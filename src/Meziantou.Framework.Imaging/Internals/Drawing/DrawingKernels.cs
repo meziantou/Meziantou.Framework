@@ -75,6 +75,9 @@ internal static class DrawingKernels
     /// <summary>The number of pixels from which a run with a single paint is searched for pixels covered entirely.</summary>
     private const int MinFullRunSearchLength = 16;
 
+    // The thresholds of the encoding of linear light to 8-bit samples, by code point of the transfer characteristics
+    private static readonly QuantizationThresholds?[] LinearThresholds8 = new QuantizationThresholds?[19];
+
     /// <summary>Converts a paint color to the pixel format of a frame, with the rules of pixel conversion.</summary>
     /// <remarks>
     /// The color samples are those of the opaque color converted by <see cref="PixelConverter"/> (Rec. 709 luma for
@@ -888,6 +891,9 @@ internal static class DrawingKernels
             decodeBlue = curves.GetDecode16(2);
         }
 
+        // The samples of 8-bit light come from the thresholds of its encoding, which give the samples of EncodeLight
+        var thresholds = curves is null && maxSample == byte.MaxValue && transfer is not CicpTransfer.Linear && transfer < LinearThresholds8.Length ? GetLinearThresholds8(transfer) : null;
+
         var colorChannels = channels == 4 ? 3 : channels;
         var mode = source.Mode;
         var blend = source.Blend;
@@ -977,13 +983,13 @@ internal static class DrawingKernels
                 {
                     if (colorChannels == 1)
                     {
-                        pixel[0] = ToSample(b[0], max, transfer, curves, 0);
+                        pixel[0] = ToSample(b[0], max, transfer, curves, 0, thresholds);
                     }
                     else
                     {
-                        pixel[red] = ToSample(b[0], max, transfer, curves, 0);
-                        pixel[1] = ToSample(b[1], max, transfer, curves, 1);
-                        pixel[blue] = ToSample(b[2], max, transfer, curves, 2);
+                        pixel[red] = ToSample(b[0], max, transfer, curves, 0, thresholds);
+                        pixel[1] = ToSample(b[1], max, transfer, curves, 1, thresholds);
+                        pixel[blue] = ToSample(b[2], max, transfer, curves, 2, thresholds);
                     }
 
                     continue;
@@ -1000,9 +1006,9 @@ internal static class DrawingKernels
                     continue;
                 }
 
-                pixel[red] = ToSample(b[0] / plusAlpha, max, transfer, curves, 0);
-                pixel[1] = ToSample(b[1] / plusAlpha, max, transfer, curves, 1);
-                pixel[blue] = ToSample(b[2] / plusAlpha, max, transfer, curves, 2);
+                pixel[red] = ToSample(b[0] / plusAlpha, max, transfer, curves, 0, thresholds);
+                pixel[1] = ToSample(b[1] / plusAlpha, max, transfer, curves, 1, thresholds);
+                pixel[blue] = ToSample(b[2] / plusAlpha, max, transfer, curves, 2, thresholds);
                 pixel[3] = TSample.CreateTruncating(plusRounded >= max ? max : plusRounded);
                 continue;
             }
@@ -1029,13 +1035,13 @@ internal static class DrawingKernels
                 // No alpha to store: the color of the result over black
                 if (colorChannels == 1)
                 {
-                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0);
+                    pixel[0] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0, thresholds);
                 }
                 else
                 {
-                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0);
-                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer, curves, 1);
-                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer, curves, 2);
+                    pixel[red] = ToSample((s[0] * sourceWeight) + (d[0] * destinationWeight), max, transfer, curves, 0, thresholds);
+                    pixel[1] = ToSample((s[1] * sourceWeight) + (d[1] * destinationWeight), max, transfer, curves, 1, thresholds);
+                    pixel[blue] = ToSample((s[2] * sourceWeight) + (d[2] * destinationWeight), max, transfer, curves, 2, thresholds);
                 }
 
                 continue;
@@ -1053,18 +1059,25 @@ internal static class DrawingKernels
                 continue;
             }
 
-            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer, curves, 0);
-            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer, curves, 1);
-            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer, curves, 2);
+            pixel[red] = ToSample(((s[0] * sourceWeight) + (d[0] * destinationWeight)) / total, max, transfer, curves, 0, thresholds);
+            pixel[1] = ToSample(((s[1] * sourceWeight) + (d[1] * destinationWeight)) / total, max, transfer, curves, 1, thresholds);
+            pixel[blue] = ToSample(((s[2] * sourceWeight) + (d[2] * destinationWeight)) / total, max, transfer, curves, 2, thresholds);
             pixel[3] = TSample.CreateTruncating(alpha >= max ? max : alpha);
         }
 
-        // The encoding is clipped to the samples, and a value that is not a number is zero
-        static TSample ToSample(double linear, double max, byte transfer, LinearLightCurves? curves, int channel)
-        {
-            var encoded = curves is null ? CicpTransfer.Encode(transfer, linear) : curves.Encode(channel, linear);
-            var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
-            return TSample.CreateTruncating(rounded >= max ? max : rounded > 0 ? rounded : 0);
-        }
+        static TSample ToSample(double linear, double max, byte transfer, LinearLightCurves? curves, int channel, QuantizationThresholds? thresholds)
+            => thresholds is not null ? TSample.CreateTruncating(thresholds.Quantize(linear)) : TSample.CreateTruncating(EncodeLight(linear, max, transfer, curves, channel));
+    }
+
+    /// <summary>Gets the thresholds of <see cref="EncodeLight"/> for 8-bit samples and a function of the transfer characteristics, or <see langword="null"/> when they do not give its samples.</summary>
+    internal static QuantizationThresholds? GetLinearThresholds8(byte transfer)
+        => QuantizationThresholds.GetOrCreate(LinearThresholds8, transfer, value => (int)EncodeLight(value, byte.MaxValue, transfer, curves: null, channel: 0), byte.MaxValue);
+
+    /// <summary>Encodes linear light to a sample, from 0 to <paramref name="max"/>: the encoding is clipped to the samples, and a value that is not a number is zero.</summary>
+    internal static double EncodeLight(double linear, double max, byte transfer, LinearLightCurves? curves, int channel)
+    {
+        var encoded = curves is null ? CicpTransfer.Encode(transfer, linear) : curves.Encode(channel, linear);
+        var rounded = Math.Floor((encoded * max) + 0.5 + (1.0 / 1048576));
+        return rounded >= max ? max : rounded > 0 ? rounded : 0;
     }
 }

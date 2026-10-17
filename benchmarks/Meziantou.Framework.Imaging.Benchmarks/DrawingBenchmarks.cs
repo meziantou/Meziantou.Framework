@@ -89,6 +89,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Translucent ellipse covering most of a 1024x768 Rgba32 canvas: fill, composited in linear sRGB")]
+    public int FillLargeTranslucentLinear()
+    {
+        _image.Draw(static canvas => canvas.Compositing(CompositingSpace.LinearSrgb, static canvas => canvas.FillEllipse(new Rgba32(30, 120, 200, 100), new PointD(512, 384), 500, 370)));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("Opaque ellipse covering most of a 1024x768 Rgba64 canvas: fill")]
     public int FillLarge64()
     {

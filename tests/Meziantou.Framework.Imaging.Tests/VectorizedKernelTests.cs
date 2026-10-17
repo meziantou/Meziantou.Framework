@@ -1438,6 +1438,111 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    public static TheoryData<byte> TransferCharacteristics() => [1, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+    [Theory]
+    [MemberData(nameof(TransferCharacteristics))]
+    public void LinearLightThresholdsMatchTheTransferFunctions(byte transfer)
+    {
+        // The encoding of the filters clips linear light to [0, 1]; the one of drawing clips the encoded value only. A
+        // function that is not monotone at the scale of the last bits of its inputs has no table (PQ, whose exponent of
+        // 78.84 magnifies the errors of rounding): it keeps the samples of the function
+        var store = WorkingSamples.GetThresholds8(transfer);
+        var draw = DrawingKernels.GetLinearThresholds8(transfer);
+        if (transfer is CicpTransfer.Srgb)
+        {
+            Assert.NotNull(store);
+            Assert.NotNull(draw);
+        }
+
+        var inputs = GetQuantizationInputs([.. new[] { store, draw }.OfType<QuantizationThresholds>()]);
+        var expected = new byte[inputs.Length];
+        var actual = new byte[inputs.Length];
+        WorkingSamples.StoreScalar<byte>(inputs, expected, WorkingAlpha.None, transfer, byte.MaxValue);
+        WorkingSamples.Store<byte>(inputs, actual, WorkingAlpha.None, transfer, byte.MaxValue);
+        Assert.Equal(expected, actual);
+
+        for (var i = 0; draw is not null && i < inputs.Length; i++)
+        {
+            Assert.Equal((int)DrawingKernels.EncodeLight(inputs[i], byte.MaxValue, transfer, curves: null, channel: 0), draw.Quantize(inputs[i]));
+        }
+    }
+
+    [Fact]
+    public void QuantizationThresholdsRefuseFunctionsThatDecrease()
+    {
+        static int Round(double value) => value <= 0 ? 0 : value >= 1 ? byte.MaxValue : (int)Math.Floor((value * byte.MaxValue) + 0.5);
+
+        var table = QuantizationThresholds.Create(Round, byte.MaxValue);
+        Assert.NotNull(table);
+        var threshold = table.GetThreshold(100);
+        Assert.Equal(100, Round(threshold));
+        Assert.Equal(99, Round(Math.BitDecrement(threshold)));
+
+        // One sample less just after a threshold, one sample more at the start of an interval of the coarse index, and a
+        // value that is not a number with a sample of its own
+        Assert.Null(QuantizationThresholds.Create(value => value == Math.BitIncrement(threshold) ? 99 : Round(value), byte.MaxValue));
+        Assert.Null(QuantizationThresholds.Create(value => value == 0.75 ? Round(value) + 1 : Round(value), byte.MaxValue));
+        Assert.Null(QuantizationThresholds.Create(value => double.IsNaN(value) ? 1 : Round(value), byte.MaxValue));
+
+        // Samples that no input reaches, and samples that are skipped
+        foreach (var quantize in new Func<double, int>[] { value => Round(value) / 2, value => Round(value) / 2 * 2 })
+        {
+            var other = QuantizationThresholds.Create(quantize, byte.MaxValue);
+            Assert.NotNull(other);
+            foreach (var value in GetQuantizationInputs(other))
+            {
+                Assert.Equal(quantize(value), other.Quantize(value));
+            }
+        }
+    }
+
+    // Every threshold and the inputs around it, the inputs around the junctions of the transfer functions, a sweep of
+    // the floats from 0 to 2, special values and random values
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static double[] GetQuantizationInputs(params QuantizationThresholds[] tables)
+    {
+        var inputs = new List<double> { 0, -0.0, -1, double.NaN, double.PositiveInfinity, double.NegativeInfinity, double.MaxValue, double.Epsilon, 1, Math.BitIncrement(1), Math.BitDecrement(1) };
+        foreach (var table in tables)
+        {
+            for (var sample = 1; sample <= byte.MaxValue; sample++)
+            {
+                var threshold = table.GetThreshold(sample);
+                if (!double.IsNaN(threshold))
+                {
+                    AddAround(threshold, 1024);
+                }
+            }
+        }
+
+        foreach (var junction in (double[])[0.0031308, 0.018053968510807, 0.0228, 0.01, Math.Sqrt(10) / 1000, 1.0 / 12, 0.04045])
+        {
+            AddAround(junction, 4096);
+        }
+
+        for (var bits = 0; bits <= BitConverter.SingleToInt32Bits(2f); bits += 1 << 12)
+        {
+            inputs.Add(BitConverter.Int32BitsToSingle(bits));
+        }
+
+        var random = new Random(42);
+        for (var i = 0; i < 100_000; i++)
+        {
+            inputs.Add((random.NextDouble() * 1.5) - 0.1);
+        }
+
+        return [.. inputs];
+
+        void AddAround(double value, int count)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            for (var i = -count; i <= count; i++)
+            {
+                inputs.Add(BitConverter.Int64BitsToDouble(bits + i));
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace, bool> ConvolutionCases()
     {
         var data = new TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace, bool>();

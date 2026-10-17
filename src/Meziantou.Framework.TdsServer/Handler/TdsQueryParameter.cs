@@ -111,6 +111,7 @@ public sealed class TdsQueryParameter
     }
 
     /// <summary>Converts the value to <see cref="decimal"/> when possible.</summary>
+    /// <remarks>A <see cref="float"/> or <see cref="double"/> outside the <see cref="decimal"/> range, NaN included, returns <see langword="null"/>.</remarks>
     public decimal? AsDecimal()
     {
         return Value switch
@@ -125,12 +126,15 @@ public sealed class TdsQueryParameter
             uint typedValue => typedValue,
             long typedValue => typedValue,
             ulong typedValue => typedValue,
-            float typedValue => (decimal)typedValue,
-            double typedValue => (decimal)typedValue,
+            float typedValue when IsInDecimalRange(typedValue) => (decimal)typedValue,
+            double typedValue when IsInDecimalRange(typedValue) => (decimal)typedValue,
             string text when decimal.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var typedValue) => typedValue,
             _ => null,
         };
     }
+
+    // decimal.MaxValue rounds up to 2^96 as a double, which is out of range, so the bound is exclusive. NaN fails the comparison.
+    private static bool IsInDecimalRange(double value) => Math.Abs(value) < (double)decimal.MaxValue;
 
     /// <summary>Returns the value as binary payload when possible.</summary>
     public byte[]? AsBinary()

@@ -86,6 +86,13 @@ internal static class TdsCollation
 
     private static bool TryGetAnsiCodePage(uint lcid, out int codePage)
     {
+        // CultureInfo.GetCultureInfo throws ArgumentOutOfRangeException rather than CultureNotFoundException for 0
+        if (lcid is 0)
+        {
+            codePage = 0;
+            return false;
+        }
+
         try
         {
             var culture = CultureInfo.GetCultureInfo((int)lcid);

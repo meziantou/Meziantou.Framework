@@ -34,6 +34,7 @@ internal static class TdsPreLoginMessage
 
     private static int GetEncryptionValueOffset(ReadOnlySpan<byte> payload)
     {
+        var optionTableLength = GetOptionTableLength(payload);
         var position = 0;
         while (position < payload.Length)
         {
@@ -48,9 +49,11 @@ internal static class TdsPreLoginMessage
                 throw new InvalidDataException("Invalid PRELOGIN payload header.");
             }
 
+            // The option data follows the option table. A value inside the table would be one of the table bytes,
+            // and the response would overwrite that byte with the encryption mode.
             var offset = BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(position + 1, 2));
             var length = BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(position + 3, 2));
-            if (offset + length > payload.Length)
+            if (offset < optionTableLength || offset + length > payload.Length)
             {
                 throw new InvalidDataException("Invalid PRELOGIN payload segment.");
             }
@@ -69,6 +72,23 @@ internal static class TdsPreLoginMessage
         }
 
         throw new InvalidDataException("PRELOGIN encryption option is missing.");
+    }
+
+    /// <summary>Returns the length of the option table, terminator included, or at least the payload length when it has no terminator.</summary>
+    private static int GetOptionTableLength(ReadOnlySpan<byte> payload)
+    {
+        var position = 0;
+        while (position < payload.Length)
+        {
+            if (payload[position] == TerminatorOption)
+            {
+                return position + 1;
+            }
+
+            position += 5;
+        }
+
+        return position;
     }
 
     private static byte[] CreateMinimalResponse(TdsPreLoginEncryptionMode encryptionMode)

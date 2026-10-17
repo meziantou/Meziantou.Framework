@@ -64,7 +64,14 @@ internal ref struct PathReader
     public ReadOnlySpan<char> CurrentText { get; private set; }
     public ReadOnlySpan<char> CurrentSegment => CurrentText[..CurrentSegmentLength];
 
-    public readonly ReadOnlySpan<char> EndText => _filename.IsEmpty ? CurrentText : _filename;
+    /// <summary>The text that ends with the last segment of the path.</summary>
+    public readonly ReadOnlySpan<char> EndText => _filename.IsEmpty ? TextWithoutTrailingSeparator : _filename;
+
+    /// <summary>
+    ///     <see cref="CurrentText"/> without its trailing separator, which only ends the last segment: the matcher
+    ///     consumes it with <see cref="ConsumeEndOfSegment"/>, so "a/b/" ends with the segment "b", not with an empty one.
+    /// </summary>
+    private readonly ReadOnlySpan<char> TextWithoutTrailingSeparator => !CurrentText.IsEmpty && IsPathSeparator(CurrentText[^1]) ? CurrentText[..^1] : CurrentText;
 
     public int CurrentSegmentLength
     {
@@ -163,8 +170,9 @@ internal ref struct PathReader
         else
         {
             // When the text holds no separator, index is -1 and the slice starts at 0, which keeps the whole text.
-            var index = CurrentText.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            CurrentText = CurrentText[(index + 1)..];
+            var text = TextWithoutTrailingSeparator;
+            var index = text.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            CurrentText = text[(index + 1)..];
         }
 
         _currentSegmentLength = CurrentText.Length;
@@ -205,14 +213,9 @@ internal ref struct PathReader
 
     public bool TryConsumePathSuffix(string[] segments, StringComparison comparison)
     {
-        ReadOnlySpan<char> currentText = CurrentText;
+        // The trailing separator of the directory only separates it from the file name, or ends the last segment
+        ReadOnlySpan<char> currentText = TextWithoutTrailingSeparator;
         ReadOnlySpan<char> filename = _filename;
-
-        // The trailing separator of the directory only separates it from the file name
-        if (!filename.IsEmpty && !currentText.IsEmpty && IsPathSeparator(currentText[^1]))
-        {
-            currentText = currentText[..^1];
-        }
 
         for (var i = segments.Length - 1; i >= 0; i--)
         {

@@ -653,6 +653,8 @@ key without separator
     [InlineData("k=a\n  ; keep me\n  b\nx=1\n", "c\nd", "k=c\n  ; keep me\n  d\nx=1\n")]
     [InlineData("k=a ; first\n  b ; last", "c", "k=c ; first")]
     [InlineData("k=a ; first\n  b ; last\n", "c", "k=c ; first\n")]
+    [InlineData("a=0\nk=old\r", "x\n\ny", "a=0\nk=x\r\r    y\n")]
+    [InlineData("a=0\nk=old\n  ; c\r  b\n", "x\n\ny", "a=0\nk=x\n  ; c\r\r  y\n")]
     public void WithValue_WritesMultilineValues(string text, string value, string expected)
     {
         var options = new IniParseOptions { AllowMultilineValues = true };

@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text;
 using System.Xml;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Language.Xml;
@@ -19,6 +21,11 @@ internal static class XmlFuzzTargets
         // An entity expansion bomb is rejected quickly rather than expanded
         MaxCharactersFromEntities = 1_000_000,
     };
+
+    /// <summary>The non-ASCII characters both System.Xml and the Fifth Edition accept in a name, but not at its start.</summary>
+    private static readonly char[] NameOnlyCharacters = [.. Enumerable.Range(0x80, 0xD800 - 0x80)
+        .Select(value => (char)value)
+        .Where(value => XmlConvert.IsNCNameChar(value) && !XmlConvert.IsStartNCNameChar(value) && SyntaxFacts.IsNameCharacter(new Rune(value)) && !SyntaxFacts.IsNameStartCharacter(new Rune(value)))];
 
     private static readonly string[] Tokens =
     [
@@ -101,7 +108,19 @@ internal static class XmlFuzzTargets
     /// <summary>A document System.Xml reads produces no diagnostic, and a document without diagnostics is one System.Xml reads.</summary>
     private static void CheckAgainstSystemXml(XmlSyntaxTree tree, string text)
     {
-        var error = ReadWithXmlReader(text);
+        // A byte order mark is the encoding signature of the document, which the parser ignores, but XmlReader reads it
+        // as a character when it reads a string
+        if (text.StartsWith('\uFEFF', StringComparison.Ordinal))
+        {
+            text = text[1..];
+        }
+
+        // A document using more of the name characters System.Xml does not know than there are characters to stand in for
+        // them cannot be compared
+        if (ReplaceFifthEditionNameCharacters(text) is not { } comparableText)
+            return;
+
+        var error = ReadWithXmlReader(comparableText);
         var diagnostics = tree.GetDiagnostics();
         if (error is null)
         {
@@ -136,15 +155,86 @@ internal static class XmlFuzzTargets
         || diagnostic.Message.EndsWith("is not a valid XML version.", StringComparison.Ordinal)
         || diagnostic.Message.Equals("An element name cannot use the 'xmlns' prefix.", StringComparison.Ordinal);
 
-    private static string? ReadWithXmlReader(string text)
+    /// <summary>
+    /// System.Xml reads names with the character classes of XML 1.0 (Fourth Edition) and none outside the basic plane, but
+    /// the parser follows the <c>NameStartChar</c> and <c>NameChar</c> productions of the Fifth Edition, which accept more:
+    /// <c>&lt;a&#x7DE;/&gt;</c> is a well-formed document that System.Xml rejects. Each character only the Fifth Edition
+    /// accepts is replaced, wherever it appears, by one of the same production that both accept and that the text does not
+    /// use. The replacement is one-to-one, so names that differ still differ, and outside a name both are character data,
+    /// so System.Xml still judges everything else in the document.
+    /// </summary>
+    /// <returns>The text to give System.Xml, or <see langword="null"/> when there are not enough characters to stand in.</returns>
+    private static string? ReplaceFifthEditionNameCharacters(string text)
     {
-        // A byte order mark is the encoding signature of the document, which the parser ignores, but XmlReader reads it
-        // as a character when it reads a string
-        if (text.StartsWith('\uFEFF', StringComparison.Ordinal))
+        StringBuilder? result = null;
+        Dictionary<Rune, char>? replacements = null;
+        HashSet<char>? usedCharacters = null;
+        var nextStartCharacter = 0x4E00; // The CJK ideographs are name start characters in both editions
+        var nextNameCharacter = 0;
+
+        var index = 0;
+        while (index < text.Length)
         {
-            text = text[1..];
+            if (Rune.DecodeFromUtf16(text.AsSpan(index), out var rune, out var length) is not OperationStatus.Done || rune.Value < 0x80 || !IsFifthEditionOnly(rune, out var isStartCharacter))
+            {
+                result?.Append(text, index, length);
+                index += length;
+                continue;
+            }
+
+            result ??= new StringBuilder(text.Length).Append(text, 0, index);
+            replacements ??= [];
+            usedCharacters ??= [.. text];
+            if (!replacements.TryGetValue(rune, out var replacement))
+            {
+                if (isStartCharacter)
+                {
+                    while (nextStartCharacter <= 0xFFFF && (usedCharacters.Contains((char)nextStartCharacter) || !IsNameStartCharacterInBothEditions((char)nextStartCharacter)))
+                    {
+                        nextStartCharacter++;
+                    }
+
+                    if (nextStartCharacter > 0xFFFF)
+                        return null;
+
+                    replacement = (char)nextStartCharacter++;
+                }
+                else
+                {
+                    while (nextNameCharacter < NameOnlyCharacters.Length && usedCharacters.Contains(NameOnlyCharacters[nextNameCharacter]))
+                    {
+                        nextNameCharacter++;
+                    }
+
+                    if (nextNameCharacter == NameOnlyCharacters.Length)
+                        return null;
+
+                    replacement = NameOnlyCharacters[nextNameCharacter++];
+                }
+
+                replacements.Add(rune, replacement);
+            }
+
+            result.Append(replacement);
+            index += length;
         }
 
+        return result?.ToString() ?? text;
+
+        static bool IsFifthEditionOnly(Rune rune, out bool isStartCharacter)
+        {
+            isStartCharacter = SyntaxFacts.IsNameStartCharacter(rune);
+            if (isStartCharacter)
+                return !rune.IsBmp || !IsNameStartCharacterInBothEditions((char)rune.Value);
+
+            return SyntaxFacts.IsNameCharacter(rune) && (!rune.IsBmp || !XmlConvert.IsNCNameChar((char)rune.Value));
+        }
+    }
+
+    private static bool IsNameStartCharacterInBothEditions(char value) => XmlConvert.IsStartNCNameChar(value) && SyntaxFacts.IsNameStartCharacter(new Rune(value));
+
+    private static string? ReadWithXmlReader(string text)
+    {
         try
         {
             using var reader = XmlReader.Create(new StringReader(text), ReaderSettings);

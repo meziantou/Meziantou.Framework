@@ -854,6 +854,8 @@ public sealed class XmlSyntaxTreeTests
     // A name may hold a character from outside the basic plane, written as a surrogate pair.
     [InlineData("<\U00010330/>", "\U00010330")]
     [InlineData("<a\U00010330b/>", "a\U00010330b")]
+    // The Fifth Edition allows U+07DE in a name, though System.Xml, which follows the Fourth, does not.
+    [InlineData("<xmln\u07DEa/>", "xmln\u07DEa")]
     // Ordinary names still work.
     [InlineData("<a:b-c.d/>", "a:b-c.d")]
     [InlineData("<_x/>", "_x")]

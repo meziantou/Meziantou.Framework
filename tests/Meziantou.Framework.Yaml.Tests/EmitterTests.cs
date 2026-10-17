@@ -363,6 +363,7 @@ public class EmitterTests : YamlTest
     [Theory]
     [InlineData("!%21", "--- !%21 \n...\n", "!!")]
     [InlineData("!<!!>", "--- !%21 \n...\n", "!!")]
+    [InlineData("!<!!> fr", "!%21 fr\n...\n", "!!")]
     [InlineData("--- !<!a!b> x\n", "--- !a%21b x\n...\n", "!a!b")]
     [InlineData("--- !<!a,[b]> x\n", "--- !a%2C%5Bb%5D x\n...\n", "!a,[b]")]
     [InlineData("--- !<tag:yaml.org,2002:> x\n", "--- !<tag:yaml.org,2002:> x\n...\n", "tag:yaml.org,2002:")]

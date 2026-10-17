@@ -1281,6 +1281,8 @@ public class GlobTests
     [InlineData("**/b?a//", "x/bxa//", true)]
     [InlineData("**/a/ba//", "x/a/ba//", true)]
     [InlineData("**/*.txt//", "x/a.txt//", true)]
+    [InlineData("**/bin/", "x/bin//", true)]
+    [InlineData("!**/bin/", "\0..x/bin//", true)]
     [InlineData("**/ba//", "x/ba///", false)]
     [InlineData("**/a/ba//", "x/a/ba///", false)]
     [InlineData("**/*.txt//", "x/a.txt///", false)]

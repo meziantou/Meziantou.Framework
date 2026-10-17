@@ -186,6 +186,13 @@ public sealed class IniPropertySyntax : IniEntrySyntax
             continuations[^1] = continuations[^1].WithTrailingTrivia(SyntaxFactory.TriviaList());
         }
 
+        var previousTrivia = first.TrailingTrivia;
+        for (var i = 0; i < continuations.Length; i++)
+        {
+            continuations[i] = continuations[i].WithLeadingTrivia(SeparateLineBreaks(previousTrivia, continuations[i].LeadingTrivia));
+            previousTrivia = continuations[i].TrailingTrivia;
+        }
+
         var lines = SyntaxFactory.SplitLines(value);
         EnsureReadsBack(first, options, isContinuation: false, lines[0], nameof(value));
         EnsureReadsBack(continuations[^1], options, isContinuation: true, lines[^1], nameof(value));
@@ -198,6 +205,40 @@ public sealed class IniPropertySyntax : IniEntrySyntax
     {
         if (!SyntaxFactory.ReadsBackAs(token, options, isContinuation, line))
             throw new ArgumentException("The value cannot be written in front of the comment that follows it, which would read as part of it.", parameterName);
+    }
+
+    /// <summary>
+    /// Returns <paramref name="trivia"/> with each <c>\n</c> that directly follows a <c>\r</c> written as <c>\r</c>: the
+    /// two would read back as one <c>\r\n</c> line break, losing a blank line of the value.
+    /// </summary>
+    /// <remarks>
+    /// The old value keeps the line breaks that ended its first line and its comment lines, which can be a <c>\r</c> where
+    /// the blank lines of the new value are written with the line break of the document.
+    /// </remarks>
+    /// <param name="previous">The trivia in front of <paramref name="trivia"/>: the trailing trivia of the line before it.</param>
+    /// <param name="trivia">The leading trivia of a line of the value.</param>
+    private static SyntaxTriviaList SeparateLineBreaks(SyntaxTriviaList previous, SyntaxTriviaList trivia)
+    {
+        var afterCarriageReturn = previous.Count > 0 && IsLineBreak(previous[^1], "\r");
+        var result = new List<SyntaxTrivia>(trivia.Count);
+        var changed = false;
+        foreach (var item in trivia)
+        {
+            var current = item;
+            if (afterCarriageReturn && IsLineBreak(current, "\n"))
+            {
+                current = SyntaxFactory.Trivia(SyntaxKind.EndOfLineTrivia, "\r");
+                changed = true;
+            }
+
+            result.Add(current);
+            afterCarriageReturn = IsLineBreak(current, "\r");
+        }
+
+        return changed ? SyntaxFactory.TriviaList(result) : trivia;
+
+        static bool IsLineBreak(SyntaxTrivia trivia, string text)
+            => trivia.IsKind(SyntaxKind.EndOfLineTrivia) && string.Equals(trivia.ToFullString(), text, StringComparison.Ordinal);
     }
 
     /// <summary>Gets the lines of <paramref name="trivia"/> that hold a comment, with their line breaks.</summary>

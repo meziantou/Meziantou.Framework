@@ -49,7 +49,8 @@ public sealed class Hyphenator
         _exceptionLookup = _exceptions.GetAlternateLookup<ReadOnlySpan<char>>();
 
         // Sorted patterns give the nodes in depth-first order, and the children of a node in the order of their letters.
-        patterns.Sort((left, right) => left.Letters.AsSpan().SequenceCompareTo(right.Letters));
+        // The sort is stable, so that the duplicates keep the order of the input.
+        var sortedPatterns = patterns.OrderBy(pattern => pattern.Letters, Comparer<int[]>.Create((left, right) => left.AsSpan().SequenceCompareTo(right)));
         var parents = new List<int> { -1 };
         var letters = new List<int> { 0 };
         var valueOffsets = new List<int> { -1 };
@@ -57,7 +58,7 @@ public sealed class Hyphenator
         var path = new List<int> { 0 };
         int[] previous = [];
         var count = 0;
-        foreach (var pattern in patterns)
+        foreach (var pattern in sortedPatterns)
         {
             var common = pattern.Letters.AsSpan().CommonPrefixLength(previous);
             if (common == pattern.Letters.Length && common == previous.Length)

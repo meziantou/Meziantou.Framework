@@ -81,9 +81,9 @@ runs:
     - name: Install DeltaBuild
       if: ${{ inputs.run-generate == 'true' }}
       shell: pwsh
-      # "update" installs the tool when it is missing, and succeeds when a previous call of the
-      # action in the same job already installed it
-      run: dotnet tool update --global Meziantou.DeltaBuild
+      # A composite action cannot reference a sibling action by a relative path (it resolves against
+      # the workspace), but the whole repository is downloaded with the action, so call the script
+      run: '& "$env:GITHUB_ACTION_PATH/../install-dotnet-tool/install-dotnet-tool.ps1" -PackageId Meziantou.DeltaBuild'
 
     - name: Generate delta project
       id: generate-delta

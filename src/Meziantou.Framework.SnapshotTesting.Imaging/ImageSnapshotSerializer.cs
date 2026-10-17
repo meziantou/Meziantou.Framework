@@ -4,9 +4,11 @@ using Meziantou.Framework.Imaging.Formats;
 namespace Meziantou.Framework.SnapshotTesting.Imaging;
 
 /// <summary>
-/// Serializes <see cref="Image"/> values to the format of the snapshot type: PNG, JPEG, BMP, TIFF, WebP, GIF or ICO. PNG,
-/// BMP, TIFF, WebP (lossless) and ICO keep the pixels exactly; GIF keeps at most 256 colors and binary transparency; JPEG
-/// uses the highest quality. Metadata the format cannot hold is dropped, since the snapshot is about the pixels.
+/// Serializes <see cref="Image"/> values to the format of the snapshot type: PNG, JPEG, BMP, TIFF, WebP, GIF, ICO, CUR, ANI,
+/// QOI, TGA, PNM, AVIF, HEIC, JPEG XL or JPEG 2000. Every format but GIF and JPEG is written without loss: GIF keeps at most
+/// 256 colors and binary transparency, and JPEG uses the highest quality. 16-bit samples are kept by PNG, TIFF, PNM, JPEG XL
+/// and JPEG 2000, reduced to 12 bits by AVIF and HEIC, and to 8 bits by the other formats. Metadata the format cannot hold
+/// is dropped, since the snapshot is about the pixels.
 /// </summary>
 internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
 {
@@ -46,6 +48,33 @@ internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
 
         if (type == SnapshotType.Ico)
             return new IcoEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == ImageSnapshotTypes.Cur)
+            return new IcoEncoder { Kind = IconKind.Cursor, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == ImageSnapshotTypes.Ani)
+            return new AniEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == ImageSnapshotTypes.Qoi)
+            return new QoiEncoder { AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == ImageSnapshotTypes.Tga)
+            return new TgaEncoder { AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == ImageSnapshotTypes.Pnm)
+            return new PnmEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == SnapshotType.Avif)
+            return new AvifEncoder { Compression = AvifCompression.Lossless, AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == SnapshotType.Heic)
+            return new HeicEncoder { Compression = HeicCompression.Lossless, AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == SnapshotType.JpegXl)
+            return new JpegXlEncoder { Compression = JpegXlCompression.Lossless, MetadataHandling = MetadataHandling.DiscardUnsupported };
+
+        if (type == SnapshotType.Jpeg2000)
+            return new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossless, MetadataHandling = MetadataHandling.DiscardUnsupported };
 
         return null;
     }

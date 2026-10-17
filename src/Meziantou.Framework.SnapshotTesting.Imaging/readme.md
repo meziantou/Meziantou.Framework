@@ -44,8 +44,8 @@ public sealed class SampleTests
 
 `AddImaging()` registers:
 
-- a serializer for `Meziantou.Framework.Imaging.Image` values, saved as `SnapshotType.Png`, `Jpeg`, `Bmp`, `Tiff`, `Webp`, `Gif` or `Ico`. PNG, BMP, TIFF, WebP (written lossless) and ICO keep the pixels exactly, GIF keeps at most 256 colors and stores transparency as on or off, JPEG uses the highest quality, and metadata the format cannot hold is dropped;
-- the `ImageComparer` for these seven snapshot types;
+- a serializer for `Meziantou.Framework.Imaging.Image` values, saved as `SnapshotType.Png`, `Jpeg`, `Bmp`, `Tiff`, `Webp`, `Gif`, `Ico`, `Avif`, `Heic`, `JpegXl` or `Jpeg2000`, or as `"cur"`, `"ani"`, `"qoi"`, `"tga"` or `"pnm"`. Every format but GIF and JPEG is written lossless and keeps the pixels exactly, GIF keeps at most 256 colors and stores transparency as on or off, and JPEG uses the highest quality. 16-bit samples are kept by PNG, TIFF, PNM, JPEG XL and JPEG 2000, reduced to 12 bits by AVIF and HEIC and to 8 bits by the other formats. Metadata the format cannot hold is dropped;
+- the `ImageComparer` for every format `Meziantou.Framework.Imaging` decodes, under each of its file extensions: PNG and APNG, JPEG, GIF, WebP, BMP, TIFF, ICO, CUR, ANI, QOI, TGA, PNM (PBM, PGM, PPM and PAM), AVIF, HEIC, JPEG XL and JPEG 2000 (`SnapshotType.Avif`, `Heic`, `JpegXl` and `Jpeg2000`);
 - a converter that writes `Rgba32` colors as `#RRGGBBAA` in human-readable snapshots.
 
 To compare image snapshots by pixels without the serializer, register the comparer alone:
@@ -78,7 +78,7 @@ Register a comparer for `SnapshotType.Png` (`AddImageComparer` or `AddImaging`) 
 
 ## Image comparison
 
-`ImageComparer` decodes both snapshots with `Meziantou.Framework.Imaging`, so every format the library reads is supported, CMYK JPEG and TIFF included. Every frame is compared: the frames of an animated GIF, APNG or WebP file, the pages of a TIFF file and the representations of an ICO or CUR file. The images must have the same number of frames and the same size. Identical bytes always match, and a snapshot that cannot be decoded does not match.
+`ImageComparer` decodes both snapshots with `Meziantou.Framework.Imaging`, so every format the library reads is supported, CMYK JPEG and TIFF included. Every frame is compared: the frames of an animated GIF, APNG, WebP, ANI, AVIF, HEIC or JPEG XL file, the pages of a TIFF file and the representations of an ICO or CUR file. The images must have the same number of frames and the same size. Identical bytes always match, and a snapshot that cannot be decoded does not match.
 
 By default, images are compared pixel by pixel (exact comparison). Fully transparent pixels are equal whatever color they hide. Images with samples of more than 8 bits, such as 16-bit PNG files, are compared on 16 bits: an 8-bit sample `v` equals the 16-bit sample `v × 257`.
 

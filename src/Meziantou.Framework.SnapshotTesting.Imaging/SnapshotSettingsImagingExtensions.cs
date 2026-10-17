@@ -9,8 +9,9 @@ public static class SnapshotSettingsImagingExtensions
     extension(SnapshotSettings snapshotSettings)
     {
         /// <summary>
-        /// Registers the serializer of <see cref="Meziantou.Framework.Imaging.Image"/> values (PNG, JPEG, BMP, TIFF, WebP, GIF
-        /// and ICO snapshots), the <see cref="ImageComparer"/> for these formats, and a converter that writes
+        /// Registers the serializer of <see cref="Meziantou.Framework.Imaging.Image"/> values (PNG, JPEG, BMP, TIFF, WebP, GIF,
+        /// ICO, CUR, ANI, QOI, TGA, PNM, AVIF, HEIC, JPEG XL and JPEG 2000 snapshots), the <see cref="ImageComparer"/> for every format the library decodes (see
+        /// <see cref="SnapshotComparerCollectionImageComparerExtensions.AddImageComparer"/>), and a converter that writes
         /// <see cref="Meziantou.Framework.Imaging.Rgba32"/> colors as <c>#RRGGBBAA</c> in human-readable snapshots.
         /// </summary>
         /// <param name="settings">Optional image comparison settings. When <see langword="null"/>, exact pixel comparison is used.</param>

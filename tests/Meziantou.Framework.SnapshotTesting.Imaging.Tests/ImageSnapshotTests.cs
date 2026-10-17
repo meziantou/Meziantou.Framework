@@ -30,6 +30,15 @@ public sealed class ImageSnapshotTests
     [InlineData("webp")]
     [InlineData("gif")]
     [InlineData("ico")]
+    [InlineData("cur")]
+    [InlineData("ani")]
+    [InlineData("qoi")]
+    [InlineData("tga")]
+    [InlineData("pnm")]
+    [InlineData("avif")]
+    [InlineData("heic")]
+    [InlineData("jxl")]
+    [InlineData("jp2")]
     public void AddImaging_SerializesImagesWithoutChangingTheirPixels(string extension)
     {
         var type = SnapshotType.Create(extension);
@@ -44,6 +53,36 @@ public sealed class ImageSnapshotTests
         Assert.Equal(type.FileExtension, snapshot.Extension);
         using var decoded = Image.Load<Rgba32>(snapshot.Data);
         Assert.Equal(GetPixels(image), GetPixels(decoded));
+    }
+
+    [Theory]
+    [InlineData("png", true)]
+    [InlineData("tiff", true)]
+    [InlineData("pnm", true)]
+    [InlineData("jxl", true)]
+    [InlineData("jp2", true)]
+    [InlineData("avif", false)]
+    [InlineData("heic", false)]
+    [InlineData("qoi", false)]
+    [InlineData("tga", false)]
+    public void AddImaging_SerializesSixteenBitImages(string extension, bool keepsSamples)
+    {
+        var settings = new SnapshotSettings();
+        settings.AddImaging();
+        using var image = new Image<Rgba64>(16, 8, new Rgba64(0x8081, 0x4041, 0x2021, 0xFFFF));
+
+        var snapshot = Assert.Single(settings.Serializers.Serialize(SnapshotType.Create(extension), image).Data);
+
+        using var decoded = Image.Load<Rgba64>(snapshot.Data);
+        var pixel = decoded.Frames[0][4, 4];
+        if (keepsSamples)
+        {
+            Assert.Equal(new Rgba64(0x8081, 0x4041, 0x2021, 0xFFFF), pixel);
+        }
+        else
+        {
+            Assert.InRange(pixel.R, 0x8000, 0x8100);
+        }
     }
 
     [Fact]
@@ -338,6 +377,29 @@ public sealed class ImageSnapshotTests
 
         var comparer = CreateComparer(SnapshotType.Webp);
         Assert.True(comparer.Equals(new SnapshotData("webp", expected), new SnapshotData("webp", actual)));
+    }
+
+    [Theory]
+    [InlineData("qoi")]
+    [InlineData("tga")]
+    [InlineData("pnm")]
+    [InlineData("cur")]
+    [InlineData("ani")]
+    [InlineData("avif")]
+    [InlineData("heic")]
+    [InlineData("jxl")]
+    [InlineData("jp2")]
+    [InlineData("j2k")]
+    public void AddImageComparer_ComparesSnapshotsOfEveryDecodedFormatByPixels(string extension)
+    {
+        using var image = CreateQuadrants(16, 16, translucentAlpha: 255);
+        var expected = Encode(image, CreateLosslessEncoder(extension));
+
+        var comparer = CreateComparer(SnapshotType.Create(extension));
+        Assert.True(comparer.Equals(new SnapshotData(extension, expected), new SnapshotData(extension, Encode(image, new PngEncoder()))));
+
+        image.Frames[0][3, 3] = new Rgba32(4, 5, 6);
+        Assert.False(comparer.Equals(new SnapshotData(extension, expected), new SnapshotData(extension, Encode(image, new PngEncoder()))));
     }
 
     [Fact]
@@ -706,7 +768,13 @@ public sealed class ImageSnapshotTests
         Assert.Equal(verifiedData, File.ReadAllBytes(verifiedPath));
     }
 
-    private static SnapshotType[] ImageTypes => [SnapshotType.Bmp, SnapshotType.Png, SnapshotType.Jpeg, SnapshotType.Tiff, SnapshotType.Webp, SnapshotType.Gif, SnapshotType.Ico];
+    private static SnapshotType[] ImageTypes =>
+    [
+        SnapshotType.Bmp, SnapshotType.Png, SnapshotType.Jpeg, SnapshotType.Tiff, SnapshotType.Webp, SnapshotType.Gif, SnapshotType.Ico,
+        SnapshotType.Avif, SnapshotType.Heic, SnapshotType.JpegXl, SnapshotType.Jpeg2000,
+        "apng", "dib", "cur", "ani", "qoi", "tga", "icb", "vda", "vst", "pnm", "pbm", "pgm", "ppm", "pam",
+        "avifs", "heif", "heics", "heifs", "j2k", "j2c", "jpc", "jpx", "jpf", "jph", "jhc",
+    ];
 
     private static SnapshotSettings CreateSettings(TemporaryDirectory directory, string extension, SnapshotUpdateStrategy strategy)
     {
@@ -724,6 +792,21 @@ public sealed class ImageSnapshotTests
         settings.Comparers.AddImageComparer();
         return settings.Comparers.Get(type);
     }
+
+    private static ImageEncoder CreateLosslessEncoder(string extension) => extension switch
+    {
+        "qoi" => new QoiEncoder(),
+        "tga" => new TgaEncoder(),
+        "pnm" => new PnmEncoder(),
+        "cur" => new IcoEncoder { Kind = IconKind.Cursor },
+        "ani" => new AniEncoder(),
+        "avif" => new AvifEncoder { Compression = AvifCompression.Lossless },
+        "heic" => new HeicEncoder { Compression = HeicCompression.Lossless },
+        "jxl" => new JpegXlEncoder { Compression = JpegXlCompression.Lossless },
+        "jp2" => new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossless },
+        "j2k" => new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossless, Container = Jpeg2000Container.Codestream },
+        _ => throw new ArgumentOutOfRangeException(nameof(extension), extension, message: null),
+    };
 
     private static ImageComparer CreateHashComparer(bool useDHash, int threshold)
     {

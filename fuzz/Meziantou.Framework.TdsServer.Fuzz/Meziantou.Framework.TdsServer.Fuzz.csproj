@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.TdsServer. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The SQL texts of the query engine tests are the seeds of the query engine target -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.TdsServer.Tests\TdsQueryEngineTests.cs" LogicalName="TdsQueryEngineTests.cs" Link="Seeds\TdsQueryEngineTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TdsServer\Meziantou.Framework.TdsServer.csproj" />
+  </ItemGroup>
+</Project>

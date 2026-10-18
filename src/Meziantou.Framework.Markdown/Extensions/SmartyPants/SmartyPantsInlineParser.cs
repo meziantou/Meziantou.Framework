@@ -305,13 +305,15 @@ public class SmartyPantsInlineParser : InlineParser, IPostInlineProcessor
 
                 if (child is LiteralInline literal)
                 {
-                    var startIndex = 0;
+                    // An escaped dash is a literal dash, not the start of a SmartyPant
+                    var startIndex = literal.IsFirstCharacterEscaped ? 1 : 0;
 
                     var indexOfDash = literal.Content.IndexOf("--", startIndex);
                     if (indexOfDash >= 0)
                     {
+                        // The text after the literal belongs to the next inline (for example the "->" smiley of the emoji parser)
                         var type = SmartyPantType.Dash2;
-                        if (literal.Content.PeekCharAbsolute(indexOfDash + 2) == '-')
+                        if (indexOfDash + 2 <= literal.Content.End && literal.Content.PeekCharAbsolute(indexOfDash + 2) == '-')
                         {
                             type = SmartyPantType.Dash3;
                         }

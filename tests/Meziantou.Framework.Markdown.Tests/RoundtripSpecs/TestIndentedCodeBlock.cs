@@ -58,6 +58,12 @@ public class TestIndentedCodeBlock
     [InlineData("    l\r\n    l\n")]
     [InlineData("    l\r\n    l\r")]
     [InlineData("    l\r\n    l\r\n")]
+
+    [InlineData("    l\n    \n")]
+    [InlineData("    l\n    \n\n")]
+    [InlineData("\n    \n    l\n    \n\n")]
+    [InlineData("    l\n  \n\n")]
+    [InlineData("    l\r\n    \r\n\r\n")]
     public void TestNewline(string value)
     {
         RoundTrip(value);

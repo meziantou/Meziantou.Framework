@@ -36,8 +36,10 @@ public class HeadingRenderer : RoundtripObjectRenderer<HeadingBlock>
             renderer.WriteLine(obj.SetextNewline);
             renderer.Write(obj.TriviaBefore);
             renderer.Write(headingChar, obj.HeaderCharCount);
-            renderer.WriteLine(obj.NewLine);
+
+            // The trivia after the underline is the end of its line
             renderer.Write(obj.TriviaAfter);
+            renderer.WriteLine(obj.NewLine);
 
             renderer.RenderLinesAfter(obj);
         }

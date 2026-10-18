@@ -45,6 +45,12 @@ public class TestSetextHeading
     [InlineData("h1\n===\n\n\nh2---\n\n")]
     [InlineData("h1\r===\r\r\rh2---\r\r")]
     [InlineData("h1\r\n===\r\n\r\n\r\nh2---\r\n\r\n")]
+
+    [InlineData("h1\n=== \n")]
+    [InlineData("h1\n===   \r")]
+    [InlineData("h1\n   ----      \n")]
+    [InlineData("h1\n---\t\r\n")]
+    [InlineData("h1\n--- \n\np")]
     public void TestNewline(string value)
     {
         RoundTrip(value);

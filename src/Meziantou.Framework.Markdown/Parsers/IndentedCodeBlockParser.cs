@@ -150,8 +150,9 @@ public class IndentedCodeBlockParser : BlockParser
                 {
                     var quoteLine = codeBlock.CodeBlockLines[i];
                     var emptyLine = new StringSlice(line.Slice.Text, quoteLine.TriviaBefore.Start, line.Slice.End, line.NewLine);
+                    // The lines are removed from the last one, so each one goes before the ones already moved
                     block.LinesAfter ??= new List<StringSlice>();
-                    block.LinesAfter.Add(emptyLine);
+                    block.LinesAfter.Insert(0, emptyLine);
                 }
             }
             else

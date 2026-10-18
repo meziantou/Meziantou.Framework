@@ -63,4 +63,12 @@ public abstract class FilterPrimitive
 
     /// <summary>Gets how far, in the drawing, the primitive moves what it reads.</summary>
     internal virtual (double X, double Y) GetReach() => (0, 0);
+
+    /// <summary>
+    /// Gets a value indicating whether the result of the primitive depends on the first pixel of the surfaces of the graph,
+    /// and not only on the pixels they hold: the running sums of a box blur start at the first pixel of each line, and an
+    /// edge mode that is not transparent adds to them pixels the edges give before the subregion of the input.
+    /// </summary>
+    /// <param name="edgeOverride">The edge mode of every filter (<see cref="FilterProcessor.EdgeOverride"/>).</param>
+    internal virtual bool DependsOnSurfaceOrigin(FilterEdgeMode? edgeOverride) => false;
 }

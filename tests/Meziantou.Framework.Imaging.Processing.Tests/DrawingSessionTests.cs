@@ -4329,6 +4329,97 @@ public sealed class DrawingSessionTests
         Assert.Throws<ArgumentNullException>(() => new ImagePrimitive(null!));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(12)]
+    [InlineData(13)]
+    [InlineData(14)]
+    public void AGraphThatDoesNotReadTheDrawingComputesTheSubregionsOnly(int index)
+    {
+        // The surfaces of a graph that reads neither the drawing nor its alpha hold only the pixels its subregions cover.
+        // After a primitive that reads the drawing in an empty subregion, and that nothing reads, the graph computes on
+        // surfaces of the whole layer, and gives the same pixels. The last two graphs filter a backdrop, whose edges are
+        // mirrored.
+        var isBackdrop = index >= 13;
+        var expected = DrawGraph(new FilterGraph([new OffsetPrimitive(default) { Input = FilterInput.SourceGraphic, Subregion = new RectangleD(0, 0, 0, 0) }, .. CreatePrimitives(index, 1)]), isBackdrop);
+        var actual = DrawGraph(new FilterGraph(CreatePrimitives(index, 0)), isBackdrop);
+        Assert.Equal(expected, actual);
+        Assert.True(Array.Exists(actual, pixel => pixel.A != 0 && pixel != new Rgba32(200, 40, 90)));
+
+        static FilterPrimitive[] CreatePrimitives(int index, int first)
+        {
+            var noise = new TurbulencePrimitive(FilterTurbulenceType.FractalNoise, 0.08, 0.1, 3, 5) { Subregion = new RectangleD(20, 12, 30, 24) };
+            var around = new RectangleD(10, 6, 50, 36);
+            var white = new Rgba32(255, 255, 255);
+            return index switch
+            {
+                0 => [noise, new GaussianBlurPrimitive(3)],
+                1 => [noise, new GaussianBlurPrimitive(3) { EdgeMode = FilterEdgeMode.Duplicate }],
+                2 => [noise, new GaussianBlurPrimitive(3) { EdgeMode = FilterEdgeMode.Wrap, Subregion = around }],
+                3 => [noise, new GaussianBlurPrimitive(2.5, 1) { EdgeMode = FilterEdgeMode.Mirror }],
+                4 => [noise, new GaussianBlurPrimitive(1) { EdgeMode = FilterEdgeMode.Duplicate, Subregion = around }],
+                5 => [new FloodPrimitive(white) { Subregion = new RectangleD(30, 20, 10, 8) }, new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 40, 3) { Subregion = new RectangleD(5, 5, 50, 40) }],
+                6 => [noise, new MorphologyPrimitive(FilterMorphologyOperator.Erode, 2, 2)],
+                7 => [noise, new DiffuseLightingPrimitive(new PointLight(30, 20, 10), white) { Subregion = around }],
+                8 => [noise, new SpecularLightingPrimitive(new DistantLight(45, 30), white)],
+                9 => [noise, new DropShadowPrimitive(new Rgba32(0, 0, 0), new PointD(3, 2), 2, 2) { Subregion = new RectangleD(8, 4, 50, 40) }],
+                10 =>
+                [
+                    new FloodPrimitive(white) { Subregion = new RectangleD(12, 10, 10, 8) },
+                    new FloodPrimitive(new Rgba32(0, 0, 255)) { Subregion = new RectangleD(40, 30, 12, 6) },
+                    new CompositePrimitive(FilterCompositeOperator.Arithmetic, FilterInput.FromResult(first + 1)) { Input = FilterInput.FromResult(first), K2 = 0.5, K3 = 0.5, K4 = 0.1 },
+                ],
+                11 =>
+                [
+                    noise,
+                    new ConvolveMatrixPrimitive(3, 3, [1, 2, 1, 0, 1, 0, 1, 2, 1]) { EdgeMode = FilterEdgeMode.Duplicate, Subregion = around },
+                    new OffsetPrimitive(new PointD(2.5, 1.5)),
+                    new DisplacementMapPrimitive(6, FilterInput.FromResult(first)),
+                ],
+                12 => [noise, new TilePrimitive { Subregion = new RectangleD(16, 8, 44, 36) }],
+                13 => [noise, new GaussianBlurPrimitive(3)],
+                _ => [noise, new DropShadowPrimitive(new Rgba32(0, 0, 0), new PointD(3, 2), 2, 2)],
+            };
+        }
+
+        static Rgba32[] DrawGraph(FilterGraph graph, bool isBackdrop)
+        {
+            using var image = new Image<Rgba32>(64, 48);
+            var paint = new SolidBrush(new Rgba32(200, 40, 90));
+            image.Draw(canvas =>
+            {
+                canvas.FillRectangle(paint, new RectangleD(6, 30, 40, 12));
+                if (isBackdrop)
+                {
+                    canvas.BackdropLayer(graph, new RectangleD(4, 3, 52, 40), 1, static _ => { });
+                }
+                else
+                {
+                    canvas.Filter(graph, layer => layer.FillRectangle(paint, new RectangleD(2, 2, 30, 20)));
+                }
+            }, Ct);
+
+            var pixels = new Rgba32[image.Width * image.Height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = image.Frames[0][i % image.Width, i / image.Width];
+            }
+
+            return pixels;
+        }
+    }
+
     /// <summary>Filters a white pixel at (1, 1) of a canvas of 6 by 6 pixels, or the whole canvas painted with a color.</summary>
     private static FilteredPixels DrawFiltered(Filter filter, Rgba32? color = null)
     {

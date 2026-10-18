@@ -49,6 +49,9 @@ public sealed class DropShadowPrimitive : FilterPrimitive
 
     internal override (double X, double Y) GetReach() => (GaussianKernel.GetRadius(SigmaX) + Math.Abs(Offset.X), GaussianKernel.GetRadius(SigmaY) + Math.Abs(Offset.Y));
 
+    // The shadow is blurred with the edge mode of every filter, or transparent
+    internal override bool DependsOnSurfaceOrigin(FilterEdgeMode? edgeOverride) => edgeOverride is { } mode && mode != FilterEdgeMode.Transparent;
+
     internal override void Evaluate(FilterGraphContext context, FilterSurface result, Rectangle subregion)
     {
         context.GetInput(0).Values.CopyTo(result.Values);

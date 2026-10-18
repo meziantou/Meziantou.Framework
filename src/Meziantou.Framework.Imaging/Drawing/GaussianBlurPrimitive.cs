@@ -61,6 +61,8 @@ public sealed class GaussianBlurPrimitive : FilterPrimitive
 
     internal override (double X, double Y) GetReach() => (GaussianKernel.GetRadius(SigmaX), GaussianKernel.GetRadius(SigmaY));
 
+    internal override bool DependsOnSurfaceOrigin(FilterEdgeMode? edgeOverride) => (edgeOverride ?? EdgeMode) != FilterEdgeMode.Transparent;
+
     internal override void Evaluate(FilterGraphContext context, FilterSurface result, Rectangle subregion)
     {
         context.GetInput(0).Values.CopyTo(result.Values);

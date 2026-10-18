@@ -107,9 +107,9 @@ public class UrlSanitizerTests
     }
 
     [Theory]
-    [InlineData("<img srcset='data:image/png;base64,iVBORw0KGgo= 1x'>", "<img srcset='data:image/png;base64,iVBORw0KGgo= 1x' />")]
-    [InlineData("<img srcset='https://example.com/a.png 1x, javascript:alert(1) 2x'>", "<img srcset='' />")]
-    [InlineData("<img srcset=''>", "<img srcset='' />")]
+    [InlineData("<img srcset='data:image/png;base64,iVBORw0KGgo= 1x'>", "<img srcset=\"data:image/png;base64,iVBORw0KGgo= 1x\">")]
+    [InlineData("<img srcset='https://example.com/a.png 1x, javascript:alert(1) 2x'>", "<img srcset=\"\">")]
+    [InlineData("<img srcset=''>", "<img srcset=\"\">")]
     public void Sanitize_Srcset(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();

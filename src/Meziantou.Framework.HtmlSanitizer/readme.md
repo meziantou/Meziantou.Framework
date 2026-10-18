@@ -6,6 +6,11 @@ A .NET library for sanitizing HTML fragments to prevent XSS attacks and other se
 
 This library provides functionality to sanitize HTML content by removing potentially dangerous elements, attributes, and URLs while preserving safe HTML structure.
 
+The fragment is parsed exactly as a browser parses it, with the HTML parser of
+[Meziantou.Framework.WebPlatform](../Meziantou.Framework.WebPlatform), and the result is written with the HTML
+serialization algorithm: attribute values are written between double quotes, and void elements have no end tag
+(`<img src="x">`).
+
 ### Basic Sanitization
 
 ```csharp
@@ -41,11 +46,11 @@ var sanitizer = new HtmlSanitizer();
 
 // Blocks javascript: URLs
 var result = sanitizer.SanitizeHtmlFragment("<a href='javascript:alert(\"xss\")'>click</a>");
-// Result: "<a href=''>click</a>"
+// Result: "<a href="">click</a>"
 
 // Allows safe URLs
 var result = sanitizer.SanitizeHtmlFragment("<a href='https://example.com'>click</a>");
-// Result: "<a href='https://example.com'>click</a>"
+// Result: "<a href="https://example.com">click</a>"
 ```
 
 ### Sanitize Srcset Attributes
@@ -57,18 +62,18 @@ var sanitizer = new HtmlSanitizer();
 
 // Blocks srcset with dangerous URLs
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
-// Result: "<img srcset='' />"
+// Result: "<img srcset="">"
 
 // Allows safe srcset
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
-// Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w' />"
+// Result: "<img srcset="https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w">"
 ```
 
 ### Text
 
-Text keeps the entities it was written with, so already encoded markup stays encoded and is not encoded a
-second time. A literal `<` is re-encoded as `&lt;`, because a `<` the parser gave up on is still markup to a
-browser — an unterminated `<!--` would put the rest of the page in comment state.
+Text and attribute values are decoded by the parser and encoded again when the result is written, so already
+encoded markup stays encoded. The markup is read as a browser reads it: an unterminated `<!--` is a comment that
+runs to the end of the fragment, and `<![CDATA[`, `<?` or `</0` start a bogus comment that ends at the first `>`.
 
 ```csharp
 var sanitizer = new HtmlSanitizer();
@@ -76,11 +81,11 @@ var sanitizer = new HtmlSanitizer();
 sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>");
 // Result: "<p>&lt;script&gt;</p>"
 
-sanitizer.SanitizeHtmlFragment("<p>a < b</p>");
-// Result: "<p>a &lt; b</p>"
+sanitizer.SanitizeHtmlFragment("<p>a < b & c</p>");
+// Result: "<p>a &lt; b &amp; c</p>"
 
 sanitizer.SanitizeHtmlFragment("<b><!--");
-// Result: "<b>&lt;!--</b>"
+// Result: "<b></b>"
 ```
 
 ### Keeping Comments
@@ -104,7 +109,7 @@ var sanitizer = new HtmlSanitizer();
 // Add custom elements
 sanitizer.ValidElements.Add("custom-element");
 
-// Has no effect: the content of a raw text element is never sanitized, so the element is
+// Has no effect: the content of a raw text element is not markup, so the element is
 // removed with its content whether or not it is in ValidElements
 sanitizer.ValidElements.Add("iframe");
 
@@ -148,6 +153,10 @@ An attribute allowed by a prefix is URL-validated only when it is in `UriAttribu
 Knockout run the value of some `data-*` attributes (`data-hx-on:click`, `data-bind`), so only allow `data-` when
 the page does not use them.
 
+The `is` attribute is removed like any other attribute that is not allowed, and the element is recreated without it:
+otherwise it would still be a customized built-in element, which a browser upgrades with the custom element of the
+page that has this name.
+
 `ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation.
 Adding an attribute to `ValidAttributes` alone lets any value through unchecked:
 
@@ -156,11 +165,11 @@ var sanitizer = new HtmlSanitizer();
 sanitizer.ValidAttributes.Add("data-url");
 
 sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
-// Result: "<p data-url='javascript:alert(1)'>test</p>"   (the value is not validated)
+// Result: "<p data-url="javascript:alert(1)">test</p>"   (the value is not validated)
 
 sanitizer.UriAttributes.Add("data-url");
 sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
-// Result: "<p data-url=''>test</p>"
+// Result: "<p data-url="">test</p>"
 ```
 
 Add any attribute that a browser resolves as a URL to both sets — `action`, `formaction`, `poster`, `data`,
@@ -181,9 +190,12 @@ By default, the sanitizer allows:
 
 An element is handled in one of three ways:
 
-- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**. This takes precedence over `ValidElements` — the content of a raw text element is written back exactly as it was read, so it can never be sanitized and adding such an element to `ValidElements` has no effect.
-- Otherwise, it is in `ValidElements`: the element and its content are kept, and its attributes are sanitized.
-- Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized.
+- It is in `BlockedElements`, or its content is text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**. This takes precedence over `ValidElements` — the content of most of these elements is written back exactly as it was read, so it can never be sanitized and adding such an element to `ValidElements` has no effect.
+- Otherwise, it is an HTML element in `ValidElements`: the element and its content are kept, and its attributes are sanitized. The content of a `template` element is sanitized too.
+- Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized. SVG and MathML elements (`svg`, `math` and their descendants) are always unwrapped, even when their name is in `ValidElements`, as a browser parses them with different rules.
+- A link (`a`) inside another link with no table cell between them, or a heading (`h1`-`h6`) whose parent is a heading,
+  is unwrapped as well. The parser only builds them when an element separates them, such as `object` or `template`;
+  once that element is unwrapped (`<a><object><a>`), a browser would not read the markup back as the same elements.
 
 ```csharp
 var sanitizer = new HtmlSanitizer();
@@ -241,8 +253,10 @@ The URL sanitizer allows:
 - Safe data URLs (base64-encoded images, videos, and audio)
 
 A URL is rejected when it contains a `&` before the first `/`, `?` or `#`. This is what stops an entity from
-masking the scheme, as in `java&#115;cript:alert(1)` or `javascript&#58;alert(1)`. It also rejects the rare
-relative URL whose first segment contains a literal `&`, such as `q&a.html` — encode it as `q%26a.html`.
+masking the scheme, as in `java&#115;cript:alert(1)` or `javascript&#58;alert(1)`, when the URL is read from
+markup without decoding it. It also rejects the rare relative URL whose first segment contains a `&`, such as
+`q&a.html` — encode it as `q%26a.html`. `HtmlSanitizer` validates the attribute values once decoded, as the
+browser reads them.
 
 ## Implementation Details
 
@@ -250,7 +264,7 @@ This library is inspired by:
 - [Angular's HTML sanitizer](https://github.com/angular/angular/blob/main/packages/core/src/sanitization/html_sanitizer.ts)
 - [Sanitizer API specification](https://wicg.github.io/sanitizer-api/#default-configuration-dictionary)
 
-The library uses [Meziantou.Framework.Html](../Meziantou.Framework.Html) for HTML parsing.
+The library uses [Meziantou.Framework.WebPlatform](../Meziantou.Framework.WebPlatform) for HTML parsing and serialization.
 
 ## Additional Resources
 

@@ -1371,6 +1371,40 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ResampleHorizontalMatchesTheScalarLoopBitForBit(int channels)
+    {
+        // Doubles, not rounded samples: the interleaved loops must keep the exact summation order of every output sample.
+        // Odd output lengths leave a single last pixel; downscales give windows of different lengths in one pair.
+        var random = new Random(channels);
+        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129)];
+        foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+        {
+            foreach (var (sourceLength, outputLength) in sizes)
+            {
+                using var weights = ResampleWeights.Create(AllocationScope.Create(configuration: null), ResampleAxis.FullExtent(sourceLength, outputLength), filter);
+                var working = new double[(((weights.Last - weights.First) + 1) * channels) + 1];
+                for (var i = 0; i < working.Length; i++)
+                {
+                    working[i] = (random.NextDouble() * 70000) - 3000;
+                }
+
+                var expected = new double[outputLength * channels];
+                var actual = new double[outputLength * channels];
+                Resampler.ResampleHorizontalScalar(working, expected, weights, channels);
+                Resampler.ResampleHorizontal(working, actual, weights, channels);
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected[i]), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData((int)WorkingAlpha.None)]
     [InlineData((int)WorkingAlpha.Premultiplied)]
     [InlineData((int)WorkingAlpha.Preserved)]

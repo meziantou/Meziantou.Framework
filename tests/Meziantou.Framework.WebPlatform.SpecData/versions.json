@@ -869,9 +869,6 @@
       "ScriptExtensions.txt": "https://www.unicode.org/Public/UCD/latest/ucd/ScriptExtensions.txt",
       "PropertyValueAliases.txt": "https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt",
       "ArabicShaping.txt": "https://www.unicode.org/Public/UCD/latest/ucd/ArabicShaping.txt",
-      "IndicSyllabicCategory.txt": "https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt",
-      "IndicPositionalCategory.txt": "https://www.unicode.org/Public/UCD/latest/ucd/IndicPositionalCategory.txt",
-      "Blocks.txt": "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt",
       "SpecialCasing.txt": "https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt"
     },
     "downloaded": "2026-10-06",
@@ -881,7 +878,6 @@
       "BidiCharacterTest.txt": "045b24d2c8ab066951bd32fe8c6b4de34647f72b5b1c7df0265f24ab53573e01",
       "BidiMirroring.txt": "cd54810ebf52f0e61a730c8b9cb25975de6c85f6d788a559b416afd548923fd6",
       "BidiTest.txt": "9af2f882a4ab50912e388f069a673b94eacd82fa6d07d20a3ff7f3c759e905aa",
-      "Blocks.txt": "a58f8d322f3c5e254f9f97b1cbf76a454a7e02de6ac35619a5e4f27aaabfd553",
       "DerivedBidiClass.txt": "d9e23222522551348ea1ccfbb4f62efbf98982afb95840f8959c08ed992c5607",
       "DerivedCoreProperties.txt": "09c928886a178fcafd93c29e4bd59073a058e5a100b716d425cb563ab50f68c9",
       "DerivedGeneralCategory.txt": "d6b151d2d40ee9b1876d26f417980f45ffae47b6055ccf7203cb31f07a030f94",
@@ -891,8 +887,6 @@
       "GraphemeBreakProperty.txt": "0839dcb79e4ac639ecd538b1abf7c9d22e3f9dd265b7e182d33627aa4d75b45a",
       "GraphemeBreakTest.txt": "b0cf047ee94485bbdc846de2b902f5f8a815f6b674f9d04223cddadd91c9df31",
       "IdnaMappingTable.txt": "a03b1eb38032268c696406a83f0972d6a815acd2c8d4151d42ec0fda70ffced1",
-      "IndicPositionalCategory.txt": "c9ad44d267c317ee0e1ec66cbd4d15033c2964f905d11fc8905915f9a5a9ae52",
-      "IndicSyllabicCategory.txt": "a2b3aacf6b3e7bad4ca351ef985d9543825e20280ff280c25f646d9bc4ce304c",
       "LineBreak.txt": "ae8cf1970c73f3f1a12d77852df96c4b2b1723ca8b388e36bb5739250c6849de",
       "LineBreakTest.txt": "fd9ff9eca411080085b41471bba79ae19d9db2e16924f9770b8509f1affd3f95",
       "PropertyValueAliases.txt": "06c4c8eaf7b0bf34abe73b113da1215bd784ac254d4c223600b90267caa4bbbd",
@@ -969,23 +963,6 @@
     "downloaded": "2026-10-02",
     "files": {
       "public_suffix_list.dat": "73c95828f5f62a3fce06d3fa9b2efd3f0a45a8c8dc2a65411545fab898a576f7"
-    }
-  },
-  "harfbuzz": {
-    "kind": "github-files",
-    "repo": "harfbuzz/harfbuzz",
-    "ref": "14.6.0",
-    "commit": "c7a7457b7385f33178e8cf87615ca077a810bbe7",
-    "files": {
-      "src/hb-ot-shaper-indic-machine.rl": "85330b07abacb3aee2243f5c1ace4bf4a257c2d32dd5863949e2f4869371e988",
-      "src/hb-ot-shaper-khmer-machine.rl": "9f0b6b351e483f9bbd2fd522800d0090635b3a020e5635fb1818cdc83649b130",
-      "src/hb-ot-shaper-myanmar-machine.rl": "d031157888505132ede7af3c770ab4331c76713ceed1b8af6decd5b106b60de1",
-      "src/hb-ot-shaper-use-machine.rl": "93c76d8b47dac77bb9ea0a5021508c9c803f8aa28df994d5f081dca0d3c54c55",
-      "src/hb-ot-tag-table.hh": "19dd8ad0e75c6d0eaef0c9ccd0ba23d213ac4592ea702322f3afcff1e010e9b1",
-      "src/ms-use/COPYING": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
-      "src/ms-use/IndicPositionalCategory-Additional.txt": "2baa1c1efe5a5f108c304b1e27d0d97864c806764eb2b0a1bd91db80ae26b5b8",
-      "src/ms-use/IndicShapingInvalidCluster.txt": "02024d4289864665721e14ec99eb320ce187f289514b793449b4f6a8ddaf5944",
-      "src/ms-use/IndicSyllabicCategory-Additional.txt": "b9472e3e72d5fba8cb3f2e0578e73012aaae786db25779de0f1a5a5ab69b84a6"
     }
   },
   "hyphenation": {

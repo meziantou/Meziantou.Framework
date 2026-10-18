@@ -105,6 +105,9 @@ internal static class OpenTypeTag
         return true;
     }
 
+    /// <summary>The tag of 4 characters (e.g. <c>smcp</c>).</summary>
+    public static uint FromString(string value) => ((uint)value[0] << 24) | ((uint)value[1] << 16) | ((uint)value[2] << 8) | value[3];
+
     /// <summary>The 4 characters of a tag.</summary>
     public static string ToString(uint tag) => string.Create(4, tag, static (span, value) =>
     {

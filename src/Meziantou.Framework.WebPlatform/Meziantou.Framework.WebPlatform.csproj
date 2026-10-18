@@ -46,8 +46,6 @@
     <!-- The bundled fonts (see Css/Fonts/Bundled/README.md); their licenses are distributed with the package -->
     <EmbeddedResource Include="Css\Fonts\Bundled\*.ttf;Css\Fonts\Bundled\*.woff2" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" />
     <None Include="Css\Fonts\Bundled\*.txt;Css\Fonts\Bundled\README.md" Pack="true" PackagePath="fonts/%(Filename)%(Extension)" />
-    <!-- The shaping engine ports algorithms and data of HarfBuzz (Old MIT license): its notice is distributed with the package -->
-    <None Include="Css\Fonts\Shaping\HarfBuzz-COPYING.txt;Css\Fonts\Shaping\MicrosoftUSE-COPYING.txt" Pack="true" PackagePath="licenses/%(Filename)%(Extension)" />
     <!-- The encoding detector is a port of chardetng (Apache-2.0 or MIT license): its notice is distributed with the package -->
     <None Include="Encodings\chardetng-COPYRIGHT.txt" Pack="true" PackagePath="licenses/%(Filename)%(Extension)" />
     <!-- The hyphenation dictionaries (see Unicode/Hyphenation/README.md); their licenses are distributed with the package -->
@@ -58,8 +56,10 @@
     <None Include="Unicode\Segmentation\LICENSES.txt;Unicode\Segmentation\README.md" Pack="true" PackagePath="segmentation/%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
-    <!-- The font reader, shared with Meziantou.Framework.Imaging; its API is internal -->
+    <!-- The font reader and the shaper, shared with Meziantou.Framework.Imaging; their API is internal -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+    <!-- Under an alias: its types would hide the ones of the library, but the shaper of Meziantou.Framework.Fonts takes its scripts -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" Aliases="UnicodeLibrary" />
   </ItemGroup>
   <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->

@@ -30,8 +30,8 @@ internal readonly record struct FontFeature(uint Tag, uint Value);
 /// </summary>
 internal sealed class FontFeatureList : IEquatable<FontFeatureList>
 {
-    private static readonly uint SmallCapsTag = ShapePlanBuilder.Tag("smcp");
-    private static readonly uint CapitalsToSmallCapsTag = ShapePlanBuilder.Tag("c2sc");
+    private static readonly uint SmallCapsTag = OpenTypeTag.FromString("smcp");
+    private static readonly uint CapitalsToSmallCapsTag = OpenTypeTag.FromString("c2sc");
 
     private readonly int _hashCode;
     private readonly (int Start, int Count) _caps;

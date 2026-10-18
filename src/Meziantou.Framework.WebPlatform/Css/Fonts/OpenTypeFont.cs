@@ -257,10 +257,6 @@ internal sealed partial class OpenTypeFont
     /// <summary>The data of a table, or an empty span when the font does not have it.</summary>
     public ReadOnlySpan<byte> GetTable(uint tag) => Face.TryGetTable(tag, out var table) ? table.Span : default;
 
-    /// <summary>The position of a table in <see cref="Data"/>, or (-1, 0) when the font does not have it.</summary>
-    private (int Offset, int Length) GetTableRange(uint tag)
-        => Face.TryGetTableRange(tag, out var offset, out var length) ? (offset, length) : (-1, 0);
-
     private OpenTypeMath? _math;
     private bool _mathParsed;
 

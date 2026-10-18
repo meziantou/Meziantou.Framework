@@ -24,12 +24,6 @@ Sources:
 - `unicode`: Unicode Character Database files, the UTS #46 IDNA mapping table, and the conformance tests of the text
   segmentation algorithms (`LineBreakTest.txt`, `GraphemeBreakTest.txt`) and of the bidirectional algorithm (`BidiTest.txt`,
   `BidiCharacterTest.txt`), which must match the version of the data
-- `harfbuzz`: files of [HarfBuzz](https://github.com/harfbuzz/harfbuzz) (MIT license), pinned to a release tag: the
-  OpenType language tag table (`src/hb-ot-tag-table.hh`: the mapping of the BCP 47 language tags to the OpenType language
-  system tags of the text shaping, `OpenTypeLanguageTags.g.cs`), the syllable machines of the complex-script shapers
-  (`src/hb-ot-shaper-{indic,khmer,myanmar,use}-machine.rl`, Ragel scanners compiled to `SyllableMachines.g.cs`), and the
-  data of the Universal Shaping Engine of Microsoft (`src/ms-use/`, MIT license: the additional Indic syllabic and positional
-  categories and the invalid vowel sequences of `IndicShapingInvalidCluster.txt`), see [layout.md](layout.md#text-shaping)
 - `chardetng`: the data of [chardetng](https://github.com/hsivonen/chardetng), the encoding detector of Firefox (Apache-2.0
   or MIT license: `COPYRIGHT`, `LICENSE-MIT`), pinned to a release tag: `src/data.rs` has the classes of the bytes of the
   single-byte encodings, the scores of the pairs of classes of each family of languages, and the most frequent ideographs
@@ -132,9 +126,7 @@ token with the contents and pull requests write permissions) to run it.
 ## Implementation notes
 
 - Unicode data (IDNA mapping, NFC, Joining_Type, Vertical_Orientation, Default_Ignorable_Code_Point, Script and
-  Script_Extensions, the Arabic joining types of `ArabicShaping.txt`, the categories of the complex-script shapers from
-  `IndicSyllabicCategory.txt`, `IndicPositionalCategory.txt` and `Blocks.txt` (`ComplexShapingGenerator`, a port of the
-  generators of HarfBuzz: `gen-indic-table.py`, `gen-use-table.py`, `gen-vowel-constraints.py`, `gen-arabic-table.py`), the bidi properties,
+  Script_Extensions, the Arabic joining types of `ArabicShaping.txt`, the bidi properties,
   see [layout.md](layout.md#bidirectional-text), and the Line_Break, East_Asian_Width, Grapheme_Cluster_Break,
   General_Category... of the text segmentation, see [layout.md](layout.md#text-segmentation)) is generated from the UCD
   instead of using `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`, whose behavior depends on the OS, the ICU

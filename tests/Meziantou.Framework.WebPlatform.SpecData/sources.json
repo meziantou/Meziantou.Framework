@@ -73,27 +73,8 @@
       "ScriptExtensions.txt": "https://www.unicode.org/Public/UCD/latest/ucd/ScriptExtensions.txt",
       "PropertyValueAliases.txt": "https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt",
       "ArabicShaping.txt": "https://www.unicode.org/Public/UCD/latest/ucd/ArabicShaping.txt",
-      "IndicSyllabicCategory.txt": "https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt",
-      "IndicPositionalCategory.txt": "https://www.unicode.org/Public/UCD/latest/ucd/IndicPositionalCategory.txt",
-      "Blocks.txt": "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt",
       "SpecialCasing.txt": "https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt"
     }
-  },
-  "harfbuzz": {
-    "kind": "github-files",
-    "repo": "harfbuzz/harfbuzz",
-    "ref": "14.6.0",
-    "paths": [
-      "src/hb-ot-tag-table.hh",
-      "src/hb-ot-shaper-indic-machine.rl",
-      "src/hb-ot-shaper-khmer-machine.rl",
-      "src/hb-ot-shaper-myanmar-machine.rl",
-      "src/hb-ot-shaper-use-machine.rl",
-      "src/ms-use/COPYING",
-      "src/ms-use/IndicPositionalCategory-Additional.txt",
-      "src/ms-use/IndicSyllabicCategory-Additional.txt",
-      "src/ms-use/IndicShapingInvalidCluster.txt"
-    ]
   },
   "chardetng": {
     "kind": "github-files",

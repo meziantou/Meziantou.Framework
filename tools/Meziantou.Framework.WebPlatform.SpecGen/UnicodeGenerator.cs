@@ -820,14 +820,6 @@ internal static class UnicodeGenerator
             writer.Line("/// <summary>Keys are (first &lt;&lt; 21) | second.</summary>");
             WriteArray(writer, "CompositionKeys", "long", compositions.Keys);
             WriteArray(writer, "CompositionValues", "int", compositions.Values);
-
-            // The canonical decomposition mappings (one step, not recursive): the normalization of the text shaping
-            // decomposes a character only as far as the font needs (https://github.com/harfbuzz/harfbuzz/blob/main/src/hb-ot-shape-normalize.cc)
-            var singleStep = decompositions.OrderBy(d => d.Key).ToList();
-            writer.Line("/// <summary>The code points that have a canonical decomposition mapping (one step); <see cref=\"CanonicalDecompositionFirst\"/> and <see cref=\"CanonicalDecompositionSecond\"/> (0 for a singleton) are the mapping.</summary>");
-            WriteArray(writer, "CanonicalDecompositionKeys", "int", singleStep.Select(d => d.Key));
-            WriteArray(writer, "CanonicalDecompositionFirst", "int", singleStep.Select(d => d.Value[0]));
-            WriteArray(writer, "CanonicalDecompositionSecond", "int", singleStep.Select(d => d.Value.Length > 1 ? d.Value[1] : 0));
         }
 
         writer.Line();

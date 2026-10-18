@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
@@ -1751,19 +1752,34 @@ internal sealed partial class InlineLayoutAlgorithm
                 i++;
             }
 
-            var type = ArabicShaper.GetJoiningType(codePoint, UnicodeProperties.GetGeneralCategory(codePoint));
-            if (type == (int)ArabicJoiningType.T)
+            var type = GetJoiningType(codePoint);
+            if (type == ArabicJoiningType.T)
                 continue;
 
-            return type == (int)ArabicJoiningType.U ? 0 : codePoint;
+            return type == ArabicJoiningType.U ? 0 : codePoint;
         }
 
         return 0;
     }
 
-    private static readonly uint HalfWidthsTag = ShapePlanBuilder.Tag("hwid");
-    private static readonly uint ThirdWidthsTag = ShapePlanBuilder.Tag("twid");
-    private static readonly uint QuarterWidthsTag = ShapePlanBuilder.Tag("qwid");
+    /// <summary>
+    /// The Joining_Type of a character (https://www.unicode.org/reports/tr44/#Joining_Type): the characters the data does not
+    /// list are transparent when they are marks or format characters, else non-joining (Unicode Standard, section 9.2).
+    /// </summary>
+    internal static ArabicJoiningType GetJoiningType(int codePoint)
+    {
+        var starts = ArabicJoiningData.RangeStarts;
+        var index = starts.BinarySearch(codePoint);
+        var type = (ArabicJoiningType)ArabicJoiningData.RangeValues[index >= 0 ? index : ~index - 1];
+        if (type != ArabicJoiningType.X)
+            return type;
+
+        return UnicodeProperties.GetGeneralCategory(codePoint) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark or UnicodeCategory.Format ? ArabicJoiningType.T : ArabicJoiningType.U;
+    }
+
+    private static readonly uint HalfWidthsTag = OpenTypeTag.FromString("hwid");
+    private static readonly uint ThirdWidthsTag = OpenTypeTag.FromString("twid");
+    private static readonly uint QuarterWidthsTag = OpenTypeTag.FromString("qwid");
 
     /// <summary>
     /// Returns the OpenType feature of the glyphs whose advance is 1/n em for a composition of n characters

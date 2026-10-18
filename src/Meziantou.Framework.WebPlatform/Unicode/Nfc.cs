@@ -174,7 +174,8 @@ internal static class Nfc
         codePoints.RemoveRange(writePosition, codePoints.Count - writePosition);
     }
 
-    private static int ComposePair(int first, int second)
+    /// <summary>The primary composite of two code points (Unicode Standard, section 3.11), or -1 when they do not compose.</summary>
+    public static int ComposePair(int first, int second)
     {
         if (first is >= LBase and < LBase + LCount && second is >= VBase and < VBase + VCount)
             return SBase + (((first - LBase) * VCount) + (second - VBase)) * TCount;

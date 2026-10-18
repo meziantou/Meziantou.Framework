@@ -491,10 +491,6 @@ internal sealed class FontFace
         return false;
     }
 
-    /// <summary>Gets the position of a table in <see cref="FontData.Bytes"/>.</summary>
-    /// <returns><see langword="false"/> when the face does not have the table.</returns>
-    public bool TryGetTableRange(uint tag, out int offset, out int length) => _directory.TryFind(tag, out offset, out length);
-
     /// <summary>Gets the glyph of a character, or 0 when the font has none.</summary>
     public int MapCodePoint(int codePoint) => _cmap.Map(codePoint);
 

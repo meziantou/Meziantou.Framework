@@ -258,7 +258,7 @@ public sealed class FontReaderTests
         var font = LoadFace(TestPaths.External("wpt", "css", "css-font-loading", "resources", "GenR102.woff2"));
         Assert.False(font.HasTable(OpenTypeTag.Gpos));
         Assert.Equal(-160, font.GetKerning(33, 54));
-        Assert.Equal(-160, font.GetKernTableValue(33, 54));
+        Assert.Equal(-160, font.Face.GetLegacyKerning(33, 54));
         Assert.Equal(-200, font.GetKerning(54, 33));
         Assert.Equal(0, font.GetKerning(33, 33));
     }
@@ -391,7 +391,7 @@ public sealed class FontReaderTests
             Assert.True(file is not null, path);
             foreach (var face in file.Faces)
             {
-                Exercise(face);
+                Exercise(face, isCorrupted: false);
             }
 
             count++;
@@ -451,14 +451,14 @@ public sealed class FontReaderTests
             {
                 foreach (var face in font.Faces)
                 {
-                    Exercise(face);
+                    Exercise(face, isCorrupted: true);
                 }
             }
         }
     }
 
     /// <summary>Reads every kind of data of a face (as the fuzzing target does).</summary>
-    private static void Exercise(OpenTypeFont font)
+    private static void Exercise(OpenTypeFont font, bool isCorrupted)
     {
         _ = font.Metrics;
         _ = font.FullName;
@@ -483,11 +483,23 @@ public sealed class FontReaderTests
         _ = font.GetAdvanceWidth((ushort)(font.GlyphCount + 10));
         _ = font.GetLeftSideBearing(ushort.MaxValue);
 
-        // The shaping engine with the GSUB, GPOS and GDEF tables of the face
-        using var buffer = new ShapingBuffer();
-        font.Shape("office AVAT\u0301a\u00E9 fi\u200D", UnicodeScript.Latin, ShapingDirection.LeftToRight, "tr", features: null, instance, buffer);
-        font.Shape("\u0644\u0627 \u0628\u0628\u064E\u200C\u0628", UnicodeScript.Arabic, ShapingDirection.RightToLeft, "ar", features: null, instance, buffer);
-        font.Shape("\u1820\u180B\u1821\u180E\u1822", UnicodeScript.Mongolian, ShapingDirection.TopToBottom, language: null, features: null, instance: null, buffer);
-        font.Shape("\u4E00\u3001", UnicodeScript.Han, ShapingDirection.TopToBottom, "ja", features: null, instance: null, buffer);
+        // The shaper with the GSUB, GPOS and GDEF tables of the face: a malformed table of a corrupted font is reported as such
+        // (the text shaping then draws the characters without the layout tables)
+        Shape("office AVAT\u0301a\u00E9 fi\u200D", UnicodeScript.Latin, isRightToLeft: false, isVertical: false, "tr", instance);
+        Shape("\u0644\u0627 \u0628\u0628\u064E\u200C\u0628", UnicodeScript.Arabic, isRightToLeft: true, isVertical: false, "ar", instance);
+        Shape("\u1820\u180B\u1821\u180E\u1822", UnicodeScript.Mongolian, isRightToLeft: false, isVertical: true, language: null, instance: null);
+        Shape("\u4E00\u3001", UnicodeScript.Han, isRightToLeft: false, isVertical: true, "ja", instance: null);
+
+        void Shape(string text, UnicodeScript script, bool isRightToLeft, bool isVertical, string? language, FontVariationInstance? instance)
+        {
+            try
+            {
+                _ = font.Shape(text, script, isRightToLeft, isVertical, language, instance);
+            }
+            catch (Meziantou.Framework.Fonts.InvalidFontException) when (isCorrupted)
+            {
+                // The layout tables of the corrupted font are malformed
+            }
+        }
     }
 }

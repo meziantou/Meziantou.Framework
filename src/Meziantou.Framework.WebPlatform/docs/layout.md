@@ -5344,9 +5344,9 @@ zeros, it never throws. The `font` fuzzing target (see
 | `post` | italic angle, underline position and thickness, fixed pitch |
 | `name` | family, subfamily, full and PostScript names (the typographic names first; the English Windows names, then the Unicode and the Macintosh Roman names) |
 | `cmap` | formats 0, 4, 6, 10, 12 and 13 (the full repertoire subtables first; the symbol fonts also map U+0020-00FF to U+F020-F0FF), and format 14 (variation sequences: `TryGetGlyphId(codePoint, variationSelector)`) |
-| `kern` | the horizontal format 0 subtables of the Microsoft and Apple versions (read by the shaping engine) |
-| `GSUB`, `GPOS` | `OpenTypeLayoutTable` (parsed lazily, immutable, cached per font): the script and language system lists, the features, the feature variations and the lookups (`OpenTypeLookup`, extensions resolved), applied by the shaping engine (see [Text shaping](#text-shaping)): GSUB lookup types 1-8, GPOS lookup types 1-9 |
-| `GDEF` | `OpenTypeGdef`: the glyph classes, the mark attachment classes, the mark glyph sets, the ligature caret values (formats 1 and 3) and the item variation store (the deltas of the device tables) |
+| `kern` | the horizontal format 0 subtables of the Microsoft and Apple versions (applied by the shaper when `GPOS` has no `kern` feature) |
+| `GSUB`, `GPOS` | read by the shaper of `Meziantou.Framework.Fonts` (see [Text shaping](#text-shaping)): the script and language system lists, the features, the feature variations and the lookups, GSUB lookup types 1-8, GPOS lookup types 1-9 |
+| `GDEF` | read by the shaper: the glyph classes, the mark attachment classes, the mark glyph sets, the ligature caret values (formats 1 and 3, `FontFace.GetLigatureCarets`) and the item variation store (the deltas of the device tables) |
 | `glyf`, `loca` | the bounding boxes the glyph headers declare |
 | `CFF `, `CFF2` | the bounding boxes of the decoded outlines (cached per glyph) |
 | `MATH` | `OpenTypeFont.MathTable` (`OpenTypeMath`): the MathConstants (`GetConstant(MathConstant)`, the percent scale downs, `DisplayOperatorMinHeight`, `RadicalDegreeBottomRaisePercent`), the italics corrections and top accent attachments of the glyphs, and the MathVariants (`GetConstruction(glyph, vertical)`: the size variants and the glyph assembly, `MinConnectorOverlap`); the variation index device tables vary the values of an instance, the other device tables are ignored |
@@ -5524,9 +5524,11 @@ aspect value of the first available font (matched without `font-size-adjust`).
 ### Text shaping
 
 `TextShaper` (`Css/Fonts`) converts a text run (characters of one style and one bidi level) to positioned glyphs with the
-OpenType Layout tables (`GSUB`, `GPOS`, `GDEF`). The shaping engine (`Css/Fonts/Shaping/`, `Css/Fonts/OpenType/`) is a
-managed port of the algorithms of [HarfBuzz](https://github.com/harfbuzz/harfbuzz) 14.6.0 (Old MIT license: its notice is
-`Css/Fonts/Shaping/HarfBuzz-COPYING.txt`, distributed with the package; the files that port it say so): no native code, the same results as HarfBuzz (and so as Chrome) for all the shapers of HarfBuzz (`OpenTypeShaper`), except the Myanmar Zawgyi encoding.
+OpenType Layout tables (`GSUB`, `GPOS`, `GDEF`). Each run is shaped by the shaper of `Meziantou.Framework.Fonts`
+(`Meziantou.Framework.Fonts.TextShaper`), shared with `Meziantou.Framework.Imaging` and written from the specifications (HarfBuzz
+is its test oracle): no native code, and the shaping models of the complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar,
+Thai and Lao, Hangul, and the Universal Shaping Engine). The Myanmar Zawgyi encoding and the Arabic fallback shaping of the
+Windows-1256 fonts are not supported.
 
 - `TextShapingOptions` is the style of a run: the computed font size, the direction (the bidi level of the run, given by
   the inline layout), the orientation (`TextShapingOrientation`: horizontal, or vertical with `text-orientation: mixed`,
@@ -5572,93 +5574,40 @@ managed port of the algorithms of [HarfBuzz](https://github.com/harfbuzz/harfbuz
   takes the script of its opening bracket, the leading Common characters take the first script, and Hiragana and Katakana
   are one run (their OpenType script is `kana`). A run is a sequence of code points of the same font, orientation and
   script; the runs of the same font are merged in `ShapedText.Runs`.
-- **Shape plan** (`ShapePlan`, `ShapePlanBuilder`, HarfBuzz's `hb_ot_map_t` and `hb_ot_shape_plan_t`): per font
-  (`OpenTypeFont.GetShapePlan`, cached by `ShapePlanKey`: script, direction, language, features, feature variations, kerning
-  decisions). It selects the script tags (`OpenTypeScriptTags`: the new tags first, e.g. `dev3`, `dev2`, `deva`, then
-  `DFLT`, `dflt`, `latn`), the language systems (`OpenTypeLanguageTags`: BCP 47 to OpenType, generated from
-  `hb-ot-tag-table.hh` of HarfBuzz by `tools/Meziantou.Framework.WebPlatform.SpecGen` (`OpenTypeTagGenerator`), with its complex rules), the feature
-  variations (`rvrn`, the `FeatureVariations` of the variable fonts), and collects the features in the order of HarfBuzz:
-  `rvrn`; `ltra`/`ltrm` or `rtla`/`rtlm`; `frac`/`numr`/`dnom`; `rand`; `abvm`/`blwm`; `ccmp`, `locl`, `mark`, `mkmk`,
-  `mset`, `rlig`; the shaper's features; `calt`, `clig`, `curs`, `dist`, `kern`, `liga`, `rclt` (horizontal) or `vert`
-  (vertical); then the requested features. Each feature gets bits of the 32-bit glyph masks; the lookups are applied by
-  stage, with the pauses of the shapers between the stages.
-- **Shapers** (`OpenTypeShaper`, HarfBuzz's `hb_ot_shaper_t`): `OpenTypeShaper.Categorize` chooses the shaper of a script
-  from the script tag chosen in `GSUB` (HarfBuzz's `hb_ot_shaper_categorize`: the syllabic scripts use the default shaper
-  when the font was designed for `DFLT` or `latn` only). A shaper overrides `CollectFeatures` (features and pauses,
-  `FeatureFlags.PerSyllable`), `CreateData` (per plan), `PreprocessText`, `Decompose`/`Compose` (the normalization),
-  `SetupMasks` (with `GlyphInfo.ShaperCategory`, `ShaperAuxiliary` and `Syllable`), `ReorderMarks`, `PostprocessGlyphs`,
-  `NormalizationPreference`, `ZeroWidthMarks` and `FallbackPosition`.
-  - `ArabicShaper` (Arabic, Syriac): the joining types come from `ArabicShaping.txt` (`ArabicJoiningData`, generated), the
-    state machine of HarfBuzz gives the forms (`isol`, `fina`, `fin2`, `fin3`, `medi`, `med2`, `init`), applied with pauses as
-    HarfBuzz, then `rlig`, `calt`, `liga`, `clig`, `mset`; the joining crosses the ZWJ and stops at a ZWNJ, uses the characters
-    around the text (`ShapingContext`), `stch` stretches the glyphs (repeated tiles), and the modifier combining marks are
-    reordered (MCM). The Arabic fonts without the joining features get the fallback shaping (`ArabicFallbackPlan`): `GSUB`
-    lookups synthesized from the presentation forms the font maps (`ArabicPresentationFormsData`, generated from
-    `UnicodeData.txt` as `gen-arabic-table.py`), applied after `rlig`; the Windows-1256 fonts are not supported.
-  - `IndicShaper` (Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, with the old `deva` and
-    the new `dev2` script tags; the `dev3` tags use the USE): the syllables (consonant, vowel, standalone, symbol, broken),
-    the initial reordering (the base consonant found from the forms of the font: `OpenTypeLayoutTable.WouldSubstitute`
-    tests the `blwf`, `pstf`, `pref`, `vatu` and `rphf` lookups as HarfBuzz's `would_substitute`; the reph, the pre-base
-    matras, the old-specification halants), the basic features one by one in the syllable (`nukt`, `akhn`, `rphf`, `rkrf`,
-    `pref`, `blwf`, `abvf`, `half`, `pstf`, `vatu`, `cjct`), the final reordering (the pre-base matras after the half forms,
-    the reph after the base or the post-base forms of the script, the pre-base-reordering Ra), then `init`, `pres`, `abvs`,
-    `blws`, `psts`, `haln`. The configuration of each script (virama, reph position and mode, below-forms mode) is HarfBuzz's.
-  - `KhmerShaper` (the Coeng Ro and the left matras move before the base, `pref`, `blwf`, `abvf`, `pstf`, `cfar` together,
-    then `pres`, `abvs`, `blws`, `psts`, `clig`; the split vowels are decomposed), `MyanmarShaper` (`mym2`: the kinzi, the
-    medial Ra and the left matras are reordered, then `rphf`, `pref`, `blwf`, `pstf` one by one; the fonts with the old `mymr`
-    tag use the default shaper, as HarfBuzz), `UseShaper` (the Universal Shaping Engine of Microsoft for Tibetan, Sinhala, the
-    Southeast Asian, Philippine and Indonesian scripts, Brahmi and its descendants, Mongolian, N'Ko, Adlam, Phags-pa and the
-    other joining scripts, the Egyptian hieroglyphs...: the clusters of the USE categories, `locl`, `ccmp`, `nukt`, `akhn`,
-    `rphf` and `pref` whose results are recorded, `rkrf`, `abvf`, `blwf`, `half`, `pstf`, `vatu`, `cjct`, the reordering of the
-    repha and of the pre-base glyphs, the topographical features `isol`, `init`, `medi`, `fina` (the Arabic joining for the
-    scripts of `ArabicShaping.txt`, else the joining of the clusters), then `abvs`, `blws`, `haln`, `pres`, `psts`).
-  - The syllables (`SyllabicShaping`) are found by the syllable machines of HarfBuzz (`IndicSyllableMachine`,
-    `KhmerSyllableMachine`, `MyanmarSyllableMachine`, `UseSyllableMachine`): `tools/Meziantou.Framework.WebPlatform.SpecGen` (`SyllableMachineGenerator`)
-    compiles the Ragel scanners of `hb-ot-shaper-*-machine.rl` (the subset of Ragel they use) to minimal DFAs whose tables
-    are generated (`SyllableMachines.g.cs`, about 10 KB); the scanning takes the longest token, the first pattern winning a
-    tie (as Ragel). The categories of the characters are generated by `ComplexShapingGenerator` from the UCD as
-    `gen-indic-table.py` and `gen-use-table.py` do, with the overrides of HarfBuzz and the additional categories of Microsoft
-    (MIT license, `Css/Fonts/Shaping/MicrosoftUSE-COPYING.txt`, packed) (`IndicCategoryData`, `UseCategoryData`: three-stage tables, about 3 KB and 10 KB). A dotted circle (U+25CC, when the font
-    has it) is inserted in the broken syllables (a mark without a base) and between the vowel sequences that look like another
-    vowel (`VowelConstraintData`, from Microsoft's `IndicShapingInvalidCluster.txt` as `gen-vowel-constraints.py`).
-  - `HangulShaper` (the jamos of a syllable are composed when the font has the precomposed syllable, else decomposed with
-    `ljmo`, `vjmo`, `tjmo`; the tone marks move before their syllable; no `calt` on the jamos), `ThaiShaper` (Thai and Lao:
-    SARA AM is decomposed to NIKHAHIT + SARA AA and the NIKHAHIT moves before the above marks; the Thai fonts without Thai
-    `GSUB` get the private use area glyphs of the Windows and Mac fonts for the marks), `HebrewShaper` (the presentation forms
-    of the marks when the font has no `GPOS` mark positioning, the reordering of patah/qamats with sheva/hiriq and meteg,
-    `GPOS` only with the `hebr` script).
-- **Pipeline** (`OpenTypeShapingEngine.Shape`, HarfBuzz's `hb_ot_shape_internal`) on a `ShapingBuffer` (the glyph infos and
-  positions, pooled arrays, one buffer rented per font list): the Unicode properties (General_Category, the modified
-  combining classes, the default ignorables), the grapheme continuations and the clusters (a ZWJ after a U+0020 starts the
-  cluster of the word after it, as in Chrome, which shapes the words between the spaces separately: the soft wrap opportunity
-  after the space is between two clusters), the native direction of the
-  script, `rtlm` for the mirrored characters without Bidi_Mirroring_Glyph (the inline layout mirrors the others), the
-  vertical presentation forms when the font has no `vert`, the normalization against `cmap` (decompose the characters the
-  font does not have, reorder the marks, recompose when the font has the composition; the variation selectors use format 14
-  of `cmap`), the masks, the glyphs and their GDEF classes (or classes synthesized from the Unicode properties), `GSUB`, the
-  advances (`hmtx`/`HVAR`, `vmtx` for the upright glyphs; the spaces the font lacks are synthesized from the em size),
-  the zeroed marks, `GPOS`, the `kern` table when `GPOS` has no `kern` feature (with the half-split cross-stream
-  adjustments of HarfBuzz), the fallback mark positioning (combining classes) for the fonts without mark attachment, the
-  invisible default ignorables, and the attachment offsets. A plan whose `GPOS` lookups are only pair kerning of the first
-  glyph (the usual kerning) applies it to the texts without marks with a per-plan cache of the pairs.
-- **Lookups** (`OpenTypeApplyContext`, HarfBuzz's `hb_ot_apply_context_t`): GSUB types 1-8 (the multiple substitutions and
-  the ligatures change the number of glyphs; the ligature components and the marks attached to them are tracked), GPOS types
-  1-9 (pair adjustments formats 1 and 2, cursive attachment, mark to base/ligature/mark, contextual and chained contextual
-  formats 1-3, extensions), the lookup flags (ignored classes, mark attachment types, mark filtering sets), the skipping of
-  the default ignorables and the joiners as HarfBuzz, and the variation deltas of the device tables (the hinting device
-  tables are ignored). The coverage and class lookups are cached per table (direct-mapped, thread-safe).
+- **The shaping of a run** (`TextShaper.ShapeRun`): the characters of the run (a line feed is given as a zero width space:
+  a segment break is not rendered), with the characters around it (`GlyphBuffer.SetContext`: the joining of the Arabic
+  letters across the runs and the inline boxes), are shaped with the face of the font, or the instance of its variations
+  (`MatchedFont.GetVariationInstance`), the script of the run (by its ISO 15924 code, `ShapingWorkspace.GetScript`), the
+  language systems (`font-language-override`, then the tags of the content language, `ShapingWorkspace.GetLanguages`) and the
+  features in the order of their precedence (a later value of a feature wins): `vkrn` when `font-kerning: normal` requests
+  the kerning of an upright run, the features of the font face, `palt` or `vpal`, the features of the run, and `kern` (or
+  `vkrn`) turned off when the run is not kerned. A run is shaped in the direction of its script, as HarfBuzz and the
+  browsers: a run of a left-to-right script in a right-to-left run (`unicode-bidi: bidi-override`), and the converse
+  (unless it only has numbers), is given to the shaper in the reverse order of its typographic character units. A ZWJ after a
+  space starts a run, as Chrome, which shapes the words between the spaces separately: the soft wrap opportunity after the
+  space stays between two clusters. The text is already mirrored by the inline layout (the shaper only applies `rtlm`), and
+  the glyphs of a right-to-left run are put back in the order of the text. The positions are in font units,
+  scaled to CSS px. The glyph buffer, the scratch memory of the outlines and the plans of the fonts (`ShapingWorkspace`) are
+  kept by the `TextShapeCache` of the font list for the next text. When the layout tables of a font cannot be used
+  (malformed, or too much work for the text: `FontException`), the run is drawn with the glyphs of `cmap` and the advances
+  of the font (`ShapingWorkspace.ShapeWithoutLayout`).
+- The queries of the layout and of the MathML layout outside of the shaping of a text (`OpenTypeFont.Layout.cs`:
+  `HasVerticalAlternate`, `HasPositioningFeature` for `halt` and `vhal`, `GetKerning`, `GetPairAdjustment`,
+  `GetSingleSubstitution` for `rtlm`, and `OpenTypeFont.Synthesis.cs`) use `Meziantou.Framework.Fonts.LayoutQueries`; a
+  malformed table answers as a font without the table.
 - **Clusters** are many-to-many: a ligature is one glyph for several characters, a multiple substitution several glyphs for
-  one character, merged as HarfBuzz's cluster level 0 (monotone graphemes). `ShapedText.LigatureCarets` are the caret
-  positions inside a cluster of several typographic character units: the `GDEF` ligature caret values (formats 1 and 3)
+  one character, merged into monotone clusters. `ShapedText.LigatureCarets` are the caret positions inside a cluster of
+  several typographic character units: the `GDEF` ligature caret values (formats 1 and 3, `FontFace.GetLigatureCarets`)
   when the ligature glyph has one per unit, else an equal division of the advance (like Chrome).
 - **Unsafe to break**: the glyphs whose shaping depends on the text before them have `ShapedGlyphFlags.UnsafeToBreak`
-  (HarfBuzz's `HB_GLYPH_FLAG_UNSAFE_TO_BREAK`: in a ligature, a contextual substitution, a kerned pair, a joining). The
+  (`GlyphInfo.IsUnsafeToBreak` of the shaper: in a ligature, a contextual substitution, a kerned pair, a cursive
+  attachment, a joining, a syllable). The
   inline layout reshapes the text at the edges of a line only when the break is unsafe or inside a cluster (`ShapeLineEdges`).
 - In vertical text, the clusters whose base character has the Vertical_Orientation
   ([UAX #50](https://www.unicode.org/reports/tr50/)) U or Tu are upright with `text-orientation: mixed` (all of them with
   `upright`, none with `sideways`), and the characters Tr are upright when the font substitutes a vertical alternate for
-  them (`OpenTypeFont.HasVerticalAlternate`), else rotated. The upright runs are shaped top to bottom with `vert` (as HarfBuzz)
-  (and `vkrn`); their advance is the vertical advance (`vmtx`, or the ascent plus the descent of the font when it has
+  them (`OpenTypeFont.HasVerticalAlternate`), else rotated. The upright runs are shaped top to bottom with `vert` (or the
+  vertical presentation forms of Unicode when the font has no `vert`) (and `vkrn`); their advance is the vertical advance (`vmtx`, or the ascent plus the descent of the font when it has
   none); the vertical origins (`VORG`, `vmtx` top side bearings) do not move the glyphs across the line.
 - `word-spacing` is added to the advance of the [word-separator characters](https://drafts.csswg.org/css-text-4/#word-separator)
   (`ShapedGlyphFlags.WordSeparator`), and `letter-spacing` to each visible cluster, the last one included (the inline layout
@@ -5686,8 +5635,8 @@ managed port of the algorithms of [HarfBuzz](https://github.com/harfbuzz/harfbuz
     disables the small capitals of a font that has them without synthesis. The characters added by a case mapping (`ß` → `SS`)
     are in the cluster of the character and get the letter spacing between them.
   - The subscripts and superscripts: when the font has no `subs`/`sups` glyph for a character of a run of the font
-    (`OpenTypeFont.WouldSubstitute`: the glyph is in the coverage of the first glyph of a subtable of a lookup of the feature,
-    as HarfBuzz's `hb_ot_layout_lookup_would_substitute` and Firefox), the whole run is synthesized when
+    (`OpenTypeFont.WouldSubstitute`: a lookup of the feature has a rule whose input is the glyph alone, whatever its context,
+    as Firefox), the whole run is synthesized when
     `font-synthesis-position` is `auto` ("simulated glyphs should be synthesized for all characters"): the glyphs without
     the feature, reduced as Firefox (82% of the font size up to 20px, 66.7% from 45px, interpolated between them, as
     `font-size: smaller` would) and shifted along the block axis (0.34em up, 0.2em down, in the glyph offsets: the line box

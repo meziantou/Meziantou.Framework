@@ -32,6 +32,7 @@ public class TextBenchmarks : IDisposable
     private static readonly string LongLatinText = string.Join(' ', Enumerable.Repeat(LatinText, 30));
 
     private byte[] _tibetanData = null!;
+    private Font _latinFont = null!;
     private TextStyle _latin = null!;
     private TextStyle _arabic = null!;
     private TextStyle _devanagari = null!;
@@ -40,13 +41,15 @@ public class TextBenchmarks : IDisposable
     private TextLayout _arabicLayout = null!;
     private TextLayout _lineLayout = null!;
     private VectorPath _curve = null!;
+    private PositionedGlyph[] _glyphs = null!;
     private Image<Rgba32> _image = null!;
 
     [GlobalSetup]
     public void Setup()
     {
         _tibetanData = ReadResource("fonts/NotoSerifTibetan-Regular.ttf");
-        _latin = new TextStyle(Font.Load(ReadResource("fonts/NotoSans-Regular.subset.ttf")), 16);
+        _latinFont = Font.Load(ReadResource("fonts/NotoSans-Regular.subset.ttf"));
+        _latin = new TextStyle(_latinFont, 16);
         _arabic = new TextStyle(Font.Load(ReadResource("fonts/NotoNaskhArabic-Regular.subset.ttf")), 16);
         _devanagari = new TextStyle(Font.Load(ReadResource("fonts/NotoSansDevanagari-Regular.ttf")), 16);
         _tibetan = new TextStyle(Font.Load(_tibetanData), 16);
@@ -55,6 +58,13 @@ public class TextBenchmarks : IDisposable
         _lineLayout = TextLayout.Create(LatinText[..60], _latin);
         _curve = new VectorPathBuilder().MoveTo(16, 600).CubicBezierTo(120, 300, 380, 300, 496, 600).Build();
         _image = new Image<Rgba32>(512, 768, new Rgba32(255, 255, 255));
+
+        // The glyphs of the Latin text on lines of 56, at origins that fall on every quarter of a pixel
+        _glyphs = new PositionedGlyph[LatinText.Length];
+        for (var i = 0; i < _glyphs.Length; i++)
+        {
+            _glyphs[i] = new PositionedGlyph(_latinFont.Face.MapCodePoint(LatinText[i]), new PointD(16 + (8.6 * (i % 56)), 32 + (20 * (i / 56))));
+        }
 
         // A text the font has no glyph for would measure the missing glyph, not the script.
         foreach (var layout in new[] { _latinLayout, _arabicLayout, TextLayout.Create(DevanagariText, _devanagari, Paragraph), TextLayout.Create(TibetanText, _tibetan, Paragraph) })
@@ -110,6 +120,14 @@ public class TextBenchmarks : IDisposable
     public int FillArabic()
     {
         _image.Draw(_arabicLayout, static (canvas, layout) => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(16, 16)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Latin paragraph, 16 px on 512x768 Rgba32: fill as positioned glyphs, without a glyph cache")]
+    public int FillGlyphs()
+    {
+        _image.Draw(this, static (canvas, benchmarks) => canvas.FillGlyphs(new SolidBrush(new Rgba32(0, 0, 0)), benchmarks._latinFont, 16, benchmarks._glyphs));
         return _image.Width;
     }
 

@@ -54,7 +54,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// of the brush.
 /// </para>
 /// <para>
-/// <b>Method.</b> When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
+/// <b>Method.</b> An image moved by whole pixels (without bicubic sampling, reduction or a rectangle that is not made of
+/// whole pixels) is read run by run: the center of the pixel <c>(x, y)</c> comes from <c>(x + tx + 1/2, y + ty + 1/2)</c>
+/// exactly (half-integers below 2^30), which is the center of the pixel <c>(x + tx, y + ty)</c> for every sampling, so
+/// that pixel is converted as it is. When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
 /// around a row of the canvas are converted once and kept until another row needs their place: the image is read row
 /// by row. Otherwise each pixel is read on its own. A reduced image is read the same two ways, one row of the image at
 /// a time for every pixel of a run, with the same operations in the same order.
@@ -66,6 +69,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>The largest magnitude of a position in the image: beyond it, every position counts as that far.</summary>
     private const double MaxPosition = 1 << 30;
+
+    /// <summary>The largest magnitude of a column or a row read by an image moved by whole pixels, far below <see cref="MaxPosition"/>.</summary>
+    private const long MaxShift = 1 << 29;
 
     /// <summary>The values kept for each pixel of a run of a reduced image: the sums of the alpha and of the three colors, and the sum of the weights of its columns.</summary>
     private const int ValuesPerSum = 5;
@@ -93,6 +99,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private Affine2D _inverse;
     private bool _isEmpty;
     private bool _keepsRows;
+
+    // An image moved by whole pixels, and by how many: the pixel (x, y) of the canvas is the pixel (x + shiftX, y + shiftY) of the frame
+    private bool _isShifted;
+    private long _shiftX;
+    private long _shiftY;
+    private bool _isSameFormat;
     private ImageWrapMode _wrapModeX;
     private ImageWrapMode _wrapModeY;
     private bool _isNearest;
@@ -199,6 +211,10 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         // The row of the image a pixel reads does not depend on its column
         _keepsRows = _inverse.B == 0;
+        _isShifted = !_isEmpty && _inverse.A == 1 && _inverse.B == 0 && _inverse.C == 0 && _inverse.D == 1 && IsWholeShift(_inverse.Tx) && IsWholeShift(_inverse.Ty);
+        _shiftX = _isShifted ? (long)_inverse.Tx : 0;
+        _shiftY = _isShifted ? (long)_inverse.Ty : 0;
+        _isSameFormat = source.PixelFormat == destination.PixelFormat;
 
         // What a pixel of the canvas covers of the image: more than a pixel when the image is reduced
         _isReduced = false;
@@ -377,6 +393,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return colors;
         }
 
+        if (_isShifted && !_hasDomain && !_isBicubic && !_isProjective && !_isReduced && TryEvaluateShifted(y, x, colors))
+            return colors;
+
         var samples = Samples[..count];
         if (_hasDomain)
         {
@@ -432,6 +451,73 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _source = null;
         _destination = null;
         _storage = null;
+    }
+
+    private static bool IsWholeShift(double offset) => Math.Abs(offset) <= MaxShift && Math.Floor(offset) == offset;
+
+    /// <summary>Evaluates a run of an image moved by whole pixels: the pixels of a run of a row of the frame, as they are.</summary>
+    /// <returns><see langword="false"/> when a position of the run is too far for its pixel to be found that way.</returns>
+    private bool TryEvaluateShifted(int y, int x, Span<ushort> colors)
+    {
+        var count = colors.Length / 4;
+        var row = (long)y + _shiftY;
+        var first = (long)x + _shiftX;
+        if (Math.Abs(row) >= MaxShift || Math.Abs(first) >= MaxShift || Math.Abs(first + count) >= MaxShift)
+            return false;
+
+        if (!TryWrap((int)row, _top, _regionHeight, _wrapModeY, out var regionRow))
+        {
+            colors.Clear();
+            return true;
+        }
+
+        // The pixels of the run in the region are read at once; the others one by one, by the wrap mode
+        var frameRow = _top + regionRow;
+        var start = (int)Math.Clamp(_left - first, 0, count);
+        var end = (int)Math.Clamp(_left + _regionWidth - first, start, count);
+        for (var i = 0; i < start; i++)
+        {
+            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
+        }
+
+        if (end > start)
+        {
+            ReadColors(frameRow, (int)(first + start), colors[(start * 4)..(end * 4)]);
+        }
+
+        for (var i = end; i < count; i++)
+        {
+            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
+        }
+
+        return true;
+    }
+
+    /// <summary>Reads a pixel of a row of the frame outside the region, by the wrap mode along x.</summary>
+    private void ReadShifted(int frameRow, int column, Span<ushort> color)
+    {
+        if (TryWrap(column, _left, _regionWidth, _wrapModeX, out var regionColumn))
+        {
+            ReadColors(frameRow, _left + regionColumn, color);
+        }
+        else
+        {
+            color.Clear();
+        }
+    }
+
+    /// <summary>Reads pixels of a row of the frame as colors of the frame that is drawn on.</summary>
+    private void ReadColors(int frameRow, int frameColumn, Span<ushort> colors)
+    {
+        if (_isSameFormat)
+        {
+            _source!.ReadDrawingColors(_storage!, frameRow, frameColumn, colors);
+            return;
+        }
+
+        var samples = Samples[..(colors.Length / 4)];
+        _source!.ReadRgba64(_storage!, frameRow, frameColumn, samples);
+        _destination!.ConvertDrawingColors(samples, colors);
     }
 
     /// <summary>Evaluates a run whose pixels all read the same two rows of the image.</summary>

@@ -244,6 +244,92 @@ internal static class DrawingKernels
         PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
     }
 
+    /// <summary>
+    /// Reads pixels of a row as the paint colors of a frame of the same pixel type: four samples per pixel, laid out as
+    /// <see cref="DrawingColor"/>. These are the colors <see cref="ConvertColors{TPixel}"/> gives for those
+    /// <see cref="ReadColors{TPixel}"/> reads, without the 16-bit colors in between: each sample is written as it is
+    /// stored, a format without alpha has an opaque one, and a gray format has its level first then two zeros. Every
+    /// sample goes back to itself through 16 bits, and the luma of a gray is that gray (<c>VectorizedKernelTests</c>
+    /// checks every 8-bit sample and every 16-bit gray).
+    /// </summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    public static void ReadDrawingColors<TPixel>(PixelStorage storage, int y, int x, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var count = destination.Length / 4;
+        var row = storage.GetRowSpanCore(y);
+        if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
+        {
+            var samples = row.Slice(x * 4, count * 4);
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                for (; i + 16 <= samples.Length; i += 16)
+                {
+                    var block = Vector128.Create(samples.Slice(i, 16));
+                    Vector128.WidenLower(block).CopyTo(destination.Slice(i, 8));
+                    Vector128.WidenUpper(block).CopyTo(destination.Slice(i + 8, 8));
+                }
+            }
+
+            for (; i < samples.Length; i++)
+            {
+                destination[i] = samples[i];
+            }
+        }
+        else if (typeof(TPixel) == typeof(Rgba64))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 4, count * 4);
+            samples.CopyTo(destination);
+        }
+        else if (typeof(TPixel) == typeof(Rgb24))
+        {
+            var samples = row.Slice(x * 3, count * 3);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i * 3];
+                entry[1] = samples[(i * 3) + 1];
+                entry[2] = samples[(i * 3) + 2];
+                entry[3] = byte.MaxValue;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Gray8))
+        {
+            var samples = row.Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i];
+                entry[1] = 0;
+                entry[2] = 0;
+                entry[3] = byte.MaxValue;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Gray16))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i];
+                entry[1] = 0;
+                entry[2] = 0;
+                entry[3] = ushort.MaxValue;
+            }
+        }
+        else
+        {
+            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row.</summary>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>

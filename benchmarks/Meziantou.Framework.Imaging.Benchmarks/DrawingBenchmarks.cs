@@ -204,6 +204,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("2048x1536 Rgba32 image drawn at a whole-pixel position, covering the canvas")]
+    public int DrawImageAtPosition()
+    {
+        _image.Draw(_photo.Frames[0], static (canvas, source) => canvas.DrawImage(source, new PointD(-512, -384)));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("Clear of a 1024x768 Rgba32 canvas")]
     public int Clear()
     {

@@ -185,6 +185,12 @@ public abstract class ImageFrame
     internal abstract void ReadRgba64(PixelStorage storage, int y, int x, Span<Rgba64> destination);
 
     /// <summary>
+    /// Reads pixels of a row as paint colors of a frame of the same pixel type, laid out as <see cref="DrawingColor"/>
+    /// (see <see cref="DrawingKernels.ReadDrawingColors{TPixel}"/>). The caller holds the lease of the storage.
+    /// </summary>
+    internal abstract void ReadDrawingColors(PixelStorage storage, int y, int x, Span<ushort> destination);
+
+    /// <summary>
     /// Composites a paint over a run of pixels, weighted by their coverage, with the kernel of the frame pixel type. The
     /// drawing session holds the lease of the storage for its whole duration.
     /// </summary>

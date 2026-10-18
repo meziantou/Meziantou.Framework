@@ -1756,6 +1756,46 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void DrawingColorsReadFromAFrameOfTheSameFormatAreItsConvertedColors()
+    {
+        // Every sample of every channel (the channels are converted on their own), and every 16-bit gray
+        CheckColors(256, i => new Rgba32((byte)i, (byte)(255 - i), (byte)(i * 37), (byte)(i * 101)));
+        CheckColors(256, i => new Bgra32((byte)i, (byte)(255 - i), (byte)(i * 37), (byte)(i * 101)));
+        CheckColors(256, i => new Rgb24((byte)i, (byte)(255 - i), (byte)(i * 37)));
+        CheckColors(256, i => new Gray8((byte)i));
+        CheckColors(65536, i => new Gray16((ushort)i));
+        CheckColors(65536, i => new Rgba64((ushort)i, (ushort)(65535 - i), (ushort)(i * 37), (ushort)(i * 101)));
+
+        static void CheckColors<TPixel>(int count, Func<int, TPixel> create)
+            where TPixel : unmanaged
+        {
+            const int Width = 256;
+            using var image = new Image<TPixel>(Width, count / Width);
+            for (var i = 0; i < count; i++)
+            {
+                image.Frames[0][i % Width, i / Width] = create(i);
+            }
+
+            var storage = image.Frames[0].GetStorage();
+            var colors = new Rgba64[Width];
+            var expected = new ushort[Width * 4];
+            for (var y = 0; y < image.Height; y++)
+            {
+                DrawingKernels.ReadColors<TPixel>(storage, y, 0, colors);
+                DrawingKernels.ConvertColors<TPixel>(colors, expected);
+
+                // Runs that start anywhere, around the length of a vector
+                foreach (var (start, length) in new[] { (0, Width), (1, Width - 1), (3, 5), (5, 3), (7, 17), (2, 1) })
+                {
+                    var actual = new ushort[length * 4];
+                    DrawingKernels.ReadDrawingColors<TPixel>(storage, y, start, actual);
+                    Assert.Equal(expected.AsSpan(start * 4, length * 4).ToArray(), actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingBlurSumsMatchTheScalarReference()
     {

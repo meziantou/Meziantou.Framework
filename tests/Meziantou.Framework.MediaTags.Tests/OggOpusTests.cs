@@ -185,6 +185,25 @@ public sealed class OggOpusTests
     }
 
     [Fact]
+    public void WriteTags_PageWithAWrongChecksum_IsRefused()
+    {
+        // Every written page gets a fresh checksum, so a corrupt audio page would come out looking valid and a
+        // player that skips it today would decode it.
+        var bytes = File.ReadAllBytes(GetTestFilePath("basic.opus"));
+        bytes[^1] ^= 0xFF;
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.OggOpus);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+
+        input.Position = 0;
+        Assert.True(MediaFile.ReadTags(input, MediaFormat.OggOpus).IsSuccess);
+    }
+
+    [Fact]
     public void ReadTags_NotAnOggFile_ReturnsSuccessWithNoTags()
     {
         using var stream = new MemoryStream([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);

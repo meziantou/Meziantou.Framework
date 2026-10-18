@@ -4029,14 +4029,19 @@ public sealed class VectorizedKernelTests
         var random = new Random(32);
         var data = new byte[70_000];
         random.NextBytes(data);
-        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 255, 5535, 5536, 5537, 5552, 11_073, 70_000];
+        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 79, 80, 81, 127, 128, 129, 191, 192, 193, 255, 5535, 5536, 5537, 5552, 11_073, 70_000];
         foreach (var length in lengths)
         {
-            foreach (var initial in new uint[] { 1, 0xFFF0FFF0, 0x12345678 % 65521 })
+            foreach (var initial in new uint[] { 1, 0xFFF0FFF0, 0x12345678 % 65521, Crc32.Initial })
             {
                 var span = data.AsSpan(0, length);
                 Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.Update(initial, span));
                 Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.UpdateTables(initial, span));
+                if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+                {
+                    Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.UpdateCarrylessMultiply(initial, span));
+                }
+
                 var adler = ((initial >> 16) % 65521 << 16) | ((initial & 0xFFFF) % 65521);
                 Assert.Equal(BoundedInflater.UpdateAdler32Scalar(adler, span), BoundedInflater.UpdateAdler32(adler, span));
             }
@@ -4048,6 +4053,10 @@ public sealed class VectorizedKernelTests
         Assert.Equal(BoundedInflater.UpdateAdler32Scalar(0xFFF0FFF0, ones), BoundedInflater.UpdateAdler32(0xFFF0FFF0, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.Update(Crc32.Initial, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateTables(Crc32.Initial, ones));
+        if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+        {
+            Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateCarrylessMultiply(Crc32.Initial, ones));
+        }
     }
 
     private static Image ImportBytes(PixelFormat format, byte[] bytes, int width, int height) => format switch

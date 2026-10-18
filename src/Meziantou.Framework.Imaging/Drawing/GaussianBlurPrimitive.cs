@@ -66,6 +66,7 @@ public sealed class GaussianBlurPrimitive : FilterPrimitive
         context.GetInput(0).Values.CopyTo(result.Values);
         var processor = context.Processor;
         var edges = processor.Edges;
+        var extent = processor.Extent;
         processor.Edges = context.GetInputSubregion(0);
         try
         {
@@ -74,6 +75,7 @@ public sealed class GaussianBlurPrimitive : FilterPrimitive
         finally
         {
             processor.Edges = edges;
+            processor.Extent = extent;
         }
 
         FilterGraphContext.ClearOutside(result, subregion);

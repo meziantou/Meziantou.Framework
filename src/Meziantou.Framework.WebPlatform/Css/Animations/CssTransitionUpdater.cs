@@ -397,14 +397,14 @@ internal static class CssTransitionUpdater
 /// compute again with the size of its query container (see <see cref="StyleEngine.InvalidateQueryContainerDescendants"/>): the
 /// layout may lay out the container more than once (e.g. to measure it), and a discarded style must not have changed the
 /// transitions. The transitions it started are canceled, and the ones it canceled run again: they are only canceled once the
-/// styles are settled (see <see cref="StyleEngine.CommitTransitionCancellations"/>).
+/// styles are settled (see <see cref="StyleEngine.CommitPendingCancellations"/>).
 /// </summary>
 /// <param name="generation">The last transition generation before the first computation: the transitions started by the computations have a greater generation.</param>
 internal sealed class TransitionChanges(long generation)
 {
     public long Generation { get; } = generation;
 
-    /// <summary>The running transitions canceled by the computations, whose cancellation is pending (see <see cref="CssTransition.IsCancellationPending"/>).</summary>
+    /// <summary>The running transitions canceled by the computations, whose cancellation is pending (see <see cref="Animation.IsCancellationPending"/>).</summary>
     public List<CssTransition>? PendingCancellations { get; set; }
 
     /// <summary>The end values of the completed transitions removed by the computations, by property.</summary>

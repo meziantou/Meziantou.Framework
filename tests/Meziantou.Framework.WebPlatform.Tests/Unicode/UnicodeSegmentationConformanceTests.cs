@@ -121,7 +121,7 @@ public sealed class UnicodeSegmentationConformanceTests
     // Each line is "÷ 0023 × 0308 ÷ ..." (÷: break, ×: no break) followed by a comment; expected[i] is the break before text[i]
     private static IEnumerable<(string Line, string Text, bool[] Expected)> Load(string name)
     {
-        foreach (var line in File.ReadLines(TestPaths.SpecData("unicode", name)))
+        foreach (var line in UnicodeConformanceFiles.ReadLines(name))
         {
             var hash = line.IndexOf('#', StringComparison.Ordinal);
             var data = (hash >= 0 ? line[..hash] : line).Trim();

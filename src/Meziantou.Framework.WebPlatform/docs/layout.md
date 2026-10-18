@@ -5728,8 +5728,8 @@ The properties of the code points come from the `Meziantou.Framework.Unicode` pa
 in constant time. `CharacterProperties` gives the ones the layout reads in another form: the classes of UAX #9 and UAX #14
 with their short names (`BidiClass`, `LineBreakClass`, whose values are the ones of the package, so a cast converts them),
 the mirroring glyph with a -1 sentinel, and the derived properties (`IsMark`, `IsHan`, `IsHangul`...). The conformance
-test files of the UCD (`LineBreakTest.txt`, `GraphemeBreakTest.txt`, `WordBreakTest.txt`) are part of the `unicode`
-source of `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`; they run as unit tests
+test files of the UCD (`LineBreakTest.txt`, `GraphemeBreakTest.txt`, `WordBreakTest.txt`) are the ones of the package
+(`tests/Meziantou.Framework.Unicode.Tests/files`), so they always match the version of the data; they run as unit tests
 (`tests/Meziantou.Framework.WebPlatform.Tests/Unicode/`).
 
 ### Grapheme clusters

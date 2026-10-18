@@ -21,10 +21,11 @@ Sources:
 - `mathml-core`: the source of [MathML Core](https://w3c.github.io/mathml-core/) (`spec.html`) and the files of its user
   agent style sheet (`user-agent-stylesheet`)
 - `webref`: curated WebIDL, parsed WebIDL, element definitions and CSS definitions from [w3c/webref](https://github.com/w3c/webref)
-- `unicode`: Unicode Character Database files (the input of the data of the complex-script shapers), the UTS #46 IDNA
-  mapping table, and the conformance tests of the text
-  segmentation algorithms (`LineBreakTest.txt`, `GraphemeBreakTest.txt`) and of the bidirectional algorithm (`BidiTest.txt`,
-  `BidiCharacterTest.txt`), which must match the version of the data
+- `unicode`: the Unicode Character Database files that the data of the complex-script shapers is generated from
+  (`ComplexShapingGenerator`, and the lowercase mappings of the hyphenation dictionaries). The URLs name a version
+  (`Public/18.0.0/`), the one of `tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt`: the other Unicode data
+  comes from the `Meziantou.Framework.Unicode` package, so the two move together. The conformance tests of the text
+  segmentation and of the bidirectional algorithm are the files of the package (`tests/Meziantou.Framework.Unicode.Tests/files`)
 - `harfbuzz`: files of [HarfBuzz](https://github.com/harfbuzz/harfbuzz) (MIT license), pinned to a release tag: the
   OpenType language tag table (`src/hb-ot-tag-table.hh`: the mapping of the BCP 47 language tags to the OpenType language
   system tags of the text shaping, `OpenTypeLanguageTags.g.cs`), the syllable machines of the complex-script shapers

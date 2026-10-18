@@ -1,4 +1,5 @@
-using Meziantou.Framework.Html;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.Sanitizers;
 
@@ -32,6 +33,11 @@ public sealed class HtmlSanitizer
     // del, ins and map are in BlockElements as well: their content model is transparent, so they are either
     // depending on what they wrap. The lists are merged into a set, so the overlap costs nothing.
     private static readonly string[] InlineElements = [.. OptionalEndTagInlineElements, "a", "abbr", "acronym", "b", "bdi", "bdo", "big", "br", "cite", "code", "del", "dfn", "em", "font", "i", "img", "ins", "kbd", "label", "map", "mark", "q", "ruby", "rp", "rt", "s", "samp", "small", "span", "strike", "strong", "sub", "sup", "time", "tt", "u", "var"];
+
+    private const string HtmlNamespace = "http://www.w3.org/1999/xhtml";
+
+    // Elements whose content is text rather than markup
+    private static readonly HashSet<string> RawTextElements = new(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "textarea", "title", "xmp"], StringComparer.Ordinal);
 
     // Blocked Elements (will be stripped)
     private static readonly string[] DefaultBlockedElements = ["script", "style"];
@@ -68,16 +74,9 @@ public sealed class HtmlSanitizer
 
     private static HashSet<string> ToHashSet(string[] values) => new(values, StringComparer.OrdinalIgnoreCase);
 
-    private bool IsValidNode(string tagName)
-    {
-        if (BlockedElements.Contains(tagName))
-            return false;
-
-        if (!ValidElements.Contains(tagName))
-            return false;
-
-        return true;
-    }
+    // Only the elements of the HTML namespace are kept: the SVG and MathML elements are parsed with other rules (foreign
+    // content), so they would not be read back as the same elements once moved or serialized.
+    private bool IsValidElement(Element element) => element.NamespaceUri == HtmlNamespace && ValidElements.Contains(element.LocalName);
 
     private bool IsValidAttribute(string attributeName)
     {
@@ -102,86 +101,148 @@ public sealed class HtmlSanitizer
         if (html is null)
             return null;
 
-        var document = ParseHtmlFragment(html);
-        Sanitize(document);
-        return document.InnerHtml;
+        // The fragment is parsed as the content of a body element, the way a browser parses the markup inserted in a page
+        var document = HtmlDocumentParser.ParseDocument("");
+        var body = document.Body!;
+        var fragment = new HtmlDocumentParser().ParseFragment(html, body);
+        Sanitize(fragment);
+        body.Append(fragment);
+        return body.GetHtml();
     }
 
     // The traversal is iterative on purpose: a hostile fragment can nest elements thousands of levels deep
     // and a recursive walk would overflow the stack.
-    private void Sanitize(HtmlNode root)
+    private void Sanitize(Node root)
     {
-        var pendingNodes = new Stack<HtmlNode>();
-        pendingNodes.Push(root);
+        var pendingNodes = new Stack<(Node Parent, bool IsInLink)>();
+        pendingNodes.Push((root, false));
+        List<Element>? leadingNewLineElements = null;
 
-        while (pendingNodes.Count > 0)
+        while (pendingNodes.TryPop(out var item))
         {
-            var parent = pendingNodes.Pop();
-            for (var i = parent.ChildNodes.Count - 1; i >= 0; i--)
+            var (parent, isInLink) = item;
+            var node = parent.FirstChild;
+            while (node is not null)
             {
-                switch (parent.ChildNodes[i])
+                var next = node.NextSibling;
+                switch (node)
                 {
                     // Blocked elements, and elements whose content is raw text rather than markup, are removed with
-                    // their content. The content of a raw text element (script, style, title, textarea, …) is
-                    // written back verbatim, so neither keeping it nor promoting it to the parent can be made safe.
+                    // their content. The content of a raw text element (script, style, iframe, noscript, …) is
+                    // serialized verbatim, so neither keeping it nor promoting it to the parent can be made safe.
                     // This is checked before ValidElements on purpose: adding such an element to the allow list
                     // would otherwise write its content straight through without ever sanitizing it.
-                    case HtmlElement element when BlockedElements.Contains(element.Name) || HasRawTextContent(element):
+                    case Element element when BlockedElements.Contains(element.LocalName) || HasRawTextContent(element):
                         element.Remove();
                         break;
 
-                    case HtmlElement element when !IsValidNode(element.Name):
-                    {
-                        // The element is not allowed but its content is, so only the tag is dropped.
-                        var promotedCount = element.ChildNodes.Count;
-                        element.Remove(keepChildren: true);
-
-                        // The promoted children take the place of the element, so they must be sanitized too.
-                        i += promotedCount;
-                        break;
-                    }
-
-                    case HtmlElement element:
-                        SanitizeAttributes(element);
-                        pendingNodes.Push(element);
+                    // The element is not allowed but its content is, so only the tag is dropped. The promoted children
+                    // take the place of the element, so they are sanitized next.
+                    // Unwrapping an element can move its content where the parser never puts it, which a browser
+                    // would read back differently: the parser allows a link in a link, or a heading in a heading, only
+                    // when an element such as template or object separates them. Such an element is unwrapped too.
+                    case Element element when !IsValidElement(element) || (isInLink && IsLink(element)) || (IsHeading(element) && parent is Element parentElement && IsHeading(parentElement)):
+                        next = Unwrap(element) ?? next;
                         break;
 
-                    case HtmlComment comment when !AllowComments:
-                        comment.Remove();
+                    case Element element:
+                        if (SanitizeAttributes(element))
+                        {
+                            element = RecreateWithoutIsValue(element);
+                        }
+
+                        if (IgnoresLeadingNewLine(element))
+                        {
+                            (leadingNewLineElements ??= []).Add(element);
+                        }
+
+                        // The content of a template element is not made of its children but of a separate fragment
+                        Node content = element is HtmlTemplateElement template ? template.Content : element;
+                        pendingNodes.Push((content, IsLink(element) || (isInLink && !IsFormattingScope(element))));
                         break;
 
-                    case HtmlText { IsCData: true } text:
-                        // "<![CDATA[…]]>" is not a CDATA section in an HTML document: it is a bogus comment that ends
-                        // at the first ">". Writing the section back as-is would let everything after that ">" escape
-                        // the comment and be parsed as markup, so the content is turned into escaped text instead.
-                        text.IsCData = false;
-                        text.Value = EscapeText(text.Value);
+                    case Text text when text.Data.Contains('\r', StringComparison.Ordinal):
+                        text.Data = NormalizeNewLines(text.Data);
                         break;
 
-                    case HtmlText text:
-                        // A "<" this parser kept as text is not necessarily text to a browser. An unterminated
-                        // "<!--" puts it in comment state for the rest of the page, and "<!x", "<?x" or "</0" start
-                        // a bogus comment that swallows everything up to the next ">". Text is written back exactly
-                        // as it was read, so the "<" would reach the browser intact.
-                        text.Value = EscapeTagStart(text.Value);
+                    // The serializer escapes the text, so it can never be read back as markup
+                    case Text:
                         break;
+
+                    case Comment when AllowComments:
+                        break;
+
+                    default:
+                        parent.RemoveChild(node);
+                        break;
+                }
+
+                node = next;
+            }
+        }
+
+        // The parser ignores a line feed that directly follows the start tag of a pre or listing element, and the
+        // serializer does not write one, so a text that starts with a line feed (written "<pre>&#10;&#10;", or the
+        // content of an unwrapped element) would lose it when it is read back. Doubling it keeps the text as it is.
+        if (leadingNewLineElements is not null)
+        {
+            foreach (var element in leadingNewLineElements)
+            {
+                if (element.FirstChild is Text text && text.Data.StartsWith('\n', StringComparison.Ordinal))
+                {
+                    text.Data = "\n" + text.Data;
                 }
             }
         }
     }
 
-    private void SanitizeAttributes(HtmlElement element)
+    private static bool IgnoresLeadingNewLine(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "pre" or "listing";
+
+    private static bool IsLink(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName == "a";
+
+    private static bool IsHeading(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "h1" or "h2" or "h3" or "h4" or "h5" or "h6";
+
+    // The elements that insert a marker in the list of active formatting elements, so a link they contain does not
+    // close a link that contains them (https://html.spec.whatwg.org/multipage/parsing.html#concept-parser-marker)
+    private static bool IsFormattingScope(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "applet" or "caption" or "marquee" or "object" or "td" or "template" or "th";
+
+    private static Node? Unwrap(Element element)
     {
-        for (var i = element.Attributes.Count - 1; i >= 0; i--)
+        Node content = element is HtmlTemplateElement template ? template.Content : element;
+        var parent = element.ParentNode!;
+        var firstChild = content.FirstChild;
+        while (content.FirstChild is { } child)
         {
-            var attribute = element.Attributes[i];
+            parent.InsertBefore(child, element);
+        }
+
+        element.Remove();
+        return firstChild;
+    }
+
+    // Returns whether the "is" attribute was removed
+    private bool SanitizeAttributes(Element element)
+    {
+        var removedIsAttribute = false;
+        var attributes = element.Attributes;
+        for (var i = attributes.Count - 1; i >= 0; i--)
+        {
+            // The values are decoded by the parser and encoded again by the serializer, so they are validated as the
+            // browser reads them: an entity cannot mask the scheme of a URL
+            var attribute = attributes[i];
             if (!IsValidAttribute(attribute.Name))
             {
-                // Removing by index instead of by name: HtmlNode.RemoveAttribute expects a local name, so a
-                // namespace-qualified attribute such as "xxx:onclick" would never be found and would survive.
-                element.Attributes.RemoveAt(i);
+                removedIsAttribute |= attribute.NamespaceUri is null && attribute.LocalName == "is";
+                element.RemoveAttributeNode(attribute);
+                continue;
             }
-            else if (UriAttributes.Contains(attribute.Name))
+
+            if (attribute.Value.Contains('\r', StringComparison.Ordinal))
+            {
+                attribute.Value = NormalizeNewLines(attribute.Value);
+            }
+
+            if (UriAttributes.Contains(attribute.Name))
             {
                 if (!UrlSanitizer.IsSafeUrl(attribute.Value))
                 {
@@ -196,39 +257,46 @@ public sealed class HtmlSanitizer
                 }
             }
         }
+
+        return removedIsAttribute;
     }
 
-    private static bool HasRawTextContent(HtmlElement element)
+    // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer
+    // writes that value as an "is" attribute when the element has none, so removing the attribute is not enough. The
+    // element is replaced with one created without an "is" value, which gets its attributes and its content.
+    private static Element RecreateWithoutIsValue(Element element)
     {
-        var options = element.OwnerDocument?.Options.GetElementReadOptions(element.Name) ?? HtmlElementReadOptions.None;
-        return (options & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw;
+        var replacement = element.OwnerDocument!.CreateElementNS(element.NamespaceUri, element.LocalName);
+        var attributes = element.Attributes;
+        while (attributes.Count > 0)
+        {
+            // Moving the nodes rather than copying the values: the parser accepts attribute names that SetAttribute rejects
+            var attribute = attributes[0];
+            element.RemoveAttributeNode(attribute);
+            replacement.SetAttributeNode(attribute);
+        }
+
+        Node content = element is HtmlTemplateElement template ? template.Content : element;
+        Node replacementContent = replacement is HtmlTemplateElement replacementTemplate ? replacementTemplate.Content : replacement;
+        while (content.FirstChild is { } child)
+        {
+            replacementContent.AppendChild(child);
+        }
+
+        element.ParentNode!.ReplaceChild(replacement, element);
+        return replacement;
     }
 
-    // Only "<" is escaped: a text node keeps the entities of the source, so escaping "&" as well would turn an
-    // already encoded "&lt;" into a visible "&lt;".
-    private static string? EscapeTagStart(string? text)
+    // A character reference such as "&#13;" decodes to a carriage return, which the serializer writes as is. A browser
+    // reads it back as a line feed (https://html.spec.whatwg.org/multipage/parsing.html#preprocessing-the-input-stream),
+    // so it is written as a line feed, and the output has no carriage return left for the browser to change.
+    private static string NormalizeNewLines(string value) => value.Replace('\r', '\n');
+
+    // https://html.spec.whatwg.org/multipage/parsing.html#serialising-html-fragments lists the elements whose text is
+    // serialized verbatim. noscript is one of them in a browser, where scripting is enabled. title and textarea are
+    // escaped by the serializer, but their content is text rather than markup, so it cannot be promoted either.
+    private static bool HasRawTextContent(Element element)
     {
-        if (string.IsNullOrEmpty(text))
-            return text;
-
-        return text.Replace("<", "&lt;", StringComparison.Ordinal);
-    }
-
-    private static string EscapeText(string? text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return "";
-
-        return text
-            .Replace("&", "&amp;", StringComparison.Ordinal)
-            .Replace("<", "&lt;", StringComparison.Ordinal)
-            .Replace(">", "&gt;", StringComparison.Ordinal);
-    }
-
-    private static HtmlDocument ParseHtmlFragment(string content)
-    {
-        var document = new HtmlDocument();
-        document.LoadHtml(content);
-        return document;
+        return element.NamespaceUri == HtmlNamespace && RawTextElements.Contains(element.LocalName);
     }
 }

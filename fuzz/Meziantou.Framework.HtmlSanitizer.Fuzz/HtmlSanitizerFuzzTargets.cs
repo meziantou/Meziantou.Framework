@@ -16,8 +16,8 @@ namespace Meziantou.Framework.Sanitizers.Fuzz;
 /// </summary>
 public static class HtmlSanitizerFuzzTargets
 {
-    // Sanitizing an output that contains one of these elements can change it: the writer and the implied end tags of
-    // the parser do not line up (see HtmlSanitizerTests.Sanitize_IsIdempotent_Fuzz), so the stability is not checked.
+    // Sanitizing an output that contains one of these elements can change it: unwrapping an element can leave them where
+    // the parser never puts them (see HtmlSanitizerTests.Sanitize_IsIdempotent_Fuzz), so the stability is not checked.
     private static readonly HashSet<string> UnstableElements = new(["colgroup", "dd", "dt", "li", "p", "tbody", "td", "tfoot", "th", "thead", "tr", "rp", "rt", "table", "caption", "col"], StringComparer.Ordinal);
 
     // The HTML5 named character references that decode to ASCII, which WebUtility.HtmlDecode (HTML 4 names) does not know

@@ -47,4 +47,8 @@
   <!-- Shared helpers and the copy of the corpus; the README.md of the corpus holds the fixture-to-feature coverage matrix
        verified against the manifest (FixtureCoverageMatrixTests) -->
   <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+  <ItemGroup>
+    <!-- The internal API of the font reader and the shaper -->
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
 </Project>

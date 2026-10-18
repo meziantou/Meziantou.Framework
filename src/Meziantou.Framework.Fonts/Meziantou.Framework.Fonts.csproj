@@ -1,0 +1,25 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <Version>1.0.0</Version>
+    <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts, and the shaping of complex scripts. Its API is internal to these packages.</Description>
+    <PackageTags>font;opentype;truetype;woff;woff2;cff;shaping;typography</PackageTags>
+
+    <!-- Every member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Unicode properties shaping needs (scripts, joining types, Indic categories, normalization) -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The API is internal: the packages that use it depend on the exact version of this package -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
+  </ItemGroup>
+</Project>

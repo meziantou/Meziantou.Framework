@@ -51,4 +51,8 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-devanagari\NotoSansDevanagari-Regular.ttf" LogicalName="fonts/NotoSansDevanagari-Regular.ttf" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-serif-tibetan\NotoSerifTibetan-Regular.ttf" LogicalName="fonts/NotoSerifTibetan-Regular.ttf" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The internal API of the font reader and the shaper -->
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
 </Project>

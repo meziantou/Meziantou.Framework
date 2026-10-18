@@ -90,6 +90,29 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void RawAndBilevelInputsDecodeToTheirSources()
+    {
+        // The text page is black and white, with enough of both for the bilevel decoders to see real runs
+        var bilevel = BenchmarkInputs.LargeBilevelSource;
+        Assert.All(bilevel, static pixel => Assert.True(pixel.Value is 0 or 255));
+        var black = bilevel.Count(static pixel => pixel.Value == 0);
+        Assert.InRange(black, bilevel.Length / 10, bilevel.Length / 2);
+
+        Assert.Equal(ImageColorModel.Grayscale, Image.Identify(BenchmarkInputs.PngBilevel).ColorModel);
+        Assert.Equal(1, Image.Identify(BenchmarkInputs.PngBilevel).BitsPerComponent);
+        _ = ReferencePng.Parse(BenchmarkInputs.PngBilevel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngBilevel, bilevel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PnmBitmap, bilevel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffBilevel, bilevel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffCcittGroup4, bilevel);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PnmRgb16, BenchmarkInputs.Rgb16Pixels);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffRgb16, BenchmarkInputs.Rgb16Pixels);
+        Assert.Equal(16, Image.Identify(BenchmarkInputs.TiffRgb16).BitsPerComponent);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffUncompressed, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TgaUncompressed, BenchmarkInputs.LargeRgb24Source);
+    }
+
+    [Fact]
     public void TheBaselineJpegInputMatchesTheEncoderModel()
     {
         // The baseline input is the output of the encode workload (2048x1536 Rgb24, quality 85, 4:2:0)

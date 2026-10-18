@@ -76,7 +76,7 @@ internal static class TextSpacingClasses
         if (category is not (UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation))
             return FullwidthPunctuation.None;
 
-        if (codePoint > 0x303F && UnicodeProperties.GetEastAsianWidth(codePoint) != EastAsianWidth.F)
+        if (codePoint > 0x303F && UnicodeProperties.GetEastAsianWidth(codePoint) != UnicodeEastAsianWidth.Fullwidth)
             return FullwidthPunctuation.None;
 
         return category == UnicodeCategory.OpenPunctuation ? FullwidthPunctuation.Opening : FullwidthPunctuation.Closing;
@@ -94,7 +94,7 @@ internal static class TextSpacingClasses
         if (codePoint is >= 0x3041 and <= 0x30FF)
             return !IsPunctuation(UnicodeProperties.GetGeneralCategory(codePoint));
 
-        return codePoint is >= 0x31C0 and <= 0x31FF || UnicodeProperties.IsHan(codePoint);
+        return codePoint is >= 0x31C0 and <= 0x31FF || CharacterProperties.IsHan(codePoint);
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ internal static class TextSpacingClasses
             return false;
         }
 
-        return !IsIdeograph(codePoint) && UnicodeProperties.GetEastAsianWidth(codePoint) is not (EastAsianWidth.W or EastAsianWidth.F);
+        return !IsIdeograph(codePoint) && UnicodeProperties.GetEastAsianWidth(codePoint) is not (UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Fullwidth);
     }
 
     /// <summary>Whether a character is a non-ideographic numeral of <c>text-autospace</c>: a decimal digit that is not East Asian Fullwidth, and not upright in vertical text.</summary>
@@ -128,7 +128,7 @@ internal static class TextSpacingClasses
         if (codePoint < 0x80)
             return codePoint is >= '0' and <= '9';
 
-        return UnicodeProperties.GetGeneralCategory(codePoint) == UnicodeCategory.DecimalDigitNumber && UnicodeProperties.GetEastAsianWidth(codePoint) != EastAsianWidth.F;
+        return UnicodeProperties.GetGeneralCategory(codePoint) == UnicodeCategory.DecimalDigitNumber && UnicodeProperties.GetEastAsianWidth(codePoint) != UnicodeEastAsianWidth.Fullwidth;
     }
 
     /// <summary>

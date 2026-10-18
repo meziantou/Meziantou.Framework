@@ -9,9 +9,9 @@ namespace Meziantou.Framework.WebPlatform.Urls;
 /// <summary>Host parsing and serializing: https://url.spec.whatwg.org/#host-parsing</summary>
 internal static class HostParser
 {
-    private static readonly Uts46Options StrictOptions = new(CheckHyphens: true, CheckBidi: true, CheckJoiners: true, UseStd3AsciiRules: true, TransitionalProcessing: false, VerifyDnsLength: true, IgnoreInvalidPunycode: false);
-    private static readonly Uts46Options NonStrictOptions = new(CheckHyphens: false, CheckBidi: true, CheckJoiners: true, UseStd3AsciiRules: false, TransitionalProcessing: false, VerifyDnsLength: false, IgnoreInvalidPunycode: false);
-    private static readonly Uts46Options ToUnicodeOptions = new(CheckHyphens: false, CheckBidi: true, CheckJoiners: true, UseStd3AsciiRules: false, TransitionalProcessing: false, VerifyDnsLength: false, IgnoreInvalidPunycode: false);
+    private static readonly UnicodeIdnaOptions StrictOptions = new() { CheckHyphens = true, CheckBidi = true, CheckJoiners = true, UseStd3AsciiRules = true, TransitionalProcessing = false, VerifyDnsLength = true, IgnoreInvalidPunycode = false };
+    private static readonly UnicodeIdnaOptions NonStrictOptions = new() { CheckHyphens = false, CheckBidi = true, CheckJoiners = true, UseStd3AsciiRules = false, TransitionalProcessing = false, VerifyDnsLength = false, IgnoreInvalidPunycode = false };
+    private static readonly UnicodeIdnaOptions ToUnicodeOptions = new() { CheckHyphens = false, CheckBidi = true, CheckJoiners = true, UseStd3AsciiRules = false, TransitionalProcessing = false, VerifyDnsLength = false, IgnoreInvalidPunycode = false };
 
     /// <summary>https://url.spec.whatwg.org/#forbidden-host-code-point</summary>
     public static bool IsForbiddenHostCodePoint(int c) => c is 0x00 or 0x09 or 0x0A or 0x0D or ' ' or '#' or '/' or ':' or '<' or '>' or '?' or '@' or '[' or '\\' or ']' or '^' or '|';
@@ -59,7 +59,7 @@ internal static class HostParser
     public static string? ParseDomain(string domain, bool beStrict)
     {
         if (beStrict)
-            return Uts46.ToAscii(domain, StrictOptions);
+            return UnicodeIdna.TryToAscii(domain, StrictOptions, out var strictResult) ? strictResult : null;
 
         string? result;
         if (Ascii.IsValid(domain))
@@ -69,8 +69,7 @@ internal static class HostParser
         }
         else
         {
-            result = Uts46.ToAscii(domain, NonStrictOptions);
-            if (result is null)
+            if (!UnicodeIdna.TryToAscii(domain, NonStrictOptions, out result))
                 return null;
         }
 
@@ -89,7 +88,7 @@ internal static class HostParser
     /// <summary>https://url.spec.whatwg.org/#concept-domain-to-unicode</summary>
     public static string DomainToUnicode(string domain)
     {
-        var result = Uts46.ToUnicode(domain, ToUnicodeOptions, out var hasError);
+        var result = UnicodeIdna.ToUnicode(domain, ToUnicodeOptions, out var hasError);
         return hasError ? domain : result;
     }
 

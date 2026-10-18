@@ -69,14 +69,14 @@ public sealed class HarfBuzzShapingTests
         var script = UnicodeScript.Common;
         if (GetOption("--script") is { } scriptCode)
         {
-            var tag = ((uint)char.ToUpperInvariant(scriptCode[0]) << 24) | ((uint)char.ToLowerInvariant(scriptCode[1]) << 16) | ((uint)char.ToLowerInvariant(scriptCode[2]) << 8) | char.ToLowerInvariant(scriptCode[3]);
-            script = (UnicodeScript)ScriptCodes.Codes.IndexOf(tag);
+            var code = char.ToUpperInvariant(scriptCode[0]) + scriptCode[1..].ToLowerInvariant();
+            script = Enum.GetValues<UnicodeScript>().FirstOrDefault(value => string.Equals(UnicodeScripts.GetIso15924Code(value), code, StringComparison.Ordinal));
         }
         else
         {
             foreach (var codePoint in codePoints)
             {
-                var value = UnicodeProperties.GetScript(codePoint);
+                var value = UnicodeScripts.GetScript(codePoint);
                 if (value is not (UnicodeScript.Common or UnicodeScript.Inherited or UnicodeScript.Unknown))
                 {
                     script = value;

@@ -14,78 +14,26 @@ internal static class ShapingNormalizer
     /// <summary>The maximum number of marks reordered together.</summary>
     private const int MaxCombiningMarks = 32;
 
-    private const int SBase = 0xAC00;
-    private const int LBase = 0x1100;
-    private const int VBase = 0x1161;
-    private const int TBase = 0x11A7;
-    private const int LCount = 19;
-    private const int VCount = 21;
-    private const int TCount = 28;
-    private const int NCount = VCount * TCount;
-    private const int SCount = LCount * NCount;
-
     /// <summary>The canonical decomposition mapping of a character (one step; Hangul syllables are decomposed algorithmically).</summary>
     public static bool DecomposeUnicode(int ab, out int a, out int b)
     {
-        // Hangul: LV to L + V, LVT to LV + T
-        var sIndex = ab - SBase;
-        if ((uint)sIndex < SCount)
-        {
-            if (sIndex % TCount != 0)
-            {
-                a = SBase + (sIndex / TCount * TCount);
-                b = TBase + (sIndex % TCount);
-            }
-            else
-            {
-                a = LBase + (sIndex / NCount);
-                b = VBase + (sIndex % NCount / TCount);
-            }
-
-            return true;
-        }
-
-        if (ab < 0xC0)
+        if (ab < 0xC0 || !UnicodeNormalization.TryDecomposeCanonical(ab, out a, out b))
         {
             a = ab;
             b = 0;
             return false;
         }
 
-        var index = NormalizationData.CanonicalDecompositionKeys.BinarySearch(ab);
-        if (index < 0)
+        if (b < 0)
         {
-            a = ab;
             b = 0;
-            return false;
         }
 
-        a = NormalizationData.CanonicalDecompositionFirst[index];
-        b = NormalizationData.CanonicalDecompositionSecond[index];
         return true;
     }
 
     /// <summary>The primary composite of two characters (the canonical composition, without the composition exclusions).</summary>
-    public static bool ComposeUnicode(int a, int b, out int ab)
-    {
-        // Hangul: L + V to LV, LV + T to LVT
-        if (a - LBase is var lIndex && (uint)lIndex < LCount && b - VBase is var vIndex && (uint)vIndex < VCount)
-        {
-            ab = SBase + (((lIndex * VCount) + vIndex) * TCount);
-            return true;
-        }
-
-        if (a - SBase is var sIndex && (uint)sIndex < SCount && sIndex % TCount == 0 && b - TBase is var tIndex and > 0 and < TCount)
-        {
-            ab = a + tIndex;
-            return true;
-        }
-
-        var key = ((long)a << 21) | (uint)b;
-        var index = NormalizationData.CompositionKeys.BinarySearch(key);
-        ab = index >= 0 ? NormalizationData.CompositionValues[index] : 0;
-        return index >= 0;
-    }
+    public static bool ComposeUnicode(int a, int b, out int ab) => UnicodeNormalization.TryComposeCanonical(a, b, out ab);
 
     /// <summary>Normalizes the characters of the buffer for a plan and a font (HarfBuzz's <c>_hb_ot_shape_normalize</c>).</summary>
     public static void Normalize(ShapePlan plan, ShapingBuffer buffer, in ShapingFont font)

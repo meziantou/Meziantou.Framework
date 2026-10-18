@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Layout;
+using CssUnicodeBidi = Meziantou.Framework.WebPlatform.Css.Layout.UnicodeBidi;
 
 namespace Meziantou.Framework.WebPlatform.Unicode;
 
@@ -43,22 +44,22 @@ internal static class BidiControls
     private static readonly string PdfPdi = new([PopDirectionalFormatting, PopDirectionalIsolate]);
 
     /// <summary>The control codes inserted at the start of an inline box (https://drafts.csswg.org/css-writing-modes-4/#bidi-control-codes-injection-table).</summary>
-    public static string GetInlineStart(UnicodeBidi unicodeBidi, bool isRightToLeft) => unicodeBidi switch
+    public static string GetInlineStart(CssUnicodeBidi unicodeBidi, bool isRightToLeft) => unicodeBidi switch
     {
-        UnicodeBidi.Embed => isRightToLeft ? Rle : Lre,
-        UnicodeBidi.Isolate => isRightToLeft ? Rli : Lri,
-        UnicodeBidi.BidiOverride => isRightToLeft ? Rlo : Lro,
-        UnicodeBidi.IsolateOverride => isRightToLeft ? FsiRlo : FsiLro,
-        UnicodeBidi.Plaintext => Fsi,
+        CssUnicodeBidi.Embed => isRightToLeft ? Rle : Lre,
+        CssUnicodeBidi.Isolate => isRightToLeft ? Rli : Lri,
+        CssUnicodeBidi.BidiOverride => isRightToLeft ? Rlo : Lro,
+        CssUnicodeBidi.IsolateOverride => isRightToLeft ? FsiRlo : FsiLro,
+        CssUnicodeBidi.Plaintext => Fsi,
         _ => "",
     };
 
     /// <summary>The control codes inserted at the end of an inline box.</summary>
-    public static string GetInlineEnd(UnicodeBidi unicodeBidi) => unicodeBidi switch
+    public static string GetInlineEnd(CssUnicodeBidi unicodeBidi) => unicodeBidi switch
     {
-        UnicodeBidi.Embed or UnicodeBidi.BidiOverride => Pdf,
-        UnicodeBidi.Isolate or UnicodeBidi.Plaintext => Pdi,
-        UnicodeBidi.IsolateOverride => PdfPdi,
+        CssUnicodeBidi.Embed or CssUnicodeBidi.BidiOverride => Pdf,
+        CssUnicodeBidi.Isolate or CssUnicodeBidi.Plaintext => Pdi,
+        CssUnicodeBidi.IsolateOverride => PdfPdi,
         _ => "",
     };
 
@@ -67,21 +68,21 @@ internal static class BidiControls
     /// <c>isolate-override</c> (the other values have no effect on the content of a block container, the paragraph level comes from
     /// <see cref="GetParagraphDirection"/>).
     /// </summary>
-    public static string GetBlockContainerStart(UnicodeBidi unicodeBidi, bool isRightToLeft) => unicodeBidi is UnicodeBidi.BidiOverride or UnicodeBidi.IsolateOverride
+    public static string GetBlockContainerStart(CssUnicodeBidi unicodeBidi, bool isRightToLeft) => unicodeBidi is CssUnicodeBidi.BidiOverride or CssUnicodeBidi.IsolateOverride
         ? (isRightToLeft ? Rlo : Lro)
         : "";
 
     /// <summary>The control codes inserted at the end of the root inline box of a block container.</summary>
-    public static string GetBlockContainerEnd(UnicodeBidi unicodeBidi) => unicodeBidi is UnicodeBidi.BidiOverride or UnicodeBidi.IsolateOverride ? Pdf : "";
+    public static string GetBlockContainerEnd(CssUnicodeBidi unicodeBidi) => unicodeBidi is CssUnicodeBidi.BidiOverride or CssUnicodeBidi.IsolateOverride ? Pdf : "";
 
     /// <summary>
     /// The paragraph embedding level of the bidi paragraphs of a block container (https://drafts.csswg.org/css-writing-modes-4/#bidi-embedding-level):
     /// its <c>direction</c> (clause HL1), or rules P2 and P3 with <c>unicode-bidi: plaintext</c> ("rather than by using the
     /// direction property of the box": a paragraph without strong character is left-to-right, rule P3).
     /// </summary>
-    public static BidiParagraphDirection GetParagraphDirection(UnicodeBidi unicodeBidi, bool isRightToLeft)
+    public static BidiParagraphDirection GetParagraphDirection(CssUnicodeBidi unicodeBidi, bool isRightToLeft)
     {
-        if (unicodeBidi == UnicodeBidi.Plaintext)
+        if (unicodeBidi == CssUnicodeBidi.Plaintext)
             return BidiParagraphDirection.AutoLeftToRight;
 
         return isRightToLeft ? BidiParagraphDirection.RightToLeft : BidiParagraphDirection.LeftToRight;
@@ -91,9 +92,9 @@ internal static class BidiControls
     /// The Bidi_Class of an atomic inline (https://drafts.csswg.org/css-writing-modes-4/#bidi-atomic-inline): a neutral character,
     /// except a replaced element with <c>unicode-bidi: embed | bidi-override</c>, which is a strong character of its direction.
     /// </summary>
-    public static BidiClass GetAtomicInlineClass(bool isReplaced, UnicodeBidi unicodeBidi, bool isRightToLeft)
+    public static BidiClass GetAtomicInlineClass(bool isReplaced, CssUnicodeBidi unicodeBidi, bool isRightToLeft)
     {
-        if (isReplaced && unicodeBidi is UnicodeBidi.Embed or UnicodeBidi.BidiOverride)
+        if (isReplaced && unicodeBidi is CssUnicodeBidi.Embed or CssUnicodeBidi.BidiOverride)
             return isRightToLeft ? BidiClass.R : BidiClass.L;
 
         return BidiClass.ON;

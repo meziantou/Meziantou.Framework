@@ -397,9 +397,9 @@ internal static class TextTransformer
         if (codePoint is not ((>= 0x0370 and <= 0x03FF) or (>= 0x1F00 and <= 0x1FFF) or 0x2126))
             return 0;
 
-        Span<int> decomposition = stackalloc int[4];
-        var count = Nfc.Decompose(codePoint, decomposition);
-        var letter = Rune.ToUpperInvariant(new Rune(decomposition[0])).Value;
+        Span<int> decomposition = stackalloc int[UnicodeNormalization.MaxCanonicalDecompositionLength];
+        var count = UnicodeNormalization.GetCanonicalDecomposition(codePoint, decomposition);
+        var letter = UnicodeProperties.ToSimpleUppercase(decomposition[0]);
         if (letter is < 0x0391 or > 0x03A9)
             return 0;
 

@@ -9,7 +9,7 @@ public sealed class HyphenatorTests
     // Formats the word with '-' at its automatic hyphenation opportunities
     private static string Hyphenate(string language, string word, int minWord = 0, int minBefore = 0, int minAfter = 0)
     {
-        var hyphenator = Hyphenator.Get(language) ?? throw new InvalidOperationException($"No dictionary for {language}");
+        var hyphenator = HyphenationDictionary.Get(language) ?? throw new InvalidOperationException($"No dictionary for {language}");
         var opportunities = new bool[word.Length];
         var found = hyphenator.FindOpportunities(word, minWord, minBefore, minAfter, opportunities);
         Assert.Equal(found, opportunities.Contains(true));
@@ -77,7 +77,7 @@ public sealed class HyphenatorTests
     [InlineData("el-GR", "el")]
     [InlineData("und-Deva", "hi")]
     [InlineData("mr", "mr")]
-    public void Languages(string language, string locale) => Assert.Equal(locale, Hyphenator.Get(language)?.Locale);
+    public void Languages(string language, string locale) => Assert.Equal(locale, HyphenationDictionary.Get(language)?.Locale);
 
     [Theory]
     [InlineData(null)]
@@ -88,15 +88,15 @@ public sealed class HyphenatorTests
     [InlineData("cs")] // GPL patterns, not bundled
     [InlineData("hu")] // MPL/GPL/LGPL patterns, not bundled
     [InlineData("x-unknown")]
-    public void Languages_NoDictionary(string? language) => Assert.Null(Hyphenator.Get(language));
+    public void Languages_NoDictionary(string? language) => Assert.Null(HyphenationDictionary.Get(language));
 
     [Fact]
     public void Dictionaries_AreShared()
     {
-        Assert.Same(Hyphenator.Get("en"), Hyphenator.Get("en-US"));
-        Assert.True(Hyphenator.Get("de")!.HyphenatesCapitalizedWords);
-        Assert.False(Hyphenator.Get("en")!.HyphenatesCapitalizedWords);
-        Assert.False(Hyphenator.Get("en-gb")!.HyphenatesCapitalizedWords);
+        Assert.Same(HyphenationDictionary.Get("en"), HyphenationDictionary.Get("en-US"));
+        Assert.True(HyphenationDictionary.Get("de")!.HyphenatesCapitalizedWords);
+        Assert.False(HyphenationDictionary.Get("en")!.HyphenatesCapitalizedWords);
+        Assert.False(HyphenationDictionary.Get("en-gb")!.HyphenatesCapitalizedWords);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class HyphenatorTests
     {
         foreach (var language in (string[])["af", "as", "be", "bg", "bn", "cy", "da", "de-1996", "de-ch-1901", "el", "en-gb", "en-us", "es", "et", "eu", "fr", "ga", "gl", "gu", "hi", "hr", "it", "ka", "kn", "la", "lt", "ml", "mn-cyrl", "mr", "nb", "nl", "nn", "or", "pa", "pt", "ru", "sk", "sl", "sq", "sr-cyrl", "sr-latn", "sv", "ta", "te", "tk", "uk"])
         {
-            var hyphenator = Hyphenator.Get(language);
+            var hyphenator = HyphenationDictionary.Get(language);
             Assert.NotNull(hyphenator);
             Assert.Equal(language, hyphenator.Locale);
         }

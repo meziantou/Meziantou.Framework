@@ -149,7 +149,7 @@ internal static class OpenTypeShapingEngine
                     SetContinuation(ref info[i], buffer);
                 }
 
-                if (i + 1 < count && UnicodeProperties.IsExtendedPictographic(info[i + 1].Codepoint))
+                if (i + 1 < count && UnicodeEmoji.IsExtendedPictographic(info[i + 1].Codepoint))
                 {
                     i++;
                     info[i].Mask = globalMask;
@@ -282,7 +282,7 @@ internal static class OpenTypeShapingEngine
             for (var i = 0; i < buffer.Length; i++)
             {
                 var u = info[i].Codepoint;
-                if (!(UnicodeProperties.IsBidiMirrored(u) && UnicodeProperties.GetBidiMirroringGlyph(u) >= 0))
+                if (!(UnicodeProperties.IsBidiMirrored(u) && CharacterProperties.GetBidiMirroringGlyph(u) >= 0))
                 {
                     info[i].Mask |= plan.RtlmMask;
                 }

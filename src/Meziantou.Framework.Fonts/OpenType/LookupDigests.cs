@@ -16,6 +16,10 @@ namespace Meziantou.Framework.Fonts;
 /// completely (a reference outside the table) contains every glyph, so that the lookup is tried, and fails, as before.
 /// What a subtable reads before it looks the glyph up is read here as well.
 /// </para>
+/// <para>
+/// The digests also keep the coverage indexes of the first coverage tables the subtables look glyphs up in
+/// (<see cref="GetCoverage"/>).
+/// </para>
 /// </remarks>
 internal sealed class LookupDigests
 {
@@ -33,6 +37,7 @@ internal sealed class LookupDigests
     private GlyphDigest[]? _digests;
     private GlyphDigest[]?[]? _subtableDigests;
     private bool[]? _isComputed;
+    private Dictionary<int, CoverageCache>? _coverages;
 
     public LookupDigests(LayoutTable table, ReadOnlyMemory<byte> data, bool isPositioning)
     {
@@ -68,6 +73,20 @@ internal sealed class LookupDigests
 
         subtables = _subtableDigests![index];
         return _digests[index];
+    }
+
+    /// <summary>Gets the cache of the coverage indexes of a coverage table of the layout table.</summary>
+    /// <param name="offset">The offset of the coverage table in the layout table.</param>
+    public CoverageCache GetCoverage(int offset)
+    {
+        _coverages ??= [];
+        if (!_coverages.TryGetValue(offset, out var coverage))
+        {
+            coverage = new CoverageCache(offset);
+            _coverages.Add(offset, coverage);
+        }
+
+        return coverage;
     }
 
     private GlyphDigest Compute(int index, out GlyphDigest[]? subtables)

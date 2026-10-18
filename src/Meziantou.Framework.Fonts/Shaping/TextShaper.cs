@@ -235,7 +235,7 @@ internal static class TextShaper
         }
 
         ReadOnlySpan<int> coordinates = face.Instance is null ? default : face.Instance.Coordinates;
-        var applier = new LayoutApplier(buffer, face);
+        var applier = cache?.GetApplier(buffer, face) ?? new LayoutApplier(buffer, face);
         applier.SetGlyphClasses();
         var hasStretching = false;
         if (!isPlanned)
@@ -390,10 +390,21 @@ internal static class TextShaper
 
             var positioningLookups = planned.Positionings!;
             hasKerningFeature = planned.HasKerningFeature;
-            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical, cache?.GetDigests(face, isPositioning: true) ?? ShapingCache.Create(face, isPositioning: true));
-            foreach (var lookup in positioningLookups)
+            var digests = cache?.GetDigests(face, isPositioning: true) ?? ShapingCache.Create(face, isPositioning: true);
+
+            // The plans a cache keeps remember the pairs of their kerning.
+            if (!isPlanned && cache is not null)
             {
-                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);
+                planned.PairKerning = PairKerningCache.TryCreate(face, positioningLookups, isVertical);
+            }
+
+            applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical, digests);
+            if (planned.PairKerning is not { } kerning || !kerning.TryApply(buffer, face, applier, digests, isRightToLeft))
+            {
+                foreach (var lookup in positioningLookups)
+                {
+                    applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);
+                }
             }
         }
 
@@ -499,6 +510,9 @@ internal static class TextShaper
         public List<PlannedLookup>? Positionings { get; set; }
 
         public bool HasKerningFeature { get; set; }
+
+        /// <summary>Gets or sets the kerning of the pairs of glyphs, when the positioning lookups only kern pairs.</summary>
+        public PairKerningCache? PairKerning { get; set; }
 
         /// <summary>Determines whether the plan is the one of a font shaped with settings.</summary>
         public bool Matches(UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)
@@ -609,6 +623,20 @@ internal static class TextShaper
         return false;
     }
 
+    // The properties of the characters of Latin-1.
+    private static readonly GlyphInfo[] Latin1Characters = CreateLatin1Characters();
+
+    private static GlyphInfo[] CreateLatin1Characters()
+    {
+        var characters = new GlyphInfo[0x100];
+        for (var i = 0; i < characters.Length; i++)
+        {
+            SetUnicodeProperties(ref characters[i], i);
+        }
+
+        return characters;
+    }
+
     /// <summary>Gives each character its general category, its combining class and what it is for shaping.</summary>
     private static void SetCharacterProperties(GlyphBuffer buffer)
     {
@@ -623,6 +651,22 @@ internal static class TextShaper
     {
         info.CodePoint = codePoint;
         info.Glyph = codePoint;
+        if ((uint)codePoint < (uint)Latin1Characters.Length)
+        {
+            // The characters of most texts, whose properties are computed once.
+            ref readonly var properties = ref Latin1Characters[codePoint];
+            info.Category = properties.Category;
+            info.CombiningClass = properties.CombiningClass;
+            info.Flags = properties.Flags;
+            info.ShaperData = 0;
+            return;
+        }
+
+        SetUnicodeProperties(ref info, codePoint);
+    }
+
+    private static void SetUnicodeProperties(ref GlyphInfo info, int codePoint)
+    {
         info.Category = UnicodeProperties.GetGeneralCategory(codePoint);
         info.CombiningClass = ShapingCombiningClass.Get(codePoint, (byte)UnicodeProperties.GetCanonicalCombiningClass(codePoint));
         var flags = 0;

@@ -6,15 +6,14 @@ namespace Meziantou.Framework.Fonts;
 /// </content>
 internal sealed partial class LayoutApplier
 {
-    private bool ApplyContext(int subtable, ref int index)
+    private bool ApplyContext(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var glyph = _buffer.Info[index].Glyph;
         switch (FontBinary.UInt16(data, subtable))
         {
             case 1:
                 {
-                    var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph);
+                    var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph);
                     if (coverage < 0 || coverage >= FontBinary.UInt16(data, subtable + 4))
                         return false;
 
@@ -23,7 +22,7 @@ internal sealed partial class LayoutApplier
 
             case 2:
                 {
-                    if (LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph) < 0)
+                    if (GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph) < 0)
                         return false;
 
                     var classesOffset = FontBinary.UInt16(data, subtable + 4);
@@ -87,15 +86,14 @@ internal sealed partial class LayoutApplier
         return false;
     }
 
-    private bool ApplyChainedContext(int subtable, ref int index)
+    private bool ApplyChainedContext(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var glyph = _buffer.Info[index].Glyph;
         switch (FontBinary.UInt16(data, subtable))
         {
             case 1:
                 {
-                    var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph);
+                    var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph);
                     if (coverage < 0 || coverage >= FontBinary.UInt16(data, subtable + 4))
                         return false;
 
@@ -104,7 +102,7 @@ internal sealed partial class LayoutApplier
 
             case 2:
                 {
-                    if (LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph) < 0)
+                    if (GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), glyph) < 0)
                         return false;
 
                     // Three class definitions: for the glyphs before, for the sequence, for the glyphs after. An offset of

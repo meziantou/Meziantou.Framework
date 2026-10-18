@@ -25,6 +25,9 @@ internal sealed class CmapTable
     private readonly int _variationOffset;
     private readonly int _variationCount;
 
+    // The glyphs of the pages of 256 characters of the Basic Multilingual Plane that were looked up.
+    private ushort[]?[]? _pages;
+
     private CmapTable(ReadOnlyMemory<byte> table, int glyphCount, int offset, int format, int count, bool isSymbol, bool isMacintosh, int variationOffset, int variationCount)
     {
         _table = table;
@@ -105,7 +108,42 @@ internal sealed class CmapTable
 
     /// <summary>Gets the glyph of a character.</summary>
     /// <returns>The glyph identifier, or 0 when the font has no glyph for the character.</returns>
+    /// <remarks>
+    /// The glyphs of the characters of the Basic Multilingual Plane are kept by pages of 256 characters, built the first
+    /// time a character of the page is looked up: a text looks up the same few pages again and again. A page is
+    /// complete when it is published, so concurrent readers see it whole or build their own.
+    /// </remarks>
     public int Map(int codePoint)
+    {
+        if ((uint)codePoint <= 0xFFFF)
+        {
+            var pages = Volatile.Read(ref _pages);
+            if (pages is null)
+            {
+                pages = new ushort[]?[256];
+                pages = Interlocked.CompareExchange(ref _pages, pages, null) ?? pages;
+            }
+
+            var page = Volatile.Read(ref pages[codePoint >> 8]);
+            if (page is null)
+            {
+                page = new ushort[256];
+                var first = codePoint & ~0xFF;
+                for (var i = 0; i < page.Length; i++)
+                {
+                    page[i] = (ushort)MapUncached(first + i);
+                }
+
+                Volatile.Write(ref pages[codePoint >> 8], page);
+            }
+
+            return page[codePoint & 0xFF];
+        }
+
+        return MapUncached(codePoint);
+    }
+
+    private int MapUncached(int codePoint)
     {
         if ((uint)codePoint > 0x10FFFF)
             return 0;

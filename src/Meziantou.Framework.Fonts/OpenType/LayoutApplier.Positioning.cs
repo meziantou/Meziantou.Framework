@@ -26,8 +26,10 @@ internal sealed partial class LayoutApplier
     /// <param name="record">The position of the record.</param>
     /// <param name="format">The fields of the record.</param>
     /// <param name="position">The position of the glyph.</param>
-    private void ApplyValue(ReadOnlySpan<byte> data, int parent, int record, int format, ref GlyphPosition position)
+    /// <returns><see langword="true"/> when the record moved the glyph or changed its advance.</returns>
+    private bool ApplyValue(ReadOnlySpan<byte> data, int parent, int record, int format, ref GlyphPosition position)
     {
+        var before = position;
         if (_hasVariations && (format & (XPlacementDevice | YPlacementDevice | XAdvanceDevice | YAdvanceDevice)) != 0)
         {
             var device = record + (BitOperations.PopCount((uint)(format & 0x0F)) * 2);
@@ -87,6 +89,8 @@ internal sealed partial class LayoutApplier
         {
             position.YAdvance -= FontBinary.Int16(data, record);
         }
+
+        return position.XOffset != before.XOffset || position.YOffset != before.YOffset || position.XAdvance != before.XAdvance || position.YAdvance != before.YAdvance;
     }
 
     /// <summary>
@@ -105,10 +109,9 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 1: a glyph is moved or its advance is changed.</summary>
-    private bool ApplySinglePositioning(int subtable, ref int index)
+    private bool ApplySinglePositioning(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
         if (coverage < 0)
             return false;
 
@@ -117,7 +120,7 @@ internal sealed partial class LayoutApplier
         {
             // The same value for every glyph.
             case 1:
-                ApplyValue(data, subtable, subtable + 6, format, ref _buffer.Positions[index]);
+                _ = ApplyValue(data, subtable, subtable + 6, format, ref _buffer.Positions[index]);
                 break;
 
             // One value per covered glyph.
@@ -125,7 +128,7 @@ internal sealed partial class LayoutApplier
                 if (coverage >= FontBinary.UInt16(data, subtable + 6))
                     return false;
 
-                ApplyValue(data, subtable, subtable + 8 + (coverage * GetValueRecordLength(format)), format, ref _buffer.Positions[index]);
+                _ = ApplyValue(data, subtable, subtable + 8 + (coverage * GetValueRecordLength(format)), format, ref _buffer.Positions[index]);
                 break;
 
             default:
@@ -137,11 +140,10 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 2: two glyphs that follow each other are moved, which is how fonts kern.</summary>
-    private bool ApplyPairPositioning(int subtable, ref int index)
+    private bool ApplyPairPositioning(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var info = _buffer.Info;
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
         if (coverage < 0)
             return false;
 
@@ -213,9 +215,13 @@ internal sealed partial class LayoutApplier
                 return false;
         }
 
-        ApplyValue(data, parent, record, format1, ref _buffer.Positions[index]);
-        ApplyValue(data, parent, record + length1, format2, ref _buffer.Positions[second]);
-        _buffer.MarkUnsafeToBreak(index, second + 1);
+        // A pair that the lookup does not move can be broken: the glyphs are the same on their own.
+        var movesFirst = ApplyValue(data, parent, record, format1, ref _buffer.Positions[index]);
+        var movesSecond = ApplyValue(data, parent, record + length1, format2, ref _buffer.Positions[second]);
+        if (movesFirst || movesSecond)
+        {
+            _buffer.MarkUnsafeToBreak(index, second + 1);
+        }
 
         // The second glyph is the first one of the next pair, unless the lookup moved it.
         index = format2 != 0 ? second + 1 : second;
@@ -226,9 +232,8 @@ internal sealed partial class LayoutApplier
     /// Type 3: the exit point of a glyph is joined to the entry point of the next one, which is how cursive scripts
     /// connect and how a line of text climbs or descends.
     /// </summary>
-    private bool ApplyCursiveAttachment(int subtable, ref int index)
+    private bool ApplyCursiveAttachment(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var info = _buffer.Info;
         if (FontBinary.UInt16(data, subtable) != 1)
             return false;
@@ -348,11 +353,10 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 4: a mark is placed on an anchor of the base glyph that precedes it.</summary>
-    private bool ApplyMarkToBase(int subtable, ref int index)
+    private bool ApplyMarkToBase(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var info = _buffer.Info;
-        var mark = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
+        var mark = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || mark < 0)
             return false;
 
@@ -401,11 +405,10 @@ internal sealed partial class LayoutApplier
     private static int GetSequenceRank(in GlyphInfo info) => IsLigatureItself(info) ? 0 : Math.Max(info.LigatureComponent - 1, 0);
 
     /// <summary>Type 5: a mark is placed on an anchor of the component of the ligature it follows.</summary>
-    private bool ApplyMarkToLigature(int subtable, ref int index)
+    private bool ApplyMarkToLigature(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var info = _buffer.Info;
-        var mark = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
+        var mark = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || mark < 0)
             return false;
 
@@ -447,11 +450,10 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 6: a mark is placed on an anchor of the mark that precedes it.</summary>
-    private bool ApplyMarkToMark(int subtable, ref int index)
+    private bool ApplyMarkToMark(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         var info = _buffer.Info;
-        var mark = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
+        var mark = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info[index].Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || mark < 0)
             return false;
 

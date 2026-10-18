@@ -48,6 +48,9 @@ internal sealed class FontFace
     private readonly int _hvarOffset;
     private readonly int _hvarLength;
     private readonly int _hvarStore;
+
+    // The advance widths of an instance with an HVAR table, by pages of 256 glyphs (see GetVariedAdvanceWidth).
+    private int[]?[]? _advancePages;
     private readonly int _hvarAdvanceMap;
     private readonly int _mvarOffset;
     private readonly int _mvarLength;
@@ -521,17 +524,7 @@ internal sealed class FontFace
             return advance;
 
         if (_hvarStore != 0)
-        {
-            var hvar = Data.Bytes.AsSpan(_hvarOffset, _hvarLength);
-            var outer = 0;
-            var inner = glyphId;
-            if (_hvarAdvanceMap != 0)
-            {
-                ItemVariationStore.ReadIndexMap(hvar, _hvarAdvanceMap, glyphId, out outer, out inner);
-            }
-
-            return advance + ItemVariationStore.Round(ItemVariationStore.GetDelta(hvar, _hvarStore, outer, inner, _instance.AdvanceScalars));
-        }
+            return GetVariedAdvanceWidth(glyphId, advance);
 
         if (_gvar is not null)
         {
@@ -540,6 +533,58 @@ internal sealed class FontFace
         }
 
         return advance;
+    }
+
+    /// <summary>
+    /// Gets the advance width of a glyph of an instance with the delta of the <c>HVAR</c> table. The advances are kept by
+    /// pages of 256 glyphs, computed the first time a glyph of the page is looked up; a page is complete when it is
+    /// published.
+    /// </summary>
+    private int GetVariedAdvanceWidth(int glyphId, int advance)
+    {
+        var pages = Volatile.Read(ref _advancePages);
+        if (pages is null)
+        {
+            pages = new int[]?[(GlyphCount + 255) >> 8];
+            pages = Interlocked.CompareExchange(ref _advancePages, pages, null) ?? pages;
+        }
+
+        var page = Volatile.Read(ref pages[glyphId >> 8]);
+        if (page is null)
+        {
+            page = new int[256];
+            var first = glyphId & ~0xFF;
+            try
+            {
+                for (var i = 0; i < page.Length && first + i < GlyphCount; i++)
+                {
+                    var index = Math.Min(first + i, _horizontalMetricCount - 1);
+                    page[i] = ComputeVariedAdvanceWidth(first + i, FontBinary.UInt16(Data.Bytes.AsSpan(_hmtxOffset, _hmtxLength), index * 4));
+                }
+            }
+            catch (InvalidFontException)
+            {
+                // A malformed table fails for the glyphs whose deltas read past its end, as it does when they are read.
+                return ComputeVariedAdvanceWidth(glyphId, advance);
+            }
+
+            Volatile.Write(ref pages[glyphId >> 8], page);
+        }
+
+        return page[glyphId & 0xFF];
+    }
+
+    private int ComputeVariedAdvanceWidth(int glyphId, int advance)
+    {
+        var hvar = Data.Bytes.AsSpan(_hvarOffset, _hvarLength);
+        var outer = 0;
+        var inner = glyphId;
+        if (_hvarAdvanceMap != 0)
+        {
+            ItemVariationStore.ReadIndexMap(hvar, _hvarAdvanceMap, glyphId, out outer, out inner);
+        }
+
+        return advance + ItemVariationStore.Round(ItemVariationStore.GetDelta(hvar, _hvarStore, outer, inner, _instance!.AdvanceScalars));
     }
 
     /// <summary>Gets a value indicating whether the font has vertical metrics of its own (<c>vhea</c> and <c>vmtx</c>).</summary>

@@ -6,11 +6,10 @@ namespace Meziantou.Framework.Fonts;
 internal sealed partial class LayoutApplier
 {
     /// <summary>Type 1: one glyph becomes another glyph.</summary>
-    private bool ApplySingleSubstitution(int subtable, ref int index)
+    private bool ApplySingleSubstitution(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         ref var info = ref _buffer.Info[index];
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
         if (coverage < 0)
             return false;
 
@@ -40,10 +39,9 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 2: one glyph becomes a sequence of glyphs.</summary>
-    private bool ApplyMultipleSubstitution(int subtable, ref int index)
+    private bool ApplyMultipleSubstitution(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || coverage < 0 || coverage >= FontBinary.UInt16(data, subtable + 4))
             return false;
 
@@ -86,11 +84,10 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 3: one glyph becomes one of several alternates, chosen by the value of the feature.</summary>
-    private bool ApplyAlternateSubstitution(int subtable, ref int index)
+    private bool ApplyAlternateSubstitution(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
         ref var info = ref _buffer.Info[index];
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || coverage < 0 || coverage >= FontBinary.UInt16(data, subtable + 4))
             return false;
 
@@ -106,10 +103,9 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Type 4: a sequence of glyphs becomes one glyph.</summary>
-    private bool ApplyLigatureSubstitution(int subtable, ref int index)
+    private bool ApplyLigatureSubstitution(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
-        var data = _data.Span;
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), _buffer.Info[index].Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || coverage < 0 || coverage >= FontBinary.UInt16(data, subtable + 4))
             return false;
 
@@ -228,15 +224,14 @@ internal sealed partial class LayoutApplier
     /// Type 8: one glyph becomes another one when the glyphs before and after it are the expected ones. The lookup is
     /// applied from the end of the text, so that it sees the glyphs after as it left them.
     /// </summary>
-    private bool ApplyReverseChainedSubstitution(int subtable, ref int index)
+    private bool ApplyReverseChainedSubstitution(ReadOnlySpan<byte> data, int subtable, ref int index)
     {
         // Not inside another lookup: the specification excludes it.
         if (_nesting != 0)
             return false;
 
-        var data = _data.Span;
         ref var info = ref _buffer.Info[index];
-        var coverage = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
+        var coverage = GetFirstCoverage(data, subtable + FontBinary.UInt16(data, subtable + 2), info.Glyph);
         if (FontBinary.UInt16(data, subtable) != 1 || coverage < 0)
             return false;
 

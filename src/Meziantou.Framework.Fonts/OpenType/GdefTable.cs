@@ -16,6 +16,9 @@ internal sealed class GdefTable
     private readonly int _markGlyphSets;
     private readonly int _ligatureCarets;
 
+    // The classes of the pages of 256 glyphs that were looked up (see GetGlyphClasses).
+    private ushort[]?[]? _classPages;
+
     private GdefTable(int glyphClasses, int ligatureCarets, int markAttachmentClasses, int markGlyphSets, int variationStore)
     {
         _glyphClasses = glyphClasses;
@@ -71,6 +74,48 @@ internal sealed class GdefTable
             3 => GlyphInfo.MarkGlyph,
             _ => 0,
         };
+    }
+
+    /// <summary>
+    /// Gets the class of a glyph as the bits of <see cref="GlyphInfo"/> in the low byte, and the attachment class of a
+    /// mark in the high byte. The classes are kept by pages of 256 glyphs, built the first time a glyph of the page is
+    /// looked up; a page is complete when it is published.
+    /// </summary>
+    public int GetGlyphClasses(ReadOnlySpan<byte> table, int glyph)
+    {
+        if ((uint)glyph > 0xFFFF)
+            return GetGlyphClass(table, glyph) | (GetMarkAttachmentClass(table, glyph) << 8);
+
+        var pages = Volatile.Read(ref _classPages);
+        if (pages is null)
+        {
+            pages = new ushort[]?[256];
+            pages = Interlocked.CompareExchange(ref _classPages, pages, null) ?? pages;
+        }
+
+        var page = Volatile.Read(ref pages[glyph >> 8]);
+        if (page is null)
+        {
+            page = new ushort[256];
+            var first = glyph & ~0xFF;
+            try
+            {
+                for (var i = 0; i < page.Length; i++)
+                {
+                    page[i] = (ushort)(GetGlyphClass(table, first + i) | (GetMarkAttachmentClass(table, first + i) << 8));
+                }
+            }
+            catch (InvalidFontException)
+            {
+                // A malformed class definition fails for the glyphs that read past its end: the other glyphs of the
+                // page still have their classes, read one at a time.
+                return GetGlyphClass(table, glyph) | (GetMarkAttachmentClass(table, glyph) << 8);
+            }
+
+            Volatile.Write(ref pages[glyph >> 8], page);
+        }
+
+        return page[glyph & 0xFF];
     }
 
     /// <summary>Gets the attachment class of a mark; 0 when the table has none.</summary>

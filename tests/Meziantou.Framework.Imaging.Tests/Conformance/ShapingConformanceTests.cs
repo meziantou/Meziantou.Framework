@@ -87,6 +87,49 @@ public sealed class ShapingConformanceTests
     }
 
     [Theory]
+    [MemberData(nameof(FontsWithShaping))]
+    public void AShapingCacheGivesTheGlyphsOfAShapingWithoutCache(string id)
+    {
+        // The cache keeps what a run computes from the font (the plans, the digests and coverage indexes of the
+        // lookups, the kerning of pairs) for the next runs: each text is shaped twice with it, so that the second run
+        // uses what the first one kept.
+        var root = FixtureRoot.GetDirectory();
+        var entry = LoadFonts().Single(font => font.Id == id);
+        var font = Font.Load(root / entry.File.Path);
+        var vectors = ShapingVectors.Load(root / entry.Shaping!.Path);
+        var cache = new ShapingCache();
+        using var scratch = new GlyphScratch(AllocationScope.Create(ImageConfiguration.Default, "ShapingConformanceTests"));
+        foreach (var testCase in vectors.Cases)
+        {
+            var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
+            var script = GetScript(testCase.Characters);
+            var isVertical = testCase.Direction is not null;
+            var isRightToLeft = !isVertical && script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
+            var languages = testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language);
+            var features = ParseFeatures(testCase.Features);
+            string Shape(ShapingCache? shapingCache)
+            {
+                var buffer = new GlyphBuffer(FontResourceLimits.Default);
+                TextShaper.AddText(buffer, testCase.Characters);
+                TextShaper.Shape(buffer, face, script, languages, isRightToLeft, features, isVertical, scratch, shapingCache);
+                var result = new StringBuilder();
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    var info = buffer.Info[i];
+                    var position = buffer.Positions[i];
+                    result.Append(CultureInfo.InvariantCulture, $"{info.Glyph}={info.Cluster}@{position.XOffset},{position.YOffset}+{position.XAdvance},{position.YAdvance}{(info.IsUnsafeToBreak ? "!" : "")}|");
+                }
+
+                return result.ToString();
+            }
+
+            var expected = Shape(shapingCache: null);
+            Assert.Equal(expected, Shape(cache), testCase.Text);
+            Assert.Equal(expected, Shape(cache), testCase.Text);
+        }
+    }
+
+    [Theory]
     [InlineData("fonts/noto-naskh-arabic", UnicodeScript.Arabic)]
     [InlineData("fonts/noto-nastaliq-urdu", UnicodeScript.Arabic)]
     [InlineData("fonts/noto-sans-hebrew", UnicodeScript.Hebrew)]

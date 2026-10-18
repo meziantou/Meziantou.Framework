@@ -34,14 +34,17 @@ internal sealed partial class LayoutApplier
     private const int SubstitutionReverseChain = 8;
     private const int PositioningExtension = 9;
 
-    private readonly GlyphBuffer _buffer;
-    private readonly FontFace _face;
-    private readonly GdefTable? _gdef;
-    private readonly ReadOnlyMemory<byte> _gdefData;
-    private readonly bool _hasVariations;
+    private GlyphBuffer _buffer;
+    private FontFace _face;
+    private GdefTable? _gdef;
+    private ReadOnlyMemory<byte> _gdefData;
+    private bool _hasVariations;
     private LayoutTable? _table;
     private ReadOnlyMemory<byte> _data;
     private LookupDigests? _digests;
+
+    // The coverage cache the last subtable looked a glyph up in.
+    private CoverageCache? _coverage;
     private bool _isPositioning;
     private bool _isRightToLeft;
 
@@ -70,6 +73,21 @@ internal sealed partial class LayoutApplier
         _hasVariations = face.Instance is not null && face.Gdef is { VariationStore: not 0 };
     }
 
+    /// <summary>Makes the applier apply the lookups of another font to another buffer, as a new one would.</summary>
+    public void Reset(GlyphBuffer buffer, FontFace face)
+    {
+        _buffer = buffer;
+        _face = face;
+        _gdef = face.Gdef;
+        _gdefData = face.GdefData;
+        _hasVariations = face.Instance is not null && face.Gdef is { VariationStore: not 0 };
+        _table = null;
+        _data = default;
+        _digests = null;
+        _coverage = null;
+        _nesting = 0;
+    }
+
     /// <summary>Starts applying the lookups of a table.</summary>
     /// <param name="table">The table.</param>
     /// <param name="data">The data of the table.</param>
@@ -82,6 +100,7 @@ internal sealed partial class LayoutApplier
         _table = table;
         _data = data;
         _digests = digests;
+        _coverage = null;
         _isPositioning = isPositioning;
         _isRightToLeft = isRightToLeft;
         _isVertical = isVertical;
@@ -99,8 +118,9 @@ internal sealed partial class LayoutApplier
         {
             if (_gdef is { HasGlyphClasses: true })
             {
-                info.Props = (byte)_gdef.GetGlyphClass(gdef, info.Glyph);
-                info.MarkAttachmentClass = (byte)_gdef.GetMarkAttachmentClass(gdef, info.Glyph);
+                var classes = _gdef.GetGlyphClasses(gdef, info.Glyph);
+                info.Props = (byte)classes;
+                info.MarkAttachmentClass = (byte)(classes >> 8);
             }
             else
             {
@@ -213,6 +233,25 @@ internal sealed partial class LayoutApplier
         }
     }
 
+    /// <summary>
+    /// Gets the coverage index of a glyph in the first coverage table of a subtable: the one each subtable starts with,
+    /// which the digests keep the indexes of.
+    /// </summary>
+    private int GetFirstCoverage(ReadOnlySpan<byte> data, int offset, int glyph)
+    {
+        if (_digests is null)
+            return LayoutCommon.GetCoverage(data, offset, glyph);
+
+        var coverage = _coverage;
+        if (coverage is null || coverage.Offset != offset)
+        {
+            coverage = _digests.GetCoverage(offset);
+            _coverage = coverage;
+        }
+
+        return coverage.Get(data, glyph);
+    }
+
     /// <summary>Tries the subtables of a lookup at a glyph, in order; the first one that applies ends the lookup there.</summary>
     /// <param name="lookup">The lookup.</param>
     /// <param name="index">The glyph; when a subtable applies, the glyph the lookup continues at.</param>
@@ -229,7 +268,7 @@ internal sealed partial class LayoutApplier
                 continue;
 
             var start = index;
-            if (Apply(lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref index))
+            if (Apply(data, lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref index))
             {
                 // A lookup that applies always moves on, even when it changed nothing after its first glyph.
                 index = Math.Max(index, _isPositioning ? start + 1 : start);
@@ -240,48 +279,47 @@ internal sealed partial class LayoutApplier
         return false;
     }
 
-    private bool Apply(int type, int subtable, ref int index)
+    private bool Apply(ReadOnlySpan<byte> data, int type, int subtable, ref int index)
     {
         if (_isPositioning)
         {
             return type switch
             {
-                1 => ApplySinglePositioning(subtable, ref index),
-                2 => ApplyPairPositioning(subtable, ref index),
-                3 => ApplyCursiveAttachment(subtable, ref index),
-                4 => ApplyMarkToBase(subtable, ref index),
-                5 => ApplyMarkToLigature(subtable, ref index),
-                6 => ApplyMarkToMark(subtable, ref index),
-                7 => ApplyContext(subtable, ref index),
-                8 => ApplyChainedContext(subtable, ref index),
-                PositioningExtension => ApplyExtension(subtable, PositioningExtension, ref index),
+                1 => ApplySinglePositioning(data, subtable, ref index),
+                2 => ApplyPairPositioning(data, subtable, ref index),
+                3 => ApplyCursiveAttachment(data, subtable, ref index),
+                4 => ApplyMarkToBase(data, subtable, ref index),
+                5 => ApplyMarkToLigature(data, subtable, ref index),
+                6 => ApplyMarkToMark(data, subtable, ref index),
+                7 => ApplyContext(data, subtable, ref index),
+                8 => ApplyChainedContext(data, subtable, ref index),
+                PositioningExtension => ApplyExtension(data, subtable, PositioningExtension, ref index),
                 _ => false,
             };
         }
 
         return type switch
         {
-            1 => ApplySingleSubstitution(subtable, ref index),
-            2 => ApplyMultipleSubstitution(subtable, ref index),
-            3 => ApplyAlternateSubstitution(subtable, ref index),
-            4 => ApplyLigatureSubstitution(subtable, ref index),
-            5 => ApplyContext(subtable, ref index),
-            6 => ApplyChainedContext(subtable, ref index),
-            SubstitutionExtension => ApplyExtension(subtable, SubstitutionExtension, ref index),
-            SubstitutionReverseChain => ApplyReverseChainedSubstitution(subtable, ref index),
+            1 => ApplySingleSubstitution(data, subtable, ref index),
+            2 => ApplyMultipleSubstitution(data, subtable, ref index),
+            3 => ApplyAlternateSubstitution(data, subtable, ref index),
+            4 => ApplyLigatureSubstitution(data, subtable, ref index),
+            5 => ApplyContext(data, subtable, ref index),
+            6 => ApplyChainedContext(data, subtable, ref index),
+            SubstitutionExtension => ApplyExtension(data, subtable, SubstitutionExtension, ref index),
+            SubstitutionReverseChain => ApplyReverseChainedSubstitution(data, subtable, ref index),
             _ => false,
         };
     }
 
     /// <summary>An extension subtable holds a subtable of another type at a 32-bit offset.</summary>
-    private bool ApplyExtension(int subtable, int extensionType, ref int index)
+    private bool ApplyExtension(ReadOnlySpan<byte> data, int subtable, int extensionType, ref int index)
     {
-        var data = _data.Span;
         var type = FontBinary.UInt16(data, subtable + 2);
         if (FontBinary.UInt16(data, subtable) != 1 || type == extensionType)
             return false;
 
-        return Apply(type, FontBinary.AddOffset(subtable, FontBinary.Offset32(data, subtable + 4)), ref index);
+        return Apply(data, type, FontBinary.AddOffset(subtable, FontBinary.Offset32(data, subtable + 4)), ref index);
     }
 
     /// <summary>Gets the type of the subtables of a lookup, through an extension.</summary>
@@ -423,8 +461,9 @@ internal sealed partial class LayoutApplier
 
         if (_gdef is { HasGlyphClasses: true })
         {
-            info.Props = (byte)(kept | _gdef.GetGlyphClass(_gdefData.Span, glyph));
-            info.MarkAttachmentClass = (byte)_gdef.GetMarkAttachmentClass(_gdefData.Span, glyph);
+            var classes = _gdef.GetGlyphClasses(_gdefData.Span, glyph);
+            info.Props = (byte)(kept | (byte)classes);
+            info.MarkAttachmentClass = (byte)(classes >> 8);
         }
         else
         {

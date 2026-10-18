@@ -10,6 +10,22 @@ internal sealed class ShapingCache
     private readonly Dictionary<FontFace, (LookupDigests? Substitutions, LookupDigests? Positions)> _digests = [];
     private readonly Dictionary<FontFace, List<TextShaper.Plan>> _plans = [];
     private readonly Dictionary<(FontFace Face, int Glyph), int> _advances = [];
+    private LayoutApplier? _applier;
+
+    /// <summary>Gets the applier of the lookups of a run, kept from a run to the next one.</summary>
+    public LayoutApplier GetApplier(GlyphBuffer buffer, FontFace face)
+    {
+        if (_applier is null)
+        {
+            _applier = new LayoutApplier(buffer, face);
+        }
+        else
+        {
+            _applier.Reset(buffer, face);
+        }
+
+        return _applier;
+    }
 
     /// <summary>
     /// Gets the advance width of a glyph: kept for a font whose advances come from the outlines of its glyphs, where

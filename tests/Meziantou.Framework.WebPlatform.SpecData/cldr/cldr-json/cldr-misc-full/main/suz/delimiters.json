@@ -1,0 +1,15 @@
+{
+  "main": {
+    "suz": {
+      "identity": {
+        "language": "suz"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

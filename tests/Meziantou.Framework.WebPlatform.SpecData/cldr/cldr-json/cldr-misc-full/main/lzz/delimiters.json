@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lzz": {
+      "identity": {
+        "language": "lzz"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

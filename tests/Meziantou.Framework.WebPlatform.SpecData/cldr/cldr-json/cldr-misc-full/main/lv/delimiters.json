@@ -1,0 +1,15 @@
+{
+  "main": {
+    "lv": {
+      "identity": {
+        "language": "lv"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "pt-LU": {
+      "identity": {
+        "language": "pt",
+        "territory": "LU"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

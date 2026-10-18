@@ -1,0 +1,412 @@
+{
+  "spec": {
+    "title": "WebXR Lighting Estimation API Level 1",
+    "url": "https://immersive-web.github.io/lighting-estimation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRLightProbe",
+          "XRLightEstimate"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRLightProbe": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRLightProbe : EventTarget {\n  readonly attribute XRSpace probeSpace;\n  attribute EventHandler onreflectionchange;\n};",
+        "type": "interface",
+        "name": "XRLightProbe",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "probeSpace",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightprobe-probespace"
+          },
+          {
+            "type": "attribute",
+            "name": "onreflectionchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightprobe-onreflectionchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/lighting-estimation/#xrlightprobe"
+      },
+      "XRReflectionFormat": {
+        "fragment": "enum XRReflectionFormat {\n  \"srgba8\",\n  \"rgba16f\",\n};",
+        "type": "enum",
+        "name": "XRReflectionFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "srgba8",
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrreflectionformat-srgba8"
+          },
+          {
+            "type": "enum-value",
+            "value": "rgba16f",
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrreflectionformat-rgba16f"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/lighting-estimation/#enumdef-xrreflectionformat"
+      },
+      "XRLightEstimate": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface XRLightEstimate {\n  readonly attribute Float32Array sphericalHarmonicsCoefficients;\n  readonly attribute DOMPointReadOnly primaryLightDirection;\n  readonly attribute DOMPointReadOnly primaryLightIntensity;\n};",
+        "type": "interface",
+        "name": "XRLightEstimate",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sphericalHarmonicsCoefficients",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightestimate-sphericalharmonicscoefficients"
+          },
+          {
+            "type": "attribute",
+            "name": "primaryLightDirection",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightestimate-primarylightdirection"
+          },
+          {
+            "type": "attribute",
+            "name": "primaryLightIntensity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightestimate-primarylightintensity"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/lighting-estimation/#xrlightestimate"
+      },
+      "XRLightProbeInit": {
+        "fragment": "dictionary XRLightProbeInit {\n  XRReflectionFormat reflectionFormat = \"srgba8\";\n};",
+        "type": "dictionary",
+        "name": "XRLightProbeInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "reflectionFormat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRReflectionFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "srgba8"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrlightprobeinit-reflectionformat"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/lighting-estimation/#dictdef-xrlightprobeinit"
+      }
+    },
+    "idlExtendedNames": {
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  Promise<XRLightProbe> requestLightProbe(optional XRLightProbeInit options = {});\n  readonly attribute XRReflectionFormat preferredReflectionFormat;\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "requestLightProbe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRLightProbe"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRLightProbeInit"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrsession-requestlightprobe"
+            },
+            {
+              "type": "attribute",
+              "name": "preferredReflectionFormat",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRReflectionFormat"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrsession-preferredreflectionformat"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n  XRLightEstimate? getLightEstimate(XRLightProbe lightProbe);\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getLightEstimate",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRLightEstimate"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "lightProbe",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRLightProbe"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrframe-getlightestimate"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRWebGLBinding": [
+        {
+          "fragment": "partial interface XRWebGLBinding {\n  WebGLTexture? getReflectionCubeMap(XRLightProbe lightProbe);\n};",
+          "type": "interface",
+          "name": "XRWebGLBinding",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getReflectionCubeMap",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "WebGLTexture"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "lightProbe",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRLightProbe"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://immersive-web.github.io/lighting-estimation/#dom-xrwebglbinding-getreflectioncubemap"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRLightProbe",
+        "XRLightEstimate"
+      ]
+    },
+    "dependencies": {
+      "XRLightProbe": [
+        "EventTarget",
+        "XRSpace",
+        "EventHandler"
+      ],
+      "XRLightEstimate": [
+        "Float32Array",
+        "DOMPointReadOnly"
+      ],
+      "XRLightProbeInit": [
+        "XRReflectionFormat"
+      ],
+      "XRSession": [
+        "XRLightProbe",
+        "XRLightProbeInit",
+        "XRReflectionFormat"
+      ],
+      "XRFrame": [
+        "XRLightEstimate",
+        "XRLightProbe"
+      ],
+      "XRWebGLBinding": [
+        "WebGLTexture",
+        "XRLightProbe"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "XRSpace",
+      "EventHandler",
+      "Float32Array",
+      "DOMPointReadOnly",
+      "XRSession",
+      "XRFrame",
+      "XRWebGLBinding",
+      "WebGLTexture"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

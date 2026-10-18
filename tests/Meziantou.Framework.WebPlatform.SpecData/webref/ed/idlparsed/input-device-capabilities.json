@@ -1,0 +1,228 @@
+{
+  "spec": {
+    "title": "Input Device Capabilities",
+    "url": "https://wicg.github.io/input-device-capabilities/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "InputDeviceCapabilities"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "InputDeviceCapabilities": {
+        "fragment": "[Exposed=Window]\ninterface InputDeviceCapabilities {\n  constructor(optional InputDeviceCapabilitiesInit deviceInitDict = {});\n  readonly attribute boolean firesTouchEvents;\n  readonly attribute boolean pointerMovementScrolls;\n};",
+        "type": "interface",
+        "name": "InputDeviceCapabilities",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "deviceInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "InputDeviceCapabilitiesInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilities-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "firesTouchEvents",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilities-firestouchevents"
+          },
+          {
+            "type": "attribute",
+            "name": "pointerMovementScrolls",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilities-pointermovementscrolls"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilities"
+      },
+      "InputDeviceCapabilitiesInit": {
+        "fragment": "dictionary InputDeviceCapabilitiesInit {\n  boolean firesTouchEvents = false;\n  boolean pointerMovementScrolls = false;\n};",
+        "type": "dictionary",
+        "name": "InputDeviceCapabilitiesInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "firesTouchEvents",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilitiesinit-firestouchevents"
+          },
+          {
+            "type": "field",
+            "name": "pointerMovementScrolls",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilitiesinit-pointermovementscrolls"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/input-device-capabilities/#dom-inputdevicecapabilitiesinit"
+      }
+    },
+    "idlExtendedNames": {
+      "UIEvent": [
+        {
+          "fragment": "partial interface UIEvent {\n  readonly attribute InputDeviceCapabilities? sourceCapabilities;\n};",
+          "type": "interface",
+          "name": "UIEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sourceCapabilities",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "InputDeviceCapabilities"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/input-device-capabilities/#dom-uievent-sourcecapabilities"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "UIEventInit": [
+        {
+          "fragment": "partial dictionary UIEventInit {\n  InputDeviceCapabilities? sourceCapabilities = null;\n};",
+          "type": "dictionary",
+          "name": "UIEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "sourceCapabilities",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "InputDeviceCapabilities"
+              },
+              "default": {
+                "type": "null"
+              },
+              "required": false,
+              "href": "https://wicg.github.io/input-device-capabilities/#dom-uieventinit-sourcecapabilities"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "InputDeviceCapabilities"
+      ]
+    },
+    "dependencies": {
+      "InputDeviceCapabilities": [
+        "InputDeviceCapabilitiesInit"
+      ],
+      "InputDeviceCapabilitiesInit": [],
+      "UIEvent": [
+        "InputDeviceCapabilities"
+      ],
+      "UIEventInit": [
+        "InputDeviceCapabilities"
+      ]
+    },
+    "externalDependencies": [
+      "UIEvent",
+      "UIEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cu": {
+      "identity": {
+        "language": "cu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

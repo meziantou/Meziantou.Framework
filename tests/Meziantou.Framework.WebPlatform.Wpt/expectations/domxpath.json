@@ -1,0 +1,111 @@
+{
+  "domxpath/booleans.html": {
+    "total": 7
+  },
+  "domxpath/document.tentative.html": {
+    "total": 1
+  },
+  "domxpath/elements-are-parents-of-their-attributes.html": {
+    "total": 2
+  },
+  "domxpath/evaluate-non-node-set-result-type.html": {
+    "total": 6
+  },
+  "domxpath/evaluator-constructor.html": {
+    "total": 2
+  },
+  "domxpath/evaluator-cross-realm.tentative.html": {
+    "total": 4
+  },
+  "domxpath/evaluator-different-document.tentative.html": {
+    "total": 8
+  },
+  "domxpath/expression-cross-realm.tentative.html": {
+    "total": 4
+  },
+  "domxpath/expression-different-document.tentative.html": {
+    "total": 8
+  },
+  "domxpath/fn-concat.html": {
+    "total": 1
+  },
+  "domxpath/fn-contains.html": {
+    "total": 1
+  },
+  "domxpath/fn-id.html": {
+    "total": 8
+  },
+  "domxpath/fn-lang.html": {
+    "total": 7
+  },
+  "domxpath/fn-normalize-space.html": {
+    "total": 2
+  },
+  "domxpath/fn-starts-with.html": {
+    "total": 1
+  },
+  "domxpath/fn-substring-after.html": {
+    "total": 1
+  },
+  "domxpath/fn-substring-before.html": {
+    "total": 1
+  },
+  "domxpath/fn-substring.html": {
+    "total": 1
+  },
+  "domxpath/fn-translate.html": {
+    "total": 1
+  },
+  "domxpath/fns-name-related.html": {
+    "total": 6
+  },
+  "domxpath/lexical-structure.html": {
+    "total": 2
+  },
+  "domxpath/node-set-tree-order.html": {
+    "total": 1
+  },
+  "domxpath/node-sets.html": {
+    "total": 1
+  },
+  "domxpath/numbers.html": {
+    "total": 5
+  },
+  "domxpath/predicates.html": {
+    "total": 1
+  },
+  "domxpath/resolver-callback-interface-cross-realm.tentative.html": {
+    "total": 5,
+    "failures": {
+      "XPathNSResolver is cross-realm callable revoked Proxy": "FAIL",
+      "XPathNSResolver is cross-realm non-callable revoked Proxy": "FAIL",
+      "XPathNSResolver is cross-realm plain object with non-callable 'lookupNamespaceURI' property": "FAIL",
+      "XPathNSResolver is cross-realm plain object with revoked Proxy as 'lookupNamespaceURI' property": "FAIL",
+      "XPathNSResolver is cross-realm plain object without 'lookupNamespaceURI' property": "FAIL"
+    }
+  },
+  "domxpath/resolver-callback-interface.html": {
+    "total": 10
+  },
+  "domxpath/resolver-non-string-result.html": {
+    "total": 6
+  },
+  "domxpath/result-iterateNext.html": {
+    "total": 7
+  },
+  "domxpath/text-html-attributes.html": {
+    "total": 15
+  },
+  "domxpath/text-html-elements.html": {
+    "total": 11
+  },
+  "domxpath/xml_xpath_runner.html": {
+    "total": 1024
+  },
+  "domxpath/xpath-shadow-dom.html": {
+    "total": 2
+  },
+  "domxpath/xpathevaluatorbase-creatensresolver.html": {
+    "total": 4
+  }
+}

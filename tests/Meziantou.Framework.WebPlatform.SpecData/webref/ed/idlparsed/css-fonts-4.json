@@ -1,0 +1,444 @@
+{
+  "spec": {
+    "title": "CSS Fonts Module Level 4",
+    "url": "https://drafts.csswg.org/css-fonts-4/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSFontFeatureValuesRule",
+          "CSSFontFeatureValuesMap",
+          "CSSFontPaletteValuesRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSFontFeatureValuesRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSFontFeatureValuesRule : CSSRule {\n  attribute CSSOMString fontFamily;\n  readonly attribute CSSFontFeatureValuesMap annotation;\n  readonly attribute CSSFontFeatureValuesMap ornaments;\n  readonly attribute CSSFontFeatureValuesMap stylistic;\n  readonly attribute CSSFontFeatureValuesMap swash;\n  readonly attribute CSSFontFeatureValuesMap characterVariant;\n  readonly attribute CSSFontFeatureValuesMap styleset;\n  readonly attribute CSSFontFeatureValuesMap historicalForms;\n};",
+        "type": "interface",
+        "name": "CSSFontFeatureValuesRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "fontFamily",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-fontfamily"
+          },
+          {
+            "type": "attribute",
+            "name": "annotation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-annotation"
+          },
+          {
+            "type": "attribute",
+            "name": "ornaments",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-ornaments"
+          },
+          {
+            "type": "attribute",
+            "name": "stylistic",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-stylistic"
+          },
+          {
+            "type": "attribute",
+            "name": "swash",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-swash"
+          },
+          {
+            "type": "attribute",
+            "name": "characterVariant",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-charactervariant"
+          },
+          {
+            "type": "attribute",
+            "name": "styleset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-styleset"
+          },
+          {
+            "type": "attribute",
+            "name": "historicalForms",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSFontFeatureValuesMap"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-historicalforms"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-fonts-4/#om-fontfeaturevalues"
+      },
+      "CSSFontFeatureValuesMap": {
+        "fragment": "[Exposed=Window]\ninterface CSSFontFeatureValuesMap {\n  maplike<CSSOMString, sequence<unsigned long>>;\n  undefined set(CSSOMString featureValueName,\n    (unsigned long or sequence<unsigned long>) values);\n};",
+        "type": "interface",
+        "name": "CSSFontFeatureValuesMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSOMString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": null,
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  }
+                ]
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "featureValueName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "values",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "unsigned long"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesmap"
+      },
+      "CSSFontPaletteValuesRule": {
+        "fragment": "[Exposed=Window]\n  interface CSSFontPaletteValuesRule : CSSRule {\n    readonly attribute CSSOMString name;\n    readonly attribute CSSOMString fontFamily;\n    readonly attribute CSSOMString basePalette;\n    readonly attribute CSSOMString overrideColors;\n  };",
+        "type": "interface",
+        "name": "CSSFontPaletteValuesRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "fontFamily",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-fontfamily"
+          },
+          {
+            "type": "attribute",
+            "name": "basePalette",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-basepalette"
+          },
+          {
+            "type": "attribute",
+            "name": "overrideColors",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-overridecolors"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-fonts-4/#om-fontpalettevalues"
+      }
+    },
+    "idlExtendedNames": {
+      "CSSRule": [
+        {
+          "fragment": "partial interface CSSRule {\n  const unsigned short FONT_FEATURE_VALUES_RULE = 14;\n};",
+          "type": "interface",
+          "name": "CSSRule",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "const",
+              "name": "FONT_FEATURE_VALUES_RULE",
+              "idlType": {
+                "type": "const-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              "extAttrs": [],
+              "value": {
+                "type": "number",
+                "value": "14"
+              },
+              "href": "https://drafts.csswg.org/css-fonts-4/#dom-cssrule-font_feature_values_rule"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSFontFeatureValuesRule",
+        "CSSFontFeatureValuesMap",
+        "CSSFontPaletteValuesRule"
+      ]
+    },
+    "dependencies": {
+      "CSSRule": [],
+      "CSSFontFeatureValuesRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CSSFontFeatureValuesMap"
+      ],
+      "CSSFontFeatureValuesMap": [
+        "CSSOMString"
+      ],
+      "CSSFontPaletteValuesRule": [
+        "CSSRule",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSRule",
+      "CSSOMString"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

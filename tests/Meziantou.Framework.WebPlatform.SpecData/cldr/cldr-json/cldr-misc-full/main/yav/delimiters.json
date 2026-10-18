@@ -1,0 +1,15 @@
+{
+  "main": {
+    "yav": {
+      "identity": {
+        "language": "yav"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "html/anonymous-iframe/anonymous-iframe-popup.tentative.https.window.js": {
+    "total": 2
+  },
+  "html/anonymous-iframe/anonymous-window.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Credentialless (false => true) => window not reused.": "FAIL",
+      "Credentialless (true => false) => window not reused.": "FAIL"
+    }
+  },
+  "html/anonymous-iframe/cache-storage.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/cookie-store.tentative.https.window.js": {
+    "total": 4
+  },
+  "html/anonymous-iframe/cookie.tentative.https.window.js": {
+    "total": 11
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?1-1": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?10-10": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?11-11": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?12-12": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?13-last": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?2-2": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?3-3": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?4-4": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?5-5": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?6-6": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?7-7": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?8-8": {
+    "total": 1
+  },
+  "html/anonymous-iframe/embedding.tentative.https.window.js?9-9": {
+    "total": 1
+  },
+  "html/anonymous-iframe/hasStorageAccess.tentative.https.window.js": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/anonymous-iframe/indexeddb.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/initial-empty-document.tentative.https.window.js": {
+    "total": 2
+  },
+  "html/anonymous-iframe/local-storage-initial-empty-document.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/local-storage.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/requestStorageAccess.tentative.https.window.js": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/anonymous-iframe/require-corp-embed-anonymous-iframe.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/serviceworker-partitioning.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/session-storage.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/sharedworker-partitioning.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "credentialless iframes get partitioned shared workers.": "FAIL"
+    }
+  },
+  "html/anonymous-iframe/web-lock.tentative.https.window.js": {
+    "total": 1
+  },
+  "html/anonymous-iframe/worker-cookies.tentative.https.window.js?worker=dedicated_worker": {
+    "total": 3
+  },
+  "html/anonymous-iframe/worker-cookies.tentative.https.window.js?worker=service_worker": {
+    "total": 3,
+    "failures": {
+      "Worker spawned from credentialless iframe can't access global cookies": "FAIL"
+    }
+  },
+  "html/anonymous-iframe/worker-cookies.tentative.https.window.js?worker=shared_worker": {
+    "total": 3
+  }
+}

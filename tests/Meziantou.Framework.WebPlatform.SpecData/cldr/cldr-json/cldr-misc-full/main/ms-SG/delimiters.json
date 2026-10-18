@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ms-SG": {
+      "identity": {
+        "language": "ms",
+        "territory": "SG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

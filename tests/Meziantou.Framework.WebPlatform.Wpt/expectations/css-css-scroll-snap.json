@@ -1,0 +1,687 @@
+{
+  "css/css-scroll-snap/capturing-snap-positions.html": {
+    "total": 1,
+    "failures": {
+      "The third item should be snapped to by default, not the second's child.": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/ignore-snap-points-orthogonal-to-snap-axis.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/inheritance.html": {
+    "total": 38
+  },
+  "css/css-scroll-snap/input/keyboard-snap-interruption.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/input/keyboard.html": {
+    "total": 8
+  },
+  "css/css-scroll-snap/input/mouse-wheel.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/input/paged.html": {
+    "total": 5,
+    "failures": {
+      "Doesn't skip past small snappable content": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/input/scroll-padding-paged.html": {
+    "total": 1,
+    "failures": {
+      "After page down, the scroll padding is also taken into account": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/input/snap-area-overflow-boundary-viewport-covering.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/large-scroll-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/multicol-001.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/multicol-002.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/multicol-003.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/nested-scrollIntoView-snaps.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/no-snap-position.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/overflowing-snap-areas-nested.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/overflowing-snap-areas.html": {
+    "total": 11
+  },
+  "css/css-scroll-snap/overscroll-snap.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-block-inline-computed.html": {
+    "total": 14
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-block-inline-invalid.html": {
+    "total": 24
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-block-inline-shorthand.html": {
+    "total": 12
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-block-inline-valid.html": {
+    "total": 14
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-computed.html": {
+    "total": 11
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-invalid.html": {
+    "total": 20
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-shorthand.html": {
+    "total": 20
+  },
+  "css/css-scroll-snap/parsing/scroll-margin-valid.html": {
+    "total": 19
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-block-inline-computed.html": {
+    "total": 42
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-block-inline-invalid.html": {
+    "total": 32
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-block-inline-shorthand.html": {
+    "total": 12
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-block-inline-valid.html": {
+    "total": 36
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-computed.html": {
+    "total": 40
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-invalid.html": {
+    "total": 28
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-shorthand.html": {
+    "total": 20
+  },
+  "css/css-scroll-snap/parsing/scroll-padding-valid.html": {
+    "total": 35
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-align-computed.html": {
+    "total": 7
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-align-invalid.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-align-valid.html": {
+    "total": 7
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-stop-before.html": {
+    "total": 1,
+    "failures": {
+      "e.style['scroll-snap-stop'] = \"before\" should set the property value": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-stop-computed.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-stop-invalid.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-stop-valid.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-type-computed.html": {
+    "total": 8
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-type-invalid.html": {
+    "total": 14
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-type-pair.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/parsing/scroll-snap-type-valid.html": {
+    "total": 11
+  },
+  "css/css-scroll-snap/resnap-on-layout-is-immediate.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/resnap-on-snap-alignment-change.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/parsing/scroll-initial-target-computed.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-initial-target/parsing/scroll-initial-target-invalid.html": {
+    "total": 5
+  },
+  "css/css-scroll-snap/scroll-initial-target/parsing/scroll-initial-target-valid.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-aligns-with-snap-align.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-display-toggled.tentative.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-nested-container.tentative.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-root.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-rtl.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-shadow-dom.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-span.tentative.html": {
+    "total": 1,
+    "failures": {
+      "<span> scroll-initial-target is honored": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-anchor-navigation.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-hash-fragment-navigation.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-scroll-snap.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-scroll-start-root.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-scroll-start.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-text-fragment-navigation.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target-with-user-programmatic-scroll.tentative.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-initial-target/scroll-initial-target.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-margin-editable.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-margin-focus.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-margin-overflow-ancestor.html": {
+    "total": 4,
+    "failures": {
+      "scroll-margin and scroll-padding are respected when overflowing an overflow: auto container": "FAIL",
+      "scroll-margin is respected when overflowing an overflow: auto container": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/scroll-margin-visibility-check.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-margin.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-on-large-element-not-covering-snapport.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-padding-and-margin.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-padding-focus.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-padding-percentage.html": {
+    "total": 2,
+    "failures": {
+      "No need to scroll to avoid percentage scroll padding left": "FAIL",
+      "No need to scroll to avoid percentage scroll padding right": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/scroll-padding.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-nested-snap-area-layout-changed.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-snap-root-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-snap-root-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-snap-root-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-snap-stop-001.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/scroll-snap-stop-002-nested.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-stop-002.html": {
+    "total": 6
+  },
+  "css/css-scroll-snap/scroll-snap-stop-change.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-snap-type-change.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/scroll-snap-type-on-root-element.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-002.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-003.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-004.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-005.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Dispatches scrollsnapchange with the single dual-axis target under scroll-snap-type: pair": "TIMEOUT"
+    }
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-006.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-snap-type-pair-007.html": {
+    "total": 1,
+    "failures": {
+      "DirectionStrategy prefers higher cosine similarity candidate during 2D momentum fling": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/scroll-snap-type.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/scroll-target-align-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-scroll-snap/scroll-target-align-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-scroll-snap/scroll-target-align-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-align-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-align-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-align-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-margin-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-margin-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-margin-005.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-target-margin-006.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/scroll-target-padding-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-padding-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-padding-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-snap-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-snap-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scroll-target-snap-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/scrollTo-scrollBy-snaps.html": {
+    "total": 40
+  },
+  "css/css-scroll-snap/selection-target.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/single-axis-001.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-002.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-003.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/single-axis-004.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-005.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-006.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-007.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/single-axis-008.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/single-axis-009.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/smooth-anchor-scroll-in-snap-container.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/direction-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/initial-snap-matches-scroll.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/scroll-snap-initial-layout-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/scroll-snap-writing-mode-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/writing-mode-horizontal-tb.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/writing-mode-vertical-lr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-initial-layout/writing-mode-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-scroll-snap/snap-after-relayout/adding-only-snap-area.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/adding-snap-area-while-snapped.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-align-nested.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-align.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-type-on-root-element.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-type.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-after-relayout/focus-element-no-snap.html": {
+    "total": 1,
+    "failures": {
+      "Resnap to focused element after relayout": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/snap-after-relayout/instant-resnap-to-target.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/layout-follows-focused-targeted-block.html": {
+    "total": 4,
+    "failures": {
+      "block axis area is preferred (vertical writing-mode).": "FAIL",
+      "block axis area is preferred.": "FAIL",
+      "focused area prefered over targeted area.": "FAIL",
+      "targeted area prefered over non-focused area.": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/snap-after-relayout/move-current-target.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/common-to-both-axes-supercedes-first-in-tree-order.html": {
+    "total": 10
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/nested-supercedes-common-to-both-axes.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-common-to-both-axes.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-first-in-flat-tree-order.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-first-in-tree-order.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-focused-element-scaled-ancestor.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-focused-element.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-focused-nested-containers.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-inner-target.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-snap-target-containing-focused-element.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-targeted-element-both-axes.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-targeted-element-main-frame.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-targeted-element-positioned.html": {
+    "total": 5
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-targeted-element.html": {
+    "total": 9
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/prefer-tree-order-over-geometric-containment.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/re-snap-focused-target-after-scrollBy.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/re-snap-per-axis-target.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/not-resnap-outside-proximity-threshold.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/remove-current-target.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/resnap-on-oveflow-hidden-container.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/resnap-on-overflowing-snap-area.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/resnap-on-reconstructing-frame.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/resnap-to-focused.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/snap-to-different-targets.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/two-consecutive-resnaps-align-end.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-relayout/two-consecutive-resnaps.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-after-style-change-respects-scroll-behavior.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-area-capturing-add-scroll-container.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-area-capturing-remove-scroll-container.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-at-user-scroll-end.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-after-layout-change.tentative.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-on-interrupted-scroll.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-on-programmatic-root-scroll.tentative.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-on-programmatic-scroll.tentative.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-on-user-root-scroll.tentative.html": {
+    "total": 6
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-on-user-scroll.tentative.html": {
+    "total": 6
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html": {
+    "total": 1,
+    "failures": {
+      "Trigger scrollsnapchange event on scroll-snap-type change": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scrolling-non-snapping-axis.tentative.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-with-proximity-strictness.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-after-layout-change.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-programmatic-root-scroll.tentative.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-programmatic-scroll.tentative.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html": {
+    "total": 7
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html": {
+    "total": 7
+  },
+  "css/css-scroll-snap/snap-events/snap-events-with-pseudo-target.tentative.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html": {
+    "total": 2,
+    "failures": {
+      "snapTarget for scrollsnapchange is the host element when a snap area is inside a closed shadow root": "FAIL",
+      "snapTarget for scrollsnapchanging is the host element when a snap area is inside a closed shadow root": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/snap-events/snapevents-at-document-bubble-to-window.html": {
+    "total": 2
+  },
+  "css/css-scroll-snap/snap-fling-in-large-area.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-fling-past-furthest-area.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-inline-block.html": {
+    "total": 8
+  },
+  "css/css-scroll-snap/snap-intended-direction.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-into-covering-area.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-on-focus.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-combination-of-two-elements-1.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-combination-of-two-elements-2.html": {
+    "total": 1,
+    "failures": {
+      "Snap to points of combinations of two different elements": "FAIL"
+    }
+  },
+  "css/css-scroll-snap/snap-to-empty-sized-element.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-transformed-target.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-both-pseudo.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-both.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-margin-both.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-margin-x-axis.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-margin-y-axis.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-x-axis.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-y-axis.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-to-zero-height-interior-area.html": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snapevent-constructor.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/unreachable-snap-positions-001.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/unreachable-snap-positions-002.html": {
+    "total": 4
+  },
+  "css/css-scroll-snap/unreachable-snap-positions-003.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/unreachable-snap-positions-004.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/unrelated-gesture-scroll-during-snap.html": {
+    "total": 2
+  }
+}

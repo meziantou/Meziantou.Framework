@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bn-IN": {
+      "identity": {
+        "language": "bn",
+        "territory": "IN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

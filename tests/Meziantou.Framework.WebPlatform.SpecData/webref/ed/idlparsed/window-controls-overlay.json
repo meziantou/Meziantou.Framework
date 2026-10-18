@@ -1,0 +1,330 @@
+{
+  "spec": {
+    "title": "Window Controls Overlay",
+    "url": "https://wicg.github.io/window-controls-overlay/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "WindowControlsOverlayGeometryChangeEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Navigator",
+          "WindowControlsOverlay"
+        ]
+      }
+    },
+    "idlNames": {
+      "WindowControlsOverlay": {
+        "fragment": "[Exposed=Window]\ninterface WindowControlsOverlay : EventTarget {\n  readonly attribute boolean visible;\n  DOMRect getTitlebarAreaRect();\n  attribute EventHandler ongeometrychange;\n};",
+        "type": "interface",
+        "name": "WindowControlsOverlay",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "visible",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlay-visible"
+          },
+          {
+            "type": "operation",
+            "name": "getTitlebarAreaRect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlay-gettitlebararearect"
+          },
+          {
+            "type": "attribute",
+            "name": "ongeometrychange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlay-ongeometrychange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlay"
+      },
+      "WindowControlsOverlayGeometryChangeEvent": {
+        "fragment": "[Exposed=Window]\ninterface WindowControlsOverlayGeometryChangeEvent : Event {\n  constructor(DOMString type, WindowControlsOverlayGeometryChangeEventInit eventInitDict);\n  [SameObject] readonly attribute DOMRect titlebarAreaRect;\n  readonly attribute boolean visible;\n};",
+        "type": "interface",
+        "name": "WindowControlsOverlayGeometryChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WindowControlsOverlayGeometryChangeEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "titlebarAreaRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeevent-titlebararearect"
+          },
+          {
+            "type": "attribute",
+            "name": "visible",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeevent-visible"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeevent"
+      },
+      "WindowControlsOverlayGeometryChangeEventInit": {
+        "fragment": "dictionary WindowControlsOverlayGeometryChangeEventInit : EventInit {\n  required DOMRect titlebarAreaRect;\n  boolean visible = false;\n};",
+        "type": "dictionary",
+        "name": "WindowControlsOverlayGeometryChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "titlebarAreaRect",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRect"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeeventinit-titlebararearect"
+          },
+          {
+            "type": "field",
+            "name": "visible",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeeventinit-visible"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/window-controls-overlay/#dom-windowcontrolsoverlaygeometrychangeeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext, Exposed=(Window)]\npartial interface Navigator {\n  [SameObject] readonly attribute WindowControlsOverlay windowControlsOverlay;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "windowControlsOverlay",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WindowControlsOverlay"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/window-controls-overlay/#dom-navigator-windowcontrolsoverlay"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "WindowControlsOverlay",
+        "WindowControlsOverlayGeometryChangeEvent"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "WindowControlsOverlay"
+      ],
+      "WindowControlsOverlay": [
+        "EventTarget",
+        "DOMRect",
+        "EventHandler"
+      ],
+      "WindowControlsOverlayGeometryChangeEvent": [
+        "Event",
+        "WindowControlsOverlayGeometryChangeEventInit",
+        "DOMRect"
+      ],
+      "WindowControlsOverlayGeometryChangeEventInit": [
+        "EventInit",
+        "DOMRect"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "DOMRect",
+      "EventHandler",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

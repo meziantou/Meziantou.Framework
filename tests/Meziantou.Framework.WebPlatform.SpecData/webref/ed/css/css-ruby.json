@@ -1,0 +1,228 @@
+{
+  "spec": {
+    "title": "CSS Ruby Annotation Layout Module Level 1",
+    "url": "https://drafts.csswg.org/css-ruby-1/"
+  },
+  "properties": [
+    {
+      "name": "ruby-position",
+      "href": "https://drafts.csswg.org/css-ruby-1/#propdef-ruby-position",
+      "value": "[ alternate || [ over | under ] ] | inter-character",
+      "initial": "alternate",
+      "appliesTo": "ruby annotation containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "alternate",
+          "prose": "Different levels of annotations alternate between over and under. If the annotation container is the first level of annotation in its ruby segment, or if all prior levels are inter-character, then alternate, either on its own or in combination with over, behaves the same as over, while alternate in combination with under behaves the same as under. Otherwise, if the previous level of interlinear annotation is over, alternate behaves like under, and vice versa. (In this case, whether alternate is specified alone or in combination with over or under makes no difference.)",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-position-alternate",
+          "type": "value",
+          "value": "alternate"
+        },
+        {
+          "name": "over",
+          "prose": "The ruby annotation appears line-over the base. Ruby over Japanese base text in horizontal layout Ruby to the right of Japanese base text in vertical layout",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-position-over",
+          "type": "value",
+          "value": "over"
+        },
+        {
+          "name": "under",
+          "prose": "The ruby annotation appears line-under the base. This is a relatively rare setting used in ideographic East Asian writing systems, most easily found in educational text. Ruby under Japanese base text in horizontal layout Ruby to the left of Japanese base text in vertical layout",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-position-under",
+          "type": "value",
+          "value": "under"
+        },
+        {
+          "name": "inter-character",
+          "prose": "If the writing mode of the enclosing ruby container is vertical, this value has the same effect as over. Otherwise, the ruby annotation becomes an inter-character annotation. The annotation appears on the right of the base in horizontal text. This forces the computed value of writing-mode of the ruby annotation children of this ruby annotation container to be vertical-rl. This value is provided for the special case of traditional Chinese as used especially in Taiwan: ruby (made of bopomofo glyphs) in that context appears vertically along the right side of the base glyph, even when the layout of the base characters is horizontal: “Bopomofo” ruby in traditional Chinese (ruby annotation shown in blue for clarity) in horizontal layout",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-position-inter-character",
+          "type": "value",
+          "value": "inter-character"
+        }
+      ],
+      "styleDeclaration": [
+        "ruby-position",
+        "rubyPosition"
+      ]
+    },
+    {
+      "name": "ruby-merge",
+      "href": "https://drafts.csswg.org/css-ruby-1/#propdef-ruby-merge",
+      "value": "separate | merge | auto",
+      "initial": "separate",
+      "appliesTo": "interlinear ruby annotation containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "separate",
+          "prose": "Each ruby annotation box is rendered within the same column(s) as its corresponding base box(es), i.e. without overlapping adjacent bases on either side. This style is called “mono ruby” in [JLREQ]. ruby-merge: separate with center alignment For example, the following two lines render the same: <p><ruby>無<rt>む</ruby><ruby>常<rt>じょう</ruby> <p><ruby style=\"ruby-merge:separate\"><rb>無<rb>常<rt>む<rt>じょう</ruby>",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-merge-separate",
+          "type": "value",
+          "value": "separate"
+        },
+        {
+          "name": "merge",
+          "prose": "All ruby annotation boxes within the same ruby segment on the same line are concatenated as inline boxes within their annotation container, and laid out in a single anonymous ruby annotation box spanning all their associated ruby base boxes. When laid out on a single line, this style renders similar to “group ruby” in [JLREQ]. However, when it breaks across lines, ruby annotations are kept together with their respective ruby bases. ruby-merge: merge with center alignment The following two lines render the same if both characters fit on one line: <p><ruby>無常<rt>むじょう</ruby> <p><ruby style=\"ruby-merge:merge\"><rb>無<rb>常<rt>む<rt>じょう</ruby> However, the second one renders the same as ruby-position: separate when the two bases are split across lines.",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-merge-merge",
+          "type": "value",
+          "value": "merge"
+        },
+        {
+          "name": "auto",
+          "prose": "The user agent may use any algorithm to determine how each ruby annotation box is rendered to its corresponding base box, with the intention that if all annotations fit over their respective bases, the result is identical to separate, but if some annotations are wider than their bases the space is shared in some way to avoid imposing space between bases. ruby-merge: auto with center alignment",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-merge-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "ruby-merge",
+        "rubyMerge"
+      ]
+    },
+    {
+      "name": "ruby-align",
+      "href": "https://drafts.csswg.org/css-ruby-1/#propdef-ruby-align",
+      "value": "start | center | space-between | space-around",
+      "initial": "space-around",
+      "appliesTo": "ruby bases, ruby annotations, ruby base containers, ruby annotation containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "start",
+          "prose": "The ruby content is aligned with the start edge of its box. start ruby distribution \"Katatsuki ruby\" (肩付きルビ) is close to, but not quite the same as, this start value. In particular, its behavior when overhanging its base can differ from start alignment depending on surrounding context, see JLREQ. Also, it’s only ever used in vertical writing, and the JLTF considers it not particularly important, so it may not be worth the effort to make this value smart enough to deal with katatsuki ruby. If start is needed for some other purpose, we should keep it. Otherwise, maybe just drop it?",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-align-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "center",
+          "prose": "The ruby content is centered within its box. center ruby distribution",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-align-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "space-between",
+          "prose": "The ruby content expands as defined for normal text justification (as defined by text-justify), except that if there are no justification opportunities the content is centered. space-between ruby distribution",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-align-space-between",
+          "type": "value",
+          "value": "space-between"
+        },
+        {
+          "name": "space-around",
+          "prose": "As for space-between except that there exists an extra justification opportunities whose space is distributed half before and half after the ruby content. space-around ruby distribution",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-align-space-around",
+          "type": "value",
+          "value": "space-around"
+        }
+      ],
+      "styleDeclaration": [
+        "ruby-align",
+        "rubyAlign"
+      ]
+    },
+    {
+      "name": "ruby-overhang",
+      "href": "https://drafts.csswg.org/css-ruby-1/#propdef-ruby-overhang",
+      "value": "auto | spaces",
+      "initial": "auto",
+      "appliesTo": "ruby annotation containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "When a ruby annotation container is longer than its corresponding ruby base container, the ruby annotation container may partially overlap adjacent boxes. Whether, how much, and under which conditions to overhang are determined by the UA.",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-overhang-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "spaces",
+          "prose": "When a ruby annotation container is longer than its corresponding ruby base container, the ruby annotation container must not overlap adjacent boxes, except over adjacent spaces. For this purpose, spaces are any of the following: preserved white space no-break space (U+00A0) other space separators half of the advance measure of fullwidth opening punctuation, on the inline-start side of the character, unless it has been trimmed by text-spacing-trim half of the advance measure of fullwidth closing punctuation, on the inline-end side of the character, unless it has been trimmed by text-spacing-trim one quarter of the advance measure of fullwidth middle dot punctuation, on both the inline-start and inline-end sides of the character, unless it has been trimmed by text-spacing-trim",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-overhang-spaces",
+          "type": "value",
+          "value": "spaces"
+        },
+        {
+          "name": "none",
+          "prose": "Additionally, for compatibility reasons, user agents must support an additional value of none for the ruby-overhang property, as a legacy value alias of spaces.",
+          "href": "https://drafts.csswg.org/css-ruby-1/#valdef-ruby-overhang-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "ruby-overhang",
+        "rubyOverhang"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "ruby",
+      "prose": "Specifies that an element generates a ruby container box. (Corresponds to HTML/XHTML <ruby> elements.)",
+      "href": "https://drafts.csswg.org/css-ruby-1/#valdef-display-ruby",
+      "type": "value",
+      "value": "ruby",
+      "for": "display"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "ruby-base",
+      "prose": "Specifies that an element generates a ruby base box. (Corresponds to HTML/XHTML <rb> elements.)",
+      "href": "https://drafts.csswg.org/css-ruby-1/#valdef-display-ruby-base",
+      "type": "value",
+      "value": "ruby-base",
+      "for": "display"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "ruby-text",
+      "prose": "Specifies that an element generates a ruby annotation box. (Corresponds to HTML/XHTML <rt> elements.)",
+      "href": "https://drafts.csswg.org/css-ruby-1/#valdef-display-ruby-text",
+      "type": "value",
+      "value": "ruby-text",
+      "for": "display"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "ruby-base-container",
+      "prose": "Specifies that an element generates a ruby base container box. (Corresponds to XHTML <rbc> elements; generated as an anonymous box in HTML.)",
+      "href": "https://drafts.csswg.org/css-ruby-1/#valdef-display-ruby-base-container",
+      "type": "value",
+      "value": "ruby-base-container",
+      "for": "display"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "ruby-text-container",
+      "prose": "Specifies that an element generates a ruby annotation container box. (Corresponds to HTML/XHTML <rtc> elements.)",
+      "href": "https://drafts.csswg.org/css-ruby-1/#valdef-display-ruby-text-container",
+      "type": "value",
+      "value": "ruby-text-container",
+      "for": "display"
+    }
+  ]
+}

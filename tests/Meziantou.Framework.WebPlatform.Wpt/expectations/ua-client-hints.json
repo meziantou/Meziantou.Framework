@@ -1,0 +1,14 @@
+{
+  "ua-client-hints/idlharness.https.any.js": {
+    "total": 39
+  },
+  "ua-client-hints/idlharness.https.any.js#dedicatedworker": {
+    "total": 39
+  },
+  "ua-client-hints/useragentdata.https.any.js": {
+    "total": 8
+  },
+  "ua-client-hints/useragentdata.https.any.js#dedicatedworker": {
+    "total": 8
+  }
+}

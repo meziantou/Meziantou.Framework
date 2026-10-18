@@ -1,0 +1,2151 @@
+{
+  "css/css-fonts/alternates-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/animations/font-palette-animation-not-specified-endpoints.html": {
+    "total": 2,
+    "failures": {
+      "Verify font-palette is animated when `to` keyframe is not specified": "FAIL"
+    }
+  },
+  "css/css-fonts/animations/font-palette-interpolation.html": {
+    "total": 114,
+    "failures": {
+      "An interpolation to inherit updates correctly on a parent style change.": "FAIL",
+      "Test additive animations": "FAIL"
+    }
+  },
+  "css/css-fonts/animations/font-size-adjust-composition.html": {
+    "total": 500
+  },
+  "css/css-fonts/animations/font-size-adjust-interpolation.html": {
+    "total": 406
+  },
+  "css/css-fonts/animations/font-size-composition.html": {
+    "total": 70
+  },
+  "css/css-fonts/animations/font-size-interpolation-001.html": {
+    "total": 140
+  },
+  "css/css-fonts/animations/font-size-interpolation-002.html": {
+    "total": 28
+  },
+  "css/css-fonts/animations/font-size-interpolation-003.html": {
+    "total": 28
+  },
+  "css/css-fonts/animations/font-stretch-interpolation.html": {
+    "total": 185
+  },
+  "css/css-fonts/animations/font-style-interpolation.html": {
+    "total": 129
+  },
+  "css/css-fonts/animations/font-variation-settings-composition.html": {
+    "total": 60
+  },
+  "css/css-fonts/animations/font-variation-settings-interpolation.html": {
+    "total": 358,
+    "failures": {
+      "CSS Animations: property <font-variation-settings> from ['aaaa' 30, 'bbbb' 20] to ['aaaa' 20, 'bbbb' 30] at (3.40282e+38) should be ['aaaa' -3.40282e+38, 'bbbb' 3.40282e+38]": "FAIL",
+      "CSS Transitions with transition: all: property <font-variation-settings> from ['aaaa' 30, 'bbbb' 20] to ['aaaa' 20, 'bbbb' 30] at (3.40282e+38) should be ['aaaa' -3.40282e+38, 'bbbb' 3.40282e+38]": "FAIL",
+      "CSS Transitions: property <font-variation-settings> from ['aaaa' 30, 'bbbb' 20] to ['aaaa' 20, 'bbbb' 30] at (3.40282e+38) should be ['aaaa' -3.40282e+38, 'bbbb' 3.40282e+38]": "FAIL",
+      "Web Animations: property <font-variation-settings> from ['aaaa' 30, 'bbbb' 20] to ['aaaa' 20, 'bbbb' 30] at (3.40282e+38) should be ['aaaa' -3.40282e+38, 'bbbb' 3.40282e+38]": "FAIL"
+    }
+  },
+  "css/css-fonts/animations/font-weight-composition.html": {
+    "total": 20,
+    "failures": {
+      "Compositing CSS Animations: property <font-weight> underlying [200] from add [600] to replace [500] at (-0.3) should be [889.75]": "FAIL",
+      "Compositing Web Animations: property <font-weight> underlying [200] from add [600] to replace [500] at (-0.3) should be [889.75]": "FAIL"
+    }
+  },
+  "css/css-fonts/animations/multiple-elements-font-palette-animation.html": {
+    "total": 2
+  },
+  "css/css-fonts/animations/system-fonts.html": {
+    "total": 588
+  },
+  "css/css-fonts/ascent-descent-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/calc-in-font-variation-settings.html": {
+    "total": 2,
+    "failures": {
+      "calc() specified value serialization in font-variation-settings": "FAIL"
+    }
+  },
+  "css/css-fonts/cjk-kerning.html": {
+    "total": 9
+  },
+  "css/css-fonts/crash-font-face-invalid-descriptor.html": {
+    "total": 1
+  },
+  "css/css-fonts/crash-large-grapheme-cluster.html": {
+    "total": 1
+  },
+  "css/css-fonts/discrete-no-interpolation.html": {
+    "total": 546
+  },
+  "css/css-fonts/downloadable-font-in-iframe-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/downloadable-font-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/downloadable-font-scoped-to-document.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/fallback-remote-to-data-url.html": {
+    "total": 1
+  },
+  "css/css-fonts/fallback-url-to-local.html": {
+    "total": 1,
+    "failures": {
+      "We should use the local font to render the page when the primary remote font is loading": "FAIL"
+    }
+  },
+  "css/css-fonts/first-available-font-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/first-available-font-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-colorization.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-default-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-default-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-default-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-default-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-display/font-display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-display/font-display-failure-fallback.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-display/font-display-feature-policy-02.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-display/font-display-preload.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-display/font-display.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-face-local-not-family.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-range-order.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-face-sign-function.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-stretch-auto-static.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-stretch-auto-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-stretch-default-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-style-auto-static.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-style-auto-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-style-default-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-style-normal.html": {
+    "total": 4
+  },
+  "css/css-fonts/font-face-unicode-range-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-unicode-range-nbsp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-weight-auto-static.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-weight-auto-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-weight-default-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-comma.html": {
+    "total": 5
+  },
+  "css/css-fonts/font-family-name-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-009.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-010.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-family-name-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-012.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-013.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-014.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-015.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-016.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-017.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-018.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-019.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-020.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-021.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-022.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-023.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-024.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-name-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-family-src-quoted.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-feature-resolution-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-resolution-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-settings-descriptor-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-settings-descriptor-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-settings-descriptor-binary.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-settings-serialization-001.html": {
+    "total": 2
+  },
+  "css/css-fonts/font-feature-settings-tibetan.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-feature-values-map-live.html": {
+    "total": 2
+  },
+  "css/css-fonts/font-feature-values-sameobject.tentative.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-features-across-space-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-features-across-space-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-features-across-space-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-kerning-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-kerning-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-kerning-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-kerning-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-kerning-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-language-override-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-language-override-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-language-override-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-19.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-20.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-21.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-22.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-23.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-23b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-24.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-25.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-26.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-27.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-28.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-29.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-30.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-31.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-32.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-33.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-34.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-35.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-36.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-9.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-add-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-add.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-empty-font-family.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-modify-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-modify.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-non-ident-font-family.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-remove-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-remove.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-values-relative-colors.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-vs-shorthand.html": {
+    "total": 4
+  },
+  "css/css-fonts/font-palette.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-shorthand-serialization-001.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-shorthand-serialization-font-stretch.html": {
+    "total": 4
+  },
+  "css/css-fonts/font-shorthand-serialization-prevention.html": {
+    "total": 216
+  },
+  "css/css-fonts/font-shorthand-subproperties-reset.html": {
+    "total": 13
+  },
+  "css/css-fonts/font-size-adjust-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-ic-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-interpolation-math-functions.html": {
+    "total": 48
+  },
+  "css/css-fonts/font-size-adjust-metrics-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-order-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-reload.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-text-orientation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-units-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-zero-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-adjust-zero-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-computed-keyword.html": {
+    "total": 16
+  },
+  "css/css-fonts/font-size-computed-no-child.html": {
+    "total": 3
+  },
+  "css/css-fonts/font-size-computed.html": {
+    "total": 25
+  },
+  "css/css-fonts/font-size-monospace-adjust.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-relative-across-calc-ff-bug-001.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-size-sign-function.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-size-xxx-large.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-zero-1-ref.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-zero-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-zero-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-zero-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-size-zero-ligatures.html": {
+    "total": 4
+  },
+  "css/css-fonts/font-stretch-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-stretch-interpolation-math-functions.html": {
+    "total": 48
+  },
+  "css/css-fonts/font-style-angle.html": {
+    "total": 1,
+    "failures": {
+      "font-style angle's unit type must be considered": "FAIL"
+    }
+  },
+  "css/css-fonts/font-style-sign-function.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-synthesis-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-small-caps-first-letter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-small-caps-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-small-caps-not-applied.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-small-caps.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-style-binary.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-style-first-letter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-style-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-style-oblique-only.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-style.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-weight-binary.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-weight-first-letter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-weight-first-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-weight-webfont-bold.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-synthesis-weight.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-19.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-layers.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-alternates-parsing.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-variant-caps-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps-invalidation-container-sizing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-caps.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-east-asian.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-emoji-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-emoji-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-emoji-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-variant-emoji-1.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-variant-emoji-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-ligatures-11.optional.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-variant-ligatures.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-numeric.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variant-position.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/font-variation-settings-calc.html": {
+    "total": 8
+  },
+  "css/css-fonts/font-variation-settings-descriptor-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variation-settings-descriptor-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variation-settings-descriptor-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variation-settings-descriptor-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-variation-settings-serialization-001.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-variation-settings-serialization-002.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-weight-bolder-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-weight-lighter-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-weight-normal-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-weight-normal-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-weight-sign-function.html": {
+    "total": 3
+  },
+  "css/css-fonts/font_feature_values_map_iteration.html": {
+    "total": 1
+  },
+  "css/css-fonts/format-specifiers-variations.html": {
+    "total": 48
+  },
+  "css/css-fonts/generic-family-keywords-001.html": {
+    "total": 15
+  },
+  "css/css-fonts/generic-family-keywords-002.html": {
+    "total": 22,
+    "failures": {
+      "font-family: -webkit-generic(fangsong) treated as <font-family>, not <generic-name>": "FAIL",
+      "font-family: -webkit-generic(kai) treated as <font-family>, not <generic-name>": "FAIL",
+      "font-family: -webkit-generic(khmer-mul) treated as <font-family>, not <generic-name>": "FAIL",
+      "font-family: -webkit-generic(nastaliq) treated as <font-family>, not <generic-name>": "FAIL"
+    }
+  },
+  "css/css-fonts/generic-family-keywords-003.html": {
+    "total": 15
+  },
+  "css/css-fonts/getComputedStyle-fontFamily.html": {
+    "total": 2
+  },
+  "css/css-fonts/hiragana-katakana-kerning.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/idlharness.html": {
+    "total": 97
+  },
+  "css/css-fonts/inheritance.html": {
+    "total": 39
+  },
+  "css/css-fonts/italic-oblique-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/lang-attribute-affects-rendering.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/line-gap-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/matching/fixed-stretch-style-over-weight.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/matching/font-unicode-PUA-primary-font.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/matching/font-unicode-PUA.html": {
+    "total": 3
+  },
+  "css/css-fonts/matching/font-unicode-presented-as-emoji-outline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/matching/font-weight-search-direction.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/matching/range-descriptor-reversed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/matching/stretch-distance-over-weight-distance.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/matching/style-ranges-over-weight-direction.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/math-script-level-and-math-style/font-size-math-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/font-size-math-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-001.tentative.html": {
+    "total": 7
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-002.tentative.html": {
+    "total": 6
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-004.tentative.html": {
+    "total": 4
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/math-script-level-and-math-style/math-style-001.tentative.html": {
+    "total": 3
+  },
+  "css/css-fonts/metrics-override-normal-keyword.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/mvs-shaping.html": {
+    "total": 5
+  },
+  "css/css-fonts/oblique-last-resort-weight-selection.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/palette-values-rule-add-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/palette-values-rule-add.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/palette-values-rule-delete-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/palette-values-rule-delete.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/parsing/font-computed.html": {
+    "total": 315
+  },
+  "css/css-fonts/parsing/font-face-metric-overrides.html": {
+    "total": 21
+  },
+  "css/css-fonts/parsing/font-face-size-adjust.html": {
+    "total": 6
+  },
+  "css/css-fonts/parsing/font-face-src-format.html": {
+    "total": 35
+  },
+  "css/css-fonts/parsing/font-face-src-list.html": {
+    "total": 17
+  },
+  "css/css-fonts/parsing/font-face-src-local.html": {
+    "total": 18
+  },
+  "css/css-fonts/parsing/font-face-src-tech.html": {
+    "total": 39
+  },
+  "css/css-fonts/parsing/font-face-width.html": {
+    "total": 19
+  },
+  "css/css-fonts/parsing/font-family-computed.html": {
+    "total": 10
+  },
+  "css/css-fonts/parsing/font-family-invalid.html": {
+    "total": 14
+  },
+  "css/css-fonts/parsing/font-family-valid.html": {
+    "total": 12
+  },
+  "css/css-fonts/parsing/font-feature-settings-computed.html": {
+    "total": 10
+  },
+  "css/css-fonts/parsing/font-feature-settings-invalid.html": {
+    "total": 5
+  },
+  "css/css-fonts/parsing/font-feature-settings-valid.html": {
+    "total": 10
+  },
+  "css/css-fonts/parsing/font-invalid.html": {
+    "total": 16
+  },
+  "css/css-fonts/parsing/font-kerning-computed.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-kerning-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-kerning-valid.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-language-override-computed.html": {
+    "total": 5
+  },
+  "css/css-fonts/parsing/font-language-override-invalid.html": {
+    "total": 6
+  },
+  "css/css-fonts/parsing/font-language-override-valid.html": {
+    "total": 9
+  },
+  "css/css-fonts/parsing/font-optical-sizing-computed.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-optical-sizing-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-optical-sizing-valid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-palette-computed.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-palette-invalid.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-palette-valid.html": {
+    "total": 5
+  },
+  "css/css-fonts/parsing/font-palette-values-invalid.html": {
+    "total": 27
+  },
+  "css/css-fonts/parsing/font-palette-values-valid.html": {
+    "total": 36
+  },
+  "css/css-fonts/parsing/font-shorthand-variant.html": {
+    "total": 1
+  },
+  "css/css-fonts/parsing/font-size-adjust-computed.html": {
+    "total": 20
+  },
+  "css/css-fonts/parsing/font-size-adjust-invalid.html": {
+    "total": 57
+  },
+  "css/css-fonts/parsing/font-size-adjust-valid.html": {
+    "total": 19
+  },
+  "css/css-fonts/parsing/font-size-computed.html": {
+    "total": 21
+  },
+  "css/css-fonts/parsing/font-size-invalid.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-size-valid.html": {
+    "total": 13
+  },
+  "css/css-fonts/parsing/font-stretch-alias.html": {
+    "total": 1
+  },
+  "css/css-fonts/parsing/font-style-computed.html": {
+    "total": 17
+  },
+  "css/css-fonts/parsing/font-style-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-style-valid.html": {
+    "total": 17
+  },
+  "css/css-fonts/parsing/font-synthesis-computed.html": {
+    "total": 21
+  },
+  "css/css-fonts/parsing/font-synthesis-invalid.html": {
+    "total": 12
+  },
+  "css/css-fonts/parsing/font-synthesis-position-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-synthesis-position-valid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-synthesis-small-caps-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-synthesis-small-caps-valid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-synthesis-style-invalid.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-synthesis-style-valid.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-synthesis-valid.html": {
+    "total": 23
+  },
+  "css/css-fonts/parsing/font-synthesis-weight-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-synthesis-weight-valid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-valid.html": {
+    "total": 315
+  },
+  "css/css-fonts/parsing/font-variant-alternates-invalid.html": {
+    "total": 15
+  },
+  "css/css-fonts/parsing/font-variant-alternates-valid.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-variant-caps-computed.html": {
+    "total": 7
+  },
+  "css/css-fonts/parsing/font-variant-caps-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-variant-caps-valid.html": {
+    "total": 7
+  },
+  "css/css-fonts/parsing/font-variant-east-asian-computed.html": {
+    "total": 12
+  },
+  "css/css-fonts/parsing/font-variant-east-asian-invalid.html": {
+    "total": 9
+  },
+  "css/css-fonts/parsing/font-variant-east-asian-valid.html": {
+    "total": 12
+  },
+  "css/css-fonts/parsing/font-variant-emoji-computed.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-variant-emoji-invalid.html": {
+    "total": 7
+  },
+  "css/css-fonts/parsing/font-variant-emoji-valid.html": {
+    "total": 4
+  },
+  "css/css-fonts/parsing/font-variant-invalid.html": {
+    "total": 21
+  },
+  "css/css-fonts/parsing/font-variant-ligatures-computed.html": {
+    "total": 10
+  },
+  "css/css-fonts/parsing/font-variant-ligatures-invalid.html": {
+    "total": 6
+  },
+  "css/css-fonts/parsing/font-variant-ligatures-valid.html": {
+    "total": 10
+  },
+  "css/css-fonts/parsing/font-variant-numeric-computed.html": {
+    "total": 11
+  },
+  "css/css-fonts/parsing/font-variant-numeric-invalid.html": {
+    "total": 9
+  },
+  "css/css-fonts/parsing/font-variant-numeric-valid.html": {
+    "total": 11
+  },
+  "css/css-fonts/parsing/font-variant-position-computed.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-variant-position-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-variant-position-valid.html": {
+    "total": 3
+  },
+  "css/css-fonts/parsing/font-variant-serialization.html": {
+    "total": 1,
+    "failures": {
+      "checking serialized value of font-variant": "FAIL"
+    }
+  },
+  "css/css-fonts/parsing/font-variant-valid.html": {
+    "total": 46
+  },
+  "css/css-fonts/parsing/font-variation-settings-computed.html": {
+    "total": 8
+  },
+  "css/css-fonts/parsing/font-variation-settings-invalid.html": {
+    "total": 18
+  },
+  "css/css-fonts/parsing/font-variation-settings-valid.html": {
+    "total": 7
+  },
+  "css/css-fonts/parsing/font-weight-computed.html": {
+    "total": 58
+  },
+  "css/css-fonts/parsing/font-weight-invalid.html": {
+    "total": 2
+  },
+  "css/css-fonts/parsing/font-weight-valid.html": {
+    "total": 22
+  },
+  "css/css-fonts/parsing/font-width-computed.html": {
+    "total": 30
+  },
+  "css/css-fonts/parsing/font-width-invalid.html": {
+    "total": 8
+  },
+  "css/css-fonts/parsing/font-width-valid.html": {
+    "total": 30
+  },
+  "css/css-fonts/parsing/palette-mix-computed.html": {
+    "total": 71
+  },
+  "css/css-fonts/parsing/palette-mix-invalid.html": {
+    "total": 16
+  },
+  "css/css-fonts/parsing/palette-mix-valid.html": {
+    "total": 69
+  },
+  "css/css-fonts/quoted-generic-ignored.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rcap-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rch-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rem-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/remove-loaded-font-face-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rex-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/ric-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rlh-in-monospace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/rtl-glyph-extents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/separators.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/size-adjust-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/size-adjust-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/size-adjust-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/size-adjust-text-decoration.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/size-adjust-unicode-range-system-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/size-adjust.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/small-caps-letter-spacing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/small-caps-letter-spacing-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-11.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-12.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-13.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-14.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-15.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-16.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-19.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-20.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/standard-font-family-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-5.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-6.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-7.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-8.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family-9.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/standard-font-family.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/synthetic-bold-combining-mark-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/synthetic-bold-combining-mark-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/synthetic-bold-does-not-widen-advances.html": {
+    "total": 3
+  },
+  "css/css-fonts/synthetic-bold-out-of-capabilities-range.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/synthetic-bold-space-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/synthetic-bold-zero-advance-glyph.html": {
+    "total": 1
+  },
+  "css/css-fonts/synthetic-oblique-out-of-capabilities-range.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-fonts-serialization.tentative.html": {
+    "total": 6
+  },
+  "css/css-fonts/system-ui-ar.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-ui-ja-vs-zh.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/system-ui-ja.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-ui-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-ui-ur-vs-ar.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-fonts/system-ui-ur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-ui-zh.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/system-ui.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/test-synthetic-bold.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/test-synthetic-italic-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/test-synthetic-italic-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/test-synthetic-italic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/test_datafont_same_origin.html": {
+    "total": 1
+  },
+  "css/css-fonts/test_font_family_parsing.html": {
+    "total": 2232,
+    "failures": {
+      "font-family: default simple": "FAIL",
+      "font-family: default simple (setter)": "FAIL",
+      "font-family: inherit simple": "FAIL",
+      "font-family: inherit simple (setter)": "FAIL",
+      "font-family: initial simple": "FAIL",
+      "font-family: initial simple (setter)": "FAIL",
+      "font-family: simple default": "FAIL",
+      "font-family: simple default (setter)": "FAIL",
+      "font-family: simple inherit": "FAIL",
+      "font-family: simple inherit (setter)": "FAIL",
+      "font-family: simple initial": "FAIL",
+      "font-family: simple initial (setter)": "FAIL",
+      "font-family: simple unset": "FAIL",
+      "font-family: simple unset (setter)": "FAIL",
+      "font-family: simple, bongo default": "FAIL",
+      "font-family: simple, bongo default (setter)": "FAIL",
+      "font-family: simple, bongo inherit": "FAIL",
+      "font-family: simple, bongo inherit (setter)": "FAIL",
+      "font-family: simple, bongo initial": "FAIL",
+      "font-family: simple, bongo initial (setter)": "FAIL",
+      "font-family: simple, bongo unset": "FAIL",
+      "font-family: simple, bongo unset (setter)": "FAIL",
+      "font-family: simple, default bongo": "FAIL",
+      "font-family: simple, default bongo (setter)": "FAIL",
+      "font-family: simple, inherit bongo": "FAIL",
+      "font-family: simple, inherit bongo (setter)": "FAIL",
+      "font-family: simple, initial bongo": "FAIL",
+      "font-family: simple, initial bongo (setter)": "FAIL",
+      "font-family: simple, unset bongo": "FAIL",
+      "font-family: simple, unset bongo (setter)": "FAIL",
+      "font-family: unset simple": "FAIL",
+      "font-family: unset simple (setter)": "FAIL",
+      "font: 16px default simple": "FAIL",
+      "font: 16px default simple (setter)": "FAIL",
+      "font: 16px inherit simple": "FAIL",
+      "font: 16px inherit simple (setter)": "FAIL",
+      "font: 16px initial simple": "FAIL",
+      "font: 16px initial simple (setter)": "FAIL",
+      "font: 16px simple default": "FAIL",
+      "font: 16px simple default (setter)": "FAIL",
+      "font: 16px simple inherit": "FAIL",
+      "font: 16px simple inherit (setter)": "FAIL",
+      "font: 16px simple initial": "FAIL",
+      "font: 16px simple initial (setter)": "FAIL",
+      "font: 16px simple unset": "FAIL",
+      "font: 16px simple unset (setter)": "FAIL",
+      "font: 16px simple, bongo default": "FAIL",
+      "font: 16px simple, bongo default (setter)": "FAIL",
+      "font: 16px simple, bongo inherit": "FAIL",
+      "font: 16px simple, bongo inherit (setter)": "FAIL",
+      "font: 16px simple, bongo initial": "FAIL",
+      "font: 16px simple, bongo initial (setter)": "FAIL",
+      "font: 16px simple, bongo unset": "FAIL",
+      "font: 16px simple, bongo unset (setter)": "FAIL",
+      "font: 16px simple, default bongo": "FAIL",
+      "font: 16px simple, default bongo (setter)": "FAIL",
+      "font: 16px simple, inherit bongo": "FAIL",
+      "font: 16px simple, inherit bongo (setter)": "FAIL",
+      "font: 16px simple, initial bongo": "FAIL",
+      "font: 16px simple, initial bongo (setter)": "FAIL",
+      "font: 16px simple, unset bongo": "FAIL",
+      "font: 16px simple, unset bongo (setter)": "FAIL",
+      "font: 16px unset simple": "FAIL",
+      "font: 16px unset simple (setter)": "FAIL",
+      "font: 35% default simple": "FAIL",
+      "font: 35% default simple (setter)": "FAIL",
+      "font: 35% inherit simple": "FAIL",
+      "font: 35% inherit simple (setter)": "FAIL",
+      "font: 35% initial simple": "FAIL",
+      "font: 35% initial simple (setter)": "FAIL",
+      "font: 35% simple default": "FAIL",
+      "font: 35% simple default (setter)": "FAIL",
+      "font: 35% simple inherit": "FAIL",
+      "font: 35% simple inherit (setter)": "FAIL",
+      "font: 35% simple initial": "FAIL",
+      "font: 35% simple initial (setter)": "FAIL",
+      "font: 35% simple unset": "FAIL",
+      "font: 35% simple unset (setter)": "FAIL",
+      "font: 35% simple, bongo default": "FAIL",
+      "font: 35% simple, bongo default (setter)": "FAIL",
+      "font: 35% simple, bongo inherit": "FAIL",
+      "font: 35% simple, bongo inherit (setter)": "FAIL",
+      "font: 35% simple, bongo initial": "FAIL",
+      "font: 35% simple, bongo initial (setter)": "FAIL",
+      "font: 35% simple, bongo unset": "FAIL",
+      "font: 35% simple, bongo unset (setter)": "FAIL",
+      "font: 35% simple, default bongo": "FAIL",
+      "font: 35% simple, default bongo (setter)": "FAIL",
+      "font: 35% simple, inherit bongo": "FAIL",
+      "font: 35% simple, inherit bongo (setter)": "FAIL",
+      "font: 35% simple, initial bongo": "FAIL",
+      "font: 35% simple, initial bongo (setter)": "FAIL",
+      "font: 35% simple, unset bongo": "FAIL",
+      "font: 35% simple, unset bongo (setter)": "FAIL",
+      "font: 35% unset simple": "FAIL",
+      "font: 35% unset simple (setter)": "FAIL",
+      "font: 400 normal 16px default simple": "FAIL",
+      "font: 400 normal 16px default simple (setter)": "FAIL",
+      "font: 400 normal 16px inherit simple": "FAIL",
+      "font: 400 normal 16px inherit simple (setter)": "FAIL",
+      "font: 400 normal 16px initial simple": "FAIL",
+      "font: 400 normal 16px initial simple (setter)": "FAIL",
+      "font: 400 normal 16px simple default": "FAIL",
+      "font: 400 normal 16px simple default (setter)": "FAIL",
+      "font: 400 normal 16px simple inherit": "FAIL",
+      "font: 400 normal 16px simple inherit (setter)": "FAIL",
+      "font: 400 normal 16px simple initial": "FAIL",
+      "font: 400 normal 16px simple initial (setter)": "FAIL",
+      "font: 400 normal 16px simple unset": "FAIL",
+      "font: 400 normal 16px simple unset (setter)": "FAIL",
+      "font: 400 normal 16px simple, bongo default": "FAIL",
+      "font: 400 normal 16px simple, bongo default (setter)": "FAIL",
+      "font: 400 normal 16px simple, bongo inherit": "FAIL",
+      "font: 400 normal 16px simple, bongo inherit (setter)": "FAIL",
+      "font: 400 normal 16px simple, bongo initial": "FAIL",
+      "font: 400 normal 16px simple, bongo initial (setter)": "FAIL",
+      "font: 400 normal 16px simple, bongo unset": "FAIL",
+      "font: 400 normal 16px simple, bongo unset (setter)": "FAIL",
+      "font: 400 normal 16px simple, default bongo": "FAIL",
+      "font: 400 normal 16px simple, default bongo (setter)": "FAIL",
+      "font: 400 normal 16px simple, inherit bongo": "FAIL",
+      "font: 400 normal 16px simple, inherit bongo (setter)": "FAIL",
+      "font: 400 normal 16px simple, initial bongo": "FAIL",
+      "font: 400 normal 16px simple, initial bongo (setter)": "FAIL",
+      "font: 400 normal 16px simple, unset bongo": "FAIL",
+      "font: 400 normal 16px simple, unset bongo (setter)": "FAIL",
+      "font: 400 normal 16px unset simple": "FAIL",
+      "font: 400 normal 16px unset simple (setter)": "FAIL",
+      "font: 7832.3% default simple": "FAIL",
+      "font: 7832.3% default simple (setter)": "FAIL",
+      "font: 7832.3% inherit simple": "FAIL",
+      "font: 7832.3% inherit simple (setter)": "FAIL",
+      "font: 7832.3% initial simple": "FAIL",
+      "font: 7832.3% initial simple (setter)": "FAIL",
+      "font: 7832.3% simple default": "FAIL",
+      "font: 7832.3% simple default (setter)": "FAIL",
+      "font: 7832.3% simple inherit": "FAIL",
+      "font: 7832.3% simple inherit (setter)": "FAIL",
+      "font: 7832.3% simple initial": "FAIL",
+      "font: 7832.3% simple initial (setter)": "FAIL",
+      "font: 7832.3% simple unset": "FAIL",
+      "font: 7832.3% simple unset (setter)": "FAIL",
+      "font: 7832.3% simple, bongo default": "FAIL",
+      "font: 7832.3% simple, bongo default (setter)": "FAIL",
+      "font: 7832.3% simple, bongo inherit": "FAIL",
+      "font: 7832.3% simple, bongo inherit (setter)": "FAIL",
+      "font: 7832.3% simple, bongo initial": "FAIL",
+      "font: 7832.3% simple, bongo initial (setter)": "FAIL",
+      "font: 7832.3% simple, bongo unset": "FAIL",
+      "font: 7832.3% simple, bongo unset (setter)": "FAIL",
+      "font: 7832.3% simple, default bongo": "FAIL",
+      "font: 7832.3% simple, default bongo (setter)": "FAIL",
+      "font: 7832.3% simple, inherit bongo": "FAIL",
+      "font: 7832.3% simple, inherit bongo (setter)": "FAIL",
+      "font: 7832.3% simple, initial bongo": "FAIL",
+      "font: 7832.3% simple, initial bongo (setter)": "FAIL",
+      "font: 7832.3% simple, unset bongo": "FAIL",
+      "font: 7832.3% simple, unset bongo (setter)": "FAIL",
+      "font: 7832.3% unset simple": "FAIL",
+      "font: 7832.3% unset simple (setter)": "FAIL",
+      "font: 900em default simple": "FAIL",
+      "font: 900em default simple (setter)": "FAIL",
+      "font: 900em inherit simple": "FAIL",
+      "font: 900em inherit simple (setter)": "FAIL",
+      "font: 900em initial simple": "FAIL",
+      "font: 900em initial simple (setter)": "FAIL",
+      "font: 900em simple default": "FAIL",
+      "font: 900em simple default (setter)": "FAIL",
+      "font: 900em simple inherit": "FAIL",
+      "font: 900em simple inherit (setter)": "FAIL",
+      "font: 900em simple initial": "FAIL",
+      "font: 900em simple initial (setter)": "FAIL",
+      "font: 900em simple unset": "FAIL",
+      "font: 900em simple unset (setter)": "FAIL",
+      "font: 900em simple, bongo default": "FAIL",
+      "font: 900em simple, bongo default (setter)": "FAIL",
+      "font: 900em simple, bongo inherit": "FAIL",
+      "font: 900em simple, bongo inherit (setter)": "FAIL",
+      "font: 900em simple, bongo initial": "FAIL",
+      "font: 900em simple, bongo initial (setter)": "FAIL",
+      "font: 900em simple, bongo unset": "FAIL",
+      "font: 900em simple, bongo unset (setter)": "FAIL",
+      "font: 900em simple, default bongo": "FAIL",
+      "font: 900em simple, default bongo (setter)": "FAIL",
+      "font: 900em simple, inherit bongo": "FAIL",
+      "font: 900em simple, inherit bongo (setter)": "FAIL",
+      "font: 900em simple, initial bongo": "FAIL",
+      "font: 900em simple, initial bongo (setter)": "FAIL",
+      "font: 900em simple, unset bongo": "FAIL",
+      "font: 900em simple, unset bongo (setter)": "FAIL",
+      "font: 900em unset simple": "FAIL",
+      "font: 900em unset simple (setter)": "FAIL",
+      "font: 900px default simple": "FAIL",
+      "font: 900px default simple (setter)": "FAIL",
+      "font: 900px inherit simple": "FAIL",
+      "font: 900px inherit simple (setter)": "FAIL",
+      "font: 900px initial simple": "FAIL",
+      "font: 900px initial simple (setter)": "FAIL",
+      "font: 900px simple default": "FAIL",
+      "font: 900px simple default (setter)": "FAIL",
+      "font: 900px simple inherit": "FAIL",
+      "font: 900px simple inherit (setter)": "FAIL",
+      "font: 900px simple initial": "FAIL",
+      "font: 900px simple initial (setter)": "FAIL",
+      "font: 900px simple unset": "FAIL",
+      "font: 900px simple unset (setter)": "FAIL",
+      "font: 900px simple, bongo default": "FAIL",
+      "font: 900px simple, bongo default (setter)": "FAIL",
+      "font: 900px simple, bongo inherit": "FAIL",
+      "font: 900px simple, bongo inherit (setter)": "FAIL",
+      "font: 900px simple, bongo initial": "FAIL",
+      "font: 900px simple, bongo initial (setter)": "FAIL",
+      "font: 900px simple, bongo unset": "FAIL",
+      "font: 900px simple, bongo unset (setter)": "FAIL",
+      "font: 900px simple, default bongo": "FAIL",
+      "font: 900px simple, default bongo (setter)": "FAIL",
+      "font: 900px simple, inherit bongo": "FAIL",
+      "font: 900px simple, inherit bongo (setter)": "FAIL",
+      "font: 900px simple, initial bongo": "FAIL",
+      "font: 900px simple, initial bongo (setter)": "FAIL",
+      "font: 900px simple, unset bongo": "FAIL",
+      "font: 900px simple, unset bongo (setter)": "FAIL",
+      "font: 900px unset simple": "FAIL",
+      "font: 900px unset simple (setter)": "FAIL",
+      "font: bolder oblique 16px default simple": "FAIL",
+      "font: bolder oblique 16px default simple (setter)": "FAIL",
+      "font: bolder oblique 16px inherit simple": "FAIL",
+      "font: bolder oblique 16px inherit simple (setter)": "FAIL",
+      "font: bolder oblique 16px initial simple": "FAIL",
+      "font: bolder oblique 16px initial simple (setter)": "FAIL",
+      "font: bolder oblique 16px simple default": "FAIL",
+      "font: bolder oblique 16px simple default (setter)": "FAIL",
+      "font: bolder oblique 16px simple inherit": "FAIL",
+      "font: bolder oblique 16px simple inherit (setter)": "FAIL",
+      "font: bolder oblique 16px simple initial": "FAIL",
+      "font: bolder oblique 16px simple initial (setter)": "FAIL",
+      "font: bolder oblique 16px simple unset": "FAIL",
+      "font: bolder oblique 16px simple unset (setter)": "FAIL",
+      "font: bolder oblique 16px simple, bongo default": "FAIL",
+      "font: bolder oblique 16px simple, bongo default (setter)": "FAIL",
+      "font: bolder oblique 16px simple, bongo inherit": "FAIL",
+      "font: bolder oblique 16px simple, bongo inherit (setter)": "FAIL",
+      "font: bolder oblique 16px simple, bongo initial": "FAIL",
+      "font: bolder oblique 16px simple, bongo initial (setter)": "FAIL",
+      "font: bolder oblique 16px simple, bongo unset": "FAIL",
+      "font: bolder oblique 16px simple, bongo unset (setter)": "FAIL",
+      "font: bolder oblique 16px simple, default bongo": "FAIL",
+      "font: bolder oblique 16px simple, default bongo (setter)": "FAIL",
+      "font: bolder oblique 16px simple, inherit bongo": "FAIL",
+      "font: bolder oblique 16px simple, inherit bongo (setter)": "FAIL",
+      "font: bolder oblique 16px simple, initial bongo": "FAIL",
+      "font: bolder oblique 16px simple, initial bongo (setter)": "FAIL",
+      "font: bolder oblique 16px simple, unset bongo": "FAIL",
+      "font: bolder oblique 16px simple, unset bongo (setter)": "FAIL",
+      "font: bolder oblique 16px unset simple": "FAIL",
+      "font: bolder oblique 16px unset simple (setter)": "FAIL",
+      "font: italic 16px default simple": "FAIL",
+      "font: italic 16px default simple (setter)": "FAIL",
+      "font: italic 16px inherit simple": "FAIL",
+      "font: italic 16px inherit simple (setter)": "FAIL",
+      "font: italic 16px initial simple": "FAIL",
+      "font: italic 16px initial simple (setter)": "FAIL",
+      "font: italic 16px simple default": "FAIL",
+      "font: italic 16px simple default (setter)": "FAIL",
+      "font: italic 16px simple inherit": "FAIL",
+      "font: italic 16px simple inherit (setter)": "FAIL",
+      "font: italic 16px simple initial": "FAIL",
+      "font: italic 16px simple initial (setter)": "FAIL",
+      "font: italic 16px simple unset": "FAIL",
+      "font: italic 16px simple unset (setter)": "FAIL",
+      "font: italic 16px simple, bongo default": "FAIL",
+      "font: italic 16px simple, bongo default (setter)": "FAIL",
+      "font: italic 16px simple, bongo inherit": "FAIL",
+      "font: italic 16px simple, bongo inherit (setter)": "FAIL",
+      "font: italic 16px simple, bongo initial": "FAIL",
+      "font: italic 16px simple, bongo initial (setter)": "FAIL",
+      "font: italic 16px simple, bongo unset": "FAIL",
+      "font: italic 16px simple, bongo unset (setter)": "FAIL",
+      "font: italic 16px simple, default bongo": "FAIL",
+      "font: italic 16px simple, default bongo (setter)": "FAIL",
+      "font: italic 16px simple, inherit bongo": "FAIL",
+      "font: italic 16px simple, inherit bongo (setter)": "FAIL",
+      "font: italic 16px simple, initial bongo": "FAIL",
+      "font: italic 16px simple, initial bongo (setter)": "FAIL",
+      "font: italic 16px simple, unset bongo": "FAIL",
+      "font: italic 16px simple, unset bongo (setter)": "FAIL",
+      "font: italic 16px unset simple": "FAIL",
+      "font: italic 16px unset simple (setter)": "FAIL",
+      "font: italic bold 16px default simple": "FAIL",
+      "font: italic bold 16px default simple (setter)": "FAIL",
+      "font: italic bold 16px inherit simple": "FAIL",
+      "font: italic bold 16px inherit simple (setter)": "FAIL",
+      "font: italic bold 16px initial simple": "FAIL",
+      "font: italic bold 16px initial simple (setter)": "FAIL",
+      "font: italic bold 16px simple default": "FAIL",
+      "font: italic bold 16px simple default (setter)": "FAIL",
+      "font: italic bold 16px simple inherit": "FAIL",
+      "font: italic bold 16px simple inherit (setter)": "FAIL",
+      "font: italic bold 16px simple initial": "FAIL",
+      "font: italic bold 16px simple initial (setter)": "FAIL",
+      "font: italic bold 16px simple unset": "FAIL",
+      "font: italic bold 16px simple unset (setter)": "FAIL",
+      "font: italic bold 16px simple, bongo default": "FAIL",
+      "font: italic bold 16px simple, bongo default (setter)": "FAIL",
+      "font: italic bold 16px simple, bongo inherit": "FAIL",
+      "font: italic bold 16px simple, bongo inherit (setter)": "FAIL",
+      "font: italic bold 16px simple, bongo initial": "FAIL",
+      "font: italic bold 16px simple, bongo initial (setter)": "FAIL",
+      "font: italic bold 16px simple, bongo unset": "FAIL",
+      "font: italic bold 16px simple, bongo unset (setter)": "FAIL",
+      "font: italic bold 16px simple, default bongo": "FAIL",
+      "font: italic bold 16px simple, default bongo (setter)": "FAIL",
+      "font: italic bold 16px simple, inherit bongo": "FAIL",
+      "font: italic bold 16px simple, inherit bongo (setter)": "FAIL",
+      "font: italic bold 16px simple, initial bongo": "FAIL",
+      "font: italic bold 16px simple, initial bongo (setter)": "FAIL",
+      "font: italic bold 16px simple, unset bongo": "FAIL",
+      "font: italic bold 16px simple, unset bongo (setter)": "FAIL",
+      "font: italic bold 16px unset simple": "FAIL",
+      "font: italic bold 16px unset simple (setter)": "FAIL",
+      "font: lighter larger default simple": "FAIL",
+      "font: lighter larger default simple (setter)": "FAIL",
+      "font: lighter larger inherit simple": "FAIL",
+      "font: lighter larger inherit simple (setter)": "FAIL",
+      "font: lighter larger initial simple": "FAIL",
+      "font: lighter larger initial simple (setter)": "FAIL",
+      "font: lighter larger simple default": "FAIL",
+      "font: lighter larger simple default (setter)": "FAIL",
+      "font: lighter larger simple inherit": "FAIL",
+      "font: lighter larger simple inherit (setter)": "FAIL",
+      "font: lighter larger simple initial": "FAIL",
+      "font: lighter larger simple initial (setter)": "FAIL",
+      "font: lighter larger simple unset": "FAIL",
+      "font: lighter larger simple unset (setter)": "FAIL",
+      "font: lighter larger simple, bongo default": "FAIL",
+      "font: lighter larger simple, bongo default (setter)": "FAIL",
+      "font: lighter larger simple, bongo inherit": "FAIL",
+      "font: lighter larger simple, bongo inherit (setter)": "FAIL",
+      "font: lighter larger simple, bongo initial": "FAIL",
+      "font: lighter larger simple, bongo initial (setter)": "FAIL",
+      "font: lighter larger simple, bongo unset": "FAIL",
+      "font: lighter larger simple, bongo unset (setter)": "FAIL",
+      "font: lighter larger simple, default bongo": "FAIL",
+      "font: lighter larger simple, default bongo (setter)": "FAIL",
+      "font: lighter larger simple, inherit bongo": "FAIL",
+      "font: lighter larger simple, inherit bongo (setter)": "FAIL",
+      "font: lighter larger simple, initial bongo": "FAIL",
+      "font: lighter larger simple, initial bongo (setter)": "FAIL",
+      "font: lighter larger simple, unset bongo": "FAIL",
+      "font: lighter larger simple, unset bongo (setter)": "FAIL",
+      "font: lighter larger unset simple": "FAIL",
+      "font: lighter larger unset simple (setter)": "FAIL",
+      "font: normal normal 16px default simple": "FAIL",
+      "font: normal normal 16px default simple (setter)": "FAIL",
+      "font: normal normal 16px inherit simple": "FAIL",
+      "font: normal normal 16px inherit simple (setter)": "FAIL",
+      "font: normal normal 16px initial simple": "FAIL",
+      "font: normal normal 16px initial simple (setter)": "FAIL",
+      "font: normal normal 16px simple default": "FAIL",
+      "font: normal normal 16px simple default (setter)": "FAIL",
+      "font: normal normal 16px simple inherit": "FAIL",
+      "font: normal normal 16px simple inherit (setter)": "FAIL",
+      "font: normal normal 16px simple initial": "FAIL",
+      "font: normal normal 16px simple initial (setter)": "FAIL",
+      "font: normal normal 16px simple unset": "FAIL",
+      "font: normal normal 16px simple unset (setter)": "FAIL",
+      "font: normal normal 16px simple, bongo default": "FAIL",
+      "font: normal normal 16px simple, bongo default (setter)": "FAIL",
+      "font: normal normal 16px simple, bongo inherit": "FAIL",
+      "font: normal normal 16px simple, bongo inherit (setter)": "FAIL",
+      "font: normal normal 16px simple, bongo initial": "FAIL",
+      "font: normal normal 16px simple, bongo initial (setter)": "FAIL",
+      "font: normal normal 16px simple, bongo unset": "FAIL",
+      "font: normal normal 16px simple, bongo unset (setter)": "FAIL",
+      "font: normal normal 16px simple, default bongo": "FAIL",
+      "font: normal normal 16px simple, default bongo (setter)": "FAIL",
+      "font: normal normal 16px simple, inherit bongo": "FAIL",
+      "font: normal normal 16px simple, inherit bongo (setter)": "FAIL",
+      "font: normal normal 16px simple, initial bongo": "FAIL",
+      "font: normal normal 16px simple, initial bongo (setter)": "FAIL",
+      "font: normal normal 16px simple, unset bongo": "FAIL",
+      "font: normal normal 16px simple, unset bongo (setter)": "FAIL",
+      "font: normal normal 16px unset simple": "FAIL",
+      "font: normal normal 16px unset simple (setter)": "FAIL",
+      "font: normal smaller default simple": "FAIL",
+      "font: normal smaller default simple (setter)": "FAIL",
+      "font: normal smaller inherit simple": "FAIL",
+      "font: normal smaller inherit simple (setter)": "FAIL",
+      "font: normal smaller initial simple": "FAIL",
+      "font: normal smaller initial simple (setter)": "FAIL",
+      "font: normal smaller simple default": "FAIL",
+      "font: normal smaller simple default (setter)": "FAIL",
+      "font: normal smaller simple inherit": "FAIL",
+      "font: normal smaller simple inherit (setter)": "FAIL",
+      "font: normal smaller simple initial": "FAIL",
+      "font: normal smaller simple initial (setter)": "FAIL",
+      "font: normal smaller simple unset": "FAIL",
+      "font: normal smaller simple unset (setter)": "FAIL",
+      "font: normal smaller simple, bongo default": "FAIL",
+      "font: normal smaller simple, bongo default (setter)": "FAIL",
+      "font: normal smaller simple, bongo inherit": "FAIL",
+      "font: normal smaller simple, bongo inherit (setter)": "FAIL",
+      "font: normal smaller simple, bongo initial": "FAIL",
+      "font: normal smaller simple, bongo initial (setter)": "FAIL",
+      "font: normal smaller simple, bongo unset": "FAIL",
+      "font: normal smaller simple, bongo unset (setter)": "FAIL",
+      "font: normal smaller simple, default bongo": "FAIL",
+      "font: normal smaller simple, default bongo (setter)": "FAIL",
+      "font: normal smaller simple, inherit bongo": "FAIL",
+      "font: normal smaller simple, inherit bongo (setter)": "FAIL",
+      "font: normal smaller simple, initial bongo": "FAIL",
+      "font: normal smaller simple, initial bongo (setter)": "FAIL",
+      "font: normal smaller simple, unset bongo": "FAIL",
+      "font: normal smaller simple, unset bongo (setter)": "FAIL",
+      "font: normal smaller unset simple": "FAIL",
+      "font: normal smaller unset simple (setter)": "FAIL",
+      "font: xx-large default simple": "FAIL",
+      "font: xx-large default simple (setter)": "FAIL",
+      "font: xx-large inherit simple": "FAIL",
+      "font: xx-large inherit simple (setter)": "FAIL",
+      "font: xx-large initial simple": "FAIL",
+      "font: xx-large initial simple (setter)": "FAIL",
+      "font: xx-large simple default": "FAIL",
+      "font: xx-large simple default (setter)": "FAIL",
+      "font: xx-large simple inherit": "FAIL",
+      "font: xx-large simple inherit (setter)": "FAIL",
+      "font: xx-large simple initial": "FAIL",
+      "font: xx-large simple initial (setter)": "FAIL",
+      "font: xx-large simple unset": "FAIL",
+      "font: xx-large simple unset (setter)": "FAIL",
+      "font: xx-large simple, bongo default": "FAIL",
+      "font: xx-large simple, bongo default (setter)": "FAIL",
+      "font: xx-large simple, bongo inherit": "FAIL",
+      "font: xx-large simple, bongo inherit (setter)": "FAIL",
+      "font: xx-large simple, bongo initial": "FAIL",
+      "font: xx-large simple, bongo initial (setter)": "FAIL",
+      "font: xx-large simple, bongo unset": "FAIL",
+      "font: xx-large simple, bongo unset (setter)": "FAIL",
+      "font: xx-large simple, default bongo": "FAIL",
+      "font: xx-large simple, default bongo (setter)": "FAIL",
+      "font: xx-large simple, inherit bongo": "FAIL",
+      "font: xx-large simple, inherit bongo (setter)": "FAIL",
+      "font: xx-large simple, initial bongo": "FAIL",
+      "font: xx-large simple, initial bongo (setter)": "FAIL",
+      "font: xx-large simple, unset bongo": "FAIL",
+      "font: xx-large simple, unset bongo (setter)": "FAIL",
+      "font: xx-large unset simple": "FAIL",
+      "font: xx-large unset simple (setter)": "FAIL"
+    }
+  },
+  "css/css-fonts/test_font_feature_values_parsing.html": {
+    "total": 302,
+    "failures": {
+      "basic parse tests - @font-feature-values bongo { @blah } @styleset { abc: 1 2 3; } }": "FAIL",
+      "serialization check - @font-feature-values bongo { @styleset { blah: 1; blah: 1; } }": "FAIL",
+      "serialization check - @font-feature-values bongo { @styleset { blah: 1; de-blah: 1; blah: 2; } }": "FAIL"
+    }
+  },
+  "css/css-fonts/variable-in-font-variation-settings.html": {
+    "total": 1
+  },
+  "css/css-fonts/variation-sequences.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/at-font-face-descriptors.html": {
+    "total": 88,
+    "failures": {
+      "font-style(valid): Simple range with former default angle for both bounds: oblique 20deg 20deg": "FAIL"
+    }
+  },
+  "css/css-fonts/variations/at-font-face-font-matching.html": {
+    "total": 107,
+    "failures": {
+      "Matching font-style: 'oblique 0deg' should prefer 'oblique -40deg -30deg' over 'italic'": "FAIL"
+    }
+  },
+  "css/css-fonts/variations/font-descriptor-range-reversed-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-descriptor-range-reversed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-opentype-collections.html": {
+    "total": 1
+  },
+  "css/css-fonts/variations/font-parse-numeric-stretch-style-weight.html": {
+    "total": 81
+  },
+  "css/css-fonts/variations/font-shorthand.html": {
+    "total": 22
+  },
+  "css/css-fonts/variations/font-slant-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-slant-2a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-slant-2b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-slant-2c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-slant-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-stretch.html": {
+    "total": 51,
+    "failures": {
+      "@getComputedStyle: 1e9% - huge legal percentage": "FAIL"
+    }
+  },
+  "css/css-fonts/variations/font-style-interpolation.html": {
+    "total": 2
+  },
+  "css/css-fonts/variations/font-style-parsing.html": {
+    "total": 43
+  },
+  "css/css-fonts/variations/font-variation-settings-inherit.html": {
+    "total": 3
+  },
+  "css/css-fonts/variations/font-weight-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-weight-interpolation.html": {
+    "total": 2
+  },
+  "css/css-fonts/variations/font-weight-lighter-bolder.html": {
+    "total": 22
+  },
+  "css/css-fonts/variations/font-weight-matching-installed-fonts.html": {
+    "total": 6
+  },
+  "css/css-fonts/variations/font-weight-matching.html": {
+    "total": 14
+  },
+  "css/css-fonts/variations/font-weight-metrics.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/font-weight-parsing.html": {
+    "total": 26
+  },
+  "css/css-fonts/variations/ital-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/slnt-backslant-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/slnt-variable.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-avar2-rvrn.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-avar2-warp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-box-font.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-gpos-avar2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-gpos-m2b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-gsub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-opsz-size-adjust.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/variations/variable-opsz.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/web-font-no-longer-accessible-when-stylesheet-removed.html": {
+    "reftest": "PASS"
+  }
+}

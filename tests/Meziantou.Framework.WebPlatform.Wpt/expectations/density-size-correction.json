@@ -1,0 +1,74 @@
+{
+  "density-size-correction/density-corrected-image-in-canvas.html": {
+    "harness": "ERROR",
+    "total": 5,
+    "failures": {
+      "resources/exif-resolution-none.jpg: webgl": "TIMEOUT",
+      "resources/exif-resolution-valid-hires.jpg: webgl": "NOTRUN",
+      "resources/exif-resolution-valid-lores.jpg: webgl": "NOTRUN"
+    }
+  },
+  "density-size-correction/density-corrected-image-svg-aspect-ratio-cross-origin.sub.html": {
+    "reftest": "FAIL"
+  },
+  "density-size-correction/density-corrected-image-svg-aspect-ratio.html": {
+    "reftest": "FAIL"
+  },
+  "density-size-correction/density-corrected-image-svg-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-image-svg.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-natural-size.html": {
+    "total": 1
+  },
+  "density-size-correction/density-corrected-size-bg-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-bg-with-radius.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-bg.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-img-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-img.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-pseudo-elements-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-size-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-various-elements-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/density-corrected-various-elements.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/image-set-001-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/image-set-001.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/image-set-002-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/image-set-002.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/image-set-003.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/srcset-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "density-size-correction/srcset.html": {
+    "reftest": "PASS"
+  }
+}

@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CA1515;CA1822;CA1001;CA2007;CA1303;CA5394</NoWarn>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <!-- The other parsers the benchmarks compare with -->
+    <PackageReference Include="AngleSharp" Version="1.8.3" />
+    <PackageReference Include="AngleSharp.Css" Version="1.1.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
+  </ItemGroup>
+</Project>

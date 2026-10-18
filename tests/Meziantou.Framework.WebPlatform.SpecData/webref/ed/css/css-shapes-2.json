@@ -1,0 +1,89 @@
+{
+  "spec": {
+    "title": "CSS Shapes Module Level 2",
+    "url": "https://drafts.csswg.org/css-shapes-2/"
+  },
+  "properties": [
+    {
+      "name": "shape-inside",
+      "href": "https://drafts.csswg.org/css-shapes-2/#propdef-shape-inside",
+      "value": "auto | outside-shape | [ <basic-shape> || shape-box ] | <image> | display",
+      "initial": "auto",
+      "appliesTo": "block-level elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "computed lengths for <basic-shape>, the absolute URL for <url>, otherwise as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "as defined for <basic-shape>, otherwise discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The shape is computed based on the content box of the element.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-inside-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "outside-shape",
+          "prose": "The shape is computed based on the shape defined by the shape-outside and shape-margin properties.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-inside-outside-shape",
+          "type": "value",
+          "value": "outside-shape"
+        },
+        {
+          "name": "<basic-shape>",
+          "prose": "The shape is computed based on the values of one of the <basic-shape> functions.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-inside-basic-shape",
+          "type": "value",
+          "value": "<basic-shape-rect> | <circle()> | <ellipse()> | <polygon()> | <path()> | <shape()>"
+        },
+        {
+          "name": "<url>",
+          "prose": "If the <uri> references an SVG shape element, that element defines the shape. Otherwise, if the <uri> references an image, the shape is extracted and computed based on the alpha channel of the specified image. If the <uri> does not reference an SVG shape element or an image, the effect is as if the value auto had been specified.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-inside-url",
+          "type": "value",
+          "value": "<url>"
+        },
+        {
+          "name": "display",
+          "prose": "The shape is computed based on the shape of the display as described in css-round-display.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-inside-display",
+          "type": "value",
+          "value": "display"
+        }
+      ],
+      "styleDeclaration": [
+        "shape-inside",
+        "shapeInside"
+      ]
+    },
+    {
+      "name": "shape-padding",
+      "href": "https://drafts.csswg.org/css-shapes-2/#propdef-shape-padding",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "block-level elements",
+      "inherited": "no",
+      "percentages": "refer to the inline size of the containing block",
+      "computedValue": "computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Sets the padding of the shape to the specified value.",
+          "href": "https://drafts.csswg.org/css-shapes-2/#valdef-shape-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "shape-padding",
+        "shapePadding"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

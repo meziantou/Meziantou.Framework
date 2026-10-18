@@ -1,0 +1,302 @@
+{
+  "spec": {
+    "title": "CSS Transitions Module Level 1",
+    "url": "https://drafts.csswg.org/css-transitions-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "TransitionEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "TransitionEvent": {
+        "fragment": "[Exposed=Window]\ninterface TransitionEvent : Event {\n  constructor(CSSOMString type, optional TransitionEventInit transitionEventInitDict = {});\n  readonly attribute CSSOMString propertyName;\n  readonly attribute double elapsedTime;\n  readonly attribute CSSOMString pseudoElement;\n};",
+        "type": "interface",
+        "name": "TransitionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "transitionEventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TransitionEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-transitions-1/#dom-transitionevent-transitionevent"
+          },
+          {
+            "type": "attribute",
+            "name": "propertyName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-transitions-1/#Events-TransitionEvent-propertyName"
+          },
+          {
+            "type": "attribute",
+            "name": "elapsedTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-transitions-1/#Events-TransitionEvent-elapsedTime"
+          },
+          {
+            "type": "attribute",
+            "name": "pseudoElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-transitions-1/#Events-TransitionEvent-pseudoElement"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-transitions-1/#transitionevent"
+      },
+      "TransitionEventInit": {
+        "fragment": "dictionary TransitionEventInit : EventInit {\n  CSSOMString propertyName = \"\";\n  double elapsedTime = 0.0;\n  CSSOMString pseudoElement = \"\";\n};",
+        "type": "dictionary",
+        "name": "TransitionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "propertyName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-transitions-1/#dom-transitioneventinit-propertyname"
+          },
+          {
+            "type": "field",
+            "name": "elapsedTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-transitions-1/#dom-transitioneventinit-elapsedtime"
+          },
+          {
+            "type": "field",
+            "name": "pseudoElement",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-transitions-1/#dom-transitioneventinit-pseudoelement"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-transitions-1/#dictdef-transitioneventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler ontransitionrun;\n  attribute EventHandler ontransitionstart;\n  attribute EventHandler ontransitionend;\n  attribute EventHandler ontransitioncancel;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "ontransitionrun",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun"
+            },
+            {
+              "type": "attribute",
+              "name": "ontransitionstart",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart"
+            },
+            {
+              "type": "attribute",
+              "name": "ontransitionend",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend"
+            },
+            {
+              "type": "attribute",
+              "name": "ontransitioncancel",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "TransitionEvent"
+      ]
+    },
+    "dependencies": {
+      "TransitionEvent": [
+        "Event",
+        "CSSOMString",
+        "TransitionEventInit"
+      ],
+      "TransitionEventInit": [
+        "EventInit",
+        "CSSOMString"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "CSSOMString",
+      "EventInit",
+      "GlobalEventHandlers",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

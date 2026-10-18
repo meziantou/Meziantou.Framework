@@ -1,0 +1,17 @@
+{
+  "main": {
+    "az-Arab-IQ": {
+      "identity": {
+        "language": "az",
+        "script": "Arab",
+        "territory": "IQ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

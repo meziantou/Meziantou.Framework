@@ -1,0 +1,389 @@
+{
+  "spec": {
+    "title": "CSS Overflow Module Level 3",
+    "url": "https://drafts.csswg.org/css-overflow-3/"
+  },
+  "properties": [
+    {
+      "name": "overflow-x",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow-x",
+      "value": "visible | hidden | clip | scroll | auto",
+      "initial": "visible",
+      "appliesTo": "block containers [CSS2], flex containers [CSS-FLEXBOX-1], grid containers [CSS-GRID-1], and table grid boxes [CSS-TABLES-3]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "usually specified value, but see text",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "overflow",
+      "values": [
+        {
+          "name": "visible",
+          "prose": "There is no special handling of overflow, that is, the box’s content is rendered outside the box if positioned there.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-visible",
+          "type": "value",
+          "value": "visible"
+        },
+        {
+          "name": "hidden",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that the UA must not provide any scrolling user interface to view the content outside the clipping region, nor allow scrolling by direct intervention of the user, such as dragging on a touch screen or using the scrolling wheel on a mouse. However, the content must still be scrollable programmatically, for example using the mechanisms defined in [CSSOM-VIEW].",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "clip",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that no scrolling user interface should be provided by the UA to view the content outside the clipping region. In addition, unlike overflow: hidden which still allows programmatic scrolling, overflow: clip forbids scrolling entirely, through any mechanism. Unlike hidden, this value does not cause the element to establish a new formatting context.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip",
+          "type": "value",
+          "value": "clip"
+        },
+        {
+          "name": "scroll",
+          "prose": "This value indicates that the content is clipped to the overflow clip edge, but can be scrolled into view. Furthermore, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism should be displayed whether or not any of its content is clipped. This avoids any problem with scrollbars appearing and disappearing in a dynamic environment. When the target medium is print, overflowing content may be printed; it is not defined where it may be printed.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-scroll",
+          "type": "value",
+          "value": "scroll"
+        },
+        {
+          "name": "auto",
+          "prose": "Like scroll when the box has scrollable overflow; like hidden otherwise. Thus, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism will only be displayed if there is overflow.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "overlay",
+          "prose": "User agents must also support the overlay keyword as a legacy value alias of auto.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay",
+          "type": "value",
+          "value": "overlay"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-x",
+        "overflowX"
+      ]
+    },
+    {
+      "name": "overflow-y",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow-y",
+      "value": "visible | hidden | clip | scroll | auto",
+      "initial": "visible",
+      "appliesTo": "block containers [CSS2], flex containers [CSS-FLEXBOX-1], grid containers [CSS-GRID-1], and table grid boxes [CSS-TABLES-3]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "usually specified value, but see text",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "overflow",
+      "values": [
+        {
+          "name": "visible",
+          "prose": "There is no special handling of overflow, that is, the box’s content is rendered outside the box if positioned there.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-visible",
+          "type": "value",
+          "value": "visible"
+        },
+        {
+          "name": "hidden",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that the UA must not provide any scrolling user interface to view the content outside the clipping region, nor allow scrolling by direct intervention of the user, such as dragging on a touch screen or using the scrolling wheel on a mouse. However, the content must still be scrollable programmatically, for example using the mechanisms defined in [CSSOM-VIEW].",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "clip",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that no scrolling user interface should be provided by the UA to view the content outside the clipping region. In addition, unlike overflow: hidden which still allows programmatic scrolling, overflow: clip forbids scrolling entirely, through any mechanism. Unlike hidden, this value does not cause the element to establish a new formatting context.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip",
+          "type": "value",
+          "value": "clip"
+        },
+        {
+          "name": "scroll",
+          "prose": "This value indicates that the content is clipped to the overflow clip edge, but can be scrolled into view. Furthermore, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism should be displayed whether or not any of its content is clipped. This avoids any problem with scrollbars appearing and disappearing in a dynamic environment. When the target medium is print, overflowing content may be printed; it is not defined where it may be printed.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-scroll",
+          "type": "value",
+          "value": "scroll"
+        },
+        {
+          "name": "auto",
+          "prose": "Like scroll when the box has scrollable overflow; like hidden otherwise. Thus, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism will only be displayed if there is overflow.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "overlay",
+          "prose": "User agents must also support the overlay keyword as a legacy value alias of auto.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay",
+          "type": "value",
+          "value": "overlay"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-y",
+        "overflowY"
+      ]
+    },
+    {
+      "name": "overflow-block",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow-block",
+      "value": "visible | hidden | clip | scroll | auto",
+      "initial": "visible",
+      "appliesTo": "block containers [CSS2], flex containers [CSS-FLEXBOX-1], grid containers [CSS-GRID-1], and table grid boxes [CSS-TABLES-3]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "usually specified value, but see text",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "overflow",
+      "values": [
+        {
+          "name": "overlay",
+          "prose": "User agents must also support the overlay keyword as a legacy value alias of auto.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay",
+          "type": "value",
+          "value": "overlay"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-block",
+        "overflowBlock"
+      ]
+    },
+    {
+      "name": "overflow-inline",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow-inline",
+      "value": "visible | hidden | clip | scroll | auto",
+      "initial": "visible",
+      "appliesTo": "block containers [CSS2], flex containers [CSS-FLEXBOX-1], grid containers [CSS-GRID-1], and table grid boxes [CSS-TABLES-3]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "usually specified value, but see text",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "overflow",
+      "values": [
+        {
+          "name": "overlay",
+          "prose": "User agents must also support the overlay keyword as a legacy value alias of auto.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay",
+          "type": "value",
+          "value": "overlay"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-inline",
+        "overflowInline"
+      ]
+    },
+    {
+      "name": "overflow",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow",
+      "value": "<'overflow-block'>{1,2}",
+      "initial": "visible",
+      "appliesTo": "block containers [CSS2], flex containers [CSS3-FLEXBOX], and grid containers [CSS3-GRID-LAYOUT]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "discrete",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "visible",
+          "prose": "There is no special handling of overflow, that is, the box’s content is rendered outside the box if positioned there.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-visible",
+          "type": "value",
+          "value": "visible"
+        },
+        {
+          "name": "hidden",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that the UA must not provide any scrolling user interface to view the content outside the clipping region, nor allow scrolling by direct intervention of the user, such as dragging on a touch screen or using the scrolling wheel on a mouse. However, the content must still be scrollable programmatically, for example using the mechanisms defined in [CSSOM-VIEW].",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "clip",
+          "prose": "This value indicates that the box’s content is clipped to its overflow clip edge and that no scrolling user interface should be provided by the UA to view the content outside the clipping region. In addition, unlike overflow: hidden which still allows programmatic scrolling, overflow: clip forbids scrolling entirely, through any mechanism. Unlike hidden, this value does not cause the element to establish a new formatting context.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip",
+          "type": "value",
+          "value": "clip"
+        },
+        {
+          "name": "scroll",
+          "prose": "This value indicates that the content is clipped to the overflow clip edge, but can be scrolled into view. Furthermore, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism should be displayed whether or not any of its content is clipped. This avoids any problem with scrollbars appearing and disappearing in a dynamic environment. When the target medium is print, overflowing content may be printed; it is not defined where it may be printed.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-scroll",
+          "type": "value",
+          "value": "scroll"
+        },
+        {
+          "name": "auto",
+          "prose": "Like scroll when the box has scrollable overflow; like hidden otherwise. Thus, if the user agent uses a scrolling mechanism that is visible on the screen (such as a scroll bar or a panner), that mechanism will only be displayed if there is overflow.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "overlay",
+          "prose": "User agents must also support the overlay keyword as a legacy value alias of auto.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay",
+          "type": "value",
+          "value": "overlay"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow"
+      ],
+      "longhands": [
+        "overflow-x",
+        "overflow-y"
+      ]
+    },
+    {
+      "name": "overflow-clip-margin",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-overflow-clip-margin",
+      "value": "<visual-box> || <length>",
+      "initial": "0px",
+      "appliesTo": "boxes to which overflow applies",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the computed <length> and a <visual-box> keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "per computed value if the <visual-box> values match; otherwise discrete",
+      "values": [
+        {
+          "name": "<visual-box>",
+          "prose": "Specifies the box edge to use as the overflow clip edge origin, i.e. when the specified offset is zero. If omitted, defaults to padding-box.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip-margin-visual-box",
+          "type": "value",
+          "value": "<visual-box>"
+        },
+        {
+          "name": "<length>",
+          "prose": "The specified offset dictates how much the overflow clip edge is expanded from the specified box edge. Negative values indicate insets, instead. Defaults to zero if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip-margin-length",
+          "type": "value",
+          "value": "<length>"
+        }
+      ],
+      "styleDeclaration": [
+        "overflow-clip-margin",
+        "overflowClipMargin"
+      ],
+      "longhands": [
+        "overflow-clip-margin-top",
+        "overflow-clip-margin-right",
+        "overflow-clip-margin-bottom",
+        "overflow-clip-margin-left"
+      ]
+    },
+    {
+      "name": "scroll-behavior",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-scroll-behavior",
+      "value": "auto | smooth",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The scroll container is scrolled in an instant fashion.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-scroll-behavior-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "smooth",
+          "prose": "The scroll container is scrolled in a smooth fashion using a user-agent-defined timing function over a user-agent-defined period of time. User agents should follow platform conventions, if any.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-scroll-behavior-smooth",
+          "type": "value",
+          "value": "smooth"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-behavior",
+        "scrollBehavior"
+      ]
+    },
+    {
+      "name": "scrollbar-gutter",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-scrollbar-gutter",
+      "value": "auto | stable && both-edges?",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Classic scrollbars consume space by creating a scrollbar gutter when overflow is scroll, or when overflow is auto and the box is overflowing. Overlay scrollbars do not consume space.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-scrollbar-gutter-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "stable",
+          "prose": "The scrollbar gutter is present for classic scrollbars when overflow is hidden, scroll, or auto, regardless of whether the box is actually overflowing. Overlay scrollbars do not consume space.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-scrollbar-gutter-stable",
+          "type": "value",
+          "value": "stable"
+        },
+        {
+          "name": "both-edges",
+          "prose": "If a scrollbar gutter would be present on one of the inline start edge or the inline end edge of the box, another scrollbar gutter must be present on the opposite edge as well.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#valdef-scrollbar-gutter-both-edges",
+          "type": "value",
+          "value": "both-edges"
+        }
+      ],
+      "styleDeclaration": [
+        "scrollbar-gutter",
+        "scrollbarGutter"
+      ]
+    },
+    {
+      "name": "text-overflow",
+      "href": "https://drafts.csswg.org/css-overflow-3/#propdef-text-overflow",
+      "value": "clip | ellipsis",
+      "initial": "clip",
+      "appliesTo": "block containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "clip",
+          "prose": "Clip inline content that overflows its block container element. Characters may be only partially rendered.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#overflow-clip",
+          "type": "value",
+          "value": "clip"
+        },
+        {
+          "name": "ellipsis",
+          "prose": "Render an ellipsis character (U+2026) to represent clipped inline content. Implementations may substitute a more language, script, or writing-mode appropriate ellipsis character, or three dots \"...\" if the ellipsis character is unavailable.",
+          "href": "https://drafts.csswg.org/css-overflow-3/#overflow-ellipsis",
+          "type": "value",
+          "value": "ellipsis"
+        }
+      ],
+      "styleDeclaration": [
+        "text-overflow",
+        "textOverflow"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

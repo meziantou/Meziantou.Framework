@@ -1,0 +1,166 @@
+{
+  "animation-worklet/animate-multiple-effects-on-different-targets-via-main-thread.https.html": {
+    "total": 1
+  },
+  "animation-worklet/animate-non-accelerated-property.https.html": {
+    "total": 1
+  },
+  "animation-worklet/animation-worklet-inside-iframe.https.html": {
+    "total": 1
+  },
+  "animation-worklet/animator-with-options.https.html": {
+    "total": 1
+  },
+  "animation-worklet/cancel-non-accelerated-property.https.html": {
+    "total": 1
+  },
+  "animation-worklet/current-time.https.html": {
+    "total": 2
+  },
+  "animation-worklet/idlharness.any.js": {
+    "total": 20,
+    "failures": {
+      "CSS namespace: attribute animationWorklet": "FAIL",
+      "Stringification of new WorkletAnimation(\"name\")": "FAIL",
+      "WorkletAnimation interface: new WorkletAnimation(\"name\") must inherit property \"animatorName\" with the proper type": "FAIL",
+      "WorkletAnimation must be primary interface of new WorkletAnimation(\"name\")": "FAIL"
+    }
+  },
+  "animation-worklet/idlharness.any.js#dedicatedworker": {
+    "total": 13,
+    "failures": {
+      "Stringification of new WorkletAnimation(\"name\")": "FAIL",
+      "WorkletAnimation interface: new WorkletAnimation(\"name\") must not have property \"animatorName\"": "FAIL",
+      "WorkletAnimation interface: new WorkletAnimation(\"name\") must not have property \"undefined\"": "FAIL",
+      "WorkletAnimation must be primary interface of new WorkletAnimation(\"name\")": "FAIL"
+    }
+  },
+  "animation-worklet/inactive-timeline.https.html": {
+    "total": 1,
+    "failures": {
+      "When timeline time becomes inactive previous current time must be the current time and start time unresolved": "FAIL"
+    }
+  },
+  "animation-worklet/multiple-effects-on-same-target-driven-by-individual-local-time.https.html": {
+    "total": 1
+  },
+  "animation-worklet/playback-rate.https.html": {
+    "harness": "TIMEOUT",
+    "total": 12,
+    "failures": {
+      "Initial current time is not affected by playbackRate set while scroll-linked animation is in play-pending state.": "FAIL",
+      "Initial current time is scaled by playbackRate set while scroll-linked animation is in idle state.": "FAIL",
+      "Scroll-linked animation playback rate affects the rate of progress of the current time.": "FAIL",
+      "The current time is not affected by playbackRate set while the scroll-linked animation is in play state.": "FAIL",
+      "The playback rate set before scroll-linked animation started playing affects the rate of progress of the current time": "FAIL",
+      "The playback rate set before the animation started playing affects the rate of progress of the current time": "FAIL",
+      "When playback rate is updated, the underlying effect is properly updated with the current time of its scroll-linked WorkletAnimation and produces correct visual result.": "TIMEOUT"
+    }
+  },
+  "animation-worklet/scroll-timeline-writing-modes.https.html": {
+    "total": 5,
+    "failures": {
+      "A block ScrollTimeline should produce the correct current time for vertical-lr": "FAIL",
+      "A block ScrollTimeline should produce the correct current time for vertical-rl": "FAIL",
+      "An inline ScrollTimeline should produce the correct current time for horizontal-tb and direction: rtl": "FAIL",
+      "An inline ScrollTimeline should produce the correct current time for vertical writing mode": "FAIL",
+      "An inline ScrollTimeline should produce the correct current time for vertical writing mode and direction: rtl": "FAIL"
+    }
+  },
+  "animation-worklet/stateful-animator.https.html": {
+    "total": 6
+  },
+  "animation-worklet/worklet-animation-animator-name.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify that animatorName matches passed name": "FAIL"
+    }
+  },
+  "animation-worklet/worklet-animation-cancel.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-creation.https.html": {
+    "total": 8,
+    "failures": {
+      "Constructing worklet animation for unregisested animator should throw": "FAIL",
+      "If there are no effects specified, object construction should fail": "FAIL"
+    }
+  },
+  "animation-worklet/worklet-animation-duration.https.html": {
+    "total": 1
+  },
+  "animation-worklet/worklet-animation-get-computed-timing-progress-on-worklet-thread.https.html": {
+    "total": 1
+  },
+  "animation-worklet/worklet-animation-get-timing-on-worklet-thread.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-local-time-after-duration.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-local-time-before-start.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-local-time-null-1.https.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "A worklet which changes localTime to from a number to null has no effect on backgroundColor.": "NOTRUN",
+      "A worklet which changes localTime to from a number to null has no effect on transform.": "TIMEOUT"
+    }
+  },
+  "animation-worklet/worklet-animation-local-time-null-2.https.html": {
+    "reftest": "TIMEOUT"
+  },
+  "animation-worklet/worklet-animation-pause-immediately.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-pause-resume.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-pause.https.html": {
+    "total": 2
+  },
+  "animation-worklet/worklet-animation-play.https.html": {
+    "total": 2
+  },
+  "animation-worklet/worklet-animation-set-keyframes.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-set-timing.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-start-delay.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-with-effects-from-different-frames.https.html": {
+    "total": 1
+  },
+  "animation-worklet/worklet-animation-with-fill-mode.https.html": {
+    "total": 6
+  },
+  "animation-worklet/worklet-animation-with-invalid-effect.https.html": {
+    "total": 1,
+    "failures": {
+      "Trying to play invalid worklet animation should throw an exception.": "FAIL"
+    }
+  },
+  "animation-worklet/worklet-animation-with-non-ascii-name.https.html": {
+    "reftest": "TIMEOUT"
+  },
+  "animation-worklet/worklet-animation-with-scroll-timeline-and-display-none.https.html": {
+    "reftest": "FAIL"
+  },
+  "animation-worklet/worklet-animation-with-scroll-timeline-and-overflow-hidden.https.html": {
+    "reftest": "FAIL"
+  },
+  "animation-worklet/worklet-animation-with-scroll-timeline-root-scroller.https.html": {
+    "reftest": "PASS"
+  },
+  "animation-worklet/worklet-animation-with-scroll-timeline.https.html": {
+    "reftest": "FAIL"
+  },
+  "animation-worklet/worklet-animation-without-target.https.html": {
+    "total": 2
+  }
+}

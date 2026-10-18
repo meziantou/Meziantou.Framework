@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ru-BY": {
+      "identity": {
+        "language": "ru",
+        "territory": "BY"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

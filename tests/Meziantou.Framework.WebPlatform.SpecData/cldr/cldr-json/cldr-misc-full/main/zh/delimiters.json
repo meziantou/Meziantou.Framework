@@ -1,0 +1,15 @@
+{
+  "main": {
+    "zh": {
+      "identity": {
+        "language": "zh"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

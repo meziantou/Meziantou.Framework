@@ -1,0 +1,330 @@
+{
+  "spec": {
+    "title": "CSS Transforms Module Level 2",
+    "url": "https://drafts.csswg.org/css-transforms-2/"
+  },
+  "properties": [
+    {
+      "name": "translate",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-translate",
+      "value": "none | <length-percentage> [ <length-percentage> <length>? ]?",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "relative to the width of the reference box (for the first value) or the height (for the second value)",
+      "computedValue": "the keyword none or a pair of computed <length-percentage> values and an absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, but see below for none",
+      "values": [
+        {
+          "name": "none",
+          "prose": "All three properties accept (and default to) the value none, which produces no transform at all. In particular, this value does not trigger the creation of a stacking context or containing block for all descendants, while all other values (including “identity” transforms like translate: 0px) create a stacking context and containing block for all descendants, per usual for transforms.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-translate-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "translate"
+      ]
+    },
+    {
+      "name": "rotate",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-rotate",
+      "value": "none | <angle> | [ x | y | z | <number>{3} ] && <angle>",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, or an <angle> with an axis consisting of a list of three <number>s",
+      "canonicalOrder": "per grammar",
+      "animationType": "as SLERP, but see below for none",
+      "values": [
+        {
+          "name": "x",
+          "prose": "The axis can be specified with either the x, y, or z keywords, which specify a rotation around that axis, equivalent to the rotateX(), rotateY(), and rotateZ() transform functions. Alternately, the axis can be specified explicitly by giving three numbers representing the x, y, and z components of an origin-centered vector, equivalent to the rotate3d() function.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-rotate-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "The axis can be specified with either the x, y, or z keywords, which specify a rotation around that axis, equivalent to the rotateX(), rotateY(), and rotateZ() transform functions. Alternately, the axis can be specified explicitly by giving three numbers representing the x, y, and z components of an origin-centered vector, equivalent to the rotate3d() function.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-rotate-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "z",
+          "prose": "The axis can be specified with either the x, y, or z keywords, which specify a rotation around that axis, equivalent to the rotateX(), rotateY(), and rotateZ() transform functions. Alternately, the axis can be specified explicitly by giving three numbers representing the x, y, and z components of an origin-centered vector, equivalent to the rotate3d() function.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-rotate-z",
+          "type": "value",
+          "value": "z"
+        },
+        {
+          "name": "none",
+          "prose": "All three properties accept (and default to) the value none, which produces no transform at all. In particular, this value does not trigger the creation of a stacking context or containing block for all descendants, while all other values (including “identity” transforms like translate: 0px) create a stacking context and containing block for all descendants, per usual for transforms.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-translate-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "rotate"
+      ]
+    },
+    {
+      "name": "scale",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-scale",
+      "value": "none | [ <number> | <percentage> ]{1,3}",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, or a list of 3 <number>s",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, but see below for none",
+      "values": [
+        {
+          "name": "none",
+          "prose": "All three properties accept (and default to) the value none, which produces no transform at all. In particular, this value does not trigger the creation of a stacking context or containing block for all descendants, while all other values (including “identity” transforms like translate: 0px) create a stacking context and containing block for all descendants, per usual for transforms.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-translate-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "scale"
+      ]
+    },
+    {
+      "name": "transform-style",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-transform-style",
+      "value": "flat | preserve-3d",
+      "initial": "flat",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "usedValue": "flat if a grouping property is present, specified keyword otherwise",
+      "styleDeclaration": [
+        "transform-style",
+        "transformStyle"
+      ]
+    },
+    {
+      "name": "perspective",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-perspective",
+      "value": "none | <length [0,∞]>",
+      "initial": "none",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none or an absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length [0,∞]>",
+          "prose": "Distance to the center of projection. Verify that projection is the distance to the center of projection. As very small <length> values can produce bizarre rendering results and stress the numerical accuracy of transform calculations, values less than 1px must be treated as 1px for rendering purposes. (This clamping does not affect the underlying value, so perspective: 0; in a stylesheet will still serialize back as 0.)",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-length-0",
+          "type": "value",
+          "value": "<length [0,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "No perspective transform is applied. The effect is mathematically similar to an infinite <length> value. All objects appear to be flat on the canvas.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "perspective"
+      ]
+    },
+    {
+      "name": "perspective-origin",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-perspective-origin",
+      "value": "<position>",
+      "initial": "50% 50%",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "refer to the size of the reference box",
+      "computedValue": "see background-position",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<percentage>",
+          "prose": "A percentage for the horizontal perspective offset is relative to the width of the reference box. A percentage for the vertical offset is relative to height of the reference box. The value for the horizontal and vertical offset represent an offset from the top left corner of the reference box.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "<length>",
+          "prose": "A length value gives a fixed length as the offset. The value for the horizontal and vertical offset represent an offset from the top left corner of the reference box.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "top",
+          "prose": "Computes to 0% for the vertical position if one or two values are given, otherwise specifies the top edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "right",
+          "prose": "Computes to 100% for the horizontal position if one or two values are given, otherwise specifies the right edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "bottom",
+          "prose": "Computes to 100% for the vertical position if one or two values are given, otherwise specifies the bottom edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "left",
+          "prose": "Computes to 0% for the horizontal position if one or two values are given, otherwise specifies the left edge as the origin for the next offset.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "center",
+          "prose": "Computes to 50% (left 50%) for the horizontal position if the horizontal position is not otherwise specified, or 50% (top 50%) for the vertical position if it is.",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-origin-center",
+          "type": "value",
+          "value": "center"
+        }
+      ],
+      "styleDeclaration": [
+        "perspective-origin",
+        "perspectiveOrigin"
+      ]
+    },
+    {
+      "name": "backface-visibility",
+      "href": "https://drafts.csswg.org/css-transforms-2/#propdef-backface-visibility",
+      "value": "visible | hidden",
+      "initial": "visible",
+      "appliesTo": "transformable elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "backface-visibility",
+        "backfaceVisibility"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<transform-function>",
+      "prose": "The value of the transform property is a list of <transform-function>. The set of allowed transform functions is given below. Wherever <angle> is used in this specification, a <number> that is equal to zero is also allowed, which is treated the same as an angle of zero degrees. A percentage for horizontal translations is relative to the width of the reference box. A percentage for vertical translations is relative to the height of the reference box. A percentage in a scale function is equivalent to a number, and serializes as a number in specified values. For example, scale3d(50%, 100%, 150%) serializes as scale3d(0.5, 1, 1.5).",
+      "href": "https://drafts.csswg.org/css-transforms-2/#typedef-transform-function",
+      "type": "type",
+      "value": "<scale3d()> | <scale()> | <scaleX()> | <scaleY()> | <scaleZ()> | <translate3d()> | <translate()> | <translateX()> | <translateY()> | <translateZ()> | <rotate3d()> | <rotate()> | <rotateX()> | <rotateY()> | <rotateZ()> | <skew()> | <skewX()> | <skewY()> | <matrix3d()> | <matrix()> | <perspective()>"
+    },
+    {
+      "name": "scale()",
+      "value": "scale( [ <number> | <percentage> ]#{1,2} )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-scale",
+      "type": "function"
+    },
+    {
+      "name": "scaleX()",
+      "value": "scaleX( [ <number> | <percentage> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-scalex",
+      "type": "function"
+    },
+    {
+      "name": "scaleY()",
+      "value": "scaleY( [ <number> | <percentage> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-scaley",
+      "type": "function"
+    },
+    {
+      "name": "matrix3d()",
+      "value": "matrix3d( <number>#{16} )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-matrix3d",
+      "type": "function"
+    },
+    {
+      "name": "translate3d()",
+      "value": "translate3d( <length-percentage> , <length-percentage> , <length> )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-translate3d",
+      "type": "function"
+    },
+    {
+      "name": "translateZ()",
+      "value": "translateZ( <length> )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-translatez",
+      "type": "function"
+    },
+    {
+      "name": "scale3d()",
+      "value": "scale3d( [ <number> | <percentage> ]#{3} )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-scale3d",
+      "type": "function"
+    },
+    {
+      "name": "scaleZ()",
+      "value": "scaleZ( [ <number> | <percentage> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-scalez",
+      "type": "function"
+    },
+    {
+      "name": "rotate3d()",
+      "value": "rotate3d( <number> , <number> , <number> , [ <angle> | <zero> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-rotate3d",
+      "type": "function"
+    },
+    {
+      "name": "rotateX()",
+      "value": "rotateX( [ <angle> | <zero> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-rotatex",
+      "type": "function"
+    },
+    {
+      "name": "rotateY()",
+      "value": "rotateY( [ <angle> | <zero> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-rotatey",
+      "type": "function"
+    },
+    {
+      "name": "rotateZ()",
+      "value": "rotateZ( [ <angle> | <zero> ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-rotatez",
+      "type": "function"
+    },
+    {
+      "name": "perspective()",
+      "value": "perspective( [ <length [0,∞]> | none ] )",
+      "href": "https://drafts.csswg.org/css-transforms-2/#funcdef-perspective",
+      "type": "function",
+      "values": [
+        {
+          "name": "none",
+          "prose": "perspective() = perspective( [ <length [0,∞]> | none ] )",
+          "href": "https://drafts.csswg.org/css-transforms-2/#valdef-perspective-func-none",
+          "type": "value",
+          "value": "none"
+        }
+      ]
+    }
+  ]
+}

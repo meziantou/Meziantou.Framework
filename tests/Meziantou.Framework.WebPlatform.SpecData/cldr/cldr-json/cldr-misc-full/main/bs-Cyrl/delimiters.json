@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bs-Cyrl": {
+      "identity": {
+        "language": "bs",
+        "script": "Cyrl"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

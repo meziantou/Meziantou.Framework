@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sat-Olck": {
+      "identity": {
+        "language": "sat",
+        "script": "Olck"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

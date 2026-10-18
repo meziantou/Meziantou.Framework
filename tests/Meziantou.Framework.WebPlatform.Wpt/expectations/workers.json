@@ -1,0 +1,1213 @@
+{
+  "workers/SharedWorker-MessageEvent-source.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/SharedWorker-constructor.html": {
+    "total": 7
+  },
+  "workers/SharedWorker-detach-frame-in-error-event.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-exception-propagation.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-exception.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-extendedLifetime-blob.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-extendedLifetime-data.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-extendedLifetime-named-module.html": {
+    "total": 2
+  },
+  "workers/SharedWorker-extendedLifetime.html": {
+    "total": 1
+  },
+  "workers/SharedWorker-replace-EventHandler.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/SharedWorker-script-error.html": {
+    "total": 2
+  },
+  "workers/SharedWorker-simple.html": {
+    "total": 1
+  },
+  "workers/SharedWorkerPerformanceNow.html": {
+    "total": 1
+  },
+  "workers/SharedWorker_blobUrl.html": {
+    "total": 1
+  },
+  "workers/SharedWorker_dataUrl.html": {
+    "total": 2
+  },
+  "workers/Worker-base64.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-base64.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-call.worker.js": {
+    "total": 1
+  },
+  "workers/Worker-constructor-proto.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-constructor-proto.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-creation-happens-in-parallel.https.html": {
+    "total": 1
+  },
+  "workers/Worker-custom-event.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-custom-event.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-formdata.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-location.sub.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Test WorkerLocation properties.": "FAIL"
+    }
+  },
+  "workers/Worker-location.sub.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "Test WorkerLocation properties.": "FAIL"
+    }
+  },
+  "workers/Worker-messageport.html": {
+    "total": 4
+  },
+  "workers/Worker-multi-port.html": {
+    "total": 9
+  },
+  "workers/Worker-nested-importScripts-error.html": {
+    "total": 1
+  },
+  "workers/Worker-postMessage-happens-in-parallel.https.html": {
+    "total": 1
+  },
+  "workers/Worker-replace-event-handler.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-replace-event-handler.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-replace-global-constructor.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-replace-global-constructor.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-replace-self.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/Worker-replace-self.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/Worker-simultaneous-errors.html": {
+    "total": 1
+  },
+  "workers/Worker-structure-message.html": {
+    "total": 1
+  },
+  "workers/Worker-terminate-forever-during-evaluation.html": {
+    "total": 7
+  },
+  "workers/Worker-terminate-forever.html": {
+    "total": 1
+  },
+  "workers/Worker-termination-with-port-messages.html": {
+    "total": 1
+  },
+  "workers/Worker-timeout-cancel-order.html": {
+    "total": 1
+  },
+  "workers/Worker-timeout-decreasing-order.html": {
+    "total": 1
+  },
+  "workers/Worker-timeout-increasing-order.html": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope-close.html": {
+    "total": 5
+  },
+  "workers/WorkerGlobalScope_ErrorEvent_colno.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_ErrorEvent_filename.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_ErrorEvent_lineno.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_ErrorEvent_message.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_importScripts.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_importScripts_NetworkErr.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_importScripts_NosniffErr.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_requestAnimationFrame.worker.js": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_setInterval.htm": {
+    "total": 1
+  },
+  "workers/WorkerGlobalScope_setTimeout.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation-origin.sub.window.js": {
+    "total": 1
+  },
+  "workers/WorkerLocation.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_hash.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_hash_encoding.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_hash_nonexist.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_host.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_hostname.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_href.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_pathname.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_port.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_protocol.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_search.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_search_empty.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_search_fragment.htm": {
+    "total": 1
+  },
+  "workers/WorkerLocation_search_nonexist.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator-hardware-concurrency.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/WorkerNavigator-hardware-concurrency.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/WorkerNavigator.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/WorkerNavigator.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_appName.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_appVersion.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_onLine.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_platform.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_userAgent.htm": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_userAgentData.http.html": {
+    "total": 1
+  },
+  "workers/WorkerNavigator_userAgentData.https.html": {
+    "total": 2
+  },
+  "workers/WorkerPerformanceNow.html": {
+    "total": 1
+  },
+  "workers/Worker_ErrorEvent_bubbles_cancelable.htm": {
+    "total": 1
+  },
+  "workers/Worker_ErrorEvent_error.htm": {
+    "total": 3
+  },
+  "workers/Worker_ErrorEvent_filename.htm": {
+    "total": 1
+  },
+  "workers/Worker_ErrorEvent_lineno.htm": {
+    "total": 1
+  },
+  "workers/Worker_ErrorEvent_message.htm": {
+    "total": 1
+  },
+  "workers/Worker_ErrorEvent_type.htm": {
+    "total": 1
+  },
+  "workers/Worker_NosniffErr.htm": {
+    "total": 1
+  },
+  "workers/Worker_basic.htm": {
+    "total": 3
+  },
+  "workers/Worker_cross_origin_security_err.htm": {
+    "total": 2
+  },
+  "workers/Worker_dispatchEvent_ErrorEvent.htm": {
+    "total": 3
+  },
+  "workers/Worker_script_mimetype.htm": {
+    "total": 5
+  },
+  "workers/Worker_terminate_event_queue.htm": {
+    "total": 1
+  },
+  "workers/abrupt-completion.html": {
+    "total": 2
+  },
+  "workers/baseurl/alpha/import-in-moduleworker.html": {
+    "total": 1,
+    "failures": {
+      "Base URL in module dedicated workers: import": "FAIL"
+    }
+  },
+  "workers/baseurl/alpha/importScripts-in-sharedworker.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "workers/baseurl/alpha/importScripts-in-worker.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "workers/baseurl/alpha/worker-in-worker.html": {
+    "total": 1,
+    "failures": {
+      "Base URL in workers: new Worker()": "FAIL"
+    }
+  },
+  "workers/baseurl/alpha/xhr-in-moduleworker.html": {
+    "total": 1,
+    "failures": {
+      "Base URL in module dedicated workers: XHR": "FAIL"
+    }
+  },
+  "workers/baseurl/alpha/xhr-in-sharedworker.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "workers/baseurl/alpha/xhr-in-worker.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "workers/constructors/SharedWorker/Infinity-arguments.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/NaN-arguments.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/SharedWorker-constructor.html": {
+    "total": 3
+  },
+  "workers/constructors/SharedWorker/URLMismatchError.htm": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/connect-event.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/dummy-name.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/dummy-shared-worker.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/empty-name.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/global-members.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/interface-objects.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/name.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/no-arguments-ctor.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/null-arguments.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/number-arguments.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/port-onmessage.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/port-properties.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/port-readonly.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/same-origin.html": {
+    "total": 10
+  },
+  "workers/constructors/SharedWorker/setting-port-members.html": {
+    "total": 7
+  },
+  "workers/constructors/SharedWorker/undefined-arguments.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/unexpected-global-properties.html": {
+    "total": 1
+  },
+  "workers/constructors/SharedWorker/unresolvable-url.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/AbstractWorker.onerror.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/Blob-url.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/DedicatedWorkerGlobalScope-members.worker.js": {
+    "total": 19
+  },
+  "workers/constructors/Worker/Worker-constructor.html": {
+    "total": 7
+  },
+  "workers/constructors/Worker/constructor-utf16-bom.html": {
+    "total": 2
+  },
+  "workers/constructors/Worker/ctor-1.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/ctor-null.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/ctor-undefined.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/expected-self-properties.worker.js": {
+    "total": 5
+  },
+  "workers/constructors/Worker/same-origin.html": {
+    "total": 10
+  },
+  "workers/constructors/Worker/terminate.html": {
+    "total": 1
+  },
+  "workers/constructors/Worker/unexpected-self-properties.worker.js": {
+    "total": 57
+  },
+  "workers/constructors/Worker/use-base-url.html": {
+    "total": 1
+  },
+  "workers/data-url-shared.html": {
+    "total": 9
+  },
+  "workers/data-url.html": {
+    "total": 9
+  },
+  "workers/dedicated-worker-from-blob-url.window.js": {
+    "total": 3
+  },
+  "workers/dedicated-worker-in-data-url-context.window.js": {
+    "total": 4
+  },
+  "workers/dedicated-worker-parse-error-failure.html": {
+    "total": 2
+  },
+  "workers/dedicated-worker-runtime-error-is-not-parse-error.html": {
+    "total": 3
+  },
+  "workers/examples/fetch_tests_from_worker.html": {
+    "total": 1
+  },
+  "workers/examples/general.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "workers/examples/general.any.js#sharedworker": {
+    "total": 2
+  },
+  "workers/examples/general.worker.js": {
+    "total": 2
+  },
+  "workers/examples/onconnect.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/importscripts_mime.any.js#dedicatedworker": {
+    "total": 24,
+    "failures": {
+      "importScripts() requires scripty MIME types: application/javascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/ecmascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript; charset=utf-8 is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript;bla;bla is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript;charset=utf-8 is allowed.": "FAIL"
+    }
+  },
+  "workers/importscripts_mime.any.js#sharedworker": {
+    "total": 24,
+    "failures": {
+      "importScripts() requires scripty MIME types: application/javascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/ecmascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript; charset=utf-8 is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript;bla;bla is allowed.": "FAIL",
+      "importScripts() requires scripty MIME types: text/javascript;charset=utf-8 is allowed.": "FAIL"
+    }
+  },
+  "workers/importscripts_mime_local.any.js#dedicatedworker": {
+    "total": 48
+  },
+  "workers/importscripts_mime_local.any.js#sharedworker": {
+    "total": 48
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/EventTarget.worker.js": {
+    "total": 2
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/onmessage.worker.js": {
+    "total": 4
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/event-ports-dedicated.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/imagedata-cloned-canvas-in-array.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/message-event.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/return-value.worker.js": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/second-argument-dictionary.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/second-argument-null-in-array.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/second-argument-null.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/second-argument-undefined.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/setting-postMessage.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/structured-clone-imagedata.html": {
+    "total": 1
+  },
+  "workers/interfaces/DedicatedWorkerGlobalScope/postMessage/structured-clone-message.html": {
+    "total": 15
+  },
+  "workers/interfaces/SharedWorkerGlobalScope/name/getting.html": {
+    "total": 3
+  },
+  "workers/interfaces/SharedWorkerGlobalScope/name/setting.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/close/incoming-message.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/close/sending-messages.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/close/setInterval.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/close/setTimeout.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/members.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/redirect-module.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "WorkerLocation with redirects: module dedicated workers": "TIMEOUT"
+    }
+  },
+  "workers/interfaces/WorkerGlobalScope/location/redirect-sharedworker.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/redirect.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "WorkerLocation with redirects: classic dedicated workers": "TIMEOUT"
+    }
+  },
+  "workers/interfaces/WorkerGlobalScope/location/returns-same-object.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/returns-same-object.any.js#sharedworker": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/setting-members.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/location/worker-separate-file.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/exception-in-onerror.html": {
+    "total": 16
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/handled.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/message-classic-DOMException.html": {
+    "total": 10
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/message-classic-Error.html": {
+    "total": 10
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/message-module-DOMException.html": {
+    "total": 10
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/message-module-Error.html": {
+    "total": 10
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/not-handled.html": {
+    "total": 2
+  },
+  "workers/interfaces/WorkerGlobalScope/onerror/propagate-to-window-onerror.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerGlobalScope/self.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerGlobalScope/self.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/WindowTimers/001.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/WindowTimers/002.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/WindowTimers/003.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/WindowTimers/004.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/WindowTimers/005.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/001.worker.js": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/002.worker.js": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/003.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/004.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/005.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/006.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/007.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/008.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/009.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/010.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/011.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/012.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/importScripts/blob-url.worker.js": {
+    "total": 3
+  },
+  "workers/interfaces/WorkerUtils/importScripts/catch.sub.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "workers/interfaces/WorkerUtils/importScripts/catch.sub.any.js#sharedworker": {
+    "total": 6
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-cross-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-cross-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-redirect-to-cross-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-redirect-to-cross-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-same-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-same-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-cross-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-cross-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-redirect-to-cross-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-redirect-to-cross-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-same-origin.sub.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/importScripts/report-error-setTimeout-same-origin.sub.any.js#sharedworker": {
+    "total": 4
+  },
+  "workers/interfaces/WorkerUtils/navigator/002.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/003.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/004.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/005.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/006.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/007.html": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/008.worker.js": {
+    "total": 1
+  },
+  "workers/interfaces/WorkerUtils/navigator/language.html": {
+    "total": 1
+  },
+  "workers/modules/dedicated-worker-import-blob-url.any.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-blob-url.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-csp.html": {
+    "total": 11,
+    "failures": {
+      "script-src * directive should allow cross origin static import.": "FAIL",
+      "script-src-elem 'self' directive should not take effect on static import.": "FAIL",
+      "worker-src * directive should allow cross origin static import.": "FAIL",
+      "worker-src * directive should override script-src 'self' directive and allow cross origin static import.": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-data-url-cross-origin.html": {
+    "total": 4,
+    "failures": {
+      "static import script from data: URL should be allowed.": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-data-url.any.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-data-url.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import-failure.html": {
+    "total": 6
+  },
+  "workers/modules/dedicated-worker-import-meta.html": {
+    "total": 3
+  },
+  "workers/modules/dedicated-worker-import-referrer.html": {
+    "total": 15,
+    "failures": {
+      "Cross-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
+      "Cross-origin dynamic import with \"origin\" referrer policy.": "FAIL",
+      "Cross-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"no-referrer\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"origin\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"origin\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin static import with \"no-referrer\" referrer policy.": "FAIL",
+      "Same-origin static import with \"origin\" referrer policy.": "FAIL",
+      "Same-origin static import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin top-level module script loading with \"no-referrer\" referrer policy": "FAIL",
+      "Same-origin top-level module script loading with \"origin\" referrer policy": "FAIL",
+      "Same-origin top-level module script loading with \"same-origin\" referrer policy": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import.any.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-import.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/dedicated-worker-options-credentials.html": {
+    "harness": "TIMEOUT",
+    "total": 33,
+    "failures": {
+      "new Worker() with type-module credentials=omit should not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new Worker() with type-module credentials=omit should not send the credentials for cross-origin static imports": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials regardless of the credentials option (default).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials regardless of the credentials option (include).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials regardless of the credentials option (omit).": "NOTRUN",
+      "new Worker() with type=classic should always send the credentials regardless of the credentials option (same-origin).": "NOTRUN",
+      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
+      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
+      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
+      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
+      "new Worker() with type=module and credentials=include should send the credentials": "NOTRUN",
+      "new Worker() with type=module and credentials=include should send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and credentials=include should send the credentials for cross-origin static imports": "NOTRUN",
+      "new Worker() with type=module and credentials=include should send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and credentials=include should send the credentials for same-origin static imports": "NOTRUN",
+      "new Worker() with type=module and credentials=omit should not send the credentials": "NOTRUN",
+      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "NOTRUN",
+      "new Worker() with type=module and credentials=same-origin should not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and credentials=same-origin should not send the credentials for cross-origin static imports": "NOTRUN",
+      "new Worker() with type=module and credentials=same-origin should send the credentials": "NOTRUN",
+      "new Worker() with type=module and credentials=same-origin should send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and credentials=same-origin should send the credentials for same-origin static imports": "NOTRUN",
+      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin static imports": "NOTRUN",
+      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials": "TIMEOUT",
+      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin static imports": "NOTRUN"
+    }
+  },
+  "workers/modules/dedicated-worker-options-type.html": {
+    "total": 5
+  },
+  "workers/modules/dedicated-worker-parse-error-failure.html": {
+    "total": 2
+  },
+  "workers/modules/shared-worker-import-blob-url.window.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-import-csp.html": {
+    "total": 9,
+    "failures": {
+      "script-src * directive should allow cross origin static import.": "FAIL",
+      "worker-src * directive should allow cross origin static import.": "FAIL",
+      "worker-src * directive should override script-src 'self' directive and allow cross origin static import.": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-import-data-url-cross-origin.html": {
+    "total": 4,
+    "failures": {
+      "static import script from data: URL should be allowed.": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-import-data-url.window.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-import-failure.html": {
+    "total": 6
+  },
+  "workers/modules/shared-worker-import-meta.html": {
+    "total": 3
+  },
+  "workers/modules/shared-worker-import-referrer.html": {
+    "total": 15,
+    "failures": {
+      "Cross-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
+      "Cross-origin dynamic import with \"origin\" referrer policy.": "FAIL",
+      "Cross-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"no-referrer\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"origin\" referrer policy.": "FAIL",
+      "Cross-origin static import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"origin\" referrer policy.": "FAIL",
+      "Same-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin static import with \"no-referrer\" referrer policy.": "FAIL",
+      "Same-origin static import with \"origin\" referrer policy.": "FAIL",
+      "Same-origin static import with \"same-origin\" referrer policy.": "FAIL",
+      "Same-origin top-level module script loading with \"no-referrer\" referrer policy": "FAIL",
+      "Same-origin top-level module script loading with \"origin\" referrer policy": "FAIL",
+      "Same-origin top-level module script loading with \"same-origin\" referrer policy": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-import.window.js": {
+    "total": 9,
+    "failures": {
+      "Static import (cross-origin).": "FAIL",
+      "Static import (redirect).": "FAIL"
+    }
+  },
+  "workers/modules/shared-worker-options-credentials.html": {
+    "harness": "TIMEOUT",
+    "total": 33,
+    "failures": {
+      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (default).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (include).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (omit).": "NOTRUN",
+      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (same-origin).": "NOTRUN",
+      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
+      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
+      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
+      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=include should send the credentials": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=include should send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=include should send the credentials for cross-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=include should send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=include should send the credentials for same-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for cross-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=same-origin should not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=same-origin should not send the credentials for cross-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=same-origin should send the credentials": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=same-origin should send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and credentials=same-origin should send the credentials for same-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin static imports": "NOTRUN",
+      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials": "TIMEOUT",
+      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin dynamic imports": "NOTRUN",
+      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin static imports": "NOTRUN"
+    }
+  },
+  "workers/modules/shared-worker-options-type.html": {
+    "total": 5
+  },
+  "workers/modules/shared-worker-parse-error-failure.html": {
+    "total": 2
+  },
+  "workers/multi-globals/url-parsing.html": {
+    "total": 1
+  },
+  "workers/name-property.html": {
+    "total": 6
+  },
+  "workers/nested_worker.worker.js": {
+    "total": 1
+  },
+  "workers/nested_worker_close_from_parent_worker.html": {
+    "total": 1
+  },
+  "workers/nested_worker_close_self.worker.js": {
+    "total": 1
+  },
+  "workers/nested_worker_importScripts.worker.js": {
+    "total": 1
+  },
+  "workers/nested_worker_sync_xhr.worker.js": {
+    "total": 1
+  },
+  "workers/nested_worker_terminate_from_document.html": {
+    "total": 1
+  },
+  "workers/opaque-origin.html": {
+    "total": 6
+  },
+  "workers/postMessage_DataCloneErr.htm": {
+    "total": 1
+  },
+  "workers/postMessage_block.https.html": {
+    "total": 1
+  },
+  "workers/postMessage_clone_port.htm": {
+    "total": 1
+  },
+  "workers/postMessage_clone_port_error.htm": {
+    "total": 1
+  },
+  "workers/postMessage_event_properties.htm": {
+    "total": 1
+  },
+  "workers/postMessage_ports_readonly_array.htm": {
+    "total": 1
+  },
+  "workers/postMessage_target_source.htm": {
+    "total": 1
+  },
+  "workers/same-origin-check.sub.html": {
+    "total": 16
+  },
+  "workers/same-site-cookies/first-party.all.tentative.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option all for first-party": "TIMEOUT"
+    }
+  },
+  "workers/same-site-cookies/first-party.default.tentative.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option default for first-party": "TIMEOUT"
+    }
+  },
+  "workers/same-site-cookies/first-party.none.tentative.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option none for first-party": "TIMEOUT"
+    }
+  },
+  "workers/same-site-cookies/third-party.all.tentative.sub.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option all for third-party": "TIMEOUT"
+    }
+  },
+  "workers/same-site-cookies/third-party.default.tentative.sub.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option default for third-party": "TIMEOUT"
+    }
+  },
+  "workers/same-site-cookies/third-party.none.tentative.sub.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Check SharedWorker sameSiteCookies option none for third-party": "TIMEOUT"
+    }
+  },
+  "workers/semantics/encodings/001.html": {
+    "total": 1
+  },
+  "workers/semantics/encodings/002.html": {
+    "total": 1
+  },
+  "workers/semantics/encodings/003.html": {
+    "total": 1,
+    "failures": {
+      "URL encoding, dedicated worker": "FAIL"
+    }
+  },
+  "workers/semantics/encodings/004.html": {
+    "total": 1,
+    "failures": {
+      "URL encoding, shared worker": "FAIL"
+    }
+  },
+  "workers/semantics/encodings/004.worker.js": {
+    "total": 1
+  },
+  "workers/semantics/interface-objects/001.worker.js": {
+    "total": 63
+  },
+  "workers/semantics/interface-objects/002.worker.js": {
+    "total": 30
+  },
+  "workers/semantics/interface-objects/003.any.js#sharedworker": {
+    "total": 62
+  },
+  "workers/semantics/interface-objects/004.any.js#sharedworker": {
+    "total": 27
+  },
+  "workers/semantics/multiple-workers/001.html": {
+    "total": 2
+  },
+  "workers/semantics/multiple-workers/002.html": {
+    "total": 1
+  },
+  "workers/semantics/multiple-workers/003.html": {
+    "total": 1
+  },
+  "workers/semantics/multiple-workers/004.html": {
+    "total": 1
+  },
+  "workers/semantics/multiple-workers/008.html": {
+    "total": 1
+  },
+  "workers/semantics/multiple-workers/exposure.any.js": {
+    "total": 2
+  },
+  "workers/semantics/multiple-workers/exposure.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "workers/semantics/multiple-workers/exposure.any.js#sharedworker": {
+    "total": 2
+  },
+  "workers/semantics/navigation/001.html": {
+    "total": 1
+  },
+  "workers/semantics/navigation/002.html": {
+    "total": 1
+  },
+  "workers/semantics/reporting-errors/001.html": {
+    "total": 1
+  },
+  "workers/semantics/reporting-errors/002.html": {
+    "total": 1
+  },
+  "workers/semantics/reporting-errors/003.html": {
+    "total": 1
+  },
+  "workers/semantics/reporting-errors/004.html": {
+    "total": 1
+  },
+  "workers/semantics/run-a-worker/001.html": {
+    "total": 1
+  },
+  "workers/semantics/run-a-worker/002.html": {
+    "total": 1
+  },
+  "workers/semantics/run-a-worker/003.html": {
+    "total": 2
+  },
+  "workers/semantics/structured-clone/dedicated.html": {
+    "total": 152,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "workers/semantics/structured-clone/shared.html": {
+    "total": 152,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "workers/semantics/xhr/001.html": {
+    "total": 1
+  },
+  "workers/semantics/xhr/002.html": {
+    "total": 1
+  },
+  "workers/semantics/xhr/003.html": {
+    "total": 1
+  },
+  "workers/semantics/xhr/004.html": {
+    "total": 1
+  },
+  "workers/semantics/xhr/005.html": {
+    "total": 1
+  },
+  "workers/semantics/xhr/006.html": {
+    "total": 1
+  },
+  "workers/shared-worker-from-blob-url.window.js": {
+    "total": 4
+  },
+  "workers/shared-worker-in-data-url-context.window.js": {
+    "total": 2
+  },
+  "workers/shared-worker-name-via-options.html": {
+    "total": 1
+  },
+  "workers/shared-worker-options-mismatch.html": {
+    "total": 32
+  },
+  "workers/shared-worker-parse-error-failure.html": {
+    "total": 2
+  },
+  "workers/shared-worker-partitioned-cookies.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "Service Worker: Partitioned Cookies 3P Iframe": "FAIL"
+    }
+  },
+  "workers/shared-worker-partitioned.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test partitioning of shared workers": "FAIL"
+    }
+  },
+  "workers/shared-worker-runtime-error-is-not-parse-error.html": {
+    "total": 3
+  },
+  "workers/worker-performance.worker.js": {
+    "total": 14,
+    "failures": {
+      "Resource timing seems to work in workers": "FAIL"
+    }
+  },
+  "workers/worker-request-animation-frame.html": {
+    "total": 1
+  },
+  "workers/worker-url-encoding.html": {
+    "total": 1
+  }
+}

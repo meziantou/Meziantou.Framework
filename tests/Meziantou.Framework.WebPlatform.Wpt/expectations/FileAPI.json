@@ -1,0 +1,369 @@
+{
+  "FileAPI/Blob-methods-from-detached-frame.html": {
+    "total": 5,
+    "failures": {
+      "slice()": "FAIL"
+    }
+  },
+  "FileAPI/BlobURL/cross-partition-navigation.https.html": {
+    "total": 5,
+    "failures": {
+      "Blob URL SVG <a> element click should enforce noopener for a cross-top-level-site navigation": "FAIL",
+      "Blob URL area element click should enforce noopener for a cross-top-level-site navigation": "FAIL",
+      "Blob URL link click should enforce noopener for a cross-top-level-site navigation": "FAIL",
+      "Blob URL should partition subframe navigation.": "FAIL",
+      "Blob URL window.open should enforce noopener for a cross-top-level-site navigation": "FAIL"
+    }
+  },
+  "FileAPI/BlobURL/cross-partition-self-fetch.https.html": {
+    "total": 1
+  },
+  "FileAPI/BlobURL/cross-partition-worker-creation.https.html": {
+    "total": 2,
+    "failures": {
+      "Cross-partition Dedicated worker shouldn't be created from blob URL.": "FAIL",
+      "Cross-partition Shared worker shouldn't be created from blob URL.": "FAIL"
+    }
+  },
+  "FileAPI/BlobURL/cross-partition.https.html": {
+    "total": 8,
+    "failures": {
+      "Blob URL shouldn't be fetched from a cross-partition dedicated worker": "FAIL",
+      "Blob URL shouldn't be fetched from a cross-partition iframe": "FAIL",
+      "Blob URL shouldn't be fetched from a cross-partition service worker": "FAIL",
+      "Blob URL shouldn't be fetched from a cross-partition shared worker": "FAIL",
+      "Blob URL shouldn't be revocable from a cross-partition dedicated worker": "FAIL",
+      "Blob URL shouldn't be revocable from a cross-partition iframe": "FAIL",
+      "Blob URL shouldn't be revocable from a cross-partition shared worker": "FAIL"
+    }
+  },
+  "FileAPI/BlobURL/opaque-origin.html": {
+    "total": 2
+  },
+  "FileAPI/FileReader/progress_event_bubbles_cancelable.html": {
+    "total": 1
+  },
+  "FileAPI/FileReader/workers.html": {
+    "total": 1
+  },
+  "FileAPI/FileReaderSync.worker.js": {
+    "total": 10
+  },
+  "FileAPI/blob/Blob-array-buffer-data-isolation.html": {
+    "total": 5
+  },
+  "FileAPI/blob/Blob-array-buffer.any.js": {
+    "total": 5
+  },
+  "FileAPI/blob/Blob-array-buffer.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "FileAPI/blob/Blob-bytes.any.js": {
+    "total": 5
+  },
+  "FileAPI/blob/Blob-bytes.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "FileAPI/blob/Blob-constructor-detached-buffer.any.js": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-constructor-detached-buffer.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-constructor-dom.window.js": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-constructor-endings.any.js": {
+    "total": 11
+  },
+  "FileAPI/blob/Blob-constructor-endings.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "FileAPI/blob/Blob-constructor-endings.html": {
+    "total": 34
+  },
+  "FileAPI/blob/Blob-constructor.any.js": {
+    "total": 73
+  },
+  "FileAPI/blob/Blob-constructor.any.js#dedicatedworker": {
+    "total": 73
+  },
+  "FileAPI/blob/Blob-in-worker.worker.js": {
+    "total": 1
+  },
+  "FileAPI/blob/Blob-newobject.any.js": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-newobject.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-newobject.any.js#sharedworker": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-slice-overflow.any.js": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-slice-overflow.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/blob/Blob-slice.any.js": {
+    "total": 150
+  },
+  "FileAPI/blob/Blob-slice.any.js#dedicatedworker": {
+    "total": 150
+  },
+  "FileAPI/blob/Blob-stream.any.js": {
+    "total": 6
+  },
+  "FileAPI/blob/Blob-stream.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "FileAPI/blob/Blob-text.any.js": {
+    "total": 8
+  },
+  "FileAPI/blob/Blob-text.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "FileAPI/blob/Blob-textStream.any.js": {
+    "total": 8
+  },
+  "FileAPI/blob/Blob-textStream.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "FileAPI/blob/Blob-textStream.any.js#sharedworker": {
+    "total": 8
+  },
+  "FileAPI/file/File-constructor-endings.any.js": {
+    "total": 11
+  },
+  "FileAPI/file/File-constructor-endings.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "FileAPI/file/File-constructor-endings.html": {
+    "total": 34
+  },
+  "FileAPI/file/File-constructor.any.js": {
+    "total": 51
+  },
+  "FileAPI/file/File-constructor.any.js#dedicatedworker": {
+    "total": 49
+  },
+  "FileAPI/file/File-lastModified.html": {
+    "total": 1
+  },
+  "FileAPI/file/Worker-read-file-constructor.worker.js": {
+    "total": 1
+  },
+  "FileAPI/file/send-file-form-controls.html": {
+    "total": 12
+  },
+  "FileAPI/file/send-file-form-iso-2022-jp.html": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-form-punctuation.html": {
+    "total": 27
+  },
+  "FileAPI/file/send-file-form-utf-8.html": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-form-windows-1252.html": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-form-x-user-defined.html": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-form.html": {
+    "total": 1
+  },
+  "FileAPI/file/send-file-formdata-controls.any.js": {
+    "total": 12
+  },
+  "FileAPI/file/send-file-formdata-controls.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "FileAPI/file/send-file-formdata-punctuation.any.js": {
+    "total": 27
+  },
+  "FileAPI/file/send-file-formdata-punctuation.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "FileAPI/file/send-file-formdata-utf-8.any.js": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-formdata-utf-8.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "FileAPI/file/send-file-formdata.any.js": {
+    "total": 1
+  },
+  "FileAPI/file/send-file-formdata.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "FileAPI/fileReader.any.js": {
+    "total": 4
+  },
+  "FileAPI/fileReader.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/filelist-section/filelist.html": {
+    "total": 7
+  },
+  "FileAPI/historical.https.html": {
+    "total": 13
+  },
+  "FileAPI/idlharness.any.js": {
+    "total": 111
+  },
+  "FileAPI/idlharness.any.js#dedicatedworker": {
+    "total": 120
+  },
+  "FileAPI/idlharness.html": {
+    "total": 69
+  },
+  "FileAPI/idlharness.worker.js": {
+    "total": 83
+  },
+  "FileAPI/reading-data-section/Determining-Encoding.any.js": {
+    "total": 6
+  },
+  "FileAPI/reading-data-section/Determining-Encoding.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "FileAPI/reading-data-section/FileReader-event-handler-attributes.any.js": {
+    "total": 6
+  },
+  "FileAPI/reading-data-section/FileReader-event-handler-attributes.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "FileAPI/reading-data-section/FileReader-multiple-reads.any.js": {
+    "total": 8
+  },
+  "FileAPI/reading-data-section/FileReader-multiple-reads.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "FileAPI/reading-data-section/filereader_abort.any.js": {
+    "total": 3
+  },
+  "FileAPI/reading-data-section/filereader_abort.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "FileAPI/reading-data-section/filereader_error.any.js": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_error.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_events.any.js": {
+    "total": 2
+  },
+  "FileAPI/reading-data-section/filereader_events.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "FileAPI/reading-data-section/filereader_readAsArrayBuffer.any.js": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readAsArrayBuffer.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readAsBinaryString.any.js": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readAsBinaryString.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readAsDataURL.any.js": {
+    "total": 4
+  },
+  "FileAPI/reading-data-section/filereader_readAsDataURL.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/reading-data-section/filereader_readAsDataURL.html": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readAsText.any.js": {
+    "total": 2
+  },
+  "FileAPI/reading-data-section/filereader_readAsText.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "FileAPI/reading-data-section/filereader_readAsText_blob_type_charset.any.js": {
+    "total": 3
+  },
+  "FileAPI/reading-data-section/filereader_readAsText_blob_type_charset.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "FileAPI/reading-data-section/filereader_readystate.any.js": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_readystate.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "FileAPI/reading-data-section/filereader_result.any.js": {
+    "total": 12
+  },
+  "FileAPI/reading-data-section/filereader_result.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "FileAPI/unicode.any.js": {
+    "total": 4
+  },
+  "FileAPI/unicode.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "FileAPI/url/cross-global-revoke.sub.html": {
+    "total": 3
+  },
+  "FileAPI/url/multi-global-origin-serialization.sub.html": {
+    "total": 1
+  },
+  "FileAPI/url/sandboxed-iframe.html": {
+    "total": 40,
+    "failures": {
+      "Blob URL fragment is implemented.": "FAIL",
+      "Blob URLs can be used in iframes, and are treated same origin": "FAIL",
+      "Revoke blob URL after creating Request, then clone Request, will fetch": "FAIL"
+    }
+  },
+  "FileAPI/url/unicode-origin.sub.html": {
+    "total": 1
+  },
+  "FileAPI/url/url-charset.window.js": {
+    "total": 2
+  },
+  "FileAPI/url/url-format.any.js": {
+    "total": 6
+  },
+  "FileAPI/url/url-format.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "FileAPI/url/url-in-tags-revoke.window.js": {
+    "total": 7
+  },
+  "FileAPI/url/url-in-tags.window.js": {
+    "total": 4
+  },
+  "FileAPI/url/url-lifetime.html": {
+    "total": 2
+  },
+  "FileAPI/url/url-reload.window.js": {
+    "total": 2,
+    "failures": {
+      "Reloading a blob URL succeeds even if the URL was revoked.": "FAIL"
+    }
+  },
+  "FileAPI/url/url-with-fetch.any.js": {
+    "total": 16
+  },
+  "FileAPI/url/url-with-fetch.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "FileAPI/url/url-with-xhr.any.js": {
+    "total": 14
+  },
+  "FileAPI/url/url-with-xhr.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "FileAPI/url/url_xmlhttprequest_img.html": {
+    "reftest": "PASS"
+  }
+}

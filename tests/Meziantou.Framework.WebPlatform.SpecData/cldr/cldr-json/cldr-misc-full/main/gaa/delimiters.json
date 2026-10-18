@@ -1,0 +1,15 @@
+{
+  "main": {
+    "gaa": {
+      "identity": {
+        "language": "gaa"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-MO": {
+      "identity": {
+        "language": "en",
+        "territory": "MO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,756 @@
+{
+  "spec": {
+    "title": "Prioritized Task Scheduling",
+    "url": "https://wicg.github.io/scheduling-apis/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "TaskPriorityChangeEvent",
+          "TaskController"
+        ],
+        "Worker": [
+          "TaskPriorityChangeEvent",
+          "TaskController"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Scheduler",
+          "TaskSignal"
+        ],
+        "Worker": [
+          "Scheduler",
+          "TaskSignal"
+        ]
+      }
+    },
+    "idlNames": {
+      "TaskPriority": {
+        "fragment": "enum TaskPriority {\n  \"user-blocking\",\n  \"user-visible\",\n  \"background\"\n};",
+        "type": "enum",
+        "name": "TaskPriority",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "user-blocking",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-blocking"
+          },
+          {
+            "type": "enum-value",
+            "value": "user-visible",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-visible"
+          },
+          {
+            "type": "enum-value",
+            "value": "background",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskpriority-background"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/scheduling-apis/#enumdef-taskpriority"
+      },
+      "SchedulerPostTaskOptions": {
+        "fragment": "dictionary SchedulerPostTaskOptions {\n  AbortSignal signal;\n  TaskPriority priority;\n  [EnforceRange] unsigned long long delay = 0;\n};",
+        "type": "dictionary",
+        "name": "SchedulerPostTaskOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskPriority"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-priority"
+          },
+          {
+            "type": "field",
+            "name": "delay",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-delay"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#dictdef-schedulerposttaskoptions"
+      },
+      "SchedulerPostTaskCallback": {
+        "fragment": "callback SchedulerPostTaskCallback = any ();",
+        "type": "callback",
+        "name": "SchedulerPostTaskCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/scheduling-apis/#callbackdef-schedulerposttaskcallback"
+      },
+      "Scheduler": {
+        "fragment": "[Exposed=(Window, Worker)]\ninterface Scheduler {\n  Promise<any> postTask(SchedulerPostTaskCallback callback,\n                        optional SchedulerPostTaskOptions options = {});\n  Promise<undefined> yield();\n};",
+        "type": "interface",
+        "name": "Scheduler",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "postTask",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SchedulerPostTaskCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SchedulerPostTaskOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-scheduler-posttask"
+          },
+          {
+            "type": "operation",
+            "name": "yield",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-scheduler-yield"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#scheduler"
+      },
+      "TaskPriorityChangeEvent": {
+        "fragment": "[Exposed=(Window, Worker)]\ninterface TaskPriorityChangeEvent : Event {\n  constructor(DOMString type, TaskPriorityChangeEventInit priorityChangeEventInitDict);\n\n  readonly attribute TaskPriority previousPriority;\n};",
+        "type": "interface",
+        "name": "TaskPriorityChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "priorityChangeEventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskPriorityChangeEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-taskprioritychangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "previousPriority",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskPriority"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-previouspriority"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#taskprioritychangeevent"
+      },
+      "TaskPriorityChangeEventInit": {
+        "fragment": "dictionary TaskPriorityChangeEventInit : EventInit {\n  required TaskPriority previousPriority;\n};",
+        "type": "dictionary",
+        "name": "TaskPriorityChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "previousPriority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskPriority"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeeventinit-previouspriority"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#dictdef-taskprioritychangeeventinit"
+      },
+      "TaskControllerInit": {
+        "fragment": "dictionary TaskControllerInit {\n  TaskPriority priority = \"user-visible\";\n};",
+        "type": "dictionary",
+        "name": "TaskControllerInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskPriority"
+            },
+            "default": {
+              "type": "string",
+              "value": "user-visible"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskcontrollerinit-priority"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#dictdef-taskcontrollerinit"
+      },
+      "TaskController": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TaskController : AbortController {\n  constructor(optional TaskControllerInit init = {});\n\n  undefined setPriority(TaskPriority priority);\n};",
+        "type": "interface",
+        "name": "TaskController",
+        "inheritance": "AbortController",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskControllerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskcontroller-taskcontroller"
+          },
+          {
+            "type": "operation",
+            "name": "setPriority",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "priority",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskPriority"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-taskcontroller-setpriority"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#taskcontroller"
+      },
+      "TaskSignalAnyInit": {
+        "fragment": "dictionary TaskSignalAnyInit {\n  (TaskPriority or TaskSignal) priority = \"user-visible\";\n};",
+        "type": "dictionary",
+        "name": "TaskSignalAnyInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskPriority"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskSignal"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "user-visible"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-tasksignalanyinit-priority"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#dictdef-tasksignalanyinit"
+      },
+      "TaskSignal": {
+        "fragment": "[Exposed=(Window, Worker)]\ninterface TaskSignal : AbortSignal {\n  [NewObject] static TaskSignal _any(sequence<AbortSignal> signals, optional TaskSignalAnyInit init = {});\n\n  readonly attribute TaskPriority priority;\n\n  attribute EventHandler onprioritychange;\n};",
+        "type": "interface",
+        "name": "TaskSignal",
+        "inheritance": "AbortSignal",
+        "members": [
+          {
+            "type": "operation",
+            "name": "any",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskSignal"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "signals",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "AbortSignal"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TaskSignalAnyInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://wicg.github.io/scheduling-apis/#dom-tasksignal-any"
+          },
+          {
+            "type": "attribute",
+            "name": "priority",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TaskPriority"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-tasksignal-priority"
+          },
+          {
+            "type": "attribute",
+            "name": "onprioritychange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/scheduling-apis/#dom-tasksignal-onprioritychange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/scheduling-apis/#tasksignal"
+      }
+    },
+    "idlExtendedNames": {
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [Replaceable] readonly attribute Scheduler scheduler;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "scheduler",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Scheduler"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "Replaceable",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/scheduling-apis/#dom-windoworworkerglobalscope-scheduler"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Scheduler",
+        "TaskPriorityChangeEvent",
+        "TaskController",
+        "TaskSignal"
+      ],
+      "Worker": [
+        "Scheduler",
+        "TaskPriorityChangeEvent",
+        "TaskController",
+        "TaskSignal"
+      ]
+    },
+    "dependencies": {
+      "SchedulerPostTaskOptions": [
+        "AbortSignal",
+        "TaskPriority"
+      ],
+      "Scheduler": [
+        "SchedulerPostTaskCallback",
+        "SchedulerPostTaskOptions"
+      ],
+      "TaskPriorityChangeEvent": [
+        "Event",
+        "TaskPriorityChangeEventInit",
+        "TaskPriority"
+      ],
+      "TaskPriorityChangeEventInit": [
+        "EventInit",
+        "TaskPriority"
+      ],
+      "TaskControllerInit": [
+        "TaskPriority"
+      ],
+      "TaskController": [
+        "AbortController",
+        "TaskControllerInit",
+        "TaskPriority"
+      ],
+      "TaskSignalAnyInit": [
+        "TaskPriority",
+        "TaskSignal"
+      ],
+      "TaskSignal": [
+        "AbortSignal",
+        "TaskSignal",
+        "TaskSignalAnyInit",
+        "TaskPriority",
+        "EventHandler"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "Scheduler"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal",
+      "Event",
+      "EventInit",
+      "AbortController",
+      "EventHandler",
+      "WindowOrWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

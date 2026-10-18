@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ln-AO": {
+      "identity": {
+        "language": "ln",
+        "territory": "AO"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

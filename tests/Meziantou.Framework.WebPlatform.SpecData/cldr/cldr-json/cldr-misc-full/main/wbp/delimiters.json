@@ -1,0 +1,15 @@
+{
+  "main": {
+    "wbp": {
+      "identity": {
+        "language": "wbp"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

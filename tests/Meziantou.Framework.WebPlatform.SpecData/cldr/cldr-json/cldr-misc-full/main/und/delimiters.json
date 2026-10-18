@@ -1,0 +1,15 @@
+{
+  "main": {
+    "und": {
+      "identity": {
+        "language": "root"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

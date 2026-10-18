@@ -1,0 +1,8 @@
+{
+  "intervention-reporting/idlharness.any.js": {
+    "total": 2
+  },
+  "intervention-reporting/idlharness.any.js#dedicatedworker": {
+    "total": 2
+  }
+}

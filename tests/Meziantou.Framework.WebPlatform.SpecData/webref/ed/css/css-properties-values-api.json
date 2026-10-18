@@ -1,0 +1,39 @@
+{
+  "spec": {
+    "title": "CSS Properties and Values API Level 1",
+    "url": "https://drafts.css-houdini.org/css-properties-values-api-1/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@property",
+      "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#at-ruledef-property",
+      "descriptors": [
+        {
+          "name": "syntax",
+          "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#descdef-property-syntax",
+          "for": "@property",
+          "value": "<string>",
+          "initial": "\"*\""
+        },
+        {
+          "name": "inherits",
+          "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#descdef-property-inherits",
+          "for": "@property",
+          "value": "true | false",
+          "initial": "true"
+        },
+        {
+          "name": "initial-value",
+          "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#descdef-property-initial-value",
+          "for": "@property",
+          "value": "<declaration-value>?",
+          "initial": "the guaranteed-invalid value"
+        }
+      ],
+      "value": "@property <custom-property-name># { <declaration-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": []
+}

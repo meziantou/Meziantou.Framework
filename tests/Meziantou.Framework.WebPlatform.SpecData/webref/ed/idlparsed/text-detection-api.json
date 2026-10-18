@@ -1,0 +1,390 @@
+{
+  "spec": {
+    "title": "Accelerated Text Detection in Images",
+    "url": "https://wicg.github.io/shape-detection-api/text.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "TextDetector"
+        ],
+        "Worker": [
+          "TextDetector"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "TextDetectorOptions": {
+        "fragment": "dictionary TextDetectorOptions {\n    required sequence<DOMString> languages;\n};",
+        "type": "dictionary",
+        "name": "TextDetectorOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "languages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetectoroptions-languages"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/shape-detection-api/text.html#dictdef-textdetectoroptions"
+      },
+      "TextDetectorCreateOptions": {
+        "fragment": "dictionary TextDetectorCreateOptions {\n    AbortSignal signal;\n    sequence<DOMString> languages;\n};",
+        "type": "dictionary",
+        "name": "TextDetectorCreateOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetectorcreateoptions-signal"
+          },
+          {
+            "type": "field",
+            "name": "languages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetectorcreateoptions-languages"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/shape-detection-api/text.html#dictdef-textdetectorcreateoptions"
+      },
+      "TextDetector": {
+        "fragment": "[\n    Exposed=(Window,Worker),\n    SecureContext\n] interface TextDetector {\n    constructor();\n    static Promise<Availability> availability(TextDetectorOptions options);\n    static Promise<TextDetector> create(optional TextDetectorCreateOptions options = {});\n    Promise<sequence<DetectedText>> detect(ImageBitmapSource image);\n};",
+        "type": "interface",
+        "name": "TextDetector",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetector-textdetector"
+          },
+          {
+            "type": "operation",
+            "name": "availability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Availability"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDetectorOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetector-availability"
+          },
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDetector"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TextDetectorCreateOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetector-create"
+          },
+          {
+            "type": "operation",
+            "name": "detect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DetectedText"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "image",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ImageBitmapSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-textdetector-detect"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/shape-detection-api/text.html#textdetector"
+      },
+      "DetectedText": {
+        "fragment": "dictionary DetectedText {\n  required DOMRectReadOnly boundingBox;\n  required DOMString rawValue;\n  required sequence<Point2D> cornerPoints;\n};",
+        "type": "dictionary",
+        "name": "DetectedText",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "boundingBox",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-detectedtext-boundingbox"
+          },
+          {
+            "type": "field",
+            "name": "rawValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-detectedtext-rawvalue"
+          },
+          {
+            "type": "field",
+            "name": "cornerPoints",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Point2D"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/shape-detection-api/text.html#dom-detectedtext-cornerpoints"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/shape-detection-api/text.html#dictdef-detectedtext"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "TextDetector"
+      ],
+      "Worker": [
+        "TextDetector"
+      ]
+    },
+    "dependencies": {
+      "TextDetectorOptions": [],
+      "TextDetectorCreateOptions": [
+        "AbortSignal"
+      ],
+      "TextDetector": [
+        "Availability",
+        "TextDetectorOptions",
+        "TextDetector",
+        "TextDetectorCreateOptions",
+        "DetectedText",
+        "ImageBitmapSource"
+      ],
+      "DetectedText": [
+        "DOMRectReadOnly",
+        "Point2D"
+      ]
+    },
+    "externalDependencies": [
+      "AbortSignal",
+      "Availability",
+      "ImageBitmapSource",
+      "DOMRectReadOnly",
+      "Point2D"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

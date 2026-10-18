@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ebu": {
+      "identity": {
+        "language": "ebu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

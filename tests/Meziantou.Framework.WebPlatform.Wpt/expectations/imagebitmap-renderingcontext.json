@@ -1,0 +1,44 @@
+{
+  "imagebitmap-renderingcontext/bitmaprenderer-as-imagesource.html": {
+    "total": 3
+  },
+  "imagebitmap-renderingcontext/context-creation-offscreen-with-alpha.html": {
+    "total": 3
+  },
+  "imagebitmap-renderingcontext/context-creation-offscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/context-creation-with-alpha.html": {
+    "total": 3
+  },
+  "imagebitmap-renderingcontext/context-creation.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/context-preserves-canvas.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/toBlob-origin-clean-offscreen.sub.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-ToBlob-offscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-ToBlob-transferControlToOffscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-TransferToImageBitmap-offscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-TransferToImageBitmap-transferControlToOffscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-detached.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-null-offscreen.html": {
+    "total": 1
+  },
+  "imagebitmap-renderingcontext/transferFromImageBitmap-null.html": {
+    "total": 1
+  }
+}

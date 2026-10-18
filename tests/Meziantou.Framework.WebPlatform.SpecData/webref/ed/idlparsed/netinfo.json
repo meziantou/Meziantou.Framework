@@ -1,0 +1,345 @@
+{
+  "spec": {
+    "title": "Network Information API",
+    "url": "https://wicg.github.io/netinfo/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "NetworkInformation"
+        ],
+        "Worker": [
+          "NetworkInformation"
+        ]
+      }
+    },
+    "idlNames": {
+      "ConnectionType": {
+        "fragment": "enum ConnectionType {\n  \"bluetooth\",\n  \"cellular\",\n  \"ethernet\",\n  \"mixed\",\n  \"none\",\n  \"other\",\n  \"unknown\",\n  \"wifi\",\n  \"wimax\"\n};",
+        "type": "enum",
+        "name": "ConnectionType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "bluetooth",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-bluetooth"
+          },
+          {
+            "type": "enum-value",
+            "value": "cellular",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-cellular"
+          },
+          {
+            "type": "enum-value",
+            "value": "ethernet",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-ethernet"
+          },
+          {
+            "type": "enum-value",
+            "value": "mixed",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-mixed"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "other",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-other"
+          },
+          {
+            "type": "enum-value",
+            "value": "unknown",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-unknown"
+          },
+          {
+            "type": "enum-value",
+            "value": "wifi",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-wifi"
+          },
+          {
+            "type": "enum-value",
+            "value": "wimax",
+            "href": "https://wicg.github.io/netinfo/#dom-connectiontype-wimax"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/netinfo/#dom-connectiontype"
+      },
+      "EffectiveConnectionType": {
+        "fragment": "enum EffectiveConnectionType {\n  \"2g\",\n  \"3g\",\n  \"4g\",\n  \"slow-2g\"\n};",
+        "type": "enum",
+        "name": "EffectiveConnectionType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "2g",
+            "href": "https://wicg.github.io/netinfo/#dom-effectiveconnectiontype-2g"
+          },
+          {
+            "type": "enum-value",
+            "value": "3g",
+            "href": "https://wicg.github.io/netinfo/#dom-effectiveconnectiontype-3g"
+          },
+          {
+            "type": "enum-value",
+            "value": "4g",
+            "href": "https://wicg.github.io/netinfo/#dom-effectiveconnectiontype-4g"
+          },
+          {
+            "type": "enum-value",
+            "value": "slow-2g",
+            "href": "https://wicg.github.io/netinfo/#dom-effectiveconnectiontype-slow-2g"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/netinfo/#dom-effectiveconnectiontype"
+      },
+      "NavigatorNetworkInformation": {
+        "fragment": "interface mixin NavigatorNetworkInformation {\n  [SameObject] readonly attribute NetworkInformation connection;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorNetworkInformation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "connection",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NetworkInformation"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-navigatornetworkinformation-connection"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/netinfo/#dom-navigatornetworkinformation"
+      },
+      "NetworkInformation": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface NetworkInformation : EventTarget {\n  readonly attribute ConnectionType type;\n  readonly attribute EffectiveConnectionType effectiveType;\n  readonly attribute Megabit downlinkMax;\n  readonly attribute Megabit downlink;\n  readonly attribute Millisecond rtt;\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "NetworkInformation",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConnectionType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-type"
+          },
+          {
+            "type": "attribute",
+            "name": "effectiveType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EffectiveConnectionType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-effectivetype"
+          },
+          {
+            "type": "attribute",
+            "name": "downlinkMax",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Megabit"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-downlinkmax"
+          },
+          {
+            "type": "attribute",
+            "name": "downlink",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Megabit"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-downlink"
+          },
+          {
+            "type": "attribute",
+            "name": "rtt",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Millisecond"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-rtt"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/netinfo/#dom-networkinformation-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/netinfo/#dom-networkinformation"
+      },
+      "Megabit": {
+        "fragment": "typedef unrestricted double Megabit;",
+        "type": "typedef",
+        "name": "Megabit",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "unrestricted double"
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/netinfo/#dom-megabit"
+      },
+      "Millisecond": {
+        "fragment": "typedef unsigned long long Millisecond;",
+        "type": "typedef",
+        "name": "Millisecond",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "unsigned long long"
+        },
+        "extAttrs": [],
+        "href": "https://wicg.github.io/netinfo/#dom-millisecond"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorNetworkInformation;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorNetworkInformation"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorNetworkInformation;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorNetworkInformation"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NetworkInformation"
+      ],
+      "Worker": [
+        "NetworkInformation"
+      ]
+    },
+    "dependencies": {
+      "NavigatorNetworkInformation": [
+        "NetworkInformation"
+      ],
+      "Navigator": [
+        "NavigatorNetworkInformation"
+      ],
+      "WorkerNavigator": [
+        "NavigatorNetworkInformation"
+      ],
+      "NetworkInformation": [
+        "EventTarget",
+        "ConnectionType",
+        "EffectiveConnectionType",
+        "Megabit",
+        "Millisecond",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

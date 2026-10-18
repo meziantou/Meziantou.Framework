@@ -1,0 +1,1503 @@
+{
+  "html/rendering/bidi-rendering/slot-direction.window.js": {
+    "total": 6
+  },
+  "html/rendering/bidi-rendering/slot-no-isolate-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bidi-rendering/unicode-bidi-ua-rules.html": {
+    "total": 130
+  },
+  "html/rendering/bindings/the-button-element/button-type-menu-historical.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-input-element-as-a-text-entry-widget/unrecognized-type-should-fallback-as-text-type.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-select-element-0/listbox-abspos-descendant.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-select-element-0/listbox-option-display-contents.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-select-element-0/listbox-option-in-div.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-select-element-0/option-label.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-textarea-element-0/cols-default.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-textarea-element-0/cols-zero.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-textarea-element-0/rows-default.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/bindings/the-textarea-element-0/rows-zero.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/cdata-001.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/cdata-002.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/dimension-attributes.html": {
+    "total": 1720
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/dialog-display.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/dialog.html": {
+    "total": 6
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/div-align.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/figure.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/form-margin-quirk.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html": {
+    "total": 11
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/search-styles.html": {
+    "total": 10
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/slot-element-default-display.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/slot-element-focusable.tentative.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/flow-content-0/slot-element-tabbable.tentative.html": {
+    "total": 2,
+    "failures": {
+      "slot element with default style should be focusable": "FAIL"
+    }
+  },
+  "html/rendering/non-replaced-elements/form-controls/align-content.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/non-replaced-elements/form-controls/datetime-dynamic-type-change.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/form-controls/input-line-height-computed.html": {
+    "total": 12
+  },
+  "html/rendering/non-replaced-elements/form-controls/input-line-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/form-controls/input-placeholder-line-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/form-controls/placeholder-opacity-default.tentative.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/form-controls/resets.html": {
+    "total": 411,
+    "failures": {
+      "<button> - align-content": "FAIL",
+      "<input type=\"button\"> - align-content": "FAIL",
+      "<input type=\"color\"> - align-content": "FAIL",
+      "<input type=\"date\"> - align-content": "FAIL",
+      "<input type=\"datetime-local\"> - align-content": "FAIL",
+      "<input type=\"email\"> - align-content": "FAIL",
+      "<input type=\"hidden\"> - align-content": "FAIL",
+      "<input type=\"image\"> - align-content": "FAIL",
+      "<input type=\"month\"> - align-content": "FAIL",
+      "<input type=\"number\"> - align-content": "FAIL",
+      "<input type=\"password\"> - align-content": "FAIL",
+      "<input type=\"reset\"> - align-content": "FAIL",
+      "<input type=\"search\"> - align-content": "FAIL",
+      "<input type=\"submit\"> - align-content": "FAIL",
+      "<input type=\"tel\"> - align-content": "FAIL",
+      "<input type=\"text\"> - align-content": "FAIL",
+      "<input type=\"time\"> - align-content": "FAIL",
+      "<input type=\"url\"> - align-content": "FAIL",
+      "<input type=\"week\"> - align-content": "FAIL",
+      "<select><optgroup><option> - align-content": "FAIL"
+    }
+  },
+  "html/rendering/non-replaced-elements/form-controls/select-sizing-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/form-controls/text-transform.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/form-controls/toggle-display.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/hidden-elements.html": {
+    "total": 20
+  },
+  "html/rendering/non-replaced-elements/input-type-hidden-important.html": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/lists/dir-type.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-text-align.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-supported-xhtml.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-supported.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-unsupported-lower-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-unsupported-lower-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-unsupported-upper-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/li-type-unsupported-upper-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/list-style-position-quirks-mode.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/lists-presentational-hints-ascii-case-insensitive.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/lists/lists-styles-quirks.html": {
+    "total": 2070
+  },
+  "html/rendering/non-replaced-elements/lists/lists-styles.html": {
+    "total": 2070
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-supported-xhtml.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-supported.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-circle.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-disc.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-invalid.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-lower-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-lower-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-none.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-round.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-square.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-upper-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ol-type-unsupported-upper-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-supported-xhtml.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-supported.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-decimal.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-invalid.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-lower-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-lower-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-upper-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/lists/ul-type-unsupported-upper-roman.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/margin-collapsing-quirks/multicol-quirks-mode.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/margin-collapsing-quirks/multicol-standards-mode.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/b-strong-styles.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/br-wbr-content/content-property.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/001-a.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/001-q.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/001-s.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/001-x.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/font-face.html": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/phrasing-content-0/font-element-text-decoration-color/font-size.html": {
+    "total": 28
+  },
+  "html/rendering/non-replaced-elements/sections-and-headings/headings-styles.html": {
+    "total": 561
+  },
+  "html/rendering/non-replaced-elements/tables/colgroup_valign_bottom.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/colgroup_valign_top.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/form-in-tables-xhtml.xhtml": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/tables/form-in-tables.html": {
+    "total": 10
+  },
+  "html/rendering/non-replaced-elements/tables/hidden-attr.html": {
+    "total": 10
+  },
+  "html/rendering/non-replaced-elements/tables/table-align-float.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-attribute.html": {
+    "total": 58
+  },
+  "html/rendering/non-replaced-elements/tables/table-background-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-1.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-3q.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-3s.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-attributes-computed-style.html": {
+    "total": 9
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-color-not-inherited.html": {
+    "total": 3,
+    "failures": {
+      "A <table rules=all> cell border does not inherit the table's CSS border-color; it resolves to the cell's currentColor": "FAIL",
+      "The legacy bordercolor attribute still propagates to interior cell borders": "FAIL"
+    }
+  },
+  "html/rendering/non-replaced-elements/tables/table-border-presentational-hints-ascii-case-insensitive.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-bordercolor-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-bordercolor-default.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/tables/table-cell-nowrap-with-fixed-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-cell-width-s.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-cell-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-column-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-direction.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-layout.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-direction.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-group-direction.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-group-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-pagination-001-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-row-pagination-002-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-rowspan-height-distribution.html": {
+    "total": 4
+  },
+  "html/rendering/non-replaced-elements/tables/table-rules-computed-style.html": {
+    "total": 35
+  },
+  "html/rendering/non-replaced-elements/tables/table-ua-stylesheet.html": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/tables/table-valign-baseline-ascii-case-insensitive.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/tables/table-vspace-hspace-s.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/tables/table-vspace-hspace.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/tables/table-width-150percent.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-width-s.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/tr-transform-and-will-change.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/transformed-tbody-tr-collapsed-border.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-br-element/br-clear-presentational-hints.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/absolute-fixed-in-legend.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/empty-scrollable.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-baseline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-block-formatting-context.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-block-size.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-border-gap-negative-margin.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-border-gap-position-relative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-border-radius-hittest.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-border-radius-with-alpha.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-calculating-min-max-content.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-containing-block.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-before-legend.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-column-rule.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-gap.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-rule-break.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-rule-inset.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-rule-overlap.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-rule-visibility-items.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-box-rule.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-percentage-size.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-content-rtl.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-default-style.html": {
+    "total": 18
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-display-ruby.html": {
+    "total": 6
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-display.html": {
+    "total": 15
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-dynamic-baseline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-dynamic-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-flexbox.html": {
+    "total": 3
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-generated-content.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-grid.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-list-item.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-max-block-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-multicol-column-height.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-multicol-only-column-count.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-multicol-only-column-width.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-multicol.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-overflow-cssomview.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-overflow-hidden.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-overflow.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-painting-order.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-percentage-block-size.html": {
+    "total": 10
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-percentage-padding.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-resize.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-transform-translatez.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-vertical.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/flex-legend-float-abspos.html": {
+    "total": 4
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/grid-template-propagation.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-align-justify-self.html": {
+    "total": 13
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-align-text-align.html": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-align.html": {
+    "total": 10
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-auto-margins.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-formatting-context.html": {
+    "total": 4
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-position-centering.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-none-rendering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-none.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-ruby.html": {
+    "total": 24
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display.html": {
+    "total": 80
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-float-abspos.html": {
+    "total": 4
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-float.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-grid-flex-multicol.html": {
+    "total": 5
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-hover.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-in-slot.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-inline-position-with-fieldset-padding.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-list-item-numbering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-list-item.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-margin-inline.html": {
+    "total": 4
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-painting-order.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-position-relative-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-position-relative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-sans-fieldset-display-ruby.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-sans-fieldset-display.html": {
+    "total": 9
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-tall.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend.html": {
+    "total": 56
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/min-inline-size.html": {
+    "total": 6
+  },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/sticky-content.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/different-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/exceed-then-not-exceed.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/frameset-visibility-hidden.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-cols-abssize.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-cols-percentage.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-cols-relsize.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-rows-abssize.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-rows-percentage.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-frameset-and-frame-elements/large-rows-relsize.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/align.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/color.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/hr.html": {
+    "total": 18
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/setting-overflow-visible.html": {
+    "total": 2
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/size-with-color-or-noshade.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-hr-element-0/width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html": {
+    "reftest": "ERROR"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1a.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1b.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1c.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1d.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1e.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1f.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1g.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1h.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1i.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1j.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1k.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-1l.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2a.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2b.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2c.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2d.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2e.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2f.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2g.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2h.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2i.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2j.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2k.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-2l.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-3a.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-page/body-margin-3b.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-page/body_text_00ffff.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/iframe-body-margin-attributes.html": {
+    "total": 3
+  },
+  "html/rendering/non-replaced-elements/the-page/iframe-marginwidth-marginheight.html": {
+    "total": 1
+  },
+  "html/rendering/non-replaced-elements/the-page/iframe-scrolling-attribute-values.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-page/iframe-scrolling-attribute.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/pixel-length-attributes.html": {
+    "total": 546
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/align.html": {
+    "total": 23,
+    "failures": {
+      "align=absbottom on replaced elements": "FAIL",
+      "align=bottom on replaced elements": "FAIL",
+      "align=center on replaced elements": "FAIL",
+      "align=middle on replaced elements": "FAIL"
+    }
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/canvas-aspect-ratio.html": {
+    "total": 13
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/canvas-dimension-attributes.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/content-aspect-ratio.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/embedded-and-images-presentational-hints-ascii-case-insensitive.html": {
+    "total": 3,
+    "failures": {
+      "keyword absbottom": "FAIL"
+    }
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-alt-crash-001.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-lazy.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio.html": {
+    "total": 41
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-dim.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-empty-alt-replaced-block.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-empty-alt-replaced.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-no-alt-replaced.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-replaced-box-while-loading.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-title-only-w-sizing.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img_border_percent.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-align-right-1.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-align-right-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-image-inline-alt.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-min-bsize-centered.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-text-indent.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-type-change-from-image-1.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/number-placeholder-right-aligned.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/object_border_perc.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/object_border_pixel.xhtml": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/picture-aspect-ratio.html": {
+    "total": 15
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/textarea-placeholder-scroll.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/textarea-scrollheight-empty.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-aspect-ratio.html": {
+    "total": 14
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-default-object-height-constrained-by-max-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-default-object-width-constrained-by-max-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/video-intrinsic-width-height.html": {
+    "total": 6
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/audio-controls-001.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/audio-controls-002.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/audio-without-controls.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/canvas-fallback.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/canvas-update-with-border-object-fit.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/canvas_scale.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content-rendering-rules/canvas_without_context_a.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/audio-controls-intrinsic-size.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/embedded-content/change-src-while-not-displayed.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/cross-domain-iframe-in-multicol.sub.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/cross-domain-iframe.sub.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/iframe-frameborder.html": {
+    "total": 13
+  },
+  "html/rendering/replaced-elements/embedded-content/object-fallback-text-decoration.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/tall-cross-domain-iframe-in-scrolled.sub.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/video-controls-stacking-hit-test.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/embedded-content/video-controls-stacking.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/video-controls-vertical-writing-mode.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/embedded-content/video-stacking-hit-test.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/images/abs-pos-transferred-max-width-from-percentage-max-height-in-auto-height-containing-block.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/replaced-elements/images/blocked-by-csp.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/images/image-fallback-respect-max-width.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/images/img-fallback-baseline-alignment.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/images/img-represents-image-size-before-partially-available.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/images/img-represents-nothing-style-mutation.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/images/img-sizes-auto.html": {
+    "total": 24
+  },
+  "html/rendering/replaced-elements/images/input-image-content.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/images/revoked-blob-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/images/space.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-auto.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-fixed.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-percentage.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-img-auto.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-img-fixed.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-img-percentage.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-object-auto.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-object-fixed.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-object-percentage.html": {
+    "total": 216
+  },
+  "html/rendering/replaced-elements/svg-inline-sizing/svg-inline.html": {
+    "total": 648
+  },
+  "html/rendering/replaced-elements/the-option-element/option-label-whitespace-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-option-element/option-label-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-option-element/option-with-br.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-option-element/select-multiple-covered-by-abspos.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-height-in-flex.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-001-ref.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-001-ref2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-002-ref.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-002-ref2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-size-empty-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/customizable-select/min-width-in-flex.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-1-block-size-001-ref.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-1-block-size-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-1-block-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-1-line-height.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-adopted.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-button-min-height-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-display-inline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-empty.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-intrinsic-option-font-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-intrinsic-text-transform.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-multiple-re-add-option-via-document-fragment.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-setting-selected-option-from-js-updates-visible-state.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-setting-value-from-js-updates-visible-state.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-select-element/select-text-decoration.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-textarea-element/caret-visibility-after-creation-in-script.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-textarea-element/textarea-defaults-to-zero-margin.tentative.html": {
+    "total": 1
+  },
+  "html/rendering/replaced-elements/the-textarea-element/textarea-padding-bend-overlaps-content-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-textarea-element/textarea-padding-bstart-moves-content-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-textarea-element/textarea-padding-iend-overlaps-content-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/replaced-elements/the-textarea-element/textarea-padding-istart-moves-content-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/sections/headingoffset-and-headingreset.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/body-bgcolor-attribute-change.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/getComputedStyle-hidden.html": {
+    "total": 2
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/mouse-cursor-imagemap.html": {
+    "total": 1
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html": {
+    "total": 2,
+    "failures": {
+      "Unvisited help links must have pointer cursor, not help cursor": "FAIL",
+      "Visited help links must have pointer cursor, not help cursor": "FAIL"
+    }
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links.historical.html": {
+    "total": 2
+  },
+  "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/pre-margin-block.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/auto-expand-details-text-fragment.html": {
+    "total": 1
+  },
+  "html/rendering/the-details-element/details-after.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-before.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-blockification.html": {
+    "total": 1
+  },
+  "html/rendering/the-details-element/details-content-pseudo-attr.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-display-type-001-ref.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-display-type-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-display-type-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-display.html": {
+    "total": 8
+  },
+  "html/rendering/the-details-element/details-focus-steps.html": {
+    "total": 2
+  },
+  "html/rendering/the-details-element/details-page-break-after-1-print.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/the-details-element/details-page-break-after-2-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-page-break-before-1-print.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/the-details-element/details-page-break-before-2-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-003.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-004.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-005.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-pseudo-elements-006.html": {
+    "total": 1
+  },
+  "html/rendering/the-details-element/details-revert.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-summary-display-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/details-summary-display-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-flex.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-grid.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-inline-flex.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-inline-grid.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-list-item-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-display-list-item-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-in-ol.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/the-details-element/summary-text-decoration.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/unmapped-attributes.html": {
+    "total": 62
+  },
+  "html/rendering/widgets/appearance/appearance-animation-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/appearance/appearance-animation-002.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/appearance/appearance-transition-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/appearance/appearance-transition-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/appearance/appearance-transition-003.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/appearance/default-styles.html": {
+    "total": 45
+  },
+  "html/rendering/widgets/baseline-alignment-and-overflow.tentative.html": {
+    "total": 132,
+    "failures": {
+      "<input type=\"checkbox\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
+      "<input type=\"checkbox\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
+      "<input type=\"checkbox\" style=\"overflow: visible; appearance: auto;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: hidden; appearance: none;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: none;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: auto;\">": "FAIL",
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: none;\">": "FAIL",
+      "<input type=\"radio\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
+      "<input type=\"radio\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
+      "<input type=\"radio\" style=\"overflow: visible; appearance: auto;\">": "FAIL"
+    }
+  },
+  "html/rendering/widgets/button-layout/anonymous-button-content-box.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/button-layout/block-in-inline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/button-dynamic-content.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/centering-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/centering-002.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/centering-003.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/centering-004.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/computed-style.html": {
+    "total": 167
+  },
+  "html/rendering/widgets/button-layout/display-none-or-contents.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/display-other.html": {
+    "total": 18
+  },
+  "html/rendering/widgets/button-layout/flex.html": {
+    "total": 5
+  },
+  "html/rendering/widgets/button-layout/grid.html": {
+    "total": 2
+  },
+  "html/rendering/widgets/button-layout/inline-level.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/input-type-button-clip.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/input-type-button-newline-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/input-type-button-newline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/propagate-text-decoration.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/button-layout/scrollable-button-centering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/scrollbars.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/button-layout/shrink-wrap.html": {
+    "total": 24
+  },
+  "html/rendering/widgets/field-sizing-input-number-relayout.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/field-sizing-input-number.html": {
+    "total": 9,
+    "failures": {
+      "number: Auto width and auto height with a long text": "FAIL",
+      "number: Explicit height and auto width": "FAIL"
+    }
+  },
+  "html/rendering/widgets/field-sizing-input-text-relayout.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/field-sizing-input-text.html": {
+    "total": 54
+  },
+  "html/rendering/widgets/field-sizing-placeholder-stretch.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/field-sizing-select-contain-size.html": {
+    "total": 2
+  },
+  "html/rendering/widgets/field-sizing-select.html": {
+    "total": 5
+  },
+  "html/rendering/widgets/field-sizing-textarea-relayout.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/field-sizing-textarea.html": {
+    "total": 10
+  },
+  "html/rendering/widgets/input-checkbox-disabled-checked.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-no-centering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch-indeterminate.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch-rtl.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-switch.tentative.window.js": {
+    "total": 4,
+    "failures": {
+      "appearance:none should work: display gets its initial value": "FAIL"
+    }
+  },
+  "html/rendering/widgets/input-checkbox-zero-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-baseline-min-height.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-baseline-print.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-baseline.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-content-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-no-resize-on-hover.html": {
+    "total": 1
+  },
+  "html/rendering/widgets/input-date-whitespace-pre-1.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-date-whitespace-pre-2.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-number-text-size.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-password-background-suppresses-appearance.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-radio-disabled-checked.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-radio-no-centering.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-overflow-ellipsis-focused.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-overflow-ellipsis-rtl-scrolled.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-overflow-ellipsis-rtl.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-overflow-ellipsis-scrolled.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-overflow-ellipsis.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-text-size.html": {
+    "total": 5
+  },
+  "html/rendering/widgets/input-time-content-size.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/placeholder-scroll.html": {
+    "total": 2
+  },
+  "html/rendering/widgets/placeholder-text-overflow-ellipsis.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/select-wrap-no-spill.optional.html": {
+    "total": 1
+  },
+  "html/rendering/widgets/shadow-dom.html": {
+    "total": 9,
+    "failures": {
+      "<audio controls=\"\"></audio> has a shadow tree with no slots": "FAIL",
+      "<audio></audio> has a shadow tree with no slots": "FAIL",
+      "<video controls=\"\"></video> has a shadow tree with no slots": "FAIL",
+      "<video></video> has a shadow tree with no slots": "FAIL"
+    }
+  },
+  "html/rendering/widgets/text-control-client-width.html": {
+    "total": 2
+  },
+  "html/rendering/widgets/text-control-flow-root.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/textarea-cols-rows.html": {
+    "total": 6
+  },
+  "html/rendering/widgets/textarea-multicol.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/textarea-scroll-restoration.html": {
+    "total": 2
+  },
+  "html/rendering/widgets/textarea-scrollbar-sizing-001.html": {
+    "total": 3
+  },
+  "html/rendering/widgets/textarea-scrollbar-sizing-002.html": {
+    "total": 3
+  },
+  "html/rendering/widgets/the-select-element/option-add-label-quirks.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-add-label.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-checked-styling.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-empty-label-to-empty-string.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-empty-label.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-label-and-text.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-only-label.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/option-rm-label.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-as-listbox-default-styles.tentative.html": {
+    "total": 184,
+    "failures": {
+      "<optgroup label=\"2\"><option>3 (in <select multiple=\"\">) - font-weight": "FAIL",
+      "<select multiple=\"\"><option>1 - background-color": "FAIL"
+    }
+  },
+  "html/rendering/widgets/the-select-element/select-dir-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-label-appearance.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-optgroup-dir-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-size-001.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/widgets/the-select-element/select-size-002.html": {
+    "reftest": "PASS"
+  }
+}

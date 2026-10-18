@@ -1,0 +1,298 @@
+{
+  "cookies/attributes/attributes-ctl.sub.html": {
+    "total": 429,
+    "failures": {
+      "Cookie with %x9 after Secure attribute is handled correctly.": "FAIL"
+    }
+  },
+  "cookies/attributes/domain.sub.html": {
+    "total": 55
+  },
+  "cookies/attributes/expires.html": {
+    "total": 23
+  },
+  "cookies/attributes/httponly-overwrite.https.window.js": {
+    "total": 8
+  },
+  "cookies/attributes/invalid.html": {
+    "total": 26
+  },
+  "cookies/attributes/max-age.html": {
+    "total": 10
+  },
+  "cookies/attributes/path-redirect.html": {
+    "total": 17
+  },
+  "cookies/attributes/path.html": {
+    "total": 21
+  },
+  "cookies/attributes/secure-non-secure.html": {
+    "total": 12
+  },
+  "cookies/attributes/secure.https.html": {
+    "total": 9
+  },
+  "cookies/cookie-enabled-noncookie-frame.html": {
+    "total": 1
+  },
+  "cookies/domain/domain-attribute-host-with-and-without-leading-period.sub.https.html": {
+    "total": 3
+  },
+  "cookies/domain/domain-attribute-host-with-leading-period.sub.https.html": {
+    "total": 3
+  },
+  "cookies/domain/domain-attribute-idn-host.sub.https.html": {
+    "total": 6
+  },
+  "cookies/domain/domain-attribute-matches-host.sub.https.html": {
+    "total": 3
+  },
+  "cookies/domain/domain-attribute-missing.sub.html": {
+    "total": 3
+  },
+  "cookies/encoding/charset.html": {
+    "total": 6
+  },
+  "cookies/meta-blocked.html": {
+    "total": 1
+  },
+  "cookies/name/name-ctl.html": {
+    "total": 66,
+    "failures": {
+      "Cookie with %xa in name is rejected or modified (HTTP).": "FAIL",
+      "Cookie with %xd in name is rejected or modified (HTTP).": "FAIL"
+    }
+  },
+  "cookies/name/name.html": {
+    "total": 45
+  },
+  "cookies/navigated-away.html": {
+    "total": 1
+  },
+  "cookies/ordering/ordering.sub.html": {
+    "total": 5
+  },
+  "cookies/origin-bound-cookies/port-bound-cookies.html": {
+    "total": 1,
+    "failures": {
+      "Cookies should be bound to their origin's port.": "FAIL"
+    }
+  },
+  "cookies/origin-bound-cookies/scheme-bound-cookies.https.html": {
+    "total": 2,
+    "failures": {
+      "Check scheme bounding behavior is working.": "FAIL"
+    }
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-a-b-a-embed.tentative.https.html": {
+    "total": 1
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-cross-site-subresource-to-same-site-redirect.tentative.https.html": {
+    "total": 1
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-parallel-iframes.embed.tentative.https.html": {
+    "total": 1
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-same-site-subresource-to-cross-site-redirect.tentative.https.html": {
+    "total": 2
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-samesite-attribute.https.html": {
+    "total": 2
+  },
+  "cookies/partitioned-cookies/partitioned-cookies-top-level-redirect.tentative.https.html": {
+    "total": 1
+  },
+  "cookies/partitioned-cookies/partitioned-cookies.tentative.https.html": {
+    "total": 7
+  },
+  "cookies/path/default.html": {
+    "total": 1
+  },
+  "cookies/path/match-percent-encoded.https.window.js": {
+    "total": 10
+  },
+  "cookies/path/match-segment-boundaries.https.window.js": {
+    "total": 6
+  },
+  "cookies/path/match.html": {
+    "total": 16
+  },
+  "cookies/path/non-ascii-path-attribute.https.window.js": {
+    "total": 7
+  },
+  "cookies/prefix/__Host-Http.https.html": {
+    "total": 7
+  },
+  "cookies/prefix/__Http.https.html": {
+    "total": 7
+  },
+  "cookies/prefix/__host.document-cookie.html": {
+    "total": 18
+  },
+  "cookies/prefix/__host.document-cookie.https.html": {
+    "total": 14
+  },
+  "cookies/prefix/__host.explicit-path.https.window.js": {
+    "total": 5
+  },
+  "cookies/prefix/__host.header.html": {
+    "total": 26
+  },
+  "cookies/prefix/__host.header.https.html": {
+    "total": 20
+  },
+  "cookies/prefix/__secure.document-cookie.html": {
+    "total": 12
+  },
+  "cookies/prefix/__secure.document-cookie.https.html": {
+    "total": 12
+  },
+  "cookies/prefix/__secure.header.html": {
+    "total": 16
+  },
+  "cookies/prefix/__secure.header.https.html": {
+    "total": 16
+  },
+  "cookies/prefix/document-cookie.non-secure.html": {
+    "total": 35
+  },
+  "cookies/samesite-none-secure/cookies-without-samesite-must-be-secure.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/about-blank-nested.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/about-blank-subresource.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/about-blank-toplevel.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/fetch.https.html": {
+    "total": 12
+  },
+  "cookies/samesite/form-get-blank-reload.https.html": {
+    "total": 3
+  },
+  "cookies/samesite/form-get-blank.https.html": {
+    "total": 12
+  },
+  "cookies/samesite/form-post-blank-reload.https.html": {
+    "total": 3
+  },
+  "cookies/samesite/form-post-blank.https.html": {
+    "total": 12
+  },
+  "cookies/samesite/get_all_cookies-default-samesite.html": {
+    "total": 1
+  },
+  "cookies/samesite/get_named_cookie-default-samesite.html": {
+    "total": 1
+  },
+  "cookies/samesite/iframe-reload.https.html": {
+    "total": 3
+  },
+  "cookies/samesite/iframe.document.https.html": {
+    "total": 2
+  },
+  "cookies/samesite/iframe.https.html": {
+    "total": 21
+  },
+  "cookies/samesite/img.https.html": {
+    "total": 12
+  },
+  "cookies/samesite/multiple-samesite-attributes.https.html": {
+    "total": 12
+  },
+  "cookies/samesite/sandbox-allow-same-site-none-cookies-value.tentative.https.html": {
+    "total": 4
+  },
+  "cookies/samesite/sandbox-iframe-nested.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/sandbox-iframe-subresource.https.html": {
+    "total": 1
+  },
+  "cookies/samesite/setcookie-lax.https.html": {
+    "total": 2
+  },
+  "cookies/samesite/setcookie-navigation.https.html": {
+    "total": 8
+  },
+  "cookies/samesite/window-open-reload.https.html": {
+    "total": 3
+  },
+  "cookies/samesite/window-open.https.html": {
+    "total": 12
+  },
+  "cookies/schemeful-same-site/schemeful-iframe-subresource.tentative.html": {
+    "total": 1
+  },
+  "cookies/schemeful-same-site/schemeful-navigation.tentative.html": {
+    "total": 2
+  },
+  "cookies/schemeful-same-site/schemeful-subresource.tentative.html": {
+    "total": 2
+  },
+  "cookies/schemeful-same-site/schemeful-websockets.sub.tentative.html": {
+    "total": 1
+  },
+  "cookies/secure/set-from-dom.https.sub.html": {
+    "total": 2
+  },
+  "cookies/secure/set-from-dom.sub.html": {
+    "total": 2
+  },
+  "cookies/secure/set-from-http.https.sub.html": {
+    "total": 2
+  },
+  "cookies/secure/set-from-http.sub.html": {
+    "total": 2
+  },
+  "cookies/secure/set-from-ws.sub.html": {
+    "total": 1
+  },
+  "cookies/secure/set-from-wss.https.sub.html": {
+    "total": 1
+  },
+  "cookies/set-and-delete-document-cookie.window.js": {
+    "total": 1
+  },
+  "cookies/size/attributes.www.sub.html": {
+    "total": 14
+  },
+  "cookies/size/name-and-value.html": {
+    "total": 11
+  },
+  "cookies/third-party-cookies/third-party-cookie-heuristics.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "3P fetch: Cookies are not accessible via HTTP": "FAIL",
+      "3P fetch: Cross site window setting HTTP cookies": "FAIL"
+    }
+  },
+  "cookies/third-party-cookies/third-party-cookies.tentative.https.html": {
+    "total": 10,
+    "failures": {
+      "3P embed: Cookies are not accessible via CookieStore": "FAIL",
+      "3P embed: Cookies are not accessible via DOM": "FAIL",
+      "3P fetch: Cookies are not accessible via HTTP": "FAIL",
+      "3P fetch: Cross site window setting HTTP cookies": "FAIL",
+      "Cross site embed setting CookieStore cookies": "FAIL",
+      "Cross site embed setting DOM cookies": "FAIL"
+    }
+  },
+  "cookies/value/value-ctl.html": {
+    "total": 66,
+    "failures": {
+      "Cookie with %xa in name is rejected or modified (HTTP).": "FAIL",
+      "Cookie with %xd in name is rejected or modified (HTTP).": "FAIL"
+    }
+  },
+  "cookies/value/value-overwrite.https.window.js": {
+    "total": 25
+  },
+  "cookies/value/value.html": {
+    "total": 28
+  }
+}

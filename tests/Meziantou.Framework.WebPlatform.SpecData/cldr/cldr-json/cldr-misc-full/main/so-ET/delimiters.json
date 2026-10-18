@@ -1,0 +1,16 @@
+{
+  "main": {
+    "so-ET": {
+      "identity": {
+        "language": "so",
+        "territory": "ET"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

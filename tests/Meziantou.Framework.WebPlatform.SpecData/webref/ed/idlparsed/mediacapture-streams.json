@@ -1,0 +1,3538 @@
+{
+  "spec": {
+    "title": "Media Capture and Streams",
+    "url": "https://w3c.github.io/mediacapture-main/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MediaStream",
+          "MediaStreamTrackEvent",
+          "OverconstrainedError",
+          "DeviceChangeEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "MediaStreamTrack",
+          "MediaDevices",
+          "MediaDeviceInfo",
+          "InputDeviceInfo"
+        ]
+      }
+    },
+    "idlNames": {
+      "MediaStream": {
+        "fragment": "[Exposed=Window]\ninterface MediaStream : EventTarget {\n  constructor();\n  constructor(MediaStream stream);\n  constructor(sequence<MediaStreamTrack> tracks);\n  readonly attribute DOMString id;\n  sequence<MediaStreamTrack> getAudioTracks();\n  sequence<MediaStreamTrack> getVideoTracks();\n  sequence<MediaStreamTrack> getTracks();\n  MediaStreamTrack? getTrackById(DOMString trackId);\n  undefined addTrack(MediaStreamTrack track);\n  undefined removeTrack(MediaStreamTrack track);\n  MediaStream clone();\n  readonly attribute boolean active;\n  attribute EventHandler onaddtrack;\n  attribute EventHandler onremovetrack;\n};",
+        "type": "interface",
+        "name": "MediaStream",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-constructor"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stream",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStream"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-constructor"
+          },
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tracks",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "MediaStreamTrack"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-id"
+          },
+          {
+            "type": "operation",
+            "name": "getAudioTracks",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-getaudiotracks"
+          },
+          {
+            "type": "operation",
+            "name": "getVideoTracks",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-getvideotracks"
+          },
+          {
+            "type": "operation",
+            "name": "getTracks",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-gettracks"
+          },
+          {
+            "type": "operation",
+            "name": "getTrackById",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "trackId",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-gettrackbyid"
+          },
+          {
+            "type": "operation",
+            "name": "addTrack",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "track",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-addtrack"
+          },
+          {
+            "type": "operation",
+            "name": "removeTrack",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "track",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrack"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-removetrack"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStream"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-clone"
+          },
+          {
+            "type": "attribute",
+            "name": "active",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-active"
+          },
+          {
+            "type": "attribute",
+            "name": "onaddtrack",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-onaddtrack"
+          },
+          {
+            "type": "attribute",
+            "name": "onremovetrack",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream-onremovetrack"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream"
+      },
+      "MediaStreamTrack": {
+        "fragment": "[Exposed=Window]\ninterface MediaStreamTrack : EventTarget {\n  readonly attribute DOMString kind;\n  readonly attribute DOMString id;\n  readonly attribute DOMString label;\n  attribute boolean enabled;\n  readonly attribute boolean muted;\n  attribute EventHandler onmute;\n  attribute EventHandler onunmute;\n  readonly attribute MediaStreamTrackState readyState;\n  attribute EventHandler onended;\n  MediaStreamTrack clone();\n  undefined stop();\n  MediaTrackCapabilities getCapabilities();\n  MediaTrackConstraints getConstraints();\n  MediaTrackSettings getSettings();\n  Promise<undefined> applyConstraints(optional MediaTrackConstraints constraints = {});\n};",
+        "type": "interface",
+        "name": "MediaStreamTrack",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "kind",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-kind"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-id"
+          },
+          {
+            "type": "attribute",
+            "name": "label",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-label"
+          },
+          {
+            "type": "attribute",
+            "name": "enabled",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-enabled"
+          },
+          {
+            "type": "attribute",
+            "name": "muted",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-muted"
+          },
+          {
+            "type": "attribute",
+            "name": "onmute",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-onmute"
+          },
+          {
+            "type": "attribute",
+            "name": "onunmute",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-onunmute"
+          },
+          {
+            "type": "attribute",
+            "name": "readyState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrackState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-readystate"
+          },
+          {
+            "type": "attribute",
+            "name": "onended",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-onended"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-clone"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-stop"
+          },
+          {
+            "type": "operation",
+            "name": "getCapabilities",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaTrackCapabilities"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-getcapabilities"
+          },
+          {
+            "type": "operation",
+            "name": "getConstraints",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaTrackConstraints"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-getconstraints"
+          },
+          {
+            "type": "operation",
+            "name": "getSettings",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaTrackSettings"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-getsettings"
+          },
+          {
+            "type": "operation",
+            "name": "applyConstraints",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "constraints",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaTrackConstraints"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-applyconstraints"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack"
+      },
+      "MediaStreamTrackState": {
+        "fragment": "enum MediaStreamTrackState {\n  \"live\",\n  \"ended\"\n};",
+        "type": "enum",
+        "name": "MediaStreamTrackState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "live",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-MediaStreamTrackState.live"
+          },
+          {
+            "type": "enum-value",
+            "value": "ended",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-MediaStreamTrackState.ended"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackstate"
+      },
+      "MediaTrackSupportedConstraints": {
+        "fragment": "dictionary MediaTrackSupportedConstraints {\n  boolean width = true;\n  boolean height = true;\n  boolean aspectRatio = true;\n  boolean frameRate = true;\n  boolean facingMode = true;\n  boolean resizeMode = true;\n  boolean sampleRate = true;\n  boolean sampleSize = true;\n  boolean echoCancellation = true;\n  boolean autoGainControl = true;\n  boolean noiseSuppression = true;\n  boolean latency = true;\n  boolean channelCount = true;\n  boolean deviceId = true;\n  boolean groupId = true;\n  boolean backgroundBlur = true;\n};",
+        "type": "dictionary",
+        "name": "MediaTrackSupportedConstraints",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-height"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-aspectratio"
+          },
+          {
+            "type": "field",
+            "name": "frameRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-framerate"
+          },
+          {
+            "type": "field",
+            "name": "facingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-facingmode"
+          },
+          {
+            "type": "field",
+            "name": "resizeMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-resizemode"
+          },
+          {
+            "type": "field",
+            "name": "sampleRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-samplerate"
+          },
+          {
+            "type": "field",
+            "name": "sampleSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-samplesize"
+          },
+          {
+            "type": "field",
+            "name": "echoCancellation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-echocancellation"
+          },
+          {
+            "type": "field",
+            "name": "autoGainControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-autogaincontrol"
+          },
+          {
+            "type": "field",
+            "name": "noiseSuppression",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-noisesuppression"
+          },
+          {
+            "type": "field",
+            "name": "latency",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-latency"
+          },
+          {
+            "type": "field",
+            "name": "channelCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-channelcount"
+          },
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "groupId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-groupid"
+          },
+          {
+            "type": "field",
+            "name": "backgroundBlur",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints-backgroundblur"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksupportedconstraints"
+      },
+      "MediaTrackCapabilities": {
+        "fragment": "dictionary MediaTrackCapabilities {\n  ULongRange width;\n  ULongRange height;\n  DoubleRange aspectRatio;\n  DoubleRange frameRate;\n  sequence<DOMString> facingMode;\n  sequence<DOMString> resizeMode;\n  ULongRange sampleRate;\n  ULongRange sampleSize;\n  sequence<(boolean or DOMString)> echoCancellation;\n  sequence<boolean> autoGainControl;\n  sequence<boolean> noiseSuppression;\n  DoubleRange latency;\n  ULongRange channelCount;\n  DOMString deviceId;\n  DOMString groupId;\n  sequence<boolean> backgroundBlur;\n};",
+        "type": "dictionary",
+        "name": "MediaTrackCapabilities",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ULongRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ULongRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-height"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DoubleRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-aspectratio"
+          },
+          {
+            "type": "field",
+            "name": "frameRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DoubleRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-framerate"
+          },
+          {
+            "type": "field",
+            "name": "facingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-facingmode"
+          },
+          {
+            "type": "field",
+            "name": "resizeMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-resizemode"
+          },
+          {
+            "type": "field",
+            "name": "sampleRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ULongRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-samplerate"
+          },
+          {
+            "type": "field",
+            "name": "sampleSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ULongRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-samplesize"
+          },
+          {
+            "type": "field",
+            "name": "echoCancellation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "boolean"
+                    },
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-echocancellation"
+          },
+          {
+            "type": "field",
+            "name": "autoGainControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-autogaincontrol"
+          },
+          {
+            "type": "field",
+            "name": "noiseSuppression",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-noisesuppression"
+          },
+          {
+            "type": "field",
+            "name": "latency",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DoubleRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-latency"
+          },
+          {
+            "type": "field",
+            "name": "channelCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ULongRange"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-channelcount"
+          },
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "groupId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-groupid"
+          },
+          {
+            "type": "field",
+            "name": "backgroundBlur",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities-backgroundblur"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackcapabilities"
+      },
+      "MediaTrackConstraints": {
+        "fragment": "dictionary MediaTrackConstraints : MediaTrackConstraintSet {\n  sequence<MediaTrackConstraintSet> advanced;\n};",
+        "type": "dictionary",
+        "name": "MediaTrackConstraints",
+        "inheritance": "MediaTrackConstraintSet",
+        "members": [
+          {
+            "type": "field",
+            "name": "advanced",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaTrackConstraintSet"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraints-advanced"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraints"
+      },
+      "MediaTrackConstraintSet": {
+        "fragment": "dictionary MediaTrackConstraintSet {\n  ConstrainULong width;\n  ConstrainULong height;\n  ConstrainDouble aspectRatio;\n  ConstrainDouble frameRate;\n  ConstrainDOMString facingMode;\n  ConstrainDOMString resizeMode;\n  ConstrainULong sampleRate;\n  ConstrainULong sampleSize;\n  ConstrainBooleanOrDOMString echoCancellation;\n  ConstrainBoolean autoGainControl;\n  ConstrainBoolean noiseSuppression;\n  ConstrainDouble latency;\n  ConstrainULong channelCount;\n  ConstrainDOMString deviceId;\n  ConstrainDOMString groupId;\n  ConstrainBoolean backgroundBlur;\n};",
+        "type": "dictionary",
+        "name": "MediaTrackConstraintSet",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULong"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULong"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-height"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDouble"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-aspectratio"
+          },
+          {
+            "type": "field",
+            "name": "frameRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDouble"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-framerate"
+          },
+          {
+            "type": "field",
+            "name": "facingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-facingmode"
+          },
+          {
+            "type": "field",
+            "name": "resizeMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-resizemode"
+          },
+          {
+            "type": "field",
+            "name": "sampleRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULong"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-samplerate"
+          },
+          {
+            "type": "field",
+            "name": "sampleSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULong"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-samplesize"
+          },
+          {
+            "type": "field",
+            "name": "echoCancellation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBooleanOrDOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-echocancellation"
+          },
+          {
+            "type": "field",
+            "name": "autoGainControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBoolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-autogaincontrol"
+          },
+          {
+            "type": "field",
+            "name": "noiseSuppression",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBoolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-noisesuppression"
+          },
+          {
+            "type": "field",
+            "name": "latency",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDouble"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-latency"
+          },
+          {
+            "type": "field",
+            "name": "channelCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULong"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-channelcount"
+          },
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "groupId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-groupid"
+          },
+          {
+            "type": "field",
+            "name": "backgroundBlur",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBoolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset-backgroundblur"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediatrackconstraintset"
+      },
+      "MediaTrackSettings": {
+        "fragment": "dictionary MediaTrackSettings {\n  unsigned long width;\n  unsigned long height;\n  double aspectRatio;\n  double frameRate;\n  DOMString facingMode;\n  DOMString resizeMode;\n  unsigned long sampleRate;\n  unsigned long sampleSize;\n  (boolean or DOMString) echoCancellation;\n  boolean autoGainControl;\n  boolean noiseSuppression;\n  double latency;\n  unsigned long channelCount;\n  DOMString deviceId;\n  DOMString groupId;\n  boolean backgroundBlur;\n};",
+        "type": "dictionary",
+        "name": "MediaTrackSettings",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-height"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-aspectratio"
+          },
+          {
+            "type": "field",
+            "name": "frameRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-framerate"
+          },
+          {
+            "type": "field",
+            "name": "facingMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-facingmode"
+          },
+          {
+            "type": "field",
+            "name": "resizeMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-resizemode"
+          },
+          {
+            "type": "field",
+            "name": "sampleRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-samplerate"
+          },
+          {
+            "type": "field",
+            "name": "sampleSize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-samplesize"
+          },
+          {
+            "type": "field",
+            "name": "echoCancellation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-echocancellation"
+          },
+          {
+            "type": "field",
+            "name": "autoGainControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-autogaincontrol"
+          },
+          {
+            "type": "field",
+            "name": "noiseSuppression",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-noisesuppression"
+          },
+          {
+            "type": "field",
+            "name": "latency",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-latency"
+          },
+          {
+            "type": "field",
+            "name": "channelCount",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-channelcount"
+          },
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "groupId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-groupid"
+          },
+          {
+            "type": "field",
+            "name": "backgroundBlur",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings-backgroundblur"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediatracksettings"
+      },
+      "VideoFacingModeEnum": {
+        "fragment": "enum VideoFacingModeEnum {\n  \"user\",\n  \"environment\",\n  \"left\",\n  \"right\"\n};",
+        "type": "enum",
+        "name": "VideoFacingModeEnum",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "user",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-videofacingmodeenum-user"
+          },
+          {
+            "type": "enum-value",
+            "value": "environment",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-videofacingmodeenum-environment"
+          },
+          {
+            "type": "enum-value",
+            "value": "left",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-videofacingmodeenum-left"
+          },
+          {
+            "type": "enum-value",
+            "value": "right",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-videofacingmodeenum-right"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-videofacingmodeenum"
+      },
+      "VideoResizeModeEnum": {
+        "fragment": "enum VideoResizeModeEnum {\n  \"none\",\n  \"crop-and-scale\"\n};",
+        "type": "enum",
+        "name": "VideoResizeModeEnum",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-VideoResizeModeEnum.none"
+          },
+          {
+            "type": "enum-value",
+            "value": "crop-and-scale",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-VideoResizeModeEnum.cropandscale"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-videoresizemodeenum"
+      },
+      "EchoCancellationModeEnum": {
+        "fragment": "enum EchoCancellationModeEnum {\n  \"all\",\n  \"remote-only\"\n};",
+        "type": "enum",
+        "name": "EchoCancellationModeEnum",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "all",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-echocancellationmodeenum-all"
+          },
+          {
+            "type": "enum-value",
+            "value": "remote-only",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-echocancellationmodeenum-remote-only"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-echocancellationmodeenum"
+      },
+      "MediaStreamTrackEvent": {
+        "fragment": "[Exposed=Window]\ninterface MediaStreamTrackEvent : Event {\n  constructor(DOMString type, MediaStreamTrackEventInit eventInitDict);\n  [SameObject] readonly attribute MediaStreamTrack track;\n};",
+        "type": "interface",
+        "name": "MediaStreamTrackEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaStreamTrackEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "track",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackevent-track"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackevent"
+      },
+      "MediaStreamTrackEventInit": {
+        "fragment": "dictionary MediaStreamTrackEventInit : EventInit {\n  required MediaStreamTrack track;\n};",
+        "type": "dictionary",
+        "name": "MediaStreamTrackEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "track",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaStreamTrack"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackeventinit-track"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackeventinit"
+      },
+      "OverconstrainedError": {
+        "fragment": "[Exposed=Window]\ninterface OverconstrainedError : DOMException {\n  constructor(DOMString constraint, optional DOMString message = \"\");\n  readonly attribute DOMString constraint;\n};",
+        "type": "interface",
+        "name": "OverconstrainedError",
+        "inheritance": "DOMException",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "constraint",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-overconstrainederror-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "constraint",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-overconstrainederror-constraint"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-overconstrainederror"
+      },
+      "MediaDevices": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface MediaDevices : EventTarget {\n  attribute EventHandler ondevicechange;\n  Promise<sequence<MediaDeviceInfo>> enumerateDevices();\n};",
+        "type": "interface",
+        "name": "MediaDevices",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "ondevicechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevices-ondevicechange"
+          },
+          {
+            "type": "operation",
+            "name": "enumerateDevices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "MediaDeviceInfo"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevices-enumeratedevices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevices"
+      },
+      "MediaDeviceInfo": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface MediaDeviceInfo {\n  readonly attribute DOMString deviceId;\n  readonly attribute MediaDeviceKind kind;\n  readonly attribute DOMString label;\n  readonly attribute DOMString groupId;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "MediaDeviceInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "deviceId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid"
+          },
+          {
+            "type": "attribute",
+            "name": "kind",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaDeviceKind"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-kind"
+          },
+          {
+            "type": "attribute",
+            "name": "label",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-label"
+          },
+          {
+            "type": "attribute",
+            "name": "groupId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-groupid"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo"
+      },
+      "MediaDeviceKind": {
+        "fragment": "enum MediaDeviceKind {\n  \"audioinput\",\n  \"audiooutput\",\n  \"videoinput\"\n};",
+        "type": "enum",
+        "name": "MediaDeviceKind",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "audioinput",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-MediaDeviceKind.audioinput"
+          },
+          {
+            "type": "enum-value",
+            "value": "audiooutput",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-MediaDeviceKind.audiooutput"
+          },
+          {
+            "type": "enum-value",
+            "value": "videoinput",
+            "href": "https://w3c.github.io/mediacapture-main/#idl-def-MediaDeviceKind.videoinput"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevicekind"
+      },
+      "InputDeviceInfo": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface InputDeviceInfo : MediaDeviceInfo {\n  MediaTrackCapabilities getCapabilities();\n};",
+        "type": "interface",
+        "name": "InputDeviceInfo",
+        "inheritance": "MediaDeviceInfo",
+        "members": [
+          {
+            "type": "operation",
+            "name": "getCapabilities",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaTrackCapabilities"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediacapture-main/#dom-inputdeviceinfo-getcapabilities"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-inputdeviceinfo"
+      },
+      "DeviceChangeEvent": {
+        "fragment": "[Exposed=Window]\ninterface DeviceChangeEvent : Event {\n  constructor(DOMString type, optional DeviceChangeEventInit eventInitDict = {});\n  [SameObject] readonly attribute FrozenArray<MediaDeviceInfo> devices;\n  [SameObject] readonly attribute FrozenArray<MediaDeviceInfo> userInsertedDevices;\n};",
+        "type": "interface",
+        "name": "DeviceChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DeviceChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "devices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaDeviceInfo"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeevent-devices"
+          },
+          {
+            "type": "attribute",
+            "name": "userInsertedDevices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaDeviceInfo"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeevent-userinserteddevices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeevent"
+      },
+      "DeviceChangeEventInit": {
+        "fragment": "dictionary DeviceChangeEventInit : EventInit {\n  sequence<MediaDeviceInfo> devices = [];\n};",
+        "type": "dictionary",
+        "name": "DeviceChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "devices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaDeviceInfo"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeeventinit-devices"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-devicechangeeventinit"
+      },
+      "MediaStreamConstraints": {
+        "fragment": "dictionary MediaStreamConstraints {\n  (boolean or MediaTrackConstraints) video = false;\n  (boolean or MediaTrackConstraints) audio = false;\n};",
+        "type": "dictionary",
+        "name": "MediaStreamConstraints",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "video",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaTrackConstraints"
+                }
+              ]
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamconstraints-video"
+          },
+          {
+            "type": "field",
+            "name": "audio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaTrackConstraints"
+                }
+              ]
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamconstraints-audio"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamconstraints"
+      },
+      "DoubleRange": {
+        "fragment": "dictionary DoubleRange {\n  double max;\n  double min;\n};",
+        "type": "dictionary",
+        "name": "DoubleRange",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "max",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-doublerange-max"
+          },
+          {
+            "type": "field",
+            "name": "min",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-doublerange-min"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-doublerange"
+      },
+      "ConstrainDoubleRange": {
+        "fragment": "dictionary ConstrainDoubleRange : DoubleRange {\n  double exact;\n  double ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainDoubleRange",
+        "inheritance": "DoubleRange",
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constraindoublerange-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constraindoublerange-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constraindoublerange"
+      },
+      "ULongRange": {
+        "fragment": "dictionary ULongRange {\n  [Clamp] unsigned long max;\n  [Clamp] unsigned long min;\n};",
+        "type": "dictionary",
+        "name": "ULongRange",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "max",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-ulongrange-max"
+          },
+          {
+            "type": "field",
+            "name": "min",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-ulongrange-min"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-ulongrange"
+      },
+      "ConstrainULongRange": {
+        "fragment": "dictionary ConstrainULongRange : ULongRange {\n  [Clamp] unsigned long exact;\n  [Clamp] unsigned long ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainULongRange",
+        "inheritance": "ULongRange",
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainulongrange-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Clamp",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainulongrange-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainulongrange"
+      },
+      "ConstrainBooleanParameters": {
+        "fragment": "dictionary ConstrainBooleanParameters {\n  boolean exact;\n  boolean ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainBooleanParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanparameters-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanparameters-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanparameters"
+      },
+      "ConstrainDOMStringParameters": {
+        "fragment": "dictionary ConstrainDOMStringParameters {\n  (DOMString or sequence<DOMString>) exact;\n  (DOMString or sequence<DOMString>) ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainDOMStringParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constraindomstringparameters-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constraindomstringparameters-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constraindomstringparameters"
+      },
+      "ConstrainBooleanOrDOMStringParameters": {
+        "fragment": "dictionary ConstrainBooleanOrDOMStringParameters {\n  (boolean or DOMString) exact;\n  (boolean or DOMString) ideal;\n};",
+        "type": "dictionary",
+        "name": "ConstrainBooleanOrDOMStringParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "exact",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanordomstringparameters-exact"
+          },
+          {
+            "type": "field",
+            "name": "ideal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanordomstringparameters-ideal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanordomstringparameters"
+      },
+      "ConstrainULong": {
+        "fragment": "typedef ([Clamp] unsigned long or ConstrainULongRange) ConstrainULong;",
+        "type": "typedef",
+        "name": "ConstrainULong",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "Clamp",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainULongRange"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainulong"
+      },
+      "ConstrainDouble": {
+        "fragment": "typedef (double or ConstrainDoubleRange) ConstrainDouble;",
+        "type": "typedef",
+        "name": "ConstrainDouble",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDoubleRange"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constraindouble"
+      },
+      "ConstrainBoolean": {
+        "fragment": "typedef (boolean or ConstrainBooleanParameters) ConstrainBoolean;",
+        "type": "typedef",
+        "name": "ConstrainBoolean",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBooleanParameters"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainboolean"
+      },
+      "ConstrainDOMString": {
+        "fragment": "typedef (DOMString or\nsequence<DOMString> or\nConstrainDOMStringParameters) ConstrainDOMString;",
+        "type": "typedef",
+        "name": "ConstrainDOMString",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainDOMStringParameters"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constraindomstring"
+      },
+      "ConstrainBooleanOrDOMString": {
+        "fragment": "typedef (boolean or DOMString or ConstrainBooleanOrDOMStringParameters) ConstrainBooleanOrDOMString;",
+        "type": "typedef",
+        "name": "ConstrainBooleanOrDOMString",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ConstrainBooleanOrDOMStringParameters"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-main/#dom-constrainbooleanordomstring"
+      },
+      "CameraDevicePermissionDescriptor": {
+        "fragment": "dictionary CameraDevicePermissionDescriptor : PermissionDescriptor {\n  boolean panTiltZoom = false;\n};",
+        "type": "dictionary",
+        "name": "CameraDevicePermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "panTiltZoom",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-main/#dom-cameradevicepermissiondescriptor-pantiltzoom"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-main/#dom-cameradevicepermissiondescriptor"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SameObject, SecureContext] readonly attribute MediaDevices mediaDevices;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "mediaDevices",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaDevices"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/mediacapture-main/#dom-navigator-mediadevices"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaDevices": [
+        {
+          "fragment": "partial interface MediaDevices {\n  MediaTrackSupportedConstraints getSupportedConstraints();\n  Promise<MediaStream> getUserMedia(optional MediaStreamConstraints constraints = {});\n};",
+          "type": "interface",
+          "name": "MediaDevices",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getSupportedConstraints",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaTrackSupportedConstraints"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevices-getsupportedconstraints"
+            },
+            {
+              "type": "operation",
+              "name": "getUserMedia",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MediaStream"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "constraints",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MediaStreamConstraints"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MediaStream",
+        "MediaStreamTrack",
+        "MediaStreamTrackEvent",
+        "OverconstrainedError",
+        "MediaDevices",
+        "MediaDeviceInfo",
+        "InputDeviceInfo",
+        "DeviceChangeEvent"
+      ]
+    },
+    "dependencies": {
+      "MediaStream": [
+        "EventTarget",
+        "MediaStream",
+        "MediaStreamTrack",
+        "EventHandler"
+      ],
+      "MediaStreamTrack": [
+        "EventTarget",
+        "EventHandler",
+        "MediaStreamTrackState",
+        "MediaStreamTrack",
+        "MediaTrackCapabilities",
+        "MediaTrackConstraints",
+        "MediaTrackSettings"
+      ],
+      "MediaTrackSupportedConstraints": [],
+      "MediaTrackCapabilities": [
+        "ULongRange",
+        "DoubleRange"
+      ],
+      "MediaTrackConstraints": [
+        "MediaTrackConstraintSet"
+      ],
+      "MediaTrackConstraintSet": [
+        "ConstrainULong",
+        "ConstrainDouble",
+        "ConstrainDOMString",
+        "ConstrainBooleanOrDOMString",
+        "ConstrainBoolean"
+      ],
+      "MediaTrackSettings": [],
+      "MediaStreamTrackEvent": [
+        "Event",
+        "MediaStreamTrackEventInit",
+        "MediaStreamTrack"
+      ],
+      "MediaStreamTrackEventInit": [
+        "EventInit",
+        "MediaStreamTrack"
+      ],
+      "OverconstrainedError": [
+        "DOMException"
+      ],
+      "Navigator": [
+        "MediaDevices"
+      ],
+      "MediaDevices": [
+        "EventTarget",
+        "EventHandler",
+        "MediaDeviceInfo",
+        "MediaTrackSupportedConstraints",
+        "MediaStream",
+        "MediaStreamConstraints"
+      ],
+      "MediaDeviceInfo": [
+        "MediaDeviceKind"
+      ],
+      "InputDeviceInfo": [
+        "MediaDeviceInfo",
+        "MediaTrackCapabilities"
+      ],
+      "DeviceChangeEvent": [
+        "Event",
+        "DeviceChangeEventInit",
+        "MediaDeviceInfo"
+      ],
+      "DeviceChangeEventInit": [
+        "EventInit",
+        "MediaDeviceInfo"
+      ],
+      "MediaStreamConstraints": [
+        "MediaTrackConstraints"
+      ],
+      "DoubleRange": [],
+      "ConstrainDoubleRange": [
+        "DoubleRange"
+      ],
+      "ULongRange": [],
+      "ConstrainULongRange": [
+        "ULongRange"
+      ],
+      "ConstrainBooleanParameters": [],
+      "ConstrainDOMStringParameters": [],
+      "ConstrainBooleanOrDOMStringParameters": [],
+      "CameraDevicePermissionDescriptor": [
+        "PermissionDescriptor"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "DOMException",
+      "Navigator",
+      "PermissionDescriptor"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

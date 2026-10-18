@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sc": {
+      "identity": {
+        "language": "sc"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "km": {
+      "identity": {
+        "language": "km"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-KE": {
+      "identity": {
+        "language": "en",
+        "territory": "KE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

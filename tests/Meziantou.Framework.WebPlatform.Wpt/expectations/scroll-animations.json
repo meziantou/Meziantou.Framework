@@ -1,0 +1,1249 @@
+{
+  "scroll-animations/animation-trigger/animation-trigger-addAnimation.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Animation attached to tripped (default) trigger plays.": "FAIL",
+      "Animation attached to tripped trigger is played immediately.": "FAIL",
+      "Animation attached to untripped trigger is paused initially.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-alternate.tentative.html": {
+    "total": 3,
+    "failures": {
+      "animation triggered via deferred (view) timeline.": "FAIL",
+      "animation triggered via scroll() timeline.": "FAIL",
+      "animation triggered via view() timeline.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-animation-target-removed-listener.tentative.html": {
+    "total": 1,
+    "failures": {
+      "triggered animation with event listener can trigger after target is removed.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-calc-with-zoom.tentative.html": {
+    "total": 2,
+    "failures": {
+      "contain calc(0% + 100px) matches contain 100px at offset before range under CSS zoom": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-disarmed-by-apis.tentative.html": {
+    "total": 1,
+    "failures": {
+      "cancel disables animation trigger": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/animation-trigger/animation-trigger-fill-mode-none.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "scroll-animations/animation-trigger/animation-trigger-late-attached-timeline.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "late-attached trigger timeline plays animation": "TIMEOUT"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-multiple-animations.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Single trigger controls multiple animations": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-multiple-triggers.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Multiple triggers on same animation throws.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-once-play-state.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/animation-trigger/animation-trigger-once.tentative.html": {
+    "total": 3,
+    "failures": {
+      "once animation triggered via deferred (view) timeline.": "FAIL",
+      "once animation triggered via scroll() timeline.": "FAIL",
+      "once animation triggered via view() timeline.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-play-forwards-backwards.tentative.html": {
+    "total": 2,
+    "failures": {
+      "play-backwards plays a finished animation if reversing direction, and does not restart it once finished": "FAIL",
+      "play-forwards plays a finished animation if reversing direction, and does not restart it once finished": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-play.tentative.html": {
+    "total": 2,
+    "failures": {
+      "play behavior does not restart a finished animation": "FAIL",
+      "play behavior resumes a paused animation": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-range-px-roundtrip.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Ranges of triggers created by script are read in CSS pixels": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-repeat.tentative.html": {
+    "total": 3,
+    "failures": {
+      "repeat animation triggered via deferred (view) timeline.": "FAIL",
+      "repeat animation triggered via scroll() timeline.": "FAIL",
+      "repeat animation triggered via view() timeline.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-replay.tentative.html": {
+    "total": 2,
+    "failures": {
+      "replay behavior restarts a finished animation": "FAIL",
+      "replay behavior restarts a paused animation": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-state.tentative.html": {
+    "total": 3,
+    "failures": {
+      "once animation triggered via deferred (view) timeline.": "FAIL",
+      "once animation triggered via scroll() timeline.": "FAIL",
+      "once animation triggered via view() timeline.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-timeline-subject-removed.tentative.html": {
+    "total": 1,
+    "failures": {
+      "triggering stops when a trigger's timeline subject is removed and restarts when reattached.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-untriggered-animations-exposed.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/animation-trigger/parsing/animation-trigger-parsing.tentative.html": {
+    "total": 58,
+    "failures": {
+      "e.style['animation-trigger'] = \"  --abc play --abc play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"  --abc play --bcd play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--a,, --b\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--aBc play --abc play --aBc play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--aBc play --abc play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play --abc play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play --bcd pause, --abc play --bcd play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play --bcd play, --cde play --def play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play pause reset\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play pause reset, --def pause reset play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc play, play\" should not set the property value": "FAIL",
+      "e.style['animation-trigger'] = \"--abc, --def play\" should not set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-invalid.tentative.html": {
+    "total": 13
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html": {
+    "total": 25,
+    "failures": {
+      "e.style['timeline-trigger-active-range-end'] = \"cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range-end'] = \"exit 1%, cover 2%, contain 100%\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html": {
+    "total": 28,
+    "failures": {
+      "Property timeline-trigger-active-range-end value 'COVER 100%'": "FAIL",
+      "Property timeline-trigger-active-range-end value 'cover 100%'": "FAIL",
+      "Property timeline-trigger-active-range-end value 'exit 1%, cover 2%, contain 100%'": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html": {
+    "total": 144,
+    "failures": {
+      "Property timeline-trigger-active-range value '10% calc(70% + 10% * sign(100em - 1px))'": "FAIL",
+      "Property timeline-trigger-active-range value '10% normal'": "FAIL",
+      "Property timeline-trigger-active-range value '100px normal'": "FAIL",
+      "Property timeline-trigger-active-range value '100px'": "FAIL",
+      "Property timeline-trigger-active-range value '10em exit 20em'": "FAIL",
+      "Property timeline-trigger-active-range value 'auto auto'": "FAIL",
+      "Property timeline-trigger-active-range value 'auto normal'": "FAIL",
+      "Property timeline-trigger-active-range value 'auto'": "FAIL",
+      "Property timeline-trigger-active-range value 'contain 0% contain 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'contain 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'contain'": "FAIL",
+      "Property timeline-trigger-active-range value 'cover 0% cover 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'cover 50% entry 50%, contain 50% exit 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'cover 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'cover'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry 0% entry 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry 10em exit 20em'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry 50% exit 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry 50px exit 100px'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry calc(10% - 10%) entry calc(50% + 50%)'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry, exit'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry-crossing 0% entry-crossing 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry-crossing 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'entry-crossing'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit 0% exit 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit calc(10% + 50px)'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit-crossing 0% exit-crossing 100%'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit-crossing 50%'": "FAIL",
+      "Property timeline-trigger-active-range value 'exit-crossing'": "FAIL",
+      "Property timeline-trigger-active-range value 'normal 100px'": "FAIL",
+      "Property timeline-trigger-active-range value 'normal auto'": "FAIL",
+      "Property timeline-trigger-active-range value 'normal normal'": "FAIL",
+      "Property timeline-trigger-active-range value 'normal'": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"10%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"10%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100% auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100% normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100px auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100px normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"100px\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"50% exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"auto auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"auto normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"contain 0% contain 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"contain 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"contain\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"cover 0% cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"cover 0% normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"cover 50% normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"cover 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"cover\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 0% entry 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 0%, exit\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 0%, exit\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 50% exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry 50px exit 100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry, exit\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry-crossing 0% entry-crossing 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry-crossing 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"entry-crossing\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit 0% exit 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit calc(10% + 50px)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit calc(10% + 50px)\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit-crossing 0% exit-crossing 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit-crossing 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"exit-crossing\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal 100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal cover 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal entry 100%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range'] = \"normal\" should set timeline-trigger-active-range-end": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html": {
+    "total": 28,
+    "failures": {
+      "Property timeline-trigger-active-range-start value 'COVER 0%'": "FAIL",
+      "Property timeline-trigger-active-range-start value 'cover 0%'": "FAIL",
+      "Property timeline-trigger-active-range-start value 'exit 1%, cover 2%, contain 0%'": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-invalid.tentative.html": {
+    "total": 10
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html": {
+    "total": 26,
+    "failures": {
+      "e.style['timeline-trigger-active-range-start'] = \"cover 0%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-active-range-start'] = \"exit 1%, cover 2%, contain 0%\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html": {
+    "total": 2,
+    "failures": {
+      "timeline-trigger shorthand initially serialized for single value lists": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html": {
+    "total": 27,
+    "failures": {
+      "Property timeline-trigger-activation-range-end value 'COVER 100%'": "FAIL",
+      "Property timeline-trigger-activation-range-end value 'cover 100%'": "FAIL",
+      "Property timeline-trigger-activation-range-end value 'exit 1%, cover 2%, contain 100%'": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-invalid.tentative.html": {
+    "total": 12
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html": {
+    "total": 23,
+    "failures": {
+      "e.style['timeline-trigger-activation-range-end'] = \"cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range-end'] = \"exit 1%, cover 2%, contain 100%\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html": {
+    "total": 129,
+    "failures": {
+      "Property timeline-trigger-activation-range value '10% calc(70% + 10% * sign(100em - 1px))'": "FAIL",
+      "Property timeline-trigger-activation-range value '10% normal'": "FAIL",
+      "Property timeline-trigger-activation-range value '100px normal'": "FAIL",
+      "Property timeline-trigger-activation-range value '100px'": "FAIL",
+      "Property timeline-trigger-activation-range value '10em exit 20em'": "FAIL",
+      "Property timeline-trigger-activation-range value 'contain 0% contain 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'contain 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'contain'": "FAIL",
+      "Property timeline-trigger-activation-range value 'cover 0% cover 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'cover 50% entry 50%, contain 50% exit 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'cover 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'cover'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry 0% entry 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry 10em exit 20em'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry 50% exit 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry 50px exit 100px'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry calc(10% - 10%) entry calc(50% + 50%)'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry, exit'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry-crossing 0% entry-crossing 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry-crossing 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'entry-crossing'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit 0% exit 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit calc(10% + 50px)'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit-crossing 0% exit-crossing 100%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit-crossing 50%'": "FAIL",
+      "Property timeline-trigger-activation-range value 'exit-crossing'": "FAIL",
+      "Property timeline-trigger-activation-range value 'normal 100px'": "FAIL",
+      "Property timeline-trigger-activation-range value 'normal normal'": "FAIL",
+      "Property timeline-trigger-activation-range value 'normal'": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"10% normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"10%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"100px normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"100px\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"50% exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"contain 0% contain 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"contain 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"contain\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"cover 0% cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"cover 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"cover\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 0% entry 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 0%, exit\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 0%, exit\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 50% exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry 50px exit 100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry, exit\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry-crossing 0% entry-crossing 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry-crossing 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"entry-crossing\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit 0% exit 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit calc(10% + 50px)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit calc(10% + 50px)\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit-crossing 0% exit-crossing 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit-crossing 50%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"exit-crossing\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"normal 100px\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"normal entry 100%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"normal normal\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range'] = \"normal\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html": {
+    "total": 27,
+    "failures": {
+      "Property timeline-trigger-activation-range-start value 'COVER 0%'": "FAIL",
+      "Property timeline-trigger-activation-range-start value 'cover 0%'": "FAIL",
+      "Property timeline-trigger-activation-range-start value 'exit 1%, cover 2%, contain 0%'": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-invalid.tentative.html": {
+    "total": 9
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html": {
+    "total": 25,
+    "failures": {
+      "e.style['timeline-trigger-activation-range-start'] = \"cover 0%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-activation-range-start'] = \"exit 1%, cover 2%, contain 0%\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-name-parsing.html": {
+    "total": 28,
+    "failures": {
+      "Property timeline-trigger-name value '--a, none, --b'": "FAIL",
+      "Property timeline-trigger-name value 'none, none'": "FAIL",
+      "e.style['timeline-trigger-name'] = \"--a, none, --b\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-name'] = \"none, none\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-shorthand.tentative.html": {
+    "total": 196,
+    "failures": {
+      "Property timeline-trigger value '--my-trigger --my-timeline / contain'": "FAIL",
+      "Property timeline-trigger value '--my-trigger --my-timeline normal / contain'": "FAIL",
+      "Property timeline-trigger value '--my-trigger --my-timeline'": "FAIL",
+      "Property timeline-trigger value '--my-trigger none'": "FAIL",
+      "Property timeline-trigger value '--my-trigger view() contain 0% contain 100% / cover 0% cover 100%'": "FAIL",
+      "Property timeline-trigger value '--my-trigger view() contain 0% contain 100%'": "FAIL",
+      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 0%'": "FAIL",
+      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 10% cover 90%'": "FAIL",
+      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 10%'": "FAIL",
+      "Property timeline-trigger value '--trigger1 none, --trigger2 view()'": "FAIL",
+      "Property timeline-trigger value '--trigger1 view(), --trigger2 scroll()'": "FAIL",
+      "Property timeline-trigger value '--trigger1, --trigger2'": "FAIL",
+      "Property timeline-trigger value 'view()'": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline / contain\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline normal / contain\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger none\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0%\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 10%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 0%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10% cover 90%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10%\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / auto auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / cover 10% auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / cover auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / normal auto\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger view()\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover \" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain 50% / cover 50%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain 50% / cover 50%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover 100% / cover exit 100%\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover 100% / cover exit 100%\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should not set unrelated longhands": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-activation-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-activation-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-active-range-end": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-active-range-start": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-name": "FAIL",
+      "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-source": "FAIL",
+      "e.style['timeline-trigger'] = \"--trigger1 none, --trigger2 view()\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--trigger1 view(), --trigger2 scroll()\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"--trigger1, --trigger2\" should set the property value": "FAIL",
+      "e.style['timeline-trigger'] = \"view()\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/timeline-trigger-source-parsing.tentative.html": {
+    "total": 69,
+    "failures": {
+      "e.style['timeline-trigger-source'] = \"scroll(block self)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(block)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(inline nearest)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(nearest inline)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(nearest)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(self block)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"scroll(y root)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(1px 1px)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(1px 2px y)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(1px y)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(auto auto)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(auto x)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(auto)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(block)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(y auto auto)\" should set the property value": "FAIL",
+      "e.style['timeline-trigger-source'] = \"view(y auto)\" should set the property value": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/parsing/trigger-scope.tentative.html": {
+    "total": 25
+  },
+  "scroll-animations/animation-trigger/timeline-trigger-none-auto.tentative.html": {
+    "total": 1,
+    "failures": {
+      "timeline-trigger-source: none does not trigger animation; auto does": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/timeline-trigger-source-starts-in-trigger-range.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/animation-trigger/timeline-trigger-toggle.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Toggling trigger on starts controlling attached animation; toggling off stops": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-add.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Added scope prevents external references from finding trigger within scope.": "FAIL",
+      "Added scope prevents subtree from searching for external trigger": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-in-scope-source.tentative.html": {
+    "total": 1,
+    "failures": {
+      "In-scope target finds trigger of source; out-of-scope target does not.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-named.tentative.html": {
+    "total": 1,
+    "failures": {
+      "target within named trigger-scope finds trigger within scope; out-of-scope target does not.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-oof.tentative.html": {
+    "total": 1,
+    "failures": {
+      "In-scope targets find trigger of oof source; out-of-scope targets do not.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-out-of-scope-source.tentative.html": {
+    "total": 1,
+    "failures": {
+      "trigger-scope prevents in-scope target from finding trigger outside scope; target outside trigger-scope finds trigger": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-scoped-tree-order.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Among in-scope triggers with same name, last in tree-order is selected.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-tree-order-ancestor-chain.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Among in-scope triggers with same name, last in tree-order is selected, unless name occurs in ancestry before scope is reached.": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/trigger-scope-unscoped-tree-order.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Among un-scoped triggers with same name, last in tree-order is selected.": "FAIL"
+    }
+  },
+  "scroll-animations/css/animation-duration-auto.tentative.html": {
+    "total": 5
+  },
+  "scroll-animations/css/animation-events.html": {
+    "total": 1
+  },
+  "scroll-animations/css/animation-fill-outside-range-test.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/animation-inactive-outside-range-test.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/animation-range-ignored.html": {
+    "total": 2
+  },
+  "scroll-animations/css/animation-range-normal-matches-cover.html": {
+    "total": 1
+  },
+  "scroll-animations/css/animation-range-scroll-timeline.html": {
+    "total": 4
+  },
+  "scroll-animations/css/animation-range-smooth-scroll.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/animation-range-visual-test.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/animation-shorthand.html": {
+    "total": 27
+  },
+  "scroll-animations/css/animation-timeline-computed.html": {
+    "total": 44
+  },
+  "scroll-animations/css/animation-timeline-deferred.html": {
+    "total": 3
+  },
+  "scroll-animations/css/animation-timeline-ignored.tentative.html": {
+    "total": 5
+  },
+  "scroll-animations/css/animation-timeline-in-keyframe.html": {
+    "total": 1
+  },
+  "scroll-animations/css/animation-timeline-multiple.html": {
+    "total": 1
+  },
+  "scroll-animations/css/animation-timeline-named-scroll-progress-timeline.tentative.html": {
+    "total": 12
+  },
+  "scroll-animations/css/animation-timeline-none.html": {
+    "total": 2
+  },
+  "scroll-animations/css/animation-timeline-parsing.html": {
+    "total": 69
+  },
+  "scroll-animations/css/animation-timeline-scroll-functional-notation.tentative.html": {
+    "total": 7
+  },
+  "scroll-animations/css/animation-timeline-view-functional-notation.tentative.html": {
+    "total": 18
+  },
+  "scroll-animations/css/chrome-40925697.html": {
+    "total": 1
+  },
+  "scroll-animations/css/deferred-timeline-composited.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/get-animations-inactive-timeline.html": {
+    "total": 1
+  },
+  "scroll-animations/css/merge-timeline-offset-keyframes.html": {
+    "total": 2
+  },
+  "scroll-animations/css/named-range-keyframes-with-document-timeline.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/css/printing/animation-timeline-none-with-progress-print.tentative.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/printing/scroll-timeline-default-iframe-print.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/printing/scroll-timeline-default-print.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "scroll-animations/css/printing/scroll-timeline-specified-scroller-print.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/progress-based-animation-animation-longhand-properties.tentative.html": {
+    "total": 12
+  },
+  "scroll-animations/css/progress-based-animation-timeline.html": {
+    "total": 1
+  },
+  "scroll-animations/css/pseudo-on-scroller-named-timeline.html": {
+    "total": 1
+  },
+  "scroll-animations/css/pseudo-on-scroller.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-animation-initial-offset.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-anonymous-reuse.html": {
+    "total": 8
+  },
+  "scroll-animations/css/scroll-timeline-anonymous-source-quirks-mode.html": {
+    "total": 3
+  },
+  "scroll-animations/css/scroll-timeline-anonymous-source-scrollable-body-quirks-mode.html": {
+    "total": 3
+  },
+  "scroll-animations/css/scroll-timeline-anonymous-source-scrollable-body.html": {
+    "total": 3
+  },
+  "scroll-animations/css/scroll-timeline-anonymous-source.html": {
+    "total": 3
+  },
+  "scroll-animations/css/scroll-timeline-axis-computed.html": {
+    "total": 14
+  },
+  "scroll-animations/css/scroll-timeline-axis-parsing.html": {
+    "total": 18
+  },
+  "scroll-animations/css/scroll-timeline-axis-writing-mode.html": {
+    "total": 7
+  },
+  "scroll-animations/css/scroll-timeline-default-iframe.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-default-quirks-mode.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-default-writing-mode-rl.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-default.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-document-scroller-quirks.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-dynamic.tentative.html": {
+    "total": 14
+  },
+  "scroll-animations/css/scroll-timeline-frame-size-changed.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-in-container-query.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-inactive.html": {
+    "total": 2
+  },
+  "scroll-animations/css/scroll-timeline-inline-orientation.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-multi-pass.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Multiple style/layout passes occur when necessary": "FAIL"
+    }
+  },
+  "scroll-animations/css/scroll-timeline-name-computed.html": {
+    "total": 13
+  },
+  "scroll-animations/css/scroll-timeline-name-parsing.html": {
+    "total": 20
+  },
+  "scroll-animations/css/scroll-timeline-name-shadow.html": {
+    "total": 4
+  },
+  "scroll-animations/css/scroll-timeline-nearest-dirty.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-nearest-with-absolute-positioned-element.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-on-pseudo-002.html": {
+    "reftest": "FAIL"
+  },
+  "scroll-animations/css/scroll-timeline-on-pseudo-like-part.html": {
+    "total": 1,
+    "failures": {
+      "timeline.source does not expose pseudo-like part": "FAIL"
+    }
+  },
+  "scroll-animations/css/scroll-timeline-on-pseudo.html": {
+    "total": 1,
+    "failures": {
+      "timeline.source does not expose pseudo-element": "FAIL"
+    }
+  },
+  "scroll-animations/css/scroll-timeline-paused-animations.html": {
+    "total": 2
+  },
+  "scroll-animations/css/scroll-timeline-range-animation.html": {
+    "total": 8
+  },
+  "scroll-animations/css/scroll-timeline-responsiveness-from-endpoint.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-root-dirty.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-sampling.html": {
+    "total": 1
+  },
+  "scroll-animations/css/scroll-timeline-shorthand.html": {
+    "total": 51
+  },
+  "scroll-animations/css/scroll-timeline-update-reversed-animation.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/scroll-timeline-with-percent-delay.tentative.html": {
+    "total": 1,
+    "failures": {
+      "ScrollTimeline with animation delays as percentages": "FAIL"
+    }
+  },
+  "scroll-animations/css/siblings-with-anonymous-timelines.html": {
+    "total": 2
+  },
+  "scroll-animations/css/timeline-names-ident-function.html": {
+    "total": 12
+  },
+  "scroll-animations/css/timeline-offset-in-keyframe-change-timeline.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/css/timeline-offset-keyframes-hidden-subject.html": {
+    "total": 1
+  },
+  "scroll-animations/css/timeline-offset-keyframes-with-document-timeline.html": {
+    "total": 1
+  },
+  "scroll-animations/css/timeline-offset-keyframes-with-scroll-timeline.html": {
+    "total": 1
+  },
+  "scroll-animations/css/timeline-offset-keyframes-zero-length-attachment-range.html": {
+    "total": 2
+  },
+  "scroll-animations/css/timeline-range-name-offset-in-keyframes.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/css/timeline-scope-all.html": {
+    "total": 3
+  },
+  "scroll-animations/css/timeline-scope-computed.html": {
+    "total": 12
+  },
+  "scroll-animations/css/timeline-scope-parsing.html": {
+    "total": 25
+  },
+  "scroll-animations/css/timeline-scope.html": {
+    "total": 12
+  },
+  "scroll-animations/css/view-timeline-animation-range-update.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-animation.html": {
+    "total": 3,
+    "failures": {
+      "Default view-timeline": "FAIL",
+      "Horizontal view-timeline": "FAIL",
+      "Multiple view-timelines on the same element": "FAIL"
+    }
+  },
+  "scroll-animations/css/view-timeline-axis-computed.html": {
+    "total": 14
+  },
+  "scroll-animations/css/view-timeline-axis-parsing.html": {
+    "total": 18
+  },
+  "scroll-animations/css/view-timeline-dynamic.html": {
+    "total": 4
+  },
+  "scroll-animations/css/view-timeline-inset-animation.html": {
+    "total": 25
+  },
+  "scroll-animations/css/view-timeline-inset-computed.html": {
+    "total": 17
+  },
+  "scroll-animations/css/view-timeline-inset-parsing.html": {
+    "total": 26
+  },
+  "scroll-animations/css/view-timeline-keyframe-boundary-interpolation.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-lookup.html": {
+    "total": 7
+  },
+  "scroll-animations/css/view-timeline-name-computed.html": {
+    "total": 13
+  },
+  "scroll-animations/css/view-timeline-name-parsing.html": {
+    "total": 20
+  },
+  "scroll-animations/css/view-timeline-name-shadow.html": {
+    "total": 4
+  },
+  "scroll-animations/css/view-timeline-on-pseudo.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-paused-animations.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-pseudo-on-scroller-002.html": {
+    "reftest": "FAIL"
+  },
+  "scroll-animations/css/view-timeline-pseudo-on-scroller.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-range-animation.html": {
+    "total": 17
+  },
+  "scroll-animations/css/view-timeline-range-update-reversed-animation.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/view-timeline-range-update.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/view-timeline-scroll-range-source-content-resize.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-shorthand.html": {
+    "total": 84
+  },
+  "scroll-animations/css/view-timeline-subject-bounds-update.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/css/view-timeline-subject-in-shadow-root-with-timeline-scope.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-unresolved-current-time-at-effect-end.html": {
+    "total": 1
+  },
+  "scroll-animations/css/view-timeline-used-values.html": {
+    "total": 2
+  },
+  "scroll-animations/css/view-timeline-with-delay-and-range.tentative.html": {
+    "total": 1,
+    "failures": {
+      "ViewTimeline with animation delays and range": "FAIL"
+    }
+  },
+  "scroll-animations/css/view-timeline-with-transform-on-subject.html": {
+    "total": 1
+  },
+  "scroll-animations/responsive/repaint-after-finished.html": {
+    "reftest": "TIMEOUT"
+  },
+  "scroll-animations/scroll-timelines/animation-with-animatable-interface.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/animation-with-display-none.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/animation-with-overflow-hidden.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/animation-with-root-scroller.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/animation-with-transform.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/cancel-animation.html": {
+    "total": 10
+  },
+  "scroll-animations/scroll-timelines/constructor-no-document.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/constructor.html": {
+    "total": 10
+  },
+  "scroll-animations/scroll-timelines/current-time-nan.html": {
+    "total": 4
+  },
+  "scroll-animations/scroll-timelines/current-time-root-scroller.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/current-time-writing-modes.html": {
+    "total": 5
+  },
+  "scroll-animations/scroll-timelines/custom-property.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/duration.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/effect-updateTiming.html": {
+    "total": 67
+  },
+  "scroll-animations/scroll-timelines/effect-updateTiming.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/finish-animation.html": {
+    "total": 21
+  },
+  "scroll-animations/scroll-timelines/idlharness.window.js": {
+    "total": 29
+  },
+  "scroll-animations/scroll-timelines/intrinsic-iteration-duration.tentative.html": {
+    "total": 6
+  },
+  "scroll-animations/scroll-timelines/layout-changes-on-percentage-based-timeline.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/pause-animation.html": {
+    "total": 7
+  },
+  "scroll-animations/scroll-timelines/play-animation.html": {
+    "total": 16
+  },
+  "scroll-animations/scroll-timelines/progress-based-effect-delay.tentative.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/reverse-animation.html": {
+    "total": 11
+  },
+  "scroll-animations/scroll-timelines/scroll-animation-effect-fill-modes.tentative.html": {
+    "total": 26
+  },
+  "scroll-animations/scroll-timelines/scroll-animation-effect-phases.tentative.html": {
+    "total": 30,
+    "failures": {
+      "Playback rate affects whether active phase boundary is inclusive.": "FAIL"
+    }
+  },
+  "scroll-animations/scroll-timelines/scroll-animation-inactive-timeline.html": {
+    "total": 4
+  },
+  "scroll-animations/scroll-timelines/scroll-animation.html": {
+    "total": 4
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-invalidation-002.html": {
+    "total": 6
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-invalidation.html": {
+    "total": 3
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-range-with-zoom.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-range.html": {
+    "total": 8
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-snapshot-elementsFromPoint.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-snapshotting.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-source-single-axis-inactive.html": {
+    "total": 3
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-source-single-axis-inner.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-source-single-axis-outer.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-source-single-axis-progress.html": {
+    "total": 2
+  },
+  "scroll-animations/scroll-timelines/scroll-timeline-source-single-axis-viewport-writing-mode.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/set-current-time-before-play.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/setting-current-time.html": {
+    "total": 11
+  },
+  "scroll-animations/scroll-timelines/setting-effect.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/setting-playback-rate.html": {
+    "total": 14
+  },
+  "scroll-animations/scroll-timelines/setting-start-time.html": {
+    "total": 14
+  },
+  "scroll-animations/scroll-timelines/setting-timeline.tentative.html": {
+    "total": 16
+  },
+  "scroll-animations/scroll-timelines/source-quirks-mode.html": {
+    "total": 1
+  },
+  "scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline-cancel-one.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline.html": {
+    "reftest": "PASS"
+  },
+  "scroll-animations/scroll-timelines/update-playback-rate.html": {
+    "total": 9
+  },
+  "scroll-animations/scroll-timelines/updating-the-finished-state.html": {
+    "total": 25
+  },
+  "scroll-animations/view-timelines/animation-events.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/block-view-timeline-current-time-vertical-rl.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/block-view-timeline-current-time.tentative.html": {
+    "total": 3
+  },
+  "scroll-animations/view-timelines/block-view-timeline-nested-subject.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/change-animation-range-updates-play-state.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/contain-alignment.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/duration.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/fieldset-source.html": {
+    "total": 1,
+    "failures": {
+      "Fieldset is a valid source for a view timeline": "FAIL"
+    }
+  },
+  "scroll-animations/view-timelines/get-keyframes-with-timeline-offset.html": {
+    "total": 6
+  },
+  "scroll-animations/view-timelines/inline-subject.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/inline-view-timeline-current-time.tentative.html": {
+    "total": 4
+  },
+  "scroll-animations/view-timelines/intermediate-transform.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/range-boundary.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-containing-block-clamp.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-1.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-2.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-3.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-4.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-5.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-6.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-offscreen-7.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-orthogonal-axis-only.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/sticky/view-timeline-sticky-zero-size-subject.tentative.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/svg-graphics-element-001.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/svg-graphics-element-002.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/svg-graphics-element-003.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/timeline-offset-in-keyframe.html": {
+    "total": 5
+  },
+  "scroll-animations/view-timelines/unattached-subject-inset.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-abspos-containing-block-outside-scroller.tentative.html": {
+    "total": 2
+  },
+  "scroll-animations/view-timelines/view-timeline-abspos-outside-scroll-range.html": {
+    "total": 2
+  },
+  "scroll-animations/view-timelines/view-timeline-abspos-subject.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-get-current-time-range-name.tentative.html": {
+    "total": 1,
+    "failures": {
+      "View timeline current time for named range": "FAIL"
+    }
+  },
+  "scroll-animations/view-timelines/view-timeline-get-set-range.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-inset.html": {
+    "total": 5,
+    "failures": {
+      "view timeline with inset auto.": "FAIL"
+    }
+  },
+  "scroll-animations/view-timelines/view-timeline-on-display-none-element.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-range-large-subject.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-range.html": {
+    "total": 7
+  },
+  "scroll-animations/view-timelines/view-timeline-relative-ancestor.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-relative-subject.html": {
+    "total": 2
+  },
+  "scroll-animations/view-timelines/view-timeline-root-source.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-snapport.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-source-single-axis-inner.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-source-single-axis-outer.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-source.tentative.html": {
+    "total": 3
+  },
+  "scroll-animations/view-timelines/view-timeline-sticky-block.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html": {
+    "total": 3,
+    "failures": {
+      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 300": "FAIL",
+      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 320": "FAIL"
+    }
+  },
+  "scroll-animations/view-timelines/view-timeline-sticky-inline.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/view-timeline-sticky-subpixel-adjustment.html": {
+    "total": 2
+  },
+  "scroll-animations/view-timelines/view-timeline-subject-size-changes.html": {
+    "total": 1
+  },
+  "scroll-animations/view-timelines/zero-intrinsic-iteration-duration.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Intrinsic iteration duration is non-negative": "FAIL"
+    }
+  }
+}

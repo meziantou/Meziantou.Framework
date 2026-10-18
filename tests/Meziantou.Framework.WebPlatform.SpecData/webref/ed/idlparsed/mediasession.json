@@ -1,0 +1,1222 @@
+{
+  "spec": {
+    "title": "Media Session",
+    "url": "https://w3c.github.io/mediasession/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MediaMetadata"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Navigator",
+          "MediaSession",
+          "ChapterInformation"
+        ]
+      }
+    },
+    "idlNames": {
+      "MediaSessionPlaybackState": {
+        "fragment": "enum MediaSessionPlaybackState {\n  \"none\",\n  \"paused\",\n  \"playing\"\n};",
+        "type": "enum",
+        "name": "MediaSessionPlaybackState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionplaybackstate-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "paused",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionplaybackstate-paused"
+          },
+          {
+            "type": "enum-value",
+            "value": "playing",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionplaybackstate-playing"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediasession/#enumdef-mediasessionplaybackstate"
+      },
+      "MediaSessionAction": {
+        "fragment": "enum MediaSessionAction {\n  \"play\",\n  \"pause\",\n  \"seekbackward\",\n  \"seekforward\",\n  \"previoustrack\",\n  \"nexttrack\",\n  \"skipad\",\n  \"stop\",\n  \"seekto\",\n  \"togglemicrophone\",\n  \"togglecamera\",\n  \"togglescreenshare\",\n  \"hangup\",\n  \"previousslide\",\n  \"nextslide\",\n  \"enterpictureinpicture\",\n  \"voiceactivity\"\n};",
+        "type": "enum",
+        "name": "MediaSessionAction",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "play",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-play"
+          },
+          {
+            "type": "enum-value",
+            "value": "pause",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-pause"
+          },
+          {
+            "type": "enum-value",
+            "value": "seekbackward",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-seekbackward"
+          },
+          {
+            "type": "enum-value",
+            "value": "seekforward",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-seekforward"
+          },
+          {
+            "type": "enum-value",
+            "value": "previoustrack",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-previoustrack"
+          },
+          {
+            "type": "enum-value",
+            "value": "nexttrack",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-nexttrack"
+          },
+          {
+            "type": "enum-value",
+            "value": "skipad",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-skipad"
+          },
+          {
+            "type": "enum-value",
+            "value": "stop",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-stop"
+          },
+          {
+            "type": "enum-value",
+            "value": "seekto",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-seekto"
+          },
+          {
+            "type": "enum-value",
+            "value": "togglemicrophone",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-togglemicrophone"
+          },
+          {
+            "type": "enum-value",
+            "value": "togglecamera",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-togglecamera"
+          },
+          {
+            "type": "enum-value",
+            "value": "togglescreenshare",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-togglescreenshare"
+          },
+          {
+            "type": "enum-value",
+            "value": "hangup",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-hangup"
+          },
+          {
+            "type": "enum-value",
+            "value": "previousslide",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-previousslide"
+          },
+          {
+            "type": "enum-value",
+            "value": "nextslide",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-nextslide"
+          },
+          {
+            "type": "enum-value",
+            "value": "enterpictureinpicture",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-enterpictureinpicture"
+          },
+          {
+            "type": "enum-value",
+            "value": "voiceactivity",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionaction-voiceactivity"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediasession/#enumdef-mediasessionaction"
+      },
+      "MediaSessionEnterPictureInPictureReason": {
+        "fragment": "enum MediaSessionEnterPictureInPictureReason {\n  \"other\",\n  \"useraction\",\n  \"contentoccluded\"\n};",
+        "type": "enum",
+        "name": "MediaSessionEnterPictureInPictureReason",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "other",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionenterpictureinpicturereason-other"
+          },
+          {
+            "type": "enum-value",
+            "value": "useraction",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionenterpictureinpicturereason-useraction"
+          },
+          {
+            "type": "enum-value",
+            "value": "contentoccluded",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionenterpictureinpicturereason-contentoccluded"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediasession/#enumdef-mediasessionenterpictureinpicturereason"
+      },
+      "MediaSessionActionHandler": {
+        "fragment": "callback MediaSessionActionHandler = undefined(MediaSessionActionDetails details);",
+        "type": "callback",
+        "name": "MediaSessionActionHandler",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "details",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSessionActionDetails"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediasession/#callbackdef-mediasessionactionhandler"
+      },
+      "MediaSession": {
+        "fragment": "[Exposed=Window]\ninterface MediaSession {\n  attribute MediaMetadata? metadata;\n\n  attribute MediaSessionPlaybackState playbackState;\n\n  undefined setActionHandler(MediaSessionAction action, MediaSessionActionHandler? handler);\n\n  undefined setPositionState(optional MediaPositionState state = {});\n\n  Promise<undefined> setMicrophoneActive(boolean active);\n\n  Promise<undefined> setCameraActive(boolean active);\n\n  Promise<undefined> setScreenshareActive(boolean active);\n};",
+        "type": "interface",
+        "name": "MediaSession",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "metadata",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "MediaMetadata"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-metadata"
+          },
+          {
+            "type": "attribute",
+            "name": "playbackState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSessionPlaybackState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-playbackstate"
+          },
+          {
+            "type": "operation",
+            "name": "setActionHandler",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "action",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaSessionAction"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "handler",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "MediaSessionActionHandler"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-setactionhandler"
+          },
+          {
+            "type": "operation",
+            "name": "setPositionState",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "state",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaPositionState"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-setpositionstate"
+          },
+          {
+            "type": "operation",
+            "name": "setMicrophoneActive",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "active",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-setmicrophoneactive"
+          },
+          {
+            "type": "operation",
+            "name": "setCameraActive",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "active",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-setcameraactive"
+          },
+          {
+            "type": "operation",
+            "name": "setScreenshareActive",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "active",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/mediasession/#dom-mediasession-setscreenshareactive"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#mediasession"
+      },
+      "MediaMetadata": {
+        "fragment": "[Exposed=Window]\ninterface MediaMetadata {\n  constructor(optional MediaMetadataInit init = {});\n  attribute DOMString title;\n  attribute DOMString artist;\n  attribute DOMString album;\n  attribute FrozenArray<object> artwork;\n  [SameObject] readonly attribute FrozenArray<ChapterInformation> chapterInfo;\n};",
+        "type": "interface",
+        "name": "MediaMetadata",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaMetadataInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-mediametadata"
+          },
+          {
+            "type": "attribute",
+            "name": "title",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-title"
+          },
+          {
+            "type": "attribute",
+            "name": "artist",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-artist"
+          },
+          {
+            "type": "attribute",
+            "name": "album",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-album"
+          },
+          {
+            "type": "attribute",
+            "name": "artwork",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-artwork"
+          },
+          {
+            "type": "attribute",
+            "name": "chapterInfo",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ChapterInformation"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadata-chapterinfo"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#mediametadata"
+      },
+      "MediaMetadataInit": {
+        "fragment": "dictionary MediaMetadataInit {\n  DOMString title = \"\";\n  DOMString artist = \"\";\n  DOMString album = \"\";\n  sequence<MediaImage> artwork = [];\n  sequence<ChapterInformationInit> chapterInfo = [];\n};",
+        "type": "dictionary",
+        "name": "MediaMetadataInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadatainit-title"
+          },
+          {
+            "type": "field",
+            "name": "artist",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadatainit-artist"
+          },
+          {
+            "type": "field",
+            "name": "album",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadatainit-album"
+          },
+          {
+            "type": "field",
+            "name": "artwork",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaImage"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadatainit-artwork"
+          },
+          {
+            "type": "field",
+            "name": "chapterInfo",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ChapterInformationInit"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediametadatainit-chapterinfo"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#dictdef-mediametadatainit"
+      },
+      "ChapterInformation": {
+        "fragment": "[Exposed=Window]\ninterface ChapterInformation {\n  readonly attribute DOMString title;\n  readonly attribute double startTime;\n  [SameObject] readonly attribute FrozenArray<MediaImage> artwork;\n};",
+        "type": "interface",
+        "name": "ChapterInformation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "title",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformation-title"
+          },
+          {
+            "type": "attribute",
+            "name": "startTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformation-starttime"
+          },
+          {
+            "type": "attribute",
+            "name": "artwork",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaImage"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformation-artwork"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#chapterinformation"
+      },
+      "ChapterInformationInit": {
+        "fragment": "dictionary ChapterInformationInit {\n  DOMString title = \"\";\n  double startTime = 0;\n  sequence<MediaImage> artwork = [];\n};",
+        "type": "dictionary",
+        "name": "ChapterInformationInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformationinit-title"
+          },
+          {
+            "type": "field",
+            "name": "startTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformationinit-starttime"
+          },
+          {
+            "type": "field",
+            "name": "artwork",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaImage"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-chapterinformationinit-artwork"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#dictdef-chapterinformationinit"
+      },
+      "MediaImage": {
+        "fragment": "dictionary MediaImage {\n  required USVString src;\n  DOMString sizes = \"\";\n  DOMString type = \"\";\n};",
+        "type": "dictionary",
+        "name": "MediaImage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "src",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/mediasession/#dom-mediaimage-src"
+          },
+          {
+            "type": "field",
+            "name": "sizes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediaimage-sizes"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediaimage-type"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#dictdef-mediaimage"
+      },
+      "MediaPositionState": {
+        "fragment": "dictionary MediaPositionState {\n  unrestricted double duration;\n  double playbackRate;\n  double position;\n};",
+        "type": "dictionary",
+        "name": "MediaPositionState",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "duration",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediapositionstate-duration"
+          },
+          {
+            "type": "field",
+            "name": "playbackRate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediapositionstate-playbackrate"
+          },
+          {
+            "type": "field",
+            "name": "position",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediapositionstate-position"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#dictdef-mediapositionstate"
+      },
+      "MediaSessionActionDetails": {
+        "fragment": "dictionary MediaSessionActionDetails {\n  required MediaSessionAction action;\n  double seekOffset;\n  double seekTime;\n  boolean fastSeek;\n  boolean isActivating;\n  MediaSessionEnterPictureInPictureReason enterPictureInPictureReason;\n};",
+        "type": "dictionary",
+        "name": "MediaSessionActionDetails",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "action",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSessionAction"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-action"
+          },
+          {
+            "type": "field",
+            "name": "seekOffset",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-seekoffset"
+          },
+          {
+            "type": "field",
+            "name": "seekTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-seektime"
+          },
+          {
+            "type": "field",
+            "name": "fastSeek",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-fastseek"
+          },
+          {
+            "type": "field",
+            "name": "isActivating",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-isactivating"
+          },
+          {
+            "type": "field",
+            "name": "enterPictureInPictureReason",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSessionEnterPictureInPictureReason"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediasession/#dom-mediasessionactiondetails-enterpictureinpicturereason"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediasession/#dictdef-mediasessionactiondetails"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  [SameObject] readonly attribute MediaSession mediaSession;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "mediaSession",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "MediaSession"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/mediasession/#dom-navigator-mediasession"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "MediaSession",
+        "MediaMetadata",
+        "ChapterInformation"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "MediaSession"
+      ],
+      "MediaSession": [
+        "MediaMetadata",
+        "MediaSessionPlaybackState",
+        "MediaSessionAction",
+        "MediaSessionActionHandler",
+        "MediaPositionState"
+      ],
+      "MediaMetadata": [
+        "MediaMetadataInit",
+        "ChapterInformation"
+      ],
+      "MediaMetadataInit": [
+        "MediaImage",
+        "ChapterInformationInit"
+      ],
+      "ChapterInformation": [
+        "MediaImage"
+      ],
+      "ChapterInformationInit": [
+        "MediaImage"
+      ],
+      "MediaImage": [],
+      "MediaPositionState": [],
+      "MediaSessionActionDetails": [
+        "MediaSessionAction",
+        "MediaSessionEnterPictureInPictureReason"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

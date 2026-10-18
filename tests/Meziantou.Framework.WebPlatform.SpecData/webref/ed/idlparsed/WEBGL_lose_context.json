@@ -1,0 +1,99 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_lose_context Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_lose_context/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_lose_context"
+        ],
+        "Worker": [
+          "WEBGL_lose_context"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_lose_context": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_lose_context {\n      undefined loseContext();\n      undefined restoreContext();\n};",
+        "type": "interface",
+        "name": "WEBGL_lose_context",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "loseContext",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "restoreContext",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_lose_context"
+      ],
+      "Worker": [
+        "WEBGL_lose_context"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_lose_context": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

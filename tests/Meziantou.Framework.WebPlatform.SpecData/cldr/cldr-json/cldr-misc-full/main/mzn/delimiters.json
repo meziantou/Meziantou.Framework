@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mzn": {
+      "identity": {
+        "language": "mzn"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

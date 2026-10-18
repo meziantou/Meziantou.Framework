@@ -1,0 +1,182 @@
+{
+  "user-timing/buffered-flag.any.js": {
+    "total": 2
+  },
+  "user-timing/buffered-flag.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "user-timing/case-sensitivity.any.js": {
+    "total": 1
+  },
+  "user-timing/case-sensitivity.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clearMarks.html": {
+    "total": 57
+  },
+  "user-timing/clearMeasures.html": {
+    "total": 57
+  },
+  "user-timing/clear_all_marks.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_all_marks.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clear_all_measures.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_all_measures.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clear_non_existent_mark.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_non_existent_mark.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clear_non_existent_measure.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_non_existent_measure.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clear_one_mark.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_one_mark.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/clear_one_measure.any.js": {
+    "total": 1
+  },
+  "user-timing/clear_one_measure.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/entry_type.any.js": {
+    "total": 2
+  },
+  "user-timing/entry_type.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "user-timing/idlharness.any.js": {
+    "total": 36
+  },
+  "user-timing/idlharness.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "user-timing/idlharness.any.js#sharedworker": {
+    "total": 36
+  },
+  "user-timing/invoke_with_timing_attributes.html": {
+    "total": 42
+  },
+  "user-timing/invoke_with_timing_attributes.worker.js": {
+    "total": 42
+  },
+  "user-timing/invoke_without_parameter.html": {
+    "total": 2
+  },
+  "user-timing/mark-entry-constructor.any.js": {
+    "total": 6
+  },
+  "user-timing/mark-entry-constructor.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "user-timing/mark-errors.any.js": {
+    "total": 10
+  },
+  "user-timing/mark-errors.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "user-timing/mark-l3.any.js": {
+    "total": 1
+  },
+  "user-timing/mark-l3.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "user-timing/mark-measure-feature-detection.html": {
+    "total": 2
+  },
+  "user-timing/mark-measure-return-objects.any.js": {
+    "total": 5
+  },
+  "user-timing/mark-measure-return-objects.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "user-timing/mark.any.js": {
+    "total": 22
+  },
+  "user-timing/mark.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "user-timing/mark.html": {
+    "total": 119
+  },
+  "user-timing/mark_exceptions.html": {
+    "total": 22
+  },
+  "user-timing/measure-exceptions.html": {
+    "total": 13
+  },
+  "user-timing/measure-l3.any.js": {
+    "total": 3
+  },
+  "user-timing/measure-l3.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "user-timing/measure-with-dict.any.js": {
+    "total": 2
+  },
+  "user-timing/measure-with-dict.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "user-timing/measure.html": {
+    "total": 38
+  },
+  "user-timing/measure_associated_with_navigation_timing.html": {
+    "total": 8
+  },
+  "user-timing/measure_exception.html": {
+    "total": 10
+  },
+  "user-timing/measure_exceptions_navigation_timing.html": {
+    "total": 4
+  },
+  "user-timing/measure_navigation_timing.html": {
+    "total": 17
+  },
+  "user-timing/measure_syntax_err.any.js": {
+    "total": 5
+  },
+  "user-timing/measure_syntax_err.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "user-timing/measures.html": {
+    "total": 119
+  },
+  "user-timing/performance-measure-invalid.worker.js": {
+    "total": 2
+  },
+  "user-timing/structured-serialize-detail.any.js": {
+    "total": 9
+  },
+  "user-timing/structured-serialize-detail.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "user-timing/supported-usertiming-types.any.js": {
+    "total": 3
+  },
+  "user-timing/supported-usertiming-types.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "user-timing/user-timing-tojson.html": {
+    "total": 2
+  },
+  "user-timing/user_timing_exists.any.js": {
+    "total": 4
+  },
+  "user-timing/user_timing_exists.any.js#dedicatedworker": {
+    "total": 4
+  }
+}

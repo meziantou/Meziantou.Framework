@@ -1,0 +1,189 @@
+{
+  "spec": {
+    "title": "Gyroscope",
+    "url": "https://w3c.github.io/gyroscope/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Gyroscope"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "Gyroscope": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface Gyroscope : Sensor {\n  constructor(optional GyroscopeSensorOptions sensorOptions = {});\n  readonly attribute double? x;\n  readonly attribute double? y;\n  readonly attribute double? z;\n};",
+        "type": "interface",
+        "name": "Gyroscope",
+        "inheritance": "Sensor",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sensorOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GyroscopeSensorOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscope-gyroscope"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscope-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscope-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscope-z"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/gyroscope/#gyroscope"
+      },
+      "GyroscopeLocalCoordinateSystem": {
+        "fragment": "enum GyroscopeLocalCoordinateSystem { \"device\", \"screen\" };",
+        "type": "enum",
+        "name": "GyroscopeLocalCoordinateSystem",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "device",
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscopelocalcoordinatesystem-device"
+          },
+          {
+            "type": "enum-value",
+            "value": "screen",
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscopelocalcoordinatesystem-screen"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/gyroscope/#enumdef-gyroscopelocalcoordinatesystem"
+      },
+      "GyroscopeSensorOptions": {
+        "fragment": "dictionary GyroscopeSensorOptions : SensorOptions {\n  GyroscopeLocalCoordinateSystem referenceFrame = \"device\";\n};",
+        "type": "dictionary",
+        "name": "GyroscopeSensorOptions",
+        "inheritance": "SensorOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "referenceFrame",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GyroscopeLocalCoordinateSystem"
+            },
+            "default": {
+              "type": "string",
+              "value": "device"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/gyroscope/#dom-gyroscopesensoroptions-referenceframe"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/gyroscope/#dictdef-gyroscopesensoroptions"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Gyroscope"
+      ]
+    },
+    "dependencies": {
+      "Gyroscope": [
+        "Sensor",
+        "GyroscopeSensorOptions"
+      ],
+      "GyroscopeSensorOptions": [
+        "SensorOptions",
+        "GyroscopeLocalCoordinateSystem"
+      ]
+    },
+    "externalDependencies": [
+      "Sensor",
+      "SensorOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,1532 @@
+{
+  "navigation-api/currententrychange-event/anchor-click.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/constructor.html": {
+    "total": 4
+  },
+  "navigation-api/currententrychange-event/history-back-same-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/history-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/history-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/location-api.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigate-from-initial-about-blank-same-doc-popup.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigate-from-initial-about-blank-same-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigate-from-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-back-forward-cross-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-back-forward-same-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-cross-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-replace-cross-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-replace-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-replace-same-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-navigate-same-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-reload-cross-doc.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-reload-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/navigation-updateCurrentEntry.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/not-on-load.html": {
+    "total": 1
+  },
+  "navigation-api/currententrychange-event/properties.html": {
+    "total": 1
+  },
+  "navigation-api/focus-reset/autofocus.html?delayed-checkpoint": {
+    "total": 7
+  },
+  "navigation-api/focus-reset/autofocus.html?same-checkpoint": {
+    "total": 7
+  },
+  "navigation-api/focus-reset/basic.html": {
+    "total": 8
+  },
+  "navigation-api/focus-reset/change-focus-again-in-blur-during-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/focus-reset/change-focus-back-to-origial-during-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/focus-reset/change-focus-during-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/focus-reset/change-focus-then-remove-during-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/focus-reset/focus-reset-timing.html": {
+    "total": 2
+  },
+  "navigation-api/focus-reset/multiple-intercept.html": {
+    "total": 6
+  },
+  "navigation-api/navigate-event/cross-origin-traversal-does-not-fire-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-origin-traversal-redirect.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-crossdocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-crossdocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-crossdocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-samedocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/click-samedocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-crossdocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-crossdocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-crossdocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-samedocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-samedocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-crossdocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-crossdocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-crossdocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-samedocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/open-samedocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-crossdocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-crossdocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-crossdocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-samedocument-crossorigin-sameorigindomain.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-samedocument-sameorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/dangling-navigate-event-after-bfcache-restore.html": {
+    "total": 1,
+    "failures": {
+      "navigateerror should not fire when calling pushState after restoring from bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigate-event/defaultPrevented-navigation-preempted.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/defaultPrevented-window-stop-after-dispatch.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-after-dispatch.html": {
+    "total": 1,
+    "failures": {
+      "event.deferPageSwap() throws if used after the dispatch phase": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-back.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-restore-callback-abort.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-same-document.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "\n  navigateEvent.deferPageSwap: deferring is not allowed for same-document navigations\n": "TIMEOUT"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-with-multiple-handlers-and-single-reject.html": {
+    "total": 1,
+    "failures": {
+      "\n  navigateEvent.deferPageSwap: rejecting a single handler resumes navigation and ignores\n  other handlers\n": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-with-multiple-handlers.html": {
+    "total": 1,
+    "failures": {
+      "\n  navigateEvent.deferPageSwap: multiple deferring methods should complete before\n  committing\n": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-with-single-handler-reject.html": {
+    "total": 1,
+    "failures": {
+      "navigateEvent.deferPageSwap: rejecting a handler does not stop navigation": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/defer-with-single-handler.html": {
+    "total": 1,
+    "failures": {
+      "navigateEvent.deferPageSwap: deferring method should complete before committing": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/defer/tentative/restore-after-bfcache.html": {
+    "total": 1,
+    "failures": {
+      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigate-event/document-open-after-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/event-constructor.html": {
+    "total": 6
+  },
+  "navigation-api/navigate-event/intercept-after-dispatch.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-and-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-canceled-event.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-cross-document-same-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-cross-origin-focus-without-user-activation.html": {
+    "total": 2,
+    "failures": {
+      "Navigation API intercept() focus reset shouldn't bypass focus-without-user-activation permissions policy": "FAIL"
+    }
+  },
+  "navigation-api/navigate-event/intercept-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-detach-multiple.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-detach.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-handler-null-or-undefined.html": {
+    "total": 2
+  },
+  "navigation-api/navigate-event/intercept-handler-returns-non-promise.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-handler-throws.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-history-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-history-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-multiple-times-reject.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-multiple-times.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-navigation-back.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-on-synthetic-event.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-popstate-no-handler.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-popstate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-reject.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-resolve.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercept-same-document-history-back.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html": {
+    "total": 1,
+    "failures": {
+      "An intercepted navigation that is ongoing when entering the BFCache should finish after restoring": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigate-event/navigate-anchor-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-download-userInitiated.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-download.html": {
+    "total": 4
+  },
+  "navigation-api/navigate-event/navigate-anchor-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-same-origin-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-same-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-userInitiated.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-with-target.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-after-detach.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-dynamic-index.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-getState-back-forward.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-getState-fragment-via-href.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-getState-fragment-via-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-getState-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-destination-getState-reload.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-event-canintercept-cross-port.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-get-sourceElement.html": {
+    "total": 2
+  },
+  "navigation-api/navigate-event/navigate-form-get.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-reload.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-requestSubmit.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-traverse.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-userInitiated.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form-with-target.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-form.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-back-after-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-back-after-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-back-bfcache.html": {
+    "total": 1,
+    "failures": {
+      "navigate event should fire when traversing to a bfcache hit": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigate-event/navigate-history-back-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-back-noop.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-go-0.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-traversal-during-onnavigate-should-reject.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-history-traversal-during-onnavigate.html": {
+    "total": 2
+  },
+  "navigation-api/navigate-event/navigate-iframe-location.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-location.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-meta-refresh.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-multiple-history-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-multiple-location.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-multiple-navigation-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-multiple-nested-navigateerror.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-navigation-back-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-navigation-back-same-document-in-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-navigation-back-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-navigation-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-svg-anchor-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-to-javascript.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-to-srcdoc.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-window-open-self.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-window-open.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigatesuccess-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigatesuccess-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-back-cross-document-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-back-same-document-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-traverseTo-in-iframe-same-document-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-traverseTo-navigates-top-and-same-doc-child-and-cross-doc-child.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-traverseTo-same-document-preventDefault-multiple-windows.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-traverseTo-top-cancels-cross-document-child.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/reentry-from-focus-reset-navigate-api-tracker.html": {
+    "total": 2
+  },
+  "navigation-api/navigate-event/replaceState-inside-back-handler-infinite.optional.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/replaceState-inside-back-handler.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/same-url-replace-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/same-url-replace-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-detach-in-onnavigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-reentry-navigate-api-tracker.html": {
+    "total": 2
+  },
+  "navigation-api/navigate-event/signal-abort-window-stop-after-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-window-stop-in-onnavigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/signal-abort-window-stop.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/sourceElement-cross-origin.sub.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/traverseTo-detach.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from must be cleared on cross-origin bfcache restoration when it was previously non-null": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-cross-origin.html": {
+    "total": 1,
+    "failures": {
+      "navigation.activation must be updated when restored from bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache.html": {
+    "total": 1,
+    "failures": {
+      "navigation.activation must be updated when restored from bfcache": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-history-pushState.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-history-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-push-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-push.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-reload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-replace-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-replace.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-same-document-then-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-traverse-not-in-entries.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-traverse-then-clobber.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-activation/activation-traverse.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/after-detach.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/current-basic.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-across-origins.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-bfcache-in-iframe.html": {
+    "total": 1,
+    "failures": {
+      "entries() in an iframe must be updated after navigating back to a bfcached page": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-history-entry/entries-after-bfcache.html": {
+    "total": 1,
+    "failures": {
+      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-history-entry/entries-after-blank-navigation-from-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-blank-navigation.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-blob-navigation.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-cross-document-forward-pruning.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-javascript-url-navigation.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-navigations-in-multiple-windows.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-server-redirect-replace.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-server-redirect.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-srcdoc-navigation.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-array-equality.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-in-new-javascript-url-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-in-new-srcdoc-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-mainframe-with-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-when-inactive.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entry-after-detach.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/index-not-in-entries.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-back-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-back-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-location-reload-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-location-reload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-location-replace-cross-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/key-id-location-replace.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/no-referrer-dynamic-url-censored.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/no-referrer-from-meta-url-censored.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/no-referrer-url-censored.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/opaque-origin-data-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/opaque-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/sameDocument-after-fragment-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/sameDocument-after-navigate-restore.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/sameDocument-after-navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/state-after-navigate-restore.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/back-forward-multiple-frames.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/disambigaute-back.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/disambigaute-forward.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/disambigaute-traverseTo-back-multiple.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/disambigaute-traverseTo-forward-multiple.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/forward-to-pruned-entry.html": {
+    "total": 1,
+    "failures": {
+      "If forward pruning clobbers the target of a traverse, abort": "FAIL"
+    }
+  },
+  "navigation-api/navigation-methods/navigate-base-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-from-initial-about-blank-gc.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-from-initial-about-blank-src.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-from-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-history-push-not-loaded.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-history-push-same-url-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-history-push-same-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-history-state-replace.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-history-state.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-info-and-state.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-intercept-history-state.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-relative-url-utf8.html?encoding=utf8": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-relative-url-utf8.html?encoding=windows-1252": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-relative-url-utf8.html?encoding=x-cp1251": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-relative-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-replace-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-replace-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-same-document.html": {
+    "total": 2
+  },
+  "navigation-api/navigation-methods/navigate-state-repeated-await.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-state-repeated.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-base-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-info.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-navigation-timing.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-no-args.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-service-worker-fetch-event.html": {
+    "total": 1,
+    "failures": {
+      "reload() appears as a reload to service worker fetch event handlers": "FAIL"
+    }
+  },
+  "navigation-api/navigation-methods/reload-state-and-info.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/reload-state-undefined.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-204-205-download.html": {
+    "total": 3
+  },
+  "navigation-api/navigation-methods/return-value/back-already-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-forward-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-forward-opaque-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-forward-out-of-bounds.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-intercept-rejected.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/back.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/forward-already-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/forward-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/forward-intercept-rejected.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/forward-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/forward.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-204-205-download.html": {
+    "total": 3
+  },
+  "navigation-api/navigation-methods/return-value/navigate-already-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-detach-in-onnavigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-detach-in-serialization.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-file-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-initial-about-blank-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-intercept-interrupted.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-intercept-rejected.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-interrupted-within-onnavigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-interrupted.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-invalid-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-javascript-url.html": {
+    "total": 2
+  },
+  "navigation-api/navigation-methods/return-value/navigate-opaque-origin.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-pagehide.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-push-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-push-javascript-url.html": {
+    "total": 2
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-beforeunload-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-detached-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-invalidurl-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-invalidurl-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-invalidurl-pagehide.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-invalidurl-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-rejection-order-pagehide-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/navigate-unserializable-state.html": {
+    "total": 2
+  },
+  "navigation-api/navigation-methods/return-value/navigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-already-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-detach-in-onnavigate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-detach-in-serialization.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-intercept-rejected.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-pagehide.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-rejection-order-beforeunload-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-rejection-order-detached-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-rejection-order-pagehide-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/reload-unserializable-state.html": {
+    "total": 2
+  },
+  "navigation-api/navigation-methods/return-value/reload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-already-detached.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-beforeunload.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-cross-document-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-current.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-detach-cross-document-before-navigate-event.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-detach-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-detach-same-document-before-navigate-event.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-detach-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-intercept-rejected.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-invalid-key.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo-repeated.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/return-value/traverseTo.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/sandboxing-back-parent.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/sandboxing-back-sibling.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/sandboxing-navigate-parent.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/sandboxing-navigate-sibling.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-after-adding-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-after-data-url.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-detach-between-navigate-and-navigatesuccess.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-multiple-steps.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-navigates-multiple-iframes.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-with-cross-origin-in-history.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download-aborts-previous-navigation.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download-intercept-reject.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download-intercept-reject.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/anchor-download.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-cross-document-event-order-with-pagehide.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-cross-document-event-order.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document-intercept-reject.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document-intercept-reject.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/back-same-document.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/currententrychange-before-popstate-intercept.html": {
+    "total": 1,
+    "failures": {
+      "currententrychange fires before popstate for navigation.back() and navigation.forward()": "FAIL"
+    }
+  },
+  "navigation-api/ordering-and-transition/currententrychange-dispose-ordering.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/intercept-async.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/intercept-async.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-canceled.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-double-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-double-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept-reentrant.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept-reentrant.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept-reject.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept-reject.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/location-href-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html": {
+    "total": 3
+  },
+  "navigation-api/ordering-and-transition/navigate-canceled.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-cross-document-double.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-cross-document-event-order.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-double-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-double-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-in-transition-finished.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-in-transition-finished.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler-redirect.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler-redirect.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler-reject.tentative.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler-reject.tentative.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-precommitHandler.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-stop.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept-stop.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document-intercept-reentrant.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document-intercept-reentrant.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document-intercept-reject.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document-intercept-reject.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/navigate-same-document.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-canceled.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-intercept-reject.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-intercept-reject.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-intercept.html?currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-intercept.html?no-currententrychange": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/reload-no-popstate.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/transition-cross-document.html": {
+    "total": 3
+  },
+  "navigation-api/ordering-and-transition/transition-finished-mark-as-handled.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/transition-realms-and-identity.html": {
+    "total": 1
+  },
+  "navigation-api/ordering-and-transition/transition-to.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-after-bfcache.html": {
+    "total": 1,
+    "failures": {
+      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/per-entry-events/dispose-cross-document.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-for-full-session-history.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Dispose should fire when an entry is removed from session history due to too many entries": "TIMEOUT"
+    }
+  },
+  "navigation-api/per-entry-events/dispose-for-navigation-in-child-entries-updated.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-for-navigation-in-child.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-for-navigation-in-sibling-detach-frame.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document-navigate-during.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document-reload-with-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document-replace-with-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document-replaceState.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/per-entry-events/dispose-skip-current-on-truncate.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/multiple-intercept.html": {
+    "total": 8
+  },
+  "navigation-api/precommit-handler/precommitHandler-addHandler-throws.html": {
+    "total": 3
+  },
+  "navigation-api/precommit-handler/precommitHandler-addHandler.html": {
+    "total": 2
+  },
+  "navigation-api/precommit-handler/precommitHandler-back-and-forth.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-javascript-url-before-commit.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-new-navigation-before-commit.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-push.html": {
+    "total": 3
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-non-api-navigation.html": {
+    "total": 2
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-options.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-push-changed-to-replace.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-push.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-replace-changed-to-push.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-replace.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-redirect-throws.html": {
+    "total": 8
+  },
+  "navigation-api/precommit-handler/precommitHandler-reload.html": {
+    "total": 3
+  },
+  "navigation-api/precommit-handler/precommitHandler-replace.html": {
+    "total": 3
+  },
+  "navigation-api/precommit-handler/precommitHandler-traversal-commit-new-navigation-before-commit.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-traversal-window-stop-before-commit.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-traverse.html": {
+    "total": 3
+  },
+  "navigation-api/precommit-handler/precommitHandler-uncancelable.html": {
+    "total": 1
+  },
+  "navigation-api/precommit-handler/precommitHandler-window-stop-before-commit.html": {
+    "total": 3
+  },
+  "navigation-api/scroll-behavior/after-transition-basic.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-change-history-scroll-restoration-during-promise.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-explicit-scroll.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-intercept-handler-modifies.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-push.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-reject.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-reload-no-scroll-anchoring.html": {
+    "total": 1,
+    "failures": {
+      "scroll: after-transition should work on a reload navigation": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/after-transition-reload.html": {
+    "total": 1,
+    "failures": {
+      "scroll: after-transition should work on a reload navigation": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/after-transition-replace.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-skips-restore-when-scrolled.html": {
+    "total": 1,
+    "failures": {
+      "scroll: after-transition should not restore scroll if the document was scrolled during the navigation": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/after-transition-timing.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-basic.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-immediate-scroll.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-after-dispatch.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-after-resolve.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-clears-target-when-fragment-does-not-exist.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-clears-target-when-no-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-fragment-does-not-exist.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-in-precommit-handler.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-push.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html": {
+    "total": 1,
+    "failures": {
+      "scroll: scroll() should work on a reload navigation": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/manual-scroll-reload.html": {
+    "total": 1,
+    "failures": {
+      "scroll: scroll() should work on a reload navigation": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/manual-scroll-repeated.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-replace.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/manual-scroll-resets-when-no-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/scroll-after-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/scroll-on-synthetic-event.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/scroll-without-intercept.html": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-away-and-back.html?method=navigate": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-away-and-back.html?method=updateCurrentEntry": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-getState-undefined.html": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-getState.html": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-location-api.html?method=navigate": {
+    "total": 1
+  },
+  "navigation-api/state/cross-document-location-api.html?method=updateCurrentEntry": {
+    "total": 1
+  },
+  "navigation-api/state/history-pushState.html?method=navigate": {
+    "total": 1
+  },
+  "navigation-api/state/history-pushState.html?method=updateCurrentEntry": {
+    "total": 1
+  },
+  "navigation-api/state/history-replaceState.html?method=navigate": {
+    "total": 1
+  },
+  "navigation-api/state/history-replaceState.html?method=updateCurrentEntry": {
+    "total": 1
+  },
+  "navigation-api/state/location-reload.html?method=navigate": {
+    "total": 1
+  },
+  "navigation-api/state/location-reload.html?method=updateCurrentEntry": {
+    "total": 1
+  },
+  "navigation-api/state/same-document-away-and-back-location-api.html": {
+    "total": 1
+  },
+  "navigation-api/state/same-document-away-and-back-navigation-api.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/basic.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/exception-order-initial-about-blank-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/exception-order-not-fully-active-unserializablestate.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/initial-about-blank.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/no-args.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/not-fully-active.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/opaque-origin.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/reentrancy-on-serialize.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/same-document-away-and-back-location-api.html": {
+    "total": 1
+  },
+  "navigation-api/updateCurrentEntry-method/unserializable.html": {
+    "total": 2
+  }
+}

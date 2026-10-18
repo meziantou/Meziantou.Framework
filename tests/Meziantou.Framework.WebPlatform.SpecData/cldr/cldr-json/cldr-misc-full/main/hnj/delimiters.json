@@ -1,0 +1,15 @@
+{
+  "main": {
+    "hnj": {
+      "identity": {
+        "language": "hnj"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

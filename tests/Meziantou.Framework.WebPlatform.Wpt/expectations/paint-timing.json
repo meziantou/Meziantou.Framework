@@ -1,0 +1,179 @@
+{
+  "paint-timing/basetest.html": {
+    "total": 1
+  },
+  "paint-timing/buffered-flag.window.js": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/buffered-flag.window.js": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-after-scroll.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-background-size.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-bg-image-set.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-bg-image-two-steps.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-border-image-with-svg.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-border-image.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-broken-image.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-canvas-context.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-gradient.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-ignore-from-subframe.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-invisible-3d-rotate-descendant.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-invisible-3d-rotate.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-invisible-scale-transition.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-invisible-scale.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-invisible-text.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-opacity-descendant.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-opacity.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-out-of-bounds-translate.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-out-of-bounds.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-pseudo-element-display.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-pseudo-element-image.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-pseudo-element-opacity.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-pseudo-element-text.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-pseudo-element-visibility.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-requires-both-paintable-and-contentful.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-svg.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-text-input.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-typographic-pseudo.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-video-frame.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-video-poster.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-whitespace.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/fcp-with-rtl.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/first-contentful-canvas-none.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/input-text.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/mask-image.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/replaced-content-image.html": {
+    "total": 1
+  },
+  "paint-timing/fcp-only/svg-in-iframe.html": {
+    "total": 1
+  },
+  "paint-timing/first-contentful-bg-image.html": {
+    "total": 1
+  },
+  "paint-timing/first-contentful-canvas-webgl2.html": {
+    "total": 1,
+    "failures": {
+      "First contentful paint fires due to webgl2 canvas render.": "PRECONDITION_FAILED"
+    }
+  },
+  "paint-timing/first-contentful-canvas.html": {
+    "total": 1
+  },
+  "paint-timing/first-contentful-image.html": {
+    "total": 1
+  },
+  "paint-timing/first-contentful-paint.html": {
+    "total": 1
+  },
+  "paint-timing/first-contentful-svg.html": {
+    "total": 1
+  },
+  "paint-timing/first-image-child.html": {
+    "total": 1
+  },
+  "paint-timing/first-paint-only/child-painting-first-image.html": {
+    "total": 1
+  },
+  "paint-timing/first-paint-only/first-paint-bg-color.html": {
+    "total": 1
+  },
+  "paint-timing/first-paint-only/first-paint-only.html": {
+    "total": 1
+  },
+  "paint-timing/first-paint-only/sibling-painting-first-image.html": {
+    "total": 1
+  },
+  "paint-timing/idlharness.window.js": {
+    "total": 18
+  },
+  "paint-timing/paint-visited.html": {
+    "total": 1
+  },
+  "paint-timing/supported-paint-type.window.js": {
+    "total": 2
+  },
+  "paint-timing/with-lcp/fcp-document-opacity-image.html": {
+    "total": 1
+  },
+  "paint-timing/with-lcp/fcp-document-opacity-text.html": {
+    "total": 1
+  },
+  "paint-timing/with-paint-timing-mixin/paint-timing-mixin-to-json.html": {
+    "total": 1
+  },
+  "paint-timing/with-paint-timing-mixin/paint-timing-mixin.html": {
+    "total": 1
+  }
+}

@@ -1,0 +1,588 @@
+{
+  "css/motion/animation/offset-anchor-composition.html": {
+    "total": 56
+  },
+  "css/motion/animation/offset-anchor-interpolation.html": {
+    "total": 312
+  },
+  "css/motion/animation/offset-distance-composition.html": {
+    "total": 40
+  },
+  "css/motion/animation/offset-distance-interpolation.html": {
+    "total": 192
+  },
+  "css/motion/animation/offset-interpolation.html": {
+    "total": 36
+  },
+  "css/motion/animation/offset-path-composition.html": {
+    "total": 84
+  },
+  "css/motion/animation/offset-path-coord-box-interpolation.html": {
+    "total": 144
+  },
+  "css/motion/animation/offset-path-interpolation-001.html": {
+    "total": 288
+  },
+  "css/motion/animation/offset-path-interpolation-002.html": {
+    "total": 144
+  },
+  "css/motion/animation/offset-path-interpolation-003.html": {
+    "total": 192
+  },
+  "css/motion/animation/offset-path-interpolation-004.html": {
+    "total": 192
+  },
+  "css/motion/animation/offset-path-interpolation-005.html": {
+    "total": 502
+  },
+  "css/motion/animation/offset-path-interpolation-006.html": {
+    "total": 510,
+    "failures": {
+      "CSS Animations: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
+      "Web Animations: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL"
+    }
+  },
+  "css/motion/animation/offset-path-interpolation-007.html": {
+    "total": 168
+  },
+  "css/motion/animation/offset-path-interpolation-008.html": {
+    "total": 614,
+    "failures": {
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2px 2px, arc to 18px -12px of 7px 17px ccw small, arc by 12px -2px of 33px 33px rotate -42deg cw large, arc to 25px 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0) should be [shape(from 5px 5px, arc to 15px -15px of 10px 20px, arc by 15px -5px of 30px 30px cw rotate 30deg large, arc to 25px 20px of 10px 5px small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8px 8px, arc to 12px -18px of 13px 23px ccw small, arc by 18px -8px of 27px 27px rotate 102deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10px 10px, arc to 10px -20px of 15px 25px ccw small, arc by 20px -10px of 25px 25px rotate 150deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20px 20px, arc to 0px -30px of 25px 35px ccw small, arc by 30px -20px of 15px 15px rotate 390deg cw small, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (-0.3) should be [shape(from calc(-4.5% + 6.5px) 2px, curve by calc(-6% + 13px) 13px with -3% 86px, curve by calc(-6% + 39px) 17px with calc(-9% + 26px) 53px / calc(1.5% + 32.5px) 61px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0) should be [shape(from calc(0% + 5px) 5px, curve by calc(0% + 10px) 10px with 0% 80px, curve by calc(0% + 30px) 20px with calc(0% + 20px) 50px / calc(0% + 25px) 70px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0.5) should be [shape(from calc(7.5% + 2.5px) 10px, curve by calc(10% + 5px) 5px with 5% 70px, curve by calc(10% + 15px) 25px with calc(15% + 10px) 45px / calc(-2.5% + 12.5px) 85px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (1.5) should be [shape(from calc(22.5% - 2.5px) 20px, curve by calc(30% - 5px) -5px with 15% 50px, curve by calc(30% - 15px) 35px with calc(45% - 10px) 35px / calc(-7.5% - 12.5px) 115px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (-0.3) should be [shape(from 2px 2px, smooth by 7px 13px with -3px 86px, smooth by 33px 17px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (1.5) should be [shape(from 20px 20px, smooth by 25px -5px with 15px 50px, smooth by 15px 35px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, arc to calc(19.5% - 1.5px) -12px of 7px 17px, arc by calc(19.5% - 7.5px) -2px of 33px 33px cw large rotate -42deg, arc to calc(32.5% - 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.3) should be [shape(from calc(3.5% + 4.5px) 8px, arc to calc(10.5% + 1.5px) -18px of 13px 23px, arc by calc(10.5% + 7.5px) -8px of 27px 27px cw large rotate 102deg, arc to calc(17.5% + 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, arc to calc(7.5% + 2.5px) -20px of 15px 25px, arc by calc(7.5% + 12.5px) -10px of 25px 25px cw large rotate 150deg, arc to calc(12.5% + 12.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1) should be [shape(from calc(0% + 15px) 15px, arc to calc(0% + 5px) -25px of 20px 30px, arc by calc(0% + 25px) -15px of 20px 20px cw rotate 270deg, arc to calc(0% + 25px) 20px of 10px 5px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, arc to calc(-7.5% + 7.5px) -30px of 25px 35px, arc by calc(-7.5% + 37.5px) -20px of 15px 15px cw rotate 390deg, arc to calc(-12.5% + 37.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2% 2px, arc to 18% -12px of 7px 17px ccw small, arc by 12% -2px of 33px 33px rotate -42deg cw large , arc to 25% 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8% 8px, arc to 12% -18px of 13px 23px ccw small, arc by 18% -8px of 27px 27px rotate 102deg cw large, arc to 25% 20px of 10px 5px cw small )]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20% 20px, arc to 0% -30px of 25px 35px ccw small, arc by 30% -20px of 15px 15px rotate 390deg cw small, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, curve to calc(13% - 6px) 13px with calc(0% - 3px) 86px, curve to calc(39% - 6px) 17px with calc(26% - 9px) 53px / calc(32.5% + 1.5px) 61px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, curve to calc(5% + 10px) 5px with calc(0% + 5px) 70px, curve to calc(15% + 10px) 25px with calc(10% + 15px) 45px / calc(12.5% - 2.5px) 85px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, curve to calc(0% + 20px) 0px with calc(0% + 10px) 60px, curve to calc(0% + 20px) 30px with calc(0% + 30px) 40px / calc(0% - 5px) 100px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, curve to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, curve to calc(-15% + 30px) 35px with calc(-10% + 45px) 35px / calc(-12.5% - 7.5px) 115px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, smooth to calc(13% - 6px) 13px with calc(0% - 3px) 86px, smooth to calc(39% - 6px) 17px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, smooth to calc(5% + 10px) 5px with calc(0% + 5px) 70px, smooth to calc(15% + 10px) 25px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, smooth to calc(0% + 20px) 0px with calc(0% + 10px) 60px, smooth to calc(0% + 20px) 30px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, smooth to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, smooth to calc(-15% + 30px) 35px)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (-0.3) should be [shape(from 2px 2px, hline to -1px, vline to -2px, close)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "CSS Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1.5) should be [shape(from 20px 20px, hline to 35px, vline to -20px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2px 2px, arc to 18px -12px of 7px 17px ccw small, arc by 12px -2px of 33px 33px rotate -42deg cw large, arc to 25px 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0) should be [shape(from 5px 5px, arc to 15px -15px of 10px 20px, arc by 15px -5px of 30px 30px cw rotate 30deg large, arc to 25px 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8px 8px, arc to 12px -18px of 13px 23px ccw small, arc by 18px -8px of 27px 27px rotate 102deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10px 10px, arc to 10px -20px of 15px 25px ccw small, arc by 20px -10px of 25px 25px rotate 150deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20px 20px, arc to 0px -30px of 25px 35px ccw small, arc by 30px -20px of 15px 15px rotate 390deg cw small, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (-0.3) should be [shape(from calc(-4.5% + 6.5px) 2px, curve by calc(-6% + 13px) 13px with -3% 86px, curve by calc(-6% + 39px) 17px with calc(-9% + 26px) 53px / calc(1.5% + 32.5px) 61px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0) should be [shape(from calc(0% + 5px) 5px, curve by calc(0% + 10px) 10px with 0% 80px, curve by calc(0% + 30px) 20px with calc(0% + 20px) 50px / calc(0% + 25px) 70px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0.5) should be [shape(from calc(7.5% + 2.5px) 10px, curve by calc(10% + 5px) 5px with 5% 70px, curve by calc(10% + 15px) 25px with calc(15% + 10px) 45px / calc(-2.5% + 12.5px) 85px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (1.5) should be [shape(from calc(22.5% - 2.5px) 20px, curve by calc(30% - 5px) -5px with 15% 50px, curve by calc(30% - 15px) 35px with calc(45% - 10px) 35px / calc(-7.5% - 12.5px) 115px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (-0.3) should be [shape(from 2px 2px, smooth by 7px 13px with -3px 86px, smooth by 33px 17px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (1.5) should be [shape(from 20px 20px, smooth by 25px -5px with 15px 50px, smooth by 15px 35px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, arc to calc(19.5% - 1.5px) -12px of 7px 17px, arc by calc(19.5% - 7.5px) -2px of 33px 33px cw large rotate -42deg, arc to calc(32.5% - 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw large rotate 30deg, arc to 25% 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.3) should be [shape(from calc(3.5% + 4.5px) 8px, arc to calc(10.5% + 1.5px) -18px of 13px 23px, arc by calc(10.5% + 7.5px) -8px of 27px 27px cw large rotate 102deg, arc to calc(17.5% + 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, arc to calc(7.5% + 2.5px) -20px of 15px 25px, arc by calc(7.5% + 12.5px) -10px of 25px 25px cw large rotate 150deg, arc to calc(12.5% + 12.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1) should be [shape(from calc(0% + 15px) 15px, arc to calc(0% + 5px) -25px of 20px 30px, arc by calc(0% + 25px) -15px of 20px 20px cw rotate 270deg, arc to calc(0% + 25px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, arc to calc(-7.5% + 7.5px) -30px of 25px 35px, arc by calc(-7.5% + 37.5px) -20px of 15px 15px cw rotate 390deg, arc to calc(-12.5% + 37.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2% 2px, arc to 18% -12px of 7px 17px ccw small, arc by 12% -2px of 33px 33px rotate -42deg cw large , arc to 25% 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8% 8px, arc to 12% -18px of 13px 23px ccw small, arc by 18% -8px of 27px 27px rotate 102deg cw large, arc to 25% 20px of 10px 5px cw small )]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20% 20px, arc to 0% -30px of 25px 35px ccw small, arc by 30% -20px of 15px 15px rotate 390deg cw small, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, curve to calc(13% - 6px) 13px with calc(0% - 3px) 86px, curve to calc(39% - 6px) 17px with calc(26% - 9px) 53px / calc(32.5% + 1.5px) 61px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0) should be [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, curve to calc(5% + 10px) 5px with calc(0% + 5px) 70px, curve to calc(15% + 10px) 25px with calc(10% + 15px) 45px / calc(12.5% - 2.5px) 85px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, curve to calc(0% + 20px) 0px with calc(0% + 10px) 60px, curve to calc(0% + 20px) 30px with calc(0% + 30px) 40px / calc(0% - 5px) 100px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, curve to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, curve to calc(-15% + 30px) 35px with calc(-10% + 45px) 35px / calc(-12.5% - 7.5px) 115px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, smooth to calc(13% - 6px) 13px with calc(0% - 3px) 86px, smooth to calc(39% - 6px) 17px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0) should be [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, smooth to calc(5% + 10px) 5px with calc(0% + 5px) 70px, smooth to calc(15% + 10px) 25px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, smooth to calc(0% + 20px) 0px with calc(0% + 10px) 60px, smooth to calc(0% + 20px) 30px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, smooth to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, smooth to calc(-15% + 30px) 35px)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (-0.3) should be [shape(from 2px 2px, hline to -1px, vline to -2px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1.5) should be [shape(from 20px 20px, hline to 35px, vline to -20px, close)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2px 2px, arc to 18px -12px of 7px 17px ccw small, arc by 12px -2px of 33px 33px rotate -42deg cw large, arc to 25px 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0) should be [shape(from 5px 5px, arc to 15px -15px of 10px 20px, arc by 15px -5px of 30px 30px cw rotate 30deg large, arc to 25px 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8px 8px, arc to 12px -18px of 13px 23px ccw small, arc by 18px -8px of 27px 27px rotate 102deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10px 10px, arc to 10px -20px of 15px 25px ccw small, arc by 20px -10px of 25px 25px rotate 150deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20px 20px, arc to 0px -30px of 25px 35px ccw small, arc by 30px -20px of 15px 15px rotate 390deg cw small, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (-0.3) should be [shape(from calc(-4.5% + 6.5px) 2px, curve by calc(-6% + 13px) 13px with -3% 86px, curve by calc(-6% + 39px) 17px with calc(-9% + 26px) 53px / calc(1.5% + 32.5px) 61px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0) should be [shape(from calc(0% + 5px) 5px, curve by calc(0% + 10px) 10px with 0% 80px, curve by calc(0% + 30px) 20px with calc(0% + 20px) 50px / calc(0% + 25px) 70px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0.5) should be [shape(from calc(7.5% + 2.5px) 10px, curve by calc(10% + 5px) 5px with 5% 70px, curve by calc(10% + 15px) 25px with calc(15% + 10px) 45px / calc(-2.5% + 12.5px) 85px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (1.5) should be [shape(from calc(22.5% - 2.5px) 20px, curve by calc(30% - 5px) -5px with 15% 50px, curve by calc(30% - 15px) 35px with calc(45% - 10px) 35px / calc(-7.5% - 12.5px) 115px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (-0.3) should be [shape(from 2px 2px, smooth by 7px 13px with -3px 86px, smooth by 33px 17px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (1.5) should be [shape(from 20px 20px, smooth by 25px -5px with 15px 50px, smooth by 15px 35px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, arc to calc(19.5% - 1.5px) -12px of 7px 17px, arc by calc(19.5% - 7.5px) -2px of 33px 33px cw large rotate -42deg, arc to calc(32.5% - 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw large rotate 30deg, arc to 25% 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.3) should be [shape(from calc(3.5% + 4.5px) 8px, arc to calc(10.5% + 1.5px) -18px of 13px 23px, arc by calc(10.5% + 7.5px) -8px of 27px 27px cw large rotate 102deg, arc to calc(17.5% + 7.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, arc to calc(7.5% + 2.5px) -20px of 15px 25px, arc by calc(7.5% + 12.5px) -10px of 25px 25px cw large rotate 150deg, arc to calc(12.5% + 12.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1) should be [shape(from calc(0% + 15px) 15px, arc to calc(0% + 5px) -25px of 20px 30px, arc by calc(0% + 25px) -15px of 20px 20px cw rotate 270deg, arc to calc(0% + 25px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, arc to calc(-7.5% + 7.5px) -30px of 25px 35px, arc by calc(-7.5% + 37.5px) -20px of 15px 15px cw rotate 390deg, arc to calc(-12.5% + 37.5px) 20px of 10px 5px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2% 2px, arc to 18% -12px of 7px 17px ccw small, arc by 12% -2px of 33px 33px rotate -42deg cw large , arc to 25% 20px of 10px 5px ccw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8% 8px, arc to 12% -18px of 13px 23px ccw small, arc by 18% -8px of 27px 27px rotate 102deg cw large, arc to 25% 20px of 10px 5px cw small )]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20% 20px, arc to 0% -30px of 25px 35px ccw small, arc by 30% -20px of 15px 15px rotate 390deg cw small, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, curve to calc(13% - 6px) 13px with calc(0% - 3px) 86px, curve to calc(39% - 6px) 17px with calc(26% - 9px) 53px / calc(32.5% + 1.5px) 61px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0) should be [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, curve to calc(5% + 10px) 5px with calc(0% + 5px) 70px, curve to calc(15% + 10px) 25px with calc(10% + 15px) 45px / calc(12.5% - 2.5px) 85px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, curve to calc(0% + 20px) 0px with calc(0% + 10px) 60px, curve to calc(0% + 20px) 30px with calc(0% + 30px) 40px / calc(0% - 5px) 100px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, curve to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, curve to calc(-15% + 30px) 35px with calc(-10% + 45px) 35px / calc(-12.5% - 7.5px) 115px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, smooth to calc(13% - 6px) 13px with calc(0% - 3px) 86px, smooth to calc(39% - 6px) 17px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0) should be [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, smooth to calc(5% + 10px) 5px with calc(0% + 5px) 70px, smooth to calc(15% + 10px) 25px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, smooth to calc(0% + 20px) 0px with calc(0% + 10px) 60px, smooth to calc(0% + 20px) 30px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, smooth to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, smooth to calc(-15% + 30px) 35px)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (-0.3) should be [shape(from 2px 2px, hline to -1px, vline to -2px, close)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "CSS Transitions: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1.5) should be [shape(from 20px 20px, hline to 35px, vline to -20px, close)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2px 2px, arc to 18px -12px of 7px 17px ccw small, arc by 12px -2px of 33px 33px rotate -42deg cw large, arc to 25px 20px of 10px 5px ccw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0) should be [shape(from 5px 5px, arc to 15px -15px of 10px 20px, arc by 15px -5px of 30px 30px cw rotate 30deg large, arc to 25px 20px of 10px 5px small)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8px 8px, arc to 12px -18px of 13px 23px ccw small, arc by 18px -8px of 27px 27px rotate 102deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10px 10px, arc to 10px -20px of 15px 25px ccw small, arc by 20px -10px of 25px 25px rotate 150deg cw large, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 A 10,20 0 0,0 15,-15 a 30,30 30 1,1 15,-5 A 10,5 0 0,0 25 20\")] to [shape(from 15px 15px, arc to 5px -25px of 20px 30px, arc by 25px -15px of 20px 20px cw rotate 270deg small, arc to 25px 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20px 20px, arc to 0px -30px of 25px 35px ccw small, arc by 30px -20px of 15px 15px rotate 390deg cw small, arc to 25px 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (-0.3) should be [shape(from calc(-4.5% + 6.5px) 2px, curve by calc(-6% + 13px) 13px with -3% 86px, curve by calc(-6% + 39px) 17px with calc(-9% + 26px) 53px / calc(1.5% + 32.5px) 61px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0) should be [shape(from calc(0% + 5px) 5px, curve by calc(0% + 10px) 10px with 0% 80px, curve by calc(0% + 30px) 20px with calc(0% + 20px) 50px / calc(0% + 25px) 70px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (0.5) should be [shape(from calc(7.5% + 2.5px) 10px, curve by calc(10% + 5px) 5px with 5% 70px, curve by calc(10% + 15px) 25px with calc(15% + 10px) 45px / calc(-2.5% + 12.5px) 85px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 q 0 80 10 10 c 20 50 25 70 30 20\")] to [shape(from 15% 15px, curve by 20% 0px with 10% 60px, curve by 20% 30px with 30% 40px / -5% 100px)] at (1.5) should be [shape(from calc(22.5% - 2.5px) 20px, curve by calc(30% - 5px) -5px with 15% 50px, curve by calc(30% - 15px) 35px with calc(45% - 10px) 35px / calc(-7.5% - 12.5px) 115px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (-0.3) should be [shape(from 2px 2px, smooth by 7px 13px with -3px 86px, smooth by 33px 17px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "Web Animations: property <offset-path> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (1.5) should be [shape(from 20px 20px, smooth by 25px -5px with 15px 50px, smooth by 15px 35px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, arc to calc(19.5% - 1.5px) -12px of 7px 17px, arc by calc(19.5% - 7.5px) -2px of 33px 33px cw large rotate -42deg, arc to calc(32.5% - 7.5px) 20px of 10px 5px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.3) should be [shape(from calc(3.5% + 4.5px) 8px, arc to calc(10.5% + 1.5px) -18px of 13px 23px, arc by calc(10.5% + 7.5px) -8px of 27px 27px cw large rotate 102deg, arc to calc(17.5% + 7.5px) 20px of 10px 5px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, arc to calc(7.5% + 2.5px) -20px of 15px 25px, arc by calc(7.5% + 12.5px) -10px of 25px 25px cw large rotate 150deg, arc to calc(12.5% + 12.5px) 20px of 10px 5px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1) should be [shape(from calc(0% + 15px) 15px, arc to calc(0% + 5px) -25px of 20px 30px, arc by calc(0% + 25px) -15px of 20px 20px cw rotate 270deg, arc to calc(0% + 25px) 20px of 10px 5px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [path(\"M 15 15 A 20,30 0 0,0 5,-25 a 20,20 270 0,1 25,-15 A 10,5 0 0,0 25 20\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, arc to calc(-7.5% + 7.5px) -30px of 25px 35px, arc by calc(-7.5% + 37.5px) -20px of 15px 15px cw rotate 390deg, arc to calc(-12.5% + 37.5px) 20px of 10px 5px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (-0.3) should be [shape(from 2% 2px, arc to 18% -12px of 7px 17px ccw small, arc by 12% -2px of 33px 33px rotate -42deg cw large , arc to 25% 20px of 10px 5px ccw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.3) should be [shape(from 8% 8px, arc to 12% -18px of 13px 23px ccw small, arc by 18% -8px of 27px 27px rotate 102deg cw large, arc to 25% 20px of 10px 5px cw small )]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (1.5) should be [shape(from 20% 20px, arc to 0% -30px of 25px 35px ccw small, arc by 30% -20px of 15px 15px rotate 390deg cw small, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, curve to calc(13% - 6px) 13px with calc(0% - 3px) 86px, curve to calc(39% - 6px) 17px with calc(26% - 9px) 53px / calc(32.5% + 1.5px) 61px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, curve to calc(5% + 10px) 5px with calc(0% + 5px) 70px, curve to calc(15% + 10px) 25px with calc(10% + 15px) 45px / calc(12.5% - 2.5px) 85px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, curve to calc(0% + 20px) 0px with calc(0% + 10px) 60px, curve to calc(0% + 20px) 30px with calc(0% + 30px) 40px / calc(0% - 5px) 100px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, curve to 10% 10px with 0% 80px, curve to 30% 20px with 20% 50px / 25% 70px)] to [path(\"M 15 15 Q 10 60 20 0 C 30 40 -5 100 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, curve to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, curve to calc(-15% + 30px) 35px with calc(-10% + 45px) 35px / calc(-12.5% - 7.5px) 115px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (-0.3) should be [shape(from calc(6.5% - 4.5px) 2px, smooth to calc(13% - 6px) 13px with calc(0% - 3px) 86px, smooth to calc(39% - 6px) 17px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (0.5) should be [shape(from calc(2.5% + 7.5px) 10px, smooth to calc(5% + 10px) 5px with calc(0% + 5px) 70px, smooth to calc(15% + 10px) 25px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1) should be [shape(from calc(0% + 15px) 15px, smooth to calc(0% + 20px) 0px with calc(0% + 10px) 60px, smooth to calc(0% + 20px) 30px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5% 5px, smooth to 10% 10px with 0% 80px, smooth to 30% 20px)] to [path(\"M 15 15 S 10 60 20 0 T 20 30\")] at (1.5) should be [shape(from calc(-2.5% + 22.5px) 20px, smooth to calc(-5% + 30px) -5px with calc(0% + 15px) 50px, smooth to calc(-15% + 30px) 35px)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (-0.3) should be [shape(from 2px 2px, hline to -1px, vline to -2px, close)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "Web Animations: property <offset-path> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1.5) should be [shape(from 20px 20px, hline to 35px, vline to -20px, close)]": "FAIL"
+    }
+  },
+  "css/motion/animation/offset-path-interpolation-009.html": {
+    "total": 36
+  },
+  "css/motion/animation/offset-position-composition.html": {
+    "total": 56
+  },
+  "css/motion/animation/offset-position-interpolation.html": {
+    "total": 312
+  },
+  "css/motion/animation/offset-rotate-composition.html": {
+    "total": 72
+  },
+  "css/motion/animation/offset-rotate-interpolation-math-functions.html": {
+    "total": 48
+  },
+  "css/motion/animation/offset-rotate-interpolation.html": {
+    "total": 540
+  },
+  "css/motion/animation/ray-angle-interpolation-math-functions.html": {
+    "total": 48
+  },
+  "css/motion/animation/reftests/offset-distance-interpolation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/animation/reftests/offset-path-path-interpolation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/animation/reftests/offset-path-with-transforms-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/animation/reftests/offset-rotate-interpolation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/change-offset-path.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/inheritance.html": {
+    "total": 10
+  },
+  "css/motion/offset-anchor-transform-box-fill-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-anchor-transform-box-fill-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-anchor-transform-box-fill-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-006.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-007.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-008.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-distance-009.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-bounding-client-rect.html": {
+    "total": 2
+  },
+  "css/motion/offset-path-coord-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-coord-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-coord-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-coord-box-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-coord-box-corner-shape.html": {
+    "total": 4
+  },
+  "css/motion/offset-path-ray-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-006.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-007.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-008.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-009.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-010.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-011.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-012.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-013.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-014.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-015.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-016.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-017.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-018.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-019.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-020.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-021.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-022.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-contain-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-contain-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-contain-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-contain-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-contain-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-sides-fourth-quadrant.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-006.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-007.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-circle-008.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-006.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-ellipse-007.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-inset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-inset-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-polygon-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-polygon-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-polygon-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-rect-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-rect-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-rect-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-shape-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-shape-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-shape-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-xywh-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-xywh-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-shape-xywh-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-string-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-string-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-string-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-006.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-007.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-008.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-009.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-010.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-011.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-url-012.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-rotate-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-rotate-002.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-rotate-003.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-rotate-004.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-rotate-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-supports-calc.html": {
+    "total": 5
+  },
+  "css/motion/parsing/offset-anchor-computed.html": {
+    "total": 14
+  },
+  "css/motion/parsing/offset-anchor-parsing-invalid.html": {
+    "total": 3
+  },
+  "css/motion/parsing/offset-anchor-parsing-valid.html": {
+    "total": 11
+  },
+  "css/motion/parsing/offset-distance-computed.html": {
+    "total": 6
+  },
+  "css/motion/parsing/offset-distance-parsing-invalid.html": {
+    "total": 2
+  },
+  "css/motion/parsing/offset-distance-parsing-valid.html": {
+    "total": 4
+  },
+  "css/motion/parsing/offset-parsing-invalid.html": {
+    "total": 13
+  },
+  "css/motion/parsing/offset-parsing-valid.html": {
+    "total": 29
+  },
+  "css/motion/parsing/offset-path-computed.html": {
+    "total": 65
+  },
+  "css/motion/parsing/offset-path-parsing-invalid.html": {
+    "total": 24
+  },
+  "css/motion/parsing/offset-path-parsing-valid.html": {
+    "total": 70
+  },
+  "css/motion/parsing/offset-path-shape-computed.html": {
+    "total": 12
+  },
+  "css/motion/parsing/offset-path-shape-parsing.html": {
+    "total": 35
+  },
+  "css/motion/parsing/offset-position-computed.html": {
+    "total": 15
+  },
+  "css/motion/parsing/offset-position-parsing-invalid.html": {
+    "total": 3
+  },
+  "css/motion/parsing/offset-position-parsing-valid.html": {
+    "total": 12
+  },
+  "css/motion/parsing/offset-rotate-computed.html": {
+    "total": 5
+  },
+  "css/motion/parsing/offset-rotate-parsing-invalid.html": {
+    "total": 4
+  },
+  "css/motion/parsing/offset-rotate-parsing-valid.html": {
+    "total": 7
+  },
+  "css/motion/parsing/offset-shorthand.html": {
+    "total": 18
+  }
+}

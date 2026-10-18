@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kok-Deva": {
+      "identity": {
+        "language": "kok",
+        "script": "Deva"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

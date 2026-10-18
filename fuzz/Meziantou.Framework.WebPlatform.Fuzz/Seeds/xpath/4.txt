@@ -1,0 +1,1 @@
+id('main')/descendant::*[position() mod 2 = 0][last()]

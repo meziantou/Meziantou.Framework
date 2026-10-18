@@ -1,0 +1,16 @@
+{
+  "main": {
+    "oka-US": {
+      "identity": {
+        "language": "oka",
+        "territory": "US"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

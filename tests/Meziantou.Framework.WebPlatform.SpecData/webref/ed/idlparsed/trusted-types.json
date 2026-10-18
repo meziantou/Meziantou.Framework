@@ -1,0 +1,1075 @@
+{
+  "spec": {
+    "title": "Trusted Types",
+    "url": "https://w3c.github.io/trusted-types/dist/spec/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "TrustedHTML",
+          "TrustedScript",
+          "TrustedScriptURL",
+          "TrustedTypePolicyFactory",
+          "TrustedTypePolicy"
+        ],
+        "Worker": [
+          "TrustedHTML",
+          "TrustedScript",
+          "TrustedScriptURL",
+          "TrustedTypePolicyFactory",
+          "TrustedTypePolicy"
+        ]
+      }
+    },
+    "idlNames": {
+      "TrustedHTML": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedHTML {\n  stringifier;\n  DOMString toJSON();\n};",
+        "type": "interface",
+        "name": "TrustedHTML",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedhtml-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedhtml"
+      },
+      "TrustedScript": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedScript {\n  stringifier;\n  DOMString toJSON();\n};",
+        "type": "interface",
+        "name": "TrustedScript",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscript-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedscript"
+      },
+      "TrustedScriptURL": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedScriptURL {\n  stringifier;\n  USVString toJSON();\n};",
+        "type": "interface",
+        "name": "TrustedScriptURL",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "",
+            "arguments": [],
+            "extAttrs": [],
+            "special": "stringifier"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscripturl-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedscripturl"
+      },
+      "TrustedTypePolicyFactory": {
+        "fragment": "[Exposed=(Window,Worker)] interface TrustedTypePolicyFactory {\n    TrustedTypePolicy createPolicy(\n        DOMString policyName, optional TrustedTypePolicyOptions policyOptions = {});\n    boolean isHTML(any value);\n    boolean isScript(any value);\n    boolean isScriptURL(any value);\n    readonly attribute TrustedHTML emptyHTML;\n    readonly attribute TrustedScript emptyScript;\n    DOMString? getAttributeType(\n        DOMString tagName,\n        DOMString attribute,\n        optional DOMString? elementNs = \"\",\n        optional DOMString? attrNs = \"\");\n    DOMString? getPropertyType(\n        DOMString tagName,\n        DOMString property,\n        optional DOMString? elementNs = \"\");\n    readonly attribute TrustedTypePolicy? defaultPolicy;\n};",
+        "type": "interface",
+        "name": "TrustedTypePolicyFactory",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "createPolicy",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedTypePolicy"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "policyName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "policyOptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TrustedTypePolicyOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-createpolicy"
+          },
+          {
+            "type": "operation",
+            "name": "isHTML",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-ishtml"
+          },
+          {
+            "type": "operation",
+            "name": "isScript",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscript"
+          },
+          {
+            "type": "operation",
+            "name": "isScriptURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscripturl"
+          },
+          {
+            "type": "attribute",
+            "name": "emptyHTML",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedHTML"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyhtml"
+          },
+          {
+            "type": "attribute",
+            "name": "emptyScript",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedScript"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyscript"
+          },
+          {
+            "type": "operation",
+            "name": "getAttributeType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tagName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "attribute",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "elementNs",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "attrNs",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getattributetype"
+          },
+          {
+            "type": "operation",
+            "name": "getPropertyType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tagName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "property",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "elementNs",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getpropertytype"
+          },
+          {
+            "type": "attribute",
+            "name": "defaultPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "TrustedTypePolicy"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-defaultpolicy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicyfactory"
+      },
+      "TrustedTypePolicy": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedTypePolicy {\n  readonly attribute DOMString name;\n  TrustedHTML createHTML(DOMString input, any... arguments);\n  TrustedScript createScript(DOMString input, any... arguments);\n  TrustedScriptURL createScriptURL(DOMString input, any... arguments);\n};",
+        "type": "interface",
+        "name": "TrustedTypePolicy",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-name"
+          },
+          {
+            "type": "operation",
+            "name": "createHTML",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedHTML"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "arguments",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": true
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createhtml"
+          },
+          {
+            "type": "operation",
+            "name": "createScript",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedScript"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "arguments",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": true
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscript"
+          },
+          {
+            "type": "operation",
+            "name": "createScriptURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedScriptURL"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "arguments",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": true
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscripturl"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicy"
+      },
+      "TrustedTypePolicyOptions": {
+        "fragment": "dictionary TrustedTypePolicyOptions {\n   CreateHTMLCallback createHTML;\n   CreateScriptCallback createScript;\n   CreateScriptURLCallback createScriptURL;\n};",
+        "type": "dictionary",
+        "name": "TrustedTypePolicyOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "createHTML",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateHTMLCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createhtml"
+          },
+          {
+            "type": "field",
+            "name": "createScript",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateScriptCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscript"
+          },
+          {
+            "type": "field",
+            "name": "createScriptURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateScriptURLCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscripturl"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#dictdef-trustedtypepolicyoptions"
+      },
+      "CreateHTMLCallback": {
+        "fragment": "callback CreateHTMLCallback = DOMString? (DOMString input, any... arguments);",
+        "type": "callback",
+        "name": "CreateHTMLCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": true,
+          "union": false,
+          "idlType": "DOMString"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "input",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createhtmlcallback"
+      },
+      "CreateScriptCallback": {
+        "fragment": "callback CreateScriptCallback = DOMString? (DOMString input, any... arguments);",
+        "type": "callback",
+        "name": "CreateScriptCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": true,
+          "union": false,
+          "idlType": "DOMString"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "input",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscriptcallback"
+      },
+      "CreateScriptURLCallback": {
+        "fragment": "callback CreateScriptURLCallback = USVString? (DOMString input, any... arguments);",
+        "type": "callback",
+        "name": "CreateScriptURLCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": true,
+          "union": false,
+          "idlType": "USVString"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "input",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscripturlcallback"
+      },
+      "TrustedType": {
+        "fragment": "typedef (TrustedHTML or TrustedScript or TrustedScriptURL) TrustedType;",
+        "type": "typedef",
+        "name": "TrustedType",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedHTML"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedScript"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedScriptURL"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#typedefdef-trustedtype"
+      }
+    },
+    "idlExtendedNames": {
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  readonly attribute TrustedTypePolicyFactory trustedTypes;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "trustedTypes",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "TrustedTypePolicyFactory"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "TrustedHTML",
+        "TrustedScript",
+        "TrustedScriptURL",
+        "TrustedTypePolicyFactory",
+        "TrustedTypePolicy"
+      ],
+      "Worker": [
+        "TrustedHTML",
+        "TrustedScript",
+        "TrustedScriptURL",
+        "TrustedTypePolicyFactory",
+        "TrustedTypePolicy"
+      ]
+    },
+    "dependencies": {
+      "TrustedHTML": [],
+      "TrustedScript": [],
+      "TrustedScriptURL": [],
+      "TrustedTypePolicyFactory": [
+        "TrustedTypePolicy",
+        "TrustedTypePolicyOptions",
+        "TrustedHTML",
+        "TrustedScript"
+      ],
+      "TrustedTypePolicy": [
+        "TrustedHTML",
+        "TrustedScript",
+        "TrustedScriptURL"
+      ],
+      "TrustedTypePolicyOptions": [
+        "CreateHTMLCallback",
+        "CreateScriptCallback",
+        "CreateScriptURLCallback"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "TrustedTypePolicyFactory"
+      ]
+    },
+    "externalDependencies": [
+      "WindowOrWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

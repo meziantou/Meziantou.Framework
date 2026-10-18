@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SC": {
+      "identity": {
+        "language": "en",
+        "territory": "SC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

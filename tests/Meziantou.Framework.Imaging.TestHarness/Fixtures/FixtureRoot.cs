@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
-/// <summary>Locates the golden corpus copied next to the test assemblies (<c>tests/Meziantou.Framework.Imaging.Fixtures</c> is copied to <c>&lt;output&gt;/Fixtures</c>).</summary>
+/// <summary>Locates the golden corpus (<c>tests/Meziantou.Framework.Imaging.Fixtures</c>) in the repository.</summary>
 public static class FixtureRoot
 {
     /// <summary>The name of the manifest file at the root of the corpus.</summary>
@@ -9,14 +9,14 @@ public static class FixtureRoot
     /// <summary>The name of the JSON schema file at the root of the corpus.</summary>
     public const string SchemaFileName = "manifest.schema.json";
 
-    /// <summary>Gets the absolute path of the corpus copied to the test output directory.</summary>
+    /// <summary>Gets the absolute path of the corpus.</summary>
     /// <returns>The corpus directory.</returns>
-    /// <exception cref="DirectoryNotFoundException">The corpus was not copied (the test project does not include tests/Meziantou.Framework.Imaging.Fixtures).</exception>
+    /// <exception cref="DirectoryNotFoundException">The corpus does not exist in the repository.</exception>
     public static FullPath GetDirectory()
     {
-        var path = FullPath.FromPath(AppContext.BaseDirectory) / "Fixtures";
+        var path = RepositoryPaths.Root / "tests" / "Meziantou.Framework.Imaging.Fixtures";
         if (!Directory.Exists(path))
-            throw new DirectoryNotFoundException($"The fixture directory '{path}' does not exist. The test project must copy tests/Meziantou.Framework.Imaging.Fixtures to its output directory.");
+            throw new DirectoryNotFoundException($"The fixture directory '{path}' does not exist.");
 
         return path;
     }

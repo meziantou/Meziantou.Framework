@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ca": {
+      "identity": {
+        "language": "ca"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

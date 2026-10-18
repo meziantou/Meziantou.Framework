@@ -1,0 +1,352 @@
+{
+  "spec": {
+    "title": "Remote Playback API",
+    "url": "https://w3c.github.io/remote-playback/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "RemotePlayback"
+        ]
+      }
+    },
+    "idlNames": {
+      "RemotePlayback": {
+        "fragment": "[Exposed=Window]\ninterface RemotePlayback : EventTarget {\n  Promise<long> watchAvailability(RemotePlaybackAvailabilityCallback callback);\n  Promise<undefined> cancelWatchAvailability(optional long id);\n\n  readonly attribute RemotePlaybackState state;\n\n  attribute EventHandler onconnecting;\n  attribute EventHandler onconnect;\n  attribute EventHandler ondisconnect;\n\n  Promise<undefined> prompt();\n};",
+        "type": "interface",
+        "name": "RemotePlayback",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "watchAvailability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RemotePlaybackAvailabilityCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-watchavailability"
+          },
+          {
+            "type": "operation",
+            "name": "cancelWatchAvailability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "id",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-cancelwatchavailability"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RemotePlaybackState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-state"
+          },
+          {
+            "type": "attribute",
+            "name": "onconnecting",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-onconnecting"
+          },
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "ondisconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-ondisconnect"
+          },
+          {
+            "type": "operation",
+            "name": "prompt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback-prompt"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/remote-playback/#dom-remoteplayback"
+      },
+      "RemotePlaybackState": {
+        "fragment": "enum RemotePlaybackState {\n  \"connecting\",\n  \"connected\",\n  \"disconnected\"\n};",
+        "type": "enum",
+        "name": "RemotePlaybackState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "connecting",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplaybackstate-connecting"
+          },
+          {
+            "type": "enum-value",
+            "value": "connected",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplaybackstate-connected"
+          },
+          {
+            "type": "enum-value",
+            "value": "disconnected",
+            "href": "https://w3c.github.io/remote-playback/#dom-remoteplaybackstate-disconnected"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/remote-playback/#dom-remoteplaybackstate"
+      },
+      "RemotePlaybackAvailabilityCallback": {
+        "fragment": "callback RemotePlaybackAvailabilityCallback = undefined(boolean available);",
+        "type": "callback",
+        "name": "RemotePlaybackAvailabilityCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "available",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/remote-playback/#dom-remoteplaybackavailabilitycallback"
+      }
+    },
+    "idlExtendedNames": {
+      "HTMLMediaElement": [
+        {
+          "fragment": "partial interface HTMLMediaElement {\n  [SameObject] readonly attribute RemotePlayback remote;\n\n  [CEReactions] attribute boolean disableRemotePlayback;\n};",
+          "type": "interface",
+          "name": "HTMLMediaElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "remote",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "RemotePlayback"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/remote-playback/#dom-htmlmediaelement-remote"
+            },
+            {
+              "type": "attribute",
+              "name": "disableRemotePlayback",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/remote-playback/#dom-htmlmediaelement-disableremoteplayback"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "RemotePlayback"
+      ]
+    },
+    "dependencies": {
+      "RemotePlayback": [
+        "EventTarget",
+        "RemotePlaybackAvailabilityCallback",
+        "RemotePlaybackState",
+        "EventHandler"
+      ],
+      "HTMLMediaElement": [
+        "RemotePlayback"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "HTMLMediaElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

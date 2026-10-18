@@ -1,0 +1,860 @@
+{
+  "css/cssom/CSS-escape-numeric-id.html": {
+    "total": 2
+  },
+  "css/cssom/CSS-namespace-object-class-string.html": {
+    "total": 4
+  },
+  "css/cssom/CSS-supports.html": {
+    "total": 11
+  },
+  "css/cssom/CSSConditionRule-conditionText.html": {
+    "total": 1
+  },
+  "css/cssom/CSSContainerRule.tentative.html": {
+    "total": 2
+  },
+  "css/cssom/CSSCounterStyleRule.html": {
+    "total": 1
+  },
+  "css/cssom/CSSFontFaceRule.html": {
+    "total": 1
+  },
+  "css/cssom/CSSFontFeatureValuesRule.html": {
+    "total": 8
+  },
+  "css/cssom/CSSGroupingRule-cssRules.html": {
+    "total": 1
+  },
+  "css/cssom/CSSGroupingRule-insertRule-computed.html": {
+    "total": 1
+  },
+  "css/cssom/CSSGroupingRule-insertRule.html": {
+    "total": 7
+  },
+  "css/cssom/CSSImportRule-insertRule-styleSheet-parentStyleSheet.html": {
+    "total": 1
+  },
+  "css/cssom/CSSImportRule-layer-false-positive.html": {
+    "total": 11
+  },
+  "css/cssom/CSSImportRule-layer-media.html": {
+    "total": 6
+  },
+  "css/cssom/CSSImportRule-media-identity.html": {
+    "total": 1
+  },
+  "css/cssom/CSSKeyframeRule-keyText-edge-cases.html": {
+    "total": 14
+  },
+  "css/cssom/CSSKeyframeRule-keyText.html": {
+    "total": 11
+  },
+  "css/cssom/CSSKeyframeRule.html": {
+    "total": 2
+  },
+  "css/cssom/CSSKeyframesRule-appendRule-invalid.html": {
+    "total": 4
+  },
+  "css/cssom/CSSKeyframesRule-appendRule-multiple.html": {
+    "total": 2
+  },
+  "css/cssom/CSSKeyframesRule-deleteRule-detach.html": {
+    "total": 2
+  },
+  "css/cssom/CSSKeyframesRule-indexed-getter.html": {
+    "total": 6
+  },
+  "css/cssom/CSSKeyframesRule.html": {
+    "total": 2
+  },
+  "css/cssom/CSSNamespaceRule.html": {
+    "total": 1
+  },
+  "css/cssom/CSSRule-type.html": {
+    "total": 14
+  },
+  "css/cssom/CSSRuleList.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleDeclaration-indexed-properties.html": {
+    "total": 6
+  },
+  "css/cssom/CSSStyleDeclaration-iterator.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleRule-selectorText-setter.html": {
+    "total": 7
+  },
+  "css/cssom/CSSStyleRule-set-selectorText-namespace.html": {
+    "total": 5
+  },
+  "css/cssom/CSSStyleRule-set-selectorText.html": {
+    "total": 82
+  },
+  "css/cssom/CSSStyleRule.html": {
+    "total": 10
+  },
+  "css/cssom/CSSStyleSheet-constructable-baseURL.html": {
+    "total": 3
+  },
+  "css/cssom/CSSStyleSheet-constructable-concat.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/CSSStyleSheet-constructable-cssRules.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleSheet-constructable-disabled-regular-sheet-insertion.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleSheet-constructable-disallow-import.tentative.html": {
+    "total": 4
+  },
+  "css/cssom/CSSStyleSheet-constructable-duplicate.html": {
+    "total": 4
+  },
+  "css/cssom/CSSStyleSheet-constructable-insertRule-base-uri.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/CSSStyleSheet-constructable-invalidation.html": {
+    "total": 3
+  },
+  "css/cssom/CSSStyleSheet-constructable-replace-cssRules.html": {
+    "total": 2
+  },
+  "css/cssom/CSSStyleSheet-constructable-replace-on-regular-sheet.html": {
+    "total": 3
+  },
+  "css/cssom/CSSStyleSheet-constructable-replace-thenable.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleSheet-constructable.html": {
+    "total": 32
+  },
+  "css/cssom/CSSStyleSheet-insertRule-computed.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleSheet-modify-after-removal.html": {
+    "total": 2
+  },
+  "css/cssom/CSSStyleSheet-replace-detach-old-rules.html": {
+    "total": 4
+  },
+  "css/cssom/CSSStyleSheet-replace-parse-errors.html": {
+    "total": 8
+  },
+  "css/cssom/CSSStyleSheet-template-adoption.html": {
+    "total": 1
+  },
+  "css/cssom/CSSStyleSheet.html": {
+    "total": 17
+  },
+  "css/cssom/HTMLLinkElement-disabled-001.html": {
+    "total": 2
+  },
+  "css/cssom/HTMLLinkElement-disabled-002.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-003.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-004.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-005.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-006.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-007.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLLinkElement-disabled-alternate.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/HTMLLinkElement-load-event-002.html": {
+    "total": 2
+  },
+  "css/cssom/HTMLLinkElement-load-event.html": {
+    "total": 1
+  },
+  "css/cssom/HTMLStyleElement-load-event.html": {
+    "total": 1
+  },
+  "css/cssom/MediaList-parsing.html": {
+    "total": 13
+  },
+  "css/cssom/MediaList.html": {
+    "total": 1
+  },
+  "css/cssom/MediaList2.xhtml": {
+    "total": 5
+  },
+  "css/cssom/MutationObserver-style.html": {
+    "total": 2
+  },
+  "css/cssom/StyleSheet-properties.html": {
+    "total": 35
+  },
+  "css/cssom/StyleSheetList-constructable-shadow-with-style-recalc.html": {
+    "total": 1
+  },
+  "css/cssom/StyleSheetList-constructable-shadow.html": {
+    "total": 1
+  },
+  "css/cssom/StyleSheetList-constructable-with-style-recalc.html": {
+    "total": 1
+  },
+  "css/cssom/StyleSheetList-constructable.html": {
+    "total": 1
+  },
+  "css/cssom/StyleSheetList.html": {
+    "total": 1
+  },
+  "css/cssom/adoptedstylesheets-adopt-link.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/cssom/adoptedstylesheets-adopt-style-subresource.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/cssom/adoptedstylesheets-adopt-style.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/cssom/adoptedstylesheets-cascade-order.html": {
+    "total": 13
+  },
+  "css/cssom/adoptedstylesheets-modify-array-and-sheet.html": {
+    "total": 3
+  },
+  "css/cssom/adoptedstylesheets-observablearray.html": {
+    "total": 5
+  },
+  "css/cssom/all-initial-csstext.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/at-namespace.html": {
+    "total": 1
+  },
+  "css/cssom/base-uri.html": {
+    "total": 3
+  },
+  "css/cssom/border-shorthand-serialization.html": {
+    "total": 3
+  },
+  "css/cssom/caretPositionFromPoint-audioVideo.html": {
+    "total": 2
+  },
+  "css/cssom/caretPositionFromPoint-in-flex-container.html": {
+    "total": 3
+  },
+  "css/cssom/caretPositionFromPoint-with-transformation.html": {
+    "total": 1
+  },
+  "css/cssom/caretPositionFromPoint.html": {
+    "total": 7
+  },
+  "css/cssom/caretRangeFromPoint-replace-document.tentative.html": {
+    "total": 1,
+    "failures": {
+      "document.caretRangeFromPoint(0, 0)": "FAIL"
+    }
+  },
+  "css/cssom/caretRangeFromPoint-textarea-transform.tentative.html": {
+    "total": 2,
+    "failures": {
+      "document.caretRangeFromPoint(0, 0)": "FAIL",
+      "document.caretRangeFromPoint(10, 10)": "FAIL"
+    }
+  },
+  "css/cssom/caretRangeFromPoint.tentative.html": {
+    "total": 8,
+    "failures": {
+      "document.caretRangeFromPoint() (no supplied coordinates) returns Range with 0 0 values": "FAIL",
+      "document.caretRangeFromPoint() on a canvas should return a Range pointing at canvas": "FAIL",
+      "document.caretRangeFromPoint() on a shadow should return a Range pointing at the same node as caretPositionFromPoint": "FAIL",
+      "document.caretRangeFromPoint() on an input should return a Range pointing at input with offset 0": "FAIL",
+      "document.caretRangeFromPoint() should return a Range at the specified location": "FAIL",
+      "document.caretRangeFromPoint() should return a client rect close to the given coords": "FAIL",
+      "document.caretRangeFromPoint() should return null for a document with no viewport": "FAIL",
+      "document.caretRangeFromPoint() should return null if given coordinates outside of the viewport": "FAIL"
+    }
+  },
+  "css/cssom/computed-style-001.html": {
+    "total": 4
+  },
+  "css/cssom/computed-style-002.html": {
+    "total": 1
+  },
+  "css/cssom/computed-style-003.html": {
+    "total": 1
+  },
+  "css/cssom/computed-style-004.html": {
+    "total": 2
+  },
+  "css/cssom/computed-style-005.html": {
+    "total": 4
+  },
+  "css/cssom/computed-style-set-property.html": {
+    "total": 5
+  },
+  "css/cssom/css-rule-selector-text.html": {
+    "total": 2
+  },
+  "css/cssom/css-style-attr-decl-block.html": {
+    "total": 7,
+    "failures": {
+      "Changes to CSS declaration block after a base URL change": "FAIL"
+    }
+  },
+  "css/cssom/css-style-attribute-modifications.html": {
+    "total": 1
+  },
+  "css/cssom/css-style-declaration-modifications.html": {
+    "total": 4
+  },
+  "css/cssom/css-style-reparse.html": {
+    "total": 2
+  },
+  "css/cssom/cssimportrule-parent.html": {
+    "total": 1
+  },
+  "css/cssom/cssimportrule-sheet-identity.html": {
+    "total": 1
+  },
+  "css/cssom/cssimportrule.html": {
+    "total": 11
+  },
+  "css/cssom/cssom-cssText-serialize.html": {
+    "total": 1
+  },
+  "css/cssom/cssom-cssstyledeclaration-set.html": {
+    "total": 1
+  },
+  "css/cssom/cssom-fontfacerule-constructors.html": {
+    "total": 2
+  },
+  "css/cssom/cssom-fontfacerule.html": {
+    "total": 1
+  },
+  "css/cssom/cssom-getPropertyValue-common-checks.html": {
+    "total": 11,
+    "failures": {
+      "All properties (except 'all') can serialize their initial value (computed)": "FAIL",
+      "All shorthands (except 'all') can serialize their longhands set to their initial value": "FAIL"
+    }
+  },
+  "css/cssom/cssom-pagerule.html": {
+    "total": 22
+  },
+  "css/cssom/cssom-ruleTypeAndOrder.html": {
+    "total": 7
+  },
+  "css/cssom/cssom-setProperty-shorthand.html": {
+    "total": 76
+  },
+  "css/cssom/cssstyledeclaration-all-shorthand.html": {
+    "total": 27
+  },
+  "css/cssom/cssstyledeclaration-cssfontrule.tentative.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-csstext-all-shorthand.html": {
+    "total": 6
+  },
+  "css/cssom/cssstyledeclaration-csstext-final-delimiter.html": {
+    "total": 3
+  },
+  "css/cssom/cssstyledeclaration-csstext-important.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-csstext-setter.window.js": {
+    "total": 9
+  },
+  "css/cssom/cssstyledeclaration-csstext.html": {
+    "total": 11
+  },
+  "css/cssom/cssstyledeclaration-custom-properties.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-mutability.html": {
+    "total": 3
+  },
+  "css/cssom/cssstyledeclaration-mutationrecord-001.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-mutationrecord-002.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-mutationrecord-003.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-mutationrecord-004.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-mutationrecord-005.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-nested.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-properties.html": {
+    "total": 1
+  },
+  "css/cssom/cssstyledeclaration-registered-custom-properties.html": {
+    "total": 2
+  },
+  "css/cssom/cssstyledeclaration-removeProperty-all.html": {
+    "total": 2
+  },
+  "css/cssom/cssstyledeclaration-setter-attr.html": {
+    "total": 2
+  },
+  "css/cssom/cssstyledeclaration-setter-declarations.html": {
+    "total": 4
+  },
+  "css/cssom/cssstyledeclaration-setter-form-controls.html": {
+    "total": 8
+  },
+  "css/cssom/cssstyledeclaration-setter-logical.html": {
+    "total": 1
+  },
+  "css/cssom/delete-namespace-rule-when-child-rule-exists.html": {
+    "total": 1
+  },
+  "css/cssom/escape.html": {
+    "total": 10
+  },
+  "css/cssom/flex-serialization.html": {
+    "total": 5,
+    "failures": {
+      "Single value flex with non-CSS-wide value should serialize correctly.": "FAIL"
+    }
+  },
+  "css/cssom/font-family-serialization-001.html": {
+    "total": 27,
+    "failures": {
+      "Serialization of prefixed -webkit-<generic-family>": "FAIL"
+    }
+  },
+  "css/cssom/font-shorthand-serialization.html": {
+    "total": 1
+  },
+  "css/cssom/font-variant-shorthand-serialization.html": {
+    "total": 7
+  },
+  "css/cssom/functional-values-comma.html": {
+    "total": 7
+  },
+  "css/cssom/getComputedStyle-animations-replaced-into-ib-split.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-basic.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-calc.html": {
+    "total": 5
+  },
+  "css/cssom/getComputedStyle-detached-subtree.html": {
+    "total": 6
+  },
+  "css/cssom/getComputedStyle-display-none-001.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-display-none-002.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-display-none-003.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-display-none-shadow-invalidation.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-dynamic-subdoc.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-getter-v-properties.tentative.html": {
+    "total": 10
+  },
+  "css/cssom/getComputedStyle-important.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-insets-absolute-roundtrip.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-insets-absolute.html": {
+    "total": 324
+  },
+  "css/cssom/getComputedStyle-insets-fixed.html": {
+    "total": 324
+  },
+  "css/cssom/getComputedStyle-insets-grid.html": {
+    "total": 5
+  },
+  "css/cssom/getComputedStyle-insets-nobox.html": {
+    "total": 216
+  },
+  "css/cssom/getComputedStyle-insets-relative.html": {
+    "total": 252
+  },
+  "css/cssom/getComputedStyle-insets-relpos-inline.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-insets-static.html": {
+    "total": 216
+  },
+  "css/cssom/getComputedStyle-insets-sticky-container-for-abspos.html": {
+    "total": 252
+  },
+  "css/cssom/getComputedStyle-insets-sticky.html": {
+    "total": 252
+  },
+  "css/cssom/getComputedStyle-layout-dependent-removed-ib-sibling.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-layout-dependent-replaced-into-ib-split.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-line-height.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-live.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-logical-enumeration.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-margins-roundtrip.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-math-function-percentage.html": {
+    "total": 12
+  },
+  "css/cssom/getComputedStyle-mutations.html": {
+    "total": 9
+  },
+  "css/cssom/getComputedStyle-page-rule.xhtml": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-pointerEvents.html": {
+    "total": 3
+  },
+  "css/cssom/getComputedStyle-property-order.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-pseudo-checkmark.html": {
+    "total": 3
+  },
+  "css/cssom/getComputedStyle-pseudo-class.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-pseudo-picker-icon.html": {
+    "total": 3
+  },
+  "css/cssom/getComputedStyle-pseudo-picker.html": {
+    "total": 9
+  },
+  "css/cssom/getComputedStyle-pseudo-shadow.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-pseudo-with-argument.html": {
+    "total": 22
+  },
+  "css/cssom/getComputedStyle-pseudo.html": {
+    "total": 28
+  },
+  "css/cssom/getComputedStyle-resolved-colors.html": {
+    "total": 13
+  },
+  "css/cssom/getComputedStyle-resolved-min-max-clamping.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-resolved-min-size-auto.html": {
+    "total": 16
+  },
+  "css/cssom/getComputedStyle-root-variables.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-root.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-shadow-host.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-shadow-inherit.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-sticky-pos-percent.html": {
+    "total": 1
+  },
+  "css/cssom/getComputedStyle-style-element-updates.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-visibility-nominal-case.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-visibility-override.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-visibility-unset.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-width-scroll.tentative.html": {
+    "total": 1
+  },
+  "css/cssom/grouping-rule-no-nested-declarations.html": {
+    "total": 5
+  },
+  "css/cssom/historical.html": {
+    "total": 20
+  },
+  "css/cssom/idlharness.html": {
+    "total": 497
+  },
+  "css/cssom/import-namespace-invalid-prelude.html": {
+    "total": 8
+  },
+  "css/cssom/inline-style-001.html": {
+    "total": 5
+  },
+  "css/cssom/insertRule-across-context.html": {
+    "total": 2
+  },
+  "css/cssom/insertRule-charset-no-index.html": {
+    "total": 2
+  },
+  "css/cssom/insertRule-font-face.html": {
+    "total": 1
+  },
+  "css/cssom/insertRule-from-script.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/insertRule-import-no-index.html": {
+    "total": 2
+  },
+  "css/cssom/insertRule-namespace-after-import.html": {
+    "total": 2
+  },
+  "css/cssom/insertRule-namespace-no-index.html": {
+    "total": 3
+  },
+  "css/cssom/insertRule-no-index.html": {
+    "total": 2
+  },
+  "css/cssom/insertRule-syntax-error-01.html": {
+    "total": 1
+  },
+  "css/cssom/invalid-pseudo-elements.html": {
+    "total": 1
+  },
+  "css/cssom/link-element-stylesheet-title.html": {
+    "total": 2
+  },
+  "css/cssom/medialist-appendmedium-parse-single-and-dedup.html": {
+    "total": 3
+  },
+  "css/cssom/medialist-deletemedium-parse-and-remove-all.html": {
+    "total": 2
+  },
+  "css/cssom/medialist-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/medialist-interfaces-001.html": {
+    "total": 4
+  },
+  "css/cssom/medialist-interfaces-002.html": {
+    "total": 3
+  },
+  "css/cssom/medialist-interfaces-004.html": {
+    "total": 2
+  },
+  "css/cssom/mediaquery-sort-dedup.html": {
+    "total": 2
+  },
+  "css/cssom/nested-import-namespace-invalid.html": {
+    "total": 4
+  },
+  "css/cssom/overflow-serialization.html": {
+    "total": 10
+  },
+  "css/cssom/page-descriptors.html": {
+    "total": 21
+  },
+  "css/cssom/preferred-stylesheet-order.html": {
+    "total": 1
+  },
+  "css/cssom/preferred-stylesheet-reversed-order.html": {
+    "total": 1
+  },
+  "css/cssom/property-accessors.html": {
+    "total": 9
+  },
+  "css/cssom/resolved-border-width.html": {
+    "total": 2
+  },
+  "css/cssom/rule-restrictions.html": {
+    "total": 2,
+    "failures": {
+      "@page": "FAIL"
+    }
+  },
+  "css/cssom/selectorSerialize.html": {
+    "total": 23
+  },
+  "css/cssom/selectorText-modification-restyle-001.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/selectorText-modification-restyle-002.html": {
+    "total": 2
+  },
+  "css/cssom/serialization-CSSDeclaration-with-important.html": {
+    "total": 4
+  },
+  "css/cssom/serialize-all-longhands.html": {
+    "total": 2
+  },
+  "css/cssom/serialize-custom-props.html": {
+    "total": 20
+  },
+  "css/cssom/serialize-media-rule.html": {
+    "total": 12
+  },
+  "css/cssom/serialize-namespaced-type-selectors.html": {
+    "total": 60
+  },
+  "css/cssom/serialize-values.html": {
+    "total": 697,
+    "failures": {
+      "outline-color: invert": "FAIL"
+    }
+  },
+  "css/cssom/serialize-variable-reference.html": {
+    "total": 4
+  },
+  "css/cssom/serialize-whitespace.html": {
+    "total": 1
+  },
+  "css/cssom/set-selector-text-attachment.html": {
+    "total": 1
+  },
+  "css/cssom/setproperty-null-undefined.html": {
+    "total": 4
+  },
+  "css/cssom/shadow-dom-style-sheet.html": {
+    "total": 3
+  },
+  "css/cssom/shorthand-serialization.html": {
+    "total": 7
+  },
+  "css/cssom/shorthand-values.html": {
+    "total": 21,
+    "failures": {
+      "The serialization of outline-width: 2px; outline-style: dotted; outline-color: blue; should be canonical.": "FAIL"
+    }
+  },
+  "css/cssom/style-attr-clone.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/style-attr-update-across-documents.html": {
+    "total": 1
+  },
+  "css/cssom/style-background-position-longhands.html": {
+    "total": 3
+  },
+  "css/cssom/style-background-position.html": {
+    "total": 7
+  },
+  "css/cssom/style-background-repeat.html": {
+    "total": 3
+  },
+  "css/cssom/style-background-shorthand-overwrite.html": {
+    "total": 4
+  },
+  "css/cssom/style-backgroundcolor-oklch.html": {
+    "total": 1
+  },
+  "css/cssom/style-backgroundcolor-table-row.html": {
+    "total": 1
+  },
+  "css/cssom/style-backgroundimage-lineargradient.html": {
+    "total": 1
+  },
+  "css/cssom/style-border-shorthand-var.html": {
+    "total": 1
+  },
+  "css/cssom/style-color-values.html": {
+    "total": 6
+  },
+  "css/cssom/style-color.html": {
+    "total": 4
+  },
+  "css/cssom/style-cssText-mutations.html": {
+    "total": 4
+  },
+  "css/cssom/style-element-inline-important.html": {
+    "total": 1
+  },
+  "css/cssom/style-element-insertion-removal-computed.html": {
+    "total": 2
+  },
+  "css/cssom/style-font-shorthand.html": {
+    "total": 1
+  },
+  "css/cssom/style-global-variable.html": {
+    "total": 1
+  },
+  "css/cssom/style-set-cssText.html": {
+    "total": 3
+  },
+  "css/cssom/style-set-custom-property-priority.html": {
+    "total": 3
+  },
+  "css/cssom/style-set-custom-property.html": {
+    "total": 1
+  },
+  "css/cssom/style-set-property.html": {
+    "total": 21
+  },
+  "css/cssom/style-sheet-interfaces-001.html": {
+    "total": 7
+  },
+  "css/cssom/style-sheet-interfaces-002.html": {
+    "total": 2
+  },
+  "css/cssom/style-width-calc-vh-vw.html": {
+    "total": 1
+  },
+  "css/cssom/stylesheet-cross-origin-redirect-quirks.sub.html": {
+    "total": 4
+  },
+  "css/cssom/stylesheet-replacedata-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom/stylesheet-same-origin.sub.html": {
+    "total": 7
+  },
+  "css/cssom/stylesheet-title.html": {
+    "total": 2
+  },
+  "css/cssom/system-color-inherit.html": {
+    "total": 2
+  },
+  "css/cssom/system-color-lowercase.html": {
+    "total": 4
+  },
+  "css/cssom/ttwf-cssom-doc-ext-load-count.html": {
+    "total": 3
+  },
+  "css/cssom/ttwf-cssom-doc-ext-load-tree-order.html": {
+    "total": 6
+  },
+  "css/cssom/ttwf-cssom-document-extension.html": {
+    "total": 1
+  },
+  "css/cssom/variable-names.html": {
+    "total": 6
+  },
+  "css/cssom/xml-stylesheet-pi-in-doctype.xhtml": {
+    "total": 1
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-AG": {
+      "identity": {
+        "language": "en",
+        "territory": "AG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

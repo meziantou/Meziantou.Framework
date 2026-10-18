@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ms-ID": {
+      "identity": {
+        "language": "ms",
+        "territory": "ID"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

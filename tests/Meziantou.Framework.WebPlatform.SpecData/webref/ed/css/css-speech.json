@@ -1,0 +1,1022 @@
+{
+  "spec": {
+    "title": "CSS Speech Module Level 1",
+    "url": "https://drafts.csswg.org/css-speech-1/"
+  },
+  "properties": [
+    {
+      "name": "voice-volume",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-volume",
+      "value": "silent | [ [ x-soft | soft | medium | loud | x-loud ] || <decibel> ]",
+      "initial": "medium",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "silent, or a keyword value and optionally also a decibel offset (if not zero)",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "silent",
+          "prose": "Specifies that no sound is generated (the text is read \"silently\").",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-silent",
+          "type": "value",
+          "value": "silent"
+        },
+        {
+          "name": "x-soft",
+          "prose": "This sequence of keywords corresponds to monotonically non-decreasing volume levels, mapped to implementation-dependent values that meet the listener’s requirements with regards to perceived loudness. These audio levels are typically provided via a preference mechanism that allow users to calibrate sound options according to their auditory environment. The keyword x-soft maps to the user’s minimum audible volume level, x-loud maps to the user’s maximum tolerable volume level, medium maps to the user’s preferred volume level, soft and loud map to intermediary values.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-x-soft",
+          "type": "value",
+          "value": "x-soft"
+        },
+        {
+          "name": "soft",
+          "prose": "This sequence of keywords corresponds to monotonically non-decreasing volume levels, mapped to implementation-dependent values that meet the listener’s requirements with regards to perceived loudness. These audio levels are typically provided via a preference mechanism that allow users to calibrate sound options according to their auditory environment. The keyword x-soft maps to the user’s minimum audible volume level, x-loud maps to the user’s maximum tolerable volume level, medium maps to the user’s preferred volume level, soft and loud map to intermediary values.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-soft",
+          "type": "value",
+          "value": "soft"
+        },
+        {
+          "name": "medium",
+          "prose": "This sequence of keywords corresponds to monotonically non-decreasing volume levels, mapped to implementation-dependent values that meet the listener’s requirements with regards to perceived loudness. These audio levels are typically provided via a preference mechanism that allow users to calibrate sound options according to their auditory environment. The keyword x-soft maps to the user’s minimum audible volume level, x-loud maps to the user’s maximum tolerable volume level, medium maps to the user’s preferred volume level, soft and loud map to intermediary values.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "loud",
+          "prose": "This sequence of keywords corresponds to monotonically non-decreasing volume levels, mapped to implementation-dependent values that meet the listener’s requirements with regards to perceived loudness. These audio levels are typically provided via a preference mechanism that allow users to calibrate sound options according to their auditory environment. The keyword x-soft maps to the user’s minimum audible volume level, x-loud maps to the user’s maximum tolerable volume level, medium maps to the user’s preferred volume level, soft and loud map to intermediary values.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-loud",
+          "type": "value",
+          "value": "loud"
+        },
+        {
+          "name": "x-loud",
+          "prose": "This sequence of keywords corresponds to monotonically non-decreasing volume levels, mapped to implementation-dependent values that meet the listener’s requirements with regards to perceived loudness. These audio levels are typically provided via a preference mechanism that allow users to calibrate sound options according to their auditory environment. The keyword x-soft maps to the user’s minimum audible volume level, x-loud maps to the user’s maximum tolerable volume level, medium maps to the user’s preferred volume level, soft and loud map to intermediary values.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-x-loud",
+          "type": "value",
+          "value": "x-loud"
+        },
+        {
+          "name": "<decibel>",
+          "prose": "This represents a change (positive or negative) relative to the given keyword value (see enumeration above), or to the default value for the root element, or otherwise to the inherited volume level (which may itself be a combination of a keyword value and decibel offset, in which case the decibel values are combined additively). When the inherited volume level is silent, this voice-volume resolves to silent too, regardless of the specified <decibel> value. The <decibel> type denotes a dimension with a \"dB\" (decibel unit) unit identifier. Decibels represent the ratio of the squares of the new signal amplitude a1 and the current amplitude a0, as per the following logarithmic equation: volume(dB) = 20 × log10(a1 / a0).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-volume-decibel",
+          "type": "value",
+          "value": "<decibel>"
+        },
+        {
+          "name": "<decibel>",
+          "prose": "The <decibel> type denotes a dimension with a \"dB\" (decibel unit) unit identifier. Decibels represent the ratio of the squares of the new signal amplitude a1 and the current amplitude a0, as per the following logarithmic equation: volume(dB) = 20 × log10(a1 / a0).",
+          "href": "https://drafts.csswg.org/css-speech-1/#typedef-voice-volume-decibel",
+          "type": "type"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-volume",
+        "voiceVolume"
+      ]
+    },
+    {
+      "name": "voice-balance",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-balance",
+      "value": "<number> | left | center | right | leftwards | rightwards",
+      "initial": "center",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified value resolved to a <number> between -100 and 100 (inclusive)",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<number>",
+          "prose": "A number between -100 and 100 (inclusive). Values smaller than -100 are clamped to -100. Values greater than 100 are clamped to 100. The value -100 represents the left side, and the value 100 represents the right side. The value 0 represents the center point whereby there is no discernible audio separation between left and right sides. (In a stereo sound system, this corresponds to equal distribution of audio signals between left and right speakers).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-number",
+          "type": "value",
+          "value": "<number>"
+        },
+        {
+          "name": "left",
+          "prose": "Same as -100.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "center",
+          "prose": "Same as 0.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "right",
+          "prose": "Same as 100.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "leftwards",
+          "prose": "Moves the sound to the left by subtracting 20 from the inherited voice-balance value (and by clamping the resulting number to -100).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-leftwards",
+          "type": "value",
+          "value": "leftwards"
+        },
+        {
+          "name": "rightwards",
+          "prose": "Moves the sound to the right, by adding 20 to the inherited voice-balance value (and by clamping the resulting number to 100).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-balance-rightwards",
+          "type": "value",
+          "value": "rightwards"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-balance",
+        "voiceBalance"
+      ]
+    },
+    {
+      "name": "speak",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-speak",
+      "value": "auto | never | always",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Resolves to a computed value of never when display is none, otherwise resolves to a computed value of auto. The used value of a computed auto is equivalent to always if visibility is visible and to never otherwise.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "never",
+          "prose": "This value causes an element (including pauses, cues, rests and actual content) to not be rendered (i.e., the element has no effect in the aural dimension).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-never",
+          "type": "value",
+          "value": "never"
+        },
+        {
+          "name": "always",
+          "prose": "The element is rendered aurally (regardless of its display value, or the display or speak values of its ancestors).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-always",
+          "type": "value",
+          "value": "always"
+        }
+      ],
+      "styleDeclaration": [
+        "speak"
+      ]
+    },
+    {
+      "name": "speak-as",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-speak-as",
+      "value": "normal | spell-out || digits || [ literal-punctuation | no-punctuation ]",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Uses language-dependent pronunciation rules for rendering the element’s content. For example, punctuation is not spoken as-is, but instead rendered naturally as appropriate pauses.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-as-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "spell-out",
+          "prose": "Spells the text one letter at a time (useful for acronyms and abbreviations). In languages where accented characters are rare, it is permitted to drop accents in favor of alternative unaccented spellings. As an example, in English, the word “rôle” can also be written as “role”. A conforming implementation would thus be able to spell-out “rôle” as “R O L E”.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-as-spell-out",
+          "type": "value",
+          "value": "spell-out"
+        },
+        {
+          "name": "digits",
+          "prose": "Speak numbers one digit at a time, for instance, “twelve” would be spoken as “one two”, and “31” as “three one”.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-as-digits",
+          "type": "value",
+          "value": "digits"
+        },
+        {
+          "name": "literal-punctuation",
+          "prose": "Punctuation such as semicolons, braces, and so on is named aloud (i.e. spoken literally) rather than rendered naturally as appropriate pauses.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-as-literal-punctuation",
+          "type": "value",
+          "value": "literal-punctuation"
+        },
+        {
+          "name": "no-punctuation",
+          "prose": "Punctuation is not rendered: neither spoken nor rendered as pauses.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-speak-as-no-punctuation",
+          "type": "value",
+          "value": "no-punctuation"
+        }
+      ],
+      "styleDeclaration": [
+        "speak-as",
+        "speakAs"
+      ]
+    },
+    {
+      "name": "pause-before",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-pause-before",
+      "value": "<time [0s,∞]> | none | x-weak | weak | medium | strong | x-strong",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Expresses the pause in absolute time units (seconds and milliseconds, e.g. \"+3s\", \"250ms\"). Only non-negative values are allowed.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "Equivalent to 0ms (no prosodic break is produced by the speech processor).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "x-weak",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-x-weak",
+          "type": "value",
+          "value": "x-weak"
+        },
+        {
+          "name": "weak",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-weak",
+          "type": "value",
+          "value": "weak"
+        },
+        {
+          "name": "medium",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "strong",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-strong",
+          "type": "value",
+          "value": "strong"
+        },
+        {
+          "name": "x-strong",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-x-strong",
+          "type": "value",
+          "value": "x-strong"
+        }
+      ],
+      "styleDeclaration": [
+        "pause-before",
+        "pauseBefore"
+      ]
+    },
+    {
+      "name": "pause-after",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-pause-after",
+      "value": "<time [0s,∞]> | none | x-weak | weak | medium | strong | x-strong",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Expresses the pause in absolute time units (seconds and milliseconds, e.g. \"+3s\", \"250ms\"). Only non-negative values are allowed.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "Equivalent to 0ms (no prosodic break is produced by the speech processor).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "x-weak",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-x-weak",
+          "type": "value",
+          "value": "x-weak"
+        },
+        {
+          "name": "weak",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-weak",
+          "type": "value",
+          "value": "weak"
+        },
+        {
+          "name": "medium",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "strong",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-strong",
+          "type": "value",
+          "value": "strong"
+        },
+        {
+          "name": "x-strong",
+          "prose": "Expresses the pause by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-pause-before-x-strong",
+          "type": "value",
+          "value": "x-strong"
+        }
+      ],
+      "styleDeclaration": [
+        "pause-after",
+        "pauseAfter"
+      ]
+    },
+    {
+      "name": "pause",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-pause",
+      "value": "<'pause-before'> <'pause-after'>?",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "pause"
+      ],
+      "longhands": [
+        "pause-before",
+        "pause-after"
+      ]
+    },
+    {
+      "name": "rest-before",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-rest-before",
+      "value": "<time [0s,∞]> | none | x-weak | weak | medium | strong | x-strong",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Expresses the rest in absolute time units (seconds and milliseconds, e.g. \"+3s\", \"250ms\"). Only non-negative values are allowed.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "Equivalent to 0ms. (No prosodic break is produced by the speech processor.)",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "x-weak",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-x-weak",
+          "type": "value",
+          "value": "x-weak"
+        },
+        {
+          "name": "weak",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-weak",
+          "type": "value",
+          "value": "weak"
+        },
+        {
+          "name": "medium",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "strong",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-strong",
+          "type": "value",
+          "value": "strong"
+        },
+        {
+          "name": "x-strong",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-x-strong",
+          "type": "value",
+          "value": "x-strong"
+        }
+      ],
+      "styleDeclaration": [
+        "rest-before",
+        "restBefore"
+      ]
+    },
+    {
+      "name": "rest-after",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-rest-after",
+      "value": "<time [0s,∞]> | none | x-weak | weak | medium | strong | x-strong",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Expresses the rest in absolute time units (seconds and milliseconds, e.g. \"+3s\", \"250ms\"). Only non-negative values are allowed.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "Equivalent to 0ms. (No prosodic break is produced by the speech processor.)",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "x-weak",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-x-weak",
+          "type": "value",
+          "value": "x-weak"
+        },
+        {
+          "name": "weak",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-weak",
+          "type": "value",
+          "value": "weak"
+        },
+        {
+          "name": "medium",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "strong",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-strong",
+          "type": "value",
+          "value": "strong"
+        },
+        {
+          "name": "x-strong",
+          "prose": "Expresses the rest by the strength of the prosodic break in speech output. The exact time is implementation-dependent. The values indicate monotonically non-decreasing (conceptually increasing) break strength between elements.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-rest-before-x-strong",
+          "type": "value",
+          "value": "x-strong"
+        }
+      ],
+      "styleDeclaration": [
+        "rest-after",
+        "restAfter"
+      ]
+    },
+    {
+      "name": "rest",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-rest",
+      "value": "<'rest-before'> <'rest-after'>?",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "rest"
+      ],
+      "longhands": [
+        "rest-before",
+        "rest-after"
+      ]
+    },
+    {
+      "name": "cue-before",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-cue-before",
+      "value": "<url> <decibel>? | none",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<url>",
+          "prose": "The URL designates an auditory icon resource. When a user agent is not able to render the specified auditory icon (e.g. missing file resource, or unsupported audio codec), it is recommended to produce an alternative cue, such as a bell sound.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-cue-before-url",
+          "type": "value",
+          "value": "<url>"
+        }
+      ],
+      "styleDeclaration": [
+        "cue-before",
+        "cueBefore"
+      ]
+    },
+    {
+      "name": "cue-after",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-cue-after",
+      "value": "<url> <decibel>? | none",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<url>",
+          "prose": "The URL designates an auditory icon resource. When a user agent is not able to render the specified auditory icon (e.g. missing file resource, or unsupported audio codec), it is recommended to produce an alternative cue, such as a bell sound.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-cue-before-url",
+          "type": "value",
+          "value": "<url>"
+        }
+      ],
+      "styleDeclaration": [
+        "cue-after",
+        "cueAfter"
+      ]
+    },
+    {
+      "name": "cue",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-cue",
+      "value": "<'cue-before'> <'cue-after'>?",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "cue"
+      ],
+      "longhands": [
+        "cue-before",
+        "cue-after"
+      ]
+    },
+    {
+      "name": "voice-family",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-family",
+      "value": "[ <voice-family-name> | <generic-voice> ]# | preserve",
+      "initial": "implementation-dependent",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<voice-family-name>",
+          "prose": "Values are specific voice instances (e.g., Mike, comedian, mary, carlos2, \"valley girl\"). Like font-family names, voice names must either be given quoted as strings, or unquoted as a sequence of one or more CSS identifiers. If a sequence of identifiers is given as a voice name, the computed value is the name converted to a string by joining all the identifiers in the sequence by single spaces. Voice names that happen to be the same as the gender keywords (male, female and neutral) or that happen to match the CSS-wide keywords or preserve must be quoted to disambiguate with these keywords. The keyword default is reserved for future use and must also be quoted when used as voice names. It is recommended to quote voice names that contain white space, digits, or punctuation characters other than hyphens—​even if these voice names are valid in unquoted form—​in order to improve code clarity. For example: voice-family: \"john doe\", \"Henry the-8th\";",
+          "href": "https://drafts.csswg.org/css-speech-1/#typedef-voice-family-voice-family-name",
+          "type": "type"
+        },
+        {
+          "name": "<age>",
+          "prose": "Possible values are child, young and old, indicating the preferred age category to match during voice selection.",
+          "href": "https://drafts.csswg.org/css-speech-1/#typedef-voice-family-age",
+          "type": "type"
+        },
+        {
+          "name": "child",
+          "value": "child",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-child",
+          "type": "value"
+        },
+        {
+          "name": "young",
+          "value": "young",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-young",
+          "type": "value"
+        },
+        {
+          "name": "old",
+          "value": "old",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-old",
+          "type": "value"
+        },
+        {
+          "name": "<gender>",
+          "prose": "One of the keywords male, female, or neutral, specifying a male, female, or neutral voice, respectively.",
+          "href": "https://drafts.csswg.org/css-speech-1/#typedef-voice-family-gender",
+          "type": "type"
+        },
+        {
+          "name": "male",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-male",
+          "type": "value",
+          "value": "male"
+        },
+        {
+          "name": "female",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-female",
+          "type": "value",
+          "value": "female"
+        },
+        {
+          "name": "neutral",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-neutral",
+          "type": "value",
+          "value": "neutral"
+        },
+        {
+          "name": "<integer>",
+          "prose": "An integer indicating the preferred variant (e.g. \"the second male child voice\"). Only positive integers (i.e. excluding zero) are allowed. The value 1 refers to the first of all matching voices.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-integer",
+          "type": "value",
+          "value": "<integer>"
+        },
+        {
+          "name": "preserve",
+          "prose": "Indicates that the voice-family value gets inherited and used regardless of any potential language change within the content markup (see the section below about voice selection and language handling). This value behaves as inherit when applied to the root element. Note: Descendants of the element automatically inherit the preserve value, unless it is explicitly overridden by other voice-family values (e.g. name, gender, age).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-family-preserve",
+          "type": "value",
+          "value": "preserve"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-family",
+        "voiceFamily"
+      ]
+    },
+    {
+      "name": "voice-rate",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-rate",
+      "value": "[ normal | x-slow | slow | medium | fast | x-fast ] || <percentage [0,∞]>",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "refer to default value",
+      "computedValue": "a keyword value, and optionally also a percentage relative to the keyword (if not 100%)",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Represents the default rate produced by the speech synthesizer for the currently active voice. This is processor-specific and depends on the language and dialect, and on the \"personality\" of the voice.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "x-slow",
+          "prose": "A sequence of monotonically non-decreasing speaking rates that are implementation- and voice-specific. For example, typical values for the English language are (in words per minute) x-slow = 80, slow = 120, medium = between 180 and 200, fast = 500.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-x-slow",
+          "type": "value",
+          "value": "x-slow"
+        },
+        {
+          "name": "slow",
+          "prose": "A sequence of monotonically non-decreasing speaking rates that are implementation- and voice-specific. For example, typical values for the English language are (in words per minute) x-slow = 80, slow = 120, medium = between 180 and 200, fast = 500.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-slow",
+          "type": "value",
+          "value": "slow"
+        },
+        {
+          "name": "medium",
+          "prose": "A sequence of monotonically non-decreasing speaking rates that are implementation- and voice-specific. For example, typical values for the English language are (in words per minute) x-slow = 80, slow = 120, medium = between 180 and 200, fast = 500.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "fast",
+          "prose": "A sequence of monotonically non-decreasing speaking rates that are implementation- and voice-specific. For example, typical values for the English language are (in words per minute) x-slow = 80, slow = 120, medium = between 180 and 200, fast = 500.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-fast",
+          "type": "value",
+          "value": "fast"
+        },
+        {
+          "name": "x-fast",
+          "prose": "A sequence of monotonically non-decreasing speaking rates that are implementation- and voice-specific. For example, typical values for the English language are (in words per minute) x-slow = 80, slow = 120, medium = between 180 and 200, fast = 500.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-x-fast",
+          "type": "value",
+          "value": "x-fast"
+        },
+        {
+          "name": "<percentage [0,∞]>",
+          "prose": "Only non-negative percentage values are allowed. This represents a change relative to the given keyword value (see enumeration above), or to the default value for the root element, or otherwise to the inherited speaking rate (which may itself be a combination of a keyword value and of a percentage, in which case percentages are combined multiplicatively). For example, 50% means that the speaking rate gets multiplied by 0.5 (half the value). Percentages above 100% result in faster speaking rates (relative to the base keyword), whereas percentages below 100% result in slower speaking rates.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-rate-percentage-0",
+          "type": "value",
+          "value": "<percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-rate",
+        "voiceRate"
+      ]
+    },
+    {
+      "name": "voice-pitch",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-pitch",
+      "value": "<frequency [0Hz,∞]> && absolute | [ [ x-low | low | medium | high | x-high ] || [ <frequency [0Hz,∞]> | <semitones> | <percentage> ] ]",
+      "initial": "medium",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "refer to inherited value",
+      "computedValue": "one of the predefined pitch keywords if only the keyword is specified by itself, otherwise an absolute frequency calculated by converting the keyword value (if any) to a fixed frequency based on the current voice-family and by applying the specified relative offset (if any)",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<frequency [0Hz,∞]>",
+          "prose": "A value in frequency units (Hertz or kiloHertz, e.g. 100Hz, +2kHz). Values are restricted to positive numbers when the absolute keyword is specified. Otherwise (when the absolute keyword is not specified), a negative value represents a decrement, and a positive value represents an increment, relative to the inherited value. For example, 2kHz is a positive offset (strictly equivalent to +2kHz), and +2kHz absolute is an absolute frequency (strictly equivalent to 2kHz absolute).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-frequency-0hz",
+          "type": "value",
+          "value": "<frequency [0Hz,∞]>"
+        },
+        {
+          "name": "absolute",
+          "prose": "If specified, this keyword indicates that the specified frequency represents an absolute value. If a negative frequency is specified, the computed frequency will be zero.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-absolute",
+          "type": "value",
+          "value": "absolute"
+        },
+        {
+          "name": "<semitones>",
+          "prose": "Specifies a relative change (decrement or increment) to the inherited value. The syntax of <semitones> allowed values is a dimension with the unit identifier st (semitones). A semitone interval corresponds to the step between each note on an equal temperament chromatic scale. A semitone can therefore be quantified as the difference between two consecutive pitch frequencies on such scale. The ratio between two consecutive frequencies separated by exactly one semitone is the twelfth root of two (approximately 11011/10393, which equals exactly 1.0594631). As a result, the value in Hertz corresponding to a semitone offset is relative to the initial frequency the offset is applied to. (In other words, a semitone doesn’t correspond to a fixed numerical value in Hertz.)",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-semitones",
+          "type": "value",
+          "value": "<semitones>"
+        },
+        {
+          "name": "<semitones>",
+          "href": "https://drafts.csswg.org/css-speech-1/#typedef-voice-pitch-semitones",
+          "type": "type"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "Positive and negative percentage values are allowed, to represent an increment or decrement (respectively) relative to the inherited value. Computed values are calculated by adding (or subtracting) the specified fraction of the inherited value, to (from) the inherited value. For example, 50% (which is equivalent to +50%) with a inherited value of 200Hz results in 200 + (200*0.5) = 300Hz. Conversely, -50% results in 200-(200*0.5) = 100Hz.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "x-low",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-x-low",
+          "type": "value",
+          "value": "x-low"
+        },
+        {
+          "name": "low",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-low",
+          "type": "value",
+          "value": "low"
+        },
+        {
+          "name": "medium",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "high",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-high",
+          "type": "value",
+          "value": "high"
+        },
+        {
+          "name": "x-high",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-pitch-x-high",
+          "type": "value",
+          "value": "x-high"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-pitch",
+        "voicePitch"
+      ]
+    },
+    {
+      "name": "voice-range",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-range",
+      "value": "<frequency [0Hz,∞]> && absolute | [ [ x-low | low | medium | high | x-high ] || [ <frequency [0Hz,∞]> | <semitones> | <percentage> ] ]",
+      "initial": "medium",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "refer to inherited value",
+      "computedValue": "one of the predefined pitch keywords if only the keyword is specified by itself, otherwise an absolute frequency calculated by converting the keyword value (if any) to a fixed frequency based on the current voice-family and by applying the specified relative offset (if any)",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<frequency [0Hz,∞]>",
+          "prose": "A value in frequency units (Hertz or kiloHertz, e.g. 100Hz, +2kHz). Values are restricted to positive numbers when the absolute keyword is specified. Otherwise (when the absolute keyword is not specified), a negative value represents a decrement, and a positive value represents an increment, relative to the inherited value. For example, 2kHz is a positive offset (strictly equivalent to +2kHz), and +2kHz absolute is an absolute frequency (strictly equivalent to 2kHz absolute).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-frequency-0hz",
+          "type": "value",
+          "value": "<frequency [0Hz,∞]>"
+        },
+        {
+          "name": "absolute",
+          "prose": "If specified, this keyword indicates that the specified frequency represents an absolute value. If a negative frequency is specified, the computed frequency will be zero.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-absolute",
+          "type": "value",
+          "value": "absolute"
+        },
+        {
+          "name": "<semitones>",
+          "prose": "Specifies a relative change (decrement or increment) to the inherited value as a semitone.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-semitones",
+          "type": "value",
+          "value": "<semitones>"
+        },
+        {
+          "name": "<percentage>",
+          "prose": "Positive and negative percentage values represent an increment or decrement (respectively) relative to the inherited value. Computed values are calculated by adding (or subtracting) the specified fraction of the inherited value, to (from) the inherited value. For example, 50% (which is equivalent to +50%) with a inherited value of 200Hz results in 200 + (200*0.5) = 300Hz. Conversely, -50% results in 200-(200*0.5) = 100Hz.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-percentage",
+          "type": "value",
+          "value": "<percentage>"
+        },
+        {
+          "name": "x-low",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-x-low",
+          "type": "value",
+          "value": "x-low"
+        },
+        {
+          "name": "low",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-low",
+          "type": "value",
+          "value": "low"
+        },
+        {
+          "name": "medium",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "high",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-high",
+          "type": "value",
+          "value": "high"
+        },
+        {
+          "name": "x-high",
+          "prose": "A sequence of monotonically non-decreasing pitch levels that are implementation and voice specific. When the computed value for a given element is only a keyword (i.e. no relative offset is specified), then the corresponding absolute frequency will be re-evaluated on a voice change. Conversely, the application of a relative offset requires the calculation of the resulting frequency based on the current voice at the point at which the relative offset is specified, so the computed frequency will inherit absolutely regardless of any voice change further down the style cascade. Authors should therefore only use keyword values in cases where they wish that voice changes trigger the re-evaluation of the conversion from a keyword to a concrete, voice-dependent frequency.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-range-x-high",
+          "type": "value",
+          "value": "x-high"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-range",
+        "voiceRange"
+      ]
+    },
+    {
+      "name": "voice-stress",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-stress",
+      "value": "normal | strong | moderate | none | reduced",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Represents the default emphasis produced by the speech synthesizer.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-stress-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "none",
+          "prose": "Prevents the synthesizer from emphasizing text it would normally emphasize.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-stress-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "moderate",
+          "prose": "These values are monotonically non-decreasing in strength. Their application results in more emphasis than what the speech synthesizer would normally produce (i.e. more than the value corresponding to normal).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-stress-moderate",
+          "type": "value",
+          "value": "moderate"
+        },
+        {
+          "name": "strong",
+          "prose": "These values are monotonically non-decreasing in strength. Their application results in more emphasis than what the speech synthesizer would normally produce (i.e. more than the value corresponding to normal).",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-stress-strong",
+          "type": "value",
+          "value": "strong"
+        },
+        {
+          "name": "reduced",
+          "prose": "Effectively the opposite of emphasizing a word.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-stress-reduced",
+          "type": "value",
+          "value": "reduced"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-stress",
+        "voiceStress"
+      ]
+    },
+    {
+      "name": "voice-duration",
+      "href": "https://drafts.csswg.org/css-speech-1/#propdef-voice-duration",
+      "value": "auto | <time [0s,∞]>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Resolves to a used value corresponding to the duration of the speech synthesis when using the inherited voice-rate.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-duration-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Specifies a value in absolute time units (seconds and milliseconds, e.g. \"+3s\", \"250ms\"). Only non-negative values are allowed.",
+          "href": "https://drafts.csswg.org/css-speech-1/#valdef-voice-duration-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "voice-duration",
+        "voiceDuration"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<generic-voice>",
+      "value": "<age>? <gender> <integer [1,∞]>?",
+      "href": "https://drafts.csswg.org/css-speech-1/#typedef-generic-voice",
+      "type": "type"
+    }
+  ]
+}

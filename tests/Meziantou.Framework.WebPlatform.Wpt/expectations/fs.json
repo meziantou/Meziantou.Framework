@@ -1,0 +1,422 @@
+{
+  "fs/FileSystemBaseHandle-IndexedDB-deferred-deserialization.https.any.js": {
+    "total": 2
+  },
+  "fs/FileSystemBaseHandle-IndexedDB-deferred-deserialization.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "fs/FileSystemBaseHandle-IndexedDB-deferred-deserialization.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "fs/FileSystemBaseHandle-IndexedDB.https.any.js": {
+    "total": 6
+  },
+  "fs/FileSystemBaseHandle-IndexedDB.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "fs/FileSystemBaseHandle-IndexedDB.https.any.js#sharedworker": {
+    "total": 6
+  },
+  "fs/FileSystemBaseHandle-buckets.https.any.js": {
+    "total": 3,
+    "failures": {
+      "Bucket quota restricts the size of a file that can be created": "FAIL",
+      "getDirectory promise rejects if bucket has been deleted": "FAIL",
+      "isSameEntry works as expected with buckets": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-buckets.https.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Bucket quota restricts the size of a file that can be created": "FAIL",
+      "getDirectory promise rejects if bucket has been deleted": "FAIL",
+      "isSameEntry works as expected with buckets": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-buckets.https.any.js#sharedworker": {
+    "total": 3,
+    "failures": {
+      "Bucket quota restricts the size of a file that can be created": "FAIL",
+      "getDirectory promise rejects if bucket has been deleted": "FAIL",
+      "isSameEntry works as expected with buckets": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-getUniqueId.https.any.js": {
+    "total": 11,
+    "failures": {
+      "a file and a directory of the same path return different IDs": "FAIL",
+      "a file and a directory return different IDs": "FAIL",
+      "different directories return different IDs": "FAIL",
+      "different files return different IDs": "FAIL",
+      "different handles for the same directory return the same ID": "FAIL",
+      "different handles for the same file return the same ID": "FAIL",
+      "identical directory handles return the same ID": "FAIL",
+      "identical file handles return the same unique ID": "FAIL",
+      "two files of the same name in different directories return different IDs": "FAIL",
+      "unique ID is in GUID version 4 format": "FAIL",
+      "unique ID of a file handle does not change after writes": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-getUniqueId.https.any.js#dedicatedworker": {
+    "total": 11,
+    "failures": {
+      "a file and a directory of the same path return different IDs": "FAIL",
+      "a file and a directory return different IDs": "FAIL",
+      "different directories return different IDs": "FAIL",
+      "different files return different IDs": "FAIL",
+      "different handles for the same directory return the same ID": "FAIL",
+      "different handles for the same file return the same ID": "FAIL",
+      "identical directory handles return the same ID": "FAIL",
+      "identical file handles return the same unique ID": "FAIL",
+      "two files of the same name in different directories return different IDs": "FAIL",
+      "unique ID is in GUID version 4 format": "FAIL",
+      "unique ID of a file handle does not change after writes": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-getUniqueId.https.any.js#sharedworker": {
+    "total": 11,
+    "failures": {
+      "a file and a directory of the same path return different IDs": "FAIL",
+      "a file and a directory return different IDs": "FAIL",
+      "different directories return different IDs": "FAIL",
+      "different files return different IDs": "FAIL",
+      "different handles for the same directory return the same ID": "FAIL",
+      "different handles for the same file return the same ID": "FAIL",
+      "identical directory handles return the same ID": "FAIL",
+      "identical file handles return the same unique ID": "FAIL",
+      "two files of the same name in different directories return different IDs": "FAIL",
+      "unique ID is in GUID version 4 format": "FAIL",
+      "unique ID of a file handle does not change after writes": "FAIL"
+    }
+  },
+  "fs/FileSystemBaseHandle-isSameEntry.https.any.js": {
+    "total": 14
+  },
+  "fs/FileSystemBaseHandle-isSameEntry.https.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "fs/FileSystemBaseHandle-isSameEntry.https.any.js#sharedworker": {
+    "total": 14
+  },
+  "fs/FileSystemBaseHandle-postMessage-BroadcastChannel.https.window.js": {
+    "total": 1
+  },
+  "fs/FileSystemBaseHandle-postMessage-Error.https.window.js": {
+    "total": 10
+  },
+  "fs/FileSystemBaseHandle-postMessage-MessagePort-frames.https.window.js": {
+    "total": 4
+  },
+  "fs/FileSystemBaseHandle-postMessage-MessagePort-windows.https.window.js": {
+    "total": 3
+  },
+  "fs/FileSystemBaseHandle-postMessage-MessagePort-workers.https.window.js": {
+    "total": 3
+  },
+  "fs/FileSystemBaseHandle-postMessage-frames.https.window.js": {
+    "total": 4
+  },
+  "fs/FileSystemBaseHandle-postMessage-windows.https.window.js": {
+    "total": 3
+  },
+  "fs/FileSystemBaseHandle-postMessage-workers.https.window.js": {
+    "total": 3
+  },
+  "fs/FileSystemBaseHandle-remove.https.any.js": {
+    "total": 9
+  },
+  "fs/FileSystemBaseHandle-remove.https.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "fs/FileSystemBaseHandle-remove.https.any.js#sharedworker": {
+    "total": 9
+  },
+  "fs/FileSystemDirectoryHandle-getDirectoryHandle.https.any.js": {
+    "total": 10
+  },
+  "fs/FileSystemDirectoryHandle-getDirectoryHandle.https.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "fs/FileSystemDirectoryHandle-getDirectoryHandle.https.any.js#sharedworker": {
+    "total": 10
+  },
+  "fs/FileSystemDirectoryHandle-getFileHandle.https.any.js": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-getFileHandle.https.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-getFileHandle.https.any.js#sharedworker": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-iteration.https.any.js": {
+    "total": 6
+  },
+  "fs/FileSystemDirectoryHandle-iteration.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "fs/FileSystemDirectoryHandle-iteration.https.any.js#sharedworker": {
+    "total": 6
+  },
+  "fs/FileSystemDirectoryHandle-removeEntry.https.any.js": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-removeEntry.https.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-removeEntry.https.any.js#sharedworker": {
+    "total": 13
+  },
+  "fs/FileSystemDirectoryHandle-resolve.https.any.js": {
+    "total": 5
+  },
+  "fs/FileSystemDirectoryHandle-resolve.https.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "fs/FileSystemDirectoryHandle-resolve.https.any.js#sharedworker": {
+    "total": 5
+  },
+  "fs/FileSystemFileHandle-create-sync-access-handle.https.window.js": {
+    "total": 1
+  },
+  "fs/FileSystemFileHandle-cross-primitive-locking.https.tentative.worker.js": {
+    "harness": "ERROR",
+    "total": 90,
+    "failures": {
+      "After a file has finished being removed, that file can have an open access handle in read-only mode": "FAIL",
+      "After a file has finished being removed, that file can have an open access handle in readwrite mode": "FAIL",
+      "After a file has finished being removed, that file can have an open access handle in readwrite-unsafe mode": "FAIL",
+      "After a file has finished being removed, that file can have an open writable stream in exclusive mode": "FAIL",
+      "After a file has finished being removed, that file can have an open writable stream in siloed mode": "FAIL",
+      "After a file has finished moving, that file can have an open access handle in read-only mode": "FAIL",
+      "After a file has finished moving, that file can have an open access handle in readwrite mode": "FAIL",
+      "After a file has finished moving, that file can have an open access handle in readwrite-unsafe mode": "FAIL",
+      "After a file has finished moving, that file can have an open writable stream in exclusive mode": "FAIL",
+      "After a file has finished moving, that file can have an open writable stream in siloed mode": "FAIL",
+      "After a writable stream in exclusive mode has been closed for a file, that file can have an ongoing move operation": "FAIL",
+      "After a writable stream in exclusive mode has been closed for a file, that file can have an ongoing remove operation": "FAIL",
+      "After a writable stream in exclusive mode has been closed for a file, that file can have an open access handle in read-only mode": "FAIL",
+      "After a writable stream in exclusive mode has been closed for a file, that file can have an open access handle in readwrite mode": "FAIL",
+      "After a writable stream in exclusive mode has been closed for a file, that file can have an open access handle in readwrite-unsafe mode": "FAIL",
+      "After all writable streams in siloed mode have been closed for a file, that file can have an ongoing move operation": "FAIL",
+      "After all writable streams in siloed mode have been closed for a file, that file can have an ongoing remove operation": "FAIL",
+      "After all writable streams in siloed mode have been closed for a file, that file can have an open access handle in read-only mode": "FAIL",
+      "After all writable streams in siloed mode have been closed for a file, that file can have an open access handle in readwrite mode": "FAIL",
+      "After all writable streams in siloed mode have been closed for a file, that file can have an open access handle in readwrite-unsafe mode": "FAIL",
+      "After an open access handle in read-only mode on a file has been closed, that file can be moved": "FAIL",
+      "After an open access handle in read-only mode on a file has been closed, that file can be removed": "FAIL",
+      "After an open access handle in readwrite mode on a file has been closed, that file can be moved": "FAIL",
+      "After an open access handle in readwrite mode on a file has been closed, that file can be removed": "FAIL",
+      "After an open access handle in readwrite-unsafe mode on a file has been closed, that file can be moved": "FAIL",
+      "After an open access handle in readwrite-unsafe mode on a file has been closed, that file can be removed": "FAIL"
+    }
+  },
+  "fs/FileSystemFileHandle-getFile.https.any.js": {
+    "total": 3
+  },
+  "fs/FileSystemFileHandle-getFile.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "fs/FileSystemFileHandle-getFile.https.any.js#sharedworker": {
+    "total": 3
+  },
+  "fs/FileSystemFileHandle-move.https.any.js": {
+    "total": 24
+  },
+  "fs/FileSystemFileHandle-move.https.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "fs/FileSystemFileHandle-move.https.any.js#sharedworker": {
+    "total": 24
+  },
+  "fs/FileSystemFileHandle-sync-access-handle-back-forward-cache.https.tentative.window.js": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Creating a SAH on an active page evicts an inactive page on contention.": "TIMEOUT",
+      "Creating an SAH should not make it ineligible for the BFCache.": "PRECONDITION_FAILED"
+    }
+  },
+  "fs/FileSystemFileHandle-sync-access-handle-lock-modes.https.tentative.worker.js": {
+    "total": 33
+  },
+  "fs/FileSystemFileHandle-writable-file-stream-back-forward-cache.https.tentative.window.js": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Creating a WFS on an active page evicts an inactive page on contention.": "TIMEOUT",
+      "Creating an WFS should not make it ineligible for the BFCache.": "PRECONDITION_FAILED"
+    }
+  },
+  "fs/FileSystemFileHandle-writable-file-stream-lock-modes.https.tentative.worker.js": {
+    "total": 15
+  },
+  "fs/FileSystemObserver-sync-access-handle.https.tentative.worker.js": {
+    "total": 4,
+    "failures": {
+      "FileSystemSyncAccessHandle methods that don't modify the file don't produce events": "FAIL",
+      "FileSystemSyncAccessHandle.truncate produces a \"modified\" event": "FAIL",
+      "FileSystemSyncAccessHandle.write produces a \"modified\" event": "FAIL",
+      "Multiple FileSystemSyncAccessHandle.writes produces the same amount of \"modified\" event": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver-writable-file-stream.https.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "All FileSystemWritableFileStream methods that aren't closed don't produce events": "FAIL",
+      "Closing a FileSystemWritableFileStream that's modified the file produces a \"modified\" event": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver-writable-file-stream.https.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "All FileSystemWritableFileStream methods that aren't closed don't produce events": "FAIL",
+      "Closing a FileSystemWritableFileStream that's modified the file produces a \"modified\" event": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver-writable-file-stream.https.tentative.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "All FileSystemWritableFileStream methods that aren't closed don't produce events": "FAIL",
+      "Closing a FileSystemWritableFileStream that's modified the file produces a \"modified\" event": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver.https.tentative.any.js": {
+    "total": 16,
+    "failures": {
+      "Calling disconnect() without observing shouldn't throw": "FAIL",
+      "Calling unobserve() without a corresponding observe() shouldn't throw": "FAIL",
+      "Creating a FileSystemObserver from a supported global succeeds": "FAIL",
+      "Creating a file through FileSystemDirectoryHandle.getFileHandle is reported as an \"appeared\" event if in scope": "FAIL",
+      "Events outside the watch scope are not sent to the observer's callback": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is not reported if destination and source are not in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"appeared\" event if only destination is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"disappeared\" event if only source is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"moved\" event if destination and source are in scope": "FAIL",
+      "Observations stop after disconnect()": "FAIL",
+      "Observations stop for all observed handles after disconnect()": "FAIL",
+      "Removing a file through FileSystemFileHandle.remove is reported as an \"disappeared\" event if in scope": "FAIL",
+      "disconnect() is idempotent": "FAIL",
+      "observe() fails when directory does not exist": "FAIL",
+      "observe() fails when file does not exist": "FAIL",
+      "unobserve() is idempotent": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver.https.tentative.any.js#dedicatedworker": {
+    "total": 16,
+    "failures": {
+      "Calling disconnect() without observing shouldn't throw": "FAIL",
+      "Calling unobserve() without a corresponding observe() shouldn't throw": "FAIL",
+      "Creating a FileSystemObserver from a supported global succeeds": "FAIL",
+      "Creating a file through FileSystemDirectoryHandle.getFileHandle is reported as an \"appeared\" event if in scope": "FAIL",
+      "Events outside the watch scope are not sent to the observer's callback": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is not reported if destination and source are not in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"appeared\" event if only destination is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"disappeared\" event if only source is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"moved\" event if destination and source are in scope": "FAIL",
+      "Observations stop after disconnect()": "FAIL",
+      "Observations stop for all observed handles after disconnect()": "FAIL",
+      "Removing a file through FileSystemFileHandle.remove is reported as an \"disappeared\" event if in scope": "FAIL",
+      "disconnect() is idempotent": "FAIL",
+      "observe() fails when directory does not exist": "FAIL",
+      "observe() fails when file does not exist": "FAIL",
+      "unobserve() is idempotent": "FAIL"
+    }
+  },
+  "fs/FileSystemObserver.https.tentative.any.js#sharedworker": {
+    "total": 16,
+    "failures": {
+      "Calling disconnect() without observing shouldn't throw": "FAIL",
+      "Calling unobserve() without a corresponding observe() shouldn't throw": "FAIL",
+      "Creating a FileSystemObserver from a supported global succeeds": "FAIL",
+      "Creating a file through FileSystemDirectoryHandle.getFileHandle is reported as an \"appeared\" event if in scope": "FAIL",
+      "Events outside the watch scope are not sent to the observer's callback": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is not reported if destination and source are not in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"appeared\" event if only destination is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"disappeared\" event if only source is in scope": "FAIL",
+      "Moving a file through FileSystemFileHandle.move is reported as a \"moved\" event if destination and source are in scope": "FAIL",
+      "Observations stop after disconnect()": "FAIL",
+      "Observations stop for all observed handles after disconnect()": "FAIL",
+      "Removing a file through FileSystemFileHandle.remove is reported as an \"disappeared\" event if in scope": "FAIL",
+      "disconnect() is idempotent": "FAIL",
+      "observe() fails when directory does not exist": "FAIL",
+      "observe() fails when file does not exist": "FAIL",
+      "unobserve() is idempotent": "FAIL"
+    }
+  },
+  "fs/FileSystemSyncAccessHandle-close.https.worker.js": {
+    "total": 6
+  },
+  "fs/FileSystemSyncAccessHandle-flush.https.worker.js": {
+    "total": 2
+  },
+  "fs/FileSystemSyncAccessHandle-getSize.https.worker.js": {
+    "total": 1
+  },
+  "fs/FileSystemSyncAccessHandle-read-write.https.worker.js": {
+    "total": 14
+  },
+  "fs/FileSystemSyncAccessHandle-truncate.https.worker.js": {
+    "total": 3
+  },
+  "fs/FileSystemWritableFileStream-piped.https.any.js": {
+    "total": 8
+  },
+  "fs/FileSystemWritableFileStream-piped.https.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "fs/FileSystemWritableFileStream-piped.https.any.js#sharedworker": {
+    "total": 8
+  },
+  "fs/FileSystemWritableFileStream-write.https.any.js": {
+    "total": 31
+  },
+  "fs/FileSystemWritableFileStream-write.https.any.js#dedicatedworker": {
+    "total": 31
+  },
+  "fs/FileSystemWritableFileStream-write.https.any.js#sharedworker": {
+    "total": 31
+  },
+  "fs/FileSystemWritableFileStream.https.any.js": {
+    "total": 9,
+    "failures": {
+      "createWritable() can be called on two handles representing the same file": "FAIL"
+    }
+  },
+  "fs/FileSystemWritableFileStream.https.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "createWritable() can be called on two handles representing the same file": "FAIL"
+    }
+  },
+  "fs/FileSystemWritableFileStream.https.any.js#sharedworker": {
+    "total": 9,
+    "failures": {
+      "createWritable() can be called on two handles representing the same file": "FAIL"
+    }
+  },
+  "fs/idlharness.https.any.js": {
+    "total": 43
+  },
+  "fs/idlharness.https.any.js#dedicatedworker": {
+    "total": 54
+  },
+  "fs/idlharness.https.any.js#sharedworker": {
+    "total": 43
+  },
+  "fs/opaque-origin.https.window.js": {
+    "total": 3
+  },
+  "fs/opfs-shared-worker-coep.https.window.js": {
+    "total": 1
+  },
+  "fs/root-name.https.any.js": {
+    "total": 1
+  },
+  "fs/root-name.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "fs/root-name.https.any.js#sharedworker": {
+    "total": 1
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "spec": {
+    "title": "CSS Transitions Module Level 2",
+    "url": "https://drafts.csswg.org/css-transitions-2/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSStartingStyleRule",
+          "TransitionEvent",
+          "CSSTransition"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSStartingStyleRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSStartingStyleRule : CSSGroupingRule {\n};",
+        "type": "interface",
+        "name": "CSSStartingStyleRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-transitions-2/#cssstartingstylerule"
+      },
+      "CSSTransition": {
+        "fragment": "[Exposed=Window]\ninterface CSSTransition : Animation {\n  readonly attribute CSSOMString transitionProperty;\n};",
+        "type": "interface",
+        "name": "CSSTransition",
+        "inheritance": "Animation",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "transitionProperty",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-transitions-2/#dom-csstransition-transitionproperty"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-transitions-2/#csstransition"
+      }
+    },
+    "idlExtendedNames": {
+      "TransitionEvent": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface TransitionEvent {\n  readonly attribute CSSTransition? animation;\n};",
+          "type": "interface",
+          "name": "TransitionEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "animation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CSSTransition"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-transitions-2/#Events-TransitionEvent-animation"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "TransitionEventInit": [
+        {
+          "fragment": "partial dictionary TransitionEventInit {\n  CSSTransition? animation = null;\n};",
+          "type": "dictionary",
+          "name": "TransitionEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "animation",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CSSTransition"
+              },
+              "default": {
+                "type": "null"
+              },
+              "required": false,
+              "href": "https://drafts.csswg.org/css-transitions-2/#dom-transitioneventinit-animation"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSStartingStyleRule",
+        "TransitionEvent",
+        "CSSTransition"
+      ]
+    },
+    "dependencies": {
+      "CSSStartingStyleRule": [
+        "CSSGroupingRule"
+      ],
+      "TransitionEvent": [
+        "CSSTransition"
+      ],
+      "TransitionEventInit": [
+        "CSSTransition"
+      ],
+      "CSSTransition": [
+        "Animation",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSGroupingRule",
+      "TransitionEvent",
+      "TransitionEventInit",
+      "Animation",
+      "CSSOMString"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

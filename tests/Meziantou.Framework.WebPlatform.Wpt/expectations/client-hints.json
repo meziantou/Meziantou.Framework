@@ -1,0 +1,421 @@
+{
+  "client-hints/accept-ch-change.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-malformed-header.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-iframe-not-setting-other-origins.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-iframe-not-setting-own-origin.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-iframe-redirect-with-fp-delegation.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-navigation-redirect.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-subresource-redirect-with-fp-delegation.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-subresource-redirect.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-subresource-with-permissions-policy.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/cross-origin-syncxhr-redirect.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-cross-origin-iframe-not-setting-other-origins.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-cross-origin-iframe-not-setting-own-origin.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-cross-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-cross-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-same-origin-iframe.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-same-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/http-equiv-same-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-cross-origin-iframe-not-setting-other-origins.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-cross-origin-iframe-not-setting-own-origin.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-cross-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-cross-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-delegate-ch-cross-origin-iframe-with-hints.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-delegate-ch-cross-origin-iframe-without-hints.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-delegate-ch-cross-origin-subresource-with-hints.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-delegate-ch-cross-origin-subresource-without-hints.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-same-origin-iframe.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-same-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/meta-equiv-same-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/same-origin-iframe.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/same-origin-navigation-empty-accept-ch.https.html": {
+    "total": 4
+  },
+  "client-hints/accept-ch-stickiness/same-origin-navigation-no-accept-ch.https.html": {
+    "total": 4
+  },
+  "client-hints/accept-ch-stickiness/same-origin-navigation-redirect.https.html": {
+    "total": 2
+  },
+  "client-hints/accept-ch-stickiness/same-origin-navigation.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch-stickiness/same-origin-subresource-redirect-opted-in.https.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch-stickiness/same-origin-subresource-redirect.https.html": {
+    "total": 2
+  },
+  "client-hints/accept-ch-stickiness/same-origin-subresource.https.html": {
+    "total": 3
+  },
+  "client-hints/accept-ch.wildcard.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch/answers.sub.https.html": {
+    "total": 2
+  },
+  "client-hints/accept-ch/cache-revalidation.https.html": {
+    "total": 1,
+    "failures": {
+      "Same headers sent for revalidation request": "FAIL"
+    }
+  },
+  "client-hints/accept-ch/meta/resource-in-markup-accept-ch.https.html": {
+    "total": 1,
+    "failures": {
+      "DPR is received in page with Accept-CH http-equiv meta tag": "FAIL"
+    }
+  },
+  "client-hints/accept-ch/meta/resource-in-markup-delegate-ch.https.html": {
+    "total": 1,
+    "failures": {
+      "DPR is received in page with Accept-CH meta tag": "FAIL"
+    }
+  },
+  "client-hints/accept-ch/no-feature-policy.sub.https.html": {
+    "total": 2
+  },
+  "client-hints/accept-ch/non-secure.http.html": {
+    "total": 1
+  },
+  "client-hints/accept-ch/permissions-policy-navigation/no-permissions-policy.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "client-hints/accept-ch/permissions-policy-navigation/permissions-policy.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "client-hints/accept-ch/permissions-policy.sub.https.html": {
+    "total": 2,
+    "failures": {
+      "Accept-CH header test": "FAIL",
+      "Cross-Origin Accept-CH header test": "FAIL"
+    }
+  },
+  "client-hints/clear-site-data/clear-site-data-all.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/clear-site-data-cache.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/clear-site-data-client-hints-third-party.https.sub.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/clear-site-data-client-hints.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/clear-site-data-cookies.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/clear-site-data-storage.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-client-hints-after-clear-all.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-client-hints-after-clear-cache.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-client-hints-after-clear-client-hints.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-client-hints-after-clear-cookies.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-client-hints-after-clear-storage.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-critical-client-hints-after-clear-all.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-critical-client-hints-after-clear-cache.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-critical-client-hints-after-clear-client-hints.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-critical-client-hints-after-clear-cookies.https.html": {
+    "total": 1
+  },
+  "client-hints/clear-site-data/set-critical-client-hints-after-clear-storage.https.html": {
+    "total": 1
+  },
+  "client-hints/critical-ch/critical-ch.navigation-timing.no-restart.https.html": {
+    "total": 1
+  },
+  "client-hints/critical-ch/critical-ch.navigation-timing.restart.https.html": {
+    "total": 1,
+    "failures": {
+      "Critical-CH restart navigation timing test": "FAIL"
+    }
+  },
+  "client-hints/critical-ch/iframe.https.window.js": {
+    "total": 2
+  },
+  "client-hints/critical-ch/mis-matched-count.https.window.js": {
+    "total": 2
+  },
+  "client-hints/critical-ch/mis-matched.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/mis-matched.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/navigation.cross-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/navigation.cross-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/navigation.same-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/navigation.same-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/non-secure.http.window.js": {
+    "total": 2
+  },
+  "client-hints/critical-ch/redirect.critical.cross-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.critical.cross-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.critical.same-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.critical.same-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.cross-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.cross-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.same-origin.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/redirect.same-origin.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/request-count.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/request-count.multiple.https.window.js": {
+    "total": 1
+  },
+  "client-hints/critical-ch/subresource.https.window.js": {
+    "total": 2
+  },
+  "client-hints/critical-ch/unsafe-method.https.window.js": {
+    "total": 2
+  },
+  "client-hints/http-equiv-accept-ch-iframe.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "client-hints/http-equiv-accept-ch-malformed-header.https.html": {
+    "total": 1
+  },
+  "client-hints/http-equiv-accept-ch-merge.https.html": {
+    "total": 1
+  },
+  "client-hints/http-equiv-accept-ch-non-secure.http.html": {
+    "total": 1
+  },
+  "client-hints/inner-delegation/accept_ch_delegation_to_all.sub.https.html": {
+    "total": 1
+  },
+  "client-hints/inner-delegation/accept_ch_delegation_to_none.sub.https.html": {
+    "total": 1
+  },
+  "client-hints/inner-delegation/accept_ch_delegation_to_self.sub.https.html": {
+    "total": 1
+  },
+  "client-hints/inner-delegation/accept_ch_delegation_to_some.sub.https.html": {
+    "total": 1
+  },
+  "client-hints/inner-delegation/accept_ch_delegation_to_src.sub.https.html": {
+    "total": 1
+  },
+  "client-hints/meta-equiv-delegate-ch-iframe.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "client-hints/meta-equiv-delegate-ch-injection.https.html": {
+    "total": 1
+  },
+  "client-hints/meta-equiv-delegate-ch-malformed-header.https.html": {
+    "total": 1
+  },
+  "client-hints/meta-equiv-delegate-ch-merge.https.html": {
+    "total": 1
+  },
+  "client-hints/meta-equiv-delegate-ch-non-secure.http.html": {
+    "total": 1
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 4
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-default-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-enabled-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-enabled-on-self-origin-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "client-hints/permissions-policy/ch-ua-high-entropy-values-permissions-policy-attribute.https.sub.html": {
+    "total": 5
+  },
+  "client-hints/sandbox/iframe-csp-same-origin.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe-csp.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe-iframe-popups.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe-popups-escape-sandbox.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe-popups.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe-same-origin.https.html": {
+    "total": 1
+  },
+  "client-hints/sandbox/iframe.https.html": {
+    "total": 1
+  },
+  "client-hints/sec-ch-quotes.https.html": {
+    "total": 1
+  },
+  "client-hints/sec-ch-ua.http.html": {
+    "total": 1
+  },
+  "client-hints/sec-ch-ua.https.html": {
+    "total": 3
+  },
+  "client-hints/sec-ch-width-auto-sizes-img.https.html": {
+    "total": 1
+  },
+  "client-hints/sec-ch-width-auto-sizes-picture.https.html": {
+    "total": 1
+  },
+  "client-hints/sec-ch-width.https.html": {
+    "total": 1
+  },
+  "client-hints/service-workers/intercept-request-critical.https.window.js": {
+    "total": 1
+  },
+  "client-hints/service-workers/intercept-request.https.html": {
+    "total": 1,
+    "failures": {
+      "Service workers succsefully receives hints from request": "FAIL"
+    }
+  },
+  "client-hints/service-workers/navigation-preload-critical.https.window.js": {
+    "total": 1
+  },
+  "client-hints/service-workers/navigation-preload.https.html": {
+    "total": 1
+  },
+  "client-hints/service-workers/new-request-critical.https.window.js": {
+    "total": 1
+  },
+  "client-hints/service-workers/new-request.https.html": {
+    "total": 1
+  },
+  "client-hints/service-workers/passthrough-request-critical.https.window.js": {
+    "total": 1
+  },
+  "client-hints/service-workers/passthrough-request.https.html": {
+    "total": 1
+  },
+  "client-hints/viewport-size/viewport-size-iframe.https.html": {
+    "total": 1
+  },
+  "client-hints/viewport-size/viewport-size-subresource.https.html": {
+    "total": 1
+  },
+  "client-hints/viewport-size/viewport-size-window-different-dimensions.https.html": {
+    "total": 1
+  },
+  "client-hints/viewport-size/viewport-size-window.https.html": {
+    "total": 1
+  }
+}

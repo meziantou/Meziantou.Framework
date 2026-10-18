@@ -1,0 +1,16 @@
+{
+  "main": {
+    "syr-SY": {
+      "identity": {
+        "language": "syr",
+        "territory": "SY"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

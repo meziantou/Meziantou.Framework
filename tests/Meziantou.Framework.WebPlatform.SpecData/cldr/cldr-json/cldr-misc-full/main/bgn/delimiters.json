@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bgn": {
+      "identity": {
+        "language": "bgn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

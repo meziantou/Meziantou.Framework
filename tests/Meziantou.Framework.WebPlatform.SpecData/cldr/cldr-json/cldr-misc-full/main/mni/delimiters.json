@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mni": {
+      "identity": {
+        "language": "mni"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

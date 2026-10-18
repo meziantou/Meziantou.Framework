@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bem": {
+      "identity": {
+        "language": "bem"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

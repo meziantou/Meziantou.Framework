@@ -1,0 +1,2388 @@
+{
+  "html/dom/access-key-label.html": {
+    "total": 2,
+    "failures": {
+      "Returns empty string when accesskey is invalid": "FAIL"
+    }
+  },
+  "html/dom/aria-attribute-reflection-enumerated.tentative.html": {
+    "total": 1761,
+    "failures": {
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"+100\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \".5\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"5%\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"alse\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"rue\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to -Infinity": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to 1.5": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to 7": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to Infinity": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to NaN": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to 1.5": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to 7": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to Infinity": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to NaN": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to null": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaAtomic (<div aria-atomic>): setAttribute() to undefined": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"+100\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \".5\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"5%\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"BOTH\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"INLINE\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"LIST\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"NONE\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"both\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"inline\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"ist\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"list\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"liſt\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"nline\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"none\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"one\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"oth\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"xboth\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"xinline\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"xlist\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to \"xnone\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to -Infinity": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to 1.5": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to 7": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to Infinity": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to NaN": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to false": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): IDL set to true": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"BOTH\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"INLINE\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"LIST\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"NONE\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"both\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"inline\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"ist\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"list\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"liſt\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"nline\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"none\\0\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"one\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"oth\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"xboth\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"xinline\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"xlist\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to \"xnone\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to 1.5": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to 7": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to Infinity": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to NaN": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to false": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to null": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to true": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): setAttribute() to undefined": "FAIL",
+      "div.ariaAutoComplete (<div aria-autocomplete>): typeof IDL attribute": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"+100\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \".5\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"5%\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"alse\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"rue\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to -Infinity": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to 1.5": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to 7": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to Infinity": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to NaN": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to 1.5": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to 7": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to Infinity": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to NaN": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to null": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaBusy (<div aria-busy>): setAttribute() to undefined": "FAIL",
+      "div.ariaBusy (<div aria-busy>): typeof IDL attribute": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"+100\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \".5\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"5%\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"MIXED\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"alse\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"ixed\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"mixed\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"rue\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"xmixed\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to -Infinity": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to 1.5": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to 7": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to Infinity": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to NaN": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"MIXED\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"ixed\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"mixed\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"xmixed\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to 1.5": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to 7": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to Infinity": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to NaN": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to null": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaChecked (<div aria-checked>): setAttribute() to undefined": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"+100\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \".5\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"5%\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"DATE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"LOCATION\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"PAGE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"STEP\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"TIME\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"age\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"alse\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"ate\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"date\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"ime\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"location\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"ocation\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"page\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"rue\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"step\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"tep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"time\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xdate\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xlocation\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xpage\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xstep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xtime\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to \"ſtep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to -Infinity": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to 1.5": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to 7": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to Infinity": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to NaN": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"DATE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"LOCATION\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"PAGE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"STEP\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"TIME\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"age\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"ate\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"date\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"ime\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"location\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"ocation\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"page\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"step\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"tep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"time\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xdate\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xlocation\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xpage\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xstep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xtime\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to \"ſtep\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to 1.5": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to 7": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to Infinity": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to NaN": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to null": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaCurrent (<div aria-current>): setAttribute() to undefined": "FAIL",
+      "div.ariaCurrent (<div aria-current>): typeof IDL attribute": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"+100\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \".5\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"5%\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"alse\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"rue\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to -Infinity": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to 1.5": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to 7": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to Infinity": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to NaN": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to 1.5": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to 7": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to Infinity": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to NaN": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to null": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): setAttribute() to undefined": "FAIL",
+      "div.ariaDisabled (<div aria-disabled>): typeof IDL attribute": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"+100\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \".5\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"5%\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"alse\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"rue\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to -Infinity": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to 1.5": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to 7": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to Infinity": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to NaN": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to 1.5": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to 7": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to Infinity": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to NaN": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to null": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaExpanded (<div aria-expanded>): setAttribute() to undefined": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"+100\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \".5\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"5%\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"DIALOG\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"GRID\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"LISTBOX\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"MENU\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"TREE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"alse\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"dialog\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"enu\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"grid\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"ialog\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"istbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"listbox\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"liſtbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"menu\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"ree\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"rid\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"rue\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"tree\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xdialog\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xgrid\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xlistbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xmenu\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xtree\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to -Infinity": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to 1.5": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to 7": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to Infinity": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to NaN": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"DIALOG\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"GRID\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"LISTBOX\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"MENU\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"TREE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"dialog\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"enu\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"grid\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"ialog\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"istbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"listbox\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"liſtbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"menu\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"ree\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"rid\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"tree\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xdialog\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xgrid\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xlistbox\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xmenu\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xtree\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to 1.5": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to 7": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to Infinity": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to NaN": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to null": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaHasPopup (<div aria-haspopup>): setAttribute() to undefined": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"+100\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \".5\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"5%\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"alse\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"rue\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to -Infinity": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to 1.5": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to 7": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to Infinity": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to NaN": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to 1.5": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to 7": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to Infinity": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to NaN": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to null": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): setAttribute() to undefined": "FAIL",
+      "div.ariaHidden (<div aria-hidden>): typeof IDL attribute": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"+100\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \".5\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"5%\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"GRAMMAR\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"SPELLING\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"alse\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"grammar\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"pelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"rammar\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"rue\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"spelling\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"xgrammar\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"xspelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to \"ſpelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to -Infinity": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to 1.5": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to 7": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to Infinity": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to NaN": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"GRAMMAR\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"SPELLING\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"grammar\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"pelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"rammar\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"spelling\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"xgrammar\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"xspelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to \"ſpelling\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to 1.5": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to 7": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to Infinity": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to NaN": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to null": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): setAttribute() to undefined": "FAIL",
+      "div.ariaInvalid (<div aria-invalid>): typeof IDL attribute": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"+100\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \".5\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"5%\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"ASSERTIVE\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"OFF\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"POLITE\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"assertive\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"aſſertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"ff\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"off\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"olite\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"polite\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"ssertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"xassertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"xoff\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to \"xpolite\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to -Infinity": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to 1.5": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to 7": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to Infinity": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to NaN": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to false": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaLive (<div aria-live>): IDL set to true": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"ASSERTIVE\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"OFF\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"POLITE\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"assertive\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"aſſertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"ff\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"off\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"olite\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"polite\\0\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"ssertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"xassertive\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"xoff\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to \"xpolite\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to 1.5": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to 7": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to Infinity": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to NaN": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to false": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to null": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to true": "FAIL",
+      "div.ariaLive (<div aria-live>): setAttribute() to undefined": "FAIL",
+      "div.ariaLive (<div aria-live>): typeof IDL attribute": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"+100\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \".5\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"5%\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"alse\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"rue\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to -Infinity": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to 1.5": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to 7": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to Infinity": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to NaN": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to 1.5": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to 7": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to Infinity": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to NaN": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to null": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaModal (<div aria-modal>): setAttribute() to undefined": "FAIL",
+      "div.ariaModal (<div aria-modal>): typeof IDL attribute": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"+100\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \".5\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"5%\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"alse\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"rue\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to -Infinity": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to 1.5": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to 7": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to Infinity": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to NaN": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to 1.5": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to 7": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to Infinity": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to NaN": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to null": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): setAttribute() to undefined": "FAIL",
+      "div.ariaMultiLine (<div aria-multiline>): typeof IDL attribute": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"+100\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \".5\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"5%\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"alse\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"rue\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to -Infinity": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to 1.5": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to 7": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to Infinity": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to NaN": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to 1.5": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to 7": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to Infinity": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to NaN": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to null": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): setAttribute() to undefined": "FAIL",
+      "div.ariaMultiSelectable (<div aria-multiselectable>): typeof IDL attribute": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"+100\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \".5\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"5%\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"HORIZONTAL\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"VERTICAL\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"ertical\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"horizontal\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"orizontal\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"vertical\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"xhorizontal\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to \"xvertical\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to -Infinity": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to 1.5": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to 7": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to Infinity": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to NaN": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to false": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): IDL set to true": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"HORIZONTAL\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"VERTICAL\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"ertical\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"horizontal\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"orizontal\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"vertical\\0\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"xhorizontal\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to \"xvertical\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to 1.5": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to 7": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to Infinity": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to NaN": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to false": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to null": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to true": "FAIL",
+      "div.ariaOrientation (<div aria-orientation>): setAttribute() to undefined": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"+100\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \".5\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"5%\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"MIXED\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"alse\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"ixed\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"mixed\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"rue\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"xmixed\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to -Infinity": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to 1.5": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to 7": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to Infinity": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to NaN": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"MIXED\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"ixed\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"mixed\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"xmixed\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to 1.5": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to 7": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to Infinity": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to NaN": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to null": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaPressed (<div aria-pressed>): setAttribute() to undefined": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"+100\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \".5\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"5%\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"alse\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"rue\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to -Infinity": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to 1.5": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to 7": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to Infinity": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to NaN": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to 1.5": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to 7": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to Infinity": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to NaN": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to null": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): setAttribute() to undefined": "FAIL",
+      "div.ariaReadOnly (<div aria-readonly>): typeof IDL attribute": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"+100\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \".5\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"5%\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"alse\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"rue\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to -Infinity": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to 1.5": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to 7": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to Infinity": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to NaN": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to 1.5": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to 7": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to Infinity": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to NaN": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to null": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaRequired (<div aria-required>): setAttribute() to undefined": "FAIL",
+      "div.ariaRequired (<div aria-required>): typeof IDL attribute": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"+100\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \".5\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"5%\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"FALSE\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"TRUE\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"alse\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"false\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"falſe\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"rue\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"true\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"xfalse\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to \"xtrue\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to -Infinity": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to 1.5": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to 7": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to Infinity": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to NaN": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"FALSE\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"TRUE\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"alse\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"false\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"falſe\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"rue\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"true\\0\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"xfalse\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to \"xtrue\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to 1.5": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to 7": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to Infinity": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to NaN": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to null": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaSelected (<div aria-selected>): setAttribute() to undefined": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL get with DOM attribute unset": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"+100\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \".5\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"5%\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"ASCENDING\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"DESCENDING\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"NONE\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"OTHER\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"ascending\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"aſcending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"descending\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"deſcending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"escending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"none\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"one\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"other\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"scending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"ther\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"xascending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"xdescending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"xnone\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to \"xother\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to -Infinity": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to 1.5": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to 7": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to Infinity": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to NaN": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to false": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to object \"[object Object]\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to object \"test-toString\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to object \"test-valueOf\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): IDL set to true": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \" \\0\\x01\\x02\\x03\\x04\\x05\\x06\\x07 \\b\\t\\n\\v\\f\\r\\x0e\\x0f \\x10\\x11\\x12\\x13\\x14\\x15\\x16\\x17 \\x18\\x19\\x1a\\x1b\\x1c\\x1d\\x1e\\x1f  foo \"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"+100\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \".5\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"5%\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"ASCENDING\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"DESCENDING\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"NONE\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"OTHER\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"ascending\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"aſcending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"descending\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"deſcending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"escending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"none\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"one\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"other\\0\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"scending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"ther\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"xascending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"xdescending\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"xnone\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to \"xother\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to -Infinity": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to 1.5": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to 7": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to Infinity": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to NaN": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to false": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to null": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to object \"[object Object]\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to object \"test-toString\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to object \"test-valueOf\"": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to true": "FAIL",
+      "div.ariaSort (<div aria-sort>): setAttribute() to undefined": "FAIL",
+      "div.ariaSort (<div aria-sort>): typeof IDL attribute": "FAIL"
+    }
+  },
+  "html/dom/aria-attribute-reflection.html": {
+    "total": 41
+  },
+  "html/dom/aria-attribute-reflection.tentative.html": {
+    "total": 3
+  },
+  "html/dom/aria-element-reflection-disconnected.html": {
+    "total": 2
+  },
+  "html/dom/aria-element-reflection-labelledby.html": {
+    "total": 4
+  },
+  "html/dom/aria-element-reflection.html": {
+    "total": 27
+  },
+  "html/dom/directionality/bdi-element-invalid-dir.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/documents/dom-tree-accessors/Document.body.html": {
+    "total": 26
+  },
+  "html/dom/documents/dom-tree-accessors/Document.currentScript.html": {
+    "total": 18
+  },
+  "html/dom/documents/dom-tree-accessors/Document.getElementsByClassName-null-undef.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/Element.getElementsByClassName-null-undef.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.embeds-document.plugins-01.html": {
+    "total": 5
+  },
+  "html/dom/documents/dom-tree-accessors/document.forms.html": {
+    "total": 6
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByClassName-same.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-case-xhtml.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-case.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-id-xhtml.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-id.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-interface.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-liveness.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-namespace-xhtml.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-namespace.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-newelements-xhtml.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-newelements.html": {
+    "total": 27
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef-xhtml.xhtml": {
+    "total": 2
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef.html": {
+    "total": 2
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-param-xhtml.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-param.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-same.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.head-01.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.head-02.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.images.html": {
+    "total": 11
+  },
+  "html/dom/documents/dom-tree-accessors/document.links.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.scripts.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-01.html": {
+    "total": 4
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-02.xhtml": {
+    "total": 4
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-03.html": {
+    "total": 11
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-04.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-05.html": {
+    "total": 21
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-06.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-07.html": {
+    "total": 9
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-08.html": {
+    "total": 2
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-09.html": {
+    "total": 5
+  },
+  "html/dom/documents/dom-tree-accessors/document.title-not-in-html-svg.html": {
+    "total": 2
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-01.html": {
+    "total": 7
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-02.html": {
+    "total": 12
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-03.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-04.html": {
+    "total": 12
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-05.html": {
+    "total": 12
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-06.html": {
+    "total": 9
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-07.html": {
+    "total": 14
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-08.html": {
+    "total": 2
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-adoption.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-img-name-added-cached-list.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-img-name-added.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-img-name-dynamic.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-img-name-removed.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-names.html": {
+    "total": 21
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-no-shadowing.tentative.html": {
+    "total": 8,
+    "failures": {
+      "document.__proto__ is not shadowed": "FAIL",
+      "document.constructor is not shadowed": "FAIL",
+      "document.currentScript is not shadowed": "FAIL",
+      "document.firstChild is not shadowed": "FAIL",
+      "document.forms is not shadowed": "FAIL",
+      "document.isSameNode() is not shadowed": "FAIL",
+      "document.onreadystatechange is not shadowed": "FAIL"
+    }
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-supported-property-names-order.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-tree-order.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-tree-transitions.html": {
+    "total": 2
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-01.html": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-02.html": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-03.html": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-04.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-05.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-compatmode-06.xhtml": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-cookie.html": {
+    "total": 5
+  },
+  "html/dom/documents/resource-metadata-management/document-lastModified-01.html": {
+    "total": 3
+  },
+  "html/dom/documents/resource-metadata-management/document-lastModified.html": {
+    "total": 1
+  },
+  "html/dom/documents/resource-metadata-management/document-readyState.html": {
+    "total": 7
+  },
+  "html/dom/documents/resource-metadata-management/load-event-after-readystatechange-starts-load.html": {
+    "total": 1
+  },
+  "html/dom/elements/elements-in-the-dom/click-in-progress-flag.html": {
+    "total": 1
+  },
+  "html/dom/elements/elements-in-the-dom/historical.html": {
+    "total": 8
+  },
+  "html/dom/elements/global-attributes/cdata-dir_auto.html": {
+    "total": 4
+  },
+  "html/dom/elements/global-attributes/classlist-nonstring.html": {
+    "total": 7
+  },
+  "html/dom/elements/global-attributes/custom-attrs.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/data_unicode_attr.html": {
+    "total": 2
+  },
+  "html/dom/elements/global-attributes/dataset-binding.window.js": {
+    "total": 4
+  },
+  "html/dom/elements/global-attributes/dataset-delete.html": {
+    "total": 9
+  },
+  "html/dom/elements/global-attributes/dataset-enumeration.html": {
+    "total": 2
+  },
+  "html/dom/elements/global-attributes/dataset-get.html": {
+    "total": 10
+  },
+  "html/dom/elements/global-attributes/dataset-prototype.html": {
+    "total": 2
+  },
+  "html/dom/elements/global-attributes/dataset-set.html": {
+    "total": 11
+  },
+  "html/dom/elements/global-attributes/dataset.html": {
+    "total": 8
+  },
+  "html/dom/elements/global-attributes/dir-assorted.window.js": {
+    "total": 41
+  },
+  "html/dom/elements/global-attributes/dir-auto-div-append-child.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/dir-auto-dynamic-changes.window.js": {
+    "total": 21
+  },
+  "html/dom/elements/global-attributes/dir-auto-dynamic-simple-dataChange.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-auto-dynamic-simple-replace.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-auto-dynamic-simple-textContent.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-auto-form-associated.window.js": {
+    "total": 22
+  },
+  "html/dom/elements/global-attributes/dir-bdi-script.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/dir-not-changed-text-input-typing.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/dir-shadow-01.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-02.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-03.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-04.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-05.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-06.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-07.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-08.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-09.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-10.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-11.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-12.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-13.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-14.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-15.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-16.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-17.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-18.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-19.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-20.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-21.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-22.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-23.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-24.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-25.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-26.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-27.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-28.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-29.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-30.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-31.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-32.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-33.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-34.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-35.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-36.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-37.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-38.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-39.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-40.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-41.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-shadow-42.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir-slots-directionality.html": {
+    "total": 17
+  },
+  "html/dom/elements/global-attributes/dir_auto-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-N-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-N-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-N-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-N-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-bdi-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-bdi-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-dir-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-dir-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-dir_auto-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-dir_auto-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-script-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-script-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-style-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-style-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-textarea-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-contained-textarea-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-N-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-N-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-N-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-N-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-N-EN-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-N-EN-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-N-L.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-N-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-input-script-R.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-isolate.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-pre-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-pre-N-between-Rs.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-pre-mixed.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-N-between-Rs.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-mixed.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-script-N-EN.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-script-N-between-Rs.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/dir_auto-textarea-script-mixed.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/document-dir.html": {
+    "total": 3
+  },
+  "html/dom/elements/global-attributes/id-attribute.html": {
+    "total": 17
+  },
+  "html/dom/elements/global-attributes/id-name-specialcase.html": {
+    "total": 5
+  },
+  "html/dom/elements/global-attributes/id-name.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/lang-attribute-document-element-replacement.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/lang-attribute-shadow.window.js": {
+    "total": 6
+  },
+  "html/dom/elements/global-attributes/lang-attribute.window.js": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/lang-xmllang-01.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/lang-xyzzy.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/mapped-attribute-adopt-001.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/style-01.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-001.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-002.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-003.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-004.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-005.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-006.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-007.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-008.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-009.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-010.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-lang-attribute-011.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-007.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-008.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-009.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-010.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-011.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/the-translate-attribute-012.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/translate-enumerated-ascii-case-insensitive.html": {
+    "total": 1
+  },
+  "html/dom/elements/global-attributes/translate-inherit-no-parent-element.html": {
+    "total": 5
+  },
+  "html/dom/elements/global-attributes/translate-non-html-translation-mode.html": {
+    "total": 3
+  },
+  "html/dom/elements/images/bypass-cache-revalidation.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Images can bypass no-cache": "TIMEOUT"
+    }
+  },
+  "html/dom/elements/name-content-attribute-and-property.html": {
+    "total": 141
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-001a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-001b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-001c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-002a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-002b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-002c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-003a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-003b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-003c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-004a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-004b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-004c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-005a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-005b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-005c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-006a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-006b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-006c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-007a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-007b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-007c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-008a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-008b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-008c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-009a.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-009b.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/requirements-relating-to-bidirectional-algorithm-formatting-characters/dir-isolation-009c.html": {
+    "reftest": "PASS"
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/dynamic-getter.html": {
+    "total": 7
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/getter-first-letter-marker-multicol.html": {
+    "total": 1
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/getter.html": {
+    "total": 276,
+    "failures": {
+      "::first-line styles applied (\"<div class='first-line-uppercase' style='width:0'>abc def\")": "FAIL",
+      "<audio> contents ignored (\"<audio style='display:block'>abc\")": "FAIL"
+    }
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-setter.html": {
+    "total": 126
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-whitespace-pre-line.html": {
+    "total": 2
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=normal": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=normal&contenteditable=plaintext-only": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=normal&contenteditable=true": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre&contenteditable=plaintext-only": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre&contenteditable=true": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-line": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-line&contenteditable=plaintext-only": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-line&contenteditable=true": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-wrap": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-wrap&contenteditable=plaintext-only": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/innertext-with-white-spaces.html?white-space=pre-wrap&contenteditable=true": {
+    "total": 79
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/multiple-text-nodes.window.js": {
+    "total": 1
+  },
+  "html/dom/elements/the-innertext-and-outertext-properties/outertext-setter.html": {
+    "total": 43
+  },
+  "html/dom/historical.html": {
+    "total": 13
+  },
+  "html/dom/idlharness.any.js#dedicatedworker": {
+    "total": 805
+  },
+  "html/dom/idlharness.https.html?exclude=(Document|Window|HTML.+)": {
+    "total": 1743,
+    "failures": {
+      "Location interface: stringifier": "FAIL",
+      "NotRestoredReasonDetails interface object length": "FAIL",
+      "NotRestoredReasonDetails interface object name": "FAIL",
+      "NotRestoredReasonDetails interface: attribute reason": "FAIL",
+      "NotRestoredReasonDetails interface: existence and properties of interface object": "FAIL",
+      "NotRestoredReasonDetails interface: existence and properties of interface prototype object": "FAIL",
+      "NotRestoredReasonDetails interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "NotRestoredReasonDetails interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "NotRestoredReasonDetails interface: operation toJSON()": "FAIL",
+      "NotRestoredReasons interface object length": "FAIL",
+      "NotRestoredReasons interface object name": "FAIL",
+      "NotRestoredReasons interface: attribute children": "FAIL",
+      "NotRestoredReasons interface: attribute id": "FAIL",
+      "NotRestoredReasons interface: attribute name": "FAIL",
+      "NotRestoredReasons interface: attribute reasons": "FAIL",
+      "NotRestoredReasons interface: attribute src": "FAIL",
+      "NotRestoredReasons interface: attribute url": "FAIL",
+      "NotRestoredReasons interface: existence and properties of interface object": "FAIL",
+      "NotRestoredReasons interface: existence and properties of interface prototype object": "FAIL",
+      "NotRestoredReasons interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "NotRestoredReasons interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "NotRestoredReasons interface: operation toJSON()": "FAIL"
+    }
+  },
+  "html/dom/idlharness.https.html?include=(Document|Window)": {
+    "total": 298,
+    "failures": {
+      "Document interface: calling execCommand(DOMString, optional boolean, optional DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling getElementsByName(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling parseHTML(DOMString, optional SetHTMLOptions) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling parseHTMLUnsafe((TrustedHTML or DOMString), optional ParseHTMLUnsafeOptions) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling queryCommandEnabled(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling queryCommandIndeterm(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling queryCommandState(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling queryCommandSupported(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling queryCommandValue(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: iframe.contentDocument must have own property \"location\"": "FAIL"
+    }
+  },
+  "html/dom/idlharness.https.html?include=HTML.+": {
+    "total": 3899,
+    "failures": {
+      "HTMLAllCollection interface: calling item(optional DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
+      "HTMLAllCollection interface: calling namedItem(DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
+      "HTMLAllCollection interface: document.all must inherit property \"item(optional DOMString)\" with the proper type": "FAIL",
+      "HTMLAllCollection interface: document.all must inherit property \"length\" with the proper type": "FAIL",
+      "HTMLAllCollection interface: document.all must inherit property \"namedItem(DOMString)\" with the proper type": "FAIL",
+      "HTMLAllCollection must be primary interface of document.all": "FAIL",
+      "Stringification of document.all": "FAIL"
+    }
+  },
+  "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-immutability.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-in-place.html": {
+    "total": 1,
+    "failures": {
+      "In-place template with buffer attribute buffers children and inserts them atomically at finalization": "FAIL"
+    }
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-mutation-observer.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-reflection.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-streaming-reflection.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/buffer-targeted.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/empty-for-streaming.html": {
+    "total": 2,
+    "failures": {
+      "In-place template moving and removal during streaming": "FAIL",
+      "In-place template with empty for attribute is removed and its children are inserted before it": "FAIL"
+    }
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-boolean.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-default.html": {
+    "total": 1,
+    "failures": {
+      "Template with empty sanitize attribute applies default safe sanitization and discards script tags": "FAIL"
+    }
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-nested.html": {
+    "total": 6
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-regular.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-template-element.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/sanitize-unsafe.html": {
+    "total": 1,
+    "failures": {
+      "Template with non-empty sanitize attribute values (unsafe or invalid) bypasses safe sanitization and allows script tags": "FAIL"
+    }
+  },
+  "html/dom/partial-updates/tentative/fragment/src-buffered.sub.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/src-cancel.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/src-csp-cors.sub.html": {
+    "total": 2
+  },
+  "html/dom/partial-updates/tentative/fragment/src-csp.sub.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/src-nonce.sub.html": {
+    "total": 2
+  },
+  "html/dom/partial-updates/tentative/fragment/src-parser-blocking.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/src-referrerpolicy.sub.html": {
+    "total": 2
+  },
+  "html/dom/partial-updates/tentative/fragment/src-sri.sub.html": {
+    "total": 2
+  },
+  "html/dom/partial-updates/tentative/fragment/src-streaming.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/streaming-target-marker-removed.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/stream-append-has-invalidation.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/stream-append-positional-pseudo-class-invalidation.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/stream-append-with-template-for.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/template-for-case-sensitive-dom-inserted.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/template-for-case-sensitive.html": {
+    "total": 1
+  },
+  "html/dom/partial-updates/tentative/template-for-empty.html": {
+    "total": 1
+  },
+  "html/dom/reflection-embedded.html": {
+    "total": 9429
+  },
+  "html/dom/reflection-forms-weekmonth.html": {
+    "total": 1618
+  },
+  "html/dom/reflection-forms.html": {
+    "total": 8817
+  },
+  "html/dom/reflection-grouping.html": {
+    "total": 5904
+  },
+  "html/dom/reflection-metadata.html": {
+    "total": 3344
+  },
+  "html/dom/reflection-misc.html": {
+    "total": 5345
+  },
+  "html/dom/reflection-obsolete.html": {
+    "total": 2816
+  },
+  "html/dom/reflection-overridden-methods.html": {
+    "total": 1
+  },
+  "html/dom/reflection-sections.html": {
+    "total": 6189
+  },
+  "html/dom/reflection-tabular.html": {
+    "total": 6506
+  },
+  "html/dom/reflection-text.html": {
+    "total": 11333
+  },
+  "html/dom/render-blocking/blocking-idl-attr.html": {
+    "total": 6
+  },
+  "html/dom/render-blocking/element-render-blocking-001.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-002.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-003.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-004.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-005.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-006.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-007.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-008.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-009.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-010.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-011.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-012.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-013.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-014.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-015.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-016.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-017.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-018.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-019.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-020.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-021.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-022.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-023.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-024.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-025.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-026.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-027.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-028.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-029.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-030.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-031.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-032.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-033.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-034.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-035.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-036.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-037.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-038.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-039.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-040.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-041.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/non-render-blocking-scripts.optional.html": {
+    "total": 14
+  },
+  "html/dom/render-blocking/parser-blocking-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/parser-inserted-async-inline-module-with-import.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/parser-inserted-async-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/parser-inserted-defer-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/parser-inserted-inline-module-with-import.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/parser-inserted-module-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/parser-inserted-style-element.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/parser-inserted-stylesheet-link.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/remove-attr-script-keeps-blocking.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/remove-attr-style-keeps-blocking.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/remove-attr-stylesheet-link-keeps-blocking.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/remove-attr-unblocks-rendering.optional.html": {
+    "total": 16
+  },
+  "html/dom/render-blocking/remove-element-unblocks-rendering.optional.html": {
+    "total": 8
+  },
+  "html/dom/render-blocking/remove-pending-async-render-blocking-script.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/script-inserted-inline-module-with-import.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/script-inserted-module-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/script-inserted-script.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/script-inserted-style-element.html": {
+    "total": 2
+  },
+  "html/dom/render-blocking/script-inserted-stylesheet-link.html": {
+    "total": 2
+  },
+  "html/dom/self-origin.any.js": {
+    "total": 1
+  },
+  "html/dom/self-origin.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/dom/self-origin.sub.html": {
+    "total": 11
+  },
+  "html/dom/usvstring-reflection.https.html": {
+    "total": 19,
+    "failures": {
+      "RTCDataChannel.send: unpaired surrogate codepoint should be replaced with U+FFFD.": "FAIL"
+    }
+  }
+}

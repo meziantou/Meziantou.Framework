@@ -1,0 +1,231 @@
+{
+  "clipboard-apis/async-clipboard-cached-getType-permission-revocation.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-clipboard-cached-getType-reject.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-clipboard-read-unsanitized-null.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-clipboard-stale-getType-reject.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-custom-formats-write-fail.tentative.https.html": {
+    "total": 5,
+    "failures": {
+      "navigator.clipboard.write() fails for more than 100 custom formats": "FAIL"
+    }
+  },
+  "clipboard-apis/async-custom-formats-write-read-web-prefix.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-custom-formats-write-read-without-web-prefix.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-custom-formats-write-read.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-html-script-removal.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-navigator-clipboard-basics.https.html": {
+    "total": 17,
+    "failures": {
+      "navigator.clipboard.readText() succeeds": "FAIL",
+      "navigator.clipboard.write([>1 ClipboardItems]) fails (not implemented)": "FAIL",
+      "navigator.clipboard.write(image/png DOMString) fails": "FAIL"
+    }
+  },
+  "clipboard-apis/async-navigator-clipboard-change-event.tentative.https.html": {
+    "total": 7,
+    "failures": {
+      "clipboardchange event is invoked even when only custom MIME types are set": "FAIL",
+      "clipboardchange event is invoked using onclipboardchange attribute": "FAIL"
+    }
+  },
+  "clipboard-apis/async-navigator-clipboard-read-resource-load.https.html": {
+    "total": 1,
+    "failures": {
+      "Async Clipboard.read() should not trigger resource loading": "FAIL"
+    }
+  },
+  "clipboard-apis/async-navigator-clipboard-read-sanitize.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-navigator-clipboard-write-domstring.https.html": {
+    "total": 8
+  },
+  "clipboard-apis/async-navigator-clipboard-write-multiple.tentative.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "clipboard.write() should cancel the prior pending one (cross-origin iframe)": "NOTRUN",
+      "clipboard.write() should cancel the prior pending one (same document)": "TIMEOUT",
+      "clipboard.write() should cancel the prior pending one (same-origin iframe)": "NOTRUN",
+      "copy action should cancel the prior pending clipboard.write() request": "NOTRUN"
+    }
+  },
+  "clipboard-apis/async-promise-write-blobs-read-blobs.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-svg-read-write.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify read and write of some image/svg+xml content": "FAIL"
+    }
+  },
+  "clipboard-apis/async-unsanitized-html-formats-write-read.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify write and read unsanitized content to the clipboard given text/html format as input": "FAIL"
+    }
+  },
+  "clipboard-apis/async-unsanitized-plaintext-formats-write-read.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-unsanitized-standard-html-read-fail.tentative.https.html": {
+    "total": 4
+  },
+  "clipboard-apis/async-write-blobs-read-blobs.https.html": {
+    "total": 2
+  },
+  "clipboard-apis/async-write-html-read-html.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/async-write-image-read-image.https.html": {
+    "total": 2,
+    "failures": {
+      "Verify write error on malformed data [image/png ClipboardItem]": "FAIL"
+    }
+  },
+  "clipboard-apis/clipboard-copy-selection-line-break.https.html?1-10": {
+    "total": 10
+  },
+  "clipboard-apis/clipboard-copy-selection-line-break.https.html?11-20": {
+    "total": 10
+  },
+  "clipboard-apis/clipboard-copy-selection-line-break.https.html?21-30": {
+    "total": 10
+  },
+  "clipboard-apis/clipboard-copy-selection-line-break.https.html?31-last": {
+    "total": 2
+  },
+  "clipboard-apis/clipboard-events-synthetic.html": {
+    "total": 9
+  },
+  "clipboard-apis/clipboard-item.https.html": {
+    "total": 35
+  },
+  "clipboard-apis/data-transfer-file-list-change-reference-updates.html": {
+    "total": 1
+  },
+  "clipboard-apis/dataTransfer-clearData.html": {
+    "total": 1
+  },
+  "clipboard-apis/detached-iframe/clipboard-on-detached-iframe.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/detached-iframe/paste-on-detaching-iframe.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/detached-iframe/read-on-detaching-iframe.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/detached-iframe/write-on-detaching-iframe.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/detached-iframe/write-read-on-detached-iframe.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify read and write fail on detached iframe": "FAIL"
+    }
+  },
+  "clipboard-apis/detached-iframe/writeText-readText-on-detached-iframe.https.html": {
+    "total": 1,
+    "failures": {
+      "Verify readText and writeText fails on detached iframe": "FAIL"
+    }
+  },
+  "clipboard-apis/downloadurl-list-custom-clipboard-data.tentative.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/drag-multiple-urls.html": {
+    "total": 1
+  },
+  "clipboard-apis/events/copy-event.html": {
+    "total": 1
+  },
+  "clipboard-apis/idlharness.https.window.js": {
+    "total": 62
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-disabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 3
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy-attribute-cross-origin-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy-attribute-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy-cross-origin-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "Permissions-Policy header clipboard-read=* allows the top-level document.": "FAIL"
+    }
+  },
+  "clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-on-self-origin-by-permissions-policy.tentative.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "Permissions-Policy header clipboard-read=self allows the top-level document.": "FAIL"
+    }
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-disabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 3
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-enabled-by-permissions-policy-attribute-cross-origin-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-enabled-by-permissions-policy-attribute-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-enabled-by-permissions-policy-cross-origin-tentative.https.sub.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-enabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 2
+  },
+  "clipboard-apis/permissions-policy/clipboard-write/clipboard-write-enabled-on-self-origin-by-permissions-policy.tentative.https.sub.html": {
+    "total": 3
+  },
+  "clipboard-apis/permissions/readText-denied.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions/readText-granted.https.html": {
+    "total": 1,
+    "failures": {
+      "navigator.clipboard.readText() succeeds when permission granted": "FAIL"
+    }
+  },
+  "clipboard-apis/permissions/writeText-denied.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/permissions/writeText-granted.https.html": {
+    "total": 1
+  },
+  "clipboard-apis/text-write-read/async-write-read.https.html": {
+    "total": 2
+  },
+  "clipboard-apis/text-write-read/async-write-readText.https.html": {
+    "total": 2
+  },
+  "clipboard-apis/text-write-read/async-writeText-read.https.html": {
+    "total": 2
+  },
+  "clipboard-apis/text-write-read/async-writeText-readText.https.html": {
+    "total": 2
+  }
+}

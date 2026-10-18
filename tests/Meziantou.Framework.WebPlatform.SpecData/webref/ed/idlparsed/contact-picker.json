@@ -1,0 +1,654 @@
+{
+  "spec": {
+    "title": "Contact Picker API",
+    "url": "https://w3c.github.io/contact-picker/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator",
+          "ContactAddress",
+          "ContactsManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "ContactProperty": {
+        "fragment": "enum ContactProperty { \"address\", \"email\", \"icon\", \"name\", \"tel\" };",
+        "type": "enum",
+        "name": "ContactProperty",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "address",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactproperty-address"
+          },
+          {
+            "type": "enum-value",
+            "value": "email",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactproperty-email"
+          },
+          {
+            "type": "enum-value",
+            "value": "icon",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactproperty-icon"
+          },
+          {
+            "type": "enum-value",
+            "value": "name",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactproperty-name"
+          },
+          {
+            "type": "enum-value",
+            "value": "tel",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactproperty-tel"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/contact-picker/#enumdef-contactproperty"
+      },
+      "ContactAddress": {
+        "fragment": "[Exposed=Window]\ninterface ContactAddress {\n  [Default] object toJSON();\n  readonly attribute DOMString city;\n  readonly attribute DOMString country;\n  readonly attribute DOMString dependentLocality;\n  readonly attribute DOMString organization;\n  readonly attribute DOMString phone;\n  readonly attribute DOMString postalCode;\n  readonly attribute DOMString recipient;\n  readonly attribute DOMString region;\n  readonly attribute DOMString sortingCode;\n  readonly attribute FrozenArray<DOMString> addressLine;\n};",
+        "type": "interface",
+        "name": "ContactAddress",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-tojson"
+          },
+          {
+            "type": "attribute",
+            "name": "city",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-city"
+          },
+          {
+            "type": "attribute",
+            "name": "country",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-country"
+          },
+          {
+            "type": "attribute",
+            "name": "dependentLocality",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-dependentlocality"
+          },
+          {
+            "type": "attribute",
+            "name": "organization",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-organization"
+          },
+          {
+            "type": "attribute",
+            "name": "phone",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-phone"
+          },
+          {
+            "type": "attribute",
+            "name": "postalCode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-postalcode"
+          },
+          {
+            "type": "attribute",
+            "name": "recipient",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-recipient"
+          },
+          {
+            "type": "attribute",
+            "name": "region",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-region"
+          },
+          {
+            "type": "attribute",
+            "name": "sortingCode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-sortingcode"
+          },
+          {
+            "type": "attribute",
+            "name": "addressLine",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactaddress-addressline"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/contact-picker/#contactaddress"
+      },
+      "ContactInfo": {
+        "fragment": "dictionary ContactInfo {\n    sequence<ContactAddress> address;\n    sequence<DOMString> email;\n    sequence<Blob> icon;\n    sequence<DOMString> name;\n    sequence<DOMString> tel;\n};",
+        "type": "dictionary",
+        "name": "ContactInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "address",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ContactAddress"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactinfo-address"
+          },
+          {
+            "type": "field",
+            "name": "email",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactinfo-email"
+          },
+          {
+            "type": "field",
+            "name": "icon",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactinfo-icon"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactinfo-name"
+          },
+          {
+            "type": "field",
+            "name": "tel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactinfo-tel"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/contact-picker/#dictdef-contactinfo"
+      },
+      "ContactsSelectOptions": {
+        "fragment": "dictionary ContactsSelectOptions {\n    boolean multiple = false;\n};",
+        "type": "dictionary",
+        "name": "ContactsSelectOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "multiple",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/contact-picker/#dom-contactsselectoptions-multiple"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/contact-picker/#dictdef-contactsselectoptions"
+      },
+      "ContactsManager": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ContactsManager {\n    Promise<sequence<ContactProperty>> getProperties();\n    Promise<sequence<ContactInfo>> select(sequence<ContactProperty> properties, optional ContactsSelectOptions options = {});\n};",
+        "type": "interface",
+        "name": "ContactsManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getProperties",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ContactProperty"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactsmanager-getproperties"
+          },
+          {
+            "type": "operation",
+            "name": "select",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ContactInfo"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "properties",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ContactProperty"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ContactsSelectOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/contact-picker/#dom-contactsmanager-select"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/contact-picker/#contactsmanager"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Navigator {\n  [SecureContext, SameObject] readonly attribute ContactsManager contacts;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "contacts",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ContactsManager"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/contact-picker/#dom-navigator-contacts"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "ContactAddress",
+        "ContactsManager"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "ContactsManager"
+      ],
+      "ContactAddress": [],
+      "ContactInfo": [
+        "ContactAddress",
+        "Blob"
+      ],
+      "ContactsSelectOptions": [],
+      "ContactsManager": [
+        "ContactProperty",
+        "ContactInfo",
+        "ContactsSelectOptions"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "Blob"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

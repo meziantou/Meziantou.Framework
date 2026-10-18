@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mdf": {
+      "identity": {
+        "language": "mdf"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

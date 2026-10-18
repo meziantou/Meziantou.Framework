@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-VU": {
+      "identity": {
+        "language": "fr",
+        "territory": "VU"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

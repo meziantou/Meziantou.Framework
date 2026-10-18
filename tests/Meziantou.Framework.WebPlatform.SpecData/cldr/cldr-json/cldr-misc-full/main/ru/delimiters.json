@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ru": {
+      "identity": {
+        "language": "ru"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

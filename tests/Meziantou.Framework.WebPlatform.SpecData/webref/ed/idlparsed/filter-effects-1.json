@@ -1,0 +1,3682 @@
+{
+  "spec": {
+    "title": "Filter Effects Module Level 1",
+    "url": "https://drafts.csswg.org/filter-effects-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "SVGFilterElement",
+          "SVGFEBlendElement",
+          "SVGFEColorMatrixElement",
+          "SVGFEComponentTransferElement",
+          "SVGComponentTransferFunctionElement",
+          "SVGFEFuncRElement",
+          "SVGFEFuncGElement",
+          "SVGFEFuncBElement",
+          "SVGFEFuncAElement",
+          "SVGFECompositeElement",
+          "SVGFEConvolveMatrixElement",
+          "SVGFEDiffuseLightingElement",
+          "SVGFEDistantLightElement",
+          "SVGFEPointLightElement",
+          "SVGFESpotLightElement",
+          "SVGFEDisplacementMapElement",
+          "SVGFEDropShadowElement",
+          "SVGFEFloodElement",
+          "SVGFEGaussianBlurElement",
+          "SVGFEImageElement",
+          "SVGFEMergeElement",
+          "SVGFEMergeNodeElement",
+          "SVGFEMorphologyElement",
+          "SVGFEOffsetElement",
+          "SVGFESpecularLightingElement",
+          "SVGFETileElement",
+          "SVGFETurbulenceElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "SVGFilterElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFilterElement : SVGElement {\n  readonly attribute SVGAnimatedEnumeration filterUnits;\n  readonly attribute SVGAnimatedEnumeration primitiveUnits;\n  readonly attribute SVGAnimatedLength x;\n  readonly attribute SVGAnimatedLength y;\n  readonly attribute SVGAnimatedLength width;\n  readonly attribute SVGAnimatedLength height;\n};",
+        "type": "interface",
+        "name": "SVGFilterElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "filterUnits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-filterunits"
+          },
+          {
+            "type": "attribute",
+            "name": "primitiveUnits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-primitiveunits"
+          },
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-y"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-height"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfilterelement"
+      },
+      "SVGFilterPrimitiveStandardAttributes": {
+        "fragment": "interface mixin SVGFilterPrimitiveStandardAttributes {\n  readonly attribute SVGAnimatedLength x;\n  readonly attribute SVGAnimatedLength y;\n  readonly attribute SVGAnimatedLength width;\n  readonly attribute SVGAnimatedLength height;\n  readonly attribute SVGAnimatedString result;\n};",
+        "type": "interface mixin",
+        "name": "SVGFilterPrimitiveStandardAttributes",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedLength"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"
+          },
+          {
+            "type": "attribute",
+            "name": "result",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfilterprimitivestandardattributes"
+      },
+      "SVGFEBlendElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEBlendElement : SVGElement {\n\n  // Blend Mode Types\n  const unsigned short SVG_FEBLEND_MODE_UNKNOWN = 0;\n  const unsigned short SVG_FEBLEND_MODE_NORMAL = 1;\n  const unsigned short SVG_FEBLEND_MODE_MULTIPLY = 2;\n  const unsigned short SVG_FEBLEND_MODE_SCREEN = 3;\n  const unsigned short SVG_FEBLEND_MODE_DARKEN = 4;\n  const unsigned short SVG_FEBLEND_MODE_LIGHTEN = 5;\n  const unsigned short SVG_FEBLEND_MODE_OVERLAY = 6;\n  const unsigned short SVG_FEBLEND_MODE_COLOR_DODGE = 7;\n  const unsigned short SVG_FEBLEND_MODE_COLOR_BURN = 8;\n  const unsigned short SVG_FEBLEND_MODE_HARD_LIGHT = 9;\n  const unsigned short SVG_FEBLEND_MODE_SOFT_LIGHT = 10;\n  const unsigned short SVG_FEBLEND_MODE_DIFFERENCE = 11;\n  const unsigned short SVG_FEBLEND_MODE_EXCLUSION = 12;\n  const unsigned short SVG_FEBLEND_MODE_HUE = 13;\n  const unsigned short SVG_FEBLEND_MODE_SATURATION = 14;\n  const unsigned short SVG_FEBLEND_MODE_COLOR = 15;\n  const unsigned short SVG_FEBLEND_MODE_LUMINOSITY = 16;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedString in2;\n  readonly attribute SVGAnimatedEnumeration mode;\n};",
+        "type": "interface",
+        "name": "SVGFEBlendElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_NORMAL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_normal"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_MULTIPLY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_multiply"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_SCREEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_screen"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_DARKEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_darken"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_LIGHTEN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "5"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_lighten"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_OVERLAY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "6"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_overlay"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_COLOR_DODGE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "7"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_dodge"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_COLOR_BURN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "8"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_burn"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_HARD_LIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "9"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hard_light"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_SOFT_LIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "10"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_soft_light"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_DIFFERENCE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "11"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_difference"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_EXCLUSION",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "12"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_exclusion"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_HUE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "13"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hue"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_SATURATION",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "14"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_saturation"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_COLOR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "15"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FEBLEND_MODE_LUMINOSITY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "16"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_luminosity"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "in2",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in2"
+          },
+          {
+            "type": "attribute",
+            "name": "mode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-mode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfeblendelement"
+      },
+      "SVGFEColorMatrixElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEColorMatrixElement : SVGElement {\n\n  // Color Matrix Types\n  const unsigned short SVG_FECOLORMATRIX_TYPE_UNKNOWN = 0;\n  const unsigned short SVG_FECOLORMATRIX_TYPE_MATRIX = 1;\n  const unsigned short SVG_FECOLORMATRIX_TYPE_SATURATE = 2;\n  const unsigned short SVG_FECOLORMATRIX_TYPE_HUEROTATE = 3;\n  const unsigned short SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA = 4;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedEnumeration type;\n  readonly attribute SVGAnimatedNumberList values;\n};",
+        "type": "interface",
+        "name": "SVGFEColorMatrixElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_FECOLORMATRIX_TYPE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOLORMATRIX_TYPE_MATRIX",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_matrix"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOLORMATRIX_TYPE_SATURATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_saturate"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOLORMATRIX_TYPE_HUEROTATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_huerotate"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_luminancetoalpha"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-type"
+          },
+          {
+            "type": "attribute",
+            "name": "values",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumberList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-values"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfecolormatrixelement"
+      },
+      "SVGFEComponentTransferElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEComponentTransferElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n};",
+        "type": "interface",
+        "name": "SVGFEComponentTransferElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecomponenttransferelement-in1"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfecomponenttransferelement"
+      },
+      "SVGComponentTransferFunctionElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGComponentTransferFunctionElement : SVGElement {\n\n  // Component Transfer Types\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN = 0;\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY = 1;\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_TABLE = 2;\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE = 3;\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_LINEAR = 4;\n  const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_GAMMA = 5;\n\n  readonly attribute SVGAnimatedEnumeration type;\n  readonly attribute SVGAnimatedNumberList tableValues;\n  readonly attribute SVGAnimatedNumber slope;\n  readonly attribute SVGAnimatedNumber intercept;\n  readonly attribute SVGAnimatedNumber amplitude;\n  readonly attribute SVGAnimatedNumber exponent;\n  readonly attribute SVGAnimatedNumber offset;\n};",
+        "type": "interface",
+        "name": "SVGComponentTransferFunctionElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_identity"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_TABLE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_table"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_discrete"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_LINEAR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_linear"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPONENTTRANSFER_TYPE_GAMMA",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "5"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_gamma"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-type"
+          },
+          {
+            "type": "attribute",
+            "name": "tableValues",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumberList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-tablevalues"
+          },
+          {
+            "type": "attribute",
+            "name": "slope",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-slope"
+          },
+          {
+            "type": "attribute",
+            "name": "intercept",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-intercept"
+          },
+          {
+            "type": "attribute",
+            "name": "amplitude",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-amplitude"
+          },
+          {
+            "type": "attribute",
+            "name": "exponent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-exponent"
+          },
+          {
+            "type": "attribute",
+            "name": "offset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-offset"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgcomponenttransferfunctionelement"
+      },
+      "SVGFEFuncRElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEFuncRElement : SVGComponentTransferFunctionElement {\n};",
+        "type": "interface",
+        "name": "SVGFEFuncRElement",
+        "inheritance": "SVGComponentTransferFunctionElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfefuncrelement"
+      },
+      "SVGFEFuncGElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEFuncGElement : SVGComponentTransferFunctionElement {\n};",
+        "type": "interface",
+        "name": "SVGFEFuncGElement",
+        "inheritance": "SVGComponentTransferFunctionElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfefuncgelement"
+      },
+      "SVGFEFuncBElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEFuncBElement : SVGComponentTransferFunctionElement {\n};",
+        "type": "interface",
+        "name": "SVGFEFuncBElement",
+        "inheritance": "SVGComponentTransferFunctionElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfefuncbelement"
+      },
+      "SVGFEFuncAElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEFuncAElement : SVGComponentTransferFunctionElement {\n};",
+        "type": "interface",
+        "name": "SVGFEFuncAElement",
+        "inheritance": "SVGComponentTransferFunctionElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfefuncaelement"
+      },
+      "SVGFECompositeElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFECompositeElement : SVGElement {\n\n  // Composite Operators\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_UNKNOWN = 0;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_OVER = 1;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_IN = 2;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_OUT = 3;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_ATOP = 4;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_XOR = 5;\n  const unsigned short SVG_FECOMPOSITE_OPERATOR_ARITHMETIC = 6;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedString in2;\n  readonly attribute SVGAnimatedEnumeration operator;\n  readonly attribute SVGAnimatedNumber k1;\n  readonly attribute SVGAnimatedNumber k2;\n  readonly attribute SVGAnimatedNumber k3;\n  readonly attribute SVGAnimatedNumber k4;\n};",
+        "type": "interface",
+        "name": "SVGFECompositeElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_OVER",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_over"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_IN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_in"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_OUT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_out"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_ATOP",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_atop"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_XOR",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "5"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_xor"
+          },
+          {
+            "type": "const",
+            "name": "SVG_FECOMPOSITE_OPERATOR_ARITHMETIC",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "6"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_arithmetic"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "in2",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in2"
+          },
+          {
+            "type": "attribute",
+            "name": "operator",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-operator"
+          },
+          {
+            "type": "attribute",
+            "name": "k1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k1"
+          },
+          {
+            "type": "attribute",
+            "name": "k2",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k2"
+          },
+          {
+            "type": "attribute",
+            "name": "k3",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k3"
+          },
+          {
+            "type": "attribute",
+            "name": "k4",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k4"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfecompositeelement"
+      },
+      "SVGFEConvolveMatrixElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEConvolveMatrixElement : SVGElement {\n\n  // Edge Mode Values\n  const unsigned short SVG_EDGEMODE_UNKNOWN = 0;\n  const unsigned short SVG_EDGEMODE_DUPLICATE = 1;\n  const unsigned short SVG_EDGEMODE_WRAP = 2;\n  const unsigned short SVG_EDGEMODE_NONE = 3;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedInteger orderX;\n  readonly attribute SVGAnimatedInteger orderY;\n  readonly attribute SVGAnimatedNumberList kernelMatrix;\n  readonly attribute SVGAnimatedNumber divisor;\n  readonly attribute SVGAnimatedNumber bias;\n  readonly attribute SVGAnimatedInteger targetX;\n  readonly attribute SVGAnimatedInteger targetY;\n  readonly attribute SVGAnimatedEnumeration edgeMode;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthX;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthY;\n  readonly attribute SVGAnimatedBoolean preserveAlpha;\n};",
+        "type": "interface",
+        "name": "SVGFEConvolveMatrixElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_DUPLICATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_duplicate"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_WRAP",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_wrap"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_NONE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_none"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "orderX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedInteger"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-orderx"
+          },
+          {
+            "type": "attribute",
+            "name": "orderY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedInteger"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-ordery"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelMatrix",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumberList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelmatrix"
+          },
+          {
+            "type": "attribute",
+            "name": "divisor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-divisor"
+          },
+          {
+            "type": "attribute",
+            "name": "bias",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-bias"
+          },
+          {
+            "type": "attribute",
+            "name": "targetX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedInteger"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targetx"
+          },
+          {
+            "type": "attribute",
+            "name": "targetY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedInteger"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targety"
+          },
+          {
+            "type": "attribute",
+            "name": "edgeMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-edgemode"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthx"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthy"
+          },
+          {
+            "type": "attribute",
+            "name": "preserveAlpha",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedBoolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-preservealpha"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfeconvolvematrixelement"
+      },
+      "SVGFEDiffuseLightingElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEDiffuseLightingElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedNumber surfaceScale;\n  readonly attribute SVGAnimatedNumber diffuseConstant;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthX;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthY;\n};",
+        "type": "interface",
+        "name": "SVGFEDiffuseLightingElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "surfaceScale",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-surfacescale"
+          },
+          {
+            "type": "attribute",
+            "name": "diffuseConstant",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-diffuseconstant"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthx"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfediffuselightingelement"
+      },
+      "SVGFEDistantLightElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEDistantLightElement : SVGElement {\n  readonly attribute SVGAnimatedNumber azimuth;\n  readonly attribute SVGAnimatedNumber elevation;\n};",
+        "type": "interface",
+        "name": "SVGFEDistantLightElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "azimuth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-azimuth"
+          },
+          {
+            "type": "attribute",
+            "name": "elevation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-elevation"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfedistantlightelement"
+      },
+      "SVGFEPointLightElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEPointLightElement : SVGElement {\n  readonly attribute SVGAnimatedNumber x;\n  readonly attribute SVGAnimatedNumber y;\n  readonly attribute SVGAnimatedNumber z;\n};",
+        "type": "interface",
+        "name": "SVGFEPointLightElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-z"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfepointlightelement"
+      },
+      "SVGFESpotLightElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFESpotLightElement : SVGElement {\n  readonly attribute SVGAnimatedNumber x;\n  readonly attribute SVGAnimatedNumber y;\n  readonly attribute SVGAnimatedNumber z;\n  readonly attribute SVGAnimatedNumber pointsAtX;\n  readonly attribute SVGAnimatedNumber pointsAtY;\n  readonly attribute SVGAnimatedNumber pointsAtZ;\n  readonly attribute SVGAnimatedNumber specularExponent;\n  readonly attribute SVGAnimatedNumber limitingConeAngle;\n};",
+        "type": "interface",
+        "name": "SVGFESpotLightElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "x",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-x"
+          },
+          {
+            "type": "attribute",
+            "name": "y",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-y"
+          },
+          {
+            "type": "attribute",
+            "name": "z",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-z"
+          },
+          {
+            "type": "attribute",
+            "name": "pointsAtX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatx"
+          },
+          {
+            "type": "attribute",
+            "name": "pointsAtY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsaty"
+          },
+          {
+            "type": "attribute",
+            "name": "pointsAtZ",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatz"
+          },
+          {
+            "type": "attribute",
+            "name": "specularExponent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-specularexponent"
+          },
+          {
+            "type": "attribute",
+            "name": "limitingConeAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-limitingconeangle"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfespotlightelement"
+      },
+      "SVGFEDisplacementMapElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEDisplacementMapElement : SVGElement {\n\n  // Channel Selectors\n  const unsigned short SVG_CHANNEL_UNKNOWN = 0;\n  const unsigned short SVG_CHANNEL_R = 1;\n  const unsigned short SVG_CHANNEL_G = 2;\n  const unsigned short SVG_CHANNEL_B = 3;\n  const unsigned short SVG_CHANNEL_A = 4;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedString in2;\n  readonly attribute SVGAnimatedNumber scale;\n  readonly attribute SVGAnimatedEnumeration xChannelSelector;\n  readonly attribute SVGAnimatedEnumeration yChannelSelector;\n};",
+        "type": "interface",
+        "name": "SVGFEDisplacementMapElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_CHANNEL_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_CHANNEL_R",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_r"
+          },
+          {
+            "type": "const",
+            "name": "SVG_CHANNEL_G",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_g"
+          },
+          {
+            "type": "const",
+            "name": "SVG_CHANNEL_B",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_b"
+          },
+          {
+            "type": "const",
+            "name": "SVG_CHANNEL_A",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_a"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "in2",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in2"
+          },
+          {
+            "type": "attribute",
+            "name": "scale",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-scale"
+          },
+          {
+            "type": "attribute",
+            "name": "xChannelSelector",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-xchannelselector"
+          },
+          {
+            "type": "attribute",
+            "name": "yChannelSelector",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-ychannelselector"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfedisplacementmapelement"
+      },
+      "SVGFEDropShadowElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEDropShadowElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedNumber dx;\n  readonly attribute SVGAnimatedNumber dy;\n  readonly attribute SVGAnimatedNumber stdDeviationX;\n  readonly attribute SVGAnimatedNumber stdDeviationY;\n\n  undefined setStdDeviation(float stdDeviationX, float stdDeviationY);\n};",
+        "type": "interface",
+        "name": "SVGFEDropShadowElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "dx",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dx"
+          },
+          {
+            "type": "attribute",
+            "name": "dy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dy"
+          },
+          {
+            "type": "attribute",
+            "name": "stdDeviationX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationx"
+          },
+          {
+            "type": "attribute",
+            "name": "stdDeviationY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationy"
+          },
+          {
+            "type": "operation",
+            "name": "setStdDeviation",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stdDeviationX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "stdDeviationY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-setstddeviation"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfedropshadowelement"
+      },
+      "SVGFEFloodElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEFloodElement : SVGElement {\n};",
+        "type": "interface",
+        "name": "SVGFEFloodElement",
+        "inheritance": "SVGElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfefloodelement"
+      },
+      "SVGFEGaussianBlurElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEGaussianBlurElement : SVGElement {\n\n  // Edge Mode Values\n  const unsigned short SVG_EDGEMODE_UNKNOWN = 0;\n  const unsigned short SVG_EDGEMODE_DUPLICATE = 1;\n  const unsigned short SVG_EDGEMODE_WRAP = 2;\n  const unsigned short SVG_EDGEMODE_NONE = 3;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedNumber stdDeviationX;\n  readonly attribute SVGAnimatedNumber stdDeviationY;\n  readonly attribute SVGAnimatedEnumeration edgeMode;\n\n  undefined setStdDeviation(float stdDeviationX, float stdDeviationY);\n};",
+        "type": "interface",
+        "name": "SVGFEGaussianBlurElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_DUPLICATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_duplicate"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_WRAP",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_wrap"
+          },
+          {
+            "type": "const",
+            "name": "SVG_EDGEMODE_NONE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_none"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "stdDeviationX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationx"
+          },
+          {
+            "type": "attribute",
+            "name": "stdDeviationY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationy"
+          },
+          {
+            "type": "attribute",
+            "name": "edgeMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-edgemode"
+          },
+          {
+            "type": "operation",
+            "name": "setStdDeviation",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stdDeviationX",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "stdDeviationY",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-setstddeviation"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfegaussianblurelement"
+      },
+      "SVGFEImageElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEImageElement : SVGElement {\n  readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio;\n  readonly attribute SVGAnimatedString crossOrigin;\n};",
+        "type": "interface",
+        "name": "SVGFEImageElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "preserveAspectRatio",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedPreserveAspectRatio"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-preserveaspectratio"
+          },
+          {
+            "type": "attribute",
+            "name": "crossOrigin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-crossorigin"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfeimageelement"
+      },
+      "SVGFEMergeElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEMergeElement : SVGElement {\n};",
+        "type": "interface",
+        "name": "SVGFEMergeElement",
+        "inheritance": "SVGElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfemergeelement"
+      },
+      "SVGFEMergeNodeElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEMergeNodeElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n};",
+        "type": "interface",
+        "name": "SVGFEMergeNodeElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemergenodeelement-in1"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfemergenodeelement"
+      },
+      "SVGFEMorphologyElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEMorphologyElement : SVGElement {\n\n  // Morphology Operators\n  const unsigned short SVG_MORPHOLOGY_OPERATOR_UNKNOWN = 0;\n  const unsigned short SVG_MORPHOLOGY_OPERATOR_ERODE = 1;\n  const unsigned short SVG_MORPHOLOGY_OPERATOR_DILATE = 2;\n\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedEnumeration operator;\n  readonly attribute SVGAnimatedNumber radiusX;\n  readonly attribute SVGAnimatedNumber radiusY;\n};",
+        "type": "interface",
+        "name": "SVGFEMorphologyElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_MORPHOLOGY_OPERATOR_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_MORPHOLOGY_OPERATOR_ERODE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_erode"
+          },
+          {
+            "type": "const",
+            "name": "SVG_MORPHOLOGY_OPERATOR_DILATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_dilate"
+          },
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "operator",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-operator"
+          },
+          {
+            "type": "attribute",
+            "name": "radiusX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusx"
+          },
+          {
+            "type": "attribute",
+            "name": "radiusY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfemorphologyelement"
+      },
+      "SVGFEOffsetElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFEOffsetElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedNumber dx;\n  readonly attribute SVGAnimatedNumber dy;\n};",
+        "type": "interface",
+        "name": "SVGFEOffsetElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "dx",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dx"
+          },
+          {
+            "type": "attribute",
+            "name": "dy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfeoffsetelement"
+      },
+      "SVGFESpecularLightingElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFESpecularLightingElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n  readonly attribute SVGAnimatedNumber surfaceScale;\n  readonly attribute SVGAnimatedNumber specularConstant;\n  readonly attribute SVGAnimatedNumber specularExponent;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthX;\n  readonly attribute SVGAnimatedNumber kernelUnitLengthY;\n};",
+        "type": "interface",
+        "name": "SVGFESpecularLightingElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-in1"
+          },
+          {
+            "type": "attribute",
+            "name": "surfaceScale",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-surfacescale"
+          },
+          {
+            "type": "attribute",
+            "name": "specularConstant",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularconstant"
+          },
+          {
+            "type": "attribute",
+            "name": "specularExponent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularexponent"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthx"
+          },
+          {
+            "type": "attribute",
+            "name": "kernelUnitLengthY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfespecularlightingelement"
+      },
+      "SVGFETileElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFETileElement : SVGElement {\n  readonly attribute SVGAnimatedString in1;\n};",
+        "type": "interface",
+        "name": "SVGFETileElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "in1",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfetileelement-in1"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfetileelement"
+      },
+      "SVGFETurbulenceElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGFETurbulenceElement : SVGElement {\n\n  // Turbulence Types\n  const unsigned short SVG_TURBULENCE_TYPE_UNKNOWN = 0;\n  const unsigned short SVG_TURBULENCE_TYPE_FRACTALNOISE = 1;\n  const unsigned short SVG_TURBULENCE_TYPE_TURBULENCE = 2;\n\n  // Stitch Options\n  const unsigned short SVG_STITCHTYPE_UNKNOWN = 0;\n  const unsigned short SVG_STITCHTYPE_STITCH = 1;\n  const unsigned short SVG_STITCHTYPE_NOSTITCH = 2;\n\n  readonly attribute SVGAnimatedNumber baseFrequencyX;\n  readonly attribute SVGAnimatedNumber baseFrequencyY;\n  readonly attribute SVGAnimatedInteger numOctaves;\n  readonly attribute SVGAnimatedNumber seed;\n  readonly attribute SVGAnimatedEnumeration stitchTiles;\n  readonly attribute SVGAnimatedEnumeration type;\n};",
+        "type": "interface",
+        "name": "SVGFETurbulenceElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "const",
+            "name": "SVG_TURBULENCE_TYPE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_TURBULENCE_TYPE_FRACTALNOISE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_fractalnoise"
+          },
+          {
+            "type": "const",
+            "name": "SVG_TURBULENCE_TYPE_TURBULENCE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_turbulence"
+          },
+          {
+            "type": "const",
+            "name": "SVG_STITCHTYPE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_unknown"
+          },
+          {
+            "type": "const",
+            "name": "SVG_STITCHTYPE_STITCH",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_stitch"
+          },
+          {
+            "type": "const",
+            "name": "SVG_STITCHTYPE_NOSTITCH",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_nostitch"
+          },
+          {
+            "type": "attribute",
+            "name": "baseFrequencyX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyx"
+          },
+          {
+            "type": "attribute",
+            "name": "baseFrequencyY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyy"
+          },
+          {
+            "type": "attribute",
+            "name": "numOctaves",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedInteger"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-numoctaves"
+          },
+          {
+            "type": "attribute",
+            "name": "seed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-seed"
+          },
+          {
+            "type": "attribute",
+            "name": "stitchTiles",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-stitchtiles"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-type"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/filter-effects-1/#svgfeturbulenceelement"
+      }
+    },
+    "idlExtendedNames": {
+      "SVGFEBlendElement": [
+        {
+          "fragment": "SVGFEBlendElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEBlendElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEColorMatrixElement": [
+        {
+          "fragment": "SVGFEColorMatrixElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEColorMatrixElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEComponentTransferElement": [
+        {
+          "fragment": "SVGFEComponentTransferElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEComponentTransferElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFECompositeElement": [
+        {
+          "fragment": "SVGFECompositeElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFECompositeElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEConvolveMatrixElement": [
+        {
+          "fragment": "SVGFEConvolveMatrixElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEConvolveMatrixElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEDiffuseLightingElement": [
+        {
+          "fragment": "SVGFEDiffuseLightingElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEDiffuseLightingElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEDisplacementMapElement": [
+        {
+          "fragment": "SVGFEDisplacementMapElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEDisplacementMapElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEDropShadowElement": [
+        {
+          "fragment": "SVGFEDropShadowElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEDropShadowElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEFloodElement": [
+        {
+          "fragment": "SVGFEFloodElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEFloodElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEGaussianBlurElement": [
+        {
+          "fragment": "SVGFEGaussianBlurElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEGaussianBlurElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEImageElement": [
+        {
+          "fragment": "SVGFEImageElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEImageElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        },
+        {
+          "fragment": "SVGFEImageElement includes SVGURIReference;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEImageElement",
+          "includes": "SVGURIReference"
+        }
+      ],
+      "SVGFEMergeElement": [
+        {
+          "fragment": "SVGFEMergeElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEMergeElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEMorphologyElement": [
+        {
+          "fragment": "SVGFEMorphologyElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEMorphologyElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFEOffsetElement": [
+        {
+          "fragment": "SVGFEOffsetElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFEOffsetElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFESpecularLightingElement": [
+        {
+          "fragment": "SVGFESpecularLightingElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFESpecularLightingElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFETileElement": [
+        {
+          "fragment": "SVGFETileElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFETileElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ],
+      "SVGFETurbulenceElement": [
+        {
+          "fragment": "SVGFETurbulenceElement includes SVGFilterPrimitiveStandardAttributes;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGFETurbulenceElement",
+          "includes": "SVGFilterPrimitiveStandardAttributes"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SVGFilterElement",
+        "SVGFEBlendElement",
+        "SVGFEColorMatrixElement",
+        "SVGFEComponentTransferElement",
+        "SVGComponentTransferFunctionElement",
+        "SVGFEFuncRElement",
+        "SVGFEFuncGElement",
+        "SVGFEFuncBElement",
+        "SVGFEFuncAElement",
+        "SVGFECompositeElement",
+        "SVGFEConvolveMatrixElement",
+        "SVGFEDiffuseLightingElement",
+        "SVGFEDistantLightElement",
+        "SVGFEPointLightElement",
+        "SVGFESpotLightElement",
+        "SVGFEDisplacementMapElement",
+        "SVGFEDropShadowElement",
+        "SVGFEFloodElement",
+        "SVGFEGaussianBlurElement",
+        "SVGFEImageElement",
+        "SVGFEMergeElement",
+        "SVGFEMergeNodeElement",
+        "SVGFEMorphologyElement",
+        "SVGFEOffsetElement",
+        "SVGFESpecularLightingElement",
+        "SVGFETileElement",
+        "SVGFETurbulenceElement"
+      ]
+    },
+    "dependencies": {
+      "SVGFilterElement": [
+        "SVGElement",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedLength"
+      ],
+      "SVGFilterPrimitiveStandardAttributes": [
+        "SVGAnimatedLength",
+        "SVGAnimatedString"
+      ],
+      "SVGFEBlendElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedEnumeration",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEColorMatrixElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedNumberList",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEComponentTransferElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGComponentTransferFunctionElement": [
+        "SVGElement",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedNumberList",
+        "SVGAnimatedNumber"
+      ],
+      "SVGFEFuncRElement": [
+        "SVGComponentTransferFunctionElement"
+      ],
+      "SVGFEFuncGElement": [
+        "SVGComponentTransferFunctionElement"
+      ],
+      "SVGFEFuncBElement": [
+        "SVGComponentTransferFunctionElement"
+      ],
+      "SVGFEFuncAElement": [
+        "SVGComponentTransferFunctionElement"
+      ],
+      "SVGFECompositeElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEConvolveMatrixElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedInteger",
+        "SVGAnimatedNumberList",
+        "SVGAnimatedNumber",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedBoolean",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEDiffuseLightingElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEDistantLightElement": [
+        "SVGElement",
+        "SVGAnimatedNumber"
+      ],
+      "SVGFEPointLightElement": [
+        "SVGElement",
+        "SVGAnimatedNumber"
+      ],
+      "SVGFESpotLightElement": [
+        "SVGElement",
+        "SVGAnimatedNumber"
+      ],
+      "SVGFEDisplacementMapElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGAnimatedEnumeration",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEDropShadowElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEFloodElement": [
+        "SVGElement",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEGaussianBlurElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGAnimatedEnumeration",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEImageElement": [
+        "SVGElement",
+        "SVGAnimatedPreserveAspectRatio",
+        "SVGAnimatedString",
+        "SVGFilterPrimitiveStandardAttributes",
+        "SVGURIReference"
+      ],
+      "SVGFEMergeElement": [
+        "SVGElement",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEMergeNodeElement": [
+        "SVGElement",
+        "SVGAnimatedString"
+      ],
+      "SVGFEMorphologyElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedEnumeration",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFEOffsetElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFESpecularLightingElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGAnimatedNumber",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFETileElement": [
+        "SVGElement",
+        "SVGAnimatedString",
+        "SVGFilterPrimitiveStandardAttributes"
+      ],
+      "SVGFETurbulenceElement": [
+        "SVGElement",
+        "SVGAnimatedNumber",
+        "SVGAnimatedInteger",
+        "SVGAnimatedEnumeration",
+        "SVGFilterPrimitiveStandardAttributes"
+      ]
+    },
+    "externalDependencies": [
+      "SVGElement",
+      "SVGAnimatedEnumeration",
+      "SVGAnimatedLength",
+      "SVGAnimatedString",
+      "SVGAnimatedNumberList",
+      "SVGAnimatedNumber",
+      "SVGAnimatedInteger",
+      "SVGAnimatedBoolean",
+      "SVGAnimatedPreserveAspectRatio"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

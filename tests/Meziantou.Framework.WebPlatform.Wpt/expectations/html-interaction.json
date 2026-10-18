@@ -1,0 +1,200 @@
+{
+  "html/interaction/focus/anchor-element-focus-ring.html": {
+    "reftest": "PASS"
+  },
+  "html/interaction/focus/chrome-object-tab-focus-bug.html": {
+    "total": 1,
+    "failures": {
+      "focus advances with tab key thorough object element": "FAIL"
+    }
+  },
+  "html/interaction/focus/composed.window.js": {
+    "total": 1
+  },
+  "html/interaction/focus/document-level-focus-apis/document-has-system-focus.html": {
+    "total": 1
+  },
+  "html/interaction/focus/document-level-focus-apis/document-level-apis.html": {
+    "total": 4
+  },
+  "html/interaction/focus/focus-01.html": {
+    "total": 3
+  },
+  "html/interaction/focus/focus-02.html": {
+    "total": 3
+  },
+  "html/interaction/focus/focus-file-input.html": {
+    "total": 1
+  },
+  "html/interaction/focus/focus-input-type-switch.html": {
+    "total": 1
+  },
+  "html/interaction/focus/focus-keyboard-js.html": {
+    "total": 1
+  },
+  "html/interaction/focus/focus-management/focus-event-targets-simple.html": {
+    "total": 1
+  },
+  "html/interaction/focus/focus-management/focus-event-view.html": {
+    "total": 5
+  },
+  "html/interaction/focus/focus-management/focus-events.html": {
+    "total": 2
+  },
+  "html/interaction/focus/focus-selection.html": {
+    "total": 2
+  },
+  "html/interaction/focus/processing-model/focus-fixup-rule-one-no-dialogs.html": {
+    "total": 8
+  },
+  "html/interaction/focus/processing-model/focusVisible.html": {
+    "total": 5
+  },
+  "html/interaction/focus/processing-model/legend-focusable.html": {
+    "total": 1
+  },
+  "html/interaction/focus/processing-model/legend.html": {
+    "total": 1
+  },
+  "html/interaction/focus/processing-model/preventScroll-nested-scroll-elements.html": {
+    "total": 1
+  },
+  "html/interaction/focus/processing-model/preventScroll-textarea.html": {
+    "total": 1
+  },
+  "html/interaction/focus/processing-model/preventScroll.html": {
+    "total": 7
+  },
+  "html/interaction/focus/processing-model/textarea-scroll-selection.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-after-disabled.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-default-value.html": {
+    "total": 2
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-negative.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-order.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-positive.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/focus-tabindex-zero.html": {
+    "total": 1
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter-frame.html": {
+    "total": 8
+  },
+  "html/interaction/focus/sequential-focus-navigation-and-the-tabindex-attribute/tabindex-getter.html": {
+    "total": 120
+  },
+  "html/interaction/focus/sequential-focus-navigation-starting-point.tentative.html": {
+    "total": 20
+  },
+  "html/interaction/focus/setSequentialFocusStartingPoint.tentative.html": {
+    "total": 1,
+    "failures": {
+      "document.setSequentialFocusStartingPoint should set the sequential focus starting point on any element.": "FAIL"
+    }
+  },
+  "html/interaction/focus/tab-table-caption.html?caption-side=bottom": {
+    "total": 6
+  },
+  "html/interaction/focus/tab-table-caption.html?caption-side=top": {
+    "total": 6
+  },
+  "html/interaction/focus/tabindex-focus-flag.html": {
+    "total": 35
+  },
+  "html/interaction/focus/the-autofocus-attribute/autofocus-area.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/autofocus-dialog.html": {
+    "total": 2
+  },
+  "html/interaction/focus/the-autofocus-attribute/autofocus-in-not-fully-active-document.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/autofocus-not-processed-when-top-document-has-focused-element.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/autofocus-on-stable-document.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/document-with-fragment-empty.html": {
+    "total": 2
+  },
+  "html/interaction/focus/the-autofocus-attribute/document-with-fragment-nonexistent.html": {
+    "total": 2
+  },
+  "html/interaction/focus/the-autofocus-attribute/document-with-fragment-removed-target.html": {
+    "total": 1,
+    "failures": {
+      "Autofocus should be skipped when the target element has been removed from the document.": "FAIL"
+    }
+  },
+  "html/interaction/focus/the-autofocus-attribute/document-with-fragment-top.html": {
+    "total": 2
+  },
+  "html/interaction/focus/the-autofocus-attribute/document-with-fragment-valid.html": {
+    "total": 3
+  },
+  "html/interaction/focus/the-autofocus-attribute/first-reconnected.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/first-when-later-but-before.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/first-when-later.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/first.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/focusable-area-in-top-document.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/no-autofocus-on-changing-input-type.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/no-cross-origin-autofocus.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/no-sandboxed-automatic-features.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/not-on-first-task.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/queue-non-focusable.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/same-origin-autofocus.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/skip-another-top-level-browsing-context.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/skip-non-focusable.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/skip-not-fully-active.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/spin-by-blocking-style-sheet.html": {
+    "total": 1
+  },
+  "html/interaction/focus/the-autofocus-attribute/supported-elements.html": {
+    "total": 6
+  },
+  "html/interaction/focus/the-autofocus-attribute/update-the-rendering.html": {
+    "total": 1,
+    "failures": {
+      "\"Flush autofocus candidates\" should be happen before a scroll event and animation frame callbacks": "FAIL"
+    }
+  }
+}

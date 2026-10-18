@@ -1,0 +1,17 @@
+{
+  "spec": {
+    "title": "WebXR DOM Overlays Module",
+    "url": "https://immersive-web.github.io/dom-overlays/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":xr-overlay",
+      "prose": "The :xr-overlay pseudo-class MUST match the overlay element for the duration of an immersive session using a DOM Overlay.",
+      "href": "https://immersive-web.github.io/dom-overlays/#selectordef-xr-overlay",
+      "value": ":xr-overlay"
+    }
+  ],
+  "values": []
+}

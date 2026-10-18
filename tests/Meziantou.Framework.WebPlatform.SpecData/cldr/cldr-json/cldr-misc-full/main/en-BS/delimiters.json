@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-BS": {
+      "identity": {
+        "language": "en",
+        "territory": "BS"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

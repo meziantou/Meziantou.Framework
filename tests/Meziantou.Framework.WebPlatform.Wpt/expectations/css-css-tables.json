@@ -1,0 +1,954 @@
+{
+  "css/css-tables/absolute-tables-001.html": {
+    "total": 8
+  },
+  "css/css-tables/absolute-tables-002.html": {
+    "total": 4
+  },
+  "css/css-tables/absolute-tables-003.html": {
+    "total": 4
+  },
+  "css/css-tables/absolute-tables-004.html": {
+    "total": 4
+  },
+  "css/css-tables/absolute-tables-005.html": {
+    "total": 4
+  },
+  "css/css-tables/absolute-tables-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-008.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-009.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-010.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-011.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/absolute-tables-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/abspos-container-change-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/animations/border-spacing-interpolation.html": {
+    "total": 120
+  },
+  "css/css-tables/anonymous-table-cell-margin-collapsing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/anonymous-table-ws-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/auto-layout-calc-width-001.html": {
+    "total": 1
+  },
+  "css/css-tables/background-clip-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/baseline-empty-cell-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/baseline-vertical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-double-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-dynamic-col-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-dynamic-oof.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-dynamic-section.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-empty-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-collapse-rowspan-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-conflict-resolution.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/border-spacing-included-in-sizes-001.html": {
+    "total": 4
+  },
+  "css/css-tables/border-writing-mode-dynamic-001.html": {
+    "total": 1
+  },
+  "css/css-tables/bounding-box-computation-1.html": {
+    "total": 12
+  },
+  "css/css-tables/bounding-box-computation-2.html": {
+    "total": 12
+  },
+  "css/css-tables/bounding-box-computation-3.html": {
+    "total": 10,
+    "failures": {
+      "First (empty) table-row-group is 0px wide": "FAIL"
+    }
+  },
+  "css/css-tables/box-shadow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/calc-percent-plus-0px-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/calc-percent-plus-0px-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/caption-cyclic-percentage.html": {
+    "total": 3
+  },
+  "css/css-tables/caption-orthogonal-block-start-margin.html": {
+    "total": 2
+  },
+  "css/css-tables/caption-orthogonal-margin-in-table-block-axis.html": {
+    "total": 2
+  },
+  "css/css-tables/caption-relative-positioning.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/caption-side-1.html": {
+    "total": 2
+  },
+  "css/css-tables/caption-writing-mode-001.html": {
+    "total": 2
+  },
+  "css/css-tables/caption-writing-mode-002.html": {
+    "total": 1
+  },
+  "css/css-tables/chrome-rowspan-bug.html": {
+    "total": 1
+  },
+  "css/css-tables/col-definite-max-size-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/col-definite-min-size-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/col-definite-size-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/col_removal.html": {
+    "total": 1
+  },
+  "css/css-tables/collapsed-border-color-change-with-compositing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-fragmentation-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-fragmentation-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-large-rowgroup-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-large-rowgroup-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-paint-phase-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-paint-phase-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-partial-invalidation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-partial-invalidation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-partial-invalidation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-positioned-tr-td.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-remove-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-remove-row-group.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-sideways-rl-rtl-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-vertical-lr-rtl-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-vertical-rtl-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/collapsed-border-writing-mode-color.html": {
+    "total": 1
+  },
+  "css/css-tables/collapsed-scroll-overflow.html": {
+    "total": 1
+  },
+  "css/css-tables/colspan-001.html": {
+    "total": 5
+  },
+  "css/css-tables/colspan-002.html": {
+    "total": 5
+  },
+  "css/css-tables/colspan-003.html": {
+    "total": 5
+  },
+  "css/css-tables/colspan-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/column-track-merging.html": {
+    "total": 13
+  },
+  "css/css-tables/display-contents-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/display-contents-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/display-contents-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/dynamic-rowspan-change.html": {
+    "total": 2
+  },
+  "css/css-tables/dynamic-table-cell-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/empty-table-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fixed-layout-1.html": {
+    "total": 5
+  },
+  "css/css-tables/fixed-layout-2.html": {
+    "total": 25
+  },
+  "css/css-tables/fixed-layout-calc-width-001.html": {
+    "total": 1
+  },
+  "css/css-tables/fixed-layout-excess-width-distribution-001.html": {
+    "total": 1
+  },
+  "css/css-tables/fixup-dynamic-anonymous-inline-table-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fixup-dynamic-anonymous-inline-table-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fixup-dynamic-anonymous-inline-table-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fixup-dynamic-anonymous-table-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fractional-percent-width.html": {
+    "total": 3
+  },
+  "css/css-tables/height-distribution/computing-row-measure-0.html": {
+    "total": 4
+  },
+  "css/css-tables/height-distribution/computing-row-measure-1.html": {
+    "total": 4
+  },
+  "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-003.html": {
+    "total": 1
+  },
+  "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html": {
+    "total": 1,
+    "failures": {
+      "#theTable 1": "FAIL"
+    }
+  },
+  "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html": {
+    "total": 10,
+    "failures": {
+      "Unresolvable percentage widths are resolved as auto in first pass (replaced elements)": "FAIL"
+    }
+  },
+  "css/css-tables/height-distribution/percentage-sizing-of-table-cell-replaced-children-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/td-different-subpixel-padding-in-same-row-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/height-distribution/td-different-subpixel-padding-in-same-row.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/html-display-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/html-to-css-mapping-1.html": {
+    "total": 4
+  },
+  "css/css-tables/html-to-css-mapping-2.html": {
+    "total": 25,
+    "failures": {
+      "1: HTML -> CSS Mapping for borders is applied correctly on table markup (table left color)": "FAIL",
+      "2: HTML -> CSS Mapping for borders is applied correctly on table markup (table left width)": "FAIL",
+      "3a: HTML -> CSS Mapping for borders is applied correctly on table markup (table left color)": "FAIL",
+      "3b: HTML -> CSS Mapping for borders is applied correctly on table markup (td top color)": "FAIL",
+      "3b: HTML -> CSS Mapping for borders is applied correctly on table markup (td top style)": "FAIL",
+      "3b: HTML -> CSS Mapping for borders is applied correctly on table markup (td top width)": "FAIL",
+      "3c: HTML -> CSS Mapping for borders is applied correctly on table markup (td left color)": "FAIL",
+      "3c: HTML -> CSS Mapping for borders is applied correctly on table markup (td left style)": "FAIL",
+      "3c: HTML -> CSS Mapping for borders is applied correctly on table markup (td left width)": "FAIL",
+      "4: HTML -> CSS Mapping for borders is applied correctly on table markup (table left color)": "FAIL",
+      "4: HTML -> CSS Mapping for borders is applied correctly on table markup (td left color)": "FAIL",
+      "5b: HTML -> CSS Mapping for borders is applied correctly on table markup (table right color)": "FAIL"
+    }
+  },
+  "css/css-tables/html5-table-formatting-1.html": {
+    "total": 6,
+    "failures": {
+      "Empty tables do not take table-columns into account": "FAIL",
+      "Empty tables do not take table-rows into account": "FAIL"
+    }
+  },
+  "css/css-tables/html5-table-formatting-2.html": {
+    "total": 12
+  },
+  "css/css-tables/html5-table-formatting-3.html": {
+    "total": 8,
+    "failures": {
+      "Explicitely-defined consecutive columns spanned by the same set of cells are not merged": "FAIL",
+      "Explicitely-defined consecutive columns spanned by the same set of cells are not merged, and cells span across border-spacing": "FAIL",
+      "Explicitely-defined consecutive rows spanned by the same set of cells are not merged, and cells span across border-spacing": "FAIL"
+    }
+  },
+  "css/css-tables/html5-table-formatting-fixed-layout-1.html": {
+    "total": 2
+  },
+  "css/css-tables/iframe-display-table-content-insertion.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/inheritance.html": {
+    "total": 10
+  },
+  "css/css-tables/insert-after-col.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/insert-after-colgroup.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/internal-containing-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/max-height-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/min-height-table-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/min-height-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/min-max-size-table-content-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/no-overflow-with-table-cell-margins.html": {
+    "total": 1
+  },
+  "css/css-tables/out-of-order-elements-collapsed-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/col-change-span-bg-invalidation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/col-change-span-bg-invalidation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/col-paint-htb-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/col-paint-vrl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/row-background-paint-remove-last-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/paint/table-border-paint-caption-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/parsing/border-collapse-computed.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/border-collapse-invalid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/border-collapse-valid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/border-spacing-computed.html": {
+    "total": 4,
+    "failures": {
+      "Property border-spacing value 'calc(10px + 0.5em) calc(10px - 0.5em)'": "FAIL",
+      "Property border-spacing value 'calc(10px - 0.5em) calc(10px + 0.5em)'": "FAIL"
+    }
+  },
+  "css/css-tables/parsing/border-spacing-invalid.html": {
+    "total": 4
+  },
+  "css/css-tables/parsing/border-spacing-valid.html": {
+    "total": 3
+  },
+  "css/css-tables/parsing/caption-side-computed.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/caption-side-invalid.html": {
+    "total": 4
+  },
+  "css/css-tables/parsing/caption-side-valid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/empty-cells-computed.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/empty-cells-invalid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/empty-cells-valid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/table-layout-computed.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/table-layout-invalid.html": {
+    "total": 2
+  },
+  "css/css-tables/parsing/table-layout-valid.html": {
+    "total": 2
+  },
+  "css/css-tables/percent-height-overflow-auto-in-restricted-block-size-cell.html": {
+    "total": 1
+  },
+  "css/css-tables/percent-height-overflow-auto-in-unrestricted-block-size-cell.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-height-replaced-in-percent-cell-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-height-replaced-in-percent-cell-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-height-replaced-in-percent-cell-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-height-replaced-in-percent-cell.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-height-table-cell-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-width-cell-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percent-width-ignored-001.tentative.html": {
+    "total": 1
+  },
+  "css/css-tables/percent-width-ignored-002.tentative.html": {
+    "total": 1
+  },
+  "css/css-tables/percent-width-ignored-003.tentative.html": {
+    "total": 1
+  },
+  "css/css-tables/percentages-grandchildren-quirks-mode-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/percentages-grandchildren-quirks-mode-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/remove-caption-from-anon-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/remove-colgroup-from-anon-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/row-group-margin-border-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/row-group-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/row-margin-border-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/rowspan-cell-border-after-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/rules-groups.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-collapsed-borders-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-collapsed-borders-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-collapsed-borders-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-table-cell-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-table-cell-width-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-table-cell-width-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/subpixel-table-width-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-as-item-cell-percentage-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-as-item-cell-percentage-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-as-item-cell-percentage-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-as-item-cell-percentage-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-baseline-static-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-child-overflow-measure.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-inline-size-box-sizing-quirks.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-overflow-auto-scrolled.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-overflow-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-overflow-explicit-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-overflow-explicit-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-scroll-height.html": {
+    "total": 1
+  },
+  "css/css-tables/table-cell-tiny-width-excess-width-distribution.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-width-0-excess-width-distribution.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-width-0.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-cell-writing-mode-computed.html": {
+    "total": 1
+  },
+  "css/css-tables/table-colspan-percent-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-has-box-sizing-border-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-has-box-sizing-border-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-intrinsic-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-intrinsic-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-intrinsic-size-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-intrinsic-size-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-model-fixup-2.html": {
+    "total": 40
+  },
+  "css/css-tables/table-model-fixup.html": {
+    "total": 11
+  },
+  "css/css-tables/table-position-sticky-computed.html": {
+    "total": 5
+  },
+  "css/css-tables/table-row-group-color-inheritance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-row-group-nested-anonymous-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table_grid_size_col_colspan.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/baseline-table.html": {
+    "total": 15
+  },
+  "css/css-tables/tentative/baseline-td.html": {
+    "total": 5
+  },
+  "css/css-tables/tentative/border-collapse-spanning-cells-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/border-collapse-spanning-cells-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/border-collapse-spanning-cells-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/border-collapse-spanning-cells-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/caption.html": {
+    "total": 13
+  },
+  "css/css-tables/tentative/col-collapse-table-size.html": {
+    "total": 5
+  },
+  "css/css-tables/tentative/colgroup-col.html": {
+    "total": 6
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/collapsed-borders-painting-order-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/colspan-redistribution.html": {
+    "total": 31
+  },
+  "css/css-tables/tentative/column-widths.html": {
+    "total": 33
+  },
+  "css/css-tables/tentative/element-sizing.html": {
+    "total": 2
+  },
+  "css/css-tables/tentative/padding-percentage.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/paint/background-image-column-collapsed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/paint/background-image-column.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/tentative/paint/background-image-row-collapsed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/paint/background-image-row.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/paint/collapsed-border-large-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/paint/overflow-hidden-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/position-sticky-container.html": {
+    "total": 3
+  },
+  "css/css-tables/tentative/rowspan-height-redistribution.html": {
+    "total": 24
+  },
+  "css/css-tables/tentative/section-no-tbody-fixed-distribution.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/section-no-tbody-percent-distribution.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/tentative/table-fixed-minmax.html": {
+    "total": 8
+  },
+  "css/css-tables/tentative/table-height-redistribution.html": {
+    "total": 31
+  },
+  "css/css-tables/tentative/table-limited-quirks.html": {
+    "total": 7
+  },
+  "css/css-tables/tentative/table-minmax.html": {
+    "total": 16
+  },
+  "css/css-tables/tentative/table-quirks.html": {
+    "total": 7
+  },
+  "css/css-tables/tentative/table-rows-with-zero-columns.html": {
+    "total": 12
+  },
+  "css/css-tables/tentative/table-width-redistribution-fixed-padding.html": {
+    "total": 15,
+    "failures": {
+      "table 12": "FAIL",
+      "table 8": "FAIL"
+    }
+  },
+  "css/css-tables/tentative/table-width-redistribution-fixed.html": {
+    "total": 26
+  },
+  "css/css-tables/tentative/table-width-redistribution.html": {
+    "total": 22
+  },
+  "css/css-tables/tentative/tbody-height-redistribution.html": {
+    "total": 12
+  },
+  "css/css-tables/tentative/td-box-sizing-001.html": {
+    "total": 14
+  },
+  "css/css-tables/tentative/td-box-sizing-002.html": {
+    "total": 15
+  },
+  "css/css-tables/tentative/td-box-sizing-003.html": {
+    "total": 11
+  },
+  "css/css-tables/tfoot-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/th-text-align.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/toggle-row-display-property-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/visibility-collapse-border-spacing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/visibility-collapse-border-spacing-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/visibility-collapse-col-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-col-002.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-col-003.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-col-004-dynamic.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-col-005.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-colspan-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-colspan-002.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-colspan-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/visibility-collapse-non-rowcol-001.html": {
+    "total": 6
+  },
+  "css/css-tables/visibility-collapse-row-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-row-002-dynamic.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-row-003-dynamic.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-row-004.html": {
+    "total": 1
+  },
+  "css/css-tables/visibility-collapse-row-005.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-row-group-001.html": {
+    "total": 5
+  },
+  "css/css-tables/visibility-collapse-row-group-002.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-rowcol-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-rowcol-002.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-rowspan-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-collapse-rowspan-002-border-separate.html": {
+    "total": 6
+  },
+  "css/css-tables/visibility-collapse-rowspan-002.html": {
+    "total": 6
+  },
+  "css/css-tables/visibility-collapse-rowspan-003-border-separate.html": {
+    "total": 6
+  },
+  "css/css-tables/visibility-collapse-rowspan-003.html": {
+    "total": 6
+  },
+  "css/css-tables/visibility-collapse-rowspan-004-dynamic.html": {
+    "total": 18
+  },
+  "css/css-tables/visibility-collapse-rowspan-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-tables/visibility-hidden-col-001.html": {
+    "total": 2
+  },
+  "css/css-tables/visibility-hidden-collapsed-borders.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/visibility-hidden-nested-001.html": {
+    "total": 8
+  },
+  "css/css-tables/visibility-hidden-nested-002.html": {
+    "total": 4
+  },
+  "css/css-tables/visibility-hidden-row-001.html": {
+    "total": 3
+  },
+  "css/css-tables/visibility-hidden-row-002.html": {
+    "total": 3
+  },
+  "css/css-tables/whitespace-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/width-distribution/computing-column-measure-0.html": {
+    "total": 4
+  },
+  "css/css-tables/width-distribution/computing-column-measure-1.html": {
+    "total": 4
+  },
+  "css/css-tables/width-distribution/computing-column-measure-2.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/computing-table-width-0.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/computing-table-width-1.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/distribution-algo-1.html": {
+    "total": 3
+  },
+  "css/css-tables/width-distribution/distribution-algo-2.html": {
+    "total": 3
+  },
+  "css/css-tables/width-distribution/distribution-algo-min-content-guess.html": {
+    "total": 3
+  },
+  "css/css-tables/width-distribution/distribution-algo-min-content-percent-guess.html": {
+    "total": 3
+  },
+  "css/css-tables/width-distribution/distribution-algo-min-content-specified-guess.1.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/distribution-algo-min-content-specified-guess.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/td-max-width-auto-layout.html": {
+    "total": 4
+  },
+  "css/css-tables/width-distribution/td-min-width-auto-layout.html": {
+    "total": 4
+  },
+  "css/css-tables/width-distribution/td-with-subpixel-padding-vertical-rl.html": {
+    "total": 1
+  },
+  "css/css-tables/width-distribution/td-with-subpixel-padding.html": {
+    "total": 1
+  },
+  "css/css-tables/zero-rowspan-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/zero-rowspan-002.html": {
+    "reftest": "PASS"
+  }
+}

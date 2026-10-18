@@ -1,0 +1,920 @@
+{
+  "spec": {
+    "title": "File and Directory Entries API",
+    "url": "https://wicg.github.io/entries-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FileSystemEntry",
+          "FileSystemDirectoryEntry",
+          "FileSystemDirectoryReader",
+          "FileSystemFileEntry",
+          "FileSystem"
+        ]
+      }
+    },
+    "idlNames": {
+      "ErrorCallback": {
+        "fragment": "callback ErrorCallback = undefined (DOMException err);",
+        "type": "callback",
+        "name": "ErrorCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "err",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/entries-api/#callbackdef-errorcallback"
+      },
+      "FileSystemEntry": {
+        "fragment": "[Exposed=Window]\ninterface FileSystemEntry {\n    readonly attribute boolean isFile;\n    readonly attribute boolean isDirectory;\n    readonly attribute USVString name;\n    readonly attribute USVString fullPath;\n    readonly attribute FileSystem filesystem;\n\n    undefined getParent(optional FileSystemEntryCallback successCallback,\n                   optional ErrorCallback errorCallback);\n};",
+        "type": "interface",
+        "name": "FileSystemEntry",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "isFile",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-isfile"
+          },
+          {
+            "type": "attribute",
+            "name": "isDirectory",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-isdirectory"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-name"
+          },
+          {
+            "type": "attribute",
+            "name": "fullPath",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-fullpath"
+          },
+          {
+            "type": "attribute",
+            "name": "filesystem",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystem"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-filesystem"
+          },
+          {
+            "type": "operation",
+            "name": "getParent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemEntryCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ErrorCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystementry-getparent"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#filesystementry"
+      },
+      "FileSystemDirectoryEntry": {
+        "fragment": "[Exposed=Window]\ninterface FileSystemDirectoryEntry : FileSystemEntry {\n    FileSystemDirectoryReader createReader();\n    undefined getFile(optional USVString? path,\n                 optional FileSystemFlags options = {},\n                 optional FileSystemEntryCallback successCallback,\n                 optional ErrorCallback errorCallback);\n    undefined getDirectory(optional USVString? path,\n                      optional FileSystemFlags options = {},\n                      optional FileSystemEntryCallback successCallback,\n                      optional ErrorCallback errorCallback);\n};",
+        "type": "interface",
+        "name": "FileSystemDirectoryEntry",
+        "inheritance": "FileSystemEntry",
+        "members": [
+          {
+            "type": "operation",
+            "name": "createReader",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemDirectoryReader"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemdirectoryentry-createreader"
+          },
+          {
+            "type": "operation",
+            "name": "getFile",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "path",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemFlags"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemEntryCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ErrorCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemdirectoryentry-getfile"
+          },
+          {
+            "type": "operation",
+            "name": "getDirectory",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "path",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemFlags"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemEntryCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ErrorCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemdirectoryentry-getdirectory"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#filesystemdirectoryentry"
+      },
+      "FileSystemFlags": {
+        "fragment": "dictionary FileSystemFlags {\n    boolean create = false;\n    boolean exclusive = false;\n};",
+        "type": "dictionary",
+        "name": "FileSystemFlags",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "create",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemflags-create"
+          },
+          {
+            "type": "field",
+            "name": "exclusive",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemflags-exclusive"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#dictdef-filesystemflags"
+      },
+      "FileSystemEntryCallback": {
+        "fragment": "callback FileSystemEntryCallback = undefined (FileSystemEntry entry);",
+        "type": "callback",
+        "name": "FileSystemEntryCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "entry",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemEntry"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/entries-api/#callbackdef-filesystementrycallback"
+      },
+      "FileSystemDirectoryReader": {
+        "fragment": "[Exposed=Window]\ninterface FileSystemDirectoryReader {\n    undefined readEntries(FileSystemEntriesCallback successCallback,\n                     optional ErrorCallback errorCallback);\n};",
+        "type": "interface",
+        "name": "FileSystemDirectoryReader",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "readEntries",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemEntriesCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ErrorCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemdirectoryreader-readentries"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#filesystemdirectoryreader"
+      },
+      "FileSystemEntriesCallback": {
+        "fragment": "callback FileSystemEntriesCallback = undefined (sequence<FileSystemEntry> entries);",
+        "type": "callback",
+        "name": "FileSystemEntriesCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "entries",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemEntry"
+                }
+              ]
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/entries-api/#callbackdef-filesystementriescallback"
+      },
+      "FileSystemFileEntry": {
+        "fragment": "[Exposed=Window]\ninterface FileSystemFileEntry : FileSystemEntry {\n    undefined file(FileCallback successCallback,\n              optional ErrorCallback errorCallback);\n};",
+        "type": "interface",
+        "name": "FileSystemFileEntry",
+        "inheritance": "FileSystemEntry",
+        "members": [
+          {
+            "type": "operation",
+            "name": "file",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "successCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ErrorCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/entries-api/#dom-filesystemfileentry-file"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#filesystemfileentry"
+      },
+      "FileCallback": {
+        "fragment": "callback FileCallback = undefined (File file);",
+        "type": "callback",
+        "name": "FileCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "file",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "File"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/entries-api/#callbackdef-filecallback"
+      },
+      "FileSystem": {
+        "fragment": "[Exposed=Window]\ninterface FileSystem {\n    readonly attribute USVString name;\n    readonly attribute FileSystemDirectoryEntry root;\n};",
+        "type": "interface",
+        "name": "FileSystem",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystem-name"
+          },
+          {
+            "type": "attribute",
+            "name": "root",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FileSystemDirectoryEntry"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/entries-api/#dom-filesystem-root"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/entries-api/#filesystem"
+      }
+    },
+    "idlExtendedNames": {
+      "File": [
+        {
+          "fragment": "partial interface File {\n    readonly attribute USVString webkitRelativePath;\n};",
+          "type": "interface",
+          "name": "File",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "webkitRelativePath",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USVString"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/entries-api/#dom-file-webkitrelativepath"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HTMLInputElement": [
+        {
+          "fragment": "partial interface HTMLInputElement {\n    attribute boolean webkitdirectory;\n    readonly attribute FrozenArray<FileSystemEntry> webkitEntries;\n};",
+          "type": "interface",
+          "name": "HTMLInputElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "webkitdirectory",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitdirectory"
+            },
+            {
+              "type": "attribute",
+              "name": "webkitEntries",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "FrozenArray",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "FileSystemEntry"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitentries"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DataTransferItem": [
+        {
+          "fragment": "partial interface DataTransferItem {\n    FileSystemEntry? webkitGetAsEntry();\n};",
+          "type": "interface",
+          "name": "DataTransferItem",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "webkitGetAsEntry",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "FileSystemEntry"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/entries-api/#dom-datatransferitem-webkitgetasentry"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FileSystemEntry",
+        "FileSystemDirectoryEntry",
+        "FileSystemDirectoryReader",
+        "FileSystemFileEntry",
+        "FileSystem"
+      ]
+    },
+    "dependencies": {
+      "File": [],
+      "HTMLInputElement": [
+        "FileSystemEntry"
+      ],
+      "DataTransferItem": [
+        "FileSystemEntry"
+      ],
+      "FileSystemEntry": [
+        "FileSystem",
+        "FileSystemEntryCallback",
+        "ErrorCallback"
+      ],
+      "FileSystemDirectoryEntry": [
+        "FileSystemEntry",
+        "FileSystemDirectoryReader",
+        "FileSystemFlags",
+        "FileSystemEntryCallback",
+        "ErrorCallback"
+      ],
+      "FileSystemFlags": [],
+      "FileSystemDirectoryReader": [
+        "FileSystemEntriesCallback",
+        "ErrorCallback"
+      ],
+      "FileSystemFileEntry": [
+        "FileSystemEntry",
+        "FileCallback",
+        "ErrorCallback"
+      ],
+      "FileSystem": [
+        "FileSystemDirectoryEntry"
+      ]
+    },
+    "externalDependencies": [
+      "File",
+      "HTMLInputElement",
+      "DataTransferItem",
+      "DOMException"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

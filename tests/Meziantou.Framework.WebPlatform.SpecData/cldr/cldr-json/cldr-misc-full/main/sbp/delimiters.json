@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sbp": {
+      "identity": {
+        "language": "sbp"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

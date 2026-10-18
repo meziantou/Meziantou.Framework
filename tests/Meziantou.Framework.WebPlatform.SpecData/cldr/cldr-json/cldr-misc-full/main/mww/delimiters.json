@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mww": {
+      "identity": {
+        "language": "mww"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

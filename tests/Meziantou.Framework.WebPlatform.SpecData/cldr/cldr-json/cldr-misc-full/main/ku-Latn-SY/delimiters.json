@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ku-Latn-SY": {
+      "identity": {
+        "language": "ku",
+        "script": "Latn",
+        "territory": "SY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

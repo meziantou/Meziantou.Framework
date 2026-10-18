@@ -1,0 +1,367 @@
+{
+  "spec": {
+    "title": "Gamepad Extensions",
+    "url": "https://w3c.github.io/gamepad/extensions.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "GamepadPose",
+          "GamepadHapticActuator"
+        ]
+      }
+    },
+    "idlNames": {
+      "GamepadHand": {
+        "fragment": "enum GamepadHand {\n  \"\",  /* unknown, both hands, or not applicable */\n  \"left\",\n  \"right\"\n};",
+        "type": "enum",
+        "name": "GamepadHand",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadhand-the-empty-string"
+          },
+          {
+            "type": "enum-value",
+            "value": "left",
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadhand-left"
+          },
+          {
+            "type": "enum-value",
+            "value": "right",
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadhand-right"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadhand"
+      },
+      "GamepadPose": {
+        "fragment": "[Exposed=Window]\ninterface GamepadPose {\n  readonly attribute boolean hasOrientation;\n  readonly attribute boolean hasPosition;\n\n  readonly attribute Float32Array? position;\n  readonly attribute Float32Array? linearVelocity;\n  readonly attribute Float32Array? linearAcceleration;\n  readonly attribute Float32Array? orientation;\n  readonly attribute Float32Array? angularVelocity;\n  readonly attribute Float32Array? angularAcceleration;\n};",
+        "type": "interface",
+        "name": "GamepadPose",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "hasOrientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-hasorientation"
+          },
+          {
+            "type": "attribute",
+            "name": "hasPosition",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-hasposition"
+          },
+          {
+            "type": "attribute",
+            "name": "position",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-position"
+          },
+          {
+            "type": "attribute",
+            "name": "linearVelocity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-linearvelocity"
+          },
+          {
+            "type": "attribute",
+            "name": "linearAcceleration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-linearacceleration"
+          },
+          {
+            "type": "attribute",
+            "name": "orientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-orientation"
+          },
+          {
+            "type": "attribute",
+            "name": "angularVelocity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-angularvelocity"
+          },
+          {
+            "type": "attribute",
+            "name": "angularAcceleration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Float32Array"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose-angularacceleration"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadpose"
+      }
+    },
+    "idlExtendedNames": {
+      "Gamepad": [
+        {
+          "fragment": "partial interface Gamepad {\n  readonly attribute GamepadHand hand;\n  readonly attribute FrozenArray<GamepadHapticActuator> hapticActuators;\n  readonly attribute GamepadPose? pose;\n};",
+          "type": "interface",
+          "name": "Gamepad",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "hand",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "GamepadHand"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepad-hand"
+            },
+            {
+              "type": "attribute",
+              "name": "hapticActuators",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "FrozenArray",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "GamepadHapticActuator"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepad-hapticactuators"
+            },
+            {
+              "type": "attribute",
+              "name": "pose",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "GamepadPose"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepad-pose"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "GamepadHapticActuator": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface GamepadHapticActuator {\n  Promise<boolean> pulse(double value, double duration);\n};",
+          "type": "interface",
+          "name": "GamepadHapticActuator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "pulse",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "value",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "double"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "duration",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "double"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/gamepad/extensions.html#dom-gamepadhapticactuator-pulse"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "GamepadPose",
+        "GamepadHapticActuator"
+      ]
+    },
+    "dependencies": {
+      "GamepadPose": [
+        "Float32Array"
+      ],
+      "Gamepad": [
+        "GamepadHand",
+        "GamepadHapticActuator",
+        "GamepadPose"
+      ],
+      "GamepadHapticActuator": []
+    },
+    "externalDependencies": [
+      "Float32Array",
+      "Gamepad",
+      "GamepadHapticActuator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

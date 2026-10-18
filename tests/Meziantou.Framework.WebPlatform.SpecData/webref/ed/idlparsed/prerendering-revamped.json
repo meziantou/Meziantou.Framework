@@ -1,0 +1,104 @@
+{
+  "spec": {
+    "title": "Prerendering Revamped",
+    "url": "https://wicg.github.io/nav-speculation/prerendering.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    readonly attribute boolean prerendering;\n\n    // Under \"special event handler IDL attributes that only apply to Document objects\"\n    attribute EventHandler onprerenderingchange;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "prerendering",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/nav-speculation/prerendering.html#dom-document-prerendering"
+            },
+            {
+              "type": "attribute",
+              "name": "onprerenderingchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/nav-speculation/prerendering.html#dom-document-onprerenderingchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "PerformanceNavigationTiming": [
+        {
+          "fragment": "partial interface PerformanceNavigationTiming {\n    readonly attribute DOMHighResTimeStamp activationStart;\n};",
+          "type": "interface",
+          "name": "PerformanceNavigationTiming",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "activationStart",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMHighResTimeStamp"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/nav-speculation/prerendering.html#dom-performancenavigationtiming-activationstart"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Document": [
+        "EventHandler"
+      ],
+      "PerformanceNavigationTiming": [
+        "DOMHighResTimeStamp"
+      ]
+    },
+    "externalDependencies": [
+      "Document",
+      "EventHandler",
+      "PerformanceNavigationTiming",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

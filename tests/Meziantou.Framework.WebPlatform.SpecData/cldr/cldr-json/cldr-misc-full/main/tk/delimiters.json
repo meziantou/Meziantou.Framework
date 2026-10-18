@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tk": {
+      "identity": {
+        "language": "tk"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

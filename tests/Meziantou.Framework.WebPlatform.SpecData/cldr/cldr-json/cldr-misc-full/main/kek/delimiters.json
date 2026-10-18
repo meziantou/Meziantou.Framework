@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kek": {
+      "identity": {
+        "language": "kek"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

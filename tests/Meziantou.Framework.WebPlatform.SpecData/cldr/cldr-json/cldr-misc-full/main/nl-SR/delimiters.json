@@ -1,0 +1,16 @@
+{
+  "main": {
+    "nl-SR": {
+      "identity": {
+        "language": "nl",
+        "territory": "SR"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "jbo": {
+      "identity": {
+        "language": "jbo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

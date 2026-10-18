@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ce": {
+      "identity": {
+        "language": "ce"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

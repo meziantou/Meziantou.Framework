@@ -1,0 +1,85 @@
+{
+  "spec": {
+    "title": "Viewport Capture",
+    "url": "https://w3c.github.io/mediacapture-viewport/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "MediaDevices": [
+        {
+          "fragment": "partial interface MediaDevices {\n  Promise<MediaStream> getViewportMedia(\n      optional DisplayMediaStreamOptions options = {});\n};",
+          "type": "interface",
+          "name": "MediaDevices",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getViewportMedia",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "MediaStream"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DisplayMediaStreamOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-viewport/#dom-mediadevices-getviewportmedia"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "MediaDevices": [
+        "MediaStream",
+        "DisplayMediaStreamOptions"
+      ]
+    },
+    "externalDependencies": [
+      "MediaDevices",
+      "MediaStream",
+      "DisplayMediaStreamOptions"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

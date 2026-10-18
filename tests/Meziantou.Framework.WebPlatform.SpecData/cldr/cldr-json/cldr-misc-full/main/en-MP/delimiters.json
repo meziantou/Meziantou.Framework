@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-MP": {
+      "identity": {
+        "language": "en",
+        "territory": "MP"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

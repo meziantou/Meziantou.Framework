@@ -1,0 +1,16 @@
+{
+  "main": {
+    "yo-BJ": {
+      "identity": {
+        "language": "yo",
+        "territory": "BJ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

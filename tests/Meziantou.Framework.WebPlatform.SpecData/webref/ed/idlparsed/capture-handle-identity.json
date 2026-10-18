@@ -1,0 +1,256 @@
+{
+  "spec": {
+    "title": "Capture Handle - Bootstrapping Collaboration when Screensharing",
+    "url": "https://w3c.github.io/mediacapture-handle/identity/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "CaptureHandleConfig": {
+        "fragment": "dictionary CaptureHandleConfig {\n  boolean exposeOrigin = false;\n  DOMString handle = \"\";\n  sequence<DOMString> permittedOrigins = [];\n};",
+        "type": "dictionary",
+        "name": "CaptureHandleConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "exposeOrigin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandleconfig-exposeorigin"
+          },
+          {
+            "type": "field",
+            "name": "handle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandleconfig-handle"
+          },
+          {
+            "type": "field",
+            "name": "permittedOrigins",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandleconfig-permittedorigins"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandleconfig"
+      },
+      "CaptureHandle": {
+        "fragment": "dictionary CaptureHandle {\n  DOMString origin;\n  DOMString handle;\n};",
+        "type": "dictionary",
+        "name": "CaptureHandle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "origin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandle-origin"
+          },
+          {
+            "type": "field",
+            "name": "handle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandle-handle"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-capturehandle"
+      }
+    },
+    "idlExtendedNames": {
+      "MediaDevices": [
+        {
+          "fragment": "partial interface MediaDevices {\n  undefined setCaptureHandleConfig(optional CaptureHandleConfig config = {});\n};",
+          "type": "interface",
+          "name": "MediaDevices",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "setCaptureHandleConfig",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "config",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CaptureHandleConfig"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-mediadevices-setcapturehandleconfig"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaStreamTrack": [
+        {
+          "fragment": "partial interface MediaStreamTrack {\n  CaptureHandle? getCaptureHandle();\n};",
+          "type": "interface",
+          "name": "MediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getCaptureHandle",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CaptureHandle"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-mediastreamtrack-getcapturehandle"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface MediaStreamTrack {\n  attribute EventHandler oncapturehandlechange;\n};",
+          "type": "interface",
+          "name": "MediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "oncapturehandlechange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/mediacapture-handle/identity/#dom-mediastreamtrack-oncapturehandlechange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "CaptureHandleConfig": [],
+      "MediaDevices": [
+        "CaptureHandleConfig"
+      ],
+      "CaptureHandle": [],
+      "MediaStreamTrack": [
+        "CaptureHandle",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "MediaDevices",
+      "MediaStreamTrack",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

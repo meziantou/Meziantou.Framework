@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kk-Cyrl": {
+      "identity": {
+        "language": "kk",
+        "script": "Cyrl"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

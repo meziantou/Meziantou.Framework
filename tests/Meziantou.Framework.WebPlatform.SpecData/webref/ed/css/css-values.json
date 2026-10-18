@@ -1,0 +1,882 @@
+{
+  "spec": {
+    "title": "CSS Values and Units Module Level 4",
+    "url": "https://drafts.csswg.org/css-values-4/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<ident>",
+      "prose": "CSS identifiers, generically denoted by <ident>, represent names, and are written as an unquoted sequence of (potentially escaped) characters corresponding to the <ident-token> grammar. [CSS-SYNTAX-3] Identifiers cannot be quoted; otherwise they would be interpreted as strings. CSS properties accept two classes of identifiers: pre-defined keywords and author-defined identifiers.",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-ident",
+      "type": "type"
+    },
+    {
+      "name": "<custom-ident>",
+      "prose": "Some properties accept arbitrary author-defined identifiers as a component value. This generic data type is denoted by <custom-ident>, and represents any valid CSS identifier that would not be misinterpreted as a pre-defined keyword in that property’s value definition. Such identifiers are fully case-sensitive (meaning they’re compared using the \"identical to\" operation), even in the ASCII range (e.g. example and EXAMPLE are two different, unrelated user-defined identifiers).",
+      "href": "https://drafts.csswg.org/css-values-4/#identifier-value",
+      "type": "type"
+    },
+    {
+      "name": "<dashed-ident>",
+      "prose": "The <dashed-ident> production is a <custom-ident>, with all the case-sensitivity that implies, with the additional restriction that it must start with two dashes (U+002D HYPHEN-MINUS).",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-dashed-ident",
+      "type": "type"
+    },
+    {
+      "name": "<string>",
+      "prose": "Strings, denoted by <string>, are sequences of characters representing arbitrary textual data. When written literally, they are delimited by double quotes or single quotes, and correspond to the <string-token> production. [CSS-SYNTAX-3].",
+      "href": "https://drafts.csswg.org/css-values-4/#string-value",
+      "type": "type"
+    },
+    {
+      "name": "url()",
+      "prose": "The <url> type, written with the url() and src() functions, represents a URL, which is a pointer to a resource.",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-url",
+      "type": "function",
+      "value": "url( <string> <url-modifier>* ) | <url-token>"
+    },
+    {
+      "name": "src()",
+      "prose": "The <url> type, written with the url() and src() functions, represents a URL, which is a pointer to a resource.",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-src",
+      "type": "function",
+      "value": "src( <string> <url-modifier>* )"
+    },
+    {
+      "name": "<url>",
+      "href": "https://drafts.csswg.org/css-values-4/#url-value",
+      "type": "type",
+      "value": "<url()> | <src()>"
+    },
+    {
+      "name": "<url-modifier>",
+      "prose": "<url>s support specifying additional <url-modifier>s, which change the meaning or the interpretation of the URL somehow. A <url-modifier> is either an <ident> or a functional notation.",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-url-modifier",
+      "type": "type"
+    },
+    {
+      "name": "<integer>",
+      "prose": "Integer values are denoted by <integer>.",
+      "href": "https://drafts.csswg.org/css-values-4/#integer-value",
+      "type": "type",
+      "value": "<number-token>"
+    },
+    {
+      "name": "<number>",
+      "prose": "Number values are denoted by <number>, and represent real numbers, possibly with a fractional component.",
+      "href": "https://drafts.csswg.org/css-values-4/#number-value",
+      "type": "type"
+    },
+    {
+      "name": "<zero>",
+      "prose": "The value <zero> represents a literal number with the value 0. Expressions that merely evaluate to a <number> with the value 0 (for example, calc(0)) do not match <zero>; only literal <number-token>s do.",
+      "href": "https://drafts.csswg.org/css-values-4/#zero-value",
+      "type": "type"
+    },
+    {
+      "name": "<dimension>",
+      "prose": "The general term dimension refers to a number with a unit attached to it; and is denoted by <dimension>.",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-dimension",
+      "type": "type"
+    },
+    {
+      "name": "<percentage>",
+      "prose": "Percentage values are denoted by <percentage>, and indicates a value that is some fraction of another reference value.",
+      "href": "https://drafts.csswg.org/css-values-4/#percentage-value",
+      "type": "type"
+    },
+    {
+      "name": "<length-percentage>",
+      "value": "[ <length> | <percentage> ]",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-length-percentage",
+      "type": "type"
+    },
+    {
+      "name": "<frequency-percentage>",
+      "value": "[ <frequency> | <percentage> ]",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-frequency-percentage",
+      "type": "type"
+    },
+    {
+      "name": "<angle-percentage>",
+      "value": "[ <angle> | <percentage> ]",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-angle-percentage",
+      "type": "type"
+    },
+    {
+      "name": "<time-percentage>",
+      "value": "[ <time> | <percentage> ]",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-time-percentage",
+      "type": "type"
+    },
+    {
+      "name": "<ratio>",
+      "prose": "Ratio values are denoted by <ratio>, and represent the ratio of two numeric values. It most often represents an aspect ratio, relating a width (first) to a height (second).",
+      "href": "https://drafts.csswg.org/css-values-4/#ratio-value",
+      "type": "type",
+      "value": "<number [0,∞]> [ / <number [0,∞]> ]?"
+    },
+    {
+      "name": "<length>",
+      "prose": "Lengths refer to distance measurements and are denoted by <length> in the property definitions. A length is a dimension.",
+      "href": "https://drafts.csswg.org/css-values-4/#length-value",
+      "type": "type",
+      "values": [
+        {
+          "name": "em",
+          "prose": "Equal to the computed value of the font-size property of the element on which it is used. The rule: h1 { line-height: 1.2em } means that the line height of h1 elements will be 20% greater than the font size of h1 element. On the other hand: h1 { font-size: 1.2em } means that the font size of h1 elements will be 20% greater than the computed font size inherited by h1 elements.",
+          "href": "https://drafts.csswg.org/css-values-4/#em",
+          "type": "value",
+          "value": "em"
+        },
+        {
+          "name": "em unit",
+          "prose": "Equal to the computed value of the font-size property of the element on which it is used. The rule: h1 { line-height: 1.2em } means that the line height of h1 elements will be 20% greater than the font size of h1 element. On the other hand: h1 { font-size: 1.2em } means that the font size of h1 elements will be 20% greater than the computed font size inherited by h1 elements.",
+          "href": "https://drafts.csswg.org/css-values-4/#em",
+          "type": "value",
+          "value": "em unit"
+        },
+        {
+          "name": "rem",
+          "prose": "Equal to the computed value of the em unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rem",
+          "type": "value",
+          "value": "rem"
+        },
+        {
+          "name": "rem unit",
+          "prose": "Equal to the computed value of the em unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rem",
+          "type": "value",
+          "value": "rem unit"
+        },
+        {
+          "name": "ex",
+          "prose": "Equal to the used x-height of the first available font [CSS3-FONTS]. The x-height is so called because it is often equal to the height of the lowercase \"x\". However, an ex is defined even for fonts that do not contain an \"x\". The x-height of a font can be found in different ways. Some fonts contain reliable metrics for the x-height. If reliable font metrics are not available, UAs may determine the x-height from the height of a lowercase glyph. One possible heuristic is to look at how far the glyph for the lowercase \"o\" extends below the baseline, and subtract that value from the top of its bounding box. In the cases where it is impossible or impractical to determine the x-height, a value of 0.5em must be assumed.",
+          "href": "https://drafts.csswg.org/css-values-4/#ex",
+          "type": "value",
+          "value": "ex"
+        },
+        {
+          "name": "ex unit",
+          "prose": "Equal to the used x-height of the first available font [CSS3-FONTS]. The x-height is so called because it is often equal to the height of the lowercase \"x\". However, an ex is defined even for fonts that do not contain an \"x\". The x-height of a font can be found in different ways. Some fonts contain reliable metrics for the x-height. If reliable font metrics are not available, UAs may determine the x-height from the height of a lowercase glyph. One possible heuristic is to look at how far the glyph for the lowercase \"o\" extends below the baseline, and subtract that value from the top of its bounding box. In the cases where it is impossible or impractical to determine the x-height, a value of 0.5em must be assumed.",
+          "href": "https://drafts.csswg.org/css-values-4/#ex",
+          "type": "value",
+          "value": "ex unit"
+        },
+        {
+          "name": "rex",
+          "prose": "Equal to the value of the ex unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rex",
+          "type": "value",
+          "value": "rex"
+        },
+        {
+          "name": "rex unit",
+          "prose": "Equal to the value of the ex unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rex",
+          "type": "value",
+          "value": "rex unit"
+        },
+        {
+          "name": "cap",
+          "prose": "Equal to the used cap-height of the first available font [CSS3-FONTS]. The cap-height is so called because it is approximately equal to the height of a capital Latin letter. However, a cap is defined even for fonts that do not contain Latin letters. The cap-height of a font can be found in different ways. Some fonts contain reliable metrics for the cap-height. If reliable font metrics are not available, UAs may determine the cap-height from the height of an uppercase glyph. One possible heuristic is to look at how far the glyph for the uppercase “O” extends below the baseline, and subtract that value from the top of its bounding box. In the cases where it is impossible or impractical to determine the cap-height, the font’s ascent must be used.",
+          "href": "https://drafts.csswg.org/css-values-4/#cap",
+          "type": "value",
+          "value": "cap"
+        },
+        {
+          "name": "cap unit",
+          "prose": "Equal to the used cap-height of the first available font [CSS3-FONTS]. The cap-height is so called because it is approximately equal to the height of a capital Latin letter. However, a cap is defined even for fonts that do not contain Latin letters. The cap-height of a font can be found in different ways. Some fonts contain reliable metrics for the cap-height. If reliable font metrics are not available, UAs may determine the cap-height from the height of an uppercase glyph. One possible heuristic is to look at how far the glyph for the uppercase “O” extends below the baseline, and subtract that value from the top of its bounding box. In the cases where it is impossible or impractical to determine the cap-height, the font’s ascent must be used.",
+          "href": "https://drafts.csswg.org/css-values-4/#cap",
+          "type": "value",
+          "value": "cap unit"
+        },
+        {
+          "name": "rcap",
+          "prose": "Equal to the value of the cap unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rcap",
+          "type": "value",
+          "value": "rcap"
+        },
+        {
+          "name": "rcap unit",
+          "prose": "Equal to the value of the cap unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rcap",
+          "type": "value",
+          "value": "rcap unit"
+        },
+        {
+          "name": "ch",
+          "prose": "Represents the typical advance measure of European alphanumeric characters, and measured as the used advance measure of the “0” (ZERO, U+0030) glyph in the font used to render it. (The advance measure of a glyph is its advance width or height, whichever is in the inline axis of the element.) In the cases where it is impossible or impractical to determine the measure of the “0” glyph, it must be assumed to be 0.5em wide by 1em tall. Thus, the ch unit falls back to 0.5em in the general case, and to 1em when it would be typeset upright (i.e. writing-mode is vertical-rl or vertical-lr and text-orientation is upright).",
+          "href": "https://drafts.csswg.org/css-values-4/#ch",
+          "type": "value",
+          "value": "ch"
+        },
+        {
+          "name": "ch unit",
+          "prose": "Represents the typical advance measure of European alphanumeric characters, and measured as the used advance measure of the “0” (ZERO, U+0030) glyph in the font used to render it. (The advance measure of a glyph is its advance width or height, whichever is in the inline axis of the element.) In the cases where it is impossible or impractical to determine the measure of the “0” glyph, it must be assumed to be 0.5em wide by 1em tall. Thus, the ch unit falls back to 0.5em in the general case, and to 1em when it would be typeset upright (i.e. writing-mode is vertical-rl or vertical-lr and text-orientation is upright).",
+          "href": "https://drafts.csswg.org/css-values-4/#ch",
+          "type": "value",
+          "value": "ch unit"
+        },
+        {
+          "name": "rch",
+          "prose": "Equal to the value of the ch unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rch",
+          "type": "value",
+          "value": "rch"
+        },
+        {
+          "name": "rch unit",
+          "prose": "Equal to the value of the ch unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rch",
+          "type": "value",
+          "value": "rch unit"
+        },
+        {
+          "name": "ic",
+          "prose": "Represents the typical advance measure of CJK letters, and measured as the used advance measure of the “水” (CJK water ideograph, U+6C34) glyph found in the font used to render it. In the cases where it is impossible or impractical to determine the ideographic advance measure, it must be assumed to be 1em.",
+          "href": "https://drafts.csswg.org/css-values-4/#ic",
+          "type": "value",
+          "value": "ic"
+        },
+        {
+          "name": "ic unit",
+          "prose": "Represents the typical advance measure of CJK letters, and measured as the used advance measure of the “水” (CJK water ideograph, U+6C34) glyph found in the font used to render it. In the cases where it is impossible or impractical to determine the ideographic advance measure, it must be assumed to be 1em.",
+          "href": "https://drafts.csswg.org/css-values-4/#ic",
+          "type": "value",
+          "value": "ic unit"
+        },
+        {
+          "name": "ric",
+          "prose": "Equal to the value of the ic unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#ric",
+          "type": "value",
+          "value": "ric"
+        },
+        {
+          "name": "ric unit",
+          "prose": "Equal to the value of the ic unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#ric",
+          "type": "value",
+          "value": "ric unit"
+        },
+        {
+          "name": "lh",
+          "prose": "Equal to the computed value of the line-height property of the element on which it is used, converting normal to an absolute length by using only the metrics of the first available font.",
+          "href": "https://drafts.csswg.org/css-values-4/#lh",
+          "type": "value",
+          "value": "lh"
+        },
+        {
+          "name": "lh unit",
+          "prose": "Equal to the computed value of the line-height property of the element on which it is used, converting normal to an absolute length by using only the metrics of the first available font.",
+          "href": "https://drafts.csswg.org/css-values-4/#lh",
+          "type": "value",
+          "value": "lh unit"
+        },
+        {
+          "name": "rlh",
+          "prose": "Equal to the value of the lh unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rlh",
+          "type": "value",
+          "value": "rlh"
+        },
+        {
+          "name": "rlh unit",
+          "prose": "Equal to the value of the lh unit on the root element.",
+          "href": "https://drafts.csswg.org/css-values-4/#rlh",
+          "type": "value",
+          "value": "rlh unit"
+        },
+        {
+          "name": "vw",
+          "prose": "Equal to 1% of the width of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively. In the example below, if the width of the viewport is 200mm, the font size of h1 elements will be 16mm (i.e. (8×200mm)/100). h1 { font-size: 8vw }",
+          "href": "https://drafts.csswg.org/css-values-4/#vw",
+          "type": "value",
+          "value": "vw"
+        },
+        {
+          "name": "svw",
+          "prose": "Equal to 1% of the width of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively. In the example below, if the width of the viewport is 200mm, the font size of h1 elements will be 16mm (i.e. (8×200mm)/100). h1 { font-size: 8vw }",
+          "href": "https://drafts.csswg.org/css-values-4/#svw",
+          "type": "value",
+          "value": "svw"
+        },
+        {
+          "name": "lvw",
+          "prose": "Equal to 1% of the width of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively. In the example below, if the width of the viewport is 200mm, the font size of h1 elements will be 16mm (i.e. (8×200mm)/100). h1 { font-size: 8vw }",
+          "href": "https://drafts.csswg.org/css-values-4/#lvw",
+          "type": "value",
+          "value": "lvw"
+        },
+        {
+          "name": "dvw",
+          "prose": "Equal to 1% of the width of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively. In the example below, if the width of the viewport is 200mm, the font size of h1 elements will be 16mm (i.e. (8×200mm)/100). h1 { font-size: 8vw }",
+          "href": "https://drafts.csswg.org/css-values-4/#dvw",
+          "type": "value",
+          "value": "dvw"
+        },
+        {
+          "name": "vh",
+          "prose": "Equal to 1% of the height of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively.",
+          "href": "https://drafts.csswg.org/css-values-4/#vh",
+          "type": "value",
+          "value": "vh"
+        },
+        {
+          "name": "svh",
+          "prose": "Equal to 1% of the height of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively.",
+          "href": "https://drafts.csswg.org/css-values-4/#svh",
+          "type": "value",
+          "value": "svh"
+        },
+        {
+          "name": "lvh",
+          "prose": "Equal to 1% of the height of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively.",
+          "href": "https://drafts.csswg.org/css-values-4/#lvh",
+          "type": "value",
+          "value": "lvh"
+        },
+        {
+          "name": "dvh",
+          "prose": "Equal to 1% of the height of the large viewport size, small viewport size, large viewport size, and dynamic viewport size, respectively.",
+          "href": "https://drafts.csswg.org/css-values-4/#dvh",
+          "type": "value",
+          "value": "dvh"
+        },
+        {
+          "name": "vi",
+          "prose": "Equal to 1% of the size of the large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s inline axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#vi",
+          "type": "value",
+          "value": "vi"
+        },
+        {
+          "name": "svi",
+          "prose": "Equal to 1% of the size of the large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s inline axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#svi",
+          "type": "value",
+          "value": "svi"
+        },
+        {
+          "name": "lvi",
+          "prose": "Equal to 1% of the size of the large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s inline axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#lvi",
+          "type": "value",
+          "value": "lvi"
+        },
+        {
+          "name": "dvi",
+          "prose": "Equal to 1% of the size of the large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s inline axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#dvi",
+          "type": "value",
+          "value": "dvi"
+        },
+        {
+          "name": "vb",
+          "prose": "Equal to 1% of the size of the initial containing block large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s block axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#vb",
+          "type": "value",
+          "value": "vb"
+        },
+        {
+          "name": "svb",
+          "prose": "Equal to 1% of the size of the initial containing block large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s block axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#svb",
+          "type": "value",
+          "value": "svb"
+        },
+        {
+          "name": "lvb",
+          "prose": "Equal to 1% of the size of the initial containing block large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s block axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#lvb",
+          "type": "value",
+          "value": "lvb"
+        },
+        {
+          "name": "dvb",
+          "prose": "Equal to 1% of the size of the initial containing block large viewport size, small viewport size, large viewport size, and dynamic viewport size (respectively) in the box’s block axis.",
+          "href": "https://drafts.csswg.org/css-values-4/#dvb",
+          "type": "value",
+          "value": "dvb"
+        },
+        {
+          "name": "vmin",
+          "prose": "Equal to the smaller of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#vmin",
+          "type": "value",
+          "value": "vmin"
+        },
+        {
+          "name": "svmin",
+          "prose": "Equal to the smaller of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#svmin",
+          "type": "value",
+          "value": "svmin"
+        },
+        {
+          "name": "lvmin",
+          "prose": "Equal to the smaller of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#lvmin",
+          "type": "value",
+          "value": "lvmin"
+        },
+        {
+          "name": "dvmin",
+          "prose": "Equal to the smaller of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#dvmin",
+          "type": "value",
+          "value": "dvmin"
+        },
+        {
+          "name": "vmax",
+          "prose": "Equal to the larger of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#vmax",
+          "type": "value",
+          "value": "vmax"
+        },
+        {
+          "name": "svmax",
+          "prose": "Equal to the larger of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#svmax",
+          "type": "value",
+          "value": "svmax"
+        },
+        {
+          "name": "lvmax",
+          "prose": "Equal to the larger of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#lvmax",
+          "type": "value",
+          "value": "lvmax"
+        },
+        {
+          "name": "dvmax",
+          "prose": "Equal to the larger of *vw or *vh.",
+          "href": "https://drafts.csswg.org/css-values-4/#dvmax",
+          "type": "value",
+          "value": "dvmax"
+        },
+        {
+          "name": "cm",
+          "href": "https://drafts.csswg.org/css-values-4/#cm",
+          "type": "value",
+          "value": "cm"
+        },
+        {
+          "name": "mm",
+          "href": "https://drafts.csswg.org/css-values-4/#mm",
+          "type": "value",
+          "value": "mm"
+        },
+        {
+          "name": "Q",
+          "href": "https://drafts.csswg.org/css-values-4/#Q",
+          "type": "value",
+          "value": "Q"
+        },
+        {
+          "name": "in",
+          "href": "https://drafts.csswg.org/css-values-4/#in",
+          "type": "value",
+          "value": "in"
+        },
+        {
+          "name": "pc",
+          "href": "https://drafts.csswg.org/css-values-4/#pc",
+          "type": "value",
+          "value": "pc"
+        },
+        {
+          "name": "pt",
+          "href": "https://drafts.csswg.org/css-values-4/#pt",
+          "type": "value",
+          "value": "pt"
+        },
+        {
+          "name": "px",
+          "href": "https://drafts.csswg.org/css-values-4/#px",
+          "type": "value",
+          "value": "px"
+        }
+      ]
+    },
+    {
+      "name": "<angle>",
+      "prose": "Angle values are <dimension>s denoted by <angle>. The angle unit identifiers are:",
+      "href": "https://drafts.csswg.org/css-values-4/#angle-value",
+      "type": "type",
+      "values": [
+        {
+          "name": "deg",
+          "prose": "Degrees. There are 360 degrees in a full circle.",
+          "href": "https://drafts.csswg.org/css-values-4/#deg",
+          "type": "value",
+          "value": "deg"
+        },
+        {
+          "name": "grad",
+          "prose": "Gradians, also known as \"gons\" or \"grades\". There are 400 gradians in a full circle.",
+          "href": "https://drafts.csswg.org/css-values-4/#grad",
+          "type": "value",
+          "value": "grad"
+        },
+        {
+          "name": "rad",
+          "prose": "Radians. There are 2π radians in a full circle.",
+          "href": "https://drafts.csswg.org/css-values-4/#rad",
+          "type": "value",
+          "value": "rad"
+        },
+        {
+          "name": "turn",
+          "prose": "Turns. There is 1 turn in a full circle.",
+          "href": "https://drafts.csswg.org/css-values-4/#turn",
+          "type": "value",
+          "value": "turn"
+        }
+      ]
+    },
+    {
+      "name": "<time>",
+      "prose": "Time values are dimensions denoted by <time>. The time unit identifiers are:",
+      "href": "https://drafts.csswg.org/css-values-4/#time-value",
+      "type": "type",
+      "values": [
+        {
+          "name": "s",
+          "prose": "Seconds.",
+          "href": "https://drafts.csswg.org/css-values-4/#s",
+          "type": "value",
+          "value": "s"
+        },
+        {
+          "name": "ms",
+          "prose": "Milliseconds. There are 1000 milliseconds in a second.",
+          "href": "https://drafts.csswg.org/css-values-4/#ms",
+          "type": "value",
+          "value": "ms"
+        }
+      ]
+    },
+    {
+      "name": "<frequency>",
+      "prose": "Frequency values are dimensions denoted by <frequency>. The frequency unit identifiers are:",
+      "href": "https://drafts.csswg.org/css-values-4/#frequency-value",
+      "type": "type",
+      "values": [
+        {
+          "name": "Hz",
+          "prose": "Hertz. It represents the number of occurrences per second.",
+          "href": "https://drafts.csswg.org/css-values-4/#Hz",
+          "type": "value",
+          "value": "Hz"
+        },
+        {
+          "name": "kHz",
+          "prose": "KiloHertz. A kiloHertz is 1000 Hertz.",
+          "href": "https://drafts.csswg.org/css-values-4/#kHz",
+          "type": "value",
+          "value": "kHz"
+        }
+      ]
+    },
+    {
+      "name": "<resolution>",
+      "prose": "Resolution units are dimensions denoted by <resolution>. The resolution unit identifiers are:",
+      "href": "https://drafts.csswg.org/css-values-4/#resolution-value",
+      "type": "type",
+      "values": [
+        {
+          "name": "dpi",
+          "prose": "Dots per inch.",
+          "href": "https://drafts.csswg.org/css-values-4/#dpi",
+          "type": "value",
+          "value": "dpi"
+        },
+        {
+          "name": "dpcm",
+          "prose": "Dots per centimeter.",
+          "href": "https://drafts.csswg.org/css-values-4/#dpcm",
+          "type": "value",
+          "value": "dpcm"
+        },
+        {
+          "name": "dppx",
+          "prose": "Dots per px unit.",
+          "href": "https://drafts.csswg.org/css-values-4/#dppx",
+          "type": "value",
+          "value": "dppx"
+        },
+        {
+          "name": "x",
+          "prose": "Dots per px unit.",
+          "href": "https://drafts.csswg.org/css-values-4/#x",
+          "type": "value",
+          "value": "x"
+        }
+      ]
+    },
+    {
+      "name": "<position>",
+      "prose": "The <position> value specifies the position of a object area (e.g. background image) inside a positioning area (e.g. background positioning area). It is computed and interpreted as specified for background-position. [CSS3-BACKGROUND]",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-position",
+      "type": "type",
+      "value": "[ [ left | center | right | top | bottom | <length-percentage> ] | [ left | center | right ] && [ top | center | bottom ] | [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] | [ [ left | right ] <length-percentage> ] && [ [ top | bottom ] <length-percentage> ] ]"
+    },
+    {
+      "name": "calc()",
+      "prose": "The calc() function is a math function that allows basic arithmetic to be performed on numerical values, using addition (+), subtraction (-), multiplication (*), division (/), and parentheses.",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-calc",
+      "type": "function",
+      "value": "calc( <calc-sum> )",
+      "values": [
+        {
+          "name": "e",
+          "prose": "the base of the natural logarithm, approximately equal to 2.7182818284590452354.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-calc-e",
+          "type": "value",
+          "value": "e"
+        },
+        {
+          "name": "pi",
+          "prose": "the ratio of a circle’s circumference to its diameter, approximately equal to 3.1415926535897932.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-calc-pi",
+          "type": "value",
+          "value": "pi"
+        },
+        {
+          "name": "infinity",
+          "prose": "the value positive infinity (+∞)",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-calc-infinity",
+          "type": "value",
+          "value": "infinity"
+        },
+        {
+          "name": "-infinity",
+          "prose": "the value negative infinity (−∞)",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-calc--infinity",
+          "type": "value",
+          "value": "-infinity"
+        },
+        {
+          "name": "NaN",
+          "prose": "the value NaN",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-calc-nan",
+          "type": "value",
+          "value": "NaN"
+        }
+      ]
+    },
+    {
+      "name": "min()",
+      "prose": "The min() or max() functions contain one or more comma-separated calculations, and represent the smallest (most negative) or largest (most positive) of them, respectively.",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-min",
+      "type": "function",
+      "value": "min( <calc-sum># )"
+    },
+    {
+      "name": "max()",
+      "prose": "The min() or max() functions contain one or more comma-separated calculations, and represent the smallest (most negative) or largest (most positive) of them, respectively.",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-max",
+      "type": "function",
+      "value": "max( <calc-sum># )"
+    },
+    {
+      "name": "clamp()",
+      "prose": "The clamp() function takes three calculations—​a minimum value, a central value, and a maximum value—​and represents its central calculation, clamped according to its min and max calculations, favoring the min calculation if it conflicts with the max. (That is, given clamp(MIN, VAL, MAX), it represents exactly the same value as max(MIN, min(VAL, MAX))).",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-clamp",
+      "type": "function",
+      "value": "clamp( [ <calc-sum> | none ], <calc-sum>, [ <calc-sum> | none ] )",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Either the min or max calculations (or even both) can instead be the keyword none, which indicates the value is not clamped from that side. (That is, clamp(MIN, VAL, none) is equivalent to max(MIN, VAL), clamp(none, VAL, MAX) is equivalent to min(VAL, MAX), and clamp(none, VAL, none) is equivalent to just calc(VAL).)",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-clamp-none",
+          "type": "value",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "name": "round()",
+      "value": "round( <rounding-strategy>?, <calc-sum>, <calc-sum>? )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-round",
+      "type": "function"
+    },
+    {
+      "name": "<rounding-strategy>",
+      "prose": "If A is exactly equal to an integer multiple of B, round() resolves to A exactly (preserving whether A is 0⁻ or 0⁺, if relevant). Otherwise, there are two integer multiples of B that are potentially \"closest\" to A, lower B which is closer to −∞ and upper B which is closer to +∞. The following <rounding-strategy>s dictate how to choose between them:",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-rounding-strategy",
+      "type": "type",
+      "value": "nearest | up | down | to-zero | line-width",
+      "values": [
+        {
+          "name": "nearest",
+          "prose": "Choose whichever of lower B and upper B that has the smallest absolute difference from A. If both have an equal difference (A is exactly between the two values), choose upper B.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-rounding-strategy-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "up",
+          "prose": "Choose upper B.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-rounding-strategy-up",
+          "type": "value",
+          "value": "up"
+        },
+        {
+          "name": "down",
+          "prose": "Choose lower B.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-rounding-strategy-down",
+          "type": "value",
+          "value": "down"
+        },
+        {
+          "name": "to-zero",
+          "prose": "Choose whichever of lower B and upper B that has the smallest absolute difference from 0.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-rounding-strategy-to-zero",
+          "type": "value",
+          "value": "to-zero"
+        },
+        {
+          "name": "line-width",
+          "prose": "If B is omitted, A is snapped as a line width. Otherwise round as for nearest, except that if one of lower B or upper B is zero, the non-zero one is chosen, and the final result is snapped as a line width.",
+          "href": "https://drafts.csswg.org/css-values-4/#valdef-rounding-strategy-line-width",
+          "type": "value",
+          "value": "line-width"
+        }
+      ]
+    },
+    {
+      "name": "mod()",
+      "value": "mod( <calc-sum>, <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-mod",
+      "type": "function"
+    },
+    {
+      "name": "rem()",
+      "value": "rem( <calc-sum>, <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-rem",
+      "type": "function"
+    },
+    {
+      "name": "sin()",
+      "value": "sin( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-sin",
+      "type": "function"
+    },
+    {
+      "name": "cos()",
+      "value": "cos( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-cos",
+      "type": "function"
+    },
+    {
+      "name": "tan()",
+      "value": "tan( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-tan",
+      "type": "function"
+    },
+    {
+      "name": "asin()",
+      "value": "asin( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-asin",
+      "type": "function"
+    },
+    {
+      "name": "acos()",
+      "value": "acos( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-acos",
+      "type": "function"
+    },
+    {
+      "name": "atan()",
+      "value": "atan( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-atan",
+      "type": "function"
+    },
+    {
+      "name": "atan2()",
+      "value": "atan2( <calc-sum>, <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-atan2",
+      "type": "function"
+    },
+    {
+      "name": "pow()",
+      "value": "pow( <calc-sum>, <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-pow",
+      "type": "function"
+    },
+    {
+      "name": "sqrt()",
+      "value": "sqrt( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-sqrt",
+      "type": "function"
+    },
+    {
+      "name": "hypot()",
+      "value": "hypot( <calc-sum># )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-hypot",
+      "type": "function"
+    },
+    {
+      "name": "log()",
+      "value": "log( <calc-sum>, <calc-sum>? )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-log",
+      "type": "function"
+    },
+    {
+      "name": "exp()",
+      "value": "exp( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-exp",
+      "type": "function"
+    },
+    {
+      "name": "abs()",
+      "value": "abs( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-abs",
+      "type": "function"
+    },
+    {
+      "name": "sign()",
+      "value": "sign( <calc-sum> )",
+      "href": "https://drafts.csswg.org/css-values-4/#funcdef-sign",
+      "type": "function"
+    },
+    {
+      "name": "<calc-sum>",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-calc-sum",
+      "type": "type",
+      "value": "<calc-product> [ [ '+' | '-' ] <calc-product> ]*"
+    },
+    {
+      "name": "<calc-product>",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-calc-product",
+      "type": "type",
+      "value": "<calc-value> [ [ '*' | / ] <calc-value> ]*"
+    },
+    {
+      "name": "<calc-value>",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-calc-value",
+      "type": "type",
+      "value": "<number> | <dimension> | <percentage> | <calc-keyword> | ( <calc-sum> )"
+    },
+    {
+      "name": "<calc-keyword>",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-calc-keyword",
+      "type": "type",
+      "value": "e | pi | infinity | -infinity | NaN"
+    },
+    {
+      "name": "<quirky-length>",
+      "prose": "When CSS is being parsed in quirks mode, <quirky-length> is a type of <length> that is only valid in certain properties:",
+      "href": "https://drafts.csswg.org/css-values-4/#typedef-quirky-length",
+      "type": "type"
+    }
+  ]
+}

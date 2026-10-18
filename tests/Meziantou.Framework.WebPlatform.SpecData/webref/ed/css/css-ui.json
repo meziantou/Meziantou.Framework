@@ -1,0 +1,1009 @@
+{
+  "spec": {
+    "title": "CSS Basic User Interface Module Level 4",
+    "url": "https://drafts.csswg.org/css-ui-4/"
+  },
+  "properties": [
+    {
+      "name": "outline",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline",
+      "value": "<'outline-width'> || <'outline-style'> || <'outline-color'>",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "outline"
+      ],
+      "longhands": [
+        "outline-width",
+        "outline-style",
+        "outline-color"
+      ]
+    },
+    {
+      "name": "outline-width",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "outline-width",
+        "outlineWidth"
+      ]
+    },
+    {
+      "name": "outline-style",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline-style",
+      "value": "auto | <outline-line-style>",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "outline-style",
+        "outlineStyle"
+      ]
+    },
+    {
+      "name": "outline-color",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline-color",
+      "value": "auto | <'border-top-color'>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see below",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "When outline-style is auto, outline-color: auto computes to auto and represents the accent color. Otherwise, outline-color: auto computes to currentColor.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-outline-color-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "outline-color",
+        "outlineColor"
+      ]
+    },
+    {
+      "name": "outline-offset",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-outline-offset",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "outline-offset",
+        "outlineOffset"
+      ]
+    },
+    {
+      "name": "resize",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-resize",
+      "value": "none | both | horizontal | vertical | block | inline",
+      "initial": "none",
+      "appliesTo": "elements that are scroll containers and optionally replaced elements such as images, videos, and iframes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "resize"
+      ]
+    },
+    {
+      "name": "cursor",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-cursor",
+      "value": "[<cursor-image>,]* <cursor-predefined>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified, except with any relative URLs converted to absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<cursor-image>",
+          "value": "[ <url> | <url-set> ] <number>{2}?",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-cursor-image",
+          "type": "value"
+        },
+        {
+          "name": "<cursor-image>",
+          "href": "https://drafts.csswg.org/css-ui-4/#typedef-cursor-cursor-image",
+          "type": "type",
+          "value": "[ <url> | <url-set> ] <number>{2}?"
+        },
+        {
+          "name": "<url-set>",
+          "prose": "<url-set> is a limited version of image-set(), where the <image> sub-production is restricted to <url> only.",
+          "href": "https://drafts.csswg.org/css-ui-4/#typedef-cursor-url-set",
+          "type": "type"
+        },
+        {
+          "name": "<cursor-predefined>",
+          "prose": "The mandatory <cursor-predefined> keyword specifies a predefined cursor to use, or the fallback cursor to be used if <url>s were provided and none of them can be successfully used. See § 5.1.1.1 Predefined Cursors for the full set of <cursor-predefined> keywords and their meanings.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-cursor-predefined",
+          "type": "value",
+          "value": "<cursor-predefined>"
+        },
+        {
+          "name": "auto",
+          "prose": "The UA determines the cursor to display based on the current context: auto behaves as text over selectable text or editable elements, and default otherwise.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "default",
+          "prose": "The platform-dependent default cursor. Often rendered as an arrow.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-default",
+          "type": "value",
+          "value": "default"
+        },
+        {
+          "name": "none",
+          "prose": "No cursor is rendered for the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "context-menu",
+          "prose": "A context menu is available for the object under the cursor. Often rendered as an arrow with a small menu-like graphic next to it.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-context-menu",
+          "type": "value",
+          "value": "context-menu"
+        },
+        {
+          "name": "help",
+          "prose": "Help is available for the object under the cursor. Often rendered as a question mark or a balloon.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-help",
+          "type": "value",
+          "value": "help"
+        },
+        {
+          "name": "pointer",
+          "prose": "The cursor is a pointer that indicates a link.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-pointer",
+          "type": "value",
+          "value": "pointer"
+        },
+        {
+          "name": "progress",
+          "prose": "A progress indicator. The program is performing some processing, but is different from wait in that the user may still interact with the program. Often rendered as a spinning beach ball, or an arrow with a watch or hourglass.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-progress",
+          "type": "value",
+          "value": "progress"
+        },
+        {
+          "name": "wait",
+          "prose": "Indicates that the program is busy and the user should wait. Often rendered as a watch or hourglass.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-wait",
+          "type": "value",
+          "value": "wait"
+        },
+        {
+          "name": "cell",
+          "prose": "Indicates that a cell or set of cells may be selected. Often rendered as a thick plus-sign with a dot in the middle.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-cell",
+          "type": "value",
+          "value": "cell"
+        },
+        {
+          "name": "crosshair",
+          "prose": "A simple crosshair (e.g., short line segments resembling a \"+\" sign). Often used to indicate a two dimensional bitmap selection mode.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-crosshair",
+          "type": "value",
+          "value": "crosshair"
+        },
+        {
+          "name": "text",
+          "prose": "Indicates text that may be selected. Often rendered as a vertical I-beam. User agents may automatically display a horizontal I-beam/cursor (e.g. same as the vertical-text keyword) for vertical text, or for that matter, any angle of I-beam/cursor for text that is rendered at any particular angle.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "vertical-text",
+          "prose": "Indicates vertical-text that may be selected. Often rendered as a horizontal I-beam.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-vertical-text",
+          "type": "value",
+          "value": "vertical-text"
+        },
+        {
+          "name": "alias",
+          "prose": "Indicates an alias of/shortcut to something is to be created. Often rendered as an arrow with a small curved arrow next to it.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-alias",
+          "type": "value",
+          "value": "alias"
+        },
+        {
+          "name": "copy",
+          "prose": "Indicates something is to be copied. Often rendered as an arrow with a small plus sign next to it.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-copy",
+          "type": "value",
+          "value": "copy"
+        },
+        {
+          "name": "move",
+          "prose": "Indicates something is to be moved.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-move",
+          "type": "value",
+          "value": "move"
+        },
+        {
+          "name": "no-drop",
+          "prose": "Indicates that the dragged item cannot be dropped at the current cursor location. Often rendered as a hand or pointer with a small circle with a line through it.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-no-drop",
+          "type": "value",
+          "value": "no-drop"
+        },
+        {
+          "name": "not-allowed",
+          "prose": "Indicates that the requested action will not be carried out. Often rendered as a circle with a line through it.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-not-allowed",
+          "type": "value",
+          "value": "not-allowed"
+        },
+        {
+          "name": "grab",
+          "prose": "Indicates that something can be grabbed (dragged to be moved). Often rendered as the backside of an open hand.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-grab",
+          "type": "value",
+          "value": "grab"
+        },
+        {
+          "name": "grabbing",
+          "prose": "Indicates that something is being grabbed (dragged to be moved). Often rendered as the backside of a hand with fingers closed mostly out of view.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-grabbing",
+          "type": "value",
+          "value": "grabbing"
+        },
+        {
+          "name": "e-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-e-resize",
+          "type": "value",
+          "value": "e-resize"
+        },
+        {
+          "name": "n-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-n-resize",
+          "type": "value",
+          "value": "n-resize"
+        },
+        {
+          "name": "ne-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-ne-resize",
+          "type": "value",
+          "value": "ne-resize"
+        },
+        {
+          "name": "nw-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-nw-resize",
+          "type": "value",
+          "value": "nw-resize"
+        },
+        {
+          "name": "s-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-s-resize",
+          "type": "value",
+          "value": "s-resize"
+        },
+        {
+          "name": "se-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-se-resize",
+          "type": "value",
+          "value": "se-resize"
+        },
+        {
+          "name": "sw-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-sw-resize",
+          "type": "value",
+          "value": "sw-resize"
+        },
+        {
+          "name": "w-resize",
+          "prose": "Indicates that some edge is to be moved. For example, the se-resize cursor is used when the movement starts from the south-east corner of the box.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-w-resize",
+          "type": "value",
+          "value": "w-resize"
+        },
+        {
+          "name": "ew-resize",
+          "prose": "Indicates a bidirectional resize cursor.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-ew-resize",
+          "type": "value",
+          "value": "ew-resize"
+        },
+        {
+          "name": "ns-resize",
+          "prose": "Indicates a bidirectional resize cursor.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-ns-resize",
+          "type": "value",
+          "value": "ns-resize"
+        },
+        {
+          "name": "nesw-resize",
+          "prose": "Indicates a bidirectional resize cursor.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-nesw-resize",
+          "type": "value",
+          "value": "nesw-resize"
+        },
+        {
+          "name": "nwse-resize",
+          "prose": "Indicates a bidirectional resize cursor.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-nwse-resize",
+          "type": "value",
+          "value": "nwse-resize"
+        },
+        {
+          "name": "col-resize",
+          "prose": "Indicates that the item/column can be resized horizontally. Often rendered as arrows pointing left and right with a vertical bar separating them.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-col-resize",
+          "type": "value",
+          "value": "col-resize"
+        },
+        {
+          "name": "row-resize",
+          "prose": "Indicates that the item/row can be resized vertically. Often rendered as arrows pointing up and down with a horizontal bar separating them.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-row-resize",
+          "type": "value",
+          "value": "row-resize"
+        },
+        {
+          "name": "all-scroll",
+          "prose": "Indicates that the something can be scrolled in any direction. Often rendered as arrows pointing up, down, left, and right with a dot in the middle.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-all-scroll",
+          "type": "value",
+          "value": "all-scroll"
+        },
+        {
+          "name": "zoom-in",
+          "prose": "Indicates that something can be zoomed (magnified) in or out, and often rendered as a magnifying glass with a \"+\" or \"-\" in the center of the glass, for zoom-in and zoom-out respectively.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-zoom-in",
+          "type": "value",
+          "value": "zoom-in"
+        },
+        {
+          "name": "zoom-out",
+          "prose": "Indicates that something can be zoomed (magnified) in or out, and often rendered as a magnifying glass with a \"+\" or \"-\" in the center of the glass, for zoom-in and zoom-out respectively.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-cursor-zoom-out",
+          "type": "value",
+          "value": "zoom-out"
+        }
+      ],
+      "styleDeclaration": [
+        "cursor"
+      ]
+    },
+    {
+      "name": "caret-color",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-caret-color",
+      "value": "auto | <color> [auto | <color>]?",
+      "initial": "auto",
+      "appliesTo": "text or elements that accept text input",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "The computed value for auto is auto. For <color> values, see CSS Color 4 § 15. Resolving <color> Values.",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "caret-color",
+        "caretColor"
+      ]
+    },
+    {
+      "name": "caret-animation",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-caret-animation",
+      "value": "auto | manual",
+      "initial": "auto",
+      "appliesTo": "text or elements that accept text input",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA determines how the caret should be animated, if at all, as well as the speed of any such animation. It should match platform conventions and settings, and may be adjusted based on context.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-animation-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "manual",
+          "prose": "The UA must not animate the caret.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-animation-manual",
+          "type": "value",
+          "value": "manual"
+        }
+      ],
+      "styleDeclaration": [
+        "caret-animation",
+        "caretAnimation"
+      ]
+    },
+    {
+      "name": "caret-shape",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-caret-shape",
+      "value": "auto | bar | block | underscore",
+      "initial": "auto",
+      "appliesTo": "text or elements that accept text input",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The UA determines the shape of the caret. It should match platform conventions, and may be adjusted based on context. For example, if a UA switches between insert mode and overtype mode when the user presses the insert key on their keyboard, it may show a bar caret in insert mode, and a block caret in overtype mode.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-shape-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "bar",
+          "prose": "The UA must render the insertion caret as a thin bar placed at the insertion point. This means it is between, before, or after characters, not over them. It should be perpendicular to the inline progression direction, although UAs may render it slanted when inserting italic or oblique text.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-shape-bar",
+          "type": "value",
+          "value": "bar"
+        },
+        {
+          "name": "block",
+          "prose": "The UA must render the insertion caret as a rectangle overlapping the next visible character following the insertion point. If there is no visible character after the insertion point, the UA must render the caret after the last visible character. UAs may render it as a slanted rectangle when inserting italic or oblique text.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-shape-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "underscore",
+          "prose": "The UA must render the insertion caret as a thin line under (as defined in [CSS-WRITING-MODES-3]) the next visible character following the insertion point. If there is no visible character after the insertion point, the UA must render the caret after the last visible character.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-caret-shape-underscore",
+          "type": "value",
+          "value": "underscore"
+        }
+      ],
+      "styleDeclaration": [
+        "caret-shape",
+        "caretShape"
+      ]
+    },
+    {
+      "name": "caret",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-caret",
+      "value": "<'caret-color'> || <'caret-animation'> || <'caret-shape'>",
+      "initial": "auto",
+      "appliesTo": "text or elements that accept text input",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "caret"
+      ],
+      "longhands": [
+        "caret-color",
+        "caret-animation",
+        "caret-shape"
+      ]
+    },
+    {
+      "name": "nav-up",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-nav-up",
+      "value": "auto | <id> [ current | root | <target-name> ]?",
+      "initial": "auto",
+      "appliesTo": "all enabled elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "nav-up",
+        "navUp"
+      ]
+    },
+    {
+      "name": "nav-right",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-nav-right",
+      "value": "auto | <id> [ current | root | <target-name> ]?",
+      "initial": "auto",
+      "appliesTo": "all enabled elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "nav-right",
+        "navRight"
+      ]
+    },
+    {
+      "name": "nav-down",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-nav-down",
+      "value": "auto | <id> [ current | root | <target-name> ]?",
+      "initial": "auto",
+      "appliesTo": "all enabled elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "nav-down",
+        "navDown"
+      ]
+    },
+    {
+      "name": "nav-left",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-nav-left",
+      "value": "auto | <id> [ current | root | <target-name> ]?",
+      "initial": "auto",
+      "appliesTo": "all enabled elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "nav-left",
+        "navLeft"
+      ]
+    },
+    {
+      "name": "user-select",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-user-select",
+      "value": "auto | text | none | contain | all",
+      "initial": "auto",
+      "appliesTo": "all elements, and optionally to the ::before and ::after pseudo-elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The used value of auto is determined as follows: On the ::before and ::after pseudo-elements, the used value is none If the element is an editable element, the used value is contain Otherwise, if the used value of user-select on the parent of this element is all, the used value is all Otherwise, if the used value of user-select on the parent of this element is none, the used value is none Otherwise, the used value is text",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-user-select-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "text",
+          "prose": "The element imposes no constraint on the selection.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-user-select-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "none",
+          "prose": "The UA must not allow selections to be started in this element. A selection started outside of this element must not end in this element. If the user attempts to create such a selection, the UA must instead end the selection range at the element boundary. However, if this element has descendants on which the used value of user-select is not none, selections that start and end within these descendants are allowed. The UA must allow selections to extend across this element, and must exclude this element from such a selection. An exception is made for UAs which do not support multiple ranges per selection, and they may include this element. If the element has descendants on which the used value of user-select is not none, these descendants must be included in a selection extending across the element. This specification makes no normative requirement about the behavior of the clipboard. However, UAs are encouraged to keep the visual selection consistent with what would get copied to the clipboard when copying. Copying text that does not appear to be selected, or vice versa, is highly confusing to users. Attempting to start a selection in an element where user-select is none, such as by clicking in it or starting a drag in it, must not cause a pre-existing selection to become unselected or to be affected in any way. As user-select is a UI convenience mechanism, not a copy protection mechanism, the UA may provide an alternative way for the user to explicitly select the text even when user-select is none.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-user-select-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "contain",
+          "prose": "UAs must not allow a selection which is started in this element to be extended outside of this element. A selection started outside of this element must not end in this element. If the user attempts to create such a selection, the UA must instead end the selection range at the element boundary. The UA must allow selections to extend across this element, and such selections must include the content of the element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-user-select-contain",
+          "type": "value",
+          "value": "contain"
+        },
+        {
+          "name": "all",
+          "prose": "The content of the element must be selected atomically: If a selection would contain part of the element, then the selection must contain the entire element including all its descendants. If the element is selected and the used value of user-select on its parent is all, then the parent must be included in the selection, recursively. If this element has descendants on which the used value of user-select is not all and if a selection is entirely contained in these descendants, then the selection is not extended to include this whole element.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-user-select-all",
+          "type": "value",
+          "value": "all"
+        }
+      ],
+      "styleDeclaration": [
+        "user-select",
+        "userSelect"
+      ]
+    },
+    {
+      "name": "interactivity",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-interactivity",
+      "value": "auto | inert",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The element’s inertness is determined by the host language. (This will usually mean the element is not inert.)",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interactivity-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "inert",
+          "prose": "The element is inert.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interactivity-inert",
+          "type": "value",
+          "value": "inert"
+        }
+      ],
+      "styleDeclaration": [
+        "interactivity"
+      ]
+    },
+    {
+      "name": "interest-delay-start",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-interest-delay-start",
+      "value": "normal | <time>",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword normal or a computed time",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The interest start delay and/or the interest end delay are UA-defined. They can be chosen to match platform conventions. These delays should not be zero. They may be different from each other, and may vary depending on the way the user is showing interest. (For example, a \"hover\" and a \"long press\" might use different delays for indicating interest.)",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<time>",
+          "prose": "Specifies that the interest start delay and/or the interest end delay are the specified duration.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-time",
+          "type": "value",
+          "value": "<time>"
+        }
+      ],
+      "styleDeclaration": [
+        "interest-delay-start",
+        "interestDelayStart"
+      ]
+    },
+    {
+      "name": "interest-delay-end",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-interest-delay-end",
+      "value": "normal | <time>",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword normal or a computed time",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The interest start delay and/or the interest end delay are UA-defined. They can be chosen to match platform conventions. These delays should not be zero. They may be different from each other, and may vary depending on the way the user is showing interest. (For example, a \"hover\" and a \"long press\" might use different delays for indicating interest.)",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<time>",
+          "prose": "Specifies that the interest start delay and/or the interest end delay are the specified duration.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-time",
+          "type": "value",
+          "value": "<time>"
+        }
+      ],
+      "styleDeclaration": [
+        "interest-delay-end",
+        "interestDelayEnd"
+      ]
+    },
+    {
+      "name": "interest-delay",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-interest-delay",
+      "value": "<'interest-delay-start'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The interest start delay and/or the interest end delay are UA-defined. They can be chosen to match platform conventions. These delays should not be zero. They may be different from each other, and may vary depending on the way the user is showing interest. (For example, a \"hover\" and a \"long press\" might use different delays for indicating interest.)",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<time>",
+          "prose": "Specifies that the interest start delay and/or the interest end delay are the specified duration.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-interest-delay-time",
+          "type": "value",
+          "value": "<time>"
+        }
+      ],
+      "styleDeclaration": [
+        "interest-delay",
+        "interestDelay"
+      ],
+      "longhands": [
+        "interest-delay-start",
+        "interest-delay-end"
+      ]
+    },
+    {
+      "name": "accent-color",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-accent-color",
+      "value": "auto | <color>",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the keyword auto or a computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Represents a UA-chosen color, which should match the accent color of the platform, if any.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-accent-color-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<color>",
+          "prose": "Specifies the color to be used as the accent color.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-accent-color-color",
+          "type": "value",
+          "value": "<color>"
+        }
+      ],
+      "styleDeclaration": [
+        "accent-color",
+        "accentColor"
+      ]
+    },
+    {
+      "name": "appearance",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-appearance",
+      "value": "none | auto | base | base-select | <compat-auto> | <compat-special>",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element is rendered following the usual rules of CSS. Replaced elements other than widgets are not affected by this and remain replaced elements. Widgets must not have their native appearance, and instead must have their primitive appearance. See § 7.2.2 Effects of appearance on Decorative Aspects of Elements and § 7.2.3 Effects of appearance on Semantic Aspects of Elements for details.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "The element’s box is laid out like a regular replaced element. Within that box, elements representing widgets should have the native appearance of that widget. The host language is responsible for defining which elements represent which widgets. Elements other than widgets must be rendered as for none.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "base",
+          "prose": "The effect of base depends on the element it is applied to:",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-base",
+          "type": "value",
+          "value": "base"
+        },
+        {
+          "name": "base-select",
+          "prose": "The effect of base-select depends on the element it is applied to:",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-base-select",
+          "type": "value",
+          "value": "base-select"
+        },
+        {
+          "name": "<compat-auto>",
+          "value": "searchfield | textarea | checkbox | radio | menulist | listbox | meter | progress-bar | button",
+          "href": "https://drafts.csswg.org/css-ui-4/#typedef-appearance-compat-auto",
+          "type": "type"
+        },
+        {
+          "name": "searchfield",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-searchfield",
+          "type": "value",
+          "value": "searchfield"
+        },
+        {
+          "name": "textarea",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-textarea",
+          "type": "value",
+          "value": "textarea"
+        },
+        {
+          "name": "checkbox",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-checkbox",
+          "type": "value",
+          "value": "checkbox"
+        },
+        {
+          "name": "radio",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-radio",
+          "type": "value",
+          "value": "radio"
+        },
+        {
+          "name": "menulist",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-menulist",
+          "type": "value",
+          "value": "menulist"
+        },
+        {
+          "name": "listbox",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-listbox",
+          "type": "value",
+          "value": "listbox"
+        },
+        {
+          "name": "meter",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-meter",
+          "type": "value",
+          "value": "meter"
+        },
+        {
+          "name": "progress-bar",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-progress-bar",
+          "type": "value",
+          "value": "progress-bar"
+        },
+        {
+          "name": "button",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-button",
+          "type": "value",
+          "value": "button"
+        },
+        {
+          "name": "<compat-special>",
+          "value": "textfield | menulist-button",
+          "href": "https://drafts.csswg.org/css-ui-4/#typedef-appearance-compat-special",
+          "type": "type"
+        },
+        {
+          "name": "textfield",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-textfield",
+          "type": "value",
+          "value": "textfield"
+        },
+        {
+          "name": "menulist-button",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-appearance-menulist-button",
+          "type": "value",
+          "value": "menulist-button"
+        }
+      ],
+      "styleDeclaration": [
+        "appearance"
+      ]
+    },
+    {
+      "name": "window-drag",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef-window-drag",
+      "value": "none | move",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Specifies that the element cannot be used as a drag area.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-window-drag-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "move",
+          "prose": "Specifies that the element’s principal box can be used as a window drag area.",
+          "href": "https://drafts.csswg.org/css-ui-4/#valdef-window-drag-move",
+          "type": "value",
+          "value": "move"
+        }
+      ],
+      "styleDeclaration": [
+        "window-drag",
+        "windowDrag"
+      ]
+    },
+    {
+      "name": "-webkit-appearance",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef--webkit-appearance",
+      "legacyAliasOf": "appearance",
+      "styleDeclaration": [
+        "-webkit-appearance",
+        "WebkitAppearance",
+        "webkitAppearance"
+      ],
+      "value": "none | auto | base | base-select | <compat-auto> | <compat-special>"
+    },
+    {
+      "name": "-webkit-user-select",
+      "href": "https://drafts.csswg.org/css-ui-4/#propdef--webkit-user-select",
+      "styleDeclaration": [
+        "-webkit-user-select",
+        "WebkitUserSelect",
+        "webkitUserSelect"
+      ],
+      "value": "auto | text | none | contain | all"
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<outline-line-style>",
+      "prose": "<outline-line-style> accepts the same values as <line-style> (CSS Backgrounds 3 § 3.2 Line Patterns: the border-style properties) with the same meaning, except that hidden is not a legal outline style. In addition, the outline-style property accepts the value auto.",
+      "href": "https://drafts.csswg.org/css-ui-4/#typedef-outline-line-style",
+      "type": "type",
+      "value": "none | auto | dotted | dashed | solid | double | groove | ridge | inset | outset"
+    },
+    {
+      "name": "<cursor-predefined>",
+      "href": "https://drafts.csswg.org/css-ui-4/#typedef-cursor-predefined",
+      "type": "type",
+      "value": "auto | default | none | context-menu | help | pointer | progress | wait | cell | crosshair | text | vertical-text | alias | copy | move | no-drop | not-allowed | grab | grabbing | e-resize | n-resize | ne-resize | nw-resize | s-resize | se-resize | sw-resize | w-resize | ew-resize | ns-resize | nesw-resize | nwse-resize | col-resize | row-resize | all-scroll | zoom-in | zoom-out"
+    },
+    {
+      "name": "<id>",
+      "prose": "The <id> value is an ID selector [SELECT]. In response to directional navigation input corresponding to the property, the focus is navigated to the first element in tree order matching the selector. If this refers to the currently focused element, the directional navigation input respective to the nav- property is ignored — there is no need to refocus the same element. If no element matches the selector, the user agent automatically determines which element to navigate the focus to. If the focus is navigated to an element that was not otherwise focusable, it becomes focusable only as the result of this directional navigation, and the :focus pseudo-class matches the element while it is focused as such.",
+      "href": "https://drafts.csswg.org/css-ui-4/#typedef-id",
+      "type": "type"
+    },
+    {
+      "name": "<target-name>",
+      "prose": "The <target-name> parameter indicates the target frame for the focus navigation. It is a <string> and it MUST NOT start with the underscore \"_\" character. Error handling: if it does start with an underscore, \"_parent\" navigates to the parent frame, \"_root\" is treated as root, and other values navigate to a frame by that name if it exists. If the specified target frame does not exist, the parameter will be treated as the keyword current, which means to simply use the frame that the element is in. The keyword root indicates that the user agent should target the full window.",
+      "href": "https://drafts.csswg.org/css-ui-4/#typedef-target-name",
+      "type": "type"
+    }
+  ]
+}

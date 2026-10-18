@@ -1,0 +1,573 @@
+{
+  "spec": {
+    "title": "Selectors Level 4",
+    "url": "https://drafts.csswg.org/selectors-4/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":is()",
+      "prose": "The matches-any pseudo-class, :is(), is a functional pseudo-class taking a <forgiving-selector-list> as its sole argument.",
+      "href": "https://drafts.csswg.org/selectors-4/#matches-pseudo"
+    },
+    {
+      "name": ":matches()",
+      "prose": "As previous drafts of this specification used the name :matches() for this pseudo-class, UAs may additionally implement this obsolete name as a legacy selector alias for :is() if needed for backwards-compatibility.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-matches"
+    },
+    {
+      "name": ":not()",
+      "prose": "The negation pseudo-class, :not(), is a functional pseudo-class taking a <complex-real-selector-list> as an argument. It represents an element that is not represented by its argument.",
+      "href": "https://drafts.csswg.org/selectors-4/#negation-pseudo"
+    },
+    {
+      "name": ":where()",
+      "prose": "The Specificity-adjustment pseudo-class, :where(), is a functional pseudo-class with the same syntax and functionality as :is(). Unlike :is(), neither the :where() pseudo-class, nor any of its arguments, contribute to the specificity of the selector—​its specificity is always zero.",
+      "href": "https://drafts.csswg.org/selectors-4/#where-pseudo"
+    },
+    {
+      "name": ":has()",
+      "prose": "The relational pseudo-class, :has(), is a functional pseudo-class taking a <relative-selector-list> as an argument. It represents an element if any of the relative selectors would match at least one element when anchored against this element.",
+      "href": "https://drafts.csswg.org/selectors-4/#has-pseudo"
+    },
+    {
+      "name": ":defined",
+      "prose": "In some host languages, elements can have a distinction between being “defined”/“constructed” or not. The :defined pseudo-class matches elements that are fully defined, as dictated by the host language.",
+      "href": "https://drafts.csswg.org/selectors-4/#defined-pseudo",
+      "value": ":defined"
+    },
+    {
+      "name": ":dir()",
+      "prose": "The :dir() pseudo-class allows the author to write selectors that represent an element based on its directionality as determined by the document language. For example, [HTML] defines how to determine the directionality of an element, based on a combination of the dir attribute, the surrounding text, and other factors. As another example, the its:dir and dirRule element of the Internationalization Tag Set [ITS20] are able to define the directionality of an element in [XML10].",
+      "href": "https://drafts.csswg.org/selectors-4/#dir-pseudo"
+    },
+    {
+      "name": ":lang()",
+      "prose": "If the document language specifies how the (human) content language of an element is determined, it is possible to write selectors that represent an element based on its content language. The :lang() pseudo-class, which accepts a comma-separated list of one or more language ranges, represents an element whose content language is one of the languages listed in its argument. Each language range in :lang() is an extended language range, as defined in BCP 47, and must be a valid CSS <ident> or <string>. (Thus language ranges containing asterisks, for example, must be either correctly escaped or quoted as strings, e.g. :lang(\\*-Latn) or :lang(\"*-Latn\").)",
+      "href": "https://drafts.csswg.org/selectors-4/#lang-pseudo"
+    },
+    {
+      "name": ":any-link",
+      "prose": "The :any-link pseudo-class represents an element that acts as the source anchor of a hyperlink. For example, in [HTML], any a or area elements with an href attribute are hyperlinks, and thus match :any-link. It matches an element if the element would match either :link or :visited, and is equivalent to :is(:link, :visited).",
+      "href": "https://drafts.csswg.org/selectors-4/#any-link-pseudo",
+      "value": ":any-link"
+    },
+    {
+      "name": ":link",
+      "prose": "User agents commonly display unvisited hyperlinks differently from previously visited ones. Selectors provides the pseudo-classes :link and :visited to distinguish them:",
+      "href": "https://drafts.csswg.org/selectors-4/#link-pseudo",
+      "value": ":link"
+    },
+    {
+      "name": ":visited",
+      "prose": "User agents commonly display unvisited hyperlinks differently from previously visited ones. Selectors provides the pseudo-classes :link and :visited to distinguish them:",
+      "href": "https://drafts.csswg.org/selectors-4/#visited-pseudo",
+      "value": ":visited"
+    },
+    {
+      "name": ":target",
+      "prose": "The :target pseudo-class matches the document’s target elements. If the document’s URL has no fragment identifier, then the document has no target elements.",
+      "href": "https://drafts.csswg.org/selectors-4/#target-pseudo",
+      "value": ":target"
+    },
+    {
+      "name": ":scope",
+      "prose": "In some contexts, selectors are matched with respect to one or more scoping roots, such as when calling the querySelector() method in [DOM]. The :scope pseudo-class represents this scoping root, and may be either a true element or a virtual one (such as a DocumentFragment).",
+      "href": "https://drafts.csswg.org/selectors-4/#scope-pseudo",
+      "value": ":scope"
+    },
+    {
+      "name": ":hover",
+      "prose": "The :hover pseudo-class applies while the user designates an element (or pseudo-element) with a pointing device, but does not necessarily activate it. For example, a visual user agent could apply this pseudo-class when the cursor (mouse pointer) hovers over a box generated by the element. Interactive user agents that cannot detect hovering due to hardware limitations (e.g., a pen device that does not detect hovering) are still conforming; the selector will simply never match in such a UA.",
+      "href": "https://drafts.csswg.org/selectors-4/#hover-pseudo",
+      "value": ":hover"
+    },
+    {
+      "name": ":active",
+      "prose": "The :active pseudo-class applies while an element is being “activated” by the user, as defined by the host language; for example, while a hyperlink is being triggered.",
+      "href": "https://drafts.csswg.org/selectors-4/#active-pseudo",
+      "value": ":active"
+    },
+    {
+      "name": ":focus",
+      "prose": "The :focus pseudo-class applies while an element (or pseudo-element) has the focus (accepts keyboard or other forms of input).",
+      "href": "https://drafts.csswg.org/selectors-4/#focus-pseudo",
+      "value": ":focus"
+    },
+    {
+      "name": ":focus-visible",
+      "prose": "While the :focus pseudo-class always matches the currently-focused element, UAs only sometimes visibly indicate focus (such as by drawing a “focus ring”), instead using a variety of heuristics to visibly indicate the focus only when it would be most helpful to the user. The :focus-visible pseudo-class matches a focused element (or pseudo-element) in these situations only, allowing authors to change the appearance of the focus indicator without changing when a focus indicator appears.",
+      "href": "https://drafts.csswg.org/selectors-4/#focus-visible-pseudo",
+      "value": ":focus-visible"
+    },
+    {
+      "name": ":focus-within",
+      "prose": "The :focus-within pseudo-class applies to any element (or pseudo-element) for which the :focus pseudo-class applies, as well as to an element (or pseudo-element) whose descendant in the flat tree (including non-element nodes, such as text nodes) matches the conditions for matching :focus.",
+      "href": "https://drafts.csswg.org/selectors-4/#focus-within-pseudo",
+      "value": ":focus-within"
+    },
+    {
+      "name": ":playing",
+      "prose": "The :playing pseudo-class represents an element that is capable of being “played” or “paused”, when that element is “playing”. (This includes both when the element is explicitly playing, and when it’s temporarily stopped for some reason not connected to user intent, but will automatically resume when that reason is resolved, such as a “buffering” or “stalled” state.)",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-playing",
+      "value": ":playing"
+    },
+    {
+      "name": ":paused",
+      "prose": "The :paused pseudo-class represents an element that is capable of being “played” or “paused”, when that element is “paused” (i.e. not ”playing”). (This includes both an explicit “paused” state, and other non-playing states like “loaded, hasn’t been activated yet”, etc.)",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-paused",
+      "value": ":paused"
+    },
+    {
+      "name": ":seeking",
+      "prose": "The :seeking pseudo-class represents an element that is capable of ”seeking” when that element is ”seeking”. (For the audio and video elements of HTML, see HTML § 4.8.11.9 Seeking.)",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-seeking",
+      "value": ":seeking"
+    },
+    {
+      "name": ":buffering",
+      "prose": "The :buffering pseudo-class represents an element that is capable of being “played” or “paused”, when that element cannot continue playing because it is actively attempting to obtain media data but has not yet obtained enough data to resume playback. (Note that the element is still considered to be “playing” when it is “buffering”. Whenever :buffering matches an element, :playing also matches the element.)",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-buffering",
+      "value": ":buffering"
+    },
+    {
+      "name": ":stalled",
+      "prose": "The :stalled pseudo-class represents an element when that element cannot continue playing because it is actively attempting to obtain media data but it has failed to receive any data for some amount of time. For the audio and video elements of HTML, this amount of time is the media element stall timeout. [HTML] (Note that, like with the :buffering pseudo-class, the element is still considered to be “playing” when it is “stalled”. Whenever :stalled matches an element, :playing also matches the element.)",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-stalled",
+      "value": ":stalled"
+    },
+    {
+      "name": ":muted",
+      "prose": "The :muted pseudo-class represents an element that is capable of making sound, but is currently “muted“ (forced silent). (For the audio and video elements of HTML, see muted. [HTML])",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-muted",
+      "value": ":muted"
+    },
+    {
+      "name": ":volume-locked",
+      "prose": "The :volume-locked pseudo-class represents an element that is capable of making sound, and currently has its volume \"locked\" by the UA or the user, so the page author cannot change it. (For the audio and video elements of HTML, see the algorithm for setting the element’s effective media volume. [HTML])",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-volume-locked",
+      "value": ":volume-locked"
+    },
+    {
+      "name": ":open",
+      "prose": "The :open pseudo-class represents an element that has both “open” and “closed” states, and which is currently in the “open” state.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-open",
+      "value": ":open"
+    },
+    {
+      "name": ":popover-open",
+      "prose": "The :popover-open pseudo-class represents an element that has both “popover-showing” and “popover-hidden” states and which is currently in the “popover-showing” state.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-popover-open",
+      "value": ":popover-open"
+    },
+    {
+      "name": ":modal",
+      "prose": "The :modal pseudo-class represents an element which is in a state that excludes all interaction with elements outside it until it has been dismissed. Multiple elements can be :modal simultaneously, with only one of them active (able to receive input).",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-modal",
+      "value": ":modal"
+    },
+    {
+      "name": ":fullscreen",
+      "prose": "The :fullscreen pseudo-class represents an element which is displayed in a mode that takes up most (usually all) of the screen, such as that defined by the Fullscreen API. [FULLSCREEN]",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-fullscreen",
+      "value": ":fullscreen"
+    },
+    {
+      "name": ":picture-in-picture",
+      "prose": "The :picture-in-picture pseudo-class represents an element whose contents are being displayed in a “picture-in-picture” mode (i.e. displayed in a window confined to part of the screen and overlaying other content) rather than embedded in the document. For example, this pseudo-class can be used to style a video element’s box while its contents are being played in an overlaid window using the Picture-in-Picture API. [picture-in-picture]",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-picture-in-picture",
+      "value": ":picture-in-picture"
+    },
+    {
+      "name": ":enabled",
+      "prose": "The :enabled pseudo-class represents user interface elements that are in an enabled state; such elements must have a corresponding disabled state.",
+      "href": "https://drafts.csswg.org/selectors-4/#enabled-pseudo",
+      "value": ":enabled"
+    },
+    {
+      "name": ":disabled",
+      "prose": "Conversely, the :disabled pseudo-class represents user interface elements that are in a disabled state; such elements must have a corresponding enabled state.",
+      "href": "https://drafts.csswg.org/selectors-4/#disabled-pseudo",
+      "value": ":disabled"
+    },
+    {
+      "name": ":read-write",
+      "prose": "An element matches :read-write if it is user-alterable, as defined by the document language. Otherwise, it is :read-only.",
+      "href": "https://drafts.csswg.org/selectors-4/#read-write-pseudo",
+      "value": ":read-write"
+    },
+    {
+      "name": ":read-only",
+      "prose": "An element matches :read-write if it is user-alterable, as defined by the document language. Otherwise, it is :read-only.",
+      "href": "https://drafts.csswg.org/selectors-4/#read-only-pseudo",
+      "value": ":read-only"
+    },
+    {
+      "name": ":placeholder-shown",
+      "prose": "Input elements can sometimes show placeholder text as a hint to the user on what to type in. See, for example, the placeholder attribute in [HTML]. The :placeholder-shown pseudo-class matches an input element that is showing such placeholder text, whether that text is given by an attribute or a real element, or is otherwise implied by the UA.",
+      "href": "https://drafts.csswg.org/selectors-4/#placeholder-shown-pseudo",
+      "value": ":placeholder-shown"
+    },
+    {
+      "name": ":autofill",
+      "prose": "The :autofill pseudo-class represents input elements that have been automatically filled by the user agent, and have not been subsequently altered by the user.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-autofill",
+      "value": ":autofill"
+    },
+    {
+      "name": ":default",
+      "prose": "The :default pseudo-class applies to the one or more UI elements that are the default among a set of similar elements. Typically applies to context menu items, buttons and select lists/menus.",
+      "href": "https://drafts.csswg.org/selectors-4/#default-pseudo",
+      "value": ":default"
+    },
+    {
+      "name": ":checked",
+      "prose": "When such elements are toggled “on” the :checked pseudo-class applies. For example, [HTML] defines that checked checkboxes, radio buttons, and selected <option> elements match :checked. Similarly, when such elements are toggled “off”, the :unchecked pseudo-class applies.",
+      "href": "https://drafts.csswg.org/selectors-4/#checked-pseudo",
+      "value": ":checked"
+    },
+    {
+      "name": ":unchecked",
+      "prose": "When such elements are toggled “on” the :checked pseudo-class applies. For example, [HTML] defines that checked checkboxes, radio buttons, and selected <option> elements match :checked. Similarly, when such elements are toggled “off”, the :unchecked pseudo-class applies.",
+      "href": "https://drafts.csswg.org/selectors-4/#unchecked-pseudo",
+      "value": ":unchecked"
+    },
+    {
+      "name": ":indeterminate",
+      "prose": "If an element that could match :checked or :unchecked is neither \"on\" nor \"off\", the :indeterminate pseudo-class applies. :indeterminate also matches elements which do not have a notion of being \"checked\", but whose \"value\" is still in an indeterminate state, such as a progress meter whose progress percentage is unknown.",
+      "href": "https://drafts.csswg.org/selectors-4/#indeterminate-pseudo",
+      "value": ":indeterminate"
+    },
+    {
+      "name": ":valid",
+      "prose": "An element is :valid or :invalid when its contents or value is, respectively, valid or invalid with respect to data validity semantics defined by the document language (e.g. [XFORMS11] or [HTML]). An element which lacks data validity semantics is neither :valid nor :invalid.",
+      "href": "https://drafts.csswg.org/selectors-4/#valid-pseudo",
+      "value": ":valid"
+    },
+    {
+      "name": ":invalid",
+      "prose": "An element is :valid or :invalid when its contents or value is, respectively, valid or invalid with respect to data validity semantics defined by the document language (e.g. [XFORMS11] or [HTML]). An element which lacks data validity semantics is neither :valid nor :invalid.",
+      "href": "https://drafts.csswg.org/selectors-4/#invalid-pseudo",
+      "value": ":invalid"
+    },
+    {
+      "name": ":in-range",
+      "prose": "The :in-range and :out-of-range pseudo-classes apply only to elements that have range limitations. An element is :in-range or :out-of-range when the value that the element is bound to is in range or out of range with respect to its range limits as defined by the document language. An element that lacks data range limits or is not a form control is neither :in-range nor :out-of-range. E.g. a slider element with a value of 11 presented as a slider control that only represents the values from 1-10 is :out-of-range. Another example is a menu element with a value of \"E\" that happens to be presented in a popup menu that only has choices \"A\", \"B\" and \"C\".",
+      "href": "https://drafts.csswg.org/selectors-4/#in-range-pseudo",
+      "value": ":in-range"
+    },
+    {
+      "name": ":out-of-range",
+      "prose": "The :in-range and :out-of-range pseudo-classes apply only to elements that have range limitations. An element is :in-range or :out-of-range when the value that the element is bound to is in range or out of range with respect to its range limits as defined by the document language. An element that lacks data range limits or is not a form control is neither :in-range nor :out-of-range. E.g. a slider element with a value of 11 presented as a slider control that only represents the values from 1-10 is :out-of-range. Another example is a menu element with a value of \"E\" that happens to be presented in a popup menu that only has choices \"A\", \"B\" and \"C\".",
+      "href": "https://drafts.csswg.org/selectors-4/#out-of-range-pseudo",
+      "value": ":out-of-range"
+    },
+    {
+      "name": ":required",
+      "prose": "A form element is :required or :optional if a value for it is, respectively, required or optional before the form it belongs to can be validly submitted. Elements that are not form elements are neither required nor optional.",
+      "href": "https://drafts.csswg.org/selectors-4/#required-pseudo",
+      "value": ":required"
+    },
+    {
+      "name": ":optional",
+      "prose": "A form element is :required or :optional if a value for it is, respectively, required or optional before the form it belongs to can be validly submitted. Elements that are not form elements are neither required nor optional.",
+      "href": "https://drafts.csswg.org/selectors-4/#optional-pseudo",
+      "value": ":optional"
+    },
+    {
+      "name": ":user-invalid",
+      "prose": "The :user-invalid and the :user-valid pseudo-classes represent an element with incorrect or correct input, respectively, but only after the user has significantly interacted with it. Their purpose is to help the user identify mistakes in their input.",
+      "href": "https://drafts.csswg.org/selectors-4/#user-invalid-pseudo",
+      "value": ":user-invalid"
+    },
+    {
+      "name": ":user-valid",
+      "prose": "The :user-invalid and the :user-valid pseudo-classes represent an element with incorrect or correct input, respectively, but only after the user has significantly interacted with it. Their purpose is to help the user identify mistakes in their input.",
+      "href": "https://drafts.csswg.org/selectors-4/#user-valid-pseudo",
+      "value": ":user-valid"
+    },
+    {
+      "name": ":root",
+      "prose": "The :root pseudo-class represents an element that is the root of the document.",
+      "href": "https://drafts.csswg.org/selectors-4/#root-pseudo",
+      "value": ":root"
+    },
+    {
+      "name": ":empty",
+      "prose": "The :empty pseudo-class represents an element that has no children except, optionally, document white space characters. In terms of the document tree, only element nodes and content nodes (such as [DOM] text nodes, and entity references) whose data has a non-zero length must be considered as affecting emptiness; comments, processing instructions, and other nodes must not affect whether an element is considered empty or not.",
+      "href": "https://drafts.csswg.org/selectors-4/#empty-pseudo",
+      "value": ":empty"
+    },
+    {
+      "name": ":nth-child()",
+      "value": ":nth-child(An+B [of S]? )",
+      "href": "https://drafts.csswg.org/selectors-4/#nth-child-pseudo"
+    },
+    {
+      "name": ":nth-last-child()",
+      "value": ":nth-last-child(An+B [of S]? )",
+      "href": "https://drafts.csswg.org/selectors-4/#nth-last-child-pseudo"
+    },
+    {
+      "name": ":first-child",
+      "prose": "The :first-child pseudo-class represents an element that is first among its inclusive siblings. Same as :nth-child(1).",
+      "href": "https://drafts.csswg.org/selectors-4/#first-child-pseudo",
+      "value": ":first-child"
+    },
+    {
+      "name": ":last-child",
+      "prose": "The :last-child pseudo-class represents an element that is last among its inclusive siblings. Same as :nth-last-child(1).",
+      "href": "https://drafts.csswg.org/selectors-4/#last-child-pseudo",
+      "value": ":last-child"
+    },
+    {
+      "name": ":only-child",
+      "prose": "The :only-child pseudo-class represents an element that has no siblings. Same as :first-child:last-child or :nth-child(1):nth-last-child(1), but with a lower specificity.",
+      "href": "https://drafts.csswg.org/selectors-4/#only-child-pseudo",
+      "value": ":only-child"
+    },
+    {
+      "name": ":nth-of-type()",
+      "value": ":nth-of-type(An+B)",
+      "href": "https://drafts.csswg.org/selectors-4/#nth-of-type-pseudo"
+    },
+    {
+      "name": ":nth-last-of-type()",
+      "value": ":nth-last-of-type(An+B)",
+      "href": "https://drafts.csswg.org/selectors-4/#nth-last-of-type-pseudo"
+    },
+    {
+      "name": ":first-of-type",
+      "prose": "The :first-of-type pseudo-class represents the same element as :nth-of-type(1).",
+      "href": "https://drafts.csswg.org/selectors-4/#first-of-type-pseudo",
+      "value": ":first-of-type"
+    },
+    {
+      "name": ":last-of-type",
+      "prose": "The :last-of-type pseudo-class represents the same element as :nth-last-of-type(1).",
+      "href": "https://drafts.csswg.org/selectors-4/#last-of-type-pseudo",
+      "value": ":last-of-type"
+    },
+    {
+      "name": ":only-of-type",
+      "prose": "The :only-of-type pseudo-class represents the same element as :first-of-type:last-of-type.",
+      "href": "https://drafts.csswg.org/selectors-4/#only-of-type-pseudo",
+      "value": ":only-of-type"
+    },
+    {
+      "name": ">",
+      "prose": "A child combinator describes a childhood relationship between two elements. A child combinator is made of the \"greater-than sign\" (U+003E, >) code point and separates two compound selectors.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-child",
+      "value": "'>'"
+    },
+    {
+      "name": "+",
+      "prose": "The next-sibling combinator is made of the “plus sign” (U+002B, +) code point that separates two compound selectors. The elements represented by the two compound selectors share the same parent in the document tree and the element represented by the first compound selector immediately precedes the element represented by the second one. Non-element nodes (e.g. text between elements) are ignored when considering the adjacency of elements.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-adjacent",
+      "value": "'+'"
+    },
+    {
+      "name": "~",
+      "prose": "The subsequent-sibling combinator is made of the \"tilde\" (U+007E, ~) code point that separates two compound selectors. The elements represented by the two compound selectors share the same parent in the document tree and the element represented by the first compound selector precedes (not necessarily immediately) the element represented by the second one.",
+      "href": "https://drafts.csswg.org/selectors-4/#selectordef-sibling",
+      "value": "'~'"
+    }
+  ],
+  "values": [
+    {
+      "name": "<selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-selector-list",
+      "type": "type",
+      "value": "<complex-selector-list>"
+    },
+    {
+      "name": "<complex-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-complex-selector-list",
+      "type": "type",
+      "value": "<complex-selector>#"
+    },
+    {
+      "name": "<complex-real-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-complex-real-selector-list",
+      "type": "type",
+      "value": "<complex-real-selector>#"
+    },
+    {
+      "name": "<compound-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-compound-selector-list",
+      "type": "type",
+      "value": "<compound-selector>#"
+    },
+    {
+      "name": "<simple-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-simple-selector-list",
+      "type": "type",
+      "value": "<simple-selector>#"
+    },
+    {
+      "name": "<relative-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-relative-selector-list",
+      "type": "type",
+      "value": "<relative-selector>#"
+    },
+    {
+      "name": "<relative-real-selector-list>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-relative-real-selector-list",
+      "type": "type",
+      "value": "<relative-real-selector>#"
+    },
+    {
+      "name": "<complex-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-complex-selector",
+      "type": "type",
+      "value": "<complex-selector-unit> [ <combinator>? <complex-selector-unit> ]*"
+    },
+    {
+      "name": "<complex-selector-unit>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-complex-selector-unit",
+      "type": "type",
+      "value": "[ <compound-selector>? <pseudo-compound-selector>* ]!"
+    },
+    {
+      "name": "<complex-real-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-complex-real-selector",
+      "type": "type",
+      "value": "<compound-selector> [ <combinator>? <compound-selector> ]*"
+    },
+    {
+      "name": "<relative-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-relative-selector",
+      "type": "type",
+      "value": "<combinator>? <complex-selector>"
+    },
+    {
+      "name": "<relative-real-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-relative-real-selector",
+      "type": "type",
+      "value": "<combinator>? <complex-real-selector>"
+    },
+    {
+      "name": "<compound-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-compound-selector",
+      "type": "type",
+      "value": "[ <type-selector>? <subclass-selector>* ]!"
+    },
+    {
+      "name": "<pseudo-compound-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-pseudo-compound-selector",
+      "type": "type",
+      "value": "<pseudo-element-selector> <pseudo-class-selector>*"
+    },
+    {
+      "name": "<simple-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-simple-selector",
+      "type": "type",
+      "value": "<type-selector> | <subclass-selector>"
+    },
+    {
+      "name": "<combinator>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-combinator",
+      "type": "type",
+      "value": "'>' | '+' | '~'"
+    },
+    {
+      "name": "<wq-name>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-wq-name",
+      "type": "type",
+      "value": "<ns-prefix>? <ident-token>"
+    },
+    {
+      "name": "<ns-prefix>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-ns-prefix",
+      "type": "type",
+      "value": "[ <ident-token> | '*' ]? '|'"
+    },
+    {
+      "name": "<type-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-type-selector",
+      "type": "type",
+      "value": "<wq-name> | <ns-prefix>? '*'"
+    },
+    {
+      "name": "<subclass-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-subclass-selector",
+      "type": "type",
+      "value": "<id-selector> | <class-selector> | <attribute-selector> | <pseudo-class-selector>"
+    },
+    {
+      "name": "<id-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-id-selector",
+      "type": "type",
+      "value": "<hash-token>"
+    },
+    {
+      "name": "<class-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-class-selector",
+      "type": "type",
+      "value": "'.' <ident-token>"
+    },
+    {
+      "name": "<attribute-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-attribute-selector",
+      "type": "type",
+      "value": "'[' <wq-name> ']' | '[' <wq-name> <attr-matcher> [ <string-token> | <ident-token> ] <attr-modifier>? ']'"
+    },
+    {
+      "name": "<attr-matcher>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-attr-matcher",
+      "type": "type",
+      "value": "[ '~' | '|' | '^' | '$' | '*' ]? '='"
+    },
+    {
+      "name": "<attr-modifier>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-attr-modifier",
+      "type": "type",
+      "value": "i | s"
+    },
+    {
+      "name": "<pseudo-class-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-pseudo-class-selector",
+      "type": "type",
+      "value": ": <ident-token> | : <function-token> <any-value> )"
+    },
+    {
+      "name": "<pseudo-element-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-pseudo-element-selector",
+      "type": "type",
+      "value": ": <pseudo-class-selector> | <legacy-pseudo-element-selector>"
+    },
+    {
+      "name": "<legacy-pseudo-element-selector>",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-legacy-pseudo-element-selector",
+      "type": "type",
+      "value": ": [before | after | first-line | first-letter]"
+    },
+    {
+      "name": "<forgiving-selector-list>",
+      "prose": "The <forgiving-selector-list> production instead parses each selector in the list individually, simply ignoring ones that fail to parse, so the remaining selectors can still be used.",
+      "href": "https://drafts.csswg.org/selectors-4/#typedef-forgiving-selector-list",
+      "type": "type"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "i",
+      "prose": "To match attribute values ASCII case-insensitively regardless of document language rules, the attribute selector may include the identifier i before the closing bracket (]). When this flag is present, UAs must match the attribute’s value ASCII case-insensitively (i.e. [a-z] and [A-Z] are considered equivalent).",
+      "href": "https://drafts.csswg.org/selectors-4/#valdef-attribute-selector-i",
+      "type": "value",
+      "value": "i",
+      "for": "attribute selector"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "s",
+      "prose": "Alternately, the attribute selector may include the identifier s before the closing bracket (]); in this case the UA must match the value case-sensitively, with “identical to” semantics [INFRA], regardless of document language rules.",
+      "href": "https://drafts.csswg.org/selectors-4/#valdef-attribute-selector-s",
+      "type": "value",
+      "value": "s",
+      "for": "attribute selector"
+    }
+  ]
+}

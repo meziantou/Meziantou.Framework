@@ -1,0 +1,1690 @@
+{
+  "css/css-multicol/abspos-after-spanner-static-pos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/abspos-after-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/abspos-autopos-contained-by-viewport-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/abspos-autopos-contained-by-viewport-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/abspos-containing-block-outside-spanner.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/abspos-multicol-in-second-outer-clipped.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/always-balancing-before-column-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/ancestor-toggle-spanner-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/ancestor-toggle-spanner-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/animation/column-count-interpolation.html": {
+    "total": 198
+  },
+  "css/css-multicol/animation/column-rule-color-interpolation.html": {
+    "total": 152
+  },
+  "css/css-multicol/animation/column-rule-width-interpolation.html": {
+    "total": 148
+  },
+  "css/css-multicol/animation/column-width-interpolation.html": {
+    "total": 222
+  },
+  "css/css-multicol/animation/column-wrap-reset-interpolation.html": {
+    "total": 1
+  },
+  "css/css-multicol/animation/columns-interpolation.html": {
+    "total": 384
+  },
+  "css/css-multicol/animation/discrete-no-interpolation.html": {
+    "total": 168
+  },
+  "css/css-multicol/as-column-flex-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/auto-fill-auto-size-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/auto-fill-auto-size-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/balance-break-avoidance-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/balance-break-avoidance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/balance-break-avoidance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/balance-grid-001.html": {
+    "total": 1
+  },
+  "css/css-multicol/balance-grid-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/balance-orphans-widows-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/baseline-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/broken-column-rule-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-fragmentainer-size-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-fragmentainer-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-fragmentainer-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-fragmentainer-size-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-intrinsic-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-transform-in-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-transform-in-second-column.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-transform-in-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/change-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-paged-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-with-floats-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-with-floats-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-with-span-and-oof-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-balancing-with-span-and-oof-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-count-used-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-fill-balance-orthog-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-height-029.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/column-height-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-pseudo-background-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-rule-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-rule-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-wrap-no-constraints-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/column-wrap-no-constraints-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/columnfill-auto-max-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/columnfill-auto-max-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/columnfill-auto-max-height-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/columns-shorthand-reset-wrap.html": {
+    "total": 3
+  },
+  "css/css-multicol/composited-under-clip-under-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/equal-gap-and-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/filter-with-abspos.html": {
+    "total": 1
+  },
+  "css/css-multicol/fixed-in-multicol-with-transform-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixed-in-nested-multicol-with-transform-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixed-in-nested-multicol-with-viewport-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixed-in-nested-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixed-size-child-with-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixedpos-static-pos-with-viewport-cb-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixedpos-static-pos-with-viewport-cb-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/fixedpos-static-pos-with-viewport-cb-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/float-and-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/float-with-line-after-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/getclientrects-000.html": {
+    "total": 6
+  },
+  "css/css-multicol/getclientrects-001.html": {
+    "total": 10
+  },
+  "css/css-multicol/getclientrects-002.html": {
+    "total": 9
+  },
+  "css/css-multicol/getclientrects-003.html": {
+    "total": 13
+  },
+  "css/css-multicol/getclientrects-004.html": {
+    "total": 13
+  },
+  "css/css-multicol/getclientrects-005.html": {
+    "total": 5
+  },
+  "css/css-multicol/getclientrects-006.html": {
+    "total": 5
+  },
+  "css/css-multicol/getclientrects-007.html": {
+    "total": 5
+  },
+  "css/css-multicol/getclientrects-008.html": {
+    "total": 4
+  },
+  "css/css-multicol/going-out-of-flow-after-spanner.html": {
+    "total": 1
+  },
+  "css/css-multicol/hit-test-child-under-perspective.html": {
+    "total": 1
+  },
+  "css/css-multicol/hit-test-in-vertical-rl.html": {
+    "total": 1
+  },
+  "css/css-multicol/hit-test-transformed-child.html": {
+    "total": 2
+  },
+  "css/css-multicol/increase-prev-sibling-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/inheritance.html": {
+    "total": 14
+  },
+  "css/css-multicol/inline-block-and-column-span-all.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-size-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-size-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-size-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/intrinsic-width-change-column-count.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/large-actual-column-count.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/max-height-stretch-relayout.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/move-with-text-after-paint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-basic-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-block-no-clip-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-block-no-clip-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-br-inside-avoidcolumn-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-break-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-break-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-breaking-nobackground-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-clip-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-clip-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-clip-scrolled-content-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-collapsing-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-invalid-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-invalid-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-columns-toolong-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-contained-absolute.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-containing-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-containing-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-containing-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-computed-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-computed-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-computed-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-negative-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-negative-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-non-integer-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-non-integer-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-count-non-integer-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-dynamic-add-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-dynamic-add-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-dynamic-add-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-dynamic-add-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-dynamic-change-inside-break-inside-avoid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-block-children-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-block-children-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-auto-block-children-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-007.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-008.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-009.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-010.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-011.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-012.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-013.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-014.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-015.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-016.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-019.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-020.html": {
+    "total": 1,
+    "failures": {
+      "Nested balanced multicol with very tall content": "FAIL"
+    }
+  },
+  "css/css-multicol/multicol-fill-balance-021.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-022.html": {
+    "total": 2
+  },
+  "css/css-multicol/multicol-fill-balance-023.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-025.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-027.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-028.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-fill-balance-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-fill-balance-nested-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-animation-001.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-gap-animation-002.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-gap-animation-003.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-gap-fraction-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-fraction-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-large-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-large-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-negative-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-gap-percentage-001.html": {
+    "total": 12
+  },
+  "css/css-multicol/multicol-height-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-height-002-print.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-height-block-child-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-inherit-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-inherit-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-inherit-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/multicol-list-item-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-list-item-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-margin-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-margin-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-margin-child-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-006.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-nested-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-012.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-nested-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-014.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/multicol-nested-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-016.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/multicol-nested-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-column-rule-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-column-rule-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-column-rule-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-margin-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-margin-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-margin-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-margin-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-nested-margin-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-on-broken-image-alt-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-oof-inline-cb-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-oof-inline-cb-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-overflow-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-overflow-clip-auto-sized.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-overflow-clip-positioned.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-overflow-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-overflow-positioned-transform-001.html": {
+    "total": 3
+  },
+  "css/css-multicol/multicol-overflow-transform-001.html": {
+    "total": 3
+  },
+  "css/css-multicol/multicol-overflowing-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-reduce-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-color-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-color-inherit-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-color-inherit-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-dashed-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-dotted-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-double-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-fraction-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-fraction-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-fraction-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-groove-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-hidden-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-inset-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-large-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-nested-balancing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-nested-balancing-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-nested-balancing-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-nested-balancing-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-none-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-outset-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-percent-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-px-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-ridge-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-samelength-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-shorthand-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-shorthand-2.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-solid-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-rule-stacking-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-scroll-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-shorthand-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-000.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-016.html": {
+    "total": 1
+  },
+  "css/css-multicol/multicol-span-all-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-block-sibling-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-button-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-button-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-button-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-004a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-004b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-children-height-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-add-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-dynamic-remove-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-fieldset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-fieldset-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-fieldset-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-list-item-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-list-item-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-bottom-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-nested-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-nested-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-margin-nested-firstchild-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-restyle-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-restyle-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-restyle-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-restyle-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-rule-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-all-rule-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-auto-size-in-vertical-writing-mode-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-auto-size-in-vertical-writing-mode-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-float-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-float-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-float-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-float-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-span-none-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-under-vertical-rl-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-ch-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-count-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-count-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-invalid-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-large-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-large-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-negative-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-width-small-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-zero-height-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-zero-height-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/multicol-zero-height-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/named-page.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-after-float-clearance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-at-outer-boundary-as-fieldset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-at-outer-boundary-as-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-at-outer-boundary-as-legend.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-floated-multicol-with-monolithic-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/nested-non-auto-inline-size-offset-top.html": {
+    "total": 1
+  },
+  "css/css-multicol/nested-oofs-in-relative-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-past-fragmentation-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-with-padding-and-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/nested-with-too-tall-line.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/no-balancing-after-column-span.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/non-adjacent-spanners-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/non-adjacent-spanners-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/offsetProps-001.html": {
+    "total": 4
+  },
+  "css/css-multicol/offsetProps-002.html": {
+    "total": 1
+  },
+  "css/css-multicol/oof-nested-in-single-column.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/orthogonal-writing-mode-shrink-to-fit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/orthogonal-writing-mode-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/overflow-unsplittable-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/overflow-unsplittable-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/overflow-unsplittable-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/page-property-ignored.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/paint-containment-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/parallel-flow-after-spanner-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/parallel-flow-after-spanner-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/parsing/column-count-computed.html": {
+    "total": 4
+  },
+  "css/css-multicol/parsing/column-count-invalid.html": {
+    "total": 6
+  },
+  "css/css-multicol/parsing/column-count-valid.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-fill-computed.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-fill-invalid.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-fill-valid.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-pseudo-computed.html": {
+    "total": 4,
+    "failures": {
+      "::column scroll-snap-margin": "FAIL"
+    }
+  },
+  "css/css-multicol/parsing/column-pseudo-invalid.html": {
+    "total": 6
+  },
+  "css/css-multicol/parsing/column-pseudo-valid.html": {
+    "total": 4
+  },
+  "css/css-multicol/parsing/column-rule-color-computed.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-rule-color-invalid.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-rule-color-valid.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-rule-computed.html": {
+    "total": 6
+  },
+  "css/css-multicol/parsing/column-rule-invalid.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-rule-shorthand.html": {
+    "total": 12
+  },
+  "css/css-multicol/parsing/column-rule-style-computed.html": {
+    "total": 9
+  },
+  "css/css-multicol/parsing/column-rule-style-invalid.html": {
+    "total": 1
+  },
+  "css/css-multicol/parsing/column-rule-style-valid.html": {
+    "total": 9
+  },
+  "css/css-multicol/parsing/column-rule-valid.html": {
+    "total": 5
+  },
+  "css/css-multicol/parsing/column-rule-width-computed.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-rule-width-invalid.html": {
+    "total": 4
+  },
+  "css/css-multicol/parsing/column-rule-width-valid.html": {
+    "total": 5
+  },
+  "css/css-multicol/parsing/column-span-computed.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-span-invalid.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-span-valid.html": {
+    "total": 2
+  },
+  "css/css-multicol/parsing/column-width-computed.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/column-width-invalid.html": {
+    "total": 5
+  },
+  "css/css-multicol/parsing/column-width-valid.html": {
+    "total": 3
+  },
+  "css/css-multicol/parsing/columns-computed.html": {
+    "total": 27
+  },
+  "css/css-multicol/parsing/columns-invalid.html": {
+    "total": 17
+  },
+  "css/css-multicol/parsing/columns-valid.html": {
+    "total": 24
+  },
+  "css/css-multicol/relative-child-overflowing-column-gap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/relative-child-overflowing-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/remove-child-in-strict-containment-also-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/remove-inline-with-block-beside-spanners.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/remove-transform-descendant-becomes-spanner.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/replaced-content-spanner-auto-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/resize-in-strict-containment-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/resize-multicol-with-fixed-size-children-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/resize-multicol-with-fixed-size-children-003.html": {
+    "total": 1
+  },
+  "css/css-multicol/resize-multicol-with-fixed-size-children.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/resize-with-text-after-paint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/scroll-width-height.tentative.html": {
+    "total": 6,
+    "failures": {
+      ".child, .grandchild 1": "FAIL",
+      ".child, .grandchild 2": "FAIL",
+      ".child, .grandchild 3": "FAIL",
+      ".child, .grandchild 4": "FAIL",
+      ".child, .grandchild 5": "FAIL",
+      ".child, .grandchild 6": "FAIL"
+    }
+  },
+  "css/css-multicol/spanner-fragmentation-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-fragmentation-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-in-child-after-parallel-flow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-in-child-after-parallel-flow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-in-child-after-parallel-flow-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-in-child-after-parallel-flow-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/spanner-in-opacity.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/subpixel-column-progression.html": {
+    "total": 4
+  },
+  "css/css-multicol/subpixel-column-rule-width.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/balance-table-with-border-spacing.html": {
+    "total": 1
+  },
+  "css/css-multicol/table/balance-table-with-fractional-height-row.html": {
+    "total": 1
+  },
+  "css/css-multicol/table/multicol-table-cell-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/multicol-table-cell-height-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/multicol-table-cell-height-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/multicol-table-cell-vertical-align-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/table-cell-as-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/table-cell-content-change-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/table-cell-content-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/table-cell-multicol-nested-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/table/table-cell-multicol-nested-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-multicol/table/table-cell-multicol-nested-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/with-custom-layout-on-same-element.https.html": {
+    "reftest": "PASS"
+  },
+  "css/css-multicol/zero-column-width-computed-style.html": {
+    "total": 1
+  },
+  "css/css-multicol/zero-column-width-layout.html": {
+    "reftest": "PASS"
+  }
+}

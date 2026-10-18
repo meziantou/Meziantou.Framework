@@ -1,0 +1,15 @@
+{
+  "main": {
+    "dav": {
+      "identity": {
+        "language": "dav"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

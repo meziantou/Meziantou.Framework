@@ -1,0 +1,159 @@
+{
+  "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?dedicated_worker": {
+    "total": 4
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?document": {
+    "total": 4
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?service_worker": {
+    "total": 4
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?shared_worker": {
+    "total": 4
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?dedicated_worker": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?document": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?service_worker": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?shared_worker": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?dedicated_worker": {
+    "total": 3
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?document": {
+    "total": 3
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?service_worker": {
+    "total": 3
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?shared_worker": {
+    "total": 3
+  },
+  "html/document-isolation-policy/credentialless-cache.tentative.window.js": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-cross-origin-isolated.tentative.window.js": {
+    "total": 4,
+    "failures": {
+      "Main crossOriginIsolated case:": "FAIL",
+      "Report-only + enforced:": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/credentialless-dedicated-worker.https.tentative.window.js": {
+    "total": 5
+  },
+  "html/document-isolation-policy/credentialless-fetch.https.tentative.window.js": {
+    "total": 13
+  },
+  "html/document-isolation-policy/credentialless-link.https.tentative.window.js": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-redirect.tentative.window.js": {
+    "total": 5
+  },
+  "html/document-isolation-policy/credentialless-script.https.tentative.window.js": {
+    "total": 7
+  },
+  "html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js": {
+    "total": 5
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=credentialless": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=none": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=none&window_dip=credentialless": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=none&window_dip=none": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=same_origin&worker_dip=credentialless&window_dip=credentialless": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=same_origin&worker_dip=credentialless&window_dip=none": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=same_origin&worker_dip=none&window_dip=credentialless": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=same_origin&worker_dip=none&window_dip=none": {
+    "total": 1
+  },
+  "html/document-isolation-policy/credentialless-video.https.tentative.window.js": {
+    "total": 6
+  },
+  "html/document-isolation-policy/credentialless-websocket.https.tentative.window.js": {
+    "total": 3
+  },
+  "html/document-isolation-policy/isolate-and-require-corp-load-from-cache-storage.tentative.https.html": {
+    "total": 29
+  },
+  "html/document-isolation-policy/isolate-and-require-corp.tentative.https.html": {
+    "total": 2
+  },
+  "html/document-isolation-policy/no-secure-context.tentative.html": {
+    "total": 1
+  },
+  "html/document-isolation-policy/reporting-cache-storage-corp.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 12,
+    "failures": {
+      "[dedicated worker] blocked due to DIP": "NOTRUN",
+      "[dedicated worker] blocked during redirect": "NOTRUN",
+      "[dedicated worker] same-origin": "NOTRUN",
+      "[document with service worker] blocked due to DIP": "NOTRUN",
+      "[document with service worker] blocked during redirect": "NOTRUN",
+      "[document with service worker] same-origin": "NOTRUN",
+      "[document] blocked due to DIP": "TIMEOUT",
+      "[document] blocked during redirect": "NOTRUN",
+      "[shared worker] blocked due to DIP": "NOTRUN",
+      "[shared worker] blocked during redirect": "NOTRUN",
+      "[shared worker] same-origin": "NOTRUN"
+    }
+  },
+  "html/document-isolation-policy/reporting-subresource-corp.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 16,
+    "failures": {
+      "[dedicated worker] blocked due to DIP": "NOTRUN",
+      "[dedicated worker] blocked due to DIP (with fragment)": "NOTRUN",
+      "[dedicated worker] blocked during redirect": "NOTRUN",
+      "[dedicated worker] same-origin": "NOTRUN",
+      "[document with service worker] blocked due to DIP": "NOTRUN",
+      "[document with service worker] blocked due to DIP (with fragment)": "NOTRUN",
+      "[document with service worker] blocked during redirect": "NOTRUN",
+      "[document with service worker] same-origin": "NOTRUN",
+      "[document] blocked due to DIP": "TIMEOUT",
+      "[document] blocked due to DIP (with fragment)": "NOTRUN",
+      "[document] blocked during redirect": "NOTRUN",
+      "[shared worker] blocked due to DIP": "NOTRUN",
+      "[shared worker] blocked due to DIP (with fragment)": "NOTRUN",
+      "[shared worker] blocked during redirect": "NOTRUN",
+      "[shared worker] same-origin": "NOTRUN"
+    }
+  },
+  "html/document-isolation-policy/service-worker-coep-credentialless-proxy.https.tentative.window.js": {
+    "total": 1
+  },
+  "html/document-isolation-policy/service-worker-coep-none-proxy.https.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "COEP:unsafe-none ServiceWorker": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/shared-workers.tentative.https.html": {
+    "total": 8,
+    "failures": {
+      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL",
+      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - data URL)": "FAIL"
+    }
+  }
+}

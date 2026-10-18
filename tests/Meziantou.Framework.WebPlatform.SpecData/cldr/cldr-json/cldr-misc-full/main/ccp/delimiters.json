@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ccp": {
+      "identity": {
+        "language": "ccp"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -68,6 +68,7 @@ jobs:
           - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
           - { project: Meziantou.Framework.Toml.Fuzz, component: toml }
           - { project: Meziantou.Framework.Unicode.Fuzz, component: unicode }
+          - { project: Meziantou.Framework.WebPlatform.Fuzz, component: webplatform }
           - { project: Meziantou.Framework.Yaml.Fuzz, component: yaml }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -181,6 +182,7 @@ jobs:
           - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
           - { project: Meziantou.Framework.Toml.Fuzz, component: toml }
           - { project: Meziantou.Framework.Unicode.Fuzz, component: unicode }
+          - { project: Meziantou.Framework.WebPlatform.Fuzz, component: webplatform }
           - { project: Meziantou.Framework.Yaml.Fuzz, component: yaml }
           - { project: Meziantou.Framework.Imaging.FuzzTests, component: imaging }
     steps:

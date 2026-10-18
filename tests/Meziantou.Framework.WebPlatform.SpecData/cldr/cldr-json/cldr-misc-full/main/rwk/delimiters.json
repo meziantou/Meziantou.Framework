@@ -1,0 +1,15 @@
+{
+  "main": {
+    "rwk": {
+      "identity": {
+        "language": "rwk"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

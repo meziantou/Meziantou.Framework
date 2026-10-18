@@ -1,0 +1,506 @@
+{
+  "intersection-observer/animating.html": {
+    "total": 1
+  },
+  "intersection-observer/bounding-box.html": {
+    "total": 5
+  },
+  "intersection-observer/callback-cross-realm-report-exception.html": {
+    "total": 1
+  },
+  "intersection-observer/client-rect.html": {
+    "total": 2
+  },
+  "intersection-observer/clip-path-animation.html": {
+    "total": 1
+  },
+  "intersection-observer/clip-path.html": {
+    "total": 1
+  },
+  "intersection-observer/containing-block.html": {
+    "total": 5
+  },
+  "intersection-observer/cross-document-root.html": {
+    "total": 2
+  },
+  "intersection-observer/cross-origin-iframe.sub.html": {
+    "total": 5
+  },
+  "intersection-observer/cross-origin-tall-iframe-rendering.sub.html": {
+    "reftest": "PASS"
+  },
+  "intersection-observer/cross-origin-tall-iframe.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/disconnect.html": {
+    "total": 3
+  },
+  "intersection-observer/display-contents.html": {
+    "total": 1
+  },
+  "intersection-observer/display-none.html": {
+    "total": 1
+  },
+  "intersection-observer/document-scrolling-element-root.html": {
+    "total": 2
+  },
+  "intersection-observer/edge-inclusive-intersection.html": {
+    "total": 5
+  },
+  "intersection-observer/empty-root-margin.html": {
+    "total": 1
+  },
+  "intersection-observer/explicit-root-different-document.html": {
+    "total": 1
+  },
+  "intersection-observer/fixed-position-child-scroll.html": {
+    "total": 3
+  },
+  "intersection-observer/fixed-position-iframe-scroll.html": {
+    "total": 3
+  },
+  "intersection-observer/fixed-position-scroll.html": {
+    "total": 3
+  },
+  "intersection-observer/grow-height-and-scrolled.html": {
+    "total": 3
+  },
+  "intersection-observer/idlharness.window.js": {
+    "total": 50
+  },
+  "intersection-observer/iframe-no-root-with-wrapping-scroller.html": {
+    "total": 5
+  },
+  "intersection-observer/iframe-no-root.html": {
+    "total": 5
+  },
+  "intersection-observer/iframe-root-with-overflow-propagation.html": {
+    "total": 3
+  },
+  "intersection-observer/img-lazy-loading-not-blocked-by-img-outside-viewport.html": {
+    "total": 1
+  },
+  "intersection-observer/initial-observation-with-threshold.html": {
+    "total": 3
+  },
+  "intersection-observer/inline-client-rect.html": {
+    "total": 3
+  },
+  "intersection-observer/inline-with-block-child-client-rect.html": {
+    "total": 2
+  },
+  "intersection-observer/intersection-ratio-ib-split.html": {
+    "total": 2
+  },
+  "intersection-observer/intersection-ratio-with-fractional-bounds-2.html": {
+    "total": 1
+  },
+  "intersection-observer/intersection-ratio-with-fractional-bounds-in-iframe.html": {
+    "total": 1
+  },
+  "intersection-observer/intersection-ratio-with-fractional-bounds.html": {
+    "total": 1
+  },
+  "intersection-observer/isIntersecting-change-events.html": {
+    "total": 5
+  },
+  "intersection-observer/isIntersecting-threshold.html": {
+    "total": 3
+  },
+  "intersection-observer/multicol-2.html": {
+    "total": 1
+  },
+  "intersection-observer/multicol.html": {
+    "total": 1
+  },
+  "intersection-observer/multiple-targets.html": {
+    "total": 5
+  },
+  "intersection-observer/multiple-thresholds.html": {
+    "total": 10
+  },
+  "intersection-observer/nested-cross-origin-iframe.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/not-in-containing-block-chain.html": {
+    "total": 1
+  },
+  "intersection-observer/observe-after-unobserve.html": {
+    "total": 1
+  },
+  "intersection-observer/observer-attributes.html": {
+    "total": 9
+  },
+  "intersection-observer/observer-callback-arguments.html": {
+    "total": 1
+  },
+  "intersection-observer/observer-exceptions.html": {
+    "total": 9
+  },
+  "intersection-observer/observer-without-js-reference.html": {
+    "total": 3
+  },
+  "intersection-observer/padding-clip.html": {
+    "total": 1
+  },
+  "intersection-observer/reinsert-element.html": {
+    "total": 1
+  },
+  "intersection-observer/remove-element.html": {
+    "total": 6
+  },
+  "intersection-observer/root-is-table-with-overflow-scroll.html": {
+    "total": 3
+  },
+  "intersection-observer/root-margin-in-same-origin-iframe.html": {
+    "total": 1
+  },
+  "intersection-observer/root-margin-root-element.html": {
+    "total": 7
+  },
+  "intersection-observer/root-margin-rounding.html": {
+    "total": 1
+  },
+  "intersection-observer/root-margin-scroll-margin-units.html": {
+    "total": 14
+  },
+  "intersection-observer/root-margin.html": {
+    "total": 5
+  },
+  "intersection-observer/root-vertical-rl.html": {
+    "total": 3
+  },
+  "intersection-observer/rtl-clipped-root.html": {
+    "total": 2
+  },
+  "intersection-observer/same-document-no-root.html": {
+    "total": 4
+  },
+  "intersection-observer/same-document-root.html": {
+    "total": 7
+  },
+  "intersection-observer/same-document-with-document-root.html": {
+    "total": 3
+  },
+  "intersection-observer/same-document-zero-size-target.html": {
+    "total": 4
+  },
+  "intersection-observer/same-origin-grand-child-iframe.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-and-root-margin.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-4-val.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-clip-path.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-dynamic.html": {
+    "total": 2
+  },
+  "intersection-observer/scroll-margin-horizontal.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-iframe.html": {
+    "total": 2
+  },
+  "intersection-observer/scroll-margin-nested-2.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-nested-3.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-nested.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-no-intersect.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-non-scrolling-root.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-not-contained.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-percent.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-propagation.html": {
+    "total": 3
+  },
+  "intersection-observer/scroll-margin-with-border-outline.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin-zero.html": {
+    "total": 1
+  },
+  "intersection-observer/scroll-margin.html": {
+    "total": 1
+  },
+  "intersection-observer/shadow-content.html": {
+    "total": 2
+  },
+  "intersection-observer/slotted-target.html": {
+    "total": 1
+  },
+  "intersection-observer/svg-clipped-rect-target.html": {
+    "total": 4
+  },
+  "intersection-observer/svg-container-element.html": {
+    "total": 3
+  },
+  "intersection-observer/svg-group-target.html": {
+    "total": 4
+  },
+  "intersection-observer/svg-image.html": {
+    "total": 3
+  },
+  "intersection-observer/svg-intersection-with-fractional-bounds-2.html": {
+    "total": 6
+  },
+  "intersection-observer/svg-intersection-with-fractional-bounds.html": {
+    "total": 4
+  },
+  "intersection-observer/svg-rect-target.html": {
+    "total": 4
+  },
+  "intersection-observer/svg-stroke-change.html": {
+    "total": 3
+  },
+  "intersection-observer/svg-target-changes-position.html": {
+    "total": 3
+  },
+  "intersection-observer/svg-transformed-rect-target.html": {
+    "total": 4
+  },
+  "intersection-observer/svg-viewbox.html": {
+    "total": 3
+  },
+  "intersection-observer/target-in-detached-document.html": {
+    "total": 3
+  },
+  "intersection-observer/target-in-different-window.html": {
+    "total": 1
+  },
+  "intersection-observer/target-is-root.html": {
+    "total": 1
+  },
+  "intersection-observer/text-target.html": {
+    "total": 4
+  },
+  "intersection-observer/thresholds-frozen-array.html": {
+    "total": 1
+  },
+  "intersection-observer/timestamp.html": {
+    "total": 3
+  },
+  "intersection-observer/transform-animation.html": {
+    "total": 1
+  },
+  "intersection-observer/transformed-iframe-001-cross-origin.html": {
+    "total": 3
+  },
+  "intersection-observer/transformed-iframe-001-same-origin.html": {
+    "total": 3
+  },
+  "intersection-observer/transformed-iframe-002-cross-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/transformed-iframe-002-same-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/transformed-iframe-003-cross-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/transformed-iframe-003-same-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/transformed-iframe-004-cross-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/transformed-iframe-004-same-origin.html": {
+    "total": 2
+  },
+  "intersection-observer/unclipped-root.html": {
+    "total": 3
+  },
+  "intersection-observer/v2/3d-transform-flattened-preserve-3d-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/3d-transform-occlusion-2.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/3d-transform-occlusion.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Intersection observer V2 test with occlusion by an element with a 3D transform.": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/3d-transform-overflow-control-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/3d-transform-z-order-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/animated-occlusion.html": {
+    "total": 2
+  },
+  "intersection-observer/v2/animated-opacity.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/blur-filter.html": {
+    "total": 3,
+    "failures": {
+      "occluder.style.opacity = 0": "FAIL"
+    }
+  },
+  "intersection-observer/v2/border-radius-shadow-occlusion-replaced.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/border-radius-shadow-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/border-shape-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/border-shape-overflow-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/box-reflect.html": {
+    "total": 2
+  },
+  "intersection-observer/v2/box-shadow.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/cross-origin-effects.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/cross-origin-occlusion.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/delay-test.html": {
+    "total": 1,
+    "failures": {
+      "'delay' parameter throttles frequency of notifications.": "FAIL"
+    }
+  },
+  "intersection-observer/v2/drop-shadow-filter-vertical-rl.html": {
+    "total": 3,
+    "failures": {
+      "occluder.style.opacity = 0": "FAIL"
+    }
+  },
+  "intersection-observer/v2/iframe-target.html": {
+    "total": 2
+  },
+  "intersection-observer/v2/inline-occlusion.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/nested-cross-origin.sub.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/position-absolute-overflow-visible-and-not-visible.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/position-relative.html": {
+    "total": 2
+  },
+  "intersection-observer/v2/scaled-target.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/simple-effects.html": {
+    "total": 5
+  },
+  "intersection-observer/v2/simple-occlusion-svg-foreign-object.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/simple-occlusion.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/svg-drop-shadow-occlusion.html": {
+    "total": 1,
+    "failures": {
+      "svg-drop-shadow-occlusion": "FAIL"
+    }
+  },
+  "intersection-observer/v2/svg-foreign-object-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG foreignObject filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-group-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG group filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-image-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG image filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-reference-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG reference filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-root-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG grandchild filter changes": "TIMEOUT",
+      "IntersectionObserver observes visibility changes from SVG root filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-shape-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/svg-text-filter-occlusion.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "IntersectionObserver observes visibility changes from SVG text filter changes": "TIMEOUT",
+      "IntersectionObserver observes visibility changes from SVG tspan filter changes": "TIMEOUT"
+    }
+  },
+  "intersection-observer/v2/text-editor-occlusion.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/text-shadow.html": {
+    "total": 4,
+    "failures": {
+      "First rAF.": "FAIL",
+      "occluder.style.textShadow = \"\"": "FAIL",
+      "occluder.style.textShadow = \"none\"": "FAIL"
+    }
+  },
+  "intersection-observer/v2/z-index-changes.html": {
+    "total": 1
+  },
+  "intersection-observer/visibility-hidden.html": {
+    "total": 3
+  },
+  "intersection-observer/zero-area-element-hidden.html": {
+    "total": 2
+  },
+  "intersection-observer/zero-area-element-visible.html": {
+    "total": 2
+  },
+  "intersection-observer/zoom-scaled-target.html": {
+    "total": 2
+  }
+}

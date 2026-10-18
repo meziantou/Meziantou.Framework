@@ -1,0 +1,629 @@
+{
+  "css/css-lists/add-inline-child-after-marker-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/add-inline-child-after-marker-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/animations/list-style-image-interpolation.html": {
+    "total": 234
+  },
+  "css/css-lists/change-list-descendant-display.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/change-list-style-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/change-list-style-position-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/change-list-style-position-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/change-list-style-type-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/change-list-style-type-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-armenian.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-circle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-decimal-leading-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-decimal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-disc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-georgian.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-lower-greek.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-lower-latin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-lower-roman.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-square.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-upper-latin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/content-property/marker-text-matches-upper-roman.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-important.html": {
+    "total": 1
+  },
+  "css/css-lists/counter-increment-inside-display-contents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-invalid.htm": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-list-item-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-list-item-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-list-item-slot-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-list-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-order-display-contents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-increment-overflow-underflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-increment-set-display-contents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-increment-set-display-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-inside-display-contents.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-display-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-list-item-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-list-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-multiple.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-nested.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-reset-reversed-not-list-item-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-not-list-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-pseudo-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-reset-reversed-pseudo-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-reset-reversed-pseudo-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counter-reset-reversed-siblings-001a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-siblings-001b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-siblings-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-siblings-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-reset-reversed-with-regular.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-set-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-set-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-slot-order-scoping.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counter-slot-order.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counters-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counters-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/counters-scope-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-scope-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-scope-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/counters-scope-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/css-lists-no-interpolation.html": {
+    "total": 462
+  },
+  "css/css-lists/deep-pseudo-element-remove-update.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/details-open.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-006a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-006b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-006c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-006d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-006e.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-007a.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/foo-counter-reversed-007b.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/foo-counter-reversed-008a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-008b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/foo-counter-reversed-009a.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/foo-counter-reversed-009b.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/implicit-and-explicit-list-item-counters.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/inherit-overwrites.html": {
+    "total": 2
+  },
+  "css/css-lists/inheritance.html": {
+    "total": 10
+  },
+  "css/css-lists/inline-block-list-marker.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/inline-block-list.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/inline-list-marker.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/inline-list-with-table-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/inline-list.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/li-counter-increment-computed-style.html": {
+    "total": 1
+  },
+  "css/css-lists/li-insert-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-list-item-counter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-list-item-counter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-list-item-counter-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-list-item-counter-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-list-item-counter-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-counter-reset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-counter-reset-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-006a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-006b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-006c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-006d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-006e.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-007a.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/li-value-reversed-007b.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/li-value-reversed-008a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-008b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-009a.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/li-value-reversed-009b.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/li-value-reversed-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-value-reversed-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-with-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/li-with-overflow-hidden-change-list-style-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-and-block-in-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-and-block-textarea-001.html": {
+    "total": 1
+  },
+  "css/css-lists/list-and-flex-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-and-grid-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-and-margin-collapse-001.html": {
+    "total": 1
+  },
+  "css/css-lists/list-and-margin-collapse-002.html": {
+    "total": 1
+  },
+  "css/css-lists/list-and-writing-mode-001.html": {
+    "total": 1
+  },
+  "css/css-lists/list-inside-contain.html": {
+    "total": 1
+  },
+  "css/css-lists/list-item-definition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-item-dynamic-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-alignment.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-counter-style-fallback-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-counter-style-mutation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-rtl-string-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-symbol-bidi.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-marker-with-lineheight-and-overflow-hidden-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-image-gradients-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-image-gradients.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-image-zoom-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-position-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-decimal-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-decimal-vertical-lr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-decimal-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-001a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-001b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-005a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-005b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-string-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-style-type-transition-tree-scope-custom-ident.html": {
+    "total": 1,
+    "failures": {
+      "Transition when an author-defined list-style-type moves to another tree scope": "FAIL"
+    }
+  },
+  "css/css-lists/list-style-type-transition-tree-scope-keyword.html": {
+    "total": 1
+  },
+  "css/css-lists/list-type-none-style-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/list-with-image-display-changed-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/marker-counter.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/marker-dynamic-content-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/marker-quotes.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/marker-webkit-text-fill-color.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/nested-list-with-list-style-type-none.html": {
+    "total": 1
+  },
+  "css/css-lists/nested-marker-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/nested-marker-styling.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/nested-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/ol-change-display-type.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-covered-by-relpos-block-link.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-lists/outside-marker-in-multicol-relpos-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-with-relpos-block-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/parsing/content-invalid.html": {
+    "total": 24
+  },
+  "css/css-lists/parsing/counter-increment-computed.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/counter-increment-invalid.html": {
+    "total": 13
+  },
+  "css/css-lists/parsing/counter-increment-valid.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/counter-reset-computed.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/counter-reset-invalid.html": {
+    "total": 15
+  },
+  "css/css-lists/parsing/counter-reset-valid.html": {
+    "total": 16
+  },
+  "css/css-lists/parsing/counter-set-computed.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/counter-set-invalid.html": {
+    "total": 13
+  },
+  "css/css-lists/parsing/counter-set-valid.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/list-style-computed.sub.html": {
+    "total": 5
+  },
+  "css/css-lists/parsing/list-style-image-computed.sub.html": {
+    "total": 11
+  },
+  "css/css-lists/parsing/list-style-image-invalid.html": {
+    "total": 2
+  },
+  "css/css-lists/parsing/list-style-image-valid.html": {
+    "total": 3
+  },
+  "css/css-lists/parsing/list-style-invalid.html": {
+    "total": 4
+  },
+  "css/css-lists/parsing/list-style-position-computed.html": {
+    "total": 2
+  },
+  "css/css-lists/parsing/list-style-position-invalid.html": {
+    "total": 2
+  },
+  "css/css-lists/parsing/list-style-position-valid.html": {
+    "total": 2
+  },
+  "css/css-lists/parsing/list-style-shorthand.sub.html": {
+    "total": 4
+  },
+  "css/css-lists/parsing/list-style-type-computed.html": {
+    "total": 27
+  },
+  "css/css-lists/parsing/list-style-type-invalid.html": {
+    "total": 10
+  },
+  "css/css-lists/parsing/list-style-type-valid.html": {
+    "total": 27
+  },
+  "css/css-lists/parsing/list-style-valid.html": {
+    "total": 24
+  },
+  "css/css-lists/pseudo-element-remove-update.html": {
+    "reftest": "PASS"
+  }
+}

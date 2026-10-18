@@ -1,0 +1,53 @@
+{
+  "beacon/beacon-basic.https.window.js": {
+    "total": 25
+  },
+  "beacon/beacon-cors.https.window.js": {
+    "total": 10
+  },
+  "beacon/beacon-navigate.https.window.js": {
+    "total": 4
+  },
+  "beacon/beacon-redirect.https.window.js": {
+    "total": 8
+  },
+  "beacon/beacon-url-encoding-euc-kr.https.html": {
+    "total": 1
+  },
+  "beacon/headers/header-content-type-and-body.html": {
+    "total": 6
+  },
+  "beacon/headers/header-origin-same-origin.html": {
+    "total": 4
+  },
+  "beacon/headers/header-referrer-no-referrer-when-downgrade.https.html": {
+    "total": 2
+  },
+  "beacon/headers/header-referrer-no-referrer.html": {
+    "total": 1
+  },
+  "beacon/headers/header-referrer-origin-when-cross-origin.html": {
+    "total": 2
+  },
+  "beacon/headers/header-referrer-origin.html": {
+    "total": 1
+  },
+  "beacon/headers/header-referrer-same-origin.html": {
+    "total": 2
+  },
+  "beacon/headers/header-referrer-strict-origin-when-cross-origin.https.html": {
+    "total": 2
+  },
+  "beacon/headers/header-referrer-strict-origin.https.html": {
+    "total": 2
+  },
+  "beacon/headers/header-referrer-unsafe-url.https.html": {
+    "total": 2
+  },
+  "beacon/idlharness.any.js": {
+    "total": 16
+  },
+  "beacon/idlharness.any.js#dedicatedworker": {
+    "total": 14
+  }
+}

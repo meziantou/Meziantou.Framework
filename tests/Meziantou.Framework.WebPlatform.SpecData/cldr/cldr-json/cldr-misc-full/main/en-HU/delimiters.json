@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-HU": {
+      "identity": {
+        "language": "en",
+        "territory": "HU"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

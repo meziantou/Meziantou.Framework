@@ -1,0 +1,15 @@
+{
+  "main": {
+    "shi": {
+      "identity": {
+        "language": "shi"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

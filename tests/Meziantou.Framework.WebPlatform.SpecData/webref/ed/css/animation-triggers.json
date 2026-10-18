@@ -1,0 +1,412 @@
+{
+  "spec": {
+    "title": "Animation Triggers",
+    "url": "https://drafts.csswg.org/animation-triggers-1/"
+  },
+  "properties": [
+    {
+      "name": "trigger-scope",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-trigger-scope",
+      "value": "none | all | <dashed-ident>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No changes in trigger name scope.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-trigger-scope-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "Specifies that all trigger names defined by this element or its descendants—​whose scope is not already limited by a descendant using trigger-scope—​to be in scope only for this element’s flat tree descendants; and limits descendants to only match trigger names to triggers within this subtree. This value only affects trigger names in the same tree scope, as if it were a strictly matched tree-scoped name. (That is, trigger-scope: all acts identically to trigger-scope: --foo, --bar, ..., listing all relevant trigger names.)",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-trigger-scope-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "<dashed-ident>",
+          "prose": "Specifies that a matching trigger name defined by this element or its descendants—​whose scope is not already limited by a descendant using trigger-scope—​to be in scope only for this element’s flat tree descendants; and limits descendants to only match these trigger names to triggers within this subtree. The <dashed-ident> represents a strictly matched tree-scoped name, i.e. it can only match against trigger names in the same shadow tree.[CSS-SCOPING-1]",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-trigger-scope-dashed-ident",
+          "type": "value",
+          "value": "<dashed-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "trigger-scope",
+        "triggerScope"
+      ]
+    },
+    {
+      "name": "timeline-trigger-name",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-name",
+      "value": "none | <dashed-ident>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "timeline-trigger-name",
+        "timelineTriggerName"
+      ]
+    },
+    {
+      "name": "timeline-trigger-source",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-source",
+      "value": "[ none | auto | [ <dashed-ident> | <scroll()> | <view()> ]+ ]#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "timeline-trigger-source",
+        "timelineTriggerSource"
+      ]
+    },
+    {
+      "name": "timeline-trigger-activation-range",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-activation-range",
+      "value": "[ <'timeline-trigger-activation-range-start'> <'timeline-trigger-activation-range-end'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "timeline-trigger-activation-range",
+        "timelineTriggerActivationRange"
+      ],
+      "longhands": [
+        "timeline-trigger-activation-range-start",
+        "timeline-trigger-activation-range-end"
+      ]
+    },
+    {
+      "name": "timeline-trigger-activation-range-start",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-activation-range-start",
+      "value": "[ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "timeline-trigger-activation-range-start",
+        "timelineTriggerActivationRangeStart"
+      ]
+    },
+    {
+      "name": "timeline-trigger-activation-range-end",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-activation-range-end",
+      "value": "[ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "timeline-trigger-activation-range-end",
+        "timelineTriggerActivationRangeEnd"
+      ]
+    },
+    {
+      "name": "timeline-trigger-active-range",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-active-range",
+      "value": "[ <'timeline-trigger-active-range-start'> <'timeline-trigger-active-range-end'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The start (for timeline-trigger-active-range-start) or end (for timeline-trigger-active-range-end) is equal to the start/end of the timeline trigger’s activation range.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-timeline-trigger-active-range-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "timeline-trigger-active-range",
+        "timelineTriggerActiveRange"
+      ],
+      "longhands": [
+        "timeline-trigger-active-range-start",
+        "timeline-trigger-active-range-end"
+      ]
+    },
+    {
+      "name": "timeline-trigger-active-range-start",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-active-range-start",
+      "value": "[ auto | normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The start (for timeline-trigger-active-range-start) or end (for timeline-trigger-active-range-end) is equal to the start/end of the timeline trigger’s activation range.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-timeline-trigger-active-range-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "timeline-trigger-active-range-start",
+        "timelineTriggerActiveRangeStart"
+      ]
+    },
+    {
+      "name": "timeline-trigger-active-range-end",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-active-range-end",
+      "value": "[ auto | normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The start (for timeline-trigger-active-range-start) or end (for timeline-trigger-active-range-end) is equal to the start/end of the timeline trigger’s activation range.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-timeline-trigger-active-range-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "timeline-trigger-active-range-end",
+        "timelineTriggerActiveRangeEnd"
+      ]
+    },
+    {
+      "name": "timeline-trigger",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger",
+      "value": "none | [ <'timeline-trigger-name'> <'timeline-trigger-source'> <'timeline-trigger-activation-range'> [ / <'timeline-trigger-active-range'> ]? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "A value of none is equivalent to none none normal.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-timeline-trigger-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "timeline-trigger",
+        "timelineTrigger"
+      ],
+      "longhands": [
+        "timeline-trigger-name",
+        "timeline-trigger-source",
+        "timeline-trigger-activation-range",
+        "timeline-trigger-active-range"
+      ]
+    },
+    {
+      "name": "event-trigger-name",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-event-trigger-name",
+      "value": "none | <dashed-ident>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "event-trigger-name",
+        "eventTriggerName"
+      ]
+    },
+    {
+      "name": "event-trigger-source",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-event-trigger-source",
+      "value": "[ none | <event-trigger-event>+ [ / <event-trigger-event>+ ]? ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The corresponding entry in the coordinated value list does not define a trigger.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-event-trigger-source-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<event-trigger-event>+ [ / <event-trigger-event>+ ]?",
+          "prose": "Defines what event(s) the event trigger responds to. If a / is used in the value, the event trigger is stateful; the set of events before the / are the event trigger’s enter events, while those after the / are the exit events. (The same events can occur in both sets.) Otherwise, the event trigger is stateless, and the provided events are its enter events.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-event-trigger-source-event-trigger-event--event-trigger-event",
+          "type": "value",
+          "value": "<event-trigger-event>+ [ / <event-trigger-event>+ ]?"
+        }
+      ],
+      "styleDeclaration": [
+        "event-trigger-source",
+        "eventTriggerSource"
+      ]
+    },
+    {
+      "name": "event-trigger",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-event-trigger",
+      "value": "none | [ <'event-trigger-name'> <'event-trigger-source'> ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "animationType": "not animatable",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "A value of none is equivalent to none none.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-event-trigger-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "event-trigger",
+        "eventTrigger"
+      ]
+    },
+    {
+      "name": "animation-trigger",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-animation-trigger",
+      "value": "[ none | [ <dashed-ident> <animation-action>+ ]+ ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The corresponding animation is not a triggered animation.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-trigger-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "[ <dashed-ident> <animation-action>+ ]+",
+          "prose": "The corresponding animation is a triggered animation, responding to the triggers named by each <dashed-ident>, and responding by taking the action named by the corresponding <animation-action>. (See § 2.3 Trigger Name Scoping: the trigger-scope property for how <dashed-ident>s are resolved to triggers.) How many <animation-action>s a trigger accepts, and what exactly activates them, is determined by the type of the trigger. (Event triggers take one and possibly an optional second, depending on whether they’re stateless or stateful; timeline triggers take one and optionally a second.) Specifying the wrong number of actions (too many or too few) is valid syntactically, but causes the trigger to have no effect. If multiple triggers occur simultaneously, they take effect in the order specified. If the same <dashed-ident> is specified multiple times, all but the last have no effect.",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-trigger--dashed-ident-animation-action",
+          "type": "value",
+          "value": "[ <dashed-ident> <animation-action>+ ]+"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-trigger",
+        "animationTrigger"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<event-trigger-event>",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#typedef-event-trigger-event",
+      "type": "type",
+      "value": "activate | interest | click | touch | dblclick | keypress(<string>) | ..."
+    },
+    {
+      "name": "<animation-action>",
+      "prose": "The possible <animation-action> values, and what effect they have in each animation state:",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#typedef-animation-action",
+      "type": "type",
+      "values": [
+        {
+          "name": "none",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "play",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-play",
+          "type": "value",
+          "value": "play"
+        },
+        {
+          "name": "play-once",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-play-once",
+          "type": "value",
+          "value": "play-once"
+        },
+        {
+          "name": "play-forwards",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-play-forwards",
+          "type": "value",
+          "value": "play-forwards"
+        },
+        {
+          "name": "play-backwards",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-play-backwards",
+          "type": "value",
+          "value": "play-backwards"
+        },
+        {
+          "name": "pause",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-pause",
+          "type": "value",
+          "value": "pause"
+        },
+        {
+          "name": "reset",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-reset",
+          "type": "value",
+          "value": "reset"
+        },
+        {
+          "name": "replay",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-animation-action-replay",
+          "type": "value",
+          "value": "replay"
+        }
+      ]
+    }
+  ]
+}

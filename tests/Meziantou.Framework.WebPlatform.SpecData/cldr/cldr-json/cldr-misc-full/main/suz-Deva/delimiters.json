@@ -1,0 +1,16 @@
+{
+  "main": {
+    "suz-Deva": {
+      "identity": {
+        "language": "suz",
+        "script": "Deva"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

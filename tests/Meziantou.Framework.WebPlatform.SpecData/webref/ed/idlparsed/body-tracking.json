@@ -1,0 +1,637 @@
+{
+  "spec": {
+    "title": "WebXR Body Tracking Module - Level 1",
+    "url": "https://immersive-web.github.io/body-tracking/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "XRBody",
+          "XRBodySpace"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRBodyJoint": {
+        "fragment": "enum XRBodyJoint {\n  \"hips\",\n  \"spine-lower\",\n  \"spine-middle\",\n  \"spine-upper\",\n  \"chest\",\n  \"neck\",\n  \"head\",\n  \"left-shoulder\",\n  \"left-scapula\",\n  \"left-arm-upper\",\n  \"left-arm-lower\",\n  \"left-hand-wrist-twist\",\n  \"right-shoulder\",\n  \"right-scapula\",\n  \"right-arm-upper\",\n  \"right-arm-lower\",\n  \"right-hand-wrist-twist\",\n  \"left-hand-palm\",\n  \"left-hand-wrist\",\n  \"left-hand-thumb-metacarpal\",\n  \"left-hand-thumb-phalanx-proximal\",\n  \"left-hand-thumb-phalanx-distal\",\n  \"left-hand-thumb-tip\",\n  \"left-hand-index-metacarpal\",\n  \"left-hand-index-phalanx-proximal\",\n  \"left-hand-index-phalanx-intermediate\",\n  \"left-hand-index-phalanx-distal\",\n  \"left-hand-index-tip\",\n  \"left-hand-middle-phalanx-metacarpal\",\n  \"left-hand-middle-phalanx-proximal\",\n  \"left-hand-middle-phalanx-intermediate\",\n  \"left-hand-middle-phalanx-distal\",\n  \"left-hand-middle-tip\",\n  \"left-hand-ring-metacarpal\",\n  \"left-hand-ring-phalanx-proximal\",\n  \"left-hand-ring-phalanx-intermediate\",\n  \"left-hand-ring-phalanx-distal\",\n  \"left-hand-ring-tip\",\n  \"left-hand-little-metacarpal\",\n  \"left-hand-little-phalanx-proximal\",\n  \"left-hand-little-phalanx-intermediate\",\n  \"left-hand-little-phalanx-distal\",\n  \"left-hand-little-tip\",\n  \"right-hand-palm\",\n  \"right-hand-wrist\",\n  \"right-hand-thumb-metacarpal\",\n  \"right-hand-thumb-phalanx-proximal\",\n  \"right-hand-thumb-phalanx-distal\",\n  \"right-hand-thumb-tip\",\n  \"right-hand-index-metacarpal\",\n  \"right-hand-index-phalanx-proximal\",\n  \"right-hand-index-phalanx-intermediate\",\n  \"right-hand-index-phalanx-distal\",\n  \"right-hand-index-tip\",\n  \"right-hand-middle-metacarpal\",\n  \"right-hand-middle-phalanx-proximal\",\n  \"right-hand-middle-phalanx-intermediate\",\n  \"right-hand-middle-phalanx-distal\",\n  \"right-hand-middle-tip\",\n  \"right-hand-ring-metacarpal\",\n  \"right-hand-ring-phalanx-proximal\",\n  \"right-hand-ring-phalanx-intermediate\",\n  \"right-hand-ring-phalanx-distal\",\n  \"right-hand-ring-tip\",\n  \"right-hand-little-metacarpal\",\n  \"right-hand-little-phalanx-proximal\",\n  \"right-hand-little-phalanx-intermediate\",\n  \"right-hand-little-phalanx-distal\",\n  \"right-hand-little-tip\",\n  \"left-upper-leg\",\n  \"left-lower-leg\",\n  \"left-foot-ankle-twist\",\n  \"left-foot-ankle\",\n  \"left-foot-subtalar\",\n  \"left-foot-transverse\",\n  \"left-foot-ball\",\n  \"right-upper-leg\",\n  \"right-lower-leg\",\n  \"right-foot-ankle-twist\",\n  \"right-foot-ankle\",\n  \"right-foot-subtalar\",\n  \"right-foot-transverse\",\n  \"right-foot-ball\"\n};",
+        "type": "enum",
+        "name": "XRBodyJoint",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "hips",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-hips"
+          },
+          {
+            "type": "enum-value",
+            "value": "spine-lower",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-spine-lower"
+          },
+          {
+            "type": "enum-value",
+            "value": "spine-middle",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-spine-middle"
+          },
+          {
+            "type": "enum-value",
+            "value": "spine-upper",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-spine-upper"
+          },
+          {
+            "type": "enum-value",
+            "value": "chest",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-chest"
+          },
+          {
+            "type": "enum-value",
+            "value": "neck",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-neck"
+          },
+          {
+            "type": "enum-value",
+            "value": "head",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-head"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-shoulder",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-shoulder"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-scapula",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-scapula"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-arm-upper",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-arm-upper"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-arm-lower",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-arm-lower"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-wrist-twist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-wrist-twist"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-shoulder",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-shoulder"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-scapula",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-scapula"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-arm-upper",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-arm-upper"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-arm-lower",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-arm-lower"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-wrist-twist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-wrist-twist"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-palm",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-palm"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-wrist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-wrist"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-thumb-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-thumb-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-thumb-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-thumb-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-thumb-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-thumb-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-thumb-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-thumb-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-index-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-index-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-index-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-index-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-index-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-index-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-index-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-index-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-index-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-index-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-middle-phalanx-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-middle-phalanx-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-middle-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-middle-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-middle-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-middle-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-middle-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-middle-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-middle-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-middle-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-ring-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-ring-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-ring-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-ring-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-ring-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-ring-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-ring-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-ring-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-ring-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-ring-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-little-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-little-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-little-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-little-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-little-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-little-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-little-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-little-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-hand-little-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-hand-little-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-palm",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-palm"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-wrist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-wrist"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-thumb-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-thumb-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-thumb-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-thumb-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-thumb-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-thumb-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-thumb-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-thumb-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-index-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-index-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-index-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-index-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-index-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-index-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-index-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-index-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-index-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-index-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-middle-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-middle-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-middle-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-middle-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-middle-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-middle-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-middle-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-middle-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-middle-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-middle-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-ring-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-ring-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-ring-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-ring-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-ring-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-ring-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-ring-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-ring-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-ring-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-ring-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-little-metacarpal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-little-metacarpal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-little-phalanx-proximal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-little-phalanx-proximal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-little-phalanx-intermediate",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-little-phalanx-intermediate"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-little-phalanx-distal",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-little-phalanx-distal"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-hand-little-tip",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-hand-little-tip"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-upper-leg",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-upper-leg"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-lower-leg",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-lower-leg"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-foot-ankle-twist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-foot-ankle-twist"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-foot-ankle",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-foot-ankle"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-foot-subtalar",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-foot-subtalar"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-foot-transverse",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-foot-transverse"
+          },
+          {
+            "type": "enum-value",
+            "value": "left-foot-ball",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-left-foot-ball"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-upper-leg",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-upper-leg"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-lower-leg",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-lower-leg"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-foot-ankle-twist",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-foot-ankle-twist"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-foot-ankle",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-foot-ankle"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-foot-subtalar",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-foot-subtalar"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-foot-transverse",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-foot-transverse"
+          },
+          {
+            "type": "enum-value",
+            "value": "right-foot-ball",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyjoint-right-foot-ball"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/body-tracking/#enumdef-xrbodyjoint"
+      },
+      "XRBody": {
+        "fragment": "[Exposed=Window]\ninterface XRBody {\n    iterable<XRBodyJoint, XRBodySpace>;\n\n    readonly attribute unsigned long size;\n    XRBodySpace get(XRBodyJoint key);\n};",
+        "type": "interface",
+        "name": "XRBody",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRBodyJoint"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRBodySpace"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbody-size"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRBodySpace"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRBodyJoint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbody-get"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/body-tracking/#xrbody"
+      },
+      "XRBodySpace": {
+        "fragment": "[Exposed=Window]\ninterface XRBodySpace: XRSpace {\n  readonly attribute XRBodyJoint jointName;\n};",
+        "type": "interface",
+        "name": "XRBodySpace",
+        "inheritance": "XRSpace",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "jointName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRBodyJoint"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/body-tracking/#dom-xrbodyspace-jointname"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/body-tracking/#xrbodyspace"
+      }
+    },
+    "idlExtendedNames": {
+      "XRFrame": [
+        {
+          "fragment": "partial interface XRFrame {\n   [SameObject] readonly attribute XRBody? body;\n};",
+          "type": "interface",
+          "name": "XRFrame",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "body",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRBody"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/body-tracking/#dom-xrframe-body"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRBody",
+        "XRBodySpace"
+      ]
+    },
+    "dependencies": {
+      "XRFrame": [
+        "XRBody"
+      ],
+      "XRBody": [
+        "XRBodyJoint",
+        "XRBodySpace"
+      ],
+      "XRBodySpace": [
+        "XRSpace",
+        "XRBodyJoint"
+      ]
+    },
+    "externalDependencies": [
+      "XRFrame",
+      "XRSpace"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

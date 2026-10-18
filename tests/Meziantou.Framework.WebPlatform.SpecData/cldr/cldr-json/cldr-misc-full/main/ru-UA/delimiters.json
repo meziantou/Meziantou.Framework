@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ru-UA": {
+      "identity": {
+        "language": "ru",
+        "territory": "UA"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

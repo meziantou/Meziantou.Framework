@@ -1,0 +1,1 @@
+:has(> b, + ul) :where(i[lang|=fr i])

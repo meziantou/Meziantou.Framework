@@ -1,0 +1,360 @@
+{
+  "spec": {
+    "title": "SVG Paths",
+    "url": "https://svgwg.org/specs/paths/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "SVGPathSegment",
+          "SVGPathElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "SVGPathSegment": {
+        "fragment": "[LegacyNoInterfaceObject, Exposed=Window]\ninterface SVGPathSegment {\n  attribute DOMString type;\n  attribute FrozenArray<float> values;\n};",
+        "type": "interface",
+        "name": "SVGPathSegment",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false
+          },
+          {
+            "type": "attribute",
+            "name": "values",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGPathDataSettings": {
+        "fragment": "dictionary SVGPathDataSettings {\n   boolean normalize = false;\n};",
+        "type": "dictionary",
+        "name": "SVGPathDataSettings",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "normalize",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false
+          }
+        ],
+        "extAttrs": [],
+        "partial": false
+      },
+      "SVGPathData": {
+        "fragment": "interface mixin SVGPathData {\n   sequence<SVGPathSegment> getPathData(optional SVGPathDataSettings settings = {});\n   undefined setPathData(sequence<SVGPathSegment> pathData);\n};",
+        "type": "interface mixin",
+        "name": "SVGPathData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getPathData",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SVGPathSegment"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "settings",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SVGPathDataSettings"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "setPathData",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "pathData",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "SVGPathSegment"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://svgwg.org/specs/paths/#InterfaceSVGPathData"
+      },
+      "SVGPathElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGPathElement : SVGGeometryElement {\n\n  readonly attribute SVGAnimatedNumber pathLength;\n\n  float getTotalLength();\n  DOMPoint getPointAtLength(float distance);\n  SVGPathSegment? getPathSegmentAtLength(float distance);\n};",
+        "type": "interface",
+        "name": "SVGPathElement",
+        "inheritance": "SVGGeometryElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "pathLength",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedNumber"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true
+          },
+          {
+            "type": "operation",
+            "name": "getTotalLength",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "getPointAtLength",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPoint"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "distance",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "getPathSegmentAtLength",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SVGPathSegment"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "distance",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {
+      "SVGPathElement": [
+        {
+          "fragment": "SVGPathElement includes SVGPathData;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGPathElement",
+          "includes": "SVGPathData"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SVGPathSegment",
+        "SVGPathElement"
+      ]
+    },
+    "dependencies": {
+      "SVGPathSegment": [],
+      "SVGPathDataSettings": [],
+      "SVGPathData": [
+        "SVGPathSegment",
+        "SVGPathDataSettings"
+      ],
+      "SVGPathElement": [
+        "SVGGeometryElement",
+        "SVGAnimatedNumber",
+        "DOMPoint",
+        "SVGPathSegment",
+        "SVGPathData"
+      ]
+    },
+    "externalDependencies": [
+      "SVGGeometryElement",
+      "SVGAnimatedNumber",
+      "DOMPoint"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

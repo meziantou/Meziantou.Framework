@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ca-FR": {
+      "identity": {
+        "language": "ca",
+        "territory": "FR"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

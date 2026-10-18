@@ -1,0 +1,738 @@
+{
+  "spec": {
+    "title": "Extending Storage Access API (SAA) to non-cookie storage",
+    "url": "https://privacycg.github.io/saa-non-cookie-storage/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "StorageAccessHandle"
+        ]
+      }
+    },
+    "idlNames": {
+      "StorageAccessTypes": {
+        "fragment": "dictionary StorageAccessTypes {\n  boolean all = false;\n  boolean cookies = false;\n  boolean sessionStorage = false;\n  boolean localStorage = false;\n  boolean indexedDB = false;\n  boolean locks = false;\n  boolean caches = false;\n  boolean getDirectory = false;\n  boolean estimate = false;\n  boolean createObjectURL = false;\n  boolean revokeObjectURL = false;\n  boolean BroadcastChannel = false;\n  boolean SharedWorker = false;\n};",
+        "type": "dictionary",
+        "name": "StorageAccessTypes",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "all",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-all"
+          },
+          {
+            "type": "field",
+            "name": "cookies",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-cookies"
+          },
+          {
+            "type": "field",
+            "name": "sessionStorage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-sessionstorage"
+          },
+          {
+            "type": "field",
+            "name": "localStorage",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-localstorage"
+          },
+          {
+            "type": "field",
+            "name": "indexedDB",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-indexeddb"
+          },
+          {
+            "type": "field",
+            "name": "locks",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-locks"
+          },
+          {
+            "type": "field",
+            "name": "caches",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-caches"
+          },
+          {
+            "type": "field",
+            "name": "getDirectory",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-getdirectory"
+          },
+          {
+            "type": "field",
+            "name": "estimate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-estimate"
+          },
+          {
+            "type": "field",
+            "name": "createObjectURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-createobjecturl"
+          },
+          {
+            "type": "field",
+            "name": "revokeObjectURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-revokeobjecturl"
+          },
+          {
+            "type": "field",
+            "name": "BroadcastChannel",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-broadcastchannel"
+          },
+          {
+            "type": "field",
+            "name": "SharedWorker",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesstypes-sharedworker"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://privacycg.github.io/saa-non-cookie-storage/#dictdef-storageaccesstypes"
+      },
+      "StorageAccessHandle": {
+        "fragment": "[Exposed=Window]\ninterface StorageAccessHandle {\n  readonly attribute Storage sessionStorage;\n  readonly attribute Storage localStorage;\n  readonly attribute IDBFactory indexedDB;\n  readonly attribute LockManager locks;\n  readonly attribute CacheStorage caches;\n  Promise<FileSystemDirectoryHandle> getDirectory();\n  Promise<StorageEstimate> estimate();\n  DOMString createObjectURL((Blob or MediaSource) obj);\n  undefined revokeObjectURL(DOMString url);\n  BroadcastChannel BroadcastChannel(DOMString name);\n  SharedWorker SharedWorker(USVString scriptURL, optional (DOMString or SharedWorkerOptions) options = {});\n};",
+        "type": "interface",
+        "name": "StorageAccessHandle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sessionStorage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Storage"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-sessionstorage"
+          },
+          {
+            "type": "attribute",
+            "name": "localStorage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Storage"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-localstorage"
+          },
+          {
+            "type": "attribute",
+            "name": "indexedDB",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "IDBFactory"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-indexeddb"
+          },
+          {
+            "type": "attribute",
+            "name": "locks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LockManager"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-locks"
+          },
+          {
+            "type": "attribute",
+            "name": "caches",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CacheStorage"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-caches"
+          },
+          {
+            "type": "operation",
+            "name": "getDirectory",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemDirectoryHandle"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-getdirectory"
+          },
+          {
+            "type": "operation",
+            "name": "estimate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StorageEstimate"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-estimate"
+          },
+          {
+            "type": "operation",
+            "name": "createObjectURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "obj",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Blob"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "MediaSource"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-createobjecturl"
+          },
+          {
+            "type": "operation",
+            "name": "revokeObjectURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-revokeobjecturl"
+          },
+          {
+            "type": "operation",
+            "name": "BroadcastChannel",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BroadcastChannel"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-broadcastchannel"
+          },
+          {
+            "type": "operation",
+            "name": "SharedWorker",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SharedWorker"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scriptURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "SharedWorkerOptions"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-sharedworker"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://privacycg.github.io/saa-non-cookie-storage/#storageaccesshandle"
+      },
+      "SameSiteCookiesType": {
+        "fragment": "enum SameSiteCookiesType { \"all\", \"none\" };",
+        "type": "enum",
+        "name": "SameSiteCookiesType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "all",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-samesitecookiestype-all"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-samesitecookiestype-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://privacycg.github.io/saa-non-cookie-storage/#enumdef-samesitecookiestype"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n  Promise<boolean> hasUnpartitionedCookieAccess();\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "hasUnpartitionedCookieAccess",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-document-hasunpartitionedcookieaccess"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "SharedWorkerOptions": [
+        {
+          "fragment": "partial dictionary SharedWorkerOptions {\n  SameSiteCookiesType sameSiteCookies;\n};",
+          "type": "dictionary",
+          "name": "SharedWorkerOptions",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "sameSiteCookies",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "SameSiteCookiesType"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://privacycg.github.io/saa-non-cookie-storage/#dom-sharedworkeroptions-samesitecookies"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "StorageAccessHandle"
+      ]
+    },
+    "dependencies": {
+      "StorageAccessTypes": [],
+      "StorageAccessHandle": [
+        "Storage",
+        "IDBFactory",
+        "LockManager",
+        "CacheStorage",
+        "FileSystemDirectoryHandle",
+        "StorageEstimate",
+        "Blob",
+        "MediaSource",
+        "BroadcastChannel",
+        "SharedWorker",
+        "SharedWorkerOptions"
+      ],
+      "Document": [],
+      "SharedWorkerOptions": [
+        "SameSiteCookiesType"
+      ]
+    },
+    "externalDependencies": [
+      "Storage",
+      "IDBFactory",
+      "LockManager",
+      "CacheStorage",
+      "FileSystemDirectoryHandle",
+      "StorageEstimate",
+      "Blob",
+      "MediaSource",
+      "BroadcastChannel",
+      "SharedWorker",
+      "SharedWorkerOptions",
+      "Document"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

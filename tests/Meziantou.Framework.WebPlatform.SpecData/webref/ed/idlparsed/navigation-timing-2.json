@@ -1,0 +1,1019 @@
+{
+  "spec": {
+    "title": "Navigation Timing Level 2",
+    "url": "https://w3c.github.io/navigation-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PerformanceNavigationTiming",
+          "PerformanceTimingConfidence",
+          "PerformanceTiming",
+          "PerformanceNavigation",
+          "Performance"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceNavigationTiming": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceNavigationTiming : PerformanceResourceTiming {\n    readonly        attribute DOMHighResTimeStamp  unloadEventStart;\n    readonly        attribute DOMHighResTimeStamp  unloadEventEnd;\n    readonly        attribute DOMHighResTimeStamp  domInteractive;\n    readonly        attribute DOMHighResTimeStamp  domContentLoadedEventStart;\n    readonly        attribute DOMHighResTimeStamp  domContentLoadedEventEnd;\n    readonly        attribute DOMHighResTimeStamp  domComplete;\n    readonly        attribute DOMHighResTimeStamp  loadEventStart;\n    readonly        attribute DOMHighResTimeStamp  loadEventEnd;\n    readonly        attribute NavigationTimingType type;\n    readonly        attribute unsigned short       redirectCount;\n    readonly        attribute DOMHighResTimeStamp  criticalCHRestart;\n    readonly        attribute NotRestoredReasons?  notRestoredReasons;\n    readonly        attribute PerformanceTimingConfidence confidence;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceNavigationTiming",
+        "inheritance": "PerformanceResourceTiming",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "unloadEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "unloadEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventend"
+          },
+          {
+            "type": "attribute",
+            "name": "domInteractive",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-dominteractive"
+          },
+          {
+            "type": "attribute",
+            "name": "domContentLoadedEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domContentLoadedEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventend"
+          },
+          {
+            "type": "attribute",
+            "name": "domComplete",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcomplete"
+          },
+          {
+            "type": "attribute",
+            "name": "loadEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "loadEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventend"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NavigationTimingType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-type"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectCount",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-redirectcount"
+          },
+          {
+            "type": "attribute",
+            "name": "criticalCHRestart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-criticalchrestart"
+          },
+          {
+            "type": "attribute",
+            "name": "notRestoredReasons",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "NotRestoredReasons"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-notrestoredreasons"
+          },
+          {
+            "type": "attribute",
+            "name": "confidence",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceTimingConfidence"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-confidence"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/navigation-timing/#performancenavigationtiming"
+      },
+      "NavigationTimingType": {
+        "fragment": "enum NavigationTimingType {\n    \"navigate\",\n    \"reload\",\n    \"back_forward\"\n};",
+        "type": "enum",
+        "name": "NavigationTimingType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "navigate",
+            "href": "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-navigate"
+          },
+          {
+            "type": "enum-value",
+            "value": "reload",
+            "href": "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-reload"
+          },
+          {
+            "type": "enum-value",
+            "value": "back_forward",
+            "href": "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-back_forward"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/navigation-timing/#enumdef-navigationtimingtype"
+      },
+      "PerformanceTimingConfidence": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceTimingConfidence {\n    readonly attribute double randomizedTriggerRate;\n    readonly attribute PerformanceTimingConfidenceValue value;\n    object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceTimingConfidence",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "randomizedTriggerRate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetimingconfidence-randomizedtriggerrate"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PerformanceTimingConfidenceValue"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetimingconfidence-value"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetimingconfidence-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/navigation-timing/#performancetimingconfidence"
+      },
+      "PerformanceTimingConfidenceValue": {
+        "fragment": "enum PerformanceTimingConfidenceValue {\n  \"high\",\n  \"low\"\n};",
+        "type": "enum",
+        "name": "PerformanceTimingConfidenceValue",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "high",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetimingconfidencevalue-high"
+          },
+          {
+            "type": "enum-value",
+            "value": "low",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetimingconfidencevalue-low"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/navigation-timing/#enumdef-performancetimingconfidencevalue"
+      },
+      "PerformanceTiming": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceTiming {\n  readonly attribute unsigned long long navigationStart;\n  readonly attribute unsigned long long unloadEventStart;\n  readonly attribute unsigned long long unloadEventEnd;\n  readonly attribute unsigned long long redirectStart;\n  readonly attribute unsigned long long redirectEnd;\n  readonly attribute unsigned long long fetchStart;\n  readonly attribute unsigned long long domainLookupStart;\n  readonly attribute unsigned long long domainLookupEnd;\n  readonly attribute unsigned long long connectStart;\n  readonly attribute unsigned long long connectEnd;\n  readonly attribute unsigned long long secureConnectionStart;\n  readonly attribute unsigned long long requestStart;\n  readonly attribute unsigned long long responseStart;\n  readonly attribute unsigned long long responseEnd;\n  readonly attribute unsigned long long domLoading;\n  readonly attribute unsigned long long domInteractive;\n  readonly attribute unsigned long long domContentLoadedEventStart;\n  readonly attribute unsigned long long domContentLoadedEventEnd;\n  readonly attribute unsigned long long domComplete;\n  readonly attribute unsigned long long loadEventStart;\n  readonly attribute unsigned long long loadEventEnd;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceTiming",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "navigationStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-navigationstart"
+          },
+          {
+            "type": "attribute",
+            "name": "unloadEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "unloadEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventend"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectstart"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectend"
+          },
+          {
+            "type": "attribute",
+            "name": "fetchStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-fetchstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domainLookupStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domainLookupEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupend"
+          },
+          {
+            "type": "attribute",
+            "name": "connectStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-connectstart"
+          },
+          {
+            "type": "attribute",
+            "name": "connectEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-connectend"
+          },
+          {
+            "type": "attribute",
+            "name": "secureConnectionStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-secureconnectionstart"
+          },
+          {
+            "type": "attribute",
+            "name": "requestStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-requeststart"
+          },
+          {
+            "type": "attribute",
+            "name": "responseStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-responsestart"
+          },
+          {
+            "type": "attribute",
+            "name": "responseEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-responseend"
+          },
+          {
+            "type": "attribute",
+            "name": "domLoading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domloading"
+          },
+          {
+            "type": "attribute",
+            "name": "domInteractive",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-dominteractive"
+          },
+          {
+            "type": "attribute",
+            "name": "domContentLoadedEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domContentLoadedEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventend"
+          },
+          {
+            "type": "attribute",
+            "name": "domComplete",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcomplete"
+          },
+          {
+            "type": "attribute",
+            "name": "loadEventStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventstart"
+          },
+          {
+            "type": "attribute",
+            "name": "loadEventEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventend"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancetiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/navigation-timing/#performancetiming"
+      },
+      "PerformanceNavigation": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceNavigation {\n  const unsigned short TYPE_NAVIGATE = 0;\n  const unsigned short TYPE_RELOAD = 1;\n  const unsigned short TYPE_BACK_FORWARD = 2;\n  const unsigned short TYPE_RESERVED = 255;\n  readonly attribute unsigned short type;\n  readonly attribute unsigned short redirectCount;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceNavigation",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "TYPE_NAVIGATE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_navigate"
+          },
+          {
+            "type": "const",
+            "name": "TYPE_RELOAD",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reload"
+          },
+          {
+            "type": "const",
+            "name": "TYPE_BACK_FORWARD",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_back_forward"
+          },
+          {
+            "type": "const",
+            "name": "TYPE_RESERVED",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "255"
+            },
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reserved"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectCount",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-redirectcount"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/navigation-timing/#dom-performancenavigation-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/navigation-timing/#performancenavigation"
+      }
+    },
+    "idlExtendedNames": {
+      "Performance": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface Performance {\n  [SameObject]\n  readonly attribute PerformanceTiming timing;\n  [SameObject]\n  readonly attribute PerformanceNavigation navigation;\n};",
+          "type": "interface",
+          "name": "Performance",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "timing",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceTiming"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/navigation-timing/#dom-performance-timing"
+            },
+            {
+              "type": "attribute",
+              "name": "navigation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PerformanceNavigation"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/navigation-timing/#dom-performance-navigation"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceNavigationTiming",
+        "PerformanceTimingConfidence",
+        "PerformanceTiming",
+        "PerformanceNavigation",
+        "Performance"
+      ]
+    },
+    "dependencies": {
+      "PerformanceNavigationTiming": [
+        "PerformanceResourceTiming",
+        "DOMHighResTimeStamp",
+        "NavigationTimingType",
+        "NotRestoredReasons",
+        "PerformanceTimingConfidence"
+      ],
+      "PerformanceTimingConfidence": [
+        "PerformanceTimingConfidenceValue"
+      ],
+      "PerformanceTiming": [],
+      "PerformanceNavigation": [],
+      "Performance": [
+        "PerformanceTiming",
+        "PerformanceNavigation"
+      ]
+    },
+    "externalDependencies": [
+      "PerformanceResourceTiming",
+      "DOMHighResTimeStamp",
+      "NotRestoredReasons",
+      "Performance"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

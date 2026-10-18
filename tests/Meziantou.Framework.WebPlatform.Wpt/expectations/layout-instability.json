@@ -1,0 +1,254 @@
+{
+  "layout-instability/absolute-child-shift-with-parent-contain.html": {
+    "total": 1
+  },
+  "layout-instability/absolute-child-shift-with-parent-negative-overflow.html": {
+    "total": 1
+  },
+  "layout-instability/absolute-child-shift-with-parent-overflow.html": {
+    "total": 1
+  },
+  "layout-instability/absolute-child-shift-with-parent-will-change.html": {
+    "total": 1
+  },
+  "layout-instability/add-remove-position-fixed.html": {
+    "total": 1
+  },
+  "layout-instability/add-remove-position-sticky.html": {
+    "total": 1
+  },
+  "layout-instability/attribution-rectangles-css-pixels.html": {
+    "total": 2
+  },
+  "layout-instability/body-display-change.html": {
+    "total": 1
+  },
+  "layout-instability/buffer-layout-shift.html": {
+    "total": 1
+  },
+  "layout-instability/buffered-flag.html": {
+    "total": 1
+  },
+  "layout-instability/child-shift-with-parent-overflow-hidden.html": {
+    "total": 1
+  },
+  "layout-instability/child-shift-with-parent-overflow-x-clip.html": {
+    "total": 1
+  },
+  "layout-instability/child-shift-with-parent.html": {
+    "total": 1
+  },
+  "layout-instability/clip-negative-bottom-margin.html": {
+    "total": 1
+  },
+  "layout-instability/composited-element-movement.html": {
+    "total": 1
+  },
+  "layout-instability/contain-paint-fully-clipped.html": {
+    "total": 1
+  },
+  "layout-instability/content-visibility-auto-offscreen.html": {
+    "total": 1
+  },
+  "layout-instability/content-visibility-auto-onscreen.html": {
+    "total": 1
+  },
+  "layout-instability/content-visibility-auto-resize.html": {
+    "total": 1
+  },
+  "layout-instability/content-visibility-hidden.html": {
+    "total": 1
+  },
+  "layout-instability/display-change-with-transform.html": {
+    "total": 1
+  },
+  "layout-instability/expand-above-viewport.html": {
+    "total": 1
+  },
+  "layout-instability/fixed-position-move.html": {
+    "total": 1
+  },
+  "layout-instability/fully-clipped-visual-rect.html": {
+    "total": 1
+  },
+  "layout-instability/idlharness.html": {
+    "total": 35
+  },
+  "layout-instability/ignore-fixed-and-sticky.html": {
+    "total": 1
+  },
+  "layout-instability/inline-flow-shift-one-line.html": {
+    "total": 1
+  },
+  "layout-instability/inline-flow-shift-vertical-rl.html": {
+    "total": 1
+  },
+  "layout-instability/inline-flow-shift.html": {
+    "total": 1
+  },
+  "layout-instability/input-timestamp.html": {
+    "total": 1
+  },
+  "layout-instability/local-shift-without-viewport-shift-2.html": {
+    "total": 1
+  },
+  "layout-instability/local-shift-without-viewport-shift.html": {
+    "total": 1
+  },
+  "layout-instability/main-frame.html": {
+    "total": 1
+  },
+  "layout-instability/mousemove-becomes-drag.html": {
+    "total": 1
+  },
+  "layout-instability/move-distance-clamped.html": {
+    "total": 1
+  },
+  "layout-instability/move-transformed.html": {
+    "total": 1
+  },
+  "layout-instability/multi-clip-visual-rect.html": {
+    "total": 1
+  },
+  "layout-instability/multicol-000.html": {
+    "total": 1
+  },
+  "layout-instability/multicol-001.html": {
+    "total": 1
+  },
+  "layout-instability/opacity-nonzero-to-zero.html": {
+    "total": 1
+  },
+  "layout-instability/opacity-zero-layout-and-visible.html": {
+    "total": 1
+  },
+  "layout-instability/opacity-zero.html": {
+    "total": 1
+  },
+  "layout-instability/outline.html": {
+    "total": 1
+  },
+  "layout-instability/partially-clipped-visual-rect.html": {
+    "total": 1
+  },
+  "layout-instability/pointerdown-becomes-scroll.html": {
+    "total": 1,
+    "failures": {
+      "Shift in pointerdown reported when it becomes a scroll.": "FAIL"
+    }
+  },
+  "layout-instability/pointerdown-becomes-tap.html": {
+    "total": 1
+  },
+  "layout-instability/pointermove-becomes-drag.html": {
+    "total": 1
+  },
+  "layout-instability/recent-input.html": {
+    "total": 1
+  },
+  "layout-instability/rtl-distance.html": {
+    "total": 1
+  },
+  "layout-instability/shift-into-viewport-inline-direction-and-scroll.html": {
+    "total": 1
+  },
+  "layout-instability/shift-into-viewport-inline-direction.html": {
+    "total": 1
+  },
+  "layout-instability/shift-into-viewport.html": {
+    "total": 1
+  },
+  "layout-instability/shift-invisible.html": {
+    "total": 1
+  },
+  "layout-instability/shift-outside-viewport-inline-direction.html": {
+    "total": 1
+  },
+  "layout-instability/shift-outside-viewport.html": {
+    "total": 1
+  },
+  "layout-instability/shift-scroll-anchoring-natural-scroll.html": {
+    "total": 1
+  },
+  "layout-instability/shift-while-scrolled.html": {
+    "total": 1
+  },
+  "layout-instability/shift-with-counter-scroll-and-transform.html": {
+    "total": 1
+  },
+  "layout-instability/shift-with-counter-scroll-and-translate.html": {
+    "total": 1
+  },
+  "layout-instability/shift-with-counterscroll-2.html": {
+    "total": 1
+  },
+  "layout-instability/shift-with-counterscroll.html": {
+    "total": 1
+  },
+  "layout-instability/shift-with-overflow-status-change.html": {
+    "total": 1
+  },
+  "layout-instability/simple-block-movement.html": {
+    "total": 1
+  },
+  "layout-instability/sources-enclosure.html": {
+    "total": 1
+  },
+  "layout-instability/sources-maximpact.html": {
+    "total": 1
+  },
+  "layout-instability/sources-pseudo-element.html": {
+    "total": 1
+  },
+  "layout-instability/sources.html": {
+    "total": 1
+  },
+  "layout-instability/sticky-descendant-move.html": {
+    "total": 1
+  },
+  "layout-instability/sticky-layout-no-change.html": {
+    "total": 1
+  },
+  "layout-instability/sub-frame.html": {
+    "total": 1
+  },
+  "layout-instability/supported-layout-type.html": {
+    "total": 1
+  },
+  "layout-instability/toJSON.html": {
+    "total": 1
+  },
+  "layout-instability/transform-above-filter-dynamic.html": {
+    "total": 1
+  },
+  "layout-instability/transform-above-perspective-dynamic.html": {
+    "total": 1
+  },
+  "layout-instability/transform-change.html": {
+    "total": 1
+  },
+  "layout-instability/transform-counter-layout-shift.html": {
+    "total": 1
+  },
+  "layout-instability/transform.html": {
+    "total": 1
+  },
+  "layout-instability/translate-change.html": {
+    "total": 1
+  },
+  "layout-instability/translate-counter-layout-shift.html": {
+    "total": 1
+  },
+  "layout-instability/video.html": {
+    "total": 1
+  },
+  "layout-instability/visibility-hidden-layout-and-visible.html": {
+    "total": 1
+  },
+  "layout-instability/visibility-hidden.html": {
+    "total": 1
+  },
+  "layout-instability/visible-to-hidden.html": {
+    "total": 1
+  }
+}

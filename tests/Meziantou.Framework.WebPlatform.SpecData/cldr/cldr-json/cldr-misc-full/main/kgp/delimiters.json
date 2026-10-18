@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kgp": {
+      "identity": {
+        "language": "kgp"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

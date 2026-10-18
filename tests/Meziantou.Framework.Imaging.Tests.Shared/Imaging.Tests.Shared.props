@@ -6,7 +6,6 @@
       decoding suites (Suites/Decode), separated by semicolons.
     - ImagingTestEncoders: the encoder configurations the project runs through the save cases of the fault injection
       (Suites/Save), separated by semicolons.
-    - ImagingTestCopyFixtures: false when no test of the project reads the golden corpus.
     Every fixture format and every encoder must belong to exactly one project (CorpusScopeTests).
   -->
   <ItemGroup>
@@ -22,10 +21,5 @@
     <!-- Read by CorpusScope -->
     <AssemblyMetadata Include="Meziantou.Framework.Imaging.Tests.ImagingTestFixtureFormats" Value="$(ImagingTestFixtureFormats)" Condition="'$(ImagingTestFixtureFormats)' != ''" />
     <AssemblyMetadata Include="Meziantou.Framework.Imaging.Tests.ImagingTestEncoders" Value="$(ImagingTestEncoders)" Condition="'$(ImagingTestEncoders)' != ''" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ImagingTestCopyFixtures)' != 'false'">
-    <!-- Copy the corpus next to the test assembly (FixtureRoot.GetDirectory) -->
-    <None Include="$(MSBuildThisFileDirectory)..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

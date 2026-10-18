@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "title": "Private Click Measurement",
+    "url": "https://privacycg.github.io/private-click-measurement/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "HTMLAnchorElement": [
+        {
+          "fragment": "partial interface HTMLAnchorElement {\n    [CEReactions] attribute unsigned long attributionSourceId;\n};",
+          "type": "interface",
+          "name": "HTMLAnchorElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "attributionSourceId",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://privacycg.github.io/private-click-measurement/#dom-htmlanchorelement-attributionsourceid"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "HTMLAnchorElement": []
+    },
+    "externalDependencies": [
+      "HTMLAnchorElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

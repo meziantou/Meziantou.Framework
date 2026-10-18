@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tpi": {
+      "identity": {
+        "language": "tpi"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

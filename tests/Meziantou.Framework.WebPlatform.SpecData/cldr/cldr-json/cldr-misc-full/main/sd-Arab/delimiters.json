@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sd-Arab": {
+      "identity": {
+        "language": "sd",
+        "script": "Arab"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

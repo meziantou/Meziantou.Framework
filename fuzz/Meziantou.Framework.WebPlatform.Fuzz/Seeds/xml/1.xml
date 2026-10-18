@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE root [<!ENTITY e "entity"><!ATTLIST item id ID #IMPLIED>]>
+<root xmlns="urn:default" xmlns:x="urn:x" x:attr="&e;"><x:item id="i1">text &amp; &#x263A; <![CDATA[<cdata>]]></x:item><!-- comment --><?pi data?><empty/></root>

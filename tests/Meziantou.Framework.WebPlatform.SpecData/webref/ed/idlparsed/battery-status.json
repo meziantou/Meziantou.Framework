@@ -1,0 +1,240 @@
+{
+  "spec": {
+    "title": "Battery Status API",
+    "url": "https://w3c.github.io/battery/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "BatteryManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "BatteryManager": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface BatteryManager : EventTarget {\n    readonly        attribute boolean             charging;\n    readonly        attribute unrestricted double chargingTime;\n    readonly        attribute unrestricted double dischargingTime;\n    readonly        attribute double              level;\n                    attribute EventHandler        onchargingchange;\n                    attribute EventHandler        onchargingtimechange;\n                    attribute EventHandler        ondischargingtimechange;\n                    attribute EventHandler        onlevelchange;\n};",
+        "type": "interface",
+        "name": "BatteryManager",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "charging",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-charging"
+          },
+          {
+            "type": "attribute",
+            "name": "chargingTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-chargingtime"
+          },
+          {
+            "type": "attribute",
+            "name": "dischargingTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-dischargingtime"
+          },
+          {
+            "type": "attribute",
+            "name": "level",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-level"
+          },
+          {
+            "type": "attribute",
+            "name": "onchargingchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-onchargingchange"
+          },
+          {
+            "type": "attribute",
+            "name": "onchargingtimechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-onchargingtimechange"
+          },
+          {
+            "type": "attribute",
+            "name": "ondischargingtimechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-ondischargingtimechange"
+          },
+          {
+            "type": "attribute",
+            "name": "onlevelchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/battery/#dom-batterymanager-onlevelchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/battery/#dom-batterymanager"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext]\npartial interface Navigator {\n  Promise<BatteryManager> getBattery();\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getBattery",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "BatteryManager"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/battery/#dom-navigator-getbattery"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "BatteryManager"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "BatteryManager"
+      ],
+      "BatteryManager": [
+        "EventTarget",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

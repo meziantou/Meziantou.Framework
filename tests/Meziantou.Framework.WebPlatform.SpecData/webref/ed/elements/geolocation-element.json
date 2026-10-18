@@ -1,0 +1,13 @@
+{
+  "spec": {
+    "title": "The HTML Geolocation Element",
+    "url": "https://wicg.github.io/PEPC/geolocation-element.html"
+  },
+  "elements": [
+    {
+      "name": "geolocation",
+      "href": "https://wicg.github.io/PEPC/geolocation-element.html#elementdef-geolocation",
+      "interface": "HTMLGeolocationElement"
+    }
+  ]
+}

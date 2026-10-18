@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-ER": {
+      "identity": {
+        "language": "en",
+        "territory": "ER"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "compat/css-style-declaration-alias-enumeration.html": {
+    "total": 51,
+    "failures": {
+      "WebKitBackgroundClip found on CSSStyleDeclaration": "FAIL"
+    }
+  },
+  "compat/historical.html": {
+    "total": 3
+  },
+  "compat/idlharness.window.js": {
+    "total": 29,
+    "failures": {
+      "HTMLBodyElement interface: attribute onorientationchange": "FAIL",
+      "HTMLBodyElement interface: document.body must inherit property \"onorientationchange\" with the proper type": "FAIL",
+      "Window interface: attribute onorientationchange": "FAIL",
+      "Window interface: attribute orientation": "FAIL",
+      "Window interface: window must inherit property \"onorientationchange\" with the proper type": "FAIL",
+      "Window interface: window must inherit property \"orientation\" with the proper type": "FAIL"
+    }
+  },
+  "compat/webkit-background-origin-text.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-align-001.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-blockify.html": {
+    "reftest": "FAIL"
+  },
+  "compat/webkit-box-clamp-bottom-border.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-clamp-visibility-change.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-fieldset.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-horizontal-reverse-variants.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-horizontal-rtl-variants.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-ignores-flex-wrap.tentative.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-box-item-shrink-001.html": {
+    "total": 20
+  },
+  "compat/webkit-box-item-shrink-002.html": {
+    "total": 18
+  },
+  "compat/webkit-box-removing-triggering-anonymous-merge.html": {
+    "total": 1
+  },
+  "compat/webkit-box-rtl-flex.html": {
+    "reftest": "FAIL"
+  },
+  "compat/webkit-box-vertically-centered.html": {
+    "total": 1
+  },
+  "compat/webkit-box-z-index.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-gradient-comma.html": {
+    "total": 2
+  },
+  "compat/webkit-gradient-sign.html": {
+    "total": 2
+  },
+  "compat/webkit-linear-gradient-diff-unprefixed.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-linear-gradient-line-bottom.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-linear-gradient-line-left.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-linear-gradient-line-right.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-linear-gradient-line-top.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-mask-box-enumeration.html": {
+    "total": 6
+  },
+  "compat/webkit-radial-gradient-radii.html": {
+    "total": 3
+  },
+  "compat/webkit-scrollbar-parse.html": {
+    "total": 1
+  },
+  "compat/webkit-text-fill-color-currentColor.html": {
+    "total": 1
+  },
+  "compat/webkit-text-fill-color-property-001a.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-001b.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-001c.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-001d.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-002.html": {
+    "reftest": "TIMEOUT"
+  },
+  "compat/webkit-text-fill-color-property-003.html": {
+    "reftest": "TIMEOUT"
+  },
+  "compat/webkit-text-fill-color-property-004.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-005.html": {
+    "reftest": "PASS"
+  },
+  "compat/webkit-text-fill-color-property-006.html": {
+    "reftest": "PASS"
+  }
+}

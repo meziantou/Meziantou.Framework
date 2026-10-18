@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sma": {
+      "identity": {
+        "language": "sma"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

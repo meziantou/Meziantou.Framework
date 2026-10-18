@@ -1,0 +1,1016 @@
+{
+  "pointerevents/bugs/drag_on_added_range_input.html": {
+    "total": 1
+  },
+  "pointerevents/bugs/events_after_lostpointercapture_remove_setcapture_node.html": {
+    "total": 1,
+    "failures": {
+      "setPointerCapture target removed by lostpointercapture": "FAIL"
+    }
+  },
+  "pointerevents/capturing_boundary_event_handler_at_ua_shadowdom.html?mouse": {
+    "total": 3
+  },
+  "pointerevents/capturing_boundary_event_handler_at_ua_shadowdom.html?pen": {
+    "total": 3
+  },
+  "pointerevents/capturing_boundary_event_handler_at_ua_shadowdom.html?touch": {
+    "total": 3
+  },
+  "pointerevents/coalesced_events_attributes.https.html?mouse": {
+    "total": 4
+  },
+  "pointerevents/coalesced_events_attributes.https.html?pen": {
+    "total": 4
+  },
+  "pointerevents/coalesced_events_attributes.https.html?touch": {
+    "total": 4
+  },
+  "pointerevents/coalesced_events_attributes_on_redispatch.https.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/coalesced_events_attributes_on_redispatch.https.html?pen": {
+    "total": 1
+  },
+  "pointerevents/coalesced_events_attributes_on_redispatch.https.html?touch": {
+    "total": 1
+  },
+  "pointerevents/coalesced_events_attributes_under_load.https.optional.html?mouse": {
+    "total": 1,
+    "failures": {
+      "Coalesced pointermoves under load": "FAIL"
+    }
+  },
+  "pointerevents/coalesced_events_attributes_under_load.https.optional.html?pen": {
+    "total": 1,
+    "failures": {
+      "Coalesced pointermoves under load": "FAIL"
+    }
+  },
+  "pointerevents/coalesced_events_attributes_under_load.https.optional.html?touch": {
+    "total": 1,
+    "failures": {
+      "Coalesced pointermoves under load": "FAIL"
+    }
+  },
+  "pointerevents/compat/pointerevent_compat-mouse-events-when-removing-nodes.html": {
+    "total": 4
+  },
+  "pointerevents/compat/pointerevent_mouse-on-object.html": {
+    "total": 2,
+    "failures": {
+      "Click and drag outside of object event sequence": "FAIL"
+    }
+  },
+  "pointerevents/compat/pointerevent_mouse-pointer-on-scrollbar.html": {
+    "total": 2
+  },
+  "pointerevents/compat/pointerevent_mouse-pointer-preventdefault-passive.html": {
+    "total": 1
+  },
+  "pointerevents/compat/pointerevent_mouse-pointer-preventdefault.html": {
+    "total": 7
+  },
+  "pointerevents/compat/pointerevent_mouse-pointer-updown-events.html": {
+    "total": 1
+  },
+  "pointerevents/compat/pointerevent_mouse_target_after_pointer_target_host_of_shadow_removed.html": {
+    "total": 3
+  },
+  "pointerevents/compat/pointerevent_mouse_target_after_pointer_target_root_element_in_shadow_removed.html": {
+    "total": 3
+  },
+  "pointerevents/compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html": {
+    "total": 3,
+    "failures": {
+      "mousedown event should be fired on the slot parent when pointerdown event listener removes the slot": "FAIL",
+      "mousemove event should be fired on the slot parent when pointermove event listener removes the slot": "FAIL",
+      "mouseup event should be fired on the slot parent when pointerup event listener removes the slot": "FAIL"
+    }
+  },
+  "pointerevents/compat/pointerevent_mouseevent_key_pressed.html": {
+    "total": 5
+  },
+  "pointerevents/compat/pointerevent_preventdefault_pointerdown_dblclick.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/compat/pointerevent_preventdefault_pointerdown_dblclick.html?touch": {
+    "total": 1
+  },
+  "pointerevents/compat/pointerevent_touch-action-verification.html": {
+    "total": 4,
+    "failures": {
+      "explicit-pinch-zoom-pan-x-pan-y": "FAIL"
+    }
+  },
+  "pointerevents/compat/pointerevent_touch-action_two-finger_interaction.html": {
+    "total": 2
+  },
+  "pointerevents/compat/pointerevent_touch_target_after_pointerdown_target_removed.tentative.html": {
+    "total": 18
+  },
+  "pointerevents/idlharness.https.window.js": {
+    "total": 203
+  },
+  "pointerevents/inheritance.html": {
+    "total": 2
+  },
+  "pointerevents/mouse-pointer-boundary-events-for-shadowdom.html": {
+    "total": 1
+  },
+  "pointerevents/parsing/touch-action-computed.html": {
+    "total": 6
+  },
+  "pointerevents/parsing/touch-action-invalid.html": {
+    "total": 3
+  },
+  "pointerevents/parsing/touch-action-valid.html": {
+    "total": 6
+  },
+  "pointerevents/persistentDeviceId/get-persistendeviceid-from-pointer-event.tentative.html": {
+    "total": 1
+  },
+  "pointerevents/persistentDeviceId/get-persistendeviceid-from-pointer-mouse-event.tentative.html": {
+    "total": 1
+  },
+  "pointerevents/persistentDeviceId/pointer-event-has-persistentdeviceid-from-pointer-event-init.tentative.html": {
+    "total": 2
+  },
+  "pointerevents/pointer-events-none-skip-scroll-in-iframe.html": {
+    "total": 1
+  },
+  "pointerevents/pointer-events-none-skip-scroll-scrollbar.html": {
+    "total": 1
+  },
+  "pointerevents/pointer-events-none-skip-scroll-will-change-in-iframe.html": {
+    "total": 1
+  },
+  "pointerevents/pointer-events-none-skip-scroll-will-change-scrollbar.html": {
+    "total": 1
+  },
+  "pointerevents/pointer-events-none-skip-scroll-will-change.html": {
+    "total": 1
+  },
+  "pointerevents/pointer-events-none-skip-scroll.html": {
+    "total": 1
+  },
+  "pointerevents/pointer_boundary_events_after_removing_last_over_element_through_innerhtml.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent-boundary-event-target-when-hover-generates-content-under-pointer.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent-drag-interaction.html": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_after_target_appended.html?mouse": {
+    "total": 8
+  },
+  "pointerevents/pointerevent_after_target_appended.html?pen": {
+    "total": 8
+  },
+  "pointerevents/pointerevent_after_target_appended.html?touch": {
+    "total": 8,
+    "failures": {
+      "pointer events from touch received before/after child attached at pointerdown": "FAIL",
+      "pointer events from touch received before/after child attached at pointerup": "FAIL",
+      "pointer events from touch received before/after child moved at pointerdown": "FAIL",
+      "pointer events from touch received before/after child moved at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_appended_interleaved.tentative.html?mouse": {
+    "total": 4,
+    "failures": {
+      "mouse events from mouse received before/after child attached at pointerdown": "FAIL",
+      "mouse events from mouse received before/after child attached at pointerup": "FAIL",
+      "mouse events from mouse received before/after child moved at pointerdown": "FAIL",
+      "mouse events from mouse received before/after child moved at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_appended_interleaved.tentative.html?pen": {
+    "total": 4,
+    "failures": {
+      "mouse events from pen received before/after child attached at pointerdown": "FAIL",
+      "mouse events from pen received before/after child attached at pointerup": "FAIL",
+      "mouse events from pen received before/after child moved at pointerdown": "FAIL",
+      "mouse events from pen received before/after child moved at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_appended_interleaved.tentative.html?touch": {
+    "total": 4,
+    "failures": {
+      "mouse events from touch received before/after child attached at pointerdown": "FAIL",
+      "mouse events from touch received before/after child attached at pointerup": "FAIL",
+      "mouse events from touch received before/after child moved at pointerdown": "FAIL",
+      "mouse events from touch received before/after child moved at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_removed.html?mouse": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_after_target_removed.html?pen": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_after_target_removed.html?touch": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_after_target_removed_from_slot.html?mouse": {
+    "total": 6,
+    "failures": {
+      "mouse events with change-slotname at pointerdown": "FAIL",
+      "mouse events with change-slotname at pointerup": "FAIL",
+      "mouse events with remove-filler at pointerdown": "FAIL",
+      "mouse events with remove-filler at pointerup": "FAIL",
+      "mouse events with remove-slot at pointerdown": "FAIL",
+      "mouse events with remove-slot at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_removed_interleaved.tentative.html?mouse": {
+    "total": 2,
+    "failures": {
+      "mouse events from mouse received before/after child removal at pointerdown": "FAIL",
+      "mouse events from mouse received before/after child removal at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_removed_interleaved.tentative.html?pen": {
+    "total": 2,
+    "failures": {
+      "mouse events from pen received before/after child removal at pointerdown": "FAIL",
+      "mouse events from pen received before/after child removal at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_after_target_removed_interleaved.tentative.html?touch": {
+    "total": 2,
+    "failures": {
+      "mouse events from touch received before/after child removal at pointerdown": "FAIL",
+      "mouse events from touch received before/after child removal at pointerup": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_attributes.html?mouse": {
+    "total": 102
+  },
+  "pointerevents/pointerevent_attributes.html?mouse-right": {
+    "total": 102
+  },
+  "pointerevents/pointerevent_attributes.html?pen": {
+    "total": 88
+  },
+  "pointerevents/pointerevent_attributes.html?pen-right": {
+    "total": 88
+  },
+  "pointerevents/pointerevent_attributes.html?touch": {
+    "total": 88
+  },
+  "pointerevents/pointerevent_attributes.optional.html?mouse": {
+    "total": 30,
+    "failures": {
+      "Inner-frame mouse pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerup.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerup.toElement value is null": "PRECONDITION_FAILED"
+    }
+  },
+  "pointerevents/pointerevent_attributes.optional.html?mouse-right": {
+    "total": 30,
+    "failures": {
+      "Inner-frame mouse pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame mouse pointerup.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame mouse pointerup.toElement value is null": "PRECONDITION_FAILED"
+    }
+  },
+  "pointerevents/pointerevent_attributes.optional.html?pen": {
+    "total": 30,
+    "failures": {
+      "Inner-frame pen pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerup.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerup.toElement value is null": "PRECONDITION_FAILED"
+    }
+  },
+  "pointerevents/pointerevent_attributes.optional.html?pen-right": {
+    "total": 30,
+    "failures": {
+      "Inner-frame pen pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame pen pointerup.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame pen pointerup.toElement value is null": "PRECONDITION_FAILED"
+    }
+  },
+  "pointerevents/pointerevent_attributes.optional.html?touch": {
+    "total": 30,
+    "failures": {
+      "Inner-frame touch pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Inner-frame touch pointerup.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerdown.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerdown.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerenter.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerenter.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerleave.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerleave.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointermove.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointermove.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerout.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerout.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerover.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerover.toElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerup.fromElement value is null": "PRECONDITION_FAILED",
+      "Main-frame touch pointerup.toElement value is null": "PRECONDITION_FAILED"
+    }
+  },
+  "pointerevents/pointerevent_auxclick_is_a_pointerevent.html?mouse": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_auxclick_is_a_pointerevent.html?pen": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_boundary_events_at_implicit_release_hoverable_pointers.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_boundary_events_attributes_during_drag.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_boundary_events_before_pointerrawupdate.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_boundary_events_in_capturing.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_boundary_events_in_capturing.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_boundary_events_in_capturing.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_boundary_events_modifier_no_pointer_movement.html?Alt": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_boundary_events_modifier_no_pointer_movement.html?Control": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_boundary_events_modifier_no_pointer_movement.html?Meta": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_boundary_events_modifier_no_pointer_movement.html?Shift": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_boundary_events_on_image_map.html": {
+    "total": 8
+  },
+  "pointerevents/pointerevent_bubble_ancestors_none.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_bubble_display_none.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_bubble_mousedown_mouseup_different_target.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_capture_mouse.html": {
+    "total": 8
+  },
+  "pointerevents/pointerevent_capture_mouse_and_release_and_capture_again.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_capture_suppressing_mouse.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_capture_touch_and_release_at_got_capture.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_change-touch-action-onpointerdown_touch.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_click_during_capture.html?mouse-auxclick": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_click_during_capture.html?mouse-click": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_click_during_parent_capture.html?pointerType=mouse&preventDefault=": {
+    "total": 14
+  },
+  "pointerevents/pointerevent_click_during_parent_capture.html?pointerType=mouse&preventDefault=pointerdown": {
+    "total": 10
+  },
+  "pointerevents/pointerevent_click_during_parent_capture.html?pointerType=touch&preventDefault=": {
+    "total": 18
+  },
+  "pointerevents/pointerevent_click_during_parent_capture.html?pointerType=touch&preventDefault=pointerdown": {
+    "total": 14
+  },
+  "pointerevents/pointerevent_click_during_parent_capture.html?pointerType=touch&preventDefault=touchstart": {
+    "total": 12
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent.html?mouse": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent.html?pen": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent.html?touch": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent_multiple_clicks.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent_multiple_clicks.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_click_is_a_pointerevent_multiple_clicks.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_click_on_chorded_mouse_button.tentative.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_coalesced_movement.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_constructor.html": {
+    "total": 35
+  },
+  "pointerevents/pointerevent_constructor.https.html": {
+    "total": 64
+  },
+  "pointerevents/pointerevent_contextmenu_is_a_pointerevent.html?mouse": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_contextmenu_is_a_pointerevent.html?touch": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "contextmenu using touch is a PointerEvent with correct properties": "TIMEOUT",
+      "contextmenu using touch is a PointerEvent with correct properties when no other PointerEvent listeners are present": "NOTRUN"
+    }
+  },
+  "pointerevents/pointerevent_disabled_form_control.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_disabled_form_control.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_disabled_form_control.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_element_haspointercapture.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_element_haspointercapture.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_element_haspointercapture.html?touch": {
+    "total": 1,
+    "failures": {
+      "hasPointerCapture": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_element_haspointercapture_release_pending_capture.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_element_haspointercapture_release_pending_capture.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_element_haspointercapture_release_pending_capture.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_fractional_coordinates.html?mouse": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_fractional_coordinates.html?pen": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_fractional_coordinates.html?touch": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_fractional_coordinates_untrusted.html": {
+    "total": 1032
+  },
+  "pointerevents/pointerevent_hit_test_scroll.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_hit_test_scroll_visible_descendant.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_iframe-touch-action-none_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_lostpointercapture_for_disconnected_node.html": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_lostpointercapture_for_disconnected_node_in_shadow_dom.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_lostpointercapture_for_disconnected_shadow_host.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_lostpointercapture_is_first.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_lostpointercapture_remove_setcapture_node.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_mouse_capture_change_hover.html": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_mouse_pointercapture_inactivate_pointer.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_movementxy.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_movementxy.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_movementxy.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_multi_touch_pointerdown_prevented.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_multiple_pointerover_no_pointer_movement.html": {
+    "total": 1,
+    "failures": {
+      "Pointer boundary events should be fired per pointer": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_on_event_handlers.html": {
+    "total": 30
+  },
+  "pointerevents/pointerevent_pointerId_scope.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointer_boundary_events_after_reappending_last_over_target.html": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_pointer_boundary_events_after_removing_last_over_element.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointercancel_touch.html": {
+    "total": 7
+  },
+  "pointerevents/pointerevent_pointercapture-in-custom-element.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointercapture-in-shadow-dom.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointercapture-not-lost-in-chorded-buttons.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointercapture_in_frame.html?mouse": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_pointercapture_in_frame.html?pen": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_pointercapture_in_frame.html?touch": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_pointerenter_does_not_bubble.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerleave_after_pointercancel_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerleave_descendant_over.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerleave_descendants.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerleave_does_not_bubble.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointermove.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointermove_after_pointerup_target_removed.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointermove_isprimary_same_as_pointerdown.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointermove_isprimary_same_as_pointerdown.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointermove_on_chorded_mouse_button.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerout_after_pointercancel_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerout_no_pointer_movement.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointerout_pen.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerout_received_once.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerrawupdate.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointerrawupdate.https.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_pointerrawupdate_after_adoption_from_child.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerrawupdate_after_adoption_from_parent.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerrawupdate_changes_pointer_capture.https.html": {
+    "total": 6
+  },
+  "pointerevents/pointerevent_pointerrawupdate_coalesced_events_attributes.https.html?mouse": {
+    "total": 32
+  },
+  "pointerevents/pointerevent_pointerrawupdate_coalesced_events_attributes.https.html?pen": {
+    "total": 32
+  },
+  "pointerevents/pointerevent_pointerrawupdate_coalesced_events_attributes.https.html?touch": {
+    "total": 32
+  },
+  "pointerevents/pointerevent_pointerrawupdate_flush_pointercapture.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_pointerrawupdate_remove_target.https.html": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_range_input.html?mouse": {
+    "total": 5
+  },
+  "pointerevents/pointerevent_range_input.html?touch": {
+    "total": 5
+  },
+  "pointerevents/pointerevent_releasepointercapture_events_to_original_target.html?mouse": {
+    "total": 19
+  },
+  "pointerevents/pointerevent_releasepointercapture_events_to_original_target.html?pen": {
+    "total": 17
+  },
+  "pointerevents/pointerevent_releasepointercapture_events_to_original_target.html?touch": {
+    "total": 17
+  },
+  "pointerevents/pointerevent_releasepointercapture_invalid_pointerid.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_onpointercancel_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_onpointerup_mouse.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_pointerup_mouse.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_releasepointercapture_pointerup_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_release_right_after_capture.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_release_right_after_capture.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_releasepointercapture_release_right_after_capture.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_root_computed_style.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_root_hit_test.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_sequence_at_implicit_release_on_click.html?mouse": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_sequence_at_implicit_release_on_click.html?pen": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_sequence_at_implicit_release_on_click.html?touch": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_sequence_at_implicit_release_on_drag.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_disconnected.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_inactive_button_mouse.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_invalid_pointerid.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_override_pending_capture_element.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_override_pending_capture_element.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_override_pending_capture_element.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_pointerup_mouse.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_setpointercapture_pointerup_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_setpointercapture_relatedtarget.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_setpointercapture_to_same_element_twice.html?mouse": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_setpointercapture_to_same_element_twice.html?pen": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_setpointercapture_to_same_element_twice.html?touch": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_suppress_compat_events_on_click.html": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_suppress_compat_events_on_drag_mouse.html": {
+    "total": 4
+  },
+  "pointerevents/pointerevent_target_at_clicking_link_in_image_map.html?capture=": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_target_at_clicking_link_in_image_map.html?capture=area": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_tiltX_tiltY_to_azimuth_altitude.html": {
+    "total": 25
+  },
+  "pointerevents/pointerevent_to_slotted_target.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_to_slotted_target.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_to_slotted_target.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-auto-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-button-none-test_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-illegal.html": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_touch-action-inherit_child-auto-child-none_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-inherit_child-none_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-inherit_child-pan-x-child-pan-x_touch.html": {
+    "total": 1,
+    "failures": {
+      "touch-action attribute test": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_touch-action-inherit_child-pan-x-child-pan-y_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-inherit_highest-parent-none_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-inherit_parent-none_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-keyboard.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-modified_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-mouse.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-none-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-none-on-body-when-style-propagates-to-viewport_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-overflow-hidden_touch.html": {
+    "total": 3
+  },
+  "pointerevents/pointerevent_touch-action-pan-down-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-left-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-right-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-up-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-x-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-x-pan-y-pan-y_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-x-pan-y_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-pan-y-css_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-single-axis_touch.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_touch-action-span-none-test_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-svg-none-test_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-action-table-none-test_touch.html": {
+    "total": 2
+  },
+  "pointerevents/pointerevent_touch-action-verification.html": {
+    "total": 37
+  },
+  "pointerevents/pointerevent_touch-adjustment_click_target.html": {
+    "total": 1
+  },
+  "pointerevents/pointerevent_touch-propagates-when-target-is-video_touch.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_coordinates_when_locked.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_getCoalescedEvents_when_pointerlocked.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_movementxy_with_pointerlock.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_pointerlock_after_pointercapture.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_pointerlock_supercedes_capture.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_pointermove_in_pointerlock.html": {
+    "total": 2
+  },
+  "pointerevents/pointerlock/pointerevent_pointermove_on_chorded_mouse_button_when_locked.html": {
+    "total": 1
+  },
+  "pointerevents/pointerlock/pointerevent_pointerrawupdate_in_pointerlock.https.html": {
+    "total": 1
+  },
+  "pointerevents/pointermove_after_pointerover_target_removed.tentative.html": {
+    "total": 4,
+    "failures": {
+      "\"pointermove\" should not be fired when the preceding \"pointerover\" caused removing its target": "FAIL"
+    }
+  },
+  "pointerevents/pointerup_after_pointerdown_target_removed.html?mouse": {
+    "total": 1
+  },
+  "pointerevents/pointerup_after_pointerdown_target_removed.html?pen": {
+    "total": 1
+  },
+  "pointerevents/pointerup_after_pointerdown_target_removed.html?touch": {
+    "total": 1
+  },
+  "pointerevents/pointerup_button_value_matches_corresponding_pointerdown.html": {
+    "total": 1
+  },
+  "pointerevents/predicted_events_attributes.html?mouse": {
+    "total": 4
+  },
+  "pointerevents/predicted_events_attributes.html?pen": {
+    "total": 4
+  },
+  "pointerevents/predicted_events_attributes.html?touch": {
+    "total": 4
+  },
+  "pointerevents/touch-action-with-swipe-dir-change.html?touch": {
+    "total": 8
+  },
+  "pointerevents/touch-scroll-axis-lock-with-scroll-chain.html?touch": {
+    "total": 2
+  }
+}

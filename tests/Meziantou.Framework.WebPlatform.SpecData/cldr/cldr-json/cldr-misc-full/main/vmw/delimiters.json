@@ -1,0 +1,15 @@
+{
+  "main": {
+    "vmw": {
+      "identity": {
+        "language": "vmw"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

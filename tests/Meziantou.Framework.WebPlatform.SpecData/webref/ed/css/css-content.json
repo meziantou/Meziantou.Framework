@@ -1,0 +1,472 @@
+{
+  "spec": {
+    "title": "CSS Generated Content Module Level 3",
+    "url": "https://drafts.csswg.org/css-content-3/"
+  },
+  "properties": [
+    {
+      "name": "content",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-content",
+      "value": "normal | none | [ <content-replacement> | <content-list> ] [/ [ <string> | <counter> | <attr()> ]+ ]?",
+      "initial": "normal",
+      "appliesTo": "all elements, tree-abiding pseudo-elements, and page margin boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "See prose below",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "For an element or page margin box, this computes to contents. For ::before and ::after, this computes to none. For ::marker, ::placeholder, and ::file-selector-button, this computes to itself (normal).",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "none",
+          "prose": "On elements, this behaves as normal. On pseudo-elements it inhibits the creation of the pseudo-element as if it had display: none. In neither case does it prevent any pseudo-elements which have this element or pseudo-element as an originating element from being generated.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<content-replacement>",
+          "value": "<image>",
+          "href": "https://drafts.csswg.org/css-content-3/#typedef-content-content-replacement",
+          "type": "type"
+        },
+        {
+          "name": "<content-list>",
+          "prose": "Replaces the element’s contents with one or more anonymous inline boxes corresponding to the specified values, in the order specified. Its normal contents are suppressed and do not generate boxes, as if they were display: none. Each value contributes an inline box to the element’s contents. For <image>, this is an inline anonymous replaced element; for the others, it’s an anonymous inline run of text. If an <image> represents an invalid image, the user agent must do one of the following: \"Skip\" the <image>, generating nothing for it. Display some indication that the image can’t be displayed in place of the <image>, such as a \"broken image\" icon. This specification intentionally does not define which behavior a user agent must use, but it must use one or the other consistently.",
+          "href": "https://drafts.csswg.org/css-content-3/#typedef-content-content-list",
+          "type": "type",
+          "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
+          "values": [
+            {
+              "name": "<string>",
+              "prose": "Represents an anonymous inline box filled with the specified text.",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-string",
+              "type": "value",
+              "value": "<string>"
+            },
+            {
+              "name": "attr()",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-attr",
+              "type": "value",
+              "value": "attr()"
+            },
+            {
+              "name": "<image>",
+              "prose": "Represents an anonymous inline replaced element filled with the specified <image>. If the <image> represents an invalid image, this value instead represents nothing. (No inline content is added to the element, as if this value were \"skipped\".)",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-list-image",
+              "type": "value",
+              "value": "<image>"
+            },
+            {
+              "name": "contents",
+              "prose": "The element’s descendants. Since this can only be used once per element (you can’t duplicate the children if, e.g., one is a plugin or form control), it is handled as follows:",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-contents",
+              "type": "value",
+              "value": "contents"
+            },
+            {
+              "name": "leader()",
+              "value": "leader( <leader-type> )",
+              "href": "https://drafts.csswg.org/css-content-3/#funcdef-content-leader",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "name": "/ [ <string> | <counter> | <attr()> ]+",
+          "prose": "Specifies the \"alt text\" for the element. See § 1.2 Alternative Text for Accessibility for details. If omitted, the element has no \"alt text\".",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content---string--counter--attr",
+          "type": "value",
+          "value": "/ [ <string> | <counter> | <attr()> ]+"
+        }
+      ],
+      "styleDeclaration": [
+        "content"
+      ]
+    },
+    {
+      "name": "quotes",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-quotes",
+      "value": "auto | none | match-parent | [ <string> <string> ]+",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, the keyword auto or match-parent, or a list, each item a pair of string values",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The open-quote and close-quote values of the content property produce no quotations marks, as if they were no-open-quote and no-close-quote respectively.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "A typographically appropriate quotation mark system is automatically chosen by the UA based on the content language of the parent (or, if there is no parent, of the element itself).",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "match-parent",
+          "prose": "Specifies the same quotation mark system as the parent. In general this is equivalent to inheriting the parent’s computed value, except that auto it resolves using the same content language that the parent used. Two possible approaches here, currently speccing the latter: a) this computes to the relevant string values, and inherits as such. b) this value effectively inherits as a keyword + a language code, meaning auto, but with this language.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        }
+      ],
+      "styleDeclaration": [
+        "quotes"
+      ]
+    },
+    {
+      "name": "string-set",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-string-set",
+      "value": "none | [ <custom-ident> <string>+ ]#",
+      "initial": "none",
+      "appliesTo": "all elements, but not pseudo-elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none or a list, each item an identifier paired with a list of string values",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element does not set any named strings.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-string-set-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "string-set",
+        "stringSet"
+      ]
+    },
+    {
+      "name": "bookmark-level",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-bookmark-level",
+      "value": "none | <integer [1,∞]>",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none or the specified integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<integer [1,∞]>",
+          "prose": "defines the level of the bookmark, with the top level being 1 (negative and zero values are invalid).",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-level-integer-1",
+          "type": "value",
+          "value": "<integer [1,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "no bookmark is generated.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-level-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "bookmark-level",
+        "bookmarkLevel"
+      ]
+    },
+    {
+      "name": "bookmark-label",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-bookmark-label",
+      "value": "<content-list>",
+      "initial": "content(text)",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<content-list>",
+          "prose": "<content-list> is defined above, in the section on the string-set property. The value of <content-list> becomes the text content of the bookmark label.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-label-content-list",
+          "type": "value",
+          "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
+          "values": [
+            {
+              "name": "<string>",
+              "prose": "Represents an anonymous inline box filled with the specified text.",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-string",
+              "type": "value",
+              "value": "<string>"
+            },
+            {
+              "name": "attr()",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-attr",
+              "type": "value",
+              "value": "attr()"
+            },
+            {
+              "name": "<image>",
+              "prose": "Represents an anonymous inline replaced element filled with the specified <image>. If the <image> represents an invalid image, this value instead represents nothing. (No inline content is added to the element, as if this value were \"skipped\".)",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-list-image",
+              "type": "value",
+              "value": "<image>"
+            },
+            {
+              "name": "contents",
+              "prose": "The element’s descendants. Since this can only be used once per element (you can’t duplicate the children if, e.g., one is a plugin or form control), it is handled as follows:",
+              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-contents",
+              "type": "value",
+              "value": "contents"
+            },
+            {
+              "name": "leader()",
+              "value": "leader( <leader-type> )",
+              "href": "https://drafts.csswg.org/css-content-3/#funcdef-content-leader",
+              "type": "function"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "bookmark-label",
+        "bookmarkLabel"
+      ]
+    },
+    {
+      "name": "bookmark-state",
+      "href": "https://drafts.csswg.org/css-content-3/#propdef-bookmark-state",
+      "value": "open | closed",
+      "initial": "open",
+      "appliesTo": "block-level elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "open",
+          "prose": "Subsequent bookmarks with bookmark-level greater than the given bookmark are displayed, until reaching another bookmark of the same level or lower. If one of subsequent bookmark is closed, apply the same test to determine if its subsequent bookmarks should be displayed.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-state-open",
+          "type": "value",
+          "value": "open"
+        },
+        {
+          "name": "closed",
+          "prose": "Subsequent bookmarks of bookmark-level greater than the given bookmark are not displayed, until reaching another bookmark of the same level or lower.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-state-closed",
+          "type": "value",
+          "value": "closed"
+        }
+      ],
+      "styleDeclaration": [
+        "bookmark-state",
+        "bookmarkState"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<quote>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-quote",
+      "type": "type",
+      "value": "open-quote | close-quote | no-open-quote | no-close-quote",
+      "values": [
+        {
+          "name": "open-quote",
+          "prose": "These values are replaced by the appropriate string as defined by the quotes property, and increments (for open-quote) or decrements (for close-quote) the level of nesting for quotes.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-open-quote",
+          "type": "value",
+          "value": "open-quote"
+        },
+        {
+          "name": "close-quote",
+          "prose": "These values are replaced by the appropriate string as defined by the quotes property, and increments (for open-quote) or decrements (for close-quote) the level of nesting for quotes.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-close-quote",
+          "type": "value",
+          "value": "close-quote"
+        },
+        {
+          "name": "no-open-quote",
+          "prose": "Inserts nothing (as in none), but increments (for no-open-quote) or decrements (for no-close-quote) the level of nesting for quotes.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-no-open-quote",
+          "type": "value",
+          "value": "no-open-quote"
+        },
+        {
+          "name": "no-close-quote",
+          "prose": "Inserts nothing (as in none), but increments (for no-open-quote) or decrements (for no-close-quote) the level of nesting for quotes.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-no-close-quote",
+          "type": "value",
+          "value": "no-close-quote"
+        }
+      ]
+    },
+    {
+      "name": "leader()",
+      "value": "leader( <leader-type> )",
+      "href": "https://drafts.csswg.org/css-content-3/#funcdef-leader",
+      "type": "function",
+      "values": [
+        {
+          "name": "dotted",
+          "prose": "Equivalent to leader(\".\")",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-leader-dotted",
+          "type": "value",
+          "value": "dotted"
+        },
+        {
+          "name": "solid",
+          "prose": "Equivalent to leader(\"_\")",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-leader-solid",
+          "type": "value",
+          "value": "solid"
+        },
+        {
+          "name": "space",
+          "prose": "Equivalent to leader(\" \")",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-leader-space",
+          "type": "value",
+          "value": "space"
+        },
+        {
+          "name": "<string>",
+          "prose": "Issue: Define this.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-leader-string",
+          "type": "value",
+          "value": "<string>"
+        }
+      ]
+    },
+    {
+      "name": "<leader-type>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-leader-type",
+      "type": "type",
+      "value": "dotted | solid | space | <string>"
+    },
+    {
+      "name": "<target>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-target",
+      "type": "type",
+      "value": "<target-counter()> | <target-counters()> | <target-text()>"
+    },
+    {
+      "name": "target-counter()",
+      "value": "target-counter( [ <string> | <url> ] , <custom-ident> , <counter-style>? )",
+      "href": "https://drafts.csswg.org/css-content-3/#funcdef-target-counter",
+      "type": "function"
+    },
+    {
+      "name": "target-counters()",
+      "value": "target-counters( [ <string> | <url> ] , <custom-ident> , <string> , <counter-style>? )",
+      "href": "https://drafts.csswg.org/css-content-3/#funcdef-target-counters",
+      "type": "function"
+    },
+    {
+      "name": "target-text()",
+      "value": "target-text( [ <string> | <url> ] , [ content | before | after | first-letter ]? )",
+      "href": "https://drafts.csswg.org/css-content-3/#target-text-function",
+      "type": "function"
+    },
+    {
+      "name": "string()",
+      "value": "string( <custom-ident> , [ first | start | last | first-except ]? )",
+      "href": "https://drafts.csswg.org/css-content-3/#funcdef-string",
+      "type": "function",
+      "values": [
+        {
+          "name": "first",
+          "prose": "The value of the first assignment on the page is used. If there is no assignment on the page, the entry value is used. If no second argument is provided, this is the default value.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-string-first",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "start",
+          "prose": "If the element is the first element on the page, the value of the first assignment is used. Otherwise the entry value is used. The entry value may be empty if the named string hasn’t yet appeared.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-string-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "last",
+          "prose": "The exit value of the named string is used.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-string-last",
+          "type": "value",
+          "value": "last"
+        },
+        {
+          "name": "first-except",
+          "prose": "This is identical to first, except that the empty string is used on the page where the value is assigned. we may need to kill the entire content string. Is this necessary?",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-string-first-except",
+          "type": "value",
+          "value": "first-except"
+        }
+      ]
+    },
+    {
+      "name": "content()",
+      "value": "content( [ text | before | after | first-letter | marker ]? )",
+      "href": "https://drafts.csswg.org/css-content-3/#funcdef-content",
+      "type": "function",
+      "values": [
+        {
+          "name": "text",
+          "prose": "The string value of the element. If no value is specified in content(), it acts as if text were specified.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "before",
+          "prose": "The string value of the ::before pseudo-element.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-before",
+          "type": "value",
+          "value": "before"
+        },
+        {
+          "name": "after",
+          "prose": "The string value of the ::after pseudo-element.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-after",
+          "type": "value",
+          "value": "after"
+        },
+        {
+          "name": "first-letter",
+          "prose": "The first letter of the element, as defined for the ::first-letter pseudo-element",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-first-letter",
+          "type": "value",
+          "value": "first-letter"
+        },
+        {
+          "name": "marker",
+          "prose": "The string value of the ::marker pseudo-element.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-marker",
+          "type": "value",
+          "value": "marker"
+        }
+      ]
+    },
+    {
+      "name": "<symbolic-counter-style>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-symbolic-counter-style",
+      "type": "type",
+      "value": "disc | circle | square | disclosure-open | disclosure-closed"
+    }
+  ]
+}

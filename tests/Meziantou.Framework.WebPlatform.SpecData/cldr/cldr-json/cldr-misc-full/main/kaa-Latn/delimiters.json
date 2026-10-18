@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kaa-Latn": {
+      "identity": {
+        "language": "kaa",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

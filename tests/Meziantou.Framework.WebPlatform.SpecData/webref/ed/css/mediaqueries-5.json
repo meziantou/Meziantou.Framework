@@ -1,0 +1,938 @@
+{
+  "spec": {
+    "title": "Media Queries Level 5",
+    "url": "https://drafts.csswg.org/mediaqueries-5/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@custom-media",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#at-ruledef-custom-media",
+      "descriptors": [],
+      "value": "@custom-media <extension-name> [ <media-query-list> | true | false ] ;",
+      "values": [
+        {
+          "name": "true",
+          "prose": "The <extension-name> can then be used in a media feature. It must be used in a boolean context; using them in a normal or range context is a syntax error. If a <media-query-list> is given, the custom media query evaluates to true if the <media-query-list> it represents evaluates to true, and false otherwise. If true or false is given, the custom media query evaluates to true or false, respectively.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-custom-media-true",
+          "type": "value",
+          "value": "true"
+        },
+        {
+          "name": "false",
+          "prose": "The <extension-name> can then be used in a media feature. It must be used in a boolean context; using them in a normal or range context is a syntax error. If a <media-query-list> is given, the custom media query evaluates to true if the <media-query-list> it represents evaluates to true, and false otherwise. If true or false is given, the custom media query evaluates to true or false, respectively.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-custom-media-false",
+          "type": "value",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "name": "@media",
+      "descriptors": [
+        {
+          "name": "width",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-width",
+          "for": "@media",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "height",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-height",
+          "for": "@media",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "aspect-ratio",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-aspect-ratio",
+          "for": "@media",
+          "value": "<ratio>",
+          "type": "range"
+        },
+        {
+          "name": "orientation",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-orientation",
+          "for": "@media",
+          "value": "portrait | landscape",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "portrait",
+              "prose": "The orientation media feature is portrait when the value of the height media feature is greater than or equal to the value of the width media feature.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-orientation-portrait",
+              "type": "value",
+              "value": "portrait"
+            },
+            {
+              "name": "landscape",
+              "prose": "Otherwise orientation is landscape.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-orientation-landscape",
+              "type": "value",
+              "value": "landscape"
+            }
+          ]
+        },
+        {
+          "name": "overflow-block",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-overflow-block",
+          "for": "@media",
+          "value": "none | scroll | paged",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "There is no affordance for overflow in the block axis; any overflowing content is simply not displayed. Examples: billboards",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-overflow-block-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "scroll",
+              "prose": "Overflowing content in the block axis is exposed by allowing users to scroll to it. Examples: computer screens",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-overflow-block-scroll",
+              "type": "value",
+              "value": "scroll"
+            },
+            {
+              "name": "paged",
+              "prose": "Content is broken up into discrete pages; content that overflows one page in the block axis is displayed on the following page. Examples: printers, ebook readers",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-overflow-block-paged",
+              "type": "value",
+              "value": "paged"
+            }
+          ]
+        },
+        {
+          "name": "overflow-inline",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-overflow-inline",
+          "for": "@media",
+          "value": "none | scroll",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "There is no affordance for overflow in the inline axis; any overflowing content is simply not displayed.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-overflow-inline-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "scroll",
+              "prose": "Overflowing content in the inline axis is exposed by allowing users to scroll to it.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-overflow-inline-scroll",
+              "type": "value",
+              "value": "scroll"
+            }
+          ]
+        },
+        {
+          "name": "horizontal-viewport-segments",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-horizontal-viewport-segments",
+          "for": "@media",
+          "value": "<integer>",
+          "type": "range"
+        },
+        {
+          "name": "vertical-viewport-segments",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-vertical-viewport-segments",
+          "for": "@media",
+          "value": "<integer>",
+          "type": "range"
+        },
+        {
+          "name": "display-mode",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-display-mode",
+          "for": "@media",
+          "value": "fullscreen | standalone | minimal-ui | browser | picture-in-picture",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "fullscreen",
+              "prose": "The browsing context is displayed with browser UI elements hidden and takes up the entirety of the available display area. The fullscreen context may have been caused by the fullscreen display mode in the application manifest, by the requestFullscreen() method of the Fullscreen API, or through some other means (such as the user manually activating fullscreen mode using the user agent’s built-in controls). Corresponds to the fullscreen display mode.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-fullscreen",
+              "type": "value",
+              "value": "fullscreen"
+            },
+            {
+              "name": "standalone",
+              "prose": "The standalone display mode is in use. Only applicable in an application context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-standalone",
+              "type": "value",
+              "value": "standalone"
+            },
+            {
+              "name": "minimal-ui",
+              "prose": "The minimal-ui display mode is in use. Only applicable in an application context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-minimal-ui",
+              "type": "value",
+              "value": "minimal-ui"
+            },
+            {
+              "name": "browser",
+              "prose": "The browsing context is displayed using the platform-specific convention for opening hyperlinks in the user agent (e.g., in a browser tab or web browser window with controls such as an address bar). This should be used for non-application contexts where no other display mode is appropriate. Corresponds to the browser display mode.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-browser",
+              "type": "value",
+              "value": "browser"
+            },
+            {
+              "name": "picture-in-picture",
+              "prose": "This mode allows users to continue consuming media while they interact with other sites or applications on their device. The browsing context is displayed in a floating and always-on-top window. A user agent may include other platform specific UI elements, such as \"back-to-tab\" and \"site information\" buttons or whatever is customary on the platform and user agent.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-picture-in-picture",
+              "type": "value",
+              "value": "picture-in-picture"
+            }
+          ]
+        },
+        {
+          "name": "resolution",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-resolution",
+          "for": "@media",
+          "value": "<resolution> | infinite",
+          "type": "range",
+          "values": [
+            {
+              "name": "infinite",
+              "prose": "For output mediums that have no physical constraints on resolution (such as outputting to vector graphics), this feature must match the infinite value. For the purpose of evaluating this media feature in the range context, infinite must be treated as larger than any possible <resolution>. (That is, a query like (resolution > 1000dpi) will be true for an infinite media.)",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-resolution-infinite",
+              "type": "value",
+              "value": "infinite"
+            }
+          ]
+        },
+        {
+          "name": "scan",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-scan",
+          "for": "@media",
+          "value": "interlace | progressive",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "interlace",
+              "prose": "CRT and some types of plasma TV screens used “interlaced” rendering, where video frames alternated between specifying only the “even” lines on the screen and only the “odd” lines, exploiting various automatic mental image-correction abilities to produce smooth motion. This allowed them to simulate a higher FPS broadcast at half the bandwidth cost. When displaying on interlaced screens, authors should avoid very fast movement across the screen to avoid “combing”, and should ensure that details on the screen are wider than 1px to avoid “twitter”.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-scan-interlace",
+              "type": "value",
+              "value": "interlace"
+            },
+            {
+              "name": "progressive",
+              "prose": "A screen using “progressive” rendering displays each screen fully, and needs no special treatment. Most modern screens, and all computer screens, use progressive rendering.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-scan-progressive",
+              "type": "value",
+              "value": "progressive"
+            }
+          ]
+        },
+        {
+          "name": "grid",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-grid",
+          "for": "@media",
+          "value": "<mq-boolean>",
+          "type": "discrete"
+        },
+        {
+          "name": "update",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-update",
+          "for": "@media",
+          "value": "none | slow | fast",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "Once it has been rendered, the layout can no longer be updated. Example: documents printed on paper.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-update-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "slow",
+              "prose": "The layout may change dynamically according to the usual rules of CSS, but the output device is not able to render or display changes quickly enough for them to be perceived as a smooth animation. Example: E-ink screens or severely under-powered devices.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-update-slow",
+              "type": "value",
+              "value": "slow"
+            },
+            {
+              "name": "fast",
+              "prose": "The layout may change dynamically according to the usual rules of CSS, and the output device is not unusually constrained in speed, so regularly-updating things like CSS Animations can be used. Example: computer screens.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-update-fast",
+              "type": "value",
+              "value": "fast"
+            }
+          ]
+        },
+        {
+          "name": "environment-blending",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-environment-blending",
+          "for": "@media",
+          "value": "opaque | additive | subtractive",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "opaque",
+              "prose": "The document is rendered on an opaque medium, such as a traditional monitor or paper. Black is dark and white is 100% light.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-environment-blending-opaque",
+              "type": "value",
+              "value": "opaque"
+            },
+            {
+              "name": "additive",
+              "prose": "The display blends the colors of the canvas with the real world using additive mixing. Black is fully transparent and white is 100% light. For example: a head-up display in a car.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-environment-blending-additive",
+              "type": "value",
+              "value": "additive"
+            },
+            {
+              "name": "subtractive",
+              "prose": "The display blends the colors of the canvas with the real world using subtractive mixing. White is fully transparent and dark colors have the most contrast. For example: an LCD display embedded in a bathroom mirror.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-environment-blending-subtractive",
+              "type": "value",
+              "value": "subtractive"
+            }
+          ]
+        },
+        {
+          "name": "color",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-color",
+          "for": "@media",
+          "value": "<integer>",
+          "type": "range"
+        },
+        {
+          "name": "color-index",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-color-index",
+          "for": "@media",
+          "value": "<integer>",
+          "type": "range"
+        },
+        {
+          "name": "monochrome",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-monochrome",
+          "for": "@media",
+          "value": "<integer>",
+          "type": "range"
+        },
+        {
+          "name": "color-gamut",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-color-gamut",
+          "for": "@media",
+          "value": "srgb | p3 | rec2020",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "srgb",
+              "prose": "The UA and output device can support approximately the sRGB gamut or more.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-color-gamut-srgb",
+              "type": "value",
+              "value": "srgb"
+            },
+            {
+              "name": "p3",
+              "prose": "The UA and output device can support approximately the gamut specified by the Display P3 [Display-P3] Color Space or more.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-color-gamut-p3",
+              "type": "value",
+              "value": "p3"
+            },
+            {
+              "name": "rec2020",
+              "prose": "The UA and output device can support approximately the gamut specified by the ITU-R Recommendation BT.2020 Color Space or more.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-color-gamut-rec2020",
+              "type": "value",
+              "value": "rec2020"
+            }
+          ]
+        },
+        {
+          "name": "dynamic-range",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-dynamic-range",
+          "for": "@media",
+          "value": "standard | high",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "high",
+              "prose": "The user agent and the output device fulfill all of the following criteria: they support a high peak brightness they support a high contrast ratio the color depth is greater than 24 bit or 8 bit per color component of RGB",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-dynamic-range-high",
+              "type": "value",
+              "value": "high"
+            },
+            {
+              "name": "standard",
+              "prose": "This value matches on any visual device, and not on devices lacking visual capabilities.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-dynamic-range-standard",
+              "type": "value",
+              "value": "standard"
+            }
+          ]
+        },
+        {
+          "name": "inverted-colors",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-inverted-colors",
+          "for": "@media",
+          "value": "none | inverted",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "Colors are displayed normally.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-inverted-colors-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "inverted",
+              "prose": "All pixels within the displayed area have been inverted. This value must not match if the user agent has done some kind of content aware inversion such as one that preserves the images.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-inverted-colors-inverted",
+              "type": "value",
+              "value": "inverted"
+            }
+          ]
+        },
+        {
+          "name": "pointer",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-pointer",
+          "for": "@media",
+          "value": "none | coarse | fine",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The primary input mechanism of the device does not include a pointing device.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-pointer-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "coarse",
+              "prose": "The primary input mechanism of the device includes a pointing device of limited accuracy. Examples include touchscreens and motion-detection sensors (like the Kinect peripheral for the Xbox.)",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-pointer-coarse",
+              "type": "value",
+              "value": "coarse"
+            },
+            {
+              "name": "fine",
+              "prose": "The primary input mechanism of the device includes an accurate pointing device. Examples include mice, touchpads, and drawing styluses.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-pointer-fine",
+              "type": "value",
+              "value": "fine"
+            }
+          ]
+        },
+        {
+          "name": "hover",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-hover",
+          "for": "@media",
+          "value": "none | hover",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "Indicates that the primary pointing device can’t hover, or that there is no pointing device. Examples include touchscreens and screens that use a basic drawing stylus. Pointing devices that can hover, but for which doing so is inconvenient and not part of the normal way they are used, also match this value. For example, a touchscreen where a long press is treated as hovering would match hover: none.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-hover-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "hover",
+              "prose": "Indicates that the primary pointing device can easily hover over parts of the page. Examples include mice and devices that physically point at the screen, like the Nintendo Wii controller.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-hover-hover",
+              "type": "value",
+              "value": "hover"
+            }
+          ]
+        },
+        {
+          "name": "any-pointer",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-any-pointer",
+          "for": "@media",
+          "value": "none | coarse | fine",
+          "type": "discrete"
+        },
+        {
+          "name": "any-hover",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-any-hover",
+          "for": "@media",
+          "value": "none | hover",
+          "type": "discrete"
+        },
+        {
+          "name": "nav-controls",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-nav-controls",
+          "for": "@media",
+          "value": "none | back",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "none",
+              "prose": "The user agent does not have any obviously discoverable navigation controls, and in particular none that cause the user agent to move back to the page’s previous session history entry.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-nav-controls-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "back",
+              "prose": "The user agent provides navigation controls, including at least an obviously discoverable control causing the user agent to move back to the page’s previous session history entry (typically, a “back” button).",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-nav-controls-back",
+              "type": "value",
+              "value": "back"
+            }
+          ]
+        },
+        {
+          "name": "video-color-gamut",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-video-color-gamut",
+          "for": "@media",
+          "value": "srgb | p3 | rec2020",
+          "type": "discrete"
+        },
+        {
+          "name": "video-dynamic-range",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-video-dynamic-range",
+          "for": "@media",
+          "value": "standard | high",
+          "type": "discrete"
+        },
+        {
+          "name": "scripting",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-scripting",
+          "for": "@media",
+          "value": "none | initial-only | enabled",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "enabled",
+              "prose": "Indicates that the user agent supports scripting of the page, and that scripting in the current document is enabled for the lifetime of the document.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-scripting-enabled",
+              "type": "value",
+              "value": "enabled"
+            },
+            {
+              "name": "initial-only",
+              "prose": "Indicates that the user agent supports scripting of the page, and that scripting in the current document is enabled during the initial page load, but is not supported afterwards. Examples are printed pages, or pre-rendering network proxies that render a page on a server and send a nearly-static version of the page to the user. Should there be an explicit minimum threshold to meet before a UA is allowed to claim initial-only? Having one would mean authors would know what they can depend on, and could tailor their scripts accordingly. On the other hand, pinpointing that threshold is difficult: if it is set too low, the scripting facilities that authors can depend on may be to constrained to be practical, even though actual UAs may potentially all support significantly more. But trying to set it higher may cause us to exclude UAs that do support scripting at loading time, but restrict it in some cases based on complex heuristics. For instance, conservative definitions likely include at least running all inline scripts and firing the DOMContentLoaded event. But it does not seem useful for authors to constrain themselves to this if most (or maybe all) initial-only UAs also load external scripts (including async and defer) and fire the load event. On the other hand, requiring external scripts to be loaded and the load event to be fired could exclude UAs like Opera mini, which typically do run them, but may decide not to based on timeouts and other heuristics. [Issue #503]",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-scripting-initial-only",
+              "type": "value",
+              "value": "initial-only"
+            },
+            {
+              "name": "none",
+              "prose": "Indicates that the user agent will not run scripts for this document; either it doesn’t support a scripting language, or the support isn’t active for the current document.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-scripting-none",
+              "type": "value",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "name": "prefers-reduced-motion",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-reduced-motion",
+          "for": "@media",
+          "value": "no-preference | reduce",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "no-preference",
+              "prose": "Indicates that the user has made no preference known to the system. This keyword value evaluates as false in the boolean context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-motion-no-preference",
+              "type": "value",
+              "value": "no-preference"
+            },
+            {
+              "name": "reduce",
+              "prose": "Indicates that user has notified the system that they prefer an interface that removes or replaces the types of motion-based animation that either trigger discomfort for those with vestibular motion sensitivity, or distraction for those with attention deficits.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-motion-reduce",
+              "type": "value",
+              "value": "reduce"
+            }
+          ]
+        },
+        {
+          "name": "prefers-reduced-transparency",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-reduced-transparency",
+          "for": "@media",
+          "value": "no-preference | reduce",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "no-preference",
+              "prose": "Indicates that the user has made no preference known to the system. This keyword value evaluates as false in the boolean context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-transparency-no-preference",
+              "type": "value",
+              "value": "no-preference"
+            },
+            {
+              "name": "reduce",
+              "prose": "Indicates that user has notified the system that they prefer an interface that minimizes the amount of transparent or translucent layer effects.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-transparency-reduce",
+              "type": "value",
+              "value": "reduce"
+            }
+          ]
+        },
+        {
+          "name": "prefers-contrast",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-contrast",
+          "for": "@media",
+          "value": "no-preference | less | more | custom",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "no-preference",
+              "prose": "Indicates that the user has made no preference known to the system. This keyword value evaluates as false in the boolean context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-contrast-no-preference",
+              "type": "value",
+              "value": "no-preference"
+            },
+            {
+              "name": "less",
+              "prose": "Indicates that user has notified the system that they prefer an interface that has a lower level of contrast.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-contrast-less",
+              "type": "value",
+              "value": "less"
+            },
+            {
+              "name": "more",
+              "prose": "Indicates that user has notified the system that they prefer an interface that has a higher level of contrast.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-contrast-more",
+              "type": "value",
+              "value": "more"
+            },
+            {
+              "name": "custom",
+              "prose": "Indicates that the user has indicated wanting a specific set of colors to be used, but the contrast implied by these particular colors is such that neither more nor less match. A user calling for cyan text over a rust background is not—​at least in terms of luminosity—​expressing a need for particularly high or low contrast, but this is not a lack of a preference either.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-contrast-custom",
+              "type": "value",
+              "value": "custom"
+            }
+          ]
+        },
+        {
+          "name": "forced-colors",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-forced-colors",
+          "for": "@media",
+          "value": "none | active",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "active",
+              "prose": "Indicates that forced colors mode is active: the user agent enforces a user-chosen limited color palette on the page, The UA will provide the color palette to authors through the CSS system color keywords. See CSS Color Adjustment 1 § 3 Forced Color Palettes for details. This does not necessarily indicate a preference for more contrast. The colors have been forcibly adjusted to match the preference of the user, but that preference can be for less or more contrast, or some other arrangement that is neither particularly low or high contrast. In addition to forced-colors: active, the user agent must also match one of prefers-contrast: more or prefers-contrast: less if it can determine that the forced color palette chosen by the user has a particularly high or low contrast, and must make prefers-contrast: custom match otherwise. Similarly, if the forced color palette chosen by the user fits within one of the color schemes described by prefers-color-scheme, the corresponding value must also match.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-forced-colors-active",
+              "type": "value",
+              "value": "active"
+            },
+            {
+              "name": "none",
+              "prose": "Forced colors mode is not active.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-forced-colors-none",
+              "type": "value",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "name": "prefers-color-scheme",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-color-scheme",
+          "for": "@media",
+          "value": "light | dark",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "light",
+              "prose": "Indicates that the page color scheme is a light color scheme (dark text on light background).",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-color-scheme-light",
+              "type": "value",
+              "value": "light"
+            },
+            {
+              "name": "dark",
+              "prose": "Indicates that the page color scheme is a dark color scheme (light text on dark background).",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-color-scheme-dark",
+              "type": "value",
+              "value": "dark"
+            }
+          ]
+        },
+        {
+          "name": "ua-color-scheme",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-ua-color-scheme",
+          "for": "@media",
+          "value": "light | dark",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "light",
+              "prose": "Indicates that the user’s preferred color scheme is a light color scheme (dark text on light background), or that the user has no preference. (If the user has not expressed an active preference, they will also receive the \"web default\" of a light theme).",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-ua-color-scheme-light",
+              "type": "value",
+              "value": "light"
+            },
+            {
+              "name": "dark",
+              "prose": "Indicates that the user’s preferred color scheme is a dark color scheme (light text on dark background).",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-ua-color-scheme-dark",
+              "type": "value",
+              "value": "dark"
+            }
+          ]
+        },
+        {
+          "name": "prefers-reduced-data",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-reduced-data",
+          "for": "@media",
+          "value": "no-preference | reduce",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "no-preference",
+              "prose": "Indicates that the user has made no preference known to the system. This keyword value evaluates as false in the boolean context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-data-no-preference",
+              "type": "value",
+              "value": "no-preference"
+            },
+            {
+              "name": "reduce",
+              "prose": "Indicates that user has expressed the preference for lightweight alternate content.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-reduced-data-reduce",
+              "type": "value",
+              "value": "reduce"
+            }
+          ]
+        },
+        {
+          "name": "device-width",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-device-width",
+          "for": "@media",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "device-height",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-device-height",
+          "for": "@media",
+          "value": "<length>",
+          "type": "range"
+        },
+        {
+          "name": "device-aspect-ratio",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-device-aspect-ratio",
+          "for": "@media",
+          "value": "<ratio>",
+          "type": "range"
+        }
+      ],
+      "values": [
+        {
+          "name": "not",
+          "prose": "An individual media query can have its result negated by prefixing it with the keyword not. If the media query would normally evaluate to true, prefixing it with not makes it evaluate to false, and vice versa.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-not",
+          "type": "value",
+          "value": "not"
+        },
+        {
+          "name": "only",
+          "prose": "To hide these media queries from legacy user agents, the media query can be prefixed with the keyword only. The only keyword has no effect on the media query’s result, but will cause the media query to be parsed by legacy user agents as specifying the unknown media type “only”, and thus be ignored.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-only",
+          "type": "value",
+          "value": "only"
+        },
+        {
+          "name": "all",
+          "prose": "Matches all devices.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "print",
+          "prose": "Matches printers, and devices intended to reproduce a printed display, such as a web browser showing a document in “Print Preview”.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-print",
+          "type": "value",
+          "value": "print"
+        },
+        {
+          "name": "screen",
+          "prose": "Matches all devices that aren’t matched by print.",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-screen",
+          "type": "value",
+          "value": "screen"
+        },
+        {
+          "name": "tty",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-tty",
+          "type": "value",
+          "value": "tty"
+        },
+        {
+          "name": "tv",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-tv",
+          "type": "value",
+          "value": "tv"
+        },
+        {
+          "name": "projection",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-projection",
+          "type": "value",
+          "value": "projection"
+        },
+        {
+          "name": "handheld",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-handheld",
+          "type": "value",
+          "value": "handheld"
+        },
+        {
+          "name": "braille",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-braille",
+          "type": "value",
+          "value": "braille"
+        },
+        {
+          "name": "embossed",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-embossed",
+          "type": "value",
+          "value": "embossed"
+        },
+        {
+          "name": "aural",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-aural",
+          "type": "value",
+          "value": "aural"
+        },
+        {
+          "name": "speech",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-speech",
+          "type": "value",
+          "value": "speech"
+        }
+      ]
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<media-query-list>",
+      "prose": "To parse a <media-query-list> production, parse a comma-separated list of component values, then parse each entry in the returned list as a <media-query>. Its value is the list of <media-query>s so produced.",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-query-list",
+      "type": "type"
+    },
+    {
+      "name": "<media-query>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-query",
+      "type": "type",
+      "value": "<media-condition> | [ not | only ]? <media-type> [ and <media-condition-without-or> ]?"
+    },
+    {
+      "name": "<media-type>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-type",
+      "type": "type",
+      "value": "<ident>"
+    },
+    {
+      "name": "<media-condition>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition",
+      "type": "type",
+      "value": "<media-not> | <media-in-parens> [ <media-and>* | <media-or>* ]"
+    },
+    {
+      "name": "<media-condition-without-or>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition-without-or",
+      "type": "type",
+      "value": "<media-not> | <media-in-parens> <media-and>*"
+    },
+    {
+      "name": "<media-not>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-not",
+      "type": "type",
+      "value": "not <media-in-parens>"
+    },
+    {
+      "name": "<media-and>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-and",
+      "type": "type",
+      "value": "and <media-in-parens>"
+    },
+    {
+      "name": "<media-or>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-or",
+      "type": "type",
+      "value": "or <media-in-parens>"
+    },
+    {
+      "name": "<media-in-parens>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-in-parens",
+      "type": "type",
+      "value": "( <media-condition> ) | ( <media-feature> ) | <general-enclosed>"
+    },
+    {
+      "name": "<media-feature>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-media-feature",
+      "type": "type",
+      "value": "[ <mf-plain> | <mf-boolean> | <mf-range> ]"
+    },
+    {
+      "name": "<mf-plain>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-plain",
+      "type": "type",
+      "value": "<mf-name> : <mf-value>"
+    },
+    {
+      "name": "<mf-boolean>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-boolean",
+      "type": "type",
+      "value": "<mf-name>"
+    },
+    {
+      "name": "<mf-range>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-range",
+      "type": "type",
+      "value": "<mf-name> <mf-comparison> <mf-value> | <mf-value> <mf-comparison> <mf-name> | <mf-value> <mf-lt> <mf-name> <mf-lt> <mf-value> | <mf-value> <mf-gt> <mf-name> <mf-gt> <mf-value>"
+    },
+    {
+      "name": "<mf-name>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-name",
+      "type": "type",
+      "value": "<ident>"
+    },
+    {
+      "name": "<mf-value>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-value",
+      "type": "type",
+      "value": "<number> | <dimension> | <ident> | <ratio>"
+    },
+    {
+      "name": "<mf-lt>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-lt",
+      "type": "type",
+      "value": "'<' '='?"
+    },
+    {
+      "name": "<mf-gt>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-gt",
+      "type": "type",
+      "value": "'>' '='?"
+    },
+    {
+      "name": "<mf-eq>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-eq",
+      "type": "type",
+      "value": "'='"
+    },
+    {
+      "name": "<mf-comparison>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mf-comparison",
+      "type": "type",
+      "value": "<mf-lt> | <mf-gt> | <mf-eq>"
+    },
+    {
+      "name": "<general-enclosed>",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-general-enclosed",
+      "type": "type",
+      "value": "[ <function-token> <any-value>? ) ] | [ ( <any-value>? ) ]"
+    },
+    {
+      "name": "<mq-boolean>",
+      "prose": "The <mq-boolean> value type is an <integer> with the value 0 or 1. Any other integer value is invalid. Note that -0 is always equivalent to 0 in CSS, and so is also accepted as a valid <mq-boolean> value.",
+      "href": "https://drafts.csswg.org/mediaqueries-5/#typedef-mq-boolean",
+      "type": "type"
+    }
+  ]
+}

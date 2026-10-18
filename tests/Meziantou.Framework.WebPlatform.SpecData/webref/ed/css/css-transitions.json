@@ -1,0 +1,126 @@
+{
+  "spec": {
+    "title": "CSS Transitions Module Level 1",
+    "url": "https://drafts.csswg.org/css-transitions-1/"
+  },
+  "properties": [
+    {
+      "name": "transition-property",
+      "href": "https://drafts.csswg.org/css-transitions-1/#propdef-transition-property",
+      "value": "none | <single-transition-property>#",
+      "initial": "all",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none else a list of identifiers",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "A value of none means that no property will transition. Otherwise, a list of properties to be transitioned, or the keyword all which indicates that all properties are to be transitioned, is given.",
+          "href": "https://drafts.csswg.org/css-transitions-1/#valdef-transition-property-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "A value of none means that no property will transition. Otherwise, a list of properties to be transitioned, or the keyword all which indicates that all properties are to be transitioned, is given.",
+          "href": "https://drafts.csswg.org/css-transitions-1/#valdef-transition-property-all",
+          "type": "value",
+          "value": "all"
+        }
+      ],
+      "styleDeclaration": [
+        "transition-property",
+        "transitionProperty"
+      ]
+    },
+    {
+      "name": "transition-duration",
+      "href": "https://drafts.csswg.org/css-transitions-1/#propdef-transition-duration",
+      "value": "<time [0s,∞]>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "transition-duration",
+        "transitionDuration"
+      ]
+    },
+    {
+      "name": "transition-timing-function",
+      "href": "https://drafts.csswg.org/css-transitions-1/#propdef-transition-timing-function",
+      "value": "<easing-function>#",
+      "initial": "ease",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "transition-timing-function",
+        "transitionTimingFunction"
+      ]
+    },
+    {
+      "name": "transition-delay",
+      "href": "https://drafts.csswg.org/css-transitions-1/#propdef-transition-delay",
+      "value": "<time>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "transition-delay",
+        "transitionDelay"
+      ]
+    },
+    {
+      "name": "transition",
+      "href": "https://drafts.csswg.org/css-transitions-1/#propdef-transition",
+      "value": "<single-transition>#",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "not animatable",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "transition"
+      ],
+      "longhands": [
+        "transition-property",
+        "transition-duration",
+        "transition-timing-function",
+        "transition-delay",
+        "transition-behavior"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<single-transition-property>",
+      "value": "all | <custom-ident>",
+      "href": "https://drafts.csswg.org/css-transitions-1/#single-transition-property",
+      "type": "type"
+    },
+    {
+      "name": "<single-transition>",
+      "value": "[ none | <single-transition-property> ] || <time> || <easing-function> || <time>",
+      "href": "https://drafts.csswg.org/css-transitions-1/#single-transition",
+      "type": "type"
+    }
+  ]
+}

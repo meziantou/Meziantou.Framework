@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-HK": {
+      "identity": {
+        "language": "en",
+        "territory": "HK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

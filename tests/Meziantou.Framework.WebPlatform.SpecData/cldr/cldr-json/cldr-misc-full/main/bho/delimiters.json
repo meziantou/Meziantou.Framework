@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bho": {
+      "identity": {
+        "language": "bho"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

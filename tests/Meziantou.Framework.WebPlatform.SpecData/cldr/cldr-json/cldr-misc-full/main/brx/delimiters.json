@@ -1,0 +1,15 @@
+{
+  "main": {
+    "brx": {
+      "identity": {
+        "language": "brx"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

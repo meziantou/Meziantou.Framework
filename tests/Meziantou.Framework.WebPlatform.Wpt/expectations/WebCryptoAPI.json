@@ -1,0 +1,974 @@
+{
+  "WebCryptoAPI/algorithm-discards-context.https.window.js": {
+    "total": 13
+  },
+  "WebCryptoAPI/crypto_key_cached_slots.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/crypto_key_cached_slots.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/derive_bits_keys/argon2.tentative.https.any.js": {
+    "total": 4
+  },
+  "WebCryptoAPI/derive_bits_keys/argon2.tentative.https.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_bits_curve25519.https.any.js": {
+    "total": 19
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_bits_curve25519.https.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_bits_curve448.tentative.https.any.js": {
+    "total": 18
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_bits_curve448.tentative.https.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_keys_curve25519.https.any.js": {
+    "total": 17
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_keys_curve25519.https.any.js#dedicatedworker": {
+    "total": 17
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_keys_curve448.tentative.https.any.js": {
+    "total": 16
+  },
+  "WebCryptoAPI/derive_bits_keys/cfrg_curves_keys_curve448.tentative.https.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "WebCryptoAPI/derive_bits_keys/derive_key_and_encrypt.https.any.js": {
+    "total": 5
+  },
+  "WebCryptoAPI/derive_bits_keys/derive_key_and_encrypt.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "WebCryptoAPI/derive_bits_keys/derived_bits_length.https.any.js": {
+    "total": 45
+  },
+  "WebCryptoAPI/derive_bits_keys/derived_bits_length.https.any.js#dedicatedworker": {
+    "total": 45
+  },
+  "WebCryptoAPI/derive_bits_keys/ecdh_bits.https.any.js": {
+    "total": 40
+  },
+  "WebCryptoAPI/derive_bits_keys/ecdh_bits.https.any.js#dedicatedworker": {
+    "total": 40
+  },
+  "WebCryptoAPI/derive_bits_keys/ecdh_keys.https.any.js": {
+    "total": 31
+  },
+  "WebCryptoAPI/derive_bits_keys/ecdh_keys.https.any.js#dedicatedworker": {
+    "total": 31
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js#dedicatedworker?1-1000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js#dedicatedworker?1001-2000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js#dedicatedworker?2001-3000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js#dedicatedworker?3001-last": {
+    "total": 661
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js?1-1000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js?1001-2000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js?2001-3000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/hkdf.https.any.js?3001-last": {
+    "total": 661
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?1-1000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?1001-2000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?2001-3000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?3001-4000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?4001-5000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?5001-6000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?6001-7000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?7001-8000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js#dedicatedworker?8001-last": {
+    "total": 632
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?1-1000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?1001-2000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?2001-3000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?3001-4000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?4001-5000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?5001-6000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?6001-7000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?7001-8000": {
+    "total": 1001
+  },
+  "WebCryptoAPI/derive_bits_keys/pbkdf2.https.any.js?8001-last": {
+    "total": 632
+  },
+  "WebCryptoAPI/digest/cshake.tentative.https.any.js": {
+    "total": 88
+  },
+  "WebCryptoAPI/digest/cshake.tentative.https.any.js#dedicatedworker": {
+    "total": 88
+  },
+  "WebCryptoAPI/digest/digest.https.any.js": {
+    "total": 116
+  },
+  "WebCryptoAPI/digest/digest.https.any.js#dedicatedworker": {
+    "total": 116
+  },
+  "WebCryptoAPI/digest/kangarootwelve.tentative.https.any.js": {
+    "total": 148
+  },
+  "WebCryptoAPI/digest/kangarootwelve.tentative.https.any.js#dedicatedworker": {
+    "total": 148
+  },
+  "WebCryptoAPI/digest/sha3.tentative.https.any.js": {
+    "total": 48
+  },
+  "WebCryptoAPI/digest/sha3.tentative.https.any.js#dedicatedworker": {
+    "total": 48
+  },
+  "WebCryptoAPI/digest/turboshake.tentative.https.any.js": {
+    "total": 135
+  },
+  "WebCryptoAPI/digest/turboshake.tentative.https.any.js#dedicatedworker": {
+    "total": 135
+  },
+  "WebCryptoAPI/encap_decap/encap_decap_bits.tentative.https.any.js": {
+    "total": 18
+  },
+  "WebCryptoAPI/encap_decap/encap_decap_bits.tentative.https.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "WebCryptoAPI/encap_decap/encap_decap_keys.tentative.https.any.js": {
+    "total": 240
+  },
+  "WebCryptoAPI/encap_decap/encap_decap_keys.tentative.https.any.js#dedicatedworker": {
+    "total": 240
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_cbc.https.any.js": {
+    "total": 61
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_cbc.https.any.js#dedicatedworker": {
+    "total": 61
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_ctr.https.any.js": {
+    "total": 52
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_ctr.https.any.js#dedicatedworker": {
+    "total": 52
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_gcm.https.any.js": {
+    "total": 577
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_gcm.https.any.js#dedicatedworker": {
+    "total": 577
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_gcm_256_iv.https.any.js": {
+    "total": 577
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_gcm_256_iv.https.any.js#dedicatedworker": {
+    "total": 577
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_ocb.tentative.https.any.js": {
+    "total": 277
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_ocb.tentative.https.any.js#dedicatedworker": {
+    "total": 277
+  },
+  "WebCryptoAPI/encrypt_decrypt/chacha20_poly1305.tentative.https.any.js": {
+    "total": 28
+  },
+  "WebCryptoAPI/encrypt_decrypt/chacha20_poly1305.tentative.https.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "WebCryptoAPI/encrypt_decrypt/rsa_oaep.https.any.js": {
+    "total": 181
+  },
+  "WebCryptoAPI/encrypt_decrypt/rsa_oaep.https.any.js#dedicatedworker": {
+    "total": 181
+  },
+  "WebCryptoAPI/export-key-error-order.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/export-key-error-order.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/failures_AES-CBC.https.any.js": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-CBC.https.any.js#dedicatedworker": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-CTR.https.any.js": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-CTR.https.any.js#dedicatedworker": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-GCM.https.any.js": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-GCM.https.any.js#dedicatedworker": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-KW.https.any.js": {
+    "total": 236
+  },
+  "WebCryptoAPI/generateKey/failures_AES-KW.https.any.js#dedicatedworker": {
+    "total": 236
+  },
+  "WebCryptoAPI/generateKey/failures_AES-OCB.tentative.https.any.js": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_AES-OCB.tentative.https.any.js#dedicatedworker": {
+    "total": 686
+  },
+  "WebCryptoAPI/generateKey/failures_ECDH.https.any.js": {
+    "total": 176
+  },
+  "WebCryptoAPI/generateKey/failures_ECDH.https.any.js#dedicatedworker": {
+    "total": 176
+  },
+  "WebCryptoAPI/generateKey/failures_ECDSA.https.any.js": {
+    "total": 142
+  },
+  "WebCryptoAPI/generateKey/failures_ECDSA.https.any.js#dedicatedworker": {
+    "total": 142
+  },
+  "WebCryptoAPI/generateKey/failures_Ed25519.https.any.js": {
+    "total": 84
+  },
+  "WebCryptoAPI/generateKey/failures_Ed25519.https.any.js#dedicatedworker": {
+    "total": 84
+  },
+  "WebCryptoAPI/generateKey/failures_Ed448.tentative.https.any.js": {
+    "total": 84
+  },
+  "WebCryptoAPI/generateKey/failures_Ed448.tentative.https.any.js#dedicatedworker": {
+    "total": 84
+  },
+  "WebCryptoAPI/generateKey/failures_HMAC.https.any.js": {
+    "total": 436
+  },
+  "WebCryptoAPI/generateKey/failures_HMAC.https.any.js#dedicatedworker": {
+    "total": 436
+  },
+  "WebCryptoAPI/generateKey/failures_Hybrid-KEM.tentative.https.any.js": {
+    "total": 684
+  },
+  "WebCryptoAPI/generateKey/failures_Hybrid-KEM.tentative.https.any.js#dedicatedworker": {
+    "total": 684
+  },
+  "WebCryptoAPI/generateKey/failures_ML-DSA.tentative.https.any.js": {
+    "total": 252
+  },
+  "WebCryptoAPI/generateKey/failures_ML-DSA.tentative.https.any.js#dedicatedworker": {
+    "total": 252
+  },
+  "WebCryptoAPI/generateKey/failures_ML-KEM.tentative.https.any.js": {
+    "total": 684
+  },
+  "WebCryptoAPI/generateKey/failures_ML-KEM.tentative.https.any.js#dedicatedworker": {
+    "total": 684
+  },
+  "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.js": {
+    "total": 340
+  },
+  "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.js#dedicatedworker": {
+    "total": 340
+  },
+  "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.js": {
+    "total": 116
+  },
+  "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.js#dedicatedworker": {
+    "total": 116
+  },
+  "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.js": {
+    "total": 116
+  },
+  "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.js#dedicatedworker": {
+    "total": 116
+  },
+  "WebCryptoAPI/generateKey/failures_X25519.https.any.js": {
+    "total": 104
+  },
+  "WebCryptoAPI/generateKey/failures_X25519.https.any.js#dedicatedworker": {
+    "total": 104
+  },
+  "WebCryptoAPI/generateKey/failures_X448.tentative.https.any.js": {
+    "total": 104
+  },
+  "WebCryptoAPI/generateKey/failures_X448.tentative.https.any.js#dedicatedworker": {
+    "total": 104
+  },
+  "WebCryptoAPI/generateKey/failures_bad_algorithm.https.any.js": {
+    "total": 360
+  },
+  "WebCryptoAPI/generateKey/failures_bad_algorithm.https.any.js#dedicatedworker": {
+    "total": 360
+  },
+  "WebCryptoAPI/generateKey/failures_chacha20_poly1305.tentative.https.any.js": {
+    "total": 276
+  },
+  "WebCryptoAPI/generateKey/failures_chacha20_poly1305.tentative.https.any.js#dedicatedworker": {
+    "total": 276
+  },
+  "WebCryptoAPI/generateKey/failures_kmac.tentative.https.any.js": {
+    "total": 312
+  },
+  "WebCryptoAPI/generateKey/failures_kmac.tentative.https.any.js#dedicatedworker": {
+    "total": 312
+  },
+  "WebCryptoAPI/generateKey/successes_AES-CBC.https.any.js": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-CBC.https.any.js#dedicatedworker": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-CTR.https.any.js": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-CTR.https.any.js#dedicatedworker": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-GCM.https.any.js": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-GCM.https.any.js#dedicatedworker": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-KW.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/generateKey/successes_AES-KW.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/generateKey/successes_AES-OCB.tentative.https.any.js": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_AES-OCB.tentative.https.any.js#dedicatedworker": {
+    "total": 288
+  },
+  "WebCryptoAPI/generateKey/successes_ECDH.https.any.js": {
+    "total": 108
+  },
+  "WebCryptoAPI/generateKey/successes_ECDH.https.any.js#dedicatedworker": {
+    "total": 108
+  },
+  "WebCryptoAPI/generateKey/successes_ECDSA.https.any.js": {
+    "total": 81
+  },
+  "WebCryptoAPI/generateKey/successes_ECDSA.https.any.js#dedicatedworker": {
+    "total": 81
+  },
+  "WebCryptoAPI/generateKey/successes_Ed25519.https.any.js": {
+    "total": 36
+  },
+  "WebCryptoAPI/generateKey/successes_Ed25519.https.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "WebCryptoAPI/generateKey/successes_Ed448.tentative.https.any.js": {
+    "total": 36
+  },
+  "WebCryptoAPI/generateKey/successes_Ed448.tentative.https.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "WebCryptoAPI/generateKey/successes_HMAC.https.any.js": {
+    "total": 192
+  },
+  "WebCryptoAPI/generateKey/successes_HMAC.https.any.js#dedicatedworker": {
+    "total": 192
+  },
+  "WebCryptoAPI/generateKey/successes_Hybrid-KEM.tentative.https.any.js": {
+    "total": 468
+  },
+  "WebCryptoAPI/generateKey/successes_Hybrid-KEM.tentative.https.any.js#dedicatedworker": {
+    "total": 468
+  },
+  "WebCryptoAPI/generateKey/successes_ML-DSA.tentative.https.any.js": {
+    "total": 108
+  },
+  "WebCryptoAPI/generateKey/successes_ML-DSA.tentative.https.any.js#dedicatedworker": {
+    "total": 108
+  },
+  "WebCryptoAPI/generateKey/successes_ML-KEM.tentative.https.any.js": {
+    "total": 468
+  },
+  "WebCryptoAPI/generateKey/successes_ML-KEM.tentative.https.any.js#dedicatedworker": {
+    "total": 468
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?101-110": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?111-120": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?121-130": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?131-140": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?141-150": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?151-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?31-40": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?41-50": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?51-60": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?61-70": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?71-80": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?81-90": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js#dedicatedworker?91-100": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?101-110": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?111-120": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?121-130": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?131-140": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?141-150": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?151-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?31-40": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?41-50": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?51-60": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?61-70": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?71-80": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?81-90": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-OAEP.https.any.js?91-100": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js#dedicatedworker?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js#dedicatedworker?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js#dedicatedworker?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js#dedicatedworker?31-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSA-PSS.https.any.js?31-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js#dedicatedworker?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js#dedicatedworker?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js#dedicatedworker?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js#dedicatedworker?31-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js?1-10": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js?11-20": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js?21-30": {
+    "total": 10
+  },
+  "WebCryptoAPI/generateKey/successes_RSASSA-PKCS1-v1_5.https.any.js?31-last": {
+    "total": 6
+  },
+  "WebCryptoAPI/generateKey/successes_X25519.https.any.js": {
+    "total": 32
+  },
+  "WebCryptoAPI/generateKey/successes_X25519.https.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "WebCryptoAPI/generateKey/successes_X448.tentative.https.any.js": {
+    "total": 32
+  },
+  "WebCryptoAPI/generateKey/successes_X448.tentative.https.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "WebCryptoAPI/generateKey/successes_chacha20_poly1305.tentative.https.any.js": {
+    "total": 192
+  },
+  "WebCryptoAPI/generateKey/successes_chacha20_poly1305.tentative.https.any.js#dedicatedworker": {
+    "total": 192
+  },
+  "WebCryptoAPI/generateKey/successes_kmac.tentative.https.any.js": {
+    "total": 144
+  },
+  "WebCryptoAPI/generateKey/successes_kmac.tentative.https.any.js#dedicatedworker": {
+    "total": 144
+  },
+  "WebCryptoAPI/getPublicKey.tentative.https.any.js": {
+    "total": 43
+  },
+  "WebCryptoAPI/getPublicKey.tentative.https.any.js#dedicatedworker": {
+    "total": 43
+  },
+  "WebCryptoAPI/getRandomValues.any.js": {
+    "total": 39
+  },
+  "WebCryptoAPI/getRandomValues.any.js#dedicatedworker": {
+    "total": 39
+  },
+  "WebCryptoAPI/historical.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/historical.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/historical.any.js#sharedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/idlharness.https.any.js": {
+    "total": 82
+  },
+  "WebCryptoAPI/idlharness.https.any.js#dedicatedworker": {
+    "total": 82
+  },
+  "WebCryptoAPI/idlharness.tentative.https.any.js": {
+    "total": 108
+  },
+  "WebCryptoAPI/idlharness.tentative.https.any.js#dedicatedworker": {
+    "total": 108
+  },
+  "WebCryptoAPI/import_export/AES-OCB_importKey.tentative.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/AES-OCB_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/Argon2_importKey.tentative.https.any.js": {
+    "total": 45
+  },
+  "WebCryptoAPI/import_export/Argon2_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 45
+  },
+  "WebCryptoAPI/import_export/ChaCha20-Poly1305_importKey.tentative.https.any.js": {
+    "total": 24
+  },
+  "WebCryptoAPI/import_export/ChaCha20-Poly1305_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "WebCryptoAPI/import_export/Hybrid-KEM_importKey.tentative.https.any.js": {
+    "total": 216
+  },
+  "WebCryptoAPI/import_export/Hybrid-KEM_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 216
+  },
+  "WebCryptoAPI/import_export/KMAC_importKey.tentative.https.any.js": {
+    "total": 144
+  },
+  "WebCryptoAPI/import_export/KMAC_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 144
+  },
+  "WebCryptoAPI/import_export/ML-DSA_importKey.tentative.https.any.js": {
+    "total": 180
+  },
+  "WebCryptoAPI/import_export/ML-DSA_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 180
+  },
+  "WebCryptoAPI/import_export/ML-KEM_importKey.tentative.https.any.js": {
+    "total": 324
+  },
+  "WebCryptoAPI/import_export/ML-KEM_importKey.tentative.https.any.js#dedicatedworker": {
+    "total": 324
+  },
+  "WebCryptoAPI/import_export/ec_importKey.https.any.js": {
+    "total": 264
+  },
+  "WebCryptoAPI/import_export/ec_importKey.https.any.js#dedicatedworker": {
+    "total": 264
+  },
+  "WebCryptoAPI/import_export/ec_importKey_failures_ECDH.https.any.js": {
+    "total": 908
+  },
+  "WebCryptoAPI/import_export/ec_importKey_failures_ECDH.https.any.js#dedicatedworker": {
+    "total": 908
+  },
+  "WebCryptoAPI/import_export/ec_importKey_failures_ECDSA.https.any.js": {
+    "total": 908
+  },
+  "WebCryptoAPI/import_export/ec_importKey_failures_ECDSA.https.any.js#dedicatedworker": {
+    "total": 908
+  },
+  "WebCryptoAPI/import_export/okp_importKey_Ed25519.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/okp_importKey_Ed25519.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/okp_importKey_Ed448.tentative.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/okp_importKey_Ed448.tentative.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/import_export/okp_importKey_X25519.https.any.js": {
+    "total": 54
+  },
+  "WebCryptoAPI/import_export/okp_importKey_X25519.https.any.js#dedicatedworker": {
+    "total": 54
+  },
+  "WebCryptoAPI/import_export/okp_importKey_X448.tentative.https.any.js": {
+    "total": 54
+  },
+  "WebCryptoAPI/import_export/okp_importKey_X448.tentative.https.any.js#dedicatedworker": {
+    "total": 54
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_Ed25519.https.any.js": {
+    "total": 770
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_Ed25519.https.any.js#dedicatedworker": {
+    "total": 770
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_Ed448.tentative.https.any.js": {
+    "total": 770
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_Ed448.tentative.https.any.js#dedicatedworker": {
+    "total": 770
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_X25519.https.any.js": {
+    "total": 662
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_X25519.https.any.js#dedicatedworker": {
+    "total": 662
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_X448.tentative.https.any.js": {
+    "total": 662
+  },
+  "WebCryptoAPI/import_export/okp_importKey_failures_X448.tentative.https.any.js#dedicatedworker": {
+    "total": 662
+  },
+  "WebCryptoAPI/import_export/raw_format_aliases.tentative.https.any.js": {
+    "total": 20
+  },
+  "WebCryptoAPI/import_export/raw_format_aliases.tentative.https.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "WebCryptoAPI/import_export/rsa_importKey.https.any.js": {
+    "total": 1056
+  },
+  "WebCryptoAPI/import_export/rsa_importKey.https.any.js#dedicatedworker": {
+    "total": 1056
+  },
+  "WebCryptoAPI/import_export/symmetric_importKey.https.any.js": {
+    "total": 606
+  },
+  "WebCryptoAPI/import_export/symmetric_importKey.https.any.js#dedicatedworker": {
+    "total": 606
+  },
+  "WebCryptoAPI/normalize-algorithm-name.https.any.js": {
+    "total": 4
+  },
+  "WebCryptoAPI/normalize-algorithm-name.https.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "WebCryptoAPI/randomUUID.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/randomUUID.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/secure_context/crypto-subtle-secure-context-available.https.sub.html": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/aes-cbc.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-cbc.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-ctr.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-ctr.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-gcm.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-gcm.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-kw.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-kw.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-ocb.tentative.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/aes-ocb.tentative.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/chacha20-poly1305.tentative.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/chacha20-poly1305.tentative.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/ecdh.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/ecdh.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/ecdsa.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/ecdsa.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/serialization/ed25519.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/ed25519.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/ed448.tentative.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/ed448.tentative.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/hmac.https.any.js": {
+    "total": 8
+  },
+  "WebCryptoAPI/serialization/hmac.https.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "WebCryptoAPI/serialization/hybridkem.tentative.https.window.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/kmac.tentative.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/kmac.tentative.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/mldsa.tentative.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/mldsa.tentative.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/mlkem.tentative.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/mlkem.tentative.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/serialization/rsa-oaep.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/rsa-oaep.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/rsa-pss.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/rsa-pss.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/rsassa-pkcs1-v1_5.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/rsassa-pkcs1-v1_5.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/x25519.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/x25519.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/x448.tentative.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/serialization/x448.tentative.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/sharedarraybuffer.https.any.js": {
+    "total": 8
+  },
+  "WebCryptoAPI/sharedarraybuffer.https.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "WebCryptoAPI/sign_verify/ecdsa.https.any.js": {
+    "total": 324
+  },
+  "WebCryptoAPI/sign_verify/ecdsa.https.any.js#dedicatedworker": {
+    "total": 324
+  },
+  "WebCryptoAPI/sign_verify/eddsa_curve25519.https.any.js": {
+    "total": 19
+  },
+  "WebCryptoAPI/sign_verify/eddsa_curve25519.https.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "WebCryptoAPI/sign_verify/eddsa_curve448.tentative.https.any.js": {
+    "total": 19
+  },
+  "WebCryptoAPI/sign_verify/eddsa_curve448.tentative.https.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "WebCryptoAPI/sign_verify/eddsa_small_order_points.https.any.js": {
+    "total": 14
+  },
+  "WebCryptoAPI/sign_verify/eddsa_small_order_points.https.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "WebCryptoAPI/sign_verify/hmac.https.any.js": {
+    "total": 65
+  },
+  "WebCryptoAPI/sign_verify/hmac.https.any.js#dedicatedworker": {
+    "total": 65
+  },
+  "WebCryptoAPI/sign_verify/kmac.tentative.https.any.js": {
+    "total": 103
+  },
+  "WebCryptoAPI/sign_verify/kmac.tentative.https.any.js#dedicatedworker": {
+    "total": 103
+  },
+  "WebCryptoAPI/sign_verify/mldsa.tentative.https.any.js": {
+    "total": 57
+  },
+  "WebCryptoAPI/sign_verify/mldsa.tentative.https.any.js#dedicatedworker": {
+    "total": 57
+  },
+  "WebCryptoAPI/sign_verify/rsa_pkcs.https.any.js": {
+    "total": 68
+  },
+  "WebCryptoAPI/sign_verify/rsa_pkcs.https.any.js#dedicatedworker": {
+    "total": 68
+  },
+  "WebCryptoAPI/sign_verify/rsa_pss.https.any.js": {
+    "total": 144
+  },
+  "WebCryptoAPI/sign_verify/rsa_pss.https.any.js#dedicatedworker": {
+    "total": 144
+  },
+  "WebCryptoAPI/supports-modern.tentative.https.any.js": {
+    "total": 147
+  },
+  "WebCryptoAPI/supports-modern.tentative.https.any.js#dedicatedworker": {
+    "total": 147
+  },
+  "WebCryptoAPI/supports.tentative.https.any.js": {
+    "total": 200
+  },
+  "WebCryptoAPI/supports.tentative.https.any.js#dedicatedworker": {
+    "total": 200
+  },
+  "WebCryptoAPI/wrapKey_unwrapKey/wrapKey_unwrapKey.https.any.js": {
+    "total": 472
+  },
+  "WebCryptoAPI/wrapKey_unwrapKey/wrapKey_unwrapKey.https.any.js#dedicatedworker": {
+    "total": 472
+  }
+}

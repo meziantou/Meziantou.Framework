@@ -1,0 +1,475 @@
+{
+  "spec": {
+    "title": "CSS Box Model Module Level 4",
+    "url": "https://drafts.csswg.org/css-box-4/"
+  },
+  "properties": [
+    {
+      "name": "margin-top",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin-top",
+      "value": "<length-percentage> | auto",
+      "initial": "0",
+      "appliesTo": "all elements except internal table elements, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-top",
+        "marginTop"
+      ]
+    },
+    {
+      "name": "margin-right",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin-right",
+      "value": "<length-percentage> | auto",
+      "initial": "0",
+      "appliesTo": "all elements except internal table elements, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-right",
+        "marginRight"
+      ]
+    },
+    {
+      "name": "margin-bottom",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin-bottom",
+      "value": "<length-percentage> | auto",
+      "initial": "0",
+      "appliesTo": "all elements except internal table elements, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-bottom",
+        "marginBottom"
+      ]
+    },
+    {
+      "name": "margin-left",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin-left",
+      "value": "<length-percentage> | auto",
+      "initial": "0",
+      "appliesTo": "all elements except internal table elements, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "margin",
+      "styleDeclaration": [
+        "margin-left",
+        "marginLeft"
+      ]
+    },
+    {
+      "name": "margin",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin",
+      "value": "<'margin-top'>{1,4}",
+      "initial": "0",
+      "appliesTo": "all elements except internal table elements, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "margin"
+      ],
+      "longhands": [
+        "margin-top",
+        "margin-right",
+        "margin-bottom",
+        "margin-left"
+      ]
+    },
+    {
+      "name": "margin-trim",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-margin-trim",
+      "value": "none | block | [ block-start || block-end ]",
+      "initial": "none",
+      "appliesTo": "block containers, multi-column containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "a set of zero to two keywords indicating which sides to trim",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Margins are not trimmed by the container.",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-margin-trim-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "block-start",
+          "prose": "For in-flow boxes contained by this box, margins adjacent to the box’s specified edges are truncated to zero. It also truncates any descendant margins collapsed with such a margin (but not its own, its siblings’, or its ancestors’).",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-margin-trim-block-start",
+          "type": "value",
+          "value": "block-start"
+        },
+        {
+          "name": "block-end",
+          "prose": "For in-flow boxes contained by this box, margins adjacent to the box’s specified edges are truncated to zero. It also truncates any descendant margins collapsed with such a margin (but not its own, its siblings’, or its ancestors’).",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-margin-trim-block-end",
+          "type": "value",
+          "value": "block-end"
+        },
+        {
+          "name": "block",
+          "prose": "Computes to block-start block-end.",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-margin-trim-block",
+          "type": "value",
+          "value": "block"
+        }
+      ],
+      "styleDeclaration": [
+        "margin-trim",
+        "marginTrim"
+      ]
+    },
+    {
+      "name": "padding-top",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-padding-top",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "all elements except: internal table elements other than table cells, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-top",
+        "paddingTop"
+      ]
+    },
+    {
+      "name": "padding-right",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-padding-right",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "all elements except: internal table elements other than table cells, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-right",
+        "paddingRight"
+      ]
+    },
+    {
+      "name": "padding-bottom",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-padding-bottom",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "all elements except: internal table elements other than table cells, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-bottom",
+        "paddingBottom"
+      ]
+    },
+    {
+      "name": "padding-left",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-padding-left",
+      "value": "<length-percentage [0,∞]>",
+      "initial": "0",
+      "appliesTo": "all elements except: internal table elements other than table cells, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "padding",
+      "styleDeclaration": [
+        "padding-left",
+        "paddingLeft"
+      ]
+    },
+    {
+      "name": "padding",
+      "href": "https://drafts.csswg.org/css-box-4/#propdef-padding",
+      "value": "<'padding-top'>{1,4}",
+      "initial": "0",
+      "appliesTo": "all elements except: internal table elements other than table cells, ruby base containers, and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "refer to logical width of containing block",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "padding"
+      ],
+      "longhands": [
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<box>",
+      "prose": "The following <box> CSS keywords are defined for use in properties (such as transform-box and background-clip) that need to refer to various box edges:",
+      "href": "https://drafts.csswg.org/css-box-4/#typedef-box",
+      "type": "type",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "margin-box",
+          "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
+          "type": "value",
+          "value": "margin-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "Refers to the object bounding box or its edges. (In a CSS box context, treated as content-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "Refers to the stroke bounding box or its edges. (In a CSS box context, treated as border-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        },
+        {
+          "name": "view-box",
+          "prose": "Refers to the nearest SVG viewport’s origin box, which is a rectangle with the width and height of the SVG viewport, positioned such that its top left corner is anchored at the coordinate system origin. (In a CSS box context, treated as border-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-view-box",
+          "type": "value",
+          "value": "view-box"
+        }
+      ]
+    },
+    {
+      "name": "<visual-box>",
+      "href": "https://drafts.csswg.org/css-box-4/#typedef-visual-box",
+      "type": "type",
+      "value": "content-box | padding-box | border-box",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
+          "type": "value",
+          "value": "border-box"
+        }
+      ]
+    },
+    {
+      "name": "<layout-box>",
+      "href": "https://drafts.csswg.org/css-box-4/#typedef-layout-box",
+      "type": "type",
+      "value": "<visual-box> | margin-box",
+      "values": [
+        {
+          "name": "margin-box",
+          "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
+          "type": "value",
+          "value": "margin-box"
+        }
+      ]
+    },
+    {
+      "name": "<paint-box>",
+      "href": "https://drafts.csswg.org/css-box-4/#typedef-paint-box",
+      "type": "type",
+      "value": "<visual-box> | fill-box | stroke-box",
+      "values": [
+        {
+          "name": "fill-box",
+          "prose": "Refers to the object bounding box or its edges. (In a CSS box context, treated as content-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "Refers to the stroke bounding box or its edges. (In a CSS box context, treated as border-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        }
+      ]
+    },
+    {
+      "name": "<coord-box>",
+      "href": "https://drafts.csswg.org/css-box-4/#typedef-coord-box",
+      "type": "type",
+      "value": "<paint-box> | view-box",
+      "values": [
+        {
+          "name": "view-box",
+          "prose": "Refers to the nearest SVG viewport’s origin box, which is a rectangle with the width and height of the SVG viewport, positioned such that its top left corner is anchored at the coordinate system origin. (In a CSS box context, treated as border-box.)",
+          "href": "https://drafts.csswg.org/css-box-4/#valdef-box-view-box",
+          "type": "value",
+          "value": "view-box"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "content-box",
+      "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
+      "type": "value",
+      "value": "content-box",
+      "for": "<shape-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "content-box",
+      "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
+      "type": "value",
+      "value": "content-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "padding-box",
+      "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
+      "type": "value",
+      "value": "padding-box",
+      "for": "<shape-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "padding-box",
+      "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
+      "type": "value",
+      "value": "padding-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "border-box",
+      "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
+      "type": "value",
+      "value": "border-box",
+      "for": "<shape-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "border-box",
+      "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
+      "type": "value",
+      "value": "border-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "margin-box",
+      "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
+      "type": "value",
+      "value": "margin-box",
+      "for": "<shape-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "margin-box",
+      "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
+      "type": "value",
+      "value": "margin-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fill-box",
+      "prose": "Refers to the object bounding box or its edges. (In a CSS box context, treated as content-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-fill-box",
+      "type": "value",
+      "value": "fill-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "stroke-box",
+      "prose": "Refers to the stroke bounding box or its edges. (In a CSS box context, treated as border-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-stroke-box",
+      "type": "value",
+      "value": "stroke-box",
+      "for": "<geometry-box>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "view-box",
+      "prose": "Refers to the nearest SVG viewport’s origin box, which is a rectangle with the width and height of the SVG viewport, positioned such that its top left corner is anchored at the coordinate system origin. (In a CSS box context, treated as border-box.)",
+      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-view-box",
+      "type": "value",
+      "value": "view-box",
+      "for": "<geometry-box>"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "spec": {
+    "title": "Device Attributes API",
+    "url": "https://wicg.github.io/WebApiDevice/device_attributes/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "NavigatorManagedData": [
+        {
+          "fragment": "partial interface NavigatorManagedData {\n  // Device Attributes API.\n  Promise<DOMString> getAnnotatedAssetId();\n  Promise<DOMString> getAnnotatedLocation();\n  Promise<DOMString> getDirectoryId();\n  Promise<DOMString> getHostname();\n  Promise<DOMString> getSerialNumber();\n};",
+          "type": "interface",
+          "name": "NavigatorManagedData",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getAnnotatedAssetId",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/WebApiDevice/device_attributes/#dom-navigatormanageddata-getannotatedassetid"
+            },
+            {
+              "type": "operation",
+              "name": "getAnnotatedLocation",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/WebApiDevice/device_attributes/#dom-navigatormanageddata-getannotatedlocation"
+            },
+            {
+              "type": "operation",
+              "name": "getDirectoryId",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/WebApiDevice/device_attributes/#dom-navigatormanageddata-getdirectoryid"
+            },
+            {
+              "type": "operation",
+              "name": "getHostname",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/WebApiDevice/device_attributes/#dom-navigatormanageddata-gethostname"
+            },
+            {
+              "type": "operation",
+              "name": "getSerialNumber",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/WebApiDevice/device_attributes/#dom-navigatormanageddata-getserialnumber"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "NavigatorManagedData": []
+    },
+    "externalDependencies": [
+      "NavigatorManagedData"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

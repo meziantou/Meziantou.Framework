@@ -1,0 +1,4465 @@
+{
+  "spec": {
+    "title": "Service Workers Nightly",
+    "url": "https://w3c.github.io/ServiceWorker/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "ExtendableEvent",
+          "InstallEvent",
+          "FetchEvent",
+          "ExtendableMessageEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "ServiceWorker",
+          "ServiceWorkerRegistration",
+          "ServiceWorkerContainer",
+          "NavigationPreloadManager",
+          "Cache",
+          "CacheStorage"
+        ],
+        "Worker": [
+          "ServiceWorker",
+          "ServiceWorkerRegistration",
+          "ServiceWorkerContainer",
+          "NavigationPreloadManager",
+          "Cache",
+          "CacheStorage"
+        ],
+        "ServiceWorker": [
+          "ServiceWorkerGlobalScope",
+          "Client",
+          "WindowClient",
+          "Clients"
+        ]
+      }
+    },
+    "idlNames": {
+      "ServiceWorker": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface ServiceWorker : EventTarget {\n  readonly attribute USVString scriptURL;\n  readonly attribute ServiceWorkerState state;\n  undefined postMessage(any message, sequence<object> transfer);\n  undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n\n  // event\n  attribute EventHandler onstatechange;\n};",
+        "type": "interface",
+        "name": "ServiceWorker",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "scriptURL",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworker-scripturl"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ServiceWorkerState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworker-state"
+          },
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "transfer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "object"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage"
+          },
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StructuredSerializeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage-message-options"
+          },
+          {
+            "type": "attribute",
+            "name": "onstatechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworker-onstatechange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#serviceworker"
+      },
+      "ServiceWorkerState": {
+        "fragment": "enum ServiceWorkerState {\n  \"parsed\",\n  \"installing\",\n  \"installed\",\n  \"activating\",\n  \"activated\",\n  \"redundant\"\n};",
+        "type": "enum",
+        "name": "ServiceWorkerState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "parsed",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-parsed"
+          },
+          {
+            "type": "enum-value",
+            "value": "installing",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-installing"
+          },
+          {
+            "type": "enum-value",
+            "value": "installed",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-installed"
+          },
+          {
+            "type": "enum-value",
+            "value": "activating",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-activating"
+          },
+          {
+            "type": "enum-value",
+            "value": "activated",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-activated"
+          },
+          {
+            "type": "enum-value",
+            "value": "redundant",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerstate-redundant"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-serviceworkerstate"
+      },
+      "ServiceWorkerRegistration": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface ServiceWorkerRegistration : EventTarget {\n  readonly attribute ServiceWorker? installing;\n  readonly attribute ServiceWorker? waiting;\n  readonly attribute ServiceWorker? active;\n  [SameObject] readonly attribute NavigationPreloadManager navigationPreload;\n\n  readonly attribute USVString scope;\n  readonly attribute ServiceWorkerUpdateViaCache updateViaCache;\n\n  [NewObject] Promise<ServiceWorkerRegistration> update();\n  [NewObject] Promise<boolean> unregister();\n\n  // event\n  attribute EventHandler onupdatefound;\n};",
+        "type": "interface",
+        "name": "ServiceWorkerRegistration",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "installing",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ServiceWorker"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-installing"
+          },
+          {
+            "type": "attribute",
+            "name": "waiting",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ServiceWorker"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-waiting"
+          },
+          {
+            "type": "attribute",
+            "name": "active",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ServiceWorker"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-active"
+          },
+          {
+            "type": "attribute",
+            "name": "navigationPreload",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NavigationPreloadManager"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-navigationpreload"
+          },
+          {
+            "type": "attribute",
+            "name": "scope",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-scope"
+          },
+          {
+            "type": "attribute",
+            "name": "updateViaCache",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ServiceWorkerUpdateViaCache"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-updateviacache"
+          },
+          {
+            "type": "operation",
+            "name": "update",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ServiceWorkerRegistration"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-update"
+          },
+          {
+            "type": "operation",
+            "name": "unregister",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-unregister"
+          },
+          {
+            "type": "attribute",
+            "name": "onupdatefound",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-onupdatefound"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#serviceworkerregistration"
+      },
+      "ServiceWorkerUpdateViaCache": {
+        "fragment": "enum ServiceWorkerUpdateViaCache {\n  \"imports\",\n  \"all\",\n  \"none\"\n};",
+        "type": "enum",
+        "name": "ServiceWorkerUpdateViaCache",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "imports",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerupdateviacache-imports"
+          },
+          {
+            "type": "enum-value",
+            "value": "all",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerupdateviacache-all"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerupdateviacache-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-serviceworkerupdateviacache"
+      },
+      "ServiceWorkerContainer": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface ServiceWorkerContainer : EventTarget {\n  readonly attribute ServiceWorker? controller;\n  readonly attribute Promise<ServiceWorkerRegistration> ready;\n\n  [NewObject] Promise<ServiceWorkerRegistration> register((TrustedScriptURL or USVString) scriptURL, optional RegistrationOptions options = {});\n\n  [NewObject] Promise<(ServiceWorkerRegistration or undefined)> getRegistration(optional USVString clientURL = \"\");\n  [NewObject] Promise<FrozenArray<ServiceWorkerRegistration>> getRegistrations();\n\n  undefined startMessages();\n\n  // events\n  attribute EventHandler oncontrollerchange;\n  attribute EventHandler onmessage; // event.source of message events is ServiceWorker object\n  attribute EventHandler onmessageerror;\n};",
+        "type": "interface",
+        "name": "ServiceWorkerContainer",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "controller",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ServiceWorker"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-controller"
+          },
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ServiceWorkerRegistration"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-ready"
+          },
+          {
+            "type": "operation",
+            "name": "register",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ServiceWorkerRegistration"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "scriptURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "TrustedScriptURL"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "USVString"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RegistrationOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register"
+          },
+          {
+            "type": "operation",
+            "name": "getRegistration",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ServiceWorkerRegistration"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "clientURL",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistration"
+          },
+          {
+            "type": "operation",
+            "name": "getRegistrations",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "FrozenArray",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ServiceWorkerRegistration"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistrations"
+          },
+          {
+            "type": "operation",
+            "name": "startMessages",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-startmessages"
+          },
+          {
+            "type": "attribute",
+            "name": "oncontrollerchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-oncontrollerchange"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessageerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessageerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#serviceworkercontainer"
+      },
+      "RegistrationOptions": {
+        "fragment": "dictionary RegistrationOptions {\n  USVString scope;\n  WorkerType type = \"classic\";\n  ServiceWorkerUpdateViaCache updateViaCache = \"imports\";\n};",
+        "type": "dictionary",
+        "name": "RegistrationOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "scope",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-registrationoptions-scope"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WorkerType"
+            },
+            "default": {
+              "type": "string",
+              "value": "classic"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-registrationoptions-type"
+          },
+          {
+            "type": "field",
+            "name": "updateViaCache",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ServiceWorkerUpdateViaCache"
+            },
+            "default": {
+              "type": "string",
+              "value": "imports"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-registrationoptions-updateviacache"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-registrationoptions"
+      },
+      "NavigationPreloadManager": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface NavigationPreloadManager {\n  Promise<undefined> enable();\n  Promise<undefined> disable();\n  Promise<undefined> setHeaderValue(ByteString value);\n  Promise<NavigationPreloadState> getState();\n};",
+        "type": "interface",
+        "name": "NavigationPreloadManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "enable",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-enable"
+          },
+          {
+            "type": "operation",
+            "name": "disable",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-disable"
+          },
+          {
+            "type": "operation",
+            "name": "setHeaderValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-setheadervalue"
+          },
+          {
+            "type": "operation",
+            "name": "getState",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigationPreloadState"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-getstate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#navigationpreloadmanager"
+      },
+      "NavigationPreloadState": {
+        "fragment": "dictionary NavigationPreloadState {\n  boolean enabled = false;\n  ByteString headerValue;\n};",
+        "type": "dictionary",
+        "name": "NavigationPreloadState",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "enabled",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadstate-enabled"
+          },
+          {
+            "type": "field",
+            "name": "headerValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadstate-headervalue"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-navigationpreloadstate"
+      },
+      "ServiceWorkerGlobalScope": {
+        "fragment": "[Global=(Worker,ServiceWorker), Exposed=ServiceWorker, SecureContext]\ninterface ServiceWorkerGlobalScope : WorkerGlobalScope {\n  [SameObject] readonly attribute Clients clients;\n  [SameObject] readonly attribute ServiceWorkerRegistration registration;\n  [SameObject] readonly attribute ServiceWorker serviceWorker;\n\n  [NewObject] Promise<undefined> skipWaiting();\n\n  attribute EventHandler oninstall;\n  attribute EventHandler onactivate;\n  attribute EventHandler onfetch;\n\n  attribute EventHandler onmessage;\n  attribute EventHandler onmessageerror;\n};",
+        "type": "interface",
+        "name": "ServiceWorkerGlobalScope",
+        "inheritance": "WorkerGlobalScope",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "clients",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Clients"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-clients"
+          },
+          {
+            "type": "attribute",
+            "name": "registration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ServiceWorkerRegistration"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-registration"
+          },
+          {
+            "type": "attribute",
+            "name": "serviceWorker",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ServiceWorker"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-serviceworker"
+          },
+          {
+            "type": "operation",
+            "name": "skipWaiting",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-skipwaiting"
+          },
+          {
+            "type": "attribute",
+            "name": "oninstall",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-oninstall"
+          },
+          {
+            "type": "attribute",
+            "name": "onactivate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onactivate"
+          },
+          {
+            "type": "attribute",
+            "name": "onfetch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onfetch"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessage"
+          },
+          {
+            "type": "attribute",
+            "name": "onmessageerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessageerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Global",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Worker"
+                },
+                {
+                  "value": "ServiceWorker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope"
+      },
+      "Client": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface Client {\n  readonly attribute USVString url;\n  readonly attribute FrameType frameType;\n  readonly attribute DOMString id;\n  readonly attribute ClientType type;\n  undefined postMessage(any message, sequence<object> transfer);\n  undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n};",
+        "type": "interface",
+        "name": "Client",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-url"
+          },
+          {
+            "type": "attribute",
+            "name": "frameType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FrameType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-frametype"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-id"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ClientType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-type"
+          },
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "transfer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "object"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-postmessage"
+          },
+          {
+            "type": "operation",
+            "name": "postMessage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "message",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "StructuredSerializeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-client-postmessage-message-options"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#client"
+      },
+      "WindowClient": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface WindowClient : Client {\n  readonly attribute DocumentVisibilityState visibilityState;\n  readonly attribute boolean focused;\n  [SameObject] readonly attribute FrozenArray<USVString> ancestorOrigins;\n  [NewObject] Promise<WindowClient> focus();\n  [NewObject] Promise<WindowClient?> navigate(USVString url);\n};",
+        "type": "interface",
+        "name": "WindowClient",
+        "inheritance": "Client",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "visibilityState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DocumentVisibilityState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-windowclient-visibilitystate"
+          },
+          {
+            "type": "attribute",
+            "name": "focused",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-windowclient-focused"
+          },
+          {
+            "type": "attribute",
+            "name": "ancestorOrigins",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-windowclient-ancestororigins"
+          },
+          {
+            "type": "operation",
+            "name": "focus",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WindowClient"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-windowclient-focus"
+          },
+          {
+            "type": "operation",
+            "name": "navigate",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "WindowClient"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#windowclient"
+      },
+      "FrameType": {
+        "fragment": "enum FrameType {\n  \"auxiliary\",\n  \"top-level\",\n  \"nested\",\n  \"none\"\n};",
+        "type": "enum",
+        "name": "FrameType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auxiliary",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-frametype-auxiliary"
+          },
+          {
+            "type": "enum-value",
+            "value": "top-level",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-frametype-top-level"
+          },
+          {
+            "type": "enum-value",
+            "value": "nested",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-frametype-nested"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-frametype-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-frametype"
+      },
+      "Clients": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface Clients {\n  // The objects returned will be new instances every time\n  [NewObject] Promise<(Client or undefined)> get(DOMString id);\n  [NewObject] Promise<FrozenArray<Client>> matchAll(optional ClientQueryOptions options = {});\n  [NewObject] Promise<WindowClient?> openWindow(USVString url);\n  [NewObject] Promise<undefined> claim();\n};",
+        "type": "interface",
+        "name": "Clients",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Client"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "id",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clients-get"
+          },
+          {
+            "type": "operation",
+            "name": "matchAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "FrozenArray",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Client"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ClientQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clients-matchall"
+          },
+          {
+            "type": "operation",
+            "name": "openWindow",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "WindowClient"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clients-openwindow"
+          },
+          {
+            "type": "operation",
+            "name": "claim",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clients-claim"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#clients"
+      },
+      "ClientQueryOptions": {
+        "fragment": "dictionary ClientQueryOptions {\n  boolean includeUncontrolled = false;\n  ClientType type = \"window\";\n};",
+        "type": "dictionary",
+        "name": "ClientQueryOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "includeUncontrolled",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clientqueryoptions-includeuncontrolled"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ClientType"
+            },
+            "default": {
+              "type": "string",
+              "value": "window"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clientqueryoptions-type"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-clientqueryoptions"
+      },
+      "ClientType": {
+        "fragment": "enum ClientType {\n  \"window\",\n  \"worker\",\n  \"sharedworker\",\n  \"all\"\n};",
+        "type": "enum",
+        "name": "ClientType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "window",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clienttype-window"
+          },
+          {
+            "type": "enum-value",
+            "value": "worker",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clienttype-worker"
+          },
+          {
+            "type": "enum-value",
+            "value": "sharedworker",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clienttype-sharedworker"
+          },
+          {
+            "type": "enum-value",
+            "value": "all",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-clienttype-all"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-clienttype"
+      },
+      "ExtendableEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface ExtendableEvent : Event {\n  constructor(DOMString type, optional ExtendableEventInit eventInitDict = {});\n  undefined waitUntil(Promise<any> f);\n};",
+        "type": "interface",
+        "name": "ExtendableEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ExtendableEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendableevent-extendableevent"
+          },
+          {
+            "type": "operation",
+            "name": "waitUntil",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "f",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "Promise",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "any"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendableevent-waituntil"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#extendableevent"
+      },
+      "ExtendableEventInit": {
+        "fragment": "dictionary ExtendableEventInit : EventInit {\n  // Defined for the forward compatibility across the derived events\n};",
+        "type": "dictionary",
+        "name": "ExtendableEventInit",
+        "inheritance": "EventInit",
+        "members": [],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-extendableeventinit"
+      },
+      "InstallEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface InstallEvent : ExtendableEvent {\n  constructor(DOMString type, optional ExtendableEventInit eventInitDict = {});\n  Promise<undefined> addRoutes((RouterRule or sequence<RouterRule>) rules);\n};",
+        "type": "interface",
+        "name": "InstallEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ExtendableEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/ServiceWorker/#dom-installevent-installevent"
+          },
+          {
+            "type": "operation",
+            "name": "addRoutes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rules",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "RouterRule"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "sequence",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": [
+                        {
+                          "type": "argument-type",
+                          "extAttrs": [],
+                          "generic": "",
+                          "nullable": false,
+                          "union": false,
+                          "idlType": "RouterRule"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#installevent"
+      },
+      "RouterRule": {
+        "fragment": "dictionary RouterRule {\n  required RouterCondition condition;\n  required RouterSource source;\n};",
+        "type": "dictionary",
+        "name": "RouterRule",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "condition",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RouterCondition"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routerrule-condition"
+          },
+          {
+            "type": "field",
+            "name": "source",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RouterSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routerrule-source"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-routerrule"
+      },
+      "RouterCondition": {
+        "fragment": "dictionary RouterCondition {\n  URLPatternCompatible urlPattern;\n  ByteString requestMethod;\n  RequestMode requestMode;\n  RequestDestination requestDestination;\n  RunningStatus runningStatus;\n\n  sequence<RouterCondition> _or;\n  RouterCondition not;\n};",
+        "type": "dictionary",
+        "name": "RouterCondition",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "urlPattern",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLPatternCompatible"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-urlpattern"
+          },
+          {
+            "type": "field",
+            "name": "requestMethod",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-requestmethod"
+          },
+          {
+            "type": "field",
+            "name": "requestMode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-requestmode"
+          },
+          {
+            "type": "field",
+            "name": "requestDestination",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestDestination"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-requestdestination"
+          },
+          {
+            "type": "field",
+            "name": "runningStatus",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RunningStatus"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-runningstatus"
+          },
+          {
+            "type": "field",
+            "name": "or",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RouterCondition"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-or"
+          },
+          {
+            "type": "field",
+            "name": "not",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RouterCondition"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routercondition-not"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-routercondition"
+      },
+      "RouterSource": {
+        "fragment": "typedef (RouterSourceDict or RouterSourceEnum) RouterSource;",
+        "type": "typedef",
+        "name": "RouterSource",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RouterSourceDict"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RouterSourceEnum"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#typedefdef-routersource"
+      },
+      "RouterSourceDict": {
+        "fragment": "dictionary RouterSourceDict {\n  DOMString cacheName;\n};",
+        "type": "dictionary",
+        "name": "RouterSourceDict",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "cacheName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routersourcedict-cachename"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-routersourcedict"
+      },
+      "RunningStatus": {
+        "fragment": "enum RunningStatus { \"running\", \"not-running\" };",
+        "type": "enum",
+        "name": "RunningStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "running",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-runningstatus-running"
+          },
+          {
+            "type": "enum-value",
+            "value": "not-running",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-runningstatus-not-running"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-runningstatus"
+      },
+      "RouterSourceEnum": {
+        "fragment": "enum RouterSourceEnum {\n  \"cache\",\n  \"fetch-event\",\n  \"network\",\n  \"race-network-and-fetch-handler\"\n};",
+        "type": "enum",
+        "name": "RouterSourceEnum",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "cache",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routersourceenum-cache"
+          },
+          {
+            "type": "enum-value",
+            "value": "fetch-event",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routersourceenum-fetch-event"
+          },
+          {
+            "type": "enum-value",
+            "value": "network",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routersourceenum-network"
+          },
+          {
+            "type": "enum-value",
+            "value": "race-network-and-fetch-handler",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-routersourceenum-race-network-and-fetch-handler"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/ServiceWorker/#enumdef-routersourceenum"
+      },
+      "FetchEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface FetchEvent : ExtendableEvent {\n  constructor(DOMString type, FetchEventInit eventInitDict);\n  [SameObject] readonly attribute Request request;\n  readonly attribute Promise<any> preloadResponse;\n  readonly attribute DOMString clientId;\n  readonly attribute DOMString resultingClientId;\n  readonly attribute DOMString replacesClientId;\n  readonly attribute Promise<undefined> handled;\n\n  undefined respondWith(Promise<Response> r);\n};",
+        "type": "interface",
+        "name": "FetchEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FetchEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-fetchevent"
+          },
+          {
+            "type": "attribute",
+            "name": "request",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Request"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-request"
+          },
+          {
+            "type": "attribute",
+            "name": "preloadResponse",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-preloadresponse"
+          },
+          {
+            "type": "attribute",
+            "name": "clientId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-clientid"
+          },
+          {
+            "type": "attribute",
+            "name": "resultingClientId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-resultingclientid"
+          },
+          {
+            "type": "attribute",
+            "name": "replacesClientId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-replacesclientid"
+          },
+          {
+            "type": "attribute",
+            "name": "handled",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-handled"
+          },
+          {
+            "type": "operation",
+            "name": "respondWith",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "r",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "Promise",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Response"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetchevent-respondwith"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#fetchevent"
+      },
+      "FetchEventInit": {
+        "fragment": "dictionary FetchEventInit : ExtendableEventInit {\n  required Request request;\n  Promise<any> preloadResponse;\n  DOMString clientId = \"\";\n  DOMString resultingClientId = \"\";\n  DOMString replacesClientId = \"\";\n  Promise<undefined> handled;\n};",
+        "type": "dictionary",
+        "name": "FetchEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "request",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Request"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-request"
+          },
+          {
+            "type": "field",
+            "name": "preloadResponse",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-preloadresponse"
+          },
+          {
+            "type": "field",
+            "name": "clientId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-clientid"
+          },
+          {
+            "type": "field",
+            "name": "resultingClientId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-resultingclientid"
+          },
+          {
+            "type": "field",
+            "name": "replacesClientId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-replacesclientid"
+          },
+          {
+            "type": "field",
+            "name": "handled",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-fetcheventinit-handled"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-fetcheventinit"
+      },
+      "ExtendableMessageEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface ExtendableMessageEvent : ExtendableEvent {\n  constructor(DOMString type, optional ExtendableMessageEventInit eventInitDict = {});\n  readonly attribute any data;\n  readonly attribute USVString origin;\n  readonly attribute DOMString lastEventId;\n  [SameObject] readonly attribute (Client or ServiceWorker or MessagePort)? source;\n  readonly attribute FrozenArray<MessagePort> ports;\n};",
+        "type": "interface",
+        "name": "ExtendableMessageEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ExtendableMessageEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-extendablemessageevent"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-data"
+          },
+          {
+            "type": "attribute",
+            "name": "origin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-origin"
+          },
+          {
+            "type": "attribute",
+            "name": "lastEventId",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-lasteventid"
+          },
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Client"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ServiceWorker"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MessagePort"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-source"
+          },
+          {
+            "type": "attribute",
+            "name": "ports",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MessagePort"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-ports"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#extendablemessageevent"
+      },
+      "ExtendableMessageEventInit": {
+        "fragment": "dictionary ExtendableMessageEventInit : ExtendableEventInit {\n  any data = null;\n  USVString origin = \"\";\n  DOMString lastEventId = \"\";\n  (Client or ServiceWorker or MessagePort)? source = null;\n  sequence<MessagePort> ports = [];\n};",
+        "type": "dictionary",
+        "name": "ExtendableMessageEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageeventinit-data"
+          },
+          {
+            "type": "field",
+            "name": "origin",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageeventinit-origin"
+          },
+          {
+            "type": "field",
+            "name": "lastEventId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageeventinit-lasteventid"
+          },
+          {
+            "type": "field",
+            "name": "source",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Client"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ServiceWorker"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MessagePort"
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageeventinit-source"
+          },
+          {
+            "type": "field",
+            "name": "ports",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MessagePort"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-extendablemessageeventinit-ports"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-extendablemessageeventinit"
+      },
+      "Cache": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface Cache {\n  [NewObject] Promise<(Response or undefined)> match(RequestInfo request, optional CacheQueryOptions options = {});\n  [NewObject] Promise<FrozenArray<Response>> matchAll(optional RequestInfo request, optional CacheQueryOptions options = {});\n  [NewObject] Promise<undefined> add(RequestInfo request);\n  [NewObject] Promise<undefined> addAll(sequence<RequestInfo> requests);\n  [NewObject] Promise<undefined> put(RequestInfo request, Response response);\n  [NewObject] Promise<boolean> delete(RequestInfo request, optional CacheQueryOptions options = {});\n  [NewObject] Promise<FrozenArray<Request>> keys(optional RequestInfo request, optional CacheQueryOptions options = {});\n};",
+        "type": "interface",
+        "name": "Cache",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "match",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Response"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-match"
+          },
+          {
+            "type": "operation",
+            "name": "matchAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "FrozenArray",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Response"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-matchall"
+          },
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-add"
+          },
+          {
+            "type": "operation",
+            "name": "addAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "requests",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "RequestInfo"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-addall"
+          },
+          {
+            "type": "operation",
+            "name": "put",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "response",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Response"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-put"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-delete"
+          },
+          {
+            "type": "operation",
+            "name": "keys",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "FrozenArray",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Request"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cache-keys"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#cache"
+      },
+      "CacheQueryOptions": {
+        "fragment": "dictionary CacheQueryOptions {\n  boolean ignoreSearch = false;\n  boolean ignoreMethod = false;\n  boolean ignoreVary = false;\n};",
+        "type": "dictionary",
+        "name": "CacheQueryOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "ignoreSearch",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachequeryoptions-ignoresearch"
+          },
+          {
+            "type": "field",
+            "name": "ignoreMethod",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachequeryoptions-ignoremethod"
+          },
+          {
+            "type": "field",
+            "name": "ignoreVary",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachequeryoptions-ignorevary"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-cachequeryoptions"
+      },
+      "CacheStorage": {
+        "fragment": "[SecureContext, Exposed=(Window,Worker)]\ninterface CacheStorage {\n  [NewObject] Promise<(Response or undefined)> match(RequestInfo request, optional MultiCacheQueryOptions options = {});\n  [NewObject] Promise<boolean> has(DOMString cacheName);\n  [NewObject] Promise<Cache> open(DOMString cacheName);\n  [NewObject] Promise<boolean> delete(DOMString cacheName);\n  [NewObject] Promise<sequence<DOMString>> keys();\n};",
+        "type": "interface",
+        "name": "CacheStorage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "match",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Response"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "request",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MultiCacheQueryOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachestorage-match"
+          },
+          {
+            "type": "operation",
+            "name": "has",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "cacheName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachestorage-has"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Cache"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "cacheName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachestorage-open"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "cacheName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachestorage-delete"
+          },
+          {
+            "type": "operation",
+            "name": "keys",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/ServiceWorker/#dom-cachestorage-keys"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#cachestorage"
+      },
+      "MultiCacheQueryOptions": {
+        "fragment": "dictionary MultiCacheQueryOptions : CacheQueryOptions {\n  DOMString cacheName;\n};",
+        "type": "dictionary",
+        "name": "MultiCacheQueryOptions",
+        "inheritance": "CacheQueryOptions",
+        "members": [
+          {
+            "type": "field",
+            "name": "cacheName",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/ServiceWorker/#dom-multicachequeryoptions-cachename"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/ServiceWorker/#dictdef-multicachequeryoptions"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorker": [
+        {
+          "fragment": "ServiceWorker includes AbstractWorker;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "ServiceWorker",
+          "includes": "AbstractWorker"
+        }
+      ],
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext, SameObject] readonly attribute ServiceWorkerContainer serviceWorker;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "serviceWorker",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ServiceWorkerContainer"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/ServiceWorker/#navigator-service-worker-attribute"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "partial interface WorkerNavigator {\n  [SecureContext, SameObject] readonly attribute ServiceWorkerContainer serviceWorker;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "serviceWorker",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ServiceWorkerContainer"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/ServiceWorker/#navigator-service-worker-attribute"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [SecureContext, SameObject] readonly attribute CacheStorage caches;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "caches",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CacheStorage"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/ServiceWorker/#global-caches-attribute"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {
+      "Worker": [
+        "ServiceWorkerGlobalScope"
+      ],
+      "ServiceWorker": [
+        "ServiceWorkerGlobalScope"
+      ]
+    },
+    "exposed": {
+      "Window": [
+        "ServiceWorker",
+        "ServiceWorkerRegistration",
+        "ServiceWorkerContainer",
+        "NavigationPreloadManager",
+        "Cache",
+        "CacheStorage"
+      ],
+      "Worker": [
+        "ServiceWorker",
+        "ServiceWorkerRegistration",
+        "ServiceWorkerContainer",
+        "NavigationPreloadManager",
+        "Cache",
+        "CacheStorage"
+      ],
+      "ServiceWorker": [
+        "ServiceWorkerGlobalScope",
+        "Client",
+        "WindowClient",
+        "Clients",
+        "ExtendableEvent",
+        "InstallEvent",
+        "FetchEvent",
+        "ExtendableMessageEvent"
+      ]
+    },
+    "dependencies": {
+      "ServiceWorker": [
+        "EventTarget",
+        "ServiceWorkerState",
+        "StructuredSerializeOptions",
+        "EventHandler",
+        "AbstractWorker"
+      ],
+      "ServiceWorkerRegistration": [
+        "EventTarget",
+        "ServiceWorker",
+        "NavigationPreloadManager",
+        "ServiceWorkerUpdateViaCache",
+        "ServiceWorkerRegistration",
+        "EventHandler"
+      ],
+      "Navigator": [
+        "ServiceWorkerContainer"
+      ],
+      "WorkerNavigator": [
+        "ServiceWorkerContainer"
+      ],
+      "ServiceWorkerContainer": [
+        "EventTarget",
+        "ServiceWorker",
+        "ServiceWorkerRegistration",
+        "TrustedScriptURL",
+        "RegistrationOptions",
+        "EventHandler"
+      ],
+      "RegistrationOptions": [
+        "WorkerType",
+        "ServiceWorkerUpdateViaCache"
+      ],
+      "NavigationPreloadManager": [
+        "NavigationPreloadState"
+      ],
+      "NavigationPreloadState": [],
+      "ServiceWorkerGlobalScope": [
+        "WorkerGlobalScope",
+        "Clients",
+        "ServiceWorkerRegistration",
+        "ServiceWorker",
+        "EventHandler"
+      ],
+      "Client": [
+        "FrameType",
+        "ClientType",
+        "StructuredSerializeOptions"
+      ],
+      "WindowClient": [
+        "Client",
+        "DocumentVisibilityState",
+        "WindowClient"
+      ],
+      "Clients": [
+        "Client",
+        "ClientQueryOptions",
+        "WindowClient"
+      ],
+      "ClientQueryOptions": [
+        "ClientType"
+      ],
+      "ExtendableEvent": [
+        "Event",
+        "ExtendableEventInit"
+      ],
+      "ExtendableEventInit": [
+        "EventInit"
+      ],
+      "InstallEvent": [
+        "ExtendableEvent",
+        "ExtendableEventInit",
+        "RouterRule"
+      ],
+      "RouterRule": [
+        "RouterCondition",
+        "RouterSource"
+      ],
+      "RouterCondition": [
+        "URLPatternCompatible",
+        "RequestMode",
+        "RequestDestination",
+        "RunningStatus",
+        "RouterCondition"
+      ],
+      "RouterSourceDict": [],
+      "FetchEvent": [
+        "ExtendableEvent",
+        "FetchEventInit",
+        "Request",
+        "Response"
+      ],
+      "FetchEventInit": [
+        "ExtendableEventInit",
+        "Request"
+      ],
+      "ExtendableMessageEvent": [
+        "ExtendableEvent",
+        "ExtendableMessageEventInit",
+        "Client",
+        "ServiceWorker",
+        "MessagePort"
+      ],
+      "ExtendableMessageEventInit": [
+        "ExtendableEventInit",
+        "Client",
+        "ServiceWorker",
+        "MessagePort"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "CacheStorage"
+      ],
+      "Cache": [
+        "Response",
+        "RequestInfo",
+        "CacheQueryOptions",
+        "Request"
+      ],
+      "CacheQueryOptions": [],
+      "CacheStorage": [
+        "Response",
+        "RequestInfo",
+        "MultiCacheQueryOptions",
+        "Cache"
+      ],
+      "MultiCacheQueryOptions": [
+        "CacheQueryOptions"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "StructuredSerializeOptions",
+      "EventHandler",
+      "Navigator",
+      "WorkerNavigator",
+      "TrustedScriptURL",
+      "WorkerType",
+      "WorkerGlobalScope",
+      "DocumentVisibilityState",
+      "Event",
+      "EventInit",
+      "URLPatternCompatible",
+      "RequestMode",
+      "RequestDestination",
+      "Request",
+      "Response",
+      "MessagePort",
+      "WindowOrWorkerGlobalScope",
+      "RequestInfo"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

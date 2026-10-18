@@ -1,0 +1,1911 @@
+{
+  "spec": {
+    "title": "CSS Fonts Module Level 4",
+    "url": "https://drafts.csswg.org/css-fonts-4/"
+  },
+  "properties": [
+    {
+      "name": "font-family",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-family",
+      "value": "[ <font-family-name> | <generic-font-family> ]#",
+      "initial": "depends on user agent",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "list, each item a string and/or <generic-font-family> keywords",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "math",
+          "prose": "This font family is intended for use with mathematical expressions. Such fonts may include additional data (for example, the OpenType MATH table) to help with the hierarchical process of equation layout. In particular, they may contain stylistic and stretching glyph variants useful in setting mathematical equations.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-math",
+          "type": "value",
+          "value": "math"
+        }
+      ],
+      "styleDeclaration": [
+        "font-family",
+        "fontFamily"
+      ]
+    },
+    {
+      "name": "font-weight",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-weight",
+      "value": "<font-weight-absolute> | bolder | lighter",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "a number, see below",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<number [1,1000]>",
+          "prose": "Each number indicates a weight that is at least as dark as its predecessor. Only values greater than or equal to 1, and less than or equal to 1000, are valid, and all other values are invalid. Numeric values typically correspond to the commonly used weight names below. 100 - Thin 200 - Extra Light (Ultra Light) 300 - Light 400 - Normal 500 - Medium 600 - Semi Bold (Demi Bold) 700 - Bold 800 - Extra Bold (Ultra Bold) 900 - Black (Heavy)",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-weight-number-1-1000",
+          "type": "value",
+          "value": "<number [1,1000]>"
+        },
+        {
+          "name": "normal",
+          "prose": "Same as 400.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-weight-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "bold",
+          "prose": "Same as 700.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-weight-bold",
+          "type": "value",
+          "value": "bold"
+        },
+        {
+          "name": "bolder",
+          "prose": "Specifies a bolder weight than the inherited value. See § 2.2.1 Relative Weights.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-weight-bolder",
+          "type": "value",
+          "value": "bolder"
+        },
+        {
+          "name": "lighter",
+          "prose": "Specifies a lighter weight than the inherited value. See § 2.2.1 Relative Weights.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-weight-lighter",
+          "type": "value",
+          "value": "lighter"
+        }
+      ],
+      "styleDeclaration": [
+        "font-weight",
+        "fontWeight"
+      ]
+    },
+    {
+      "name": "font-width",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-width",
+      "value": "normal | <percentage [0,∞]> | ultra-condensed | extra-condensed | condensed | semi-condensed | semi-expanded | expanded | extra-expanded | ultra-expanded",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "Not resolved",
+      "computedValue": "a percentage, see below",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "ultra-condensed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-ultra-condensed",
+          "type": "value",
+          "value": "ultra-condensed"
+        },
+        {
+          "name": "extra-condensed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-extra-condensed",
+          "type": "value",
+          "value": "extra-condensed"
+        },
+        {
+          "name": "condensed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-condensed",
+          "type": "value",
+          "value": "condensed"
+        },
+        {
+          "name": "semi-condensed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-semi-condensed",
+          "type": "value",
+          "value": "semi-condensed"
+        },
+        {
+          "name": "normal",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "semi-expanded",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-semi-expanded",
+          "type": "value",
+          "value": "semi-expanded"
+        },
+        {
+          "name": "expanded",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-expanded",
+          "type": "value",
+          "value": "expanded"
+        },
+        {
+          "name": "extra-expanded",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-extra-expanded",
+          "type": "value",
+          "value": "extra-expanded"
+        },
+        {
+          "name": "ultra-expanded",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-ultra-expanded",
+          "type": "value",
+          "value": "ultra-expanded"
+        },
+        {
+          "name": "<percentage [0,∞]>",
+          "prose": "<percentage [0,∞]> values represent the fractional width of the glyphs, with 100% representing “normal” glyph widths (as defined by the font designer). Values less than 0% are invalid.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-width-percentage-0",
+          "type": "value",
+          "value": "<percentage [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "font-width",
+        "fontWidth"
+      ]
+    },
+    {
+      "name": "font-style",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-style",
+      "value": "normal | italic | left | right | oblique <angle [-90deg,90deg]>?",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword specified, plus angle in degrees if specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type; normal animates as oblique 0deg",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Matches against a face that is classified as a normal face, one that is neither italic or obliqued. This represents an oblique value of \"0\".",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-style-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "italic",
+          "prose": "Matches against a font that is labeled as an italic face, or an oblique face if one does not exist. The angle and direction of slant is unspecified.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-style-italic",
+          "type": "value",
+          "value": "italic"
+        },
+        {
+          "name": "left",
+          "prose": "Matches against a font that is labeled as an italic face, with a positive (clockwise) slant; or an oblique face with positive slant, if one does not exist.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-style-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Matches against a font that is labeled as an italic face, with a negative (counter-clockwise) slant; or an oblique face with negative slant, if one does not exist.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-style-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "oblique <angle [-90deg,90deg]>?",
+          "prose": "Controls matching against an oblique face. Positive angles represent a clockwise slant; negative angles represent a counter-clockwise slant. The lack of an <angle> represents 14deg. (Note that a font might internally provide its own mapping for \"oblique\", but the mapping within the font is disregarded.) Fractional and negative values are accepted; however, values less than -90deg or values greater than 90deg are invalid. If no oblique faces exist, and font-synthesis-style has the value auto, a synthetic oblique face will be generated.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-style-oblique-angle--90deg-90deg",
+          "type": "value",
+          "value": "oblique <angle [-90deg,90deg]>?"
+        }
+      ],
+      "styleDeclaration": [
+        "font-style",
+        "fontStyle"
+      ]
+    },
+    {
+      "name": "font-size",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-size",
+      "value": "<absolute-size> | <relative-size> | <length-percentage [0,∞]> | math",
+      "initial": "medium",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "refer to parent element’s font size",
+      "computedValue": "an absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "A length value specifies an absolute font size (independent of the user agent’s font table). Negative lengths are invalid. A percentage value specifies an absolute font size relative to the parent element’s computed font-size. Negative percentages are invalid.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-size-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "math",
+          "prose": "Special mathematical scaling rules must be applied when determining the computed value of the font-size property.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-size-math",
+          "type": "value",
+          "value": "math"
+        }
+      ],
+      "styleDeclaration": [
+        "font-size",
+        "fontSize"
+      ]
+    },
+    {
+      "name": "font-size-adjust",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-size-adjust",
+      "value": "none | <number [0,∞]>",
+      "initial": "none",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "a number or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Do not preserve the font’s x-height.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-size-adjust-none-value",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "Specifies the aspect value used in the calculation below to calculate the adjusted font size: c = ( a / a' ) s where: s = font-size value a = aspect value as specified by the 'font-size-adjust' property a' = aspect value of actual font c = adjusted font-size to use Negative values are invalid. This value applies to any font that is selected but in typical usage it should be based on the aspect value of the first font in the font-family list. If this is specified accurately, the (a/a') term in the formula above is effectively 1 for the first font and no adjustment occurs. If the value is specified inaccurately, text rendered using the first font in the family list will display differently in older user agents that don’t support font-size-adjust.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#aspect-ratio-value",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "font-size-adjust",
+        "fontSizeAdjust"
+      ]
+    },
+    {
+      "name": "font",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font",
+      "value": "[ [ <'font-style'> || <font-variant-css2> || <'font-weight'> || <font-width-css3> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'># ] | <system-font-family-name>",
+      "initial": "see individual properties",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "values": [
+        {
+          "name": "caption",
+          "prose": "The font used for captioned controls (e.g., buttons, drop-downs, etc.).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-caption",
+          "type": "value",
+          "value": "caption"
+        },
+        {
+          "name": "icon",
+          "prose": "The font used to label icons.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-icon",
+          "type": "value",
+          "value": "icon"
+        },
+        {
+          "name": "menu",
+          "prose": "The font used in menus (e.g., dropdown menus and menu lists).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-menu",
+          "type": "value",
+          "value": "menu"
+        },
+        {
+          "name": "message-box",
+          "prose": "The font used in dialog boxes.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-message-box",
+          "type": "value",
+          "value": "message-box"
+        },
+        {
+          "name": "small-caption",
+          "prose": "The font used for labeling small controls.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-small-caption",
+          "type": "value",
+          "value": "small-caption"
+        },
+        {
+          "name": "status-bar",
+          "prose": "The font used in window status bars.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-status-bar",
+          "type": "value",
+          "value": "status-bar"
+        }
+      ],
+      "styleDeclaration": [
+        "font"
+      ],
+      "longhands": [
+        "font-style",
+        "font-variant",
+        "font-weight",
+        "font-stretch",
+        "font-size",
+        "line-height",
+        "font-family"
+      ],
+      "resetLonghands": [
+        "font-feature-settings",
+        "font-kerning",
+        "font-language-override",
+        "font-optical-sizing",
+        "font-size-adjust",
+        "font-variation-settings"
+      ]
+    },
+    {
+      "name": "font-synthesis-weight",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-synthesis-weight",
+      "value": "auto | none",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Synthesis of bold faces is allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-weight-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Synthesis of bold faces is not allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-weight-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-synthesis-weight",
+        "fontSynthesisWeight"
+      ]
+    },
+    {
+      "name": "font-synthesis-style",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-synthesis-style",
+      "value": "auto | none | oblique-only",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Synthesis of oblique faces is allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-style-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Synthesis of oblique faces is not allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-style-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "oblique-only",
+          "prose": "Synthesis of oblique faces is allowed, but they must not be used as fallback if italic is specified",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-style-oblique-only",
+          "type": "value",
+          "value": "oblique-only"
+        }
+      ],
+      "styleDeclaration": [
+        "font-synthesis-style",
+        "fontSynthesisStyle"
+      ]
+    },
+    {
+      "name": "font-synthesis-small-caps",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-synthesis-small-caps",
+      "value": "auto | none",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Synthesis of small caps faces is allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-small-caps-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Synthesis of small caps faces is not allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-small-caps-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-synthesis-small-caps",
+        "fontSynthesisSmallCaps"
+      ]
+    },
+    {
+      "name": "font-synthesis-position",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-synthesis-position",
+      "value": "auto | none",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Synthesis of superscript and subscript forms is required",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-position-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "Synthesis of superscript and subscript forms is not allowed",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-synthesis-position-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-synthesis-position",
+        "fontSynthesisPosition"
+      ]
+    },
+    {
+      "name": "font-synthesis",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-synthesis",
+      "value": "none | [ weight || style || small-caps || position]",
+      "initial": "weight style small-caps position",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "font-synthesis",
+        "fontSynthesis"
+      ],
+      "longhands": [
+        "font-synthesis-weight",
+        "font-synthesis-style",
+        "font-synthesis-small-caps"
+      ]
+    },
+    {
+      "name": "font-kerning",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-kerning",
+      "value": "auto | normal | none",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Specifies that kerning is applied at the discretion of the user agent",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-kerning-auto-value",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "normal",
+          "prose": "Specifies that kerning is applied",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-kerning-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "none",
+          "prose": "Specifies that kerning is not applied",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-kerning-none-value",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-kerning",
+        "fontKerning"
+      ]
+    },
+    {
+      "name": "font-variant-ligatures",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-ligatures",
+      "value": "normal | none | [ <common-lig-values> || <discretionary-lig-values> || <historical-lig-values> || <contextual-alt-values> ]",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "A value of normal specifies that common default features are enabled, as described in detail in the next section. For OpenType fonts, common ligatures and contextual forms are on by default, discretionary and historical ligatures are not.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-ligatures-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "none",
+          "prose": "Specifies that all types of ligatures and contextual forms covered by this property are explicitly disabled. In situations where ligatures are not considered necessary, this may improve the speed of text rendering.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-ligatures-none-value",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "common-ligatures",
+          "prose": "Enables display of common ligatures (OpenType features: liga, clig). For OpenType fonts, common ligatures are enabled by default.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-common-ligatures",
+          "type": "value",
+          "value": "common-ligatures"
+        },
+        {
+          "name": "no-common-ligatures",
+          "prose": "Disables display of common ligatures (OpenType features: liga, clig).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-no-common-ligatures",
+          "type": "value",
+          "value": "no-common-ligatures"
+        },
+        {
+          "name": "discretionary-ligatures",
+          "prose": "Enables display of discretionary ligatures (OpenType feature: dlig). Which ligatures are discretionary or optional is decided by the type designer, so authors will need to refer to the documentation of a given font to understand which ligatures are considered discretionary.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-discretionary-ligatures",
+          "type": "value",
+          "value": "discretionary-ligatures"
+        },
+        {
+          "name": "no-discretionary-ligatures",
+          "prose": "Disables display of discretionary ligatures (OpenType feature: dlig).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-no-discretionary-ligatures",
+          "type": "value",
+          "value": "no-discretionary-ligatures"
+        },
+        {
+          "name": "historical-ligatures",
+          "prose": "Enables display of historical ligatures (OpenType feature: hlig).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-historical-ligatures",
+          "type": "value",
+          "value": "historical-ligatures"
+        },
+        {
+          "name": "no-historical-ligatures",
+          "prose": "Disables display of historical ligatures (OpenType feature: hlig).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-no-historical-ligatures",
+          "type": "value",
+          "value": "no-historical-ligatures"
+        },
+        {
+          "name": "contextual",
+          "prose": "Enables display of contextual alternates (OpenType feature: calt). Although not strictly a ligature feature, like ligatures this feature is commonly used to harmonize the shapes of glyphs with the surrounding context. For OpenType fonts, this feature is on by default.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-contextual",
+          "type": "value",
+          "value": "contextual"
+        },
+        {
+          "name": "no-contextual",
+          "prose": "Disables display of contextual alternates (OpenType feature: calt).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-ligatures-no-contextual",
+          "type": "value",
+          "value": "no-contextual"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-ligatures",
+        "fontVariantLigatures"
+      ]
+    },
+    {
+      "name": "font-variant-position",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-position",
+      "value": "normal | sub | super",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "None of the features listed below are enabled.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-position-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "sub",
+          "prose": "Enables display of subscript variants (OpenType feature: subs).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-position-sub",
+          "type": "value",
+          "value": "sub"
+        },
+        {
+          "name": "super",
+          "prose": "Enables display of superscript variants (OpenType feature: sups).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-position-super",
+          "type": "value",
+          "value": "super"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-position",
+        "fontVariantPosition"
+      ]
+    },
+    {
+      "name": "font-variant-caps",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-caps",
+      "value": "normal | small-caps | all-small-caps | petite-caps | all-petite-caps | unicase | titling-caps",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "None of the features listed below are enabled.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-caps-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "small-caps",
+          "prose": "Enables display of small capitals (OpenType feature: smcp). Small-caps glyphs typically use the form of uppercase letters but are reduced to the size of lowercase letters.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-small-caps",
+          "type": "value",
+          "value": "small-caps"
+        },
+        {
+          "name": "all-small-caps",
+          "prose": "Enables display of small capitals for both upper and lowercase letters (OpenType features: c2sc, smcp).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-all-small-caps",
+          "type": "value",
+          "value": "all-small-caps"
+        },
+        {
+          "name": "petite-caps",
+          "prose": "Enables display of petite capitals (OpenType feature: pcap).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-petite-caps",
+          "type": "value",
+          "value": "petite-caps"
+        },
+        {
+          "name": "all-petite-caps",
+          "prose": "Enables display of petite capitals for both upper and lowercase letters (OpenType features: c2pc, pcap).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-all-petite-caps",
+          "type": "value",
+          "value": "all-petite-caps"
+        },
+        {
+          "name": "unicase",
+          "prose": "Enables display of mixture of small capitals for uppercase letters with normal lowercase letters (OpenType feature: unic).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-unicase",
+          "type": "value",
+          "value": "unicase"
+        },
+        {
+          "name": "titling-caps",
+          "prose": "Enables display of titling capitals (OpenType feature: titl). Uppercase letter glyphs are often designed for use with lowercase letters. When used in all uppercase titling sequences they can appear too strong. Titling capitals are designed specifically for this situation.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-caps-titling-caps",
+          "type": "value",
+          "value": "titling-caps"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-caps",
+        "fontVariantCaps"
+      ]
+    },
+    {
+      "name": "font-variant-numeric",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-numeric",
+      "value": "normal | [ <numeric-figure-values> || <numeric-spacing-values> || <numeric-fraction-values> || ordinal || slashed-zero ]",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "None of the features listed below are enabled.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-numeric-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "lining-nums",
+          "prose": "Enables display of lining numerals (OpenType feature: lnum).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-lining-nums",
+          "type": "value",
+          "value": "lining-nums"
+        },
+        {
+          "name": "oldstyle-nums",
+          "prose": "Enables display of old-style numerals (OpenType feature: onum).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-oldstyle-nums",
+          "type": "value",
+          "value": "oldstyle-nums"
+        },
+        {
+          "name": "proportional-nums",
+          "prose": "Enables display of proportional numerals (OpenType feature: pnum).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-proportional-nums",
+          "type": "value",
+          "value": "proportional-nums"
+        },
+        {
+          "name": "tabular-nums",
+          "prose": "Enables display of tabular numerals (OpenType feature: tnum).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-tabular-nums",
+          "type": "value",
+          "value": "tabular-nums"
+        },
+        {
+          "name": "diagonal-fractions",
+          "prose": "Enables display of lining diagonal fractions (OpenType feature: frac).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-diagonal-fractions",
+          "type": "value",
+          "value": "diagonal-fractions"
+        },
+        {
+          "name": "stacked-fractions",
+          "prose": "Enables display of lining stacked fractions (OpenType feature: afrc).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-stacked-fractions",
+          "type": "value",
+          "value": "stacked-fractions"
+        },
+        {
+          "name": "ordinal",
+          "prose": "Enables display of letter forms used with ordinal numbers (OpenType feature: ordn).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-ordinal",
+          "type": "value",
+          "value": "ordinal"
+        },
+        {
+          "name": "slashed-zero",
+          "prose": "Enables display of slashed zeros (OpenType feature: zero).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-numeric-slashed-zero",
+          "type": "value",
+          "value": "slashed-zero"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-numeric",
+        "fontVariantNumeric"
+      ]
+    },
+    {
+      "name": "font-variant-alternates",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-alternates",
+      "value": "normal | [ stylistic(<font-feature-value-name>) || historical-forms || styleset(<font-feature-value-name>#) || character-variant(<font-feature-value-name>#) || swash(<font-feature-value-name>) || ornaments(<font-feature-value-name>) || annotation(<font-feature-value-name>) ]",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "None of the features listed below are enabled.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-alternates-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "historical-forms",
+          "prose": "Enables display of historical forms (OpenType feature: hist).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-alternates-historical-forms",
+          "type": "value",
+          "value": "historical-forms"
+        },
+        {
+          "name": "stylistic()",
+          "value": "stylistic()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#stylistic",
+          "type": "value"
+        },
+        {
+          "name": "styleset()",
+          "value": "styleset()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#styleset",
+          "type": "value"
+        },
+        {
+          "name": "character-variant()",
+          "value": "character-variant()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#character-variant",
+          "type": "value"
+        },
+        {
+          "name": "swash()",
+          "value": "swash()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#swash",
+          "type": "value"
+        },
+        {
+          "name": "ornaments()",
+          "value": "ornaments()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#ornaments",
+          "type": "value"
+        },
+        {
+          "name": "annotation()",
+          "value": "annotation()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#annotation",
+          "type": "value"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-alternates",
+        "fontVariantAlternates"
+      ]
+    },
+    {
+      "name": "font-variant-east-asian",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-east-asian",
+      "value": "normal | [ <east-asian-variant-values> || <east-asian-width-values> || ruby ]",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "None of the features listed below are enabled.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-east-asian-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "jis78",
+          "prose": "Enables rendering of JIS78 forms (OpenType feature: jp78).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-jis78",
+          "type": "value",
+          "value": "jis78"
+        },
+        {
+          "name": "jis83",
+          "prose": "Enables rendering of JIS83 forms (OpenType feature: jp83).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-jis83",
+          "type": "value",
+          "value": "jis83"
+        },
+        {
+          "name": "jis90",
+          "prose": "Enables rendering of JIS90 forms (OpenType feature: jp90).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-jis90",
+          "type": "value",
+          "value": "jis90"
+        },
+        {
+          "name": "jis04",
+          "prose": "Enables rendering of JIS2004 forms (OpenType feature: jp04). The various JIS variants reflect the glyph forms defined in different Japanese national standards. Fonts generally include glyphs defined by the most recent national standard, but it’s sometimes necessary to use older variants, to match signage for example.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-jis04",
+          "type": "value",
+          "value": "jis04"
+        },
+        {
+          "name": "simplified",
+          "prose": "Enables rendering of simplified forms (OpenType feature: smpl).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-simplified",
+          "type": "value",
+          "value": "simplified"
+        },
+        {
+          "name": "traditional",
+          "prose": "Enables rendering of traditional forms (OpenType feature: trad). The simplified and traditional values allow control over the glyph forms for characters which have been simplified over time but for which the older, traditional form is still used in some contexts. The exact set of characters and glyph forms will vary to some degree by the context for which a given font was designed.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-traditional",
+          "type": "value",
+          "value": "traditional"
+        },
+        {
+          "name": "full-width",
+          "prose": "Enables rendering of full-width variants (OpenType feature: fwid).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-full-width",
+          "type": "value",
+          "value": "full-width"
+        },
+        {
+          "name": "proportional-width",
+          "prose": "Enables rendering of proportionally-spaced variants (OpenType feature: pwid).",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-proportional-width",
+          "type": "value",
+          "value": "proportional-width"
+        },
+        {
+          "name": "ruby",
+          "prose": "Enables display of ruby variant glyphs (OpenType feature: ruby). Since ruby text is generally smaller than the associated body text, font designers can design special glyphs for use with ruby that are more readable than scaled down versions of the default glyphs. Only glyph selection is affected, there is no associated font scaling or other change that affects line layout. The red ruby text below is shown with default glyphs (top) and with ruby variant glyphs (bottom). Note the slight difference in stroke thickness.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-east-asian-ruby",
+          "type": "value",
+          "value": "ruby"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-east-asian",
+        "fontVariantEastAsian"
+      ]
+    },
+    {
+      "name": "font-variant",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant",
+      "value": "normal | none | [ [ <common-lig-values> || <discretionary-lig-values> || <historical-lig-values> || <contextual-alt-values> ] || [ small-caps | all-small-caps | petite-caps | all-petite-caps | unicase | titling-caps ] || [ stylistic(<font-feature-value-name>) || historical-forms || styleset(<font-feature-value-name>#) || character-variant(<font-feature-value-name>#) || swash(<font-feature-value-name>) || ornaments(<font-feature-value-name>) || annotation(<font-feature-value-name>) ] || [ <numeric-figure-values> || <numeric-spacing-values> || <numeric-fraction-values> || ordinal || slashed-zero ] || [ <east-asian-variant-values> || <east-asian-width-values> || ruby ] || [ sub | super ] || [ text | emoji | unicode ] ]",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The value normal resets all subproperties of font-variant to their initial value. The none value sets font-variant-ligatures to 'font-variant-ligatures/none' and resets all other font feature properties to their initial value. Like other shorthands, using font-variant resets unspecified font-variant subproperties to their initial values.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "none",
+          "prose": "The value normal resets all subproperties of font-variant to their initial value. The none value sets font-variant-ligatures to 'font-variant-ligatures/none' and resets all other font feature properties to their initial value. Like other shorthands, using font-variant resets unspecified font-variant subproperties to their initial values.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-none-value",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant",
+        "fontVariant"
+      ],
+      "longhands": [
+        "font-variant-ligatures",
+        "font-variant-caps",
+        "font-variant-alternates",
+        "font-variant-numeric",
+        "font-variant-east-asian",
+        "font-variant-position",
+        "font-variant-emoji"
+      ]
+    },
+    {
+      "name": "font-feature-settings",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-feature-settings",
+      "value": "normal | <feature-tag-value>#",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "A value of normal means that no change in glyph selection or positioning occurs due to this property.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-feature-settings-normal-value",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<feature-tag-value>",
+          "href": "https://drafts.csswg.org/css-fonts-4/#feature-tag-value",
+          "type": "type",
+          "value": "<opentype-tag> [ <integer [0,∞]> | on | off ]?",
+          "values": [
+            {
+              "name": "on",
+              "prose": "If present, a value indicates an index used for glyph selection. An <integer> value must be 0 or greater. A value of 0 indicates that the feature is disabled. For boolean features, a value of 1 enables the feature. For non-boolean features, a value of 1 or greater enables the feature and indicates the feature selection index. A value of on is synonymous with 1 and off is synonymous with 0. If the value is omitted, a value of 1 is assumed.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-feature-tag-value-on",
+              "type": "value",
+              "value": "on"
+            },
+            {
+              "name": "off",
+              "prose": "If present, a value indicates an index used for glyph selection. An <integer> value must be 0 or greater. A value of 0 indicates that the feature is disabled. For boolean features, a value of 1 enables the feature. For non-boolean features, a value of 1 or greater enables the feature and indicates the feature selection index. A value of on is synonymous with 1 and off is synonymous with 0. If the value is omitted, a value of 1 is assumed.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-feature-tag-value-off",
+              "type": "value",
+              "value": "off"
+            }
+          ]
+        }
+      ],
+      "styleDeclaration": [
+        "font-feature-settings",
+        "fontFeatureSettings"
+      ]
+    },
+    {
+      "name": "font-language-override",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-language-override",
+      "value": "normal | <string>",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified string or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "<string>",
+          "prose": "single four-character case-sensitive OpenType language system tag, specifies the OpenType language system to be used instead of the language system implied by the language of the element. If the string is shorter than four characters, it is padded at the end with space (U+0020) characters such that the length is 4, before being matched.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-language-override-string-value",
+          "type": "value",
+          "value": "<string>"
+        }
+      ],
+      "styleDeclaration": [
+        "font-language-override",
+        "fontLanguageOverride"
+      ]
+    },
+    {
+      "name": "font-optical-sizing",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-optical-sizing",
+      "value": "auto | none",
+      "initial": "auto",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The user agent may modify the shape of glyphs based on the font-size and the pixel density of the screen. For OpenType and TrueType fonts using font variations, this is often done by using the \"opsz\" font variation.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-optical-sizing-auto-value",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "none",
+          "prose": "The user agent must not modify the shape of glyphs for optical size.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#font-optical-sizing-none-value",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "font-optical-sizing",
+        "fontOpticalSizing"
+      ]
+    },
+    {
+      "name": "font-variation-settings",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variation-settings",
+      "value": "normal | [ <opentype-tag> <number> ]#",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword normal or a list, each item a string paired with a number",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "styleDeclaration": [
+        "font-variation-settings",
+        "fontVariationSettings"
+      ]
+    },
+    {
+      "name": "font-palette",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-palette",
+      "value": "normal | light | dark | <palette-identifier> | <palette-mix()>",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/a",
+      "computedValue": "specified keyword, identifier or <palette-mix()> function. <palette-mix()> must be simplified to a single keyword or identifier if resulting palette is equivalent.",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "If the color-scheme property is set to a value other than normal', user-agents should select the first light or dark palette as appropriate. Otherwise, user-agents display the color font with the default palette or default glyph colorisation. User-agents should take the computed value of the color property into consideration when a color font format requires use of the foreground color In the COLR [OPENTYPE] table, color index 0xFFFF should be rendered according the color property. For COLR/CPAL [OPENTYPE] fonts, font-palette: normal usually means rendering the font with the palette in the font at index 0.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-palette-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "light",
+          "prose": "Some color font formats include metadata marking certain palettes as applicable on a light (close to white) background. This keyword causes the user-agent to use the first available palette in the font file marked this way. If the font file format does not account for this metadata, or no palette in the font is marked this way, this value behaves as normal.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-palette-light",
+          "type": "value",
+          "value": "light"
+        },
+        {
+          "name": "dark",
+          "prose": "Some color font formats include metadata marking certain palettes as applicable on a dark (close to black) background. This keyword causes the user-agent to use the first available palette in the font file marked this way. If the font file format does not account for this metadata, or no palette in the font is marked this way, this value behaves as normal.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-palette-dark",
+          "type": "value",
+          "value": "dark"
+        },
+        {
+          "name": "<palette-identifier>",
+          "prose": "This value identifies an CSS-defined palette to use. Users can define a palette by using the @font-palette-values rule. If no applicable @font-palette-values rule is present, this value behaves as normal. <palette-identifier> is parsed as a <dashed-ident>.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#typedef-font-palette-palette-identifier",
+          "type": "type",
+          "value": "<dashed-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "font-palette",
+        "fontPalette"
+      ]
+    },
+    {
+      "name": "font-variant-emoji",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-emoji",
+      "value": "normal | text | emoji | unicode",
+      "initial": "normal",
+      "appliesTo": "all elements and text",
+      "inherited": "yes",
+      "percentages": "N/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "User agents can choose to draw a Emoji Presentation Participating Code Point in either emoji style or text style. User agents typically follow platform conventions when performing this decision.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-emoji-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "text",
+          "prose": "Code points are rendered as if U+FE0E VARIATION SELECTOR-15 was appended to every Emoji Presentation Participating Code Point.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-emoji-text",
+          "type": "value",
+          "value": "text"
+        },
+        {
+          "name": "emoji",
+          "prose": "Code points are rendered as if U+FE0F VARIATION SELECTOR-16 was appended to every Emoji Presentation Participating Code Point.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-emoji-emoji",
+          "type": "value",
+          "value": "emoji"
+        },
+        {
+          "name": "unicode",
+          "prose": "Code points are rendered in accordance with [UTS51] as either emoji-default, text-default, or text-only, depending on the values of the Emoji and Emoji_Presentation properties for each Emoji Presentation Participating Code Point. If present, FE0E VARIATION SELECTOR-15 and U+FE0F VARIATION SELECTOR-16 will override the default presentation of individual Emoji Presentation Participating Code Points.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-variant-emoji-unicode",
+          "type": "value",
+          "value": "unicode"
+        }
+      ],
+      "styleDeclaration": [
+        "font-variant-emoji",
+        "fontVariantEmoji"
+      ]
+    },
+    {
+      "name": "font-stretch",
+      "href": "https://drafts.csswg.org/css-fonts-4/#propdef-font-stretch",
+      "legacyAliasOf": "font-width",
+      "styleDeclaration": [
+        "font-stretch",
+        "fontStretch"
+      ],
+      "value": "normal | <percentage [0,∞]> | ultra-condensed | extra-condensed | condensed | semi-condensed | semi-expanded | expanded | extra-expanded | ultra-expanded"
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@font-face",
+      "href": "https://drafts.csswg.org/css-fonts-4/#at-font-face-rule",
+      "descriptors": [
+        {
+          "name": "font-family",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-family",
+          "for": "@font-face",
+          "value": "<font-family-name>",
+          "initial": "N/A"
+        },
+        {
+          "name": "src",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-src",
+          "for": "@font-face",
+          "value": "<font-src-list>",
+          "initial": "N/A",
+          "values": [
+            {
+              "name": "format()",
+              "value": "format()",
+              "href": "https://drafts.csswg.org/css-fonts-4/#format()",
+              "type": "value"
+            },
+            {
+              "name": "tech()",
+              "value": "tech()",
+              "href": "https://drafts.csswg.org/css-fonts-4/#tech()",
+              "type": "value"
+            },
+            {
+              "name": "local()",
+              "value": "local()",
+              "href": "https://drafts.csswg.org/css-fonts-4/#local()",
+              "type": "value"
+            }
+          ]
+        },
+        {
+          "name": "font-style",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-style",
+          "for": "@font-face",
+          "value": "auto | normal | italic | left | right | oblique [ <angle [-90deg,90deg]>{1,2} ]?",
+          "initial": "auto"
+        },
+        {
+          "name": "font-weight",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-weight",
+          "for": "@font-face",
+          "value": "auto | <font-weight-absolute>{1,2}",
+          "initial": "auto"
+        },
+        {
+          "name": "font-width",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-width",
+          "for": "@font-face",
+          "value": "auto | <'font-width'>{1,2}",
+          "initial": "auto"
+        },
+        {
+          "name": "unicode-range",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-unicode-range",
+          "for": "@font-face",
+          "value": "<unicode-range-token>#",
+          "initial": "U+0-10FFFF"
+        },
+        {
+          "name": "font-feature-settings",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-feature-settings",
+          "for": "@font-face",
+          "value": "normal | <feature-tag-value>#",
+          "initial": "normal"
+        },
+        {
+          "name": "font-variation-settings",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-variation-settings",
+          "for": "@font-face",
+          "value": "normal | [ <string> <number>]#",
+          "initial": "normal"
+        },
+        {
+          "name": "font-named-instance",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-named-instance",
+          "for": "@font-face",
+          "value": "auto | <string>",
+          "initial": "auto"
+        },
+        {
+          "name": "font-display",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-display",
+          "for": "@font-face",
+          "value": "auto | block | swap | fallback | optional",
+          "initial": "auto",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "The font display policy is user-agent-defined.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-face-font-display-auto",
+              "type": "value",
+              "value": "auto"
+            },
+            {
+              "name": "block",
+              "prose": "Gives the font face a short block period (3s is recommended in most cases) and an infinite swap period. This value must only be used when rendering text in a particular font is required for the page to be usable. It must only be used for small pieces of text. For example, badly designed \"icon fonts\" might associate a \"⎙\" (printer) icon with an unrelated character like \"P\", so if the text is displayed with a fallback font instead there will be confusing letters scattered around the page rather than the desired icon. In this case, temporary blank spots are better than using a fallback font. (However, the fallback font is used eventually, as having confusing letters scattered around the page is better than having links and such never show up at all.) A better solution is described in the Accessibility Considerations section.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-face-font-display-block",
+              "type": "value",
+              "value": "block"
+            },
+            {
+              "name": "swap",
+              "prose": "Gives the font face an extremely small block period (100ms or less is recommended in most cases) and an infinite swap period. This value should only be used when rendering text in a particular font is very important for the page, but rendering in any font will still get a correct message across. It should only be used for small pieces of text. For example, if a website has a custom font for rendering their logo, rendering that logo correctly is fairly important for branding purposes, but displaying the logo in any font will at least get the point across without confusion.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-face-font-display-swap",
+              "type": "value",
+              "value": "swap"
+            },
+            {
+              "name": "fallback",
+              "prose": "Gives the font face an extremely small block period (100ms or less is recommended in most cases) and a short swap period (3s is recommended in most cases). This value should be used for body text, or any other text where the use of the chosen font is useful and desired, but it’s acceptable for the user to see the text in a fallback font. This value is appropriate to use for large pieces of text. For example, in large pieces of body text, it’s most important just to get the text rendered quickly, so the user can begin to read as quickly as possible. Further, once the user has started reading, they shouldn’t be disturbed by the text suddenly \"shifting\" as a new font is swapped in, as that’s distracting and annoying to re-find where one was in the text.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-face-font-display-fallback",
+              "type": "value",
+              "value": "fallback"
+            },
+            {
+              "name": "optional",
+              "prose": "If the font can be loaded \"immediately\" (such that it’s available to be used for the \"first paint\" of the text), the font is used. Otherwise, the font is treated as if its block period and swap period both expired before it finished loading. If the font is not used due to this, the user agent may choose to abort the font download, or download it with a very low priority. If the user agent believes it would be useful for the user, it may avoid even starting the font download, and proceed immediately to using a fallback font. An optional font must never cause the layout of the page to \"jump\" as it loads in. A user agent may choose to slightly delay rendering an element using an optional font to give it time to load from a possibly-slow local cache, but once the text has been painted to the screen with a fallback font instead, it must not be rendered with the optional font for the rest of the page’s lifetime. This value should be used for body text, or any other text where the chosen font is purely a decorative \"nice-to-have\". It should be used anytime it is more important that the web page render quickly on first visit, than it is that the user wait a longer time to see everything perfect immediately. For example, body text is perfectly readable in one of the browser default fonts, though a downloadable font face might be more attractive and mesh with the site’s aesthetics better. First time visitors to a site generally care far more about the site being quickly usable than they do about the finer points of its display, and optional provides a good behavior for them. If they return later, the desired font faces might have finished downloading, giving them the \"intended\" experience without slowing down either their first or subsequent visits. Users on very slow connections might not ever receive the \"intended\" experience, but optional ensures they can actually use the site, rather than quitting and going elsewhere because the site takes too long to load.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-face-font-display-optional",
+              "type": "value",
+              "value": "optional"
+            }
+          ]
+        },
+        {
+          "name": "font-language-override",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-language-override",
+          "for": "@font-face",
+          "value": "normal | <string>",
+          "initial": "normal"
+        },
+        {
+          "name": "ascent-override",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-ascent-override",
+          "for": "@font-face",
+          "value": "normal | <percentage [0,∞]>",
+          "initial": "normal"
+        },
+        {
+          "name": "descent-override",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-descent-override",
+          "for": "@font-face",
+          "value": "normal | <percentage [0,∞]>",
+          "initial": "normal"
+        },
+        {
+          "name": "line-gap-override",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-face-line-gap-override",
+          "for": "@font-face",
+          "value": "normal | <percentage [0,∞]>",
+          "initial": "normal"
+        }
+      ],
+      "value": "@font-face { <declaration-list> }"
+    },
+    {
+      "name": "@font-feature-values",
+      "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values",
+      "descriptors": [
+        {
+          "name": "font-display",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-feature-values-font-display",
+          "for": "@font-feature-values",
+          "value": "auto | block | swap | fallback | optional",
+          "initial": "auto"
+        },
+        {
+          "name": "@stylistic",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-stylistic",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@stylistic { <declaration-list> }"
+        },
+        {
+          "name": "@historical-forms",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-historical-forms",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@historical-forms { <declaration-list> }"
+        },
+        {
+          "name": "@styleset",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-styleset",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@styleset { <declaration-list> }"
+        },
+        {
+          "name": "@character-variant",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-character-variant",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@character-variant { <declaration-list> }"
+        },
+        {
+          "name": "@swash",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-swash",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@swash { <declaration-list> }"
+        },
+        {
+          "name": "@ornaments",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-ornaments",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@ornaments { <declaration-list> }"
+        },
+        {
+          "name": "@annotation",
+          "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-feature-values-annotation",
+          "type": "at-rule",
+          "for": "@font-feature-values",
+          "value": "@annotation { <declaration-list> }"
+        }
+      ],
+      "value": "@font-feature-values <font-family-name># { <declaration-rule-list> }",
+      "values": [
+        {
+          "name": "<font-feature-value-type>",
+          "href": "https://drafts.csswg.org/css-fonts-4/#typedef-font-feature-values-font-feature-value-type",
+          "type": "type"
+        }
+      ]
+    },
+    {
+      "name": "@font-palette-values",
+      "prose": "The @font-palette-values rule defines a color palette and associates that color palette with a specific font. This allows a web author to select arbitrary <color>s to use inside a color font rather than being limited to the preexisting palettes inside font files.",
+      "href": "https://drafts.csswg.org/css-fonts-4/#at-ruledef-font-palette-values",
+      "descriptors": [
+        {
+          "name": "font-family",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-palette-values-font-family",
+          "for": "@font-palette-values",
+          "value": "<font-family-name>#",
+          "initial": "N/A"
+        },
+        {
+          "name": "base-palette",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-palette-values-base-palette",
+          "for": "@font-palette-values",
+          "value": "light | dark | <integer [0,∞]>",
+          "initial": "N/A",
+          "values": [
+            {
+              "name": "light",
+              "prose": "Some color font formats include metadata marking certain palettes as applicable on a light (close to white) background. This keyword identifies the first available palette in the font file marked this way. If the font file format does not account for this metadata, or no palette in the font is marked this way, this value behaves as 0.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-base-palette-light",
+              "type": "value",
+              "value": "light"
+            },
+            {
+              "name": "dark",
+              "prose": "Some color font formats include metadata marking certain palettes as applicable on a dark (close to black) background. This keyword identifies the first available palette in the font file marked this way. If the font file format does not account for this metadata, or no palette in the font is marked this way, this value behaves as 0.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-base-palette-dark",
+              "type": "value",
+              "value": "dark"
+            },
+            {
+              "name": "<integer [0,∞]>",
+              "prose": "Identifies a (zero-based) numerical palette index within the font.",
+              "href": "https://drafts.csswg.org/css-fonts-4/#valdef-base-palette-integer-0",
+              "type": "value",
+              "value": "<integer [0,∞]>"
+            }
+          ]
+        },
+        {
+          "name": "override-colors",
+          "href": "https://drafts.csswg.org/css-fonts-4/#descdef-font-palette-values-override-colors",
+          "for": "@font-palette-values",
+          "value": "[ <integer [0,∞]> <color> ]#",
+          "initial": "N/A"
+        }
+      ],
+      "value": "@font-palette-values <dashed-ident> { <declaration-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<font-family-name>",
+      "prose": "The name of a font family, such as Helvetica or Verdana in the previous example. This might be a locally-instaled font, or might be a web font.",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-family-name-value",
+      "type": "type",
+      "value": "<string> | <custom-ident>+"
+    },
+    {
+      "name": "<system-font-family-name>",
+      "prose": "A locally installed system font, whose use is subject to certain constraints. In particular, it may not be used with the font-family property, but can be used with the font shorthand. The following values refer to system fonts:",
+      "href": "https://drafts.csswg.org/css-fonts-4/#system-font-family-name-value",
+      "type": "type",
+      "value": "caption | icon | menu | message-box | small-caption | status-bar"
+    },
+    {
+      "name": "<generic-font-family>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-generic-font-family",
+      "type": "type",
+      "value": "<generic-font-script-specific>| <generic-font-complete> | <generic-font-incomplete>",
+      "values": [
+        {
+          "name": "serif",
+          "prose": "Serif fonts represent glyphs that have finishing strokes, flared or tapering ends, or have actual serifed endings (including slab serifs). Serif fonts are typically proportionately-spaced. They often display a greater variation between thick and thin strokes than fonts from the sans-serif generic font family. CSS uses the term \"serif\" to apply to a font for any script, although other names might be more familiar for particular scripts, such as Mincho (Japanese), Sung or Song (Chinese), Batang (Korean). For Arabic, the Naskh style would correspond to serif. serif must always map to at least one matched font face. Sample serif fonts",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-serif",
+          "type": "value",
+          "value": "serif"
+        },
+        {
+          "name": "sans-serif",
+          "prose": "Glyphs in sans-serif fonts, as the term is used in CSS, are generally low contrast (vertical and horizontal stems have the close to the same thickness) and have stroke endings that are plain (without any flaring, cross stroke, or other ornamentation). Sans-serif fonts are typically proportionately-spaced. They often have little variation between thick and thin strokes, compared to fonts from the serif family. CSS uses the term \"sans-serif\" to apply to a font for any script, although other names might be more familiar for particular scripts, such as Gothic (Japanese), Hei (Chinese), or Gulim (Korean). sans-serif must always map to at least one matched font face. Sample sans-serif fonts",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-sans-serif",
+          "type": "value",
+          "value": "sans-serif"
+        },
+        {
+          "name": "cursive",
+          "prose": "Glyphs in cursive fonts generally use a script style, and the result looks more like handwritten pen or brush writing than printed letterwork. CSS uses the term \"cursive\" to apply to a font for any script, although other names such as Chancery, Brush, Swing and Script are also used in font names. Sample cursive fonts",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-cursive",
+          "type": "value",
+          "value": "cursive"
+        },
+        {
+          "name": "fantasy",
+          "prose": "Fantasy fonts are primarily decorative or expressive fonts that contain decorative or expressive representations of characters. These do not include Pi or Picture fonts which do not represent actual characters. Sample fantasy fonts",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-fantasy",
+          "type": "value",
+          "value": "fantasy"
+        },
+        {
+          "name": "monospace",
+          "prose": "The sole criterion of a monospace font is that all glyphs have the same fixed width. This is often used to render samples of computer code. monospace must always map to at least one matched font face. Sample monospace fonts",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-monospace",
+          "type": "value",
+          "value": "monospace"
+        },
+        {
+          "name": "system-ui",
+          "prose": "This generic font family lets text render with the default user interface font (which, as with all § 2.1.5 Generic font families, may be a composite font) on the platform on which the UA is running. A cross-platform UA should use different fonts on its different supported platforms. The purpose of system-ui is to allow web content to integrate with the look and feel of the native OS. This is useful for hybrid, web or cross-platform applications. The precise font(s) used will depend on factors such as platform support, platform language, locale settings, user preferences, Unicode coverage and the content language. UA may optionally choose to use the text rendering engine provided by the platform when using system-ui to match the appearance of the default user interface more closely. As with other generic font families, the substitution of specific installed fonts for system-ui does not affect the computed style. <div id=\"system-text\" style=\"font-family: system-ui\"></div> ... window.getComputedStyle(document.getElementById(\"system-text\")).getPropertyValue(\"font-family\"); The script above should not have any knowledge of how system-ui is expanded to include a collection of system user interface fonts. In particular, the above script should yield a result of \"system-ui\" on every platform.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-system-ui",
+          "type": "value",
+          "value": "system-ui"
+        },
+        {
+          "name": "generic()",
+          "value": "generic()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-generic-fangsong",
+          "type": "value"
+        },
+        {
+          "name": "generic()",
+          "value": "generic()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-generic-kai",
+          "type": "value"
+        },
+        {
+          "name": "generic()",
+          "value": "generic()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-generic-khmer-mul",
+          "type": "value"
+        },
+        {
+          "name": "generic()",
+          "value": "generic()",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-generic-nastaliq",
+          "type": "value"
+        },
+        {
+          "name": "ui-serif",
+          "prose": "This font family is used for the serif variant of the system’s user interface. The purpose of ui-serif is to allow web content to integrate with the look and feel of the native OS. Sample ui-serif font on macOS Catalina and iOS 13: New York",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-ui-serif",
+          "type": "value",
+          "value": "ui-serif"
+        },
+        {
+          "name": "ui-sans-serif",
+          "prose": "This font family is used for the sans-serif variant of the system’s user interface. The purpose of ui-sans-serif is to allow web content to integrate with the look and feel of the native OS. Sample ui-sans-serif font on macOS Catalina and iOS 13: San Francisco",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-ui-sans-serif",
+          "type": "value",
+          "value": "ui-sans-serif"
+        },
+        {
+          "name": "ui-monospace",
+          "prose": "This font family is used for the monospaced variant of the system’s user interface. The purpose of ui-monospace is to allow web content to integrate with the look and feel of the native OS. Sample ui-monospace font on macOS Catalina and iOS 13: SF Mono",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-ui-monospace",
+          "type": "value",
+          "value": "ui-monospace"
+        },
+        {
+          "name": "ui-rounded",
+          "prose": "This font family is used for the rounded variant of the system’s user interface. The purpose of ui-rounded is to allow web content to integrate with the look and feel of the native OS. Sample ui-rounded font on macOS Catalina and iOS 13: SF Rounded",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-family-ui-rounded",
+          "type": "value",
+          "value": "ui-rounded"
+        }
+      ]
+    },
+    {
+      "name": "<generic-font-script-specific>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-generic-font-script-specific",
+      "type": "type",
+      "value": "generic(fangsong) | generic(kai) | generic(khmer-mul) | generic(nastaliq)"
+    },
+    {
+      "name": "<generic-font-complete>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-generic-font-complete",
+      "type": "type",
+      "value": "serif | sans-serif | system-ui | cursive | fantasy | math | monospace"
+    },
+    {
+      "name": "<generic-font-incomplete>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-generic-font-incomplete",
+      "type": "type",
+      "value": "ui-serif | ui-sans-serif | ui-monospace | ui-rounded"
+    },
+    {
+      "name": "<font-weight-absolute>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-weight-absolute-values",
+      "type": "type",
+      "value": "[ normal | bold | <number [1,1000]> ]"
+    },
+    {
+      "name": "<absolute-size>",
+      "value": "[ xx-small | x-small | small | medium | large | x-large | xx-large | xxx-large ]",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-absolute-size",
+      "type": "type"
+    },
+    {
+      "name": "<relative-size>",
+      "value": "[ larger | smaller ]",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-relative-size",
+      "type": "type"
+    },
+    {
+      "name": "<font-variant-css2>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-variant-css21-values",
+      "type": "type",
+      "value": "normal | small-caps"
+    },
+    {
+      "name": "<font-width-css3>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-width-css3-values",
+      "type": "type",
+      "value": "normal | ultra-condensed | extra-condensed | condensed | semi-condensed | semi-expanded | expanded | extra-expanded | ultra-expanded"
+    },
+    {
+      "name": "<font-src-list>",
+      "prose": "To parse a <font-src-list> production, parse a list of <font-src>s.",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-font-src-list",
+      "type": "type"
+    },
+    {
+      "name": "<font-src>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-font-src",
+      "type": "type",
+      "value": "<url> [ format( <font-format> ) ]? [ tech( <font-tech># ) ]? | local( <font-family-name> )"
+    },
+    {
+      "name": "<font-format>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-format-values",
+      "type": "type",
+      "value": "[ <string> | collection | embedded-opentype | opentype | svg | truetype | woff | woff2 ]"
+    },
+    {
+      "name": "<font-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-tech-values",
+      "type": "type",
+      "value": "[ <font-features-tech> | <color-font-tech> | variations | palettes | incremental ]",
+      "values": [
+        {
+          "name": "variations",
+          "prose": "The variations tech refers to the support of font variations, commonly implemented in [OPENTYPE] with the avar, cvar, fvar, gvar, HVAR, MVAR, STAT, and VVAR tables, as well as in [AAT-FEATURES] using the avar, cvar, fvar, gvar tables. The section on § 2 Basic Font Properties as well as the section on § 8 Font Variation Properties describe properties that interact with these facilities.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-tech-variations",
+          "type": "value",
+          "value": "variations"
+        },
+        {
+          "name": "palettes",
+          "prose": "The palettes tech refers to support for font palettes, commonly implemented in the [OPENTYPE] and [AAT-FEATURES] with the CPAL table. The section on § 9 Color Font Support describes properties that interact with these facilities.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-tech-palettes",
+          "type": "value",
+          "value": "palettes"
+        },
+        {
+          "name": "incremental",
+          "prose": "The incremental tech refers to client support for incremental font transfer [IFT].",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-tech-incremental",
+          "type": "value",
+          "value": "incremental"
+        }
+      ]
+    },
+    {
+      "name": "<font-features-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-features-tech-values",
+      "type": "type",
+      "value": "[ features-opentype | features-aat | features-graphite ]",
+      "values": [
+        {
+          "name": "features-opentype",
+          "prose": "The features-opentype, features-aat and features-graphite techs refer to support for font features, commonly implemented in [OPENTYPE] with the GSUB and the GPOS tables, as well as in [AAT-FEATURES] using the morx and kerx tables and [GRAPHITE] with the Silf, Glat , Gloc , Feat and Sill tables as documented in the Graphite Table Format. The section on § 6 Font Feature Properties describes properties that interact with these facilities.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-features-tech-features-opentype",
+          "type": "value",
+          "value": "features-opentype"
+        },
+        {
+          "name": "features-aat",
+          "prose": "The features-opentype, features-aat and features-graphite techs refer to support for font features, commonly implemented in [OPENTYPE] with the GSUB and the GPOS tables, as well as in [AAT-FEATURES] using the morx and kerx tables and [GRAPHITE] with the Silf, Glat , Gloc , Feat and Sill tables as documented in the Graphite Table Format. The section on § 6 Font Feature Properties describes properties that interact with these facilities.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-features-tech-features-aat",
+          "type": "value",
+          "value": "features-aat"
+        },
+        {
+          "name": "features-graphite",
+          "prose": "The features-opentype, features-aat and features-graphite techs refer to support for font features, commonly implemented in [OPENTYPE] with the GSUB and the GPOS tables, as well as in [AAT-FEATURES] using the morx and kerx tables and [GRAPHITE] with the Silf, Glat , Gloc , Feat and Sill tables as documented in the Graphite Table Format. The section on § 6 Font Feature Properties describes properties that interact with these facilities.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-font-features-tech-features-graphite",
+          "type": "value",
+          "value": "features-graphite"
+        }
+      ]
+    },
+    {
+      "name": "<color-font-tech>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#color-font-tech-values",
+      "type": "type",
+      "value": "[ color-COLRv0 | color-COLRv1 | color-SVG | color-sbix | color-CBDT ]",
+      "values": [
+        {
+          "name": "color-colrv0",
+          "prose": "The color-colrv0, color-colrv1, color-svg, color-sbix and color-cbdt technologies refers to various types of color font file technologies. Each one represents a table (COLR, SVG, sbix or CBDT) inside [OPENTYPE] or [AAT-FEATURES] fonts which must be supported to satisfy this requirement.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-color-font-tech-color-colrv0",
+          "type": "value",
+          "value": "color-colrv0"
+        },
+        {
+          "name": "color-colrv1",
+          "prose": "The color-colrv0, color-colrv1, color-svg, color-sbix and color-cbdt technologies refers to various types of color font file technologies. Each one represents a table (COLR, SVG, sbix or CBDT) inside [OPENTYPE] or [AAT-FEATURES] fonts which must be supported to satisfy this requirement.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-color-font-tech-color-colrv1",
+          "type": "value",
+          "value": "color-colrv1"
+        },
+        {
+          "name": "color-svg",
+          "prose": "The color-colrv0, color-colrv1, color-svg, color-sbix and color-cbdt technologies refers to various types of color font file technologies. Each one represents a table (COLR, SVG, sbix or CBDT) inside [OPENTYPE] or [AAT-FEATURES] fonts which must be supported to satisfy this requirement.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-color-font-tech-color-svg",
+          "type": "value",
+          "value": "color-svg"
+        },
+        {
+          "name": "color-sbix",
+          "prose": "The color-colrv0, color-colrv1, color-svg, color-sbix and color-cbdt technologies refers to various types of color font file technologies. Each one represents a table (COLR, SVG, sbix or CBDT) inside [OPENTYPE] or [AAT-FEATURES] fonts which must be supported to satisfy this requirement.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-color-font-tech-color-sbix",
+          "type": "value",
+          "value": "color-sbix"
+        },
+        {
+          "name": "color-cbdt",
+          "prose": "The color-colrv0, color-colrv1, color-svg, color-sbix and color-cbdt technologies refers to various types of color font file technologies. Each one represents a table (COLR, SVG, sbix or CBDT) inside [OPENTYPE] or [AAT-FEATURES] fonts which must be supported to satisfy this requirement.",
+          "href": "https://drafts.csswg.org/css-fonts-4/#valdef-color-font-tech-color-cbdt",
+          "type": "value",
+          "value": "color-cbdt"
+        }
+      ]
+    },
+    {
+      "name": "<common-lig-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#common-lig-values",
+      "type": "type",
+      "value": "[ common-ligatures | no-common-ligatures ]"
+    },
+    {
+      "name": "<discretionary-lig-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#discretionary-lig-values",
+      "type": "type",
+      "value": "[ discretionary-ligatures | no-discretionary-ligatures ]"
+    },
+    {
+      "name": "<historical-lig-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#historical-lig-values",
+      "type": "type",
+      "value": "[ historical-ligatures | no-historical-ligatures ]"
+    },
+    {
+      "name": "<contextual-alt-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#contextual-alt-values",
+      "type": "type",
+      "value": "[ contextual | no-contextual ]"
+    },
+    {
+      "name": "<numeric-figure-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#numeric-figure-values",
+      "type": "type",
+      "value": "[ lining-nums | oldstyle-nums ]"
+    },
+    {
+      "name": "<numeric-spacing-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#numeric-spacing-values",
+      "type": "type",
+      "value": "[ proportional-nums | tabular-nums ]"
+    },
+    {
+      "name": "<numeric-fraction-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#numeric-fraction-values",
+      "type": "type",
+      "value": "[ diagonal-fractions | stacked-fractions ]"
+    },
+    {
+      "name": "<font-feature-index>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-feature-index-value",
+      "type": "type",
+      "value": "<integer>"
+    },
+    {
+      "name": "<font-feature-value-name>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-feature-value-name-value",
+      "type": "type",
+      "value": "<ident>"
+    },
+    {
+      "name": "<east-asian-variant-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#east-asian-variant-values",
+      "type": "type",
+      "value": "[ jis78 | jis83 | jis90 | jis04 | simplified | traditional ]"
+    },
+    {
+      "name": "<east-asian-width-values>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#east-asian-width-values",
+      "type": "type",
+      "value": "[ full-width | proportional-width ]"
+    },
+    {
+      "name": "<opentype-tag>",
+      "href": "https://drafts.csswg.org/css-fonts-4/#typedef-opentype-tag",
+      "type": "type",
+      "value": "<string>"
+    },
+    {
+      "name": "palette-mix()",
+      "prose": "With the palette-mix() function defined as follows:",
+      "href": "https://drafts.csswg.org/css-fonts-4/#funcdef-palette-mix",
+      "type": "function",
+      "value": "palette-mix( <color-interpolation-method>? , [ <'font-palette'> && <percentage [0,100]>? ]# )"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "normal",
+      "prose": "specifies that when rendering with OpenType fonts, the content language of the element is used to infer the OpenType language system",
+      "href": "https://drafts.csswg.org/css-fonts-4/#font-language-override-normal-value",
+      "type": "value",
+      "value": "normal",
+      "for": "font-language override"
+    }
+  ]
+}

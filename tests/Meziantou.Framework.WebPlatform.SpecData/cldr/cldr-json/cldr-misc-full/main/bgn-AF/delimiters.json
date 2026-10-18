@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bgn-AF": {
+      "identity": {
+        "language": "bgn",
+        "territory": "AF"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,582 @@
+{
+  "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/bluetooth-default-permissions-policy.https.sub.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-click-handler.tentative.html": {
+    "total": 2,
+    "failures": {
+      "A click handler defined in a denied window cannot borrow the button owner's focus permission": "FAIL",
+      "A denied window can trigger focus through an allowed window's own click handler": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-default-permissions-policy.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "Default \"focus-without-user-activation\" permissions policy [*] allows cross-origin iframes.": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy-cross-origin.https.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy.https.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-disabled.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-enabled.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-focused-frame-descendant-cross-origin.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "Cross-origin iframe with policy denied and focus can call element.focus() on its own elements": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-focused-frame-descendant-remote.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Iframe with policy denied can take focus back from cross-origin child iframe (inclusive-descendant check)": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-focused-frame-descendant.html": {
+    "total": 7,
+    "failures": {
+      "Iframe with policy denied and focus can delegate focus to child iframe via element.focus() and contentWindow.focus()": "FAIL",
+      "Iframe with policy denied and focus can focus and move focus between its own elements": "FAIL",
+      "Iframe with policy denied and focus can focus child element via contentDocument.getElementById().focus()": "FAIL",
+      "Iframe with policy denied can take focus back from child iframe that has focus": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-setter-policy.html": {
+    "total": 2,
+    "failures": {
+      "Setter with policy allowed can focus child element with policy denied via contentDocument": "FAIL",
+      "Setter with policy denied cannot focus element in parent with policy allowed": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/focus-without-user-activation-target-frame-state-ignored.html": {
+    "total": 2,
+    "failures": {
+      "Target iframe activation does not authorize a focus call from a restricted initiator": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/permissions-policy-header-host-wildcard.https.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/permissions-policy-header-port-wildcard.https.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/permissions-policy-header-scheme-only.https.sub.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/private-state-token-redemption-default-permissions-policy.tentative.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "Default \"private-state-token-redemption\" permissions policy [\"self\"] allows cross-origin iframes.": "FAIL",
+      "Default \"private-state-token-redemption\" permissions policy [\"self\"] allows same-origin iframes.": "FAIL",
+      "Default \"private-state-token-redemption\" permissions policy [\"self\"] allows the top-level document.": "FAIL",
+      "Default \"private-state-token-redemption\" permissions policy [\"self\"] and allow=\"private-state-token-redemption 'none'\" disallows cross-origin iframes.": "FAIL"
+    }
+  },
+  "permissions-policy/experimental-features/private-state-token-redemption-supported-by-permissions-policy.tentative.html": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-by-default.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-embed.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-frameset.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "'unload' Policy : allowed in headerless doc when allowed in main frame.": "TIMEOUT"
+    }
+  },
+  "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=blob": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=data": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=srcdoc": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-allowed-object.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-embed.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-frameset.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "'unload' Policy : disallowed in headerless doc when disallowed in main frame.": "TIMEOUT"
+    }
+  },
+  "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=blob": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=data": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=srcdoc": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-object.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed-subframe.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/unload-disallowed.tentative.window.js": {
+    "total": 1
+  },
+  "permissions-policy/experimental-features/vertical-scroll-disabled-scrollbar-tentative.html": {
+    "reftest": "FAIL"
+  },
+  "permissions-policy/experimental-features/vertical-scroll-scrollintoview.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Calling 'scrollIntoView()' inside a <iframe> with 'vertical-scroll none;'will not propagate upwards.": "FAIL"
+    }
+  },
+  "permissions-policy/historical-feature-policy-header.html": {
+    "total": 1
+  },
+  "permissions-policy/historical.html": {
+    "total": 4
+  },
+  "permissions-policy/idlharness.window.js": {
+    "total": 44
+  },
+  "permissions-policy/navigate-to-blob.sub.html": {
+    "total": 2
+  },
+  "permissions-policy/payment-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "permissions policy allow=\"payment\" allows same-origin navigation in an iframe.": "FAIL"
+    }
+  },
+  "permissions-policy/payment-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "permissions policy \"payment\" can be enabled in cross-origin iframe using allow=\"payment\" attribute": "FAIL",
+      "permissions policy \"payment\" can be enabled in same-origin iframe using allow=\"payment\" attribute": "FAIL",
+      "permissions policy \"payment\" is enabled by default": "FAIL"
+    }
+  },
+  "permissions-policy/payment-allowed-by-permissions-policy.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "permissions policy header \"payment=*\" allow=\"payment\" allows Payment Request in cross-origin iframes.": "FAIL",
+      "permissions policy header \"payment=*\" allows Payment Request API same-origin iframes.": "FAIL",
+      "permissions policy header \"payment=*\" allows Payment Request API the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/payment-default-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "Payment Request API is enabled by default in same-origin iframes.": "FAIL",
+      "Payment Request API is enabled by default the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/payment-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "permissions policy header \"payment=()\" disallows Payment Request API in top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/payment-extension-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "WebAuthn \"payment\" extension can be enabled in cross-origin iframe using allow=\"payment\" attribute": "NOTRUN",
+      "WebAuthn \"payment\" extension is not supported in cross-origin iframe without allow=\"payment\" attribute": "TIMEOUT"
+    }
+  },
+  "permissions-policy/payment-supported-by-permissions-policy.tentative.html": {
+    "total": 1
+  },
+  "permissions-policy/permissions-policy-frame-policy-allowed-for-all.https.sub.html": {
+    "total": 78
+  },
+  "permissions-policy/permissions-policy-frame-policy-allowed-for-self.https.sub.html": {
+    "total": 86
+  },
+  "permissions-policy/permissions-policy-frame-policy-allowed-for-some-override.https.sub.html": {
+    "total": 32
+  },
+  "permissions-policy/permissions-policy-frame-policy-allowed-for-some.https.sub.html": {
+    "total": 76
+  },
+  "permissions-policy/permissions-policy-frame-policy-disallowed-for-all.https.sub.html": {
+    "total": 78
+  },
+  "permissions-policy/permissions-policy-frame-policy-timing.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "allow attr timing test diff origin": "FAIL",
+      "allow attr timing test same origin": "FAIL"
+    }
+  },
+  "permissions-policy/permissions-policy-header-policy-allowed-for-all.https.sub.html": {
+    "total": 7
+  },
+  "permissions-policy/permissions-policy-header-policy-allowed-for-malformed-wildcard.https.sub.html": {
+    "total": 7
+  },
+  "permissions-policy/permissions-policy-header-policy-allowed-for-self.https.sub.html": {
+    "total": 5
+  },
+  "permissions-policy/permissions-policy-header-policy-allowed-for-some.https.sub.html": {
+    "total": 10
+  },
+  "permissions-policy/permissions-policy-header-policy-allowed-for-wildcard.https.sub.html": {
+    "total": 9
+  },
+  "permissions-policy/permissions-policy-header-policy-declined.https.sub.html": {
+    "total": 10,
+    "failures": {
+      "Permissions-Policy: fullscreen=(self \"https://www.web-platform.test:8443\" \"https://www.example.com\" -- test allowlist is [cross_origin, https://www.example.com]": "FAIL"
+    }
+  },
+  "permissions-policy/permissions-policy-header-policy-disallowed-for-all.https.sub.html": {
+    "total": 5
+  },
+  "permissions-policy/permissions-policy-javascript-url-frame-policy.https.html": {
+    "total": 2
+  },
+  "permissions-policy/permissions-policy-nested-header-policy-allowed-for-all.https.sub.html": {
+    "total": 6
+  },
+  "permissions-policy/permissions-policy-nested-header-policy-allowed-for-self.https.sub.html": {
+    "total": 6
+  },
+  "permissions-policy/permissions-policy-nested-header-policy-disallowed-for-all.https.sub.html": {
+    "total": 6
+  },
+  "permissions-policy/permissions-policy-opaque-origin-history.https.html": {
+    "total": 1
+  },
+  "permissions-policy/permissions-policy-opaque-origin.https.html": {
+    "total": 1,
+    "failures": {
+      "permissions-policy-opaque-origin": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "permissions policy allow=\"picture-in-picture\" allows same-origin navigation in an iframe.": "FAIL",
+      "permissions policy allow=\"picture-in-picture\" disallows cross-origin navigation in an iframe.": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "permissions policy \"picture-in-picture\" can be enabled in cross-origin iframe using allow=\"picture-in-picture\" attribute": "FAIL",
+      "permissions policy \"picture-in-picture\" can be enabled in same-origin iframe using allow=\"picture-in-picture\" attribute": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-allowed-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "permissions policy header: picture-in-picture * allows cross-origin iframes.": "FAIL",
+      "permissions policy header: picture-in-picture * allows same-origin iframes.": "FAIL",
+      "permissions policy header: picture-in-picture * allows the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-default-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "Default \"picture-in-picture\" permissions policy [*] allows cross-origin iframes.": "FAIL",
+      "Default \"picture-in-picture\" permissions policy [*] allows same-origin iframes.": "FAIL",
+      "Default \"picture-in-picture\" permissions policy [*] allows the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "permissions policy header: picture-in-picture \"none\" disallows cross-origin iframes.": "FAIL",
+      "permissions policy header: picture-in-picture \"none\" disallows same-origin iframes.": "FAIL",
+      "permissions policy header: picture-in-picture \"none\" disallows the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/picture-in-picture-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "permissions-policy/policy-extends-to-sandbox.html": {
+    "total": 1
+  },
+  "permissions-policy/private-state-token-issue-allowed-by-permissions-policy-attribute.tentative.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "Permissions policy \"private-state-token-issuance\" can be enabled in cross-origin iframe using allow=\"private-state-token-issuance\" attribute": "FAIL",
+      "Permissions policy \"private-state-token-issuance\" can be enabled in same-origin iframe using allow=\"private-state-token-issuance\" attribute": "FAIL"
+    }
+  },
+  "permissions-policy/private-state-token-issue-disabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 5,
+    "failures": {
+      "Permissions policy header \"private-state-token-issuance=()\" and allow=\"private-state-token-issuance\" disallows cross-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=()\" and allow=\"private-state-token-issuance\" disallows same-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=()\" disallows cross-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=()\" disallows same-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=()\" disallows the top-level document.": "FAIL"
+    }
+  },
+  "permissions-policy/private-state-token-issue-enabled-by-permissions-policy.tentative.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "Permissions policy header \"private-state-token-issuance=*\" allows cross-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=*\" allows same-origin iframes.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=*\" allows the top-level document.": "FAIL",
+      "Permissions policy header \"private-state-token-issuance=*\" and allow=\"private-state-token-issuance 'none'\" disallows cross-origin iframes.": "FAIL"
+    }
+  },
+  "permissions-policy/private-state-token-issue-supported-by-permissions-policy.tentative.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/bluetooth-report-only.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/reporting/bluetooth-reporting.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "permissions-policy/reporting/camera-potential-report-only.https.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/camera-potential-reporting.https.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/camera-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "Camera report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/camera-reporting.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Camera Report Format": "NOTRUN"
+    }
+  },
+  "permissions-policy/reporting/encrypted-media-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "Encrypted Media report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/encrypted-media-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "Encrypted Media report format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/fullscreen-report-only.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/fullscreen-reporting.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/generic-sensor-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "Generic Sensor report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/generic-sensor-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "Generic Sensor Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/geolocation-report-only.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Geolocation report only mode": "TIMEOUT"
+    }
+  },
+  "permissions-policy/reporting/geolocation-reporting.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Geolocation Report Format": "NOTRUN"
+    }
+  },
+  "permissions-policy/reporting/microphone-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "Microphone report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/microphone-reporting.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Microphone Report Format": "NOTRUN"
+    }
+  },
+  "permissions-policy/reporting/midi-report-only.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "MIDI report only mode": "TIMEOUT"
+    }
+  },
+  "permissions-policy/reporting/midi-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "MIDI Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/payment-report-only.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "PaymentRequest report only mode": "TIMEOUT"
+    }
+  },
+  "permissions-policy/reporting/payment-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "PaymentRequest Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/picture-in-picture-report-only.html": {
+    "total": 1,
+    "failures": {
+      "Picture-in-Picture report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/picture-in-picture-reporting.html": {
+    "total": 1,
+    "failures": {
+      "Picture-in-Picture Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/report-only-and-enforce.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Enforcing policy receives reports when both enforcing and report-only policies are set.": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/report-only-single-endpoint.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Reporting-Endpoints defined endpoint received reports in report-only mode.": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Reporting-Endpoints defined endpoint received reports.": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/report-to-single-endpoint.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "Reporting-Endpoints defined endpoint received reports.": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/screen-wake-lock-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "Screen Wake Lock Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/serial-report-only.https.html": {
+    "total": 2,
+    "failures": {
+      "getPorts in serial report only mode": "FAIL",
+      "requestPort in serial report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/serial-reporting.https.html": {
+    "total": 2,
+    "failures": {
+      "getPorts in serial reporting mode": "FAIL",
+      "requestPort in serial reporting mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/sync-xhr-report-only.html": {
+    "total": 1
+  },
+  "permissions-policy/reporting/sync-xhr-reporting.html": {
+    "total": 1,
+    "failures": {
+      "Sync-xhr Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/usb-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "USB report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/usb-reporting.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "USB Report Format": "NOTRUN"
+    }
+  },
+  "permissions-policy/reporting/xr-report-only.https.html": {
+    "total": 1,
+    "failures": {
+      "XR report only mode": "FAIL"
+    }
+  },
+  "permissions-policy/reporting/xr-reporting.https.html": {
+    "total": 1,
+    "failures": {
+      "XR Report Format": "FAIL"
+    }
+  },
+  "permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "allows setSinkId in cross-origin iframe with allow": "FAIL",
+      "allows setSinkId in same-origin iframe": "FAIL",
+      "allows setSinkId in top-level document": "FAIL"
+    }
+  },
+  "permissions-policy/speaker-selection-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "disallows setSinkId in top-level document": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+input:checked, input:required:valid, option:disabled:checked, :placeholder-shown, :default, :indeterminate

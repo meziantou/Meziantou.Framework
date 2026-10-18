@@ -1,0 +1,179 @@
+{
+  "import-maps/acquiring/dynamic-import.html": {
+    "total": 2
+  },
+  "import-maps/acquiring/modulepreload-link-header.html": {
+    "total": 1
+  },
+  "import-maps/acquiring/modulepreload.html": {
+    "total": 1
+  },
+  "import-maps/acquiring/script-tag-inline.html": {
+    "total": 1
+  },
+  "import-maps/acquiring/script-tag.html": {
+    "total": 1
+  },
+  "import-maps/acquiring/worker-request.html": {
+    "total": 1
+  },
+  "import-maps/bare-specifiers.sub.html": {
+    "total": 20
+  },
+  "import-maps/csp/applied-to-target-dynamic.sub.html": {
+    "total": 2
+  },
+  "import-maps/csp/applied-to-target.sub.html": {
+    "total": 2
+  },
+  "import-maps/csp/hash-failure.html": {
+    "total": 1
+  },
+  "import-maps/csp/hash.html": {
+    "total": 1
+  },
+  "import-maps/csp/nonce-failure.html": {
+    "total": 1
+  },
+  "import-maps/csp/nonce.html": {
+    "total": 1
+  },
+  "import-maps/csp/unsafe-inline.html": {
+    "total": 1
+  },
+  "import-maps/data-driven/resolving.html?data-url-prefix.json": {
+    "total": 2
+  },
+  "import-maps/data-driven/resolving.html?empty-import-map.json": {
+    "total": 31
+  },
+  "import-maps/data-driven/resolving.html?empty-scopes.json": {
+    "total": 12
+  },
+  "import-maps/data-driven/resolving.html?overlapping-entries.json": {
+    "total": 7
+  },
+  "import-maps/data-driven/resolving.html?packages-via-trailing-slashes.json": {
+    "total": 33
+  },
+  "import-maps/data-driven/resolving.html?resolving-null.json": {
+    "total": 21
+  },
+  "import-maps/data-driven/resolving.html?scopes-exact-vs-prefix.json": {
+    "total": 25
+  },
+  "import-maps/data-driven/resolving.html?scopes.json": {
+    "total": 37
+  },
+  "import-maps/data-driven/resolving.html?tricky-specifiers.json": {
+    "total": 25
+  },
+  "import-maps/data-driven/resolving.html?url-specifiers-schemes.json": {
+    "total": 21
+  },
+  "import-maps/data-driven/resolving.html?url-specifiers.json": {
+    "total": 25
+  },
+  "import-maps/data-url-specifiers.sub.html": {
+    "total": 20
+  },
+  "import-maps/dynamic-integrity.html": {
+    "total": 12
+  },
+  "import-maps/dynamic-module-map-key.html": {
+    "total": 5
+  },
+  "import-maps/external-import-map-errors.html": {
+    "total": 3
+  },
+  "import-maps/http-url-like-specifiers.sub.html": {
+    "total": 20
+  },
+  "import-maps/import-maps-base-url.sub.html": {
+    "total": 6,
+    "failures": {
+      "bare/bare: dynamic import (from text/javascript) with inject <base>": "FAIL"
+    }
+  },
+  "import-maps/module-map-key.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/already-resolved-dropped.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/basic.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/conflict-first-persists.html": {
+    "total": 3
+  },
+  "import-maps/multiple-import-maps/exact-url-scope-immutability.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/resolution-consistency-in-module-tree-inline.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/resolution-consistency-in-module-tree.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/scope-ordering-reverse.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/scope-ordering.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/url-resolution-conflict.html": {
+    "total": 1
+  },
+  "import-maps/multiple-import-maps/with-errors.html": {
+    "total": 1
+  },
+  "import-maps/no-referencing-script-integrity-valid.html": {
+    "total": 1
+  },
+  "import-maps/no-referencing-script-integrity.html": {
+    "total": 1
+  },
+  "import-maps/nonimport-integrity.html": {
+    "total": 10
+  },
+  "import-maps/not-as-classic-script.html": {
+    "total": 5
+  },
+  "import-maps/not-overridden/dynamic.html": {
+    "total": 2
+  },
+  "import-maps/not-overridden/external-script-bare-descendent.html": {
+    "total": 3
+  },
+  "import-maps/not-overridden/external-script-descendent-with-scope.html": {
+    "total": 1
+  },
+  "import-maps/not-overridden/external-script-descendent.html": {
+    "total": 1
+  },
+  "import-maps/not-overridden/failed-resolution.html": {
+    "total": 4
+  },
+  "import-maps/not-overridden/integrity.html": {
+    "total": 1
+  },
+  "import-maps/not-overridden/prefix.html": {
+    "total": 2
+  },
+  "import-maps/not-overridden/script-descendent.html": {
+    "total": 1
+  },
+  "import-maps/not-overridden/url-resolution-conflict.html": {
+    "total": 1
+  },
+  "import-maps/script-supports-importmap.html": {
+    "total": 2
+  },
+  "import-maps/static-after-innerText.html": {
+    "total": 1
+  },
+  "import-maps/static-integrity.html": {
+    "total": 5
+  }
+}

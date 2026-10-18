@@ -13,10 +13,10 @@ public class HtmlSanitizerTests
     [InlineData("<p id='test' id='test2'>test</p>", "<p>test</p>")]
     [InlineData("<p style='color:red'>test</p>", "<p>test</p>")]
     [InlineData("<div><script></script>test</div>", "<div>test</div>")]
-    [InlineData("<a href='javascript:alert(\"toto\")'>test</a>", "<a href=''>test</a>")]
-    [InlineData("<a href='https://example.com'>test</a>", "<a href='https://example.com'>test</a>")]
-    [InlineData("<img srcset='javascript:alert() 300w, https://example.com 600w'>", "<img srcset='' />")]
-    [InlineData("<img srcset='https://example.com 300w, https://example.com 600w'>", "<img srcset='https://example.com 300w, https://example.com 600w' />")]
+    [InlineData("<a href='javascript:alert(\"toto\")'>test</a>", "<a href=\"\">test</a>")]
+    [InlineData("<a href='https://example.com'>test</a>", "<a href=\"https://example.com\">test</a>")]
+    [InlineData("<img srcset='javascript:alert() 300w, https://example.com 600w'>", "<img srcset=\"\">")]
+    [InlineData("<img srcset='https://example.com 300w, https://example.com 600w'>", "<img srcset=\"https://example.com 300w, https://example.com 600w\">")]
     public void Sanitize(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
@@ -33,13 +33,12 @@ public class HtmlSanitizerTests
 
     [Theory]
     // A "<![CDATA[…]]>" section is not a CDATA section in an HTML document, it is a bogus comment that ends at
-    // the first ">". Writing the section back as-is would let everything after that ">" be parsed as markup,
-    // so its content is written as escaped text instead.
-    [InlineData("<![CDATA[a><script>alert(1)</script>]]>", "a&gt;&lt;script&gt;alert(1)&lt;/script&gt;")]
-    [InlineData("<![CDATA[a><img src=x onerror=alert(1)>]]>", "a&gt;&lt;img src=x onerror=alert(1)&gt;")]
-    [InlineData("<p>a<![CDATA[><img src=x onerror=alert(1)>]]>b</p>", "<p>a&gt;&lt;img src=x onerror=alert(1)&gt;b</p>")]
-    [InlineData("<![CDATA[a & b]]>", "a &amp; b")]
-    public void Sanitize_CDataSectionIsEscaped(string html, string expectedResult)
+    // the first ">". Everything after that ">" is markup, exactly as a browser reads it, so it is sanitized.
+    [InlineData("<![CDATA[a><script>alert(1)</script>]]>", "]]&gt;")]
+    [InlineData("<![CDATA[a><img src=x onerror=alert(1)>]]>", "<img src=\"x\">]]&gt;")]
+    [InlineData("<p>a<![CDATA[><img src=x onerror=alert(1)>]]>b</p>", "<p>a<img src=\"x\">]]&gt;b</p>")]
+    [InlineData("<![CDATA[a & b]]>", "")]
+    public void Sanitize_CDataSectionIsABogusComment(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
@@ -59,11 +58,15 @@ public class HtmlSanitizerTests
     // The promoted content is sanitized too
     [InlineData("<form><script>alert(1)</script>test</form>", "test")]
     [InlineData("<form><p onclick='alert(1)'>test</p></form>", "<p>test</p>")]
-    [InlineData("<form><a href='javascript:alert(1)'>test</a></form>", "<a href=''>test</a>")]
-    // Processing instructions and doctypes are not real elements, they carry no content
+    [InlineData("<form><a href='javascript:alert(1)'>test</a></form>", "<a href=\"\">test</a>")]
+    [InlineData("<noxhtml><img src=x onerror=alert(1)></noxhtml>", "<img src=\"x\">")]
+    // The content of a template element is promoted too
+    [InlineData("<template><p onclick='alert(1)'>test</p></template>", "<p>test</p>")]
+    // Doctypes are ignored in a fragment. Processing instructions are bogus comments that end at the first ">", and
+    // what follows is sanitized as any other markup.
     [InlineData("<!DOCTYPE html><p>test</p>", "<p>test</p>")]
     [InlineData("<?xml version='1.0'?><p>test</p>", "<p>test</p>")]
-    [InlineData("<?php echo '<script>alert(1)</script>'; ?><p>test</p>", "<p>test</p>")]
+    [InlineData("<?php echo '<script>alert(1)</script>'; ?><p>test</p>", "alert(1)'; ?&gt;<p>test</p>")]
     public void Sanitize_UnwrapsInvalidElements(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
@@ -83,7 +86,6 @@ public class HtmlSanitizerTests
     [InlineData("<iframe><img src=x onerror=alert(1)></iframe>", "")]
     [InlineData("<noembed><img src=x onerror=alert(1)></noembed>", "")]
     [InlineData("<noframes><img src=x onerror=alert(1)></noframes>", "")]
-    [InlineData("<noxhtml><img src=x onerror=alert(1)></noxhtml>", "")]
     [InlineData("<noscript><img src=x onerror=alert(1)></noscript>", "")]
     [InlineData("<p>a<title><img src=x onerror=alert(1)></title>b</p>", "<p>ab</p>")]
     public void Sanitize_RemovesElementsWithNonMarkupContent(string html, string expectedResult)
@@ -99,22 +101,25 @@ public class HtmlSanitizerTests
     [InlineData("<p xml:onclick='alert(1)'>x</p>", "<p>x</p>")]
     [InlineData("<p xmlns:x='u' x:onclick='alert(1)'>y</p>", "<p>y</p>")]
     [InlineData("<p foo:class='x'>y</p>", "<p>y</p>")]
-    [InlineData("<p ONCLICK='alert(1)' class='c'>x</p>", "<p class='c'>x</p>")]
-    [InlineData("<p onclick='a' class='b' onclick='c'>x</p>", "<p class='b'>x</p>")]
+    [InlineData("<p ONCLICK='alert(1)' class='c'>x</p>", "<p class=\"c\">x</p>")]
+    [InlineData("<p onclick='a' class='b' onclick='c'>x</p>", "<p class=\"b\">x</p>")]
     [InlineData("<a href=x onclick=alert(1)>x</a>", "<a href=\"x\">x</a>")]
     [InlineData("<p/onclick=alert(1)>x</p>", "<p>x</p>")]
     // xlink:href is allowed but is a URI attribute, so its value is validated
-    [InlineData("<a xlink:href='javascript:alert(1)'>x</a>", "<a xlink:href=''>x</a>")]
-    [InlineData("<a xlink:href='https://example.com'>x</a>", "<a xlink:href='https://example.com'>x</a>")]
-    // Duplicated attributes are each sanitized on their own
-    [InlineData("<a href='https://ok' href='javascript:alert(1)'>x</a>", "<a href='https://ok' href=''>x</a>")]
-    [InlineData("<a href='javascript:alert(1)' href='https://ok'>x</a>", "<a href='' href='https://ok'>x</a>")]
-    // Valueless attributes are kept as-is
-    [InlineData("<a href>x</a>", "<a href>x</a>")]
+    [InlineData("<a xlink:href='javascript:alert(1)'>x</a>", "<a xlink:href=\"\">x</a>")]
+    [InlineData("<a xlink:href='https://example.com'>x</a>", "<a xlink:href=\"https://example.com\">x</a>")]
+    // As in a browser, the first of duplicated attributes wins
+    [InlineData("<a href='https://ok' href='javascript:alert(1)'>x</a>", "<a href=\"https://ok\">x</a>")]
+    [InlineData("<a href='javascript:alert(1)' href='https://ok'>x</a>", "<a href=\"\">x</a>")]
+    // Valueless attributes have an empty value
+    [InlineData("<a href>x</a>", "<a href=\"\">x</a>")]
     // ARIA attributes are allowed by their prefix
-    [InlineData("<p role='note' aria-label='a' ARIA-HIDDEN='true'>x</p>", "<p role='note' aria-label='a' ARIA-HIDDEN='true'>x</p>")]
+    [InlineData("<p role='note' aria-label='a' ARIA-HIDDEN='true'>x</p>", "<p role=\"note\" aria-label=\"a\" aria-hidden=\"true\">x</p>")]
     [InlineData("<p arialabel='a' x-aria-label='b'>x</p>", "<p>x</p>")]
-    [InlineData("<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>", "<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>")]
+    // The "is" value of a customized built-in element is written back as an attribute unless the element is recreated
+    [InlineData("<p is='x-foo' class='a'>x</p>", "<p class=\"a\">x</p>")]
+    [InlineData("<p is>x<b is=x-foo>y</b></p>", "<p>x<b>y</b></p>")]
+    [InlineData("<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>", "<p hidden=\"\" translate=\"no\"><time datetime=\"2026-01-01\">x</time></p>")]
     public void Sanitize_Attributes(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
@@ -122,16 +127,21 @@ public class HtmlSanitizerTests
     }
 
     [Theory]
-    // The value of an attribute is re-written with a quote character that cannot be closed by the value itself
-    [InlineData("<p title='a\" onmouseover=\"alert(1)'>x</p>", "<p title='a\" onmouseover=\"alert(1)'>x</p>")]
+    // The value of an attribute is written between double quotes, and the double quotes of the value are encoded
+    [InlineData("<p title='a\" onmouseover=\"alert(1)'>x</p>", "<p title=\"a&quot; onmouseover=&quot;alert(1)\">x</p>")]
     [InlineData("<p title=\"a' onmouseover='alert(1)\">x</p>", "<p title=\"a' onmouseover='alert(1)\">x</p>")]
-    [InlineData("<p title=a\"onmouseover=alert(1)\"x>y</p>", "<p title='a\"onmouseover=alert(1)\"x'>y</p>")]
-    [InlineData("<p title=a\"b'c>x</p>", "<p title='a\"b&apos;c'>x</p>")]
-    [InlineData("<p title=\"</p><script>alert(1)</script>\">x</p>", "<p title=\"</p><script>alert(1)</script>\">x</p>")]
-    // Entities in an attribute value are kept encoded
-    [InlineData("<p title='&lt;script&gt;'>x</p>", "<p title='&lt;script&gt;'>x</p>")]
+    [InlineData("<p title=a\"onmouseover=alert(1)\"x>y</p>", "<p title=\"a&quot;onmouseover=alert(1)&quot;x\">y</p>")]
+    [InlineData("<p title=a\"b'c>x</p>", "<p title=\"a&quot;b'c\">x</p>")]
+    [InlineData("<p title=\"</p><script>alert(1)</script>\">x</p>", "<p title=\"&lt;/p&gt;&lt;script&gt;alert(1)&lt;/script&gt;\">x</p>")]
+    // Entities in an attribute value are decoded by the parser and encoded again
+    [InlineData("<p title='&lt;script&gt;'>x</p>", "<p title=\"&lt;script&gt;\">x</p>")]
     [InlineData("<p title=&quot;onmouseover=alert(1)&quot;>x</p>", "<p title=\"&quot;onmouseover=alert(1)&quot;\">x</p>")]
-    [InlineData("<a href='http://example.com/?a=1&amp;b=2'>x</a>", "<a href='http://example.com/?a=1&amp;b=2'>x</a>")]
+    [InlineData("<a href='http://example.com/?a=1&amp;b=2'>x</a>", "<a href=\"http://example.com/?a=1&amp;b=2\">x</a>")]
+    // The URL is validated once decoded, as the browser reads it, so an entity cannot mask its scheme
+    [InlineData("<a href='java&#115;cript:alert(1)'>x</a>", "<a href=\"\">x</a>")]
+    [InlineData("<a href='javascript&#58;alert(1)'>x</a>", "<a href=\"\">x</a>")]
+    [InlineData("<a href='java&#9;script:alert(1)'>x</a>", "<a href=\"\">x</a>")]
+    [InlineData("<a href='&#x20;javascript:alert(1)'>x</a>", "<a href=\"\">x</a>")]
     public void Sanitize_AttributeValuesCannotEscapeTheirQuotes(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
@@ -139,42 +149,66 @@ public class HtmlSanitizerTests
     }
 
     [Theory]
-    // Text is kept as it was written in the source, so encoded markup stays encoded
+    // Text is decoded by the parser and encoded again, so encoded markup stays encoded
     [InlineData("&lt;script&gt;alert(1)&lt;/script&gt;", "&lt;script&gt;alert(1)&lt;/script&gt;")]
     [InlineData("<p>&lt;img src=x onerror=alert(1)&gt;</p>", "<p>&lt;img src=x onerror=alert(1)&gt;</p>")]
-    [InlineData("<p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;</p>", "<p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;</p>")]
+    [InlineData("<p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;</p>", "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>")]
     [InlineData("a &amp; b", "a &amp; b")]
-    [InlineData("a & b", "a & b")]
-    // "<" is the one character that is re-encoded, see Sanitize_EscapesMarkupStartInText
+    [InlineData("a & b", "a &amp; b")]
     [InlineData("<p>a < b</p>", "<p>a &lt; b</p>")]
-    public void Sanitize_KeepsTextAsIs(string html, string expectedResult)
+    // A browser reads a carriage return as a line feed, so a decoded one is written as a line feed
+    [InlineData("a&#13;b&#13;&#10;c", "a\nb\n\nc")]
+    [InlineData("<p title='a&#13;b'>x</p>", "<p title=\"a\nb\">x</p>")]
+    // The parser ignores a line feed that directly follows <pre>, so a text that starts with one gets a second one
+    [InlineData("<pre>\n\nx</pre>", "<pre>\n\nx</pre>")]
+    [InlineData("<pre>\nx</pre>", "<pre>x</pre>")]
+    [InlineData("<pre><object>\nx</object></pre>", "<pre>\n\nx</pre>")]
+    public void Sanitize_EncodesText(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
     }
 
     [Theory]
-    // A "<" that the parser gave up on and kept as text is still markup to a browser. An unterminated comment
-    // puts the rest of the host page in comment state; "<!x", "<?x" and "</0" are bogus comments that swallow
-    // everything up to the next ">". None of them may be written back with the "<" intact.
-    [InlineData("<b><!--", "<b>&lt;!--</b>")]
-    [InlineData("<p>a<!--b", "<p>a&lt;!--b</p>")]
-    [InlineData("<!--", "&lt;!--")]
-    [InlineData("<b><!x", "<b>&lt;!x</b>")]
-    [InlineData("<b><?x", "<b>&lt;?x</b>")]
-    [InlineData("<b></0", "<b>&lt;/0</b>")]
+    // The markup is read exactly as a browser reads it. An unterminated comment runs to the end of the fragment;
+    // "<!x", "<?x" and "</0" are bogus comments that swallow everything up to the next ">". These comments are
+    // removed, and a "<" that does not start any markup is text, so it is encoded.
+    [InlineData("<b><!--", "<b></b>")]
+    [InlineData("<p>a<!--b", "<p>a</p>")]
+    [InlineData("<!--", "")]
+    [InlineData("<b><!x", "<b></b>")]
+    [InlineData("<b><?x", "<b></b>")]
+    [InlineData("<b></0", "<b></b>")]
     [InlineData("<b><", "<b>&lt;</b>")]
-    [InlineData("<p>a</0 onerror=alert(1)>b</p>", "<p>a&lt;/0 onerror=alert(1)>b</p>")]
-    [InlineData("<p>a<1 onerror=alert(1)>b</p>", "<p>a&lt;1 onerror=alert(1)>b</p>")]
-    [InlineData("<p>a<%img src=x onerror=alert(1)>b</p>", "<p>a&lt;%img src=x onerror=alert(1)>b</p>")]
-    [InlineData("<p>a<//script>b</p>", "<p>a&lt;//script>b</p>")]
+    [InlineData("<p>a</0 onerror=alert(1)>b</p>", "<p>ab</p>")]
+    [InlineData("<p>a<1 onerror=alert(1)>b</p>", "<p>a&lt;1 onerror=alert(1)&gt;b</p>")]
+    [InlineData("<p>a<%img src=x onerror=alert(1)>b</p>", "<p>a&lt;%img src=x onerror=alert(1)&gt;b</p>")]
+    [InlineData("<p>a<//script>b</p>", "<p>ab</p>")]
     // Already encoded text is not encoded a second time
     [InlineData("<p>&lt;script&gt;</p>", "<p>&lt;script&gt;</p>")]
     [InlineData("<p>a &amp; b</p>", "<p>a &amp; b</p>")]
-    public void Sanitize_EscapesMarkupStartInText(string html, string expectedResult)
+    public void Sanitize_IncompleteMarkup(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
+    }
+
+    [Theory]
+    // The parser allows a link in a link, or a heading in a heading, only when an element such as template or object
+    // separates them. Unwrapping that element would make the output read back differently, so the inner one is
+    // unwrapped too.
+    [InlineData("<a href='https://a'>x<object><a href='https://b'>y</a></object></a>", "<a href=\"https://a\">xy</a>")]
+    [InlineData("<a>x<template><b><a>y</a></b></template></a>", "<a>x<b>y</b></a>")]
+    [InlineData("<h1>x<object><h2>y</h2></object></h1>", "<h1>xy</h1>")]
+    [InlineData("<h1>x<object><b><h2>y</h2></b></object></h1>", "<h1>x<b><h2>y</h2></b></h1>")]
+    // A table cell separates them too, so these are kept
+    [InlineData("<a>x<table><tr><td><a>y</a></td></tr></table></a>", "<a>x<table><tbody><tr><td><a>y</a></td></tr></tbody></table></a>")]
+    public void Sanitize_UnwrappingDoesNotNestLinksOrHeadings(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        var actual = sanitizer.SanitizeHtmlFragment(html);
+        Assert.Equal(expectedResult, actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
     }
 
     [Fact]
@@ -192,6 +226,8 @@ public class HtmlSanitizerTests
             "<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">",
             "<math><mtext><table><mglyph><style><img src=x onerror=alert(1)>",
             "<form><p>a</p>b<span>c</span></form>", "<p title=a\"b'c>x</p>",
+            "a&#13;b", "<p title='a&#13;b'>x</p>", "x&#13;<script></script>&#10;y",
+            "<pre>\n\nx</pre>", "<pre><object>\nx</object></pre>", "<pre>&#10;&#10;x</pre>",
         ];
 
         foreach (var fragment in fragments)
@@ -206,10 +242,10 @@ public class HtmlSanitizerTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
     public void Sanitize_IsIdempotent_Fuzz()
     {
-        // Elements whose end tag is optional (p, td, table, …) are left out on purpose. They can still nest in
-        // the output in a way the parser reads back differently, which is a separate defect in how the writer
-        // and the implied-end-tag rules line up rather than anything to do with how text is written. Over
-        // 200_000 fragments drawn from the full token set, every remaining violation involved one of them.
+        // Elements whose end tag is optional (p, li, td, tbody, …) are left out on purpose. Unwrapping an element
+        // can leave them in a place where the parser never puts them ("<li><select><li>" becomes an li nested in
+        // an li, "<template><tbody>" a tbody outside of a table), so the parser reads the output back with a
+        // different structure. The text and the attributes are the same, so this changes nothing to the safety.
         string[] tokens =
         [
             "<b>", "</b>", "<script>", "</script>", "<img src=x onerror=alert(1)>",
@@ -251,7 +287,7 @@ public class HtmlSanitizerTests
     [InlineData("<!-- comment -->", "<!-- comment -->")]
     [InlineData("<p>a<!-- comment -->b</p>", "<p>a<!-- comment -->b</p>")]
     // A comment can never be closed by its own content, so it cannot escape
-    [InlineData("<p><!--a--!>b--></p>", "<p><!--a-->b--></p>")]
+    [InlineData("<p><!--a--!>b--></p>", "<p><!--a-->b--&gt;</p>")]
     public void Sanitize_AllowComments(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer { AllowComments = true };
@@ -263,9 +299,9 @@ public class HtmlSanitizerTests
     [InlineData("<svg><script>alert(1)</script></svg>", "")]
     [InlineData("<svg onload='alert(1)'></svg>", "")]
     [InlineData("<math><mtext><table><mglyph><style><img src=x onerror=alert(1)>", "<table></table>")]
-    // The end tag closes the raw text of the noscript element, exactly like a browser does, and the img that
-    // follows it is a real element whose event handler is removed
-    [InlineData("<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">", "<img src=\"x\" />\">")]
+    // The noscript element is removed with its content, whether a parser reads it as markup (scripting disabled)
+    // or as raw text (scripting enabled), so the difference cannot be used to smuggle markup
+    [InlineData("<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">", "")]
     [InlineData("<template><script>alert(1)</script></template>", "")]
     [InlineData("<base href='javascript:alert(1)'>", "")]
     [InlineData("<meta http-equiv='refresh' content='0;url=javascript:alert(1)'>", "")]
@@ -398,12 +434,54 @@ public class HtmlSanitizerTests
     }
 
     [Fact]
+    public void Sanitize_AllowedTemplateWithIsValue()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("template");
+
+        Assert.Equal("<template><p>x</p></template>", sanitizer.SanitizeHtmlFragment("<template is='x-foo'><p is='x-bar'>x</p></template>"));
+    }
+
+    [Fact]
+    public void Sanitize_CanAllowIsAttribute()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributes.Add("is");
+
+        Assert.Equal("<p is=\"x-foo\">x</p>", sanitizer.SanitizeHtmlFragment("<p is='x-foo'>x</p>"));
+    }
+
+    [Fact]
+    public void Sanitize_AllowedTemplateContentIsSanitized()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("template");
+
+        Assert.Equal("<template><p>x</p></template>", sanitizer.SanitizeHtmlFragment("<template><p onclick='alert(1)'>x</p><script>alert(1)</script></template>"));
+    }
+
+    [Theory]
+    // SVG and MathML elements are parsed with other rules than HTML elements, so they are never kept, and the
+    // elements they contain are not HTML elements even when they have the same name (the "a" of SVG)
+    [InlineData("<svg><a href='https://example.com'>x</a></svg>", "x")]
+    [InlineData("<math><mi>x</mi></math>", "x")]
+    public void Sanitize_ForeignElementsAreUnwrappedEvenWhenAllowed(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("svg");
+        sanitizer.ValidElements.Add("math");
+        sanitizer.ValidElements.Add("mi");
+
+        Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
+    }
+
+    [Fact]
     public void Sanitize_CanAllowAdditionalAttributes()
     {
         var sanitizer = new HtmlSanitizer();
         sanitizer.ValidAttributes.Add("data-custom");
 
-        Assert.Equal("<p data-custom='1'>test</p>", sanitizer.SanitizeHtmlFragment("<p data-custom='1'>test</p>"));
+        Assert.Equal("<p data-custom=\"1\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-custom='1'>test</p>"));
     }
 
     [Fact]
@@ -412,7 +490,7 @@ public class HtmlSanitizerTests
         var sanitizer = new HtmlSanitizer();
         sanitizer.ValidAttributes.Remove("target");
 
-        Assert.Equal("<a href='https://example.com'>test</a>", sanitizer.SanitizeHtmlFragment("<a href='https://example.com' target='_blank'>test</a>"));
+        Assert.Equal("<a href=\"https://example.com\">test</a>", sanitizer.SanitizeHtmlFragment("<a href='https://example.com' target='_blank'>test</a>"));
     }
 
     [Fact]
@@ -421,7 +499,7 @@ public class HtmlSanitizerTests
         var sanitizer = new HtmlSanitizer();
         sanitizer.ValidAttributePrefixes.Add("data-");
 
-        Assert.Equal("<p data-a='1' data-b='2'>test</p>", sanitizer.SanitizeHtmlFragment("<p data-a='1' data-b='2' style='a'>test</p>"));
+        Assert.Equal("<p data-a=\"1\" data-b=\"2\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-a='1' data-b='2' style='a'>test</p>"));
     }
 
     [Fact]
@@ -430,7 +508,7 @@ public class HtmlSanitizerTests
         var sanitizer = new HtmlSanitizer();
         sanitizer.ValidAttributePrefixes.Remove("aria-");
 
-        Assert.Equal("<p role='note'>test</p>", sanitizer.SanitizeHtmlFragment("<p role='note' aria-label='a'>test</p>"));
+        Assert.Equal("<p role=\"note\">test</p>", sanitizer.SanitizeHtmlFragment("<p role='note' aria-label='a'>test</p>"));
     }
 
     [Fact]
@@ -440,7 +518,7 @@ public class HtmlSanitizerTests
         sanitizer.ValidAttributePrefixes.Add("data-");
         sanitizer.UriAttributes.Add("data-url");
 
-        Assert.Equal("<p data-url='' data-x='javascript:alert(1)'>test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)' data-x='javascript:alert(1)'>test</p>"));
+        Assert.Equal("<p data-url=\"\" data-x=\"javascript:alert(1)\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)' data-x='javascript:alert(1)'>test</p>"));
     }
 
     [Fact]
@@ -450,6 +528,6 @@ public class HtmlSanitizerTests
         sanitizer.ValidAttributes.Add("data-url");
         sanitizer.UriAttributes.Add("data-url");
 
-        Assert.Equal("<p data-url=''>test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
+        Assert.Equal("<p data-url=\"\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
     }
 }

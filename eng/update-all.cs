@@ -363,14 +363,18 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     var testsProjectSet = new HashSet<string>(testsProjects, StringComparer.OrdinalIgnoreCase);
     var projectReferencesCache = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-    var toolProjectsBySrcName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Meziantou.Framework.HtmlToMarkdown"] = "Meziantou.Framework.HtmlToMarkdown.Emoji.Generator",
-        ["Meziantou.Framework.Http.Hsts"] = "Meziantou.Framework.Http.Hsts.Generator",
-        ["Meziantou.Framework.Markdown"] = "Meziantou.Framework.Markdown.Specs.Generator",
-        ["Meziantou.Framework.Unicode"] = "Meziantou.Framework.Unicode.Generator",
-        ["Meziantou.Framework.Uri"] = "Meziantou.Framework.Uri.PublicSuffix.Generator",
-    };
+    (string SrcName, string ToolName)[] toolProjectsBySrcName =
+    [
+        ("Meziantou.Framework.HtmlToMarkdown", "Meziantou.Framework.HtmlToMarkdown.Emoji.Generator"),
+        ("Meziantou.Framework.Http.Hsts", "Meziantou.Framework.Http.Hsts.Generator"),
+        ("Meziantou.Framework.Markdown", "Meziantou.Framework.Markdown.Specs.Generator"),
+        ("Meziantou.Framework.Unicode", "Meziantou.Framework.Unicode.Generator"),
+        ("Meziantou.Framework.Uri", "Meziantou.Framework.Uri.PublicSuffix.Generator"),
+        ("Meziantou.Framework.WebPlatform", "Meziantou.Framework.WebPlatform.Analyzers"),
+        ("Meziantou.Framework.WebPlatform", "Meziantou.Framework.WebPlatform.ChromiumDiff"),
+        ("Meziantou.Framework.WebPlatform", "Meziantou.Framework.WebPlatform.SpecGen"),
+        ("Meziantou.Framework.WebPlatform", "Meziantou.Framework.WebPlatform.SpecUpdate"),
+    ];
 
     var srcProjectByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     foreach (var project in srcProjects)

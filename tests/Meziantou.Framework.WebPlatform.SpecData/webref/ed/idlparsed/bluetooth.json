@@ -1,0 +1,3605 @@
+{
+  "spec": {
+    "title": "Web Bluetooth",
+    "url": "https://bluetooth.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "ValueEvent",
+          "BluetoothAdvertisingEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "Bluetooth",
+          "BluetoothPermissionResult",
+          "BluetoothDevice",
+          "BluetoothManufacturerDataMap",
+          "BluetoothServiceDataMap",
+          "BluetoothRemoteGATTServer",
+          "BluetoothRemoteGATTService",
+          "BluetoothRemoteGATTCharacteristic",
+          "BluetoothCharacteristicProperties",
+          "BluetoothRemoteGATTDescriptor",
+          "BluetoothUUID"
+        ]
+      }
+    },
+    "idlNames": {
+      "BluetoothDataFilterInit": {
+        "fragment": "dictionary BluetoothDataFilterInit {\n  BufferSource dataPrefix;\n  BufferSource mask;\n};",
+        "type": "dictionary",
+        "name": "BluetoothDataFilterInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "dataPrefix",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdatafilterinit-dataprefix"
+          },
+          {
+            "type": "field",
+            "name": "mask",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdatafilterinit-mask"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothdatafilterinit"
+      },
+      "BluetoothManufacturerDataFilterInit": {
+        "fragment": "dictionary BluetoothManufacturerDataFilterInit : BluetoothDataFilterInit {\n  required [EnforceRange] unsigned short companyIdentifier;\n};",
+        "type": "dictionary",
+        "name": "BluetoothManufacturerDataFilterInit",
+        "inheritance": "BluetoothDataFilterInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "companyIdentifier",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothmanufacturerdatafilterinit-companyidentifier"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothmanufacturerdatafilterinit"
+      },
+      "BluetoothServiceDataFilterInit": {
+        "fragment": "dictionary BluetoothServiceDataFilterInit : BluetoothDataFilterInit {\n  required BluetoothServiceUUID service;\n};",
+        "type": "dictionary",
+        "name": "BluetoothServiceDataFilterInit",
+        "inheritance": "BluetoothDataFilterInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "service",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceUUID"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothservicedatafilterinit-service"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothservicedatafilterinit"
+      },
+      "BluetoothLEScanFilterInit": {
+        "fragment": "dictionary BluetoothLEScanFilterInit {\n  sequence<BluetoothServiceUUID> services;\n  DOMString name;\n  DOMString namePrefix;\n  sequence<BluetoothManufacturerDataFilterInit> manufacturerData;\n  sequence<BluetoothServiceDataFilterInit> serviceData;\n};",
+        "type": "dictionary",
+        "name": "BluetoothLEScanFilterInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "services",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothlescanfilterinit-services"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothlescanfilterinit-name"
+          },
+          {
+            "type": "field",
+            "name": "namePrefix",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothlescanfilterinit-nameprefix"
+          },
+          {
+            "type": "field",
+            "name": "manufacturerData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothManufacturerDataFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothlescanfilterinit-manufacturerdata"
+          },
+          {
+            "type": "field",
+            "name": "serviceData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceDataFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothlescanfilterinit-servicedata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothlescanfilterinit"
+      },
+      "RequestDeviceOptions": {
+        "fragment": "dictionary RequestDeviceOptions {\n  sequence<BluetoothLEScanFilterInit> filters;\n  sequence<BluetoothLEScanFilterInit> exclusionFilters;\n  sequence<BluetoothServiceUUID> optionalServices = [];\n  sequence<unsigned short> optionalManufacturerData = [];\n  boolean acceptAllDevices = false;\n};",
+        "type": "dictionary",
+        "name": "RequestDeviceOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-requestdeviceoptions-filters"
+          },
+          {
+            "type": "field",
+            "name": "exclusionFilters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-requestdeviceoptions-exclusionfilters"
+          },
+          {
+            "type": "field",
+            "name": "optionalServices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-requestdeviceoptions-optionalservices"
+          },
+          {
+            "type": "field",
+            "name": "optionalManufacturerData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned short"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-requestdeviceoptions-optionalmanufacturerdata"
+          },
+          {
+            "type": "field",
+            "name": "acceptAllDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-requestdeviceoptions-acceptalldevices"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-requestdeviceoptions"
+      },
+      "Bluetooth": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Bluetooth : EventTarget {\n  Promise<boolean> getAvailability();\n  attribute EventHandler onavailabilitychanged;\n  [SameObject]\n  readonly attribute BluetoothDevice? referringDevice;\n  Promise<sequence<BluetoothDevice>> getDevices();\n  Promise<BluetoothDevice> requestDevice(optional RequestDeviceOptions options = {});\n};",
+        "type": "interface",
+        "name": "Bluetooth",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "getAvailability",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetooth-getavailability"
+          },
+          {
+            "type": "attribute",
+            "name": "onavailabilitychanged",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetooth-onavailabilitychanged"
+          },
+          {
+            "type": "attribute",
+            "name": "referringDevice",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "BluetoothDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetooth-referringdevice"
+          },
+          {
+            "type": "operation",
+            "name": "getDevices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BluetoothDevice"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetooth-getdevices"
+          },
+          {
+            "type": "operation",
+            "name": "requestDevice",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothDevice"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestDeviceOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetooth-requestdevice"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetooth"
+      },
+      "BluetoothPermissionDescriptor": {
+        "fragment": "dictionary BluetoothPermissionDescriptor : PermissionDescriptor {\n  DOMString deviceId;\n  // These match RequestDeviceOptions.\n  sequence<BluetoothLEScanFilterInit> filters;\n  sequence<BluetoothServiceUUID> optionalServices = [];\n  sequence<unsigned short> optionalManufacturerData = [];\n  boolean acceptAllDevices = false;\n};",
+        "type": "dictionary",
+        "name": "BluetoothPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissiondescriptor-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothLEScanFilterInit"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissiondescriptor-filters"
+          },
+          {
+            "type": "field",
+            "name": "optionalServices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissiondescriptor-optionalservices"
+          },
+          {
+            "type": "field",
+            "name": "optionalManufacturerData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned short"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissiondescriptor-optionalmanufacturerdata"
+          },
+          {
+            "type": "field",
+            "name": "acceptAllDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissiondescriptor-acceptalldevices"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothpermissiondescriptor"
+      },
+      "AllowedBluetoothDevice": {
+        "fragment": "dictionary AllowedBluetoothDevice {\n  required DOMString deviceId;\n  required boolean mayUseGATT;\n  // An allowedServices of \"all\" means all services are allowed.\n  required (DOMString or sequence<UUID>) allowedServices;\n  required sequence<unsigned short> allowedManufacturerData;\n};",
+        "type": "dictionary",
+        "name": "AllowedBluetoothDevice",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "deviceId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-allowedbluetoothdevice-deviceid"
+          },
+          {
+            "type": "field",
+            "name": "mayUseGATT",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-allowedbluetoothdevice-mayusegatt"
+          },
+          {
+            "type": "field",
+            "name": "allowedServices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "UUID"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-allowedbluetoothdevice-allowedservices"
+          },
+          {
+            "type": "field",
+            "name": "allowedManufacturerData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned short"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-allowedbluetoothdevice-allowedmanufacturerdata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-allowedbluetoothdevice"
+      },
+      "BluetoothPermissionStorage": {
+        "fragment": "dictionary BluetoothPermissionStorage {\n  required sequence<AllowedBluetoothDevice> allowedDevices;\n};",
+        "type": "dictionary",
+        "name": "BluetoothPermissionStorage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "allowedDevices",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AllowedBluetoothDevice"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissionstorage-alloweddevices"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothpermissionstorage"
+      },
+      "BluetoothPermissionResult": {
+        "fragment": "[Exposed=Window]\ninterface BluetoothPermissionResult : PermissionStatus {\n  attribute FrozenArray<BluetoothDevice> devices;\n};",
+        "type": "interface",
+        "name": "BluetoothPermissionResult",
+        "inheritance": "PermissionStatus",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "devices",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothDevice"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothpermissionresult-devices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothpermissionresult"
+      },
+      "ValueEvent": {
+        "fragment": "[\n  Exposed=Window,\n  SecureContext\n]\ninterface ValueEvent : Event {\n  constructor(DOMString type, optional ValueEventInit initDict = {});\n  readonly attribute any value;\n};",
+        "type": "interface",
+        "name": "ValueEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "initDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ValueEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/#dom-valueevent-valueevent"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-valueevent-value"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#valueevent"
+      },
+      "ValueEventInit": {
+        "fragment": "dictionary ValueEventInit : EventInit {\n  any value = null;\n};",
+        "type": "dictionary",
+        "name": "ValueEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-valueeventinit-value"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-valueeventinit"
+      },
+      "BluetoothDevice": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothDevice : EventTarget {\n  readonly attribute DOMString id;\n  readonly attribute DOMString? name;\n  readonly attribute BluetoothRemoteGATTServer? gatt;\n\n  Promise<undefined> forget();\n  Promise<undefined> watchAdvertisements(\n      optional WatchAdvertisementsOptions options = {});\n  readonly attribute boolean watchingAdvertisements;\n};",
+        "type": "interface",
+        "name": "BluetoothDevice",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-id"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-name"
+          },
+          {
+            "type": "attribute",
+            "name": "gatt",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "BluetoothRemoteGATTServer"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-gatt"
+          },
+          {
+            "type": "operation",
+            "name": "forget",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-forget"
+          },
+          {
+            "type": "operation",
+            "name": "watchAdvertisements",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "WatchAdvertisementsOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-watchadvertisements"
+          },
+          {
+            "type": "attribute",
+            "name": "watchingAdvertisements",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdevice-watchingadvertisements"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothdevice"
+      },
+      "WatchAdvertisementsOptions": {
+        "fragment": "dictionary WatchAdvertisementsOptions {\n  AbortSignal signal;\n};",
+        "type": "dictionary",
+        "name": "WatchAdvertisementsOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-watchadvertisementsoptions-signal"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-watchadvertisementsoptions"
+      },
+      "BluetoothManufacturerDataMap": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothManufacturerDataMap {\n  readonly maplike<unsigned short, DataView>;\n};",
+        "type": "interface",
+        "name": "BluetoothManufacturerDataMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DataView"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothmanufacturerdatamap"
+      },
+      "BluetoothServiceDataMap": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothServiceDataMap {\n  readonly maplike<UUID, DataView>;\n};",
+        "type": "interface",
+        "name": "BluetoothServiceDataMap",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "maplike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "UUID"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DataView"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothservicedatamap"
+      },
+      "BluetoothAdvertisingEvent": {
+        "fragment": "[\n  Exposed=Window,\n  SecureContext\n]\ninterface BluetoothAdvertisingEvent : Event {\n  constructor(DOMString type, BluetoothAdvertisingEventInit init);\n  [SameObject]\n  readonly attribute BluetoothDevice device;\n  readonly attribute FrozenArray<UUID> uuids;\n  readonly attribute DOMString? name;\n  readonly attribute unsigned short? appearance;\n  readonly attribute byte? txPower;\n  readonly attribute byte? rssi;\n  [SameObject]\n  readonly attribute BluetoothManufacturerDataMap manufacturerData;\n  [SameObject]\n  readonly attribute BluetoothServiceDataMap serviceData;\n};",
+        "type": "interface",
+        "name": "BluetoothAdvertisingEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothAdvertisingEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-bluetoothadvertisingevent"
+          },
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-device"
+          },
+          {
+            "type": "attribute",
+            "name": "uuids",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "UUID"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-uuids"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-name"
+          },
+          {
+            "type": "attribute",
+            "name": "appearance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-appearance"
+          },
+          {
+            "type": "attribute",
+            "name": "txPower",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "byte"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-txpower"
+          },
+          {
+            "type": "attribute",
+            "name": "rssi",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "byte"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-rssi"
+          },
+          {
+            "type": "attribute",
+            "name": "manufacturerData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothManufacturerDataMap"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-manufacturerdata"
+          },
+          {
+            "type": "attribute",
+            "name": "serviceData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceDataMap"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingevent-servicedata"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothadvertisingevent"
+      },
+      "BluetoothAdvertisingEventInit": {
+        "fragment": "dictionary BluetoothAdvertisingEventInit : EventInit {\n  required BluetoothDevice device;\n  sequence<(DOMString or unsigned long)> uuids;\n  DOMString name;\n  unsigned short appearance;\n  byte txPower;\n  byte rssi;\n  BluetoothManufacturerDataMap manufacturerData;\n  BluetoothServiceDataMap serviceData;\n};",
+        "type": "dictionary",
+        "name": "BluetoothAdvertisingEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "device",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothDevice"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-device"
+          },
+          {
+            "type": "field",
+            "name": "uuids",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-uuids"
+          },
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-name"
+          },
+          {
+            "type": "field",
+            "name": "appearance",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-appearance"
+          },
+          {
+            "type": "field",
+            "name": "txPower",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-txpower"
+          },
+          {
+            "type": "field",
+            "name": "rssi",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "byte"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-rssi"
+          },
+          {
+            "type": "field",
+            "name": "manufacturerData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothManufacturerDataMap"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-manufacturerdata"
+          },
+          {
+            "type": "field",
+            "name": "serviceData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceDataMap"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothadvertisingeventinit-servicedata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#dictdef-bluetoothadvertisingeventinit"
+      },
+      "BluetoothRemoteGATTServer": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothRemoteGATTServer {\n  [SameObject]\n  readonly attribute BluetoothDevice device;\n  readonly attribute boolean connected;\n  Promise<BluetoothRemoteGATTServer> connect();\n  undefined disconnect();\n  Promise<BluetoothRemoteGATTService> getPrimaryService(BluetoothServiceUUID service);\n  Promise<sequence<BluetoothRemoteGATTService>>\n    getPrimaryServices(optional BluetoothServiceUUID service);\n};",
+        "type": "interface",
+        "name": "BluetoothRemoteGATTServer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-device"
+          },
+          {
+            "type": "attribute",
+            "name": "connected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-connected"
+          },
+          {
+            "type": "operation",
+            "name": "connect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTServer"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-connect"
+          },
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-disconnect"
+          },
+          {
+            "type": "operation",
+            "name": "getPrimaryService",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTService"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "service",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-getprimaryservice"
+          },
+          {
+            "type": "operation",
+            "name": "getPrimaryServices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BluetoothRemoteGATTService"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "service",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattserver-getprimaryservices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothremotegattserver"
+      },
+      "BluetoothRemoteGATTService": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothRemoteGATTService : EventTarget {\n  [SameObject]\n  readonly attribute BluetoothDevice device;\n  readonly attribute UUID uuid;\n  readonly attribute boolean isPrimary;\n  Promise<BluetoothRemoteGATTCharacteristic>\n    getCharacteristic(BluetoothCharacteristicUUID characteristic);\n  Promise<sequence<BluetoothRemoteGATTCharacteristic>>\n    getCharacteristics(optional BluetoothCharacteristicUUID characteristic);\n  Promise<BluetoothRemoteGATTService>\n    getIncludedService(BluetoothServiceUUID service);\n  Promise<sequence<BluetoothRemoteGATTService>>\n    getIncludedServices(optional BluetoothServiceUUID service);\n};",
+        "type": "interface",
+        "name": "BluetoothRemoteGATTService",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "device",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothDevice"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-device"
+          },
+          {
+            "type": "attribute",
+            "name": "uuid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-uuid"
+          },
+          {
+            "type": "attribute",
+            "name": "isPrimary",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-isprimary"
+          },
+          {
+            "type": "operation",
+            "name": "getCharacteristic",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTCharacteristic"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "characteristic",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothCharacteristicUUID"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-getcharacteristic"
+          },
+          {
+            "type": "operation",
+            "name": "getCharacteristics",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BluetoothRemoteGATTCharacteristic"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "characteristic",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothCharacteristicUUID"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-getcharacteristics"
+          },
+          {
+            "type": "operation",
+            "name": "getIncludedService",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTService"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "service",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-getincludedservice"
+          },
+          {
+            "type": "operation",
+            "name": "getIncludedServices",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BluetoothRemoteGATTService"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "service",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattservice-getincludedservices"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothremotegattservice"
+      },
+      "BluetoothRemoteGATTCharacteristic": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothRemoteGATTCharacteristic : EventTarget {\n  [SameObject]\n  readonly attribute BluetoothRemoteGATTService service;\n  readonly attribute UUID uuid;\n  readonly attribute BluetoothCharacteristicProperties properties;\n  readonly attribute DataView? value;\n  Promise<BluetoothRemoteGATTDescriptor> getDescriptor(BluetoothDescriptorUUID descriptor);\n  Promise<sequence<BluetoothRemoteGATTDescriptor>>\n    getDescriptors(optional BluetoothDescriptorUUID descriptor);\n  Promise<DataView> readValue();\n  Promise<undefined> writeValue(BufferSource value);\n  Promise<undefined> writeValueWithResponse(BufferSource value);\n  Promise<undefined> writeValueWithoutResponse(BufferSource value);\n  Promise<BluetoothRemoteGATTCharacteristic> startNotifications();\n  Promise<BluetoothRemoteGATTCharacteristic> stopNotifications();\n};",
+        "type": "interface",
+        "name": "BluetoothRemoteGATTCharacteristic",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "service",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothRemoteGATTService"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-service"
+          },
+          {
+            "type": "attribute",
+            "name": "uuid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-uuid"
+          },
+          {
+            "type": "attribute",
+            "name": "properties",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothCharacteristicProperties"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-properties"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-value"
+          },
+          {
+            "type": "operation",
+            "name": "getDescriptor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTDescriptor"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "descriptor",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothDescriptorUUID"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-getdescriptor"
+          },
+          {
+            "type": "operation",
+            "name": "getDescriptors",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BluetoothRemoteGATTDescriptor"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "descriptor",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothDescriptorUUID"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-getdescriptors"
+          },
+          {
+            "type": "operation",
+            "name": "readValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DataView"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-readvalue"
+          },
+          {
+            "type": "operation",
+            "name": "writeValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-writevalue"
+          },
+          {
+            "type": "operation",
+            "name": "writeValueWithResponse",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-writevaluewithresponse"
+          },
+          {
+            "type": "operation",
+            "name": "writeValueWithoutResponse",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-writevaluewithoutresponse"
+          },
+          {
+            "type": "operation",
+            "name": "startNotifications",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTCharacteristic"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-startnotifications"
+          },
+          {
+            "type": "operation",
+            "name": "stopNotifications",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothRemoteGATTCharacteristic"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattcharacteristic-stopnotifications"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothremotegattcharacteristic"
+      },
+      "BluetoothCharacteristicProperties": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothCharacteristicProperties {\n  readonly attribute boolean broadcast;\n  readonly attribute boolean read;\n  readonly attribute boolean writeWithoutResponse;\n  readonly attribute boolean write;\n  readonly attribute boolean notify;\n  readonly attribute boolean indicate;\n  readonly attribute boolean authenticatedSignedWrites;\n  readonly attribute boolean reliableWrite;\n  readonly attribute boolean writableAuxiliaries;\n};",
+        "type": "interface",
+        "name": "BluetoothCharacteristicProperties",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "broadcast",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-broadcast"
+          },
+          {
+            "type": "attribute",
+            "name": "read",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-read"
+          },
+          {
+            "type": "attribute",
+            "name": "writeWithoutResponse",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-writewithoutresponse"
+          },
+          {
+            "type": "attribute",
+            "name": "write",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-write"
+          },
+          {
+            "type": "attribute",
+            "name": "notify",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-notify"
+          },
+          {
+            "type": "attribute",
+            "name": "indicate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-indicate"
+          },
+          {
+            "type": "attribute",
+            "name": "authenticatedSignedWrites",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-authenticatedsignedwrites"
+          },
+          {
+            "type": "attribute",
+            "name": "reliableWrite",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-reliablewrite"
+          },
+          {
+            "type": "attribute",
+            "name": "writableAuxiliaries",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothcharacteristicproperties-writableauxiliaries"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothcharacteristicproperties"
+      },
+      "BluetoothRemoteGATTDescriptor": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface BluetoothRemoteGATTDescriptor {\n  [SameObject]\n  readonly attribute BluetoothRemoteGATTCharacteristic characteristic;\n  readonly attribute UUID uuid;\n  readonly attribute DataView? value;\n  Promise<DataView> readValue();\n  Promise<undefined> writeValue(BufferSource value);\n};",
+        "type": "interface",
+        "name": "BluetoothRemoteGATTDescriptor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "characteristic",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothRemoteGATTCharacteristic"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattdescriptor-characteristic"
+          },
+          {
+            "type": "attribute",
+            "name": "uuid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattdescriptor-uuid"
+          },
+          {
+            "type": "attribute",
+            "name": "value",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DataView"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattdescriptor-value"
+          },
+          {
+            "type": "operation",
+            "name": "readValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DataView"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattdescriptor-readvalue"
+          },
+          {
+            "type": "operation",
+            "name": "writeValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothremotegattdescriptor-writevalue"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothremotegattdescriptor"
+      },
+      "CharacteristicEventHandlers": {
+        "fragment": "[SecureContext]\ninterface mixin CharacteristicEventHandlers {\n  attribute EventHandler oncharacteristicvaluechanged;\n};",
+        "type": "interface mixin",
+        "name": "CharacteristicEventHandlers",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "oncharacteristicvaluechanged",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-characteristiceventhandlers-oncharacteristicvaluechanged"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#characteristiceventhandlers"
+      },
+      "BluetoothDeviceEventHandlers": {
+        "fragment": "[SecureContext]\ninterface mixin BluetoothDeviceEventHandlers {\n  attribute EventHandler onadvertisementreceived;\n  attribute EventHandler ongattserverdisconnected;\n};",
+        "type": "interface mixin",
+        "name": "BluetoothDeviceEventHandlers",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onadvertisementreceived",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdeviceeventhandlers-onadvertisementreceived"
+          },
+          {
+            "type": "attribute",
+            "name": "ongattserverdisconnected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothdeviceeventhandlers-ongattserverdisconnected"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothdeviceeventhandlers"
+      },
+      "ServiceEventHandlers": {
+        "fragment": "[SecureContext]\ninterface mixin ServiceEventHandlers {\n  attribute EventHandler onserviceadded;\n  attribute EventHandler onservicechanged;\n  attribute EventHandler onserviceremoved;\n};",
+        "type": "interface mixin",
+        "name": "ServiceEventHandlers",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onserviceadded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-serviceeventhandlers-onserviceadded"
+          },
+          {
+            "type": "attribute",
+            "name": "onservicechanged",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-serviceeventhandlers-onservicechanged"
+          },
+          {
+            "type": "attribute",
+            "name": "onserviceremoved",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://bluetooth.spec.whatwg.org/#dom-serviceeventhandlers-onserviceremoved"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#serviceeventhandlers"
+      },
+      "UUID": {
+        "fragment": "typedef DOMString UUID;",
+        "type": "typedef",
+        "name": "UUID",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "DOMString"
+        },
+        "extAttrs": [],
+        "href": "https://bluetooth.spec.whatwg.org/#typedefdef-uuid"
+      },
+      "BluetoothUUID": {
+        "fragment": "[Exposed=Window]\ninterface BluetoothUUID {\n  static UUID getService((DOMString or unsigned long) name);\n  static UUID getCharacteristic((DOMString or unsigned long) name);\n  static UUID getDescriptor((DOMString or unsigned long) name);\n\n  static UUID canonicalUUID([EnforceRange] unsigned long alias);\n};",
+        "type": "interface",
+        "name": "BluetoothUUID",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getService",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothuuid-getservice"
+          },
+          {
+            "type": "operation",
+            "name": "getCharacteristic",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothuuid-getcharacteristic"
+          },
+          {
+            "type": "operation",
+            "name": "getDescriptor",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "unsigned long"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothuuid-getdescriptor"
+          },
+          {
+            "type": "operation",
+            "name": "canonicalUUID",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UUID"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "alias",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "EnforceRange",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://bluetooth.spec.whatwg.org/#dom-bluetoothuuid-canonicaluuid"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://bluetooth.spec.whatwg.org/#bluetoothuuid"
+      },
+      "BluetoothServiceUUID": {
+        "fragment": "typedef (DOMString or unsigned long) BluetoothServiceUUID;",
+        "type": "typedef",
+        "name": "BluetoothServiceUUID",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://bluetooth.spec.whatwg.org/#typedefdef-bluetoothserviceuuid"
+      },
+      "BluetoothCharacteristicUUID": {
+        "fragment": "typedef (DOMString or unsigned long) BluetoothCharacteristicUUID;",
+        "type": "typedef",
+        "name": "BluetoothCharacteristicUUID",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://bluetooth.spec.whatwg.org/#typedefdef-bluetoothcharacteristicuuid"
+      },
+      "BluetoothDescriptorUUID": {
+        "fragment": "typedef (DOMString or unsigned long) BluetoothDescriptorUUID;",
+        "type": "typedef",
+        "name": "BluetoothDescriptorUUID",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://bluetooth.spec.whatwg.org/#typedefdef-bluetoothdescriptoruuid"
+      }
+    },
+    "idlExtendedNames": {
+      "Bluetooth": [
+        {
+          "fragment": "Bluetooth includes BluetoothDeviceEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Bluetooth",
+          "includes": "BluetoothDeviceEventHandlers"
+        },
+        {
+          "fragment": "Bluetooth includes CharacteristicEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Bluetooth",
+          "includes": "CharacteristicEventHandlers"
+        },
+        {
+          "fragment": "Bluetooth includes ServiceEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Bluetooth",
+          "includes": "ServiceEventHandlers"
+        }
+      ],
+      "BluetoothDevice": [
+        {
+          "fragment": "BluetoothDevice includes BluetoothDeviceEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothDevice",
+          "includes": "BluetoothDeviceEventHandlers"
+        },
+        {
+          "fragment": "BluetoothDevice includes CharacteristicEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothDevice",
+          "includes": "CharacteristicEventHandlers"
+        },
+        {
+          "fragment": "BluetoothDevice includes ServiceEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothDevice",
+          "includes": "ServiceEventHandlers"
+        }
+      ],
+      "BluetoothRemoteGATTService": [
+        {
+          "fragment": "BluetoothRemoteGATTService includes CharacteristicEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothRemoteGATTService",
+          "includes": "CharacteristicEventHandlers"
+        },
+        {
+          "fragment": "BluetoothRemoteGATTService includes ServiceEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothRemoteGATTService",
+          "includes": "ServiceEventHandlers"
+        }
+      ],
+      "BluetoothRemoteGATTCharacteristic": [
+        {
+          "fragment": "BluetoothRemoteGATTCharacteristic includes CharacteristicEventHandlers;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "BluetoothRemoteGATTCharacteristic",
+          "includes": "CharacteristicEventHandlers"
+        }
+      ],
+      "Navigator": [
+        {
+          "fragment": "[SecureContext]\npartial interface Navigator {\n  [SameObject]\n  readonly attribute Bluetooth bluetooth;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "bluetooth",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Bluetooth"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://bluetooth.spec.whatwg.org/#dom-navigator-bluetooth"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Bluetooth",
+        "BluetoothPermissionResult",
+        "ValueEvent",
+        "BluetoothDevice",
+        "BluetoothManufacturerDataMap",
+        "BluetoothServiceDataMap",
+        "BluetoothAdvertisingEvent",
+        "BluetoothRemoteGATTServer",
+        "BluetoothRemoteGATTService",
+        "BluetoothRemoteGATTCharacteristic",
+        "BluetoothCharacteristicProperties",
+        "BluetoothRemoteGATTDescriptor",
+        "BluetoothUUID"
+      ]
+    },
+    "dependencies": {
+      "BluetoothDataFilterInit": [
+        "BufferSource"
+      ],
+      "BluetoothManufacturerDataFilterInit": [
+        "BluetoothDataFilterInit"
+      ],
+      "BluetoothServiceDataFilterInit": [
+        "BluetoothDataFilterInit",
+        "BluetoothServiceUUID"
+      ],
+      "BluetoothLEScanFilterInit": [
+        "BluetoothServiceUUID",
+        "BluetoothManufacturerDataFilterInit",
+        "BluetoothServiceDataFilterInit"
+      ],
+      "RequestDeviceOptions": [
+        "BluetoothLEScanFilterInit",
+        "BluetoothServiceUUID"
+      ],
+      "Bluetooth": [
+        "EventTarget",
+        "EventHandler",
+        "BluetoothDevice",
+        "RequestDeviceOptions",
+        "BluetoothDeviceEventHandlers",
+        "CharacteristicEventHandlers",
+        "ServiceEventHandlers"
+      ],
+      "BluetoothPermissionDescriptor": [
+        "PermissionDescriptor",
+        "BluetoothLEScanFilterInit",
+        "BluetoothServiceUUID"
+      ],
+      "AllowedBluetoothDevice": [
+        "UUID"
+      ],
+      "BluetoothPermissionStorage": [
+        "AllowedBluetoothDevice"
+      ],
+      "BluetoothPermissionResult": [
+        "PermissionStatus",
+        "BluetoothDevice"
+      ],
+      "ValueEvent": [
+        "Event",
+        "ValueEventInit"
+      ],
+      "ValueEventInit": [
+        "EventInit"
+      ],
+      "BluetoothDevice": [
+        "EventTarget",
+        "BluetoothRemoteGATTServer",
+        "WatchAdvertisementsOptions",
+        "BluetoothDeviceEventHandlers",
+        "CharacteristicEventHandlers",
+        "ServiceEventHandlers"
+      ],
+      "WatchAdvertisementsOptions": [
+        "AbortSignal"
+      ],
+      "BluetoothManufacturerDataMap": [
+        "DataView"
+      ],
+      "BluetoothServiceDataMap": [
+        "UUID",
+        "DataView"
+      ],
+      "BluetoothAdvertisingEvent": [
+        "Event",
+        "BluetoothAdvertisingEventInit",
+        "BluetoothDevice",
+        "UUID",
+        "BluetoothManufacturerDataMap",
+        "BluetoothServiceDataMap"
+      ],
+      "BluetoothAdvertisingEventInit": [
+        "EventInit",
+        "BluetoothDevice",
+        "BluetoothManufacturerDataMap",
+        "BluetoothServiceDataMap"
+      ],
+      "BluetoothRemoteGATTServer": [
+        "BluetoothDevice",
+        "BluetoothRemoteGATTServer",
+        "BluetoothRemoteGATTService",
+        "BluetoothServiceUUID"
+      ],
+      "BluetoothRemoteGATTService": [
+        "EventTarget",
+        "BluetoothDevice",
+        "UUID",
+        "BluetoothRemoteGATTCharacteristic",
+        "BluetoothCharacteristicUUID",
+        "BluetoothRemoteGATTService",
+        "BluetoothServiceUUID",
+        "CharacteristicEventHandlers",
+        "ServiceEventHandlers"
+      ],
+      "BluetoothRemoteGATTCharacteristic": [
+        "EventTarget",
+        "BluetoothRemoteGATTService",
+        "UUID",
+        "BluetoothCharacteristicProperties",
+        "DataView",
+        "BluetoothRemoteGATTDescriptor",
+        "BluetoothDescriptorUUID",
+        "BufferSource",
+        "BluetoothRemoteGATTCharacteristic",
+        "CharacteristicEventHandlers"
+      ],
+      "BluetoothCharacteristicProperties": [],
+      "BluetoothRemoteGATTDescriptor": [
+        "BluetoothRemoteGATTCharacteristic",
+        "UUID",
+        "DataView",
+        "BufferSource"
+      ],
+      "CharacteristicEventHandlers": [
+        "EventHandler"
+      ],
+      "BluetoothDeviceEventHandlers": [
+        "EventHandler"
+      ],
+      "ServiceEventHandlers": [
+        "EventHandler"
+      ],
+      "BluetoothUUID": [
+        "UUID"
+      ],
+      "Navigator": [
+        "Bluetooth"
+      ]
+    },
+    "externalDependencies": [
+      "BufferSource",
+      "EventTarget",
+      "EventHandler",
+      "PermissionDescriptor",
+      "PermissionStatus",
+      "Event",
+      "EventInit",
+      "AbortSignal",
+      "DataView",
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

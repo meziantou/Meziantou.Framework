@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ky": {
+      "identity": {
+        "language": "ky"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

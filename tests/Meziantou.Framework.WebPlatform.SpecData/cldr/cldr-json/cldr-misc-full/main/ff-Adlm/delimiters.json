@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ff-Adlm": {
+      "identity": {
+        "language": "ff",
+        "script": "Adlm"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

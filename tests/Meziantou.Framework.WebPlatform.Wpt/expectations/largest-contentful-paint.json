@@ -1,0 +1,241 @@
+{
+  "largest-contentful-paint/animated/observe-animated-image-gif.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Same origin animated image is observable and has a first frame.": "FAIL"
+    }
+  },
+  "largest-contentful-paint/animated/observe-animated-image-webp.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Same origin animated image is observable and has a first frame.": "FAIL"
+    }
+  },
+  "largest-contentful-paint/animated/observe-animated-image.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Same origin animated image is observable and has a first frame.": "FAIL"
+    }
+  },
+  "largest-contentful-paint/animated/observe-cross-origin-animated-image.tentative.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/animated/observe-cross-origin-tao-animated-image.tentative.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/animated/observe-non-animated-image.tentative.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/animated/observe-video.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Same origin animated image is observable and has a first frame.": "TIMEOUT"
+    }
+  },
+  "largest-contentful-paint/background-image-set-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/broken-image-icon.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/contracted-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/cross-origin-image.sub.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/element-only-when-fully-active.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/expanded-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/first-letter-background.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/first-paint-equals-lcp-text.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/idlharness.html": {
+    "total": 30
+  },
+  "largest-contentful-paint/iframe-content-not-observed.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-TAO.sub.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-element-when-fully-active.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-full-viewport.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-inside-svg.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-not-fully-visible.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-removed-after-paint.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-removed-before-load.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-src-change.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-sw-same-origin.https.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/image-upscaling-empty-url.html": {
+    "total": 10
+  },
+  "largest-contentful-paint/image-upscaling.html": {
+    "total": 10
+  },
+  "largest-contentful-paint/initially-invisible-images.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/invisible-images-composited-1.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/invisible-images-composited-2.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/invisible-images.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/larger-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/larger-text.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/loadTime-after-appendChild.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/modified-text-not-reconsidered.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/multiple-image-same-src.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/multiple-redirects-TAO.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-after-untrusted-scroll.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-css-generated-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-css-generated-text.html": {
+    "total": 3
+  },
+  "largest-contentful-paint/observe-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-mathml.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-random-namespace.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-svg-background-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-svg-data-uri-background-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-svg-data-uri-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-svg-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/observe-text.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/performance-entry-sequence.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/placeholder-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/progressively-loaded-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/redirects-tao-star.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/repeated-image.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/resized-image-not-reconsidered.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/same-origin-redirects.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/supported-lcp-type.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/text-fragment-union.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/text-with-display-style.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/toJSON.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/transparent-text-with-shadow.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/transparent-text-with-text-stroke.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/transparent-text.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/update-on-style-change.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/video-data-uri.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Video of data URI src should trigger an LCP entry to be emitted.": "TIMEOUT"
+    }
+  },
+  "largest-contentful-paint/video-play-after-poster.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/video-poster.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/web-font-styled-text-resize-block.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/web-font-styled-text-resize-swap-after-interaction.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/web-font-styled-text-resize-swap-smaller.html": {
+    "total": 1
+  },
+  "largest-contentful-paint/web-font-styled-text-resize-swap-subnode.html": {
+    "total": 1,
+    "failures": {
+      "LCP should be updated if the web font styled text resizes to be larger during the swap period": "FAIL"
+    }
+  },
+  "largest-contentful-paint/web-font-styled-text-resize-swap.html": {
+    "total": 1,
+    "failures": {
+      "LCP should be updated if the web font styled text resizes to be larger during the swap period": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,253 @@
+{
+  "spec": {
+    "title": "CSS Properties and Values API Level 1",
+    "url": "https://drafts.css-houdini.org/css-properties-values-api-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSPropertyRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "PropertyDefinition": {
+        "fragment": "dictionary PropertyDefinition {\n  required DOMString name;\n           DOMString syntax       = \"*\";\n           boolean   inherits     = true;\n           DOMString initialValue;\n\n};",
+        "type": "dictionary",
+        "name": "PropertyDefinition",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-name"
+          },
+          {
+            "type": "field",
+            "name": "syntax",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "*"
+            },
+            "required": false,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-syntax"
+          },
+          {
+            "type": "field",
+            "name": "inherits",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-inherits"
+          },
+          {
+            "type": "field",
+            "name": "initialValue",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-initialvalue"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dictdef-propertydefinition"
+      },
+      "CSSPropertyRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSPropertyRule : CSSRule {\n  readonly attribute CSSOMString name;\n  readonly attribute CSSOMString syntax;\n  readonly attribute boolean inherits;\n  readonly attribute CSSOMString? initialValue;\n};",
+        "type": "interface",
+        "name": "CSSPropertyRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "syntax",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-syntax"
+          },
+          {
+            "type": "attribute",
+            "name": "inherits",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-inherits"
+          },
+          {
+            "type": "attribute",
+            "name": "initialValue",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-initialvalue"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#csspropertyrule"
+      }
+    },
+    "idlExtendedNames": {
+      "CSS": [
+        {
+          "fragment": "partial namespace CSS {\n  undefined registerProperty(PropertyDefinition definition);\n};",
+          "type": "namespace",
+          "name": "CSS",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "registerProperty",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "definition",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "PropertyDefinition"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-css-registerproperty"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSPropertyRule"
+      ]
+    },
+    "dependencies": {
+      "PropertyDefinition": [],
+      "CSS": [
+        "PropertyDefinition"
+      ],
+      "CSSPropertyRule": [
+        "CSSRule",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSS",
+      "CSSRule",
+      "CSSOMString"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

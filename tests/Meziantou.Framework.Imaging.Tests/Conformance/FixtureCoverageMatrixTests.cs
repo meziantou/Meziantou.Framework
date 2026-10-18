@@ -15,7 +15,7 @@ public sealed class FixtureCoverageMatrixTests
 {
     private static readonly string[] Kinds = [FixtureKinds.Valid, FixtureKinds.Invalid, FixtureKinds.Unsupported, FixtureKinds.Limit];
 
-    private static readonly FullPath MatrixPath = FullPath.FromPath(AppContext.BaseDirectory) / "Fixtures" / "README.md";
+    private static readonly FullPath MatrixPath = FixtureRoot.GetDirectory() / "README.md";
 
     [Fact]
     public void FormatCountsMatchTheManifest()

@@ -1,0 +1,195 @@
+{
+  "spec": {
+    "title": "Pointer-driven Animations Module Level 1",
+    "url": "https://drafts.csswg.org/pointer-animations-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "PointerTimeline"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "PointerAxis": {
+        "fragment": "enum PointerAxis {\n  \"block\",\n  \"inline\",\n  \"x\",\n  \"y\"\n};",
+        "type": "enum",
+        "name": "PointerAxis",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "block",
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointeraxis-block"
+          },
+          {
+            "type": "enum-value",
+            "value": "inline",
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointeraxis-inline"
+          },
+          {
+            "type": "enum-value",
+            "value": "x",
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointeraxis-x"
+          },
+          {
+            "type": "enum-value",
+            "value": "y",
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointeraxis-y"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/pointer-animations-1/#enumdef-pointeraxis"
+      },
+      "PointerTimelineOptions": {
+        "fragment": "dictionary PointerTimelineOptions {\n  Element? source;\n  PointerAxis axis = \"block\";\n};",
+        "type": "dictionary",
+        "name": "PointerTimelineOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "source",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointertimelineoptions-source"
+          },
+          {
+            "type": "field",
+            "name": "axis",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PointerAxis"
+            },
+            "default": {
+              "type": "string",
+              "value": "block"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointertimelineoptions-axis"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/pointer-animations-1/#dictdef-pointertimelineoptions"
+      },
+      "PointerTimeline": {
+        "fragment": "[Exposed=Window]\ninterface PointerTimeline : AnimationTimeline {\n  constructor(optional PointerTimelineOptions options = {});\n  readonly attribute Element? source;\n  readonly attribute PointerAxis axis;\n};",
+        "type": "interface",
+        "name": "PointerTimeline",
+        "inheritance": "AnimationTimeline",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PointerTimelineOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointertimeline-pointertimeline"
+          },
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointertimeline-source"
+          },
+          {
+            "type": "attribute",
+            "name": "axis",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PointerAxis"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/pointer-animations-1/#dom-pointertimeline-axis"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/pointer-animations-1/#pointertimeline"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PointerTimeline"
+      ]
+    },
+    "dependencies": {
+      "PointerTimelineOptions": [
+        "Element",
+        "PointerAxis"
+      ],
+      "PointerTimeline": [
+        "AnimationTimeline",
+        "PointerTimelineOptions",
+        "Element",
+        "PointerAxis"
+      ]
+    },
+    "externalDependencies": [
+      "Element",
+      "AnimationTimeline"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

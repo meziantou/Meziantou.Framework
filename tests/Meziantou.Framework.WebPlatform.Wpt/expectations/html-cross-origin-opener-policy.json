@@ -1,0 +1,677 @@
+{
+  "html/cross-origin-opener-policy/blob-popup.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coep-blob-popup.https.html": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/coep-navigate-popup.https.html?0-1": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/coep-navigate-popup.https.html?2-3": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/coep-navigate-popup.https.html?4-last": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/coep-redirect.https.html": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/coep-with-cross-origin.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-opener-policy/coep-with-same-origin.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-opener-policy/coep-with-same-site.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-opener-policy/coop-coep-sandbox.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/coop-csp-sandbox-navigate.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/coop-csp-sandbox.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/coop-navigate-same-origin-csp-sandbox.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coop-navigated-history-popup.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coop-navigated-popup.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coop-noopener-allow-popups.https.html": {
+    "total": 9
+  },
+  "html/cross-origin-opener-policy/coop-popup-opener-navigates.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coop-same-origin-allow-popups-document-write.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/coop-sandbox-cuts-opener.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/coop-sandbox-redirects-cuts-opener.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/coop-sandbox.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/header-parsing-failures.https.html?1-4": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/header-parsing-failures.https.html?12-last": {
+    "total": 5
+  },
+  "html/cross-origin-opener-policy/header-parsing-failures.https.html?5-8": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/header-parsing-failures.https.html?9-12": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/header-parsing-non-ascii.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/header-parsing-repeated.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/header-parsing-successes.https.html": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/historical/coep-navigate-popup-unsafe-inherit.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-origin-unsafe-allow-outgoing-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-origin-unsafe-allow-outgoing-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-origin-unsafe-allow-outgoing-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-unsafe-allow-outgoing-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-unsafe-allow-outgoing-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-unsafe-allow-outgoing-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/historical/popup-same-site-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin-allow-popups.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin-allow-popups.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin-allow-popups.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin-allow-popups.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin-allow-popups.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-same-origin.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-unsafe-none.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-unsafe-none.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-unsafe-none.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-unsafe-none.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-allow-popups-to-unsafe-none.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-same-origin.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-same-origin.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-same-origin.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-same-origin.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-same-origin.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-unsafe-none.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-unsafe-none.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-unsafe-none.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-unsafe-none.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-same-origin-to-unsafe-none.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-same-origin.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-same-origin.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-same-origin.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-same-origin.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-same-origin.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-unsafe-none.https.html?1-2": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-unsafe-none.https.html?3-4": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-unsafe-none.https.html?5-6": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-unsafe-none.https.html?7-8": {
+    "total": 6
+  },
+  "html/cross-origin-opener-policy/iframe-popup-unsafe-none-to-unsafe-none.https.html?9-last": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?1-2": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?11-12": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?13-14": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?15-16": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?17-last": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?3-4": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?5-6": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?7-8": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/javascript-url.https.html?9-10": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/navigate-to-aboutblank.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-opener-policy/navigate-top-to-aboutblank.https.html": {
+    "total": 3,
+    "failures": {
+      "Navigate top to about:blank from iframe with opener COOP: |header(Cross-Origin-Opener-Policy,same-origin-allow-popups), iframe origin: https://www1.web-platform.test:8443": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/no-https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-coop-by-sw.https.html?1-4": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/popup-coop-by-sw.https.html?5-last": {
+    "total": 4
+  },
+  "html/cross-origin-opener-policy/popup-meta-http-equiv.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/popup-redirect-cache.https.html?0-1": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-redirect-cache.https.html?2-3": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-redirect-cache.https.html?4-5": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-redirect-cache.https.html?6-7": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-redirect-cache.https.html?8-last": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/popup-redirect-same-origin-allow-popups.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-allow-popups-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-allow-popups-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-allow-popups-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-non-initial-about-blank.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-same-origin-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unsafe-none-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unsafe-none-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unsafe-none-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unspecified-with-cross-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unspecified-with-same-origin.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-unspecified-with-same-site.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-opener-policy/popup-with-structured-header.https.html": {
+    "total": 3
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-openee_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "access-from-coop-page-to-openee, same-origin": "FAIL",
+      "access-from-coop-page-to-openee, same-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-openee_coop-ro_cross-origin.https.html": {
+    "total": 2,
+    "failures": {
+      "access-from-coop-page-to-openee, cross-origin": "FAIL",
+      "access-from-coop-page-to-openee, cross-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-opener_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "access-from-coop-page-to-opener, same-origin": "FAIL",
+      "access-from-coop-page-to-opener, same-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-opener_coop-ro_cross-origin.https.html": {
+    "total": 2,
+    "failures": {
+      "access-from-coop-page-to-opener, cross-origin": "FAIL",
+      "access-from-coop-page-to-opener, cross-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-other_coop-ro.https.html": {
+    "total": 1,
+    "failures": {
+      "access-from-coop-page-to-other (COOP-RO)": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-from-coop-page-to-other_coop-ro_cross-origin.https.html": {
+    "total": 1,
+    "failures": {
+      "access-from-coop-page-to-other (COOP-RO)": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-openee_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "access-to-coop-page-from-openee, same-origin": "FAIL",
+      "access-to-coop-page-from-openee, same-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-openee_coop-ro_cross-origin.https.html": {
+    "total": 2,
+    "failures": {
+      "access-to-coop-page-from-openee, cross-origin": "FAIL",
+      "access-to-coop-page-from-openee, cross-origin + redirect)": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-opener_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "access-to-coop-page-from-opener, same-origin": "FAIL",
+      "access-to-coop-page-from-opener, same-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-opener_coop-ro_cross-origin.https.html": {
+    "total": 2,
+    "failures": {
+      "access-to-coop-page-from-opener, cross-origin": "FAIL",
+      "access-to-coop-page-from-opener, cross-origin + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-other_coop-ro.https.html": {
+    "total": 1,
+    "failures": {
+      "access-to-coop-page-from-other (COOP-RO)": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/access-to-coop-page-from-other_coop-ro_cross-origin.https.html": {
+    "total": 1,
+    "failures": {
+      "access-to-coop-page-from-other (COOP-RO)": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-blur.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.blur()": "FAIL",
+      "same-origin > w => w.blur()": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-close.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.close()": "FAIL",
+      "same-origin > w => w.close()": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-closed.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.closed": "FAIL",
+      "same-origin > w => w.closed": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-focus.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.focus()": "FAIL",
+      "same-origin > w => w.focus()": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-frames.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.frames": "FAIL",
+      "same-origin > w => w.frames": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-indexed-getter.https.html": {
+    "total": 6,
+    "failures": {
+      "cross-origin > w => w[0]": "FAIL",
+      "same-site > w => w[0]": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-length.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.length": "FAIL",
+      "same-origin > w => w.length": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-location-get.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.location": "FAIL",
+      "same-origin > w => w.location": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-location-set.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.location = \"#\"": "FAIL",
+      "same-origin > w => w.location = \"#\"": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-named-getter.https.html": {
+    "total": 8,
+    "failures": {
+      "cross-origin > w => w[\"iframeName\"]": "FAIL",
+      "same-site > w => w[\"divID\"]": "FAIL",
+      "same-site > w => w[\"iframeName\"]": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-opener-get.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.opener": "FAIL",
+      "same-origin > w => w.opener": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-opener-set.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-postmessage-1.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.postMessage(\"\", \"\")": "FAIL",
+      "same-origin > w => w.postMessage(\"\", \"\")": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-postmessage-2.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.postMessage(\"\")": "FAIL",
+      "same-origin > w => w.postMessage(\"\")": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-self.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.self": "FAIL",
+      "same-origin > w => w.self": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-top.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.top": "FAIL",
+      "same-origin > w => w.top": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/property-window.https.html": {
+    "total": 2,
+    "failures": {
+      "cross-origin > w => w.window": "FAIL",
+      "same-origin > w => w.window": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/report-to-both_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "Access from openee": "FAIL",
+      "Access from opener": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/access-reporting/reporting-observer.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Access from cross-site iframe": "NOTRUN",
+      "Access from same-origin iframe": "TIMEOUT",
+      "Openee COOP": "FAIL",
+      "Opener COOP": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/document-reporting/report-only-four-reports.https.html": {
+    "total": 1,
+    "failures": {
+      "coop document reporting test A test with both COOP and COOP report only setup using Reporting-Endpoints header to CROSS_ORIGIN with same-origin-allow-popups; report-to=\"coop-popup-report-endpoint\", require-corp, same-origin; report-to=\"coop-popup-report-only-endpoint\", require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/document-reporting/report-to-both_coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "Access from openee": "FAIL",
+      "Access from opener": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/document-reporting/reporting-redirect-with-same-origin-allow-popups.https.html": {
+    "total": 2,
+    "failures": {
+      "Cross origin openee redirected to same-origin with same-origin-allow-popups": "FAIL",
+      "Same origin openee redirected to same-origin with same-origin-allow-popups": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/document-reporting/reporting-redirect-with-unsafe-none.https.html": {
+    "total": 2,
+    "failures": {
+      "Cross origin openee redirected to same-origin with unsafe-none": "FAIL",
+      "Same origin openee redirected to same-origin with unsafe-none": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-four-reports.https.html": {
+    "total": 2,
+    "failures": {
+      "coop reporting test A test with both COOP and COOP report only setup to CROSS_ORIGIN with same-origin-allow-popups; report-to=\"coop-popup-report-endpoint\", require-corp, same-origin; report-to=\"coop-popup-report-only-endpoint\", require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-from-unsafe-none.https.html": {
+    "total": 3,
+    "failures": {
+      "coop reporting test Report only tests for an opener without any COOP/COOP report only set to CROSS_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", ": "FAIL",
+      "coop reporting test Report only tests for an opener without any COOP/COOP report only set to SAME_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-same-origin-report-to.https.html": {
+    "total": 4,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with , , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-same-origin-with-coep-report-only.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-same-origin-with-coep.https.html": {
+    "total": 2
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/report-only-same-origin.https.html": {
+    "total": 3,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", require-corp": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with , require-corp, same-origin; report-to=\"coop-popup-report-only-endpoint\", ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-coop-navigated-opener.https.html": {
+    "total": 1,
+    "failures": {
+      "navigation-report-from-opener-navigation": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-coop-navigated-popup.https.html": {
+    "total": 2,
+    "failures": {
+      "Open a popup to a document without COOP, then navigate it to a document with": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-same-origin-allow-popups-report-to.https.html": {
+    "total": 4,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with same-origin, require-corp, , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with same-origin-allow-popups; report-to=\"coop-popup-report-endpoint\", require-corp, , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-same-origin-coep-report-to.https.html": {
+    "total": 6,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", require-corp": "FAIL",
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", require-corp, , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", require-corp": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-same-origin-report-to.https.html": {
+    "total": 7,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with unsafe-none; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", require-corp, , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with unsafe-none, , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with unsafe-none; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-same-origin.https.html": {
+    "total": 5,
+    "failures": {
+      "coop reporting test reporting same origin to CROSS_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting same origin to CROSS_ORIGIN with unsafe-none; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting same origin to SAME_ORIGIN with unsafe-none; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-unsafe-none-report-to.https.html": {
+    "total": 4,
+    "failures": {
+      "coop reporting test reporting same origin with report-to to CROSS_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with same-origin, , , ": "FAIL",
+      "coop reporting test reporting same origin with report-to to SAME_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-redirect-with-same-origin-allow-popups.https.html": {
+    "total": 2,
+    "failures": {
+      "Cross origin openee redirected to same-origin with same-origin-allow-popups": "FAIL",
+      "Same origin openee redirected to same-origin with same-origin-allow-popups": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/tentative/access-to-noopener-page-from-no-coop-ro.https.html": {
+    "total": 2,
+    "failures": {
+      "access-to-coop-page-from-opener, noopener-allow-popups": "FAIL",
+      "access-to-coop-page-from-opener, noopener-allow-popups + redirect": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/resource-popup.https.html": {
+    "total": 12
+  },
+  "html/cross-origin-opener-policy/tentative/noopener/coop-noopener-allow-popups-restrict-properties.https.html": {
+    "total": 2
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sw-KE": {
+      "identity": {
+        "language": "sw",
+        "territory": "KE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

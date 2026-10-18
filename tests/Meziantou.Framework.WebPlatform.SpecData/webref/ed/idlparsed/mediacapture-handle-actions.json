@@ -1,0 +1,317 @@
+{
+  "spec": {
+    "title": "The Capture-Handle Actions Mechanism",
+    "url": "https://w3c.github.io/mediacapture-handle/actions/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "CaptureActionEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "CaptureAction": {
+        "fragment": "enum CaptureAction {\n  \"next\",\n  \"previous\",\n  \"first\",\n  \"last\"\n};",
+        "type": "enum",
+        "name": "CaptureAction",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "next",
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureaction-next"
+          },
+          {
+            "type": "enum-value",
+            "value": "previous",
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureaction-previous"
+          },
+          {
+            "type": "enum-value",
+            "value": "first",
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureaction-first"
+          },
+          {
+            "type": "enum-value",
+            "value": "last",
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureaction-last"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureaction"
+      },
+      "CaptureActionEvent": {
+        "fragment": "[Exposed=Window]\ninterface CaptureActionEvent : Event {\n  constructor(optional CaptureActionEventInit init = {});\n  readonly attribute CaptureAction action;\n};",
+        "type": "interface",
+        "name": "CaptureActionEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CaptureActionEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureactionevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "action",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CaptureAction"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureactionevent-action"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureactionevent"
+      },
+      "CaptureActionEventInit": {
+        "fragment": "dictionary CaptureActionEventInit : EventInit {\n  DOMString action;\n};",
+        "type": "dictionary",
+        "name": "CaptureActionEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "action",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureactioneventinit-action"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-captureactioneventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "MediaDevices": [
+        {
+          "fragment": "partial interface MediaDevices {\n  undefined setSupportedCaptureActions(sequence<DOMString> actions);\n  attribute EventHandler oncaptureaction;\n};",
+          "type": "interface",
+          "name": "MediaDevices",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "setSupportedCaptureActions",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "actions",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-mediadevices-setsupportedcaptureactions"
+            },
+            {
+              "type": "attribute",
+              "name": "oncaptureaction",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-mediadevices-oncaptureaction"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "MediaStreamTrack": [
+        {
+          "fragment": "partial interface MediaStreamTrack {\n  sequence<DOMString> getSupportedCaptureActions();\n  Promise<undefined> sendCaptureAction(CaptureAction action);\n};",
+          "type": "interface",
+          "name": "MediaStreamTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getSupportedCaptureActions",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-mediastreamtrack-getsupportedcaptureactions"
+            },
+            {
+              "type": "operation",
+              "name": "sendCaptureAction",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "action",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CaptureAction"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/mediacapture-handle/actions/#dom-mediastreamtrack-sendcaptureaction"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CaptureActionEvent"
+      ]
+    },
+    "dependencies": {
+      "MediaDevices": [
+        "EventHandler"
+      ],
+      "CaptureActionEvent": [
+        "Event",
+        "CaptureActionEventInit",
+        "CaptureAction"
+      ],
+      "CaptureActionEventInit": [
+        "EventInit"
+      ],
+      "MediaStreamTrack": [
+        "CaptureAction"
+      ]
+    },
+    "externalDependencies": [
+      "MediaDevices",
+      "EventHandler",
+      "Event",
+      "EventInit",
+      "MediaStreamTrack"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

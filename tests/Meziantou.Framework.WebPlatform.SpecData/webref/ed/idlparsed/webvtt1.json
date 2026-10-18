@@ -1,0 +1,630 @@
+{
+  "spec": {
+    "title": "WebVTT: The Web Video Text Tracks Format",
+    "url": "https://w3c.github.io/webvtt/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "VTTCue",
+          "VTTRegion"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "AutoKeyword": {
+        "fragment": "enum AutoKeyword { \"auto\" };",
+        "type": "enum",
+        "name": "AutoKeyword",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://w3c.github.io/webvtt/#dom-autokeyword-auto"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-autokeyword"
+      },
+      "LineAndPositionSetting": {
+        "fragment": "typedef (double or AutoKeyword) LineAndPositionSetting;",
+        "type": "typedef",
+        "name": "LineAndPositionSetting",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AutoKeyword"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#typedefdef-lineandpositionsetting"
+      },
+      "DirectionSetting": {
+        "fragment": "enum DirectionSetting { \"\" /* horizontal */, \"rl\", \"lr\" };",
+        "type": "enum",
+        "name": "DirectionSetting",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://w3c.github.io/webvtt/#dom-directionsetting"
+          },
+          {
+            "type": "enum-value",
+            "value": "rl",
+            "href": "https://w3c.github.io/webvtt/#dom-directionsetting-rl"
+          },
+          {
+            "type": "enum-value",
+            "value": "lr",
+            "href": "https://w3c.github.io/webvtt/#dom-directionsetting-lr"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-directionsetting"
+      },
+      "LineAlignSetting": {
+        "fragment": "enum LineAlignSetting { \"start\", \"center\", \"end\" };",
+        "type": "enum",
+        "name": "LineAlignSetting",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "start",
+            "href": "https://w3c.github.io/webvtt/#dom-linealignsetting-start"
+          },
+          {
+            "type": "enum-value",
+            "value": "center",
+            "href": "https://w3c.github.io/webvtt/#dom-linealignsetting-center"
+          },
+          {
+            "type": "enum-value",
+            "value": "end",
+            "href": "https://w3c.github.io/webvtt/#dom-linealignsetting-end"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-linealignsetting"
+      },
+      "PositionAlignSetting": {
+        "fragment": "enum PositionAlignSetting { \"line-left\", \"center\", \"line-right\", \"auto\" };",
+        "type": "enum",
+        "name": "PositionAlignSetting",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "line-left",
+            "href": "https://w3c.github.io/webvtt/#dom-positionalignsetting-line-left"
+          },
+          {
+            "type": "enum-value",
+            "value": "center",
+            "href": "https://w3c.github.io/webvtt/#dom-positionalignsetting-center"
+          },
+          {
+            "type": "enum-value",
+            "value": "line-right",
+            "href": "https://w3c.github.io/webvtt/#dom-positionalignsetting-line-right"
+          },
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://w3c.github.io/webvtt/#dom-positionalignsetting-auto"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-positionalignsetting"
+      },
+      "AlignSetting": {
+        "fragment": "enum AlignSetting { \"start\", \"center\", \"end\", \"left\", \"right\" };",
+        "type": "enum",
+        "name": "AlignSetting",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "start",
+            "href": "https://w3c.github.io/webvtt/#dom-alignsetting-start"
+          },
+          {
+            "type": "enum-value",
+            "value": "center",
+            "href": "https://w3c.github.io/webvtt/#dom-alignsetting-center"
+          },
+          {
+            "type": "enum-value",
+            "value": "end",
+            "href": "https://w3c.github.io/webvtt/#dom-alignsetting-end"
+          },
+          {
+            "type": "enum-value",
+            "value": "left",
+            "href": "https://w3c.github.io/webvtt/#dom-alignsetting-left"
+          },
+          {
+            "type": "enum-value",
+            "value": "right",
+            "href": "https://w3c.github.io/webvtt/#dom-alignsetting-right"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-alignsetting"
+      },
+      "VTTCue": {
+        "fragment": "[Exposed=Window]\ninterface VTTCue : TextTrackCue {\n  constructor(double startTime, unrestricted double endTime, DOMString text);\n  attribute VTTRegion? region;\n  attribute DirectionSetting vertical;\n  attribute boolean snapToLines;\n  attribute LineAndPositionSetting line;\n  attribute LineAlignSetting lineAlign;\n  attribute LineAndPositionSetting position;\n  attribute PositionAlignSetting positionAlign;\n  attribute double size;\n  attribute AlignSetting align;\n  attribute DOMString text;\n  DocumentFragment getCueAsHTML();\n};",
+        "type": "interface",
+        "name": "VTTCue",
+        "inheritance": "TextTrackCue",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "startTime",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "endTime",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-vttcue"
+          },
+          {
+            "type": "attribute",
+            "name": "region",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "VTTRegion"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-region"
+          },
+          {
+            "type": "attribute",
+            "name": "vertical",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DirectionSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-vertical"
+          },
+          {
+            "type": "attribute",
+            "name": "snapToLines",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-snaptolines"
+          },
+          {
+            "type": "attribute",
+            "name": "line",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LineAndPositionSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-line"
+          },
+          {
+            "type": "attribute",
+            "name": "lineAlign",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LineAlignSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-linealign"
+          },
+          {
+            "type": "attribute",
+            "name": "position",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LineAndPositionSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-position"
+          },
+          {
+            "type": "attribute",
+            "name": "positionAlign",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PositionAlignSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-positionalign"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-size"
+          },
+          {
+            "type": "attribute",
+            "name": "align",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AlignSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-align"
+          },
+          {
+            "type": "attribute",
+            "name": "text",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-text"
+          },
+          {
+            "type": "operation",
+            "name": "getCueAsHTML",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DocumentFragment"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webvtt/#dom-vttcue-getcueashtml"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webvtt/#vttcue"
+      },
+      "ScrollSetting": {
+        "fragment": "enum ScrollSetting { \"\" /* none */, \"up\" };",
+        "type": "enum",
+        "name": "ScrollSetting",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://w3c.github.io/webvtt/#dom-scrollsetting"
+          },
+          {
+            "type": "enum-value",
+            "value": "up",
+            "href": "https://w3c.github.io/webvtt/#dom-scrollsetting-up"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webvtt/#enumdef-scrollsetting"
+      },
+      "VTTRegion": {
+        "fragment": "[Exposed=Window]\ninterface VTTRegion {\n  constructor();\n  attribute DOMString id;\n  attribute double width;\n  attribute unsigned long lines;\n  attribute double regionAnchorX;\n  attribute double regionAnchorY;\n  attribute double viewportAnchorX;\n  attribute double viewportAnchorY;\n  attribute ScrollSetting scroll;\n};",
+        "type": "interface",
+        "name": "VTTRegion",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-vttregion"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-id"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-width"
+          },
+          {
+            "type": "attribute",
+            "name": "lines",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-lines"
+          },
+          {
+            "type": "attribute",
+            "name": "regionAnchorX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-regionanchorx"
+          },
+          {
+            "type": "attribute",
+            "name": "regionAnchorY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-regionanchory"
+          },
+          {
+            "type": "attribute",
+            "name": "viewportAnchorX",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-viewportanchorx"
+          },
+          {
+            "type": "attribute",
+            "name": "viewportAnchorY",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-viewportanchory"
+          },
+          {
+            "type": "attribute",
+            "name": "scroll",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ScrollSetting"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webvtt/#dom-vttregion-scroll"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webvtt/#vttregion"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "VTTCue",
+        "VTTRegion"
+      ]
+    },
+    "dependencies": {
+      "VTTCue": [
+        "TextTrackCue",
+        "VTTRegion",
+        "DirectionSetting",
+        "LineAndPositionSetting",
+        "LineAlignSetting",
+        "PositionAlignSetting",
+        "AlignSetting",
+        "DocumentFragment"
+      ],
+      "VTTRegion": [
+        "ScrollSetting"
+      ]
+    },
+    "externalDependencies": [
+      "TextTrackCue",
+      "DocumentFragment"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

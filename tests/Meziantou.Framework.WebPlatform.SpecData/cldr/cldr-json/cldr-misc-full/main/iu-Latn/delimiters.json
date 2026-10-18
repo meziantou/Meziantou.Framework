@@ -1,0 +1,16 @@
+{
+  "main": {
+    "iu-Latn": {
+      "identity": {
+        "language": "iu",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

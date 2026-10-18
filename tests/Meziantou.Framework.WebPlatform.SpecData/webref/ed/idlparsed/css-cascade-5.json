@@ -1,0 +1,126 @@
+{
+  "spec": {
+    "title": "CSS Cascading and Inheritance Module Level 5",
+    "url": "https://drafts.csswg.org/css-cascade-5/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSLayerBlockRule",
+          "CSSLayerStatementRule"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSLayerBlockRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSLayerBlockRule : CSSGroupingRule {\n  readonly attribute CSSOMString name;\n};",
+        "type": "interface",
+        "name": "CSSLayerBlockRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-cascade-5/#dom-csslayerblockrule-name"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-cascade-5/#csslayerblockrule"
+      },
+      "CSSLayerStatementRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSLayerStatementRule : CSSRule {\n  readonly attribute FrozenArray<CSSOMString> nameList;\n};",
+        "type": "interface",
+        "name": "CSSLayerStatementRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "nameList",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-cascade-5/#dom-csslayerstatementrule-namelist"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-cascade-5/#csslayerstatementrule"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSLayerBlockRule",
+        "CSSLayerStatementRule"
+      ]
+    },
+    "dependencies": {
+      "CSSLayerBlockRule": [
+        "CSSGroupingRule",
+        "CSSOMString"
+      ],
+      "CSSLayerStatementRule": [
+        "CSSRule",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSGroupingRule",
+      "CSSOMString",
+      "CSSRule"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

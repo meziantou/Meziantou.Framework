@@ -1,0 +1,1285 @@
+{
+  "spec": {
+    "title": "Push API",
+    "url": "https://w3c.github.io/push-api/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "PushEvent",
+          "PushSubscriptionChangeEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "PushManager",
+          "PushSubscriptionOptions",
+          "PushSubscription"
+        ],
+        "Worker": [
+          "PushManager",
+          "PushSubscriptionOptions",
+          "PushSubscription"
+        ],
+        "ServiceWorker": [
+          "PushMessageData",
+          "ServiceWorkerGlobalScope"
+        ]
+      }
+    },
+    "idlNames": {
+      "PushPermissionDescriptor": {
+        "fragment": "dictionary PushPermissionDescriptor : PermissionDescriptor {\n  boolean userVisibleOnly = false;\n};",
+        "type": "dictionary",
+        "name": "PushPermissionDescriptor",
+        "inheritance": "PermissionDescriptor",
+        "members": [
+          {
+            "type": "field",
+            "name": "userVisibleOnly",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushpermissiondescriptor-uservisibleonly"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushpermissiondescriptor"
+      },
+      "PushManagerAttribute": {
+        "fragment": "[SecureContext]\ninterface mixin PushManagerAttribute {\n  readonly attribute PushManager pushManager;\n};",
+        "type": "interface mixin",
+        "name": "PushManagerAttribute",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "pushManager",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PushManager"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushmanagerattribute-pushmanager"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushmanagerattribute"
+      },
+      "PushManager": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface PushManager {\n  [SameObject] static readonly attribute FrozenArray<DOMString> supportedContentEncodings;\n\n  Promise<PushSubscription> subscribe(optional PushSubscriptionOptionsInit options = {});\n  Promise<PushSubscription?> getSubscription();\n  Promise<PermissionState> permissionState(optional PushSubscriptionOptionsInit options = {});\n};",
+        "type": "interface",
+        "name": "PushManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "supportedContentEncodings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushmanager-supportedcontentencodings"
+          },
+          {
+            "type": "operation",
+            "name": "subscribe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushSubscription"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushSubscriptionOptionsInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmanager-subscribe"
+          },
+          {
+            "type": "operation",
+            "name": "getSubscription",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "PushSubscription"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmanager-getsubscription"
+          },
+          {
+            "type": "operation",
+            "name": "permissionState",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PermissionState"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushSubscriptionOptionsInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmanager-permissionstate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushmanager"
+      },
+      "PushSubscriptionOptions": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface PushSubscriptionOptions {\n  readonly attribute boolean userVisibleOnly;\n  [SameObject] readonly attribute ArrayBuffer? applicationServerKey;\n};",
+        "type": "interface",
+        "name": "PushSubscriptionOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "userVisibleOnly",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptions-uservisibleonly"
+          },
+          {
+            "type": "attribute",
+            "name": "applicationServerKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptions-applicationserverkey"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptions"
+      },
+      "PushSubscriptionOptionsInit": {
+        "fragment": "dictionary PushSubscriptionOptionsInit {\n  boolean userVisibleOnly = false;\n  (BufferSource or DOMString)? applicationServerKey = null;\n};",
+        "type": "dictionary",
+        "name": "PushSubscriptionOptionsInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "userVisibleOnly",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptionsinit-uservisibleonly"
+          },
+          {
+            "type": "field",
+            "name": "applicationServerKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptionsinit-applicationserverkey"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionoptionsinit"
+      },
+      "PushSubscription": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface PushSubscription {\n  readonly attribute USVString endpoint;\n  readonly attribute EpochTimeStamp? expirationTime;\n  [SameObject] readonly attribute PushSubscriptionOptions options;\n  ArrayBuffer? getKey(PushEncryptionKeyName name);\n  Promise<boolean> unsubscribe();\n\n  PushSubscriptionJSON toJSON();\n};",
+        "type": "interface",
+        "name": "PushSubscription",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "endpoint",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-endpoint"
+          },
+          {
+            "type": "attribute",
+            "name": "expirationTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EpochTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-expirationtime"
+          },
+          {
+            "type": "attribute",
+            "name": "options",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PushSubscriptionOptions"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-options"
+          },
+          {
+            "type": "operation",
+            "name": "getKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushEncryptionKeyName"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-getkey"
+          },
+          {
+            "type": "operation",
+            "name": "unsubscribe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-unsubscribe"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PushSubscriptionJSON"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscription-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscription"
+      },
+      "PushSubscriptionJSON": {
+        "fragment": "dictionary PushSubscriptionJSON {\n  USVString endpoint;\n  EpochTimeStamp? expirationTime = null;\n  record<DOMString, USVString> keys;\n};",
+        "type": "dictionary",
+        "name": "PushSubscriptionJSON",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "endpoint",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionjson-endpoint"
+          },
+          {
+            "type": "field",
+            "name": "expirationTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EpochTimeStamp"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionjson-expirationtime"
+          },
+          {
+            "type": "field",
+            "name": "keys",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionjson-keys"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionjson"
+      },
+      "PushEncryptionKeyName": {
+        "fragment": "enum PushEncryptionKeyName {\n  \"p256dh\",\n  \"auth\"\n};",
+        "type": "enum",
+        "name": "PushEncryptionKeyName",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "p256dh",
+            "href": "https://w3c.github.io/push-api/#dom-pushencryptionkeyname-p256dh"
+          },
+          {
+            "type": "enum-value",
+            "value": "auth",
+            "href": "https://w3c.github.io/push-api/#dom-pushencryptionkeyname-auth"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/push-api/#dom-pushencryptionkeyname"
+      },
+      "PushMessageData": {
+        "fragment": "[Exposed=ServiceWorker, SecureContext]\ninterface PushMessageData {\n  ArrayBuffer arrayBuffer();\n  Blob blob();\n  Uint8Array bytes();\n  any json();\n  USVString text();\n};",
+        "type": "interface",
+        "name": "PushMessageData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "arrayBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmessagedata-arraybuffer"
+          },
+          {
+            "type": "operation",
+            "name": "blob",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmessagedata-blob"
+          },
+          {
+            "type": "operation",
+            "name": "bytes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Uint8Array"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmessagedata-bytes"
+          },
+          {
+            "type": "operation",
+            "name": "json",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmessagedata-json"
+          },
+          {
+            "type": "operation",
+            "name": "text",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/push-api/#dom-pushmessagedata-text"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushmessagedata"
+      },
+      "PushEvent": {
+        "fragment": "[Exposed=ServiceWorker, SecureContext]\ninterface PushEvent : ExtendableEvent {\n  constructor(DOMString type, optional PushEventInit eventInitDict = {});\n  readonly attribute PushMessageData? data;\n  readonly attribute Notification? notification;\n};",
+        "type": "interface",
+        "name": "PushEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/push-api/#dom-pushevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "PushMessageData"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushevent-data"
+          },
+          {
+            "type": "attribute",
+            "name": "notification",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Notification"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushevent-notification"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushevent"
+      },
+      "PushEventInit": {
+        "fragment": "dictionary PushEventInit : ExtendableEventInit {\n  PushMessageDataInit? data = null;\n  Notification? notification = null;\n};",
+        "type": "dictionary",
+        "name": "PushEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "PushMessageDataInit"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pusheventinit-data"
+          },
+          {
+            "type": "field",
+            "name": "notification",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Notification"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pusheventinit-notification"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pusheventinit"
+      },
+      "PushMessageDataInit": {
+        "fragment": "typedef (BufferSource or USVString) PushMessageDataInit;",
+        "type": "typedef",
+        "name": "PushMessageDataInit",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/push-api/#dom-pushmessagedatainit"
+      },
+      "PushSubscriptionChangeEvent": {
+        "fragment": "[Exposed=ServiceWorker, SecureContext]\ninterface PushSubscriptionChangeEvent : ExtendableEvent {\n  constructor(DOMString type, optional PushSubscriptionChangeEventInit eventInitDict = {});\n  readonly attribute PushSubscription? newSubscription;\n  readonly attribute PushSubscription? oldSubscription;\n};",
+        "type": "interface",
+        "name": "PushSubscriptionChangeEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PushSubscriptionChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "newSubscription",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "PushSubscription"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeevent-newsubscription"
+          },
+          {
+            "type": "attribute",
+            "name": "oldSubscription",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "PushSubscription"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeevent-oldsubscription"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeevent"
+      },
+      "PushSubscriptionChangeEventInit": {
+        "fragment": "dictionary PushSubscriptionChangeEventInit : ExtendableEventInit {\n  PushSubscription newSubscription = null;\n  PushSubscription oldSubscription = null;\n};",
+        "type": "dictionary",
+        "name": "PushSubscriptionChangeEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "newSubscription",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PushSubscription"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeeventinit-newsubscription"
+          },
+          {
+            "type": "field",
+            "name": "oldSubscription",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PushSubscription"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeeventinit-oldsubscription"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "Window includes PushManagerAttribute;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Window",
+          "includes": "PushManagerAttribute"
+        }
+      ],
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "ServiceWorkerRegistration includes PushManagerAttribute;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "ServiceWorkerRegistration",
+          "includes": "PushManagerAttribute"
+        }
+      ],
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "[Exposed=ServiceWorker, SecureContext]\npartial interface ServiceWorkerGlobalScope {\n  attribute EventHandler onpush;\n  attribute EventHandler onpushsubscriptionchange;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onpush",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/push-api/#dom-serviceworkerglobalscope-onpush"
+            },
+            {
+              "type": "attribute",
+              "name": "onpushsubscriptionchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/push-api/#dom-serviceworkerglobalscope-onpushsubscriptionchange"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "ServiceWorker"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PushManager",
+        "PushSubscriptionOptions",
+        "PushSubscription"
+      ],
+      "Worker": [
+        "PushManager",
+        "PushSubscriptionOptions",
+        "PushSubscription"
+      ],
+      "ServiceWorker": [
+        "PushMessageData",
+        "ServiceWorkerGlobalScope",
+        "PushEvent",
+        "PushSubscriptionChangeEvent"
+      ]
+    },
+    "dependencies": {
+      "PushPermissionDescriptor": [
+        "PermissionDescriptor"
+      ],
+      "PushManagerAttribute": [
+        "PushManager"
+      ],
+      "Window": [
+        "PushManagerAttribute"
+      ],
+      "ServiceWorkerRegistration": [
+        "PushManagerAttribute"
+      ],
+      "PushManager": [
+        "PushSubscription",
+        "PushSubscriptionOptionsInit",
+        "PermissionState"
+      ],
+      "PushSubscriptionOptions": [
+        "ArrayBuffer"
+      ],
+      "PushSubscriptionOptionsInit": [
+        "BufferSource"
+      ],
+      "PushSubscription": [
+        "EpochTimeStamp",
+        "PushSubscriptionOptions",
+        "ArrayBuffer",
+        "PushEncryptionKeyName",
+        "PushSubscriptionJSON"
+      ],
+      "PushSubscriptionJSON": [
+        "EpochTimeStamp"
+      ],
+      "PushMessageData": [
+        "ArrayBuffer",
+        "Blob",
+        "Uint8Array"
+      ],
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ],
+      "PushEvent": [
+        "ExtendableEvent",
+        "PushEventInit",
+        "PushMessageData",
+        "Notification"
+      ],
+      "PushEventInit": [
+        "ExtendableEventInit",
+        "PushMessageDataInit",
+        "Notification"
+      ],
+      "PushSubscriptionChangeEvent": [
+        "ExtendableEvent",
+        "PushSubscriptionChangeEventInit",
+        "PushSubscription"
+      ],
+      "PushSubscriptionChangeEventInit": [
+        "ExtendableEventInit",
+        "PushSubscription"
+      ]
+    },
+    "externalDependencies": [
+      "PermissionDescriptor",
+      "PermissionState",
+      "ArrayBuffer",
+      "BufferSource",
+      "EpochTimeStamp",
+      "Blob",
+      "Uint8Array",
+      "ServiceWorkerGlobalScope",
+      "EventHandler",
+      "ExtendableEvent",
+      "Notification",
+      "ExtendableEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ku-TR": {
+      "identity": {
+        "language": "ku",
+        "territory": "TR"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

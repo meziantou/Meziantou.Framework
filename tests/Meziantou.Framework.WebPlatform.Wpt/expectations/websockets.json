@@ -1,0 +1,3005 @@
+{
+  "websockets/Close-1000-reason.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-1000-reason.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000-reason.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-1000-reason.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-1000-reason.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000-reason.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000-verify-code.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1000.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1005-verify-code.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-1005.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-2999-reason.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-3000-reason.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-3000-verify-code.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-4999-reason.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-Reason-124Bytes.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-delayed.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-onlyReason.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closed.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-readyState-Closing.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-reason-unpaired-surrogates.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-server-initiated-close.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js?default": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Close-undefined.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-asciiSep-protocol-string.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-blocked-port.any.js#dedicatedworker?default": {
+    "total": 84
+  },
+  "websockets/Create-blocked-port.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 84
+  },
+  "websockets/Create-blocked-port.any.js#dedicatedworker?wss": {
+    "total": 84
+  },
+  "websockets/Create-blocked-port.any.js?default": {
+    "total": 84
+  },
+  "websockets/Create-blocked-port.any.js?wpt_flags=h2": {
+    "total": 84
+  },
+  "websockets/Create-blocked-port.any.js?wss": {
+    "total": 84
+  },
+  "websockets/Create-extensions-empty.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-extensions-empty.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-extensions-empty.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-extensions-empty.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-extensions-empty.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-extensions-empty.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-http-urls.any.js": {
+    "total": 1
+  },
+  "websockets/Create-http-urls.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "websockets/Create-invalid-urls.any.js": {
+    "total": 8
+  },
+  "websockets/Create-invalid-urls.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "websockets/Create-non-absolute-url.any.js": {
+    "total": 5
+  },
+  "websockets/Create-non-absolute-url.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-nonAscii-protocol-string.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-on-worker-shutdown.any.js": {
+    "total": 1
+  },
+  "websockets/Create-on-worker-shutdown.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocol-with-space.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated-case-insensitive.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-protocols-repeated.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-url-with-space.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-url-with-windows-1252-encoding.html": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-array-protocols.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-binaryType-blob.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-empty.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-setCorrectly.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol-string.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url-protocol.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js?default": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Create-valid-url.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-0byte-data.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-65K-data.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-before-open.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-65K-arraybuffer.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybuffer.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float16.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float32.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-float64.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int16-offset.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int32.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-int8.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint16-offset-length.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint32-offset.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset-length.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-arraybufferview-uint8-offset.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-binary-blob.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-data.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-data.worker.js?default": {
+    "total": 1
+  },
+  "websockets/Send-data.worker.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-data.worker.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-null.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-paired-surrogates.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-unicode-data.any.js?wss": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js?default": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/Send-unpaired-surrogates.any.js?wss": {
+    "total": 1
+  },
+  "websockets/back-forward-cache-closes-open-websocket-connection.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for page with open WebSocket connection, where the WebSocket connection is closed on BFCache.": "PRECONDITION_FAILED"
+    }
+  },
+  "websockets/back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for page with closed WebSocket connection and \"Cache-Control: no-store\" header.": "PRECONDITION_FAILED"
+    }
+  },
+  "websockets/back-forward-cache-with-closed-websocket-connection.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for page with closed WebSocket connection.": "PRECONDITION_FAILED"
+    }
+  },
+  "websockets/back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for a page with an open WebSocket connection, but close it in pagehide.": "PRECONDITION_FAILED"
+    }
+  },
+  "websockets/back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Testing BFCache support for page with open WebSocket connection and \"Cache-Control: no-store\" header.": "PRECONDITION_FAILED"
+    }
+  },
+  "websockets/back-forward-cache-with-open-websocket-connection.window.js": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js#sharedworker?wss": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/basic-auth.any.js?wss": {
+    "total": 1
+  },
+  "websockets/binary/001.html?default": {
+    "total": 1
+  },
+  "websockets/binary/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binary/001.html?wss": {
+    "total": 1
+  },
+  "websockets/binary/002.html?default": {
+    "total": 1
+  },
+  "websockets/binary/002.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binary/002.html?wss": {
+    "total": 1
+  },
+  "websockets/binary/004.html?default": {
+    "total": 1
+  },
+  "websockets/binary/004.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binary/004.html?wss": {
+    "total": 1
+  },
+  "websockets/binary/005.html?default": {
+    "total": 1
+  },
+  "websockets/binary/005.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binary/005.html?wss": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js?default": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/binaryType-wrong-value.any.js?wss": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#sharedworker?default": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js#sharedworker?wss": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js?default": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/bufferedAmount-unchanged-by-sync-xhr.any.js?wss": {
+    "total": 1
+  },
+  "websockets/close-invalid.any.js#dedicatedworker?default": {
+    "total": 6
+  },
+  "websockets/close-invalid.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 6
+  },
+  "websockets/close-invalid.any.js#dedicatedworker?wss": {
+    "total": 6
+  },
+  "websockets/close-invalid.any.js?default": {
+    "total": 6
+  },
+  "websockets/close-invalid.any.js?wpt_flags=h2": {
+    "total": 6
+  },
+  "websockets/close-invalid.any.js?wss": {
+    "total": 6
+  },
+  "websockets/closing-handshake/002.html?default": {
+    "total": 1
+  },
+  "websockets/closing-handshake/002.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/closing-handshake/002.html?wss": {
+    "total": 1
+  },
+  "websockets/closing-handshake/003.html?default": {
+    "total": 1
+  },
+  "websockets/closing-handshake/003.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/closing-handshake/003.html?wss": {
+    "total": 1
+  },
+  "websockets/closing-handshake/004.html?default": {
+    "total": 1
+  },
+  "websockets/closing-handshake/004.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/closing-handshake/004.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/constructor.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/constructor.any.js?default": {
+    "total": 1
+  },
+  "websockets/constructor.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor.any.js?wss": {
+    "total": 1
+  },
+  "websockets/constructor/001.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/001.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/004.html?default": {
+    "total": 161
+  },
+  "websockets/constructor/004.html?wpt_flags=h2": {
+    "total": 161
+  },
+  "websockets/constructor/004.html?wss": {
+    "total": 161
+  },
+  "websockets/constructor/005.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/005.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/005.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/006.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/006.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/006.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/007.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/007.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/007.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/008.html?default": {
+    "total": 4
+  },
+  "websockets/constructor/008.html?wss": {
+    "total": 4
+  },
+  "websockets/constructor/009.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/009.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/009.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/010.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/010.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/010.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/011.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/011.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/011.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/012.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/012.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/012.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/013.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/013.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/013.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/014.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/014.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/016.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/016.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/016.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/017.html?default": {
+    "total": 2
+  },
+  "websockets/constructor/017.html?wpt_flags=h2": {
+    "total": 2
+  },
+  "websockets/constructor/017.html?wss": {
+    "total": 2
+  },
+  "websockets/constructor/018.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/018.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/018.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/019.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/019.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/019.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/020.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/020.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/020.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/021.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/021.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/021.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/022.html?default": {
+    "total": 1
+  },
+  "websockets/constructor/022.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/constructor/022.html?wss": {
+    "total": 1
+  },
+  "websockets/constructor/option-bag.any.js#dedicatedworker?default": {
+    "total": 2,
+    "failures": {
+      "Empty option bag should be accepted": "FAIL",
+      "Option bag with protocols array should be accepted": "FAIL"
+    }
+  },
+  "websockets/constructor/option-bag.any.js#dedicatedworker?wss": {
+    "total": 2,
+    "failures": {
+      "Empty option bag should be accepted": "FAIL",
+      "Option bag with protocols array should be accepted": "FAIL"
+    }
+  },
+  "websockets/constructor/option-bag.any.js?default": {
+    "total": 2,
+    "failures": {
+      "Empty option bag should be accepted": "FAIL",
+      "Option bag with protocols array should be accepted": "FAIL"
+    }
+  },
+  "websockets/constructor/option-bag.any.js?wss": {
+    "total": 2,
+    "failures": {
+      "Empty option bag should be accepted": "FAIL",
+      "Option bag with protocols array should be accepted": "FAIL"
+    }
+  },
+  "websockets/constructor/target-address-space.any.js#dedicatedworker?default": {
+    "total": 6,
+    "failures": {
+      "WebSocket constructor with invalid targetAddressSpace throws TypeError": "FAIL",
+      "WebSocket constructor with matching targetAddressSpace 'loopback' succeeds": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'local' fails connection": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'public' fails connection": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'private' throws TypeError as it is an unsupported legacy alias": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'unknown' throws TypeError": "FAIL"
+    }
+  },
+  "websockets/constructor/target-address-space.any.js#dedicatedworker?wss": {
+    "total": 6,
+    "failures": {
+      "WebSocket constructor with invalid targetAddressSpace throws TypeError": "FAIL",
+      "WebSocket constructor with matching targetAddressSpace 'loopback' succeeds": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'local' fails connection": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'public' fails connection": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'private' throws TypeError as it is an unsupported legacy alias": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'unknown' throws TypeError": "FAIL"
+    }
+  },
+  "websockets/constructor/target-address-space.any.js?default": {
+    "total": 6,
+    "failures": {
+      "WebSocket constructor with invalid targetAddressSpace throws TypeError": "FAIL",
+      "WebSocket constructor with matching targetAddressSpace 'loopback' succeeds": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'local' fails connection": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'public' fails connection": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'private' throws TypeError as it is an unsupported legacy alias": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'unknown' throws TypeError": "FAIL"
+    }
+  },
+  "websockets/constructor/target-address-space.any.js?wss": {
+    "total": 6,
+    "failures": {
+      "WebSocket constructor with invalid targetAddressSpace throws TypeError": "FAIL",
+      "WebSocket constructor with matching targetAddressSpace 'loopback' succeeds": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'local' fails connection": "FAIL",
+      "WebSocket constructor with mismatched targetAddressSpace 'public' fails connection": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'private' throws TypeError as it is an unsupported legacy alias": "FAIL",
+      "WebSocket constructor with targetAddressSpace 'unknown' throws TypeError": "FAIL"
+    }
+  },
+  "websockets/constructor/third-param-ignored.any.js#dedicatedworker?default": {
+    "total": 3
+  },
+  "websockets/constructor/third-param-ignored.any.js#dedicatedworker?wss": {
+    "total": 3
+  },
+  "websockets/constructor/third-param-ignored.any.js#sharedworker?default": {
+    "total": 3
+  },
+  "websockets/constructor/third-param-ignored.any.js#sharedworker?wss": {
+    "total": 3
+  },
+  "websockets/constructor/third-param-ignored.any.js?default": {
+    "total": 3
+  },
+  "websockets/constructor/third-param-ignored.any.js?wss": {
+    "total": 3
+  },
+  "websockets/cookies/001.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/cookies/001.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/002.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/002.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/cookies/002.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/003.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/003.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/cookies/003.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/004.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/004.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/005.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/005.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/006.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/006.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/cookies/006.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/007.html?default": {
+    "total": 1
+  },
+  "websockets/cookies/007.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/cookies/007.html?wss&wpt_flags=https": {
+    "total": 1
+  },
+  "websockets/cookies/cross-origin-cookie-set.html": {
+    "total": 1,
+    "failures": {
+      "Cookie should be set": "FAIL"
+    }
+  },
+  "websockets/cookies/third-party-cookie-accepted.https.html": {
+    "total": 1
+  },
+  "websockets/eventhandlers.any.js#dedicatedworker?default": {
+    "total": 4
+  },
+  "websockets/eventhandlers.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 4
+  },
+  "websockets/eventhandlers.any.js#dedicatedworker?wss": {
+    "total": 4
+  },
+  "websockets/eventhandlers.any.js?default": {
+    "total": 4
+  },
+  "websockets/eventhandlers.any.js?wpt_flags=h2": {
+    "total": 4
+  },
+  "websockets/eventhandlers.any.js?wss": {
+    "total": 4
+  },
+  "websockets/extended-payload-length.html?default": {
+    "total": 4
+  },
+  "websockets/extended-payload-length.html?wpt_flags=h2": {
+    "total": 4
+  },
+  "websockets/extended-payload-length.html?wss": {
+    "total": 4
+  },
+  "websockets/idlharness.any.js": {
+    "total": 62
+  },
+  "websockets/idlharness.any.js#dedicatedworker": {
+    "total": 62
+  },
+  "websockets/interfaces/CloseEvent/clean-close.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/CloseEvent/clean-close.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/CloseEvent/clean-close.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/CloseEvent/constructor.html": {
+    "total": 2
+  },
+  "websockets/interfaces/CloseEvent/historical.html": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-arraybuffer.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-arraybuffer.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-arraybuffer.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-blob.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-blob.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-blob.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-getter.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-getter.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-setter.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-setter.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-deleting.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-deleting.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-initial.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-initial.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-large.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-large.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-large.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-readonly.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-readonly.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-unicode.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-unicode.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-unicode.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-basic.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-basic.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting-async.any.js?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-connecting.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-multiple.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-multiple.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-nested.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-nested.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-replace.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-replace.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-return.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/close/close-return.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/constants/001.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/001.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/002.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/002.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/003.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/003.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/004.html?default": {
+    "total": 8
+  },
+  "websockets/interfaces/WebSocket/constants/004.html?wss": {
+    "total": 8
+  },
+  "websockets/interfaces/WebSocket/constants/005.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/005.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/006.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/constants/006.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/001.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/001.html?wpt_flags=h2": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/001.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/002.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/002.html?wpt_flags=h2": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/002.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/003.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/003.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/004.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/004.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/006.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/006.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/007.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/007.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/007.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/008.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/008.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/009.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/009.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/010.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/010.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/011.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/011.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/012.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/012.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/013.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/013.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/014.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/014.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/015.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/015.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/015.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/016.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/016.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/016.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/017.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/017.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/017.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/018.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/018.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/018.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/019.html?default": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/019.html?wss": {
+    "total": 4
+  },
+  "websockets/interfaces/WebSocket/events/020.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/events/020.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/extensions/001.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/extensions/001.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/protocol/protocol-initial.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/protocol/protocol-initial.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/001.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/001.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/002.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/002.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/003.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/003.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/004.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/004.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/005.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/005.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/006.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/006.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/007.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/007.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/008.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/readyState/008.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/001.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/001.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/002.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/002.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/003.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/003.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/004.html?default": {
+    "total": 3
+  },
+  "websockets/interfaces/WebSocket/send/004.html?wss": {
+    "total": 3
+  },
+  "websockets/interfaces/WebSocket/send/005.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/005.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/006.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/006.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/006.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/007.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/007.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/007.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/008.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/008.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/009.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/009.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/009.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/010.html?default": {
+    "total": 11
+  },
+  "websockets/interfaces/WebSocket/send/010.html?wss": {
+    "total": 11
+  },
+  "websockets/interfaces/WebSocket/send/011.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/011.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/011.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/012.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/012.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/send/012.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/001.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/001.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/002.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/002.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/003.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/003.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/004.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/004.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/005.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/005.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/006.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/006.html?wss": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/resolve.html?default": {
+    "total": 1
+  },
+  "websockets/interfaces/WebSocket/url/resolve.html?wss": {
+    "total": 1
+  },
+  "websockets/keeping-connection-open/001.html?default": {
+    "total": 1
+  },
+  "websockets/keeping-connection-open/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/keeping-connection-open/001.html?wss": {
+    "total": 1
+  },
+  "websockets/mixed-content.https.any.js": {
+    "total": 1
+  },
+  "websockets/mixed-content.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "websockets/mixed-content.https.any.js#sharedworker": {
+    "total": 1
+  },
+  "websockets/multi-globals/message-received.html": {
+    "total": 2
+  },
+  "websockets/multi-globals/url-parsing/url-parsing.html": {
+    "total": 1
+  },
+  "websockets/opening-handshake/001.html?default": {
+    "total": 1
+  },
+  "websockets/opening-handshake/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/opening-handshake/001.html?wss": {
+    "total": 1
+  },
+  "websockets/opening-handshake/002.html?default": {
+    "total": 1
+  },
+  "websockets/opening-handshake/002.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/opening-handshake/002.html?wss": {
+    "total": 1
+  },
+  "websockets/opening-handshake/003-sets-origin.worker.js": {
+    "total": 1
+  },
+  "websockets/opening-handshake/003.html?default": {
+    "total": 1
+  },
+  "websockets/opening-handshake/003.html?wss": {
+    "total": 1
+  },
+  "websockets/opening-handshake/005.html?default": {
+    "total": 1
+  },
+  "websockets/opening-handshake/005.html?wss": {
+    "total": 1
+  },
+  "websockets/opening-handshake/006.html?default": {
+    "total": 1
+  },
+  "websockets/opening-handshake/006.html?wss": {
+    "total": 1
+  },
+  "websockets/opening-handshake/received-301-code.html": {
+    "total": 1
+  },
+  "websockets/referrer.any.js": {
+    "total": 1
+  },
+  "websockets/referrer.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "websockets/remove-own-iframe-during-onerror.window.js?default": {
+    "total": 1
+  },
+  "websockets/remove-own-iframe-during-onerror.window.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/remove-own-iframe-during-onerror.window.js?wss": {
+    "total": 1
+  },
+  "websockets/security/001.html?default": {
+    "total": 1
+  },
+  "websockets/security/001.html?wss": {
+    "total": 1
+  },
+  "websockets/security/002.html?default": {
+    "total": 1
+  },
+  "websockets/security/002.html?wss": {
+    "total": 1
+  },
+  "websockets/send-data-isolation.sub.html": {
+    "total": 3
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#dedicatedworker?default": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#dedicatedworker?wss": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#sharedworker?default": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js#sharedworker?wss": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js?default": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/send-many-64K-messages-with-backpressure.any.js?wss": {
+    "total": 1
+  },
+  "websockets/stream/tentative/abort.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/abort.any.js#dedicatedworker?wss": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/abort.any.js#sharedworker?wpt_flags=h2": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/abort.any.js#sharedworker?wss": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/abort.any.js?wpt_flags=h2": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/abort.any.js?wss": {
+    "total": 3,
+    "failures": {
+      "abort after connect should do nothing": "FAIL",
+      "abort before constructing should prevent connection": "FAIL",
+      "abort during handshake should work": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js#dedicatedworker?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js#sharedworker?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-receive.any.js?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to received messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js#dedicatedworker?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js#sharedworker?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/backpressure-send.any.js?wss": {
+    "total": 1,
+    "failures": {
+      "backpressure should be applied to sent messages": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#dedicatedworker?default": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#dedicatedworker?wss": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#sharedworker?default": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#sharedworker?wpt_flags=h2": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js#sharedworker?wss": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js?default": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js?wpt_flags=h2": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/close.any.js?wss": {
+    "total": 27,
+    "failures": {
+      "aborting the writable should result in a clean close": "FAIL",
+      "aborting the writable with a DOMException not set code or reason": "FAIL",
+      "aborting the writable with a code and reason should use them": "FAIL",
+      "aborting the writable with a code should send that code": "FAIL",
+      "aborting the writable with a reason but no code should default the close code": "FAIL",
+      "aborting the writable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "canceling the readable should result in a clean close": "FAIL",
+      "canceling the readable with a DOMException not set code or reason": "FAIL",
+      "canceling the readable with a code and reason should use them": "FAIL",
+      "canceling the readable with a code should send that code": "FAIL",
+      "canceling the readable with a reason but no code should default the close code": "FAIL",
+      "canceling the readable with attributes not wrapped in a WebSocketError should be ignored": "FAIL",
+      "close code should be sent to server and reflected back": "FAIL",
+      "close during handshake should work": "FAIL",
+      "close() with an overlong reason should throw": "FAIL",
+      "close() with invalid code 1001 should throw": "FAIL",
+      "close() with invalid code 2999 should throw": "FAIL",
+      "close() with invalid code 5000 should throw": "FAIL",
+      "close() with invalid code 999 should throw": "FAIL",
+      "close(true) should throw a TypeError": "FAIL",
+      "closing the writable should result in a clean close": "FAIL",
+      "incomplete closing handshake should be considered unclean close": "FAIL",
+      "no close argument should send empty Close frame": "FAIL",
+      "unspecified close code should send empty Close frame": "FAIL",
+      "unspecified close code with empty reason should send empty Close frame": "FAIL",
+      "unspecified close code with non-empty reason should set code to 1000": "FAIL",
+      "writer close() promise should not resolve until handshake completes": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js#dedicatedworker?wss": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js#sharedworker?wpt_flags=h2": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js#sharedworker?wss": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js?wpt_flags=h2": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/constructor.any.js?wss": {
+    "total": 8,
+    "failures": {
+      "connection failure should reject the promises": "FAIL",
+      "constructing with a valid URL should work": "FAIL",
+      "constructing with an invalid URL should throw": "FAIL",
+      "constructing with invalid options should throw": "FAIL",
+      "constructing with no URL should throw": "FAIL",
+      "protocols should be required to be a list": "FAIL",
+      "setting a protocol in the constructor should work": "FAIL",
+      "wss.opened should resolve to the right types": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#dedicatedworker?default": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#dedicatedworker?wss": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#sharedworker?default": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#sharedworker?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js#sharedworker?wss": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js?default": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/read.any.js?wss": {
+    "total": 1,
+    "failures": {
+      "read type for binary messages is Uint8Array": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#dedicatedworker?default": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#dedicatedworker?wss": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#sharedworker?default": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#sharedworker?wpt_flags=h2": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js#sharedworker?wss": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js?default": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js?wpt_flags=h2": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/remote-close.any.js?wss": {
+    "total": 7,
+    "failures": {
+      "UTF-8 reason should work": "FAIL",
+      "abrupt close should give an error": "FAIL",
+      "clean close should be clean": "FAIL",
+      "close frame with no body should result in status code 1005": "FAIL",
+      "close with unwritten data should not be considered clean": "FAIL",
+      "reason should be passed through": "FAIL",
+      "remote code and reason should be used": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/websocket-error.any.js": {
+    "total": 10,
+    "failures": {
+      "WebSocketError defaults should be correct": "FAIL",
+      "WebSocketError should be initialised from arguments": "FAIL",
+      "new WebSocketError with invalid code 1001 should throw": "FAIL",
+      "new WebSocketError with invalid code 2999 should throw": "FAIL",
+      "new WebSocketError with invalid code 5000 should throw": "FAIL",
+      "new WebSocketError with invalid code 999 should throw": "FAIL",
+      "overlong reason should throw": "FAIL",
+      "passing a non-empty reason should cause the close code to be set to 1000": "FAIL",
+      "passing only close code to WebSocketError should work": "FAIL",
+      "reason should be rejected based on utf-8 bytes, not character count": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/websocket-error.any.js#dedicatedworker": {
+    "total": 10,
+    "failures": {
+      "WebSocketError defaults should be correct": "FAIL",
+      "WebSocketError should be initialised from arguments": "FAIL",
+      "new WebSocketError with invalid code 1001 should throw": "FAIL",
+      "new WebSocketError with invalid code 2999 should throw": "FAIL",
+      "new WebSocketError with invalid code 5000 should throw": "FAIL",
+      "new WebSocketError with invalid code 999 should throw": "FAIL",
+      "overlong reason should throw": "FAIL",
+      "passing a non-empty reason should cause the close code to be set to 1000": "FAIL",
+      "passing only close code to WebSocketError should work": "FAIL",
+      "reason should be rejected based on utf-8 bytes, not character count": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/websocket-error.any.js#sharedworker": {
+    "total": 10,
+    "failures": {
+      "WebSocketError defaults should be correct": "FAIL",
+      "WebSocketError should be initialised from arguments": "FAIL",
+      "new WebSocketError with invalid code 1001 should throw": "FAIL",
+      "new WebSocketError with invalid code 2999 should throw": "FAIL",
+      "new WebSocketError with invalid code 5000 should throw": "FAIL",
+      "new WebSocketError with invalid code 999 should throw": "FAIL",
+      "overlong reason should throw": "FAIL",
+      "passing a non-empty reason should cause the close code to be set to 1000": "FAIL",
+      "passing only close code to WebSocketError should work": "FAIL",
+      "reason should be rejected based on utf-8 bytes, not character count": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#dedicatedworker?default": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#dedicatedworker?wpt_flags=h2": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#dedicatedworker?wss": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#sharedworker?default": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#sharedworker?wpt_flags=h2": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js#sharedworker?wss": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js?default": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js?wpt_flags=h2": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/stream/tentative/write.any.js?wss": {
+    "total": 6,
+    "failures": {
+      "Garbage collecting a WebSocket stream doesn't crash while write promise is pending": "FAIL",
+      "a write that was incomplete at close time should reject": "FAIL",
+      "garbage collection after close with a pending write promise should not crash": "FAIL",
+      "writing a resizable ArrayBuffer should be rejected": "FAIL",
+      "writing a value that cannot be stringified should cause a rejection": "FAIL",
+      "writing a view on a shared buffer should be rejected": "FAIL"
+    }
+  },
+  "websockets/unload-a-document/001.html?default": {
+    "total": 1
+  },
+  "websockets/unload-a-document/001.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/unload-a-document/001.html?wss": {
+    "total": 1
+  },
+  "websockets/unload-a-document/002.html?default": {
+    "total": 1,
+    "failures": {
+      "WebSockets: navigating top-level browsing context with closed websocket": "FAIL"
+    }
+  },
+  "websockets/unload-a-document/002.html?wpt_flags=h2": {
+    "total": 1,
+    "failures": {
+      "WebSockets: navigating top-level browsing context with closed websocket": "FAIL"
+    }
+  },
+  "websockets/unload-a-document/002.html?wss": {
+    "total": 1,
+    "failures": {
+      "WebSockets: navigating top-level browsing context with closed websocket": "FAIL"
+    }
+  },
+  "websockets/unload-a-document/003.html": {
+    "total": 1
+  },
+  "websockets/unload-a-document/004.html": {
+    "total": 1,
+    "failures": {
+      "WebSockets: navigating nested browsing context with closed websocket": "FAIL"
+    }
+  },
+  "websockets/unload-a-document/005.html?default": {
+    "total": 1
+  },
+  "websockets/unload-a-document/005.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "websockets/unload-a-document/005.html?wss": {
+    "total": 1
+  }
+}

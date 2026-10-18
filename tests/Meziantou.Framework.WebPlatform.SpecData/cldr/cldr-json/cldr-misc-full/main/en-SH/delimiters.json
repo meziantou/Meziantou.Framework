@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SH": {
+      "identity": {
+        "language": "en",
+        "territory": "SH"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

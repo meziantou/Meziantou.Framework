@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-UM": {
+      "identity": {
+        "language": "en",
+        "territory": "UM"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

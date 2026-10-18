@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sgs": {
+      "identity": {
+        "language": "sgs"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

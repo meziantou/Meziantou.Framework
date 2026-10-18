@@ -1,0 +1,44 @@
+{
+  "spec": {
+    "title": "CSS Shadow Module Level 1",
+    "url": "https://drafts.csswg.org/css-shadow-1/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":host",
+      "prose": "The :host pseudo-class, when evaluated in the context of a shadow tree, matches the shadow tree’s shadow host. In any other context, it matches nothing.",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-host",
+      "value": ":host"
+    },
+    {
+      "name": ":host()",
+      "prose": "The :host() function pseudo-class has the syntax:",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-host-function"
+    },
+    {
+      "name": ":host-context()",
+      "prose": "The :host-context() functional pseudo-class tests whether there is an ancestor, outside the shadow tree, which matches a particular selector. Its syntax is:",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-host-context"
+    },
+    {
+      "name": "::slotted()",
+      "prose": "The ::slotted() pseudo-element represents the elements assigned, after flattening, to a slot. This pseudo-element only exists on slots.",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-slotted"
+    },
+    {
+      "name": ":has-slotted",
+      "prose": "The :has-slotted pseudo-class matches slot elements which have a non-empty list of flattened slotted nodes.",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-has-slotted",
+      "value": ":has-slotted"
+    },
+    {
+      "name": "::part()",
+      "prose": "The ::part() pseudo-element allows you to select elements that have been exposed via a part attribute. The syntax is:",
+      "href": "https://drafts.csswg.org/css-shadow-1/#selectordef-part",
+      "value": "::part( <ident>+ )"
+    }
+  ],
+  "values": []
+}

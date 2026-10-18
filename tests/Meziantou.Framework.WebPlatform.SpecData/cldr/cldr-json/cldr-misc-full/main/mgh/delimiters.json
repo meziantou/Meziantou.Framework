@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mgh": {
+      "identity": {
+        "language": "mgh"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

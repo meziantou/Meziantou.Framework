@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-DZ": {
+      "identity": {
+        "language": "fr",
+        "territory": "DZ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

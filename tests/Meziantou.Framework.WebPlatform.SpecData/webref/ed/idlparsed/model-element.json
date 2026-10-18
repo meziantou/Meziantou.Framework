@@ -1,0 +1,200 @@
+{
+  "spec": {
+    "title": "The <model> element",
+    "url": "https://immersive-web.github.io/model-element/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "HTMLModelElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "HTMLModelElement": {
+        "fragment": "[Exposed=Window]\ninterface HTMLModelElement : HTMLElement {\n\n  readonly attribute Promise<HTMLModelElement> ready;\n  readonly attribute DOMPointReadOnly boundingBoxCenter;\n  readonly attribute DOMPointReadOnly boundingBoxExtents;\n\n  attribute DOMMatrixReadOnly entityTransform;\n\n  attribute USVString environmentMap;\n  readonly attribute Promise<undefined> environmentMapReady;\n\n  [Reflect=stagemode] attribute DOMString stageMode;\n};",
+        "type": "interface",
+        "name": "HTMLModelElement",
+        "inheritance": "HTMLElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLModelElement"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-ready"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxCenter",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-boundingboxcenter"
+          },
+          {
+            "type": "attribute",
+            "name": "boundingBoxExtents",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-boundingboxextents"
+          },
+          {
+            "type": "attribute",
+            "name": "entityTransform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMMatrixReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-entitytransform"
+          },
+          {
+            "type": "attribute",
+            "name": "environmentMap",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-environmentmap"
+          },
+          {
+            "type": "attribute",
+            "name": "environmentMapReady",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-environmentmapready"
+          },
+          {
+            "type": "attribute",
+            "name": "stageMode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "stagemode"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-stagemode"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HTMLModelElement"
+      ]
+    },
+    "dependencies": {
+      "HTMLModelElement": [
+        "HTMLElement",
+        "HTMLModelElement",
+        "DOMPointReadOnly",
+        "DOMMatrixReadOnly"
+      ]
+    },
+    "externalDependencies": [
+      "HTMLElement",
+      "DOMPointReadOnly",
+      "DOMMatrixReadOnly"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

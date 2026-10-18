@@ -1,1 +1,5 @@
 * -text
+# The specification data of Meziantou.Framework.WebPlatform is downloaded by tools/Meziantou.Framework.WebPlatform.SpecUpdate,
+# and the code generated from it by tools/Meziantou.Framework.WebPlatform.SpecGen
+tests/Meziantou.Framework.WebPlatform.SpecData/** linguist-vendored=true -diff
+src/Meziantou.Framework.WebPlatform*/**/*.g.cs linguist-generated=true

@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.TestHarness;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -51,6 +52,7 @@ internal static class RequiredTools
         }
 
         var swift = ExecutableFinder.GetFullExecutablePath("swift") ?? throw new ExternalToolUnavailableException("swift (Xcode command line tools) is required to run the Apple ImageIO helper.");
-        return (swift, FullPath.FromPath(AppContext.BaseDirectory) / "imageio_frames.swift");
+        // The Apple ImageIO frame dumper is shared with the corpus generator
+        return (swift, RepositoryPaths.Root / "tools" / "Meziantou.Framework.Imaging.CorpusGenerator" / "imageio_frames.swift");
     }
 }

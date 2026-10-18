@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -57,11 +58,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="red">The Cr samples minus 128.</param>
     /// <remarks>
     /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
-    /// operations in the same order (separate multiplications and additions, the divisions kept), so the samples are identical.
+    /// operations in the same order (separate multiplications and additions, the divisions kept), so the samples are identical;
+    /// with AVX2, four at a time.
     /// </remarks>
     internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
     {
-        var done = Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red) : 0;
+        var done = Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
+            : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red)
+            : 0;
         ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
     }
 
@@ -82,7 +86,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
     /// <summary>Converts the pixels of whole 16-pixel groups.</summary>
     /// <returns>The number of pixels converted.</returns>
-    private static int ConvertRgbToYCbCrVector(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static int ConvertRgbToYCbCrVector(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
     {
         var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
         ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
@@ -92,20 +96,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         var x = 0;
         for (; x + 16 <= count; x += 16)
         {
-            var v0 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)(3 * x)));
-            var v1 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)((3 * x) + 16)));
-            var v2 = unsafe(Vector128.LoadUnsafe(ref sourceStart, (nuint)((3 * x) + 32)));
-
-            // Deinterleaved samples: each byte comes from one of the three vectors (an index of 0xFF selects zero)
-            var r = Vector128.Shuffle(v0, Vector128.Create((byte)0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13));
-            var g = Vector128.Shuffle(v0, Vector128.Create((byte)1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14));
-            var b = Vector128.Shuffle(v0, Vector128.Create((byte)2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
-                | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15));
+            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
             var (r0, r1) = Vector128.Widen(r);
             var (g0, g1) = Vector128.Widen(g);
             var (b0, b1) = Vector128.Widen(b);
@@ -128,6 +119,17 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert4(Vector128<uint> r, Vector128<uint> g, Vector128<uint> b, ref float luma, ref float blue, ref float red)
         {
+            if (Sse2.IsSupported)
+            {
+                // x64 has no 64-bit integer conversion before AVX-512: CVTDQ2PD converts the two lower 32-bit integers
+                Convert2(ToDouble(r), ToDouble(g), ToDouble(b), out var lowLuma, out var lowBlue, out var lowRed);
+                Convert2(ToDouble(Upper(r)), ToDouble(Upper(g)), ToDouble(Upper(b)), out var highLuma, out var highBlue, out var highRed);
+                unsafe { Vector128.Narrow(lowLuma, highLuma).StoreUnsafe(ref luma); }
+                unsafe { Vector128.Narrow(lowBlue, highBlue).StoreUnsafe(ref blue); }
+                unsafe { Vector128.Narrow(lowRed, highRed).StoreUnsafe(ref red); }
+                return;
+            }
+
             var (r0, r1) = Vector128.Widen(r);
             var (g0, g1) = Vector128.Widen(g);
             var (b0, b1) = Vector128.Widen(b);
@@ -138,6 +140,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             unsafe { Vector128.Narrow(cr0, cr1).StoreUnsafe(ref red); }
         }
 
+        static Vector128<double> ToDouble(Vector128<uint> value) => Sse2.ConvertToVector128Double(value.AsInt32());
+
+        static Vector128<uint> Upper(Vector128<uint> value) => Sse2.UnpackHigh(value.AsUInt64(), value.AsUInt64()).AsUInt32();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert2(Vector128<double> r, Vector128<double> g, Vector128<double> b, out Vector128<double> luma, out Vector128<double> blue, out Vector128<double> red)
         {
@@ -146,6 +152,72 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             blue = (b - y) / Vector128.Create(1.772);
             red = (r - y) / Vector128.Create(1.402);
         }
+    }
+
+    /// <summary>
+    /// Converts the pixels of whole 16-pixel groups with AVX2: the samples are deinterleaved as with
+    /// <see cref="Vector128{T}"/>, widened to 32-bit integers (x64 has no 64-bit integer conversion before AVX-512) and
+    /// converted four at a time.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrAvx2(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            Convert8(Avx2.ConvertToVector256Int32(r), Avx2.ConvertToVector256Int32(g), Avx2.ConvertToVector256Int32(b), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+            Convert8(
+                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(r, 8)),
+                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(g, 8)),
+                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(b, 8)),
+                ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert8(Vector256<int> r, Vector256<int> g, Vector256<int> b, ref float luma, ref float blue, ref float red)
+        {
+            Convert4(r.GetLower(), g.GetLower(), b.GetLower(), ref luma, ref blue, ref red);
+            Convert4(r.GetUpper(), g.GetUpper(), b.GetUpper(), ref unsafe(Unsafe.Add(ref luma, 4)), ref unsafe(Unsafe.Add(ref blue, 4)), ref unsafe(Unsafe.Add(ref red, 4)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert4(Vector128<int> red8, Vector128<int> green8, Vector128<int> blue8, ref float luma, ref float blue, ref float red)
+        {
+            var r = Avx.ConvertToVector256Double(red8);
+            var g = Avx.ConvertToVector256Double(green8);
+            var b = Avx.ConvertToVector256Double(blue8);
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            unsafe { Avx.ConvertToVector128Single(y - Vector256.Create(128.0)).StoreUnsafe(ref luma); }
+            unsafe { Avx.ConvertToVector128Single((b - y) / Vector256.Create(1.772)).StoreUnsafe(ref blue); }
+            unsafe { Avx.ConvertToVector128Single((r - y) / Vector256.Create(1.402)).StoreUnsafe(ref red); }
+        }
+    }
+
+    /// <summary>Deinterleaves 16 RGB pixels: each byte comes from one of three vectors (an index of 0xFF selects zero).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> R, Vector128<byte> G, Vector128<byte> B) Deinterleave(ref byte source)
+    {
+        var v0 = unsafe(Vector128.LoadUnsafe(ref source));
+        var v1 = unsafe(Vector128.LoadUnsafe(ref source, 16));
+        var v2 = unsafe(Vector128.LoadUnsafe(ref source, 32));
+        var r = Vector128.Shuffle(v0, Vector128.Create((byte)0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13));
+        var g = Vector128.Shuffle(v0, Vector128.Create((byte)1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 2, 5, 8, 11, 14));
+        var b = Vector128.Shuffle(v0, Vector128.Create((byte)2, 5, 8, 11, 14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+            | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15));
+        return (r, g, b);
     }
 
     /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "zh-Latn": {
+      "identity": {
+        "language": "zh",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,371 @@
+{
+  "spec": {
+    "title": "Generic Sensor API",
+    "url": "https://w3c.github.io/sensors/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "DedicatedWorker": [
+          "SensorErrorEvent"
+        ],
+        "Window": [
+          "SensorErrorEvent"
+        ]
+      },
+      "functions": {
+        "DedicatedWorker": [
+          "Sensor"
+        ],
+        "Window": [
+          "Sensor"
+        ]
+      }
+    },
+    "idlNames": {
+      "Sensor": {
+        "fragment": "[SecureContext, Exposed=(DedicatedWorker, Window)]\ninterface Sensor : EventTarget {\n  readonly attribute boolean activated;\n  readonly attribute boolean hasReading;\n  readonly attribute DOMHighResTimeStamp? timestamp;\n  undefined start();\n  undefined stop();\n  attribute EventHandler onreading;\n  attribute EventHandler onactivate;\n  attribute EventHandler onerror;\n};",
+        "type": "interface",
+        "name": "Sensor",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "activated",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-activated"
+          },
+          {
+            "type": "attribute",
+            "name": "hasReading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-hasreading"
+          },
+          {
+            "type": "attribute",
+            "name": "timestamp",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-timestamp"
+          },
+          {
+            "type": "operation",
+            "name": "start",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/sensors/#dom-sensor-start"
+          },
+          {
+            "type": "operation",
+            "name": "stop",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/sensors/#dom-sensor-stop"
+          },
+          {
+            "type": "attribute",
+            "name": "onreading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-onreading"
+          },
+          {
+            "type": "attribute",
+            "name": "onactivate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-onactivate"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/sensors/#dom-sensor-onerror"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/sensors/#sensor"
+      },
+      "SensorOptions": {
+        "fragment": "dictionary SensorOptions {\n  double frequency;\n};",
+        "type": "dictionary",
+        "name": "SensorOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "frequency",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/sensors/#dom-sensoroptions-frequency"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/sensors/#dictdef-sensoroptions"
+      },
+      "SensorErrorEvent": {
+        "fragment": "[SecureContext, Exposed=(DedicatedWorker, Window)]\ninterface SensorErrorEvent : Event {\n  constructor(DOMString type, SensorErrorEventInit errorEventInitDict);\n  readonly attribute DOMException error;\n};",
+        "type": "interface",
+        "name": "SensorErrorEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "errorEventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SensorErrorEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/sensors/#dom-sensorerrorevent-sensorerrorevent"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/sensors/#dom-sensorerrorevent-error"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/sensors/#sensorerrorevent"
+      },
+      "SensorErrorEventInit": {
+        "fragment": "dictionary SensorErrorEventInit : EventInit {\n  required DOMException error;\n};",
+        "type": "dictionary",
+        "name": "SensorErrorEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "error",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/sensors/#dom-sensorerroreventinit-error"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/sensors/#dictdef-sensorerroreventinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "DedicatedWorker": [
+        "Sensor",
+        "SensorErrorEvent"
+      ],
+      "Window": [
+        "Sensor",
+        "SensorErrorEvent"
+      ]
+    },
+    "dependencies": {
+      "Sensor": [
+        "EventTarget",
+        "DOMHighResTimeStamp",
+        "EventHandler"
+      ],
+      "SensorOptions": [],
+      "SensorErrorEvent": [
+        "Event",
+        "SensorErrorEventInit",
+        "DOMException"
+      ],
+      "SensorErrorEventInit": [
+        "EventInit",
+        "DOMException"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "DOMHighResTimeStamp",
+      "EventHandler",
+      "Event",
+      "DOMException",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

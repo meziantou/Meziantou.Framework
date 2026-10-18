@@ -1,0 +1,411 @@
+{
+  "encoding/api-basics.any.js": {
+    "total": 6
+  },
+  "encoding/api-basics.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "encoding/api-invalid-label.any.js#dedicatedworker?1-1000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js#dedicatedworker?1001-2000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js#dedicatedworker?2001-3000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js#dedicatedworker?3001-last": {
+    "total": 421
+  },
+  "encoding/api-invalid-label.any.js?1-1000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js?1001-2000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js?2001-3000": {
+    "total": 1000
+  },
+  "encoding/api-invalid-label.any.js?3001-last": {
+    "total": 421
+  },
+  "encoding/api-replacement-encodings.any.js": {
+    "total": 6
+  },
+  "encoding/api-replacement-encodings.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "encoding/api-surrogates-utf8.any.js": {
+    "total": 6
+  },
+  "encoding/api-surrogates-utf8.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "encoding/big5-encoder.html": {
+    "total": 13
+  },
+  "encoding/bom-handling.html": {
+    "total": 1
+  },
+  "encoding/encodeInto.any.js": {
+    "total": 111
+  },
+  "encoding/encodeInto.any.js#dedicatedworker": {
+    "total": 111
+  },
+  "encoding/encodeInto.any.js#sharedworker": {
+    "total": 111
+  },
+  "encoding/eof-shift_jis.html": {
+    "reftest": "PASS"
+  },
+  "encoding/eof-utf-8-one.html": {
+    "reftest": "PASS"
+  },
+  "encoding/eof-utf-8-three.html": {
+    "reftest": "PASS"
+  },
+  "encoding/eof-utf-8-two.html": {
+    "reftest": "PASS"
+  },
+  "encoding/idlharness.any.js": {
+    "total": 57
+  },
+  "encoding/idlharness.any.js#dedicatedworker": {
+    "total": 57
+  },
+  "encoding/idlharness.any.js#sharedworker": {
+    "total": 57
+  },
+  "encoding/iso-2022-jp-decoder.any.js": {
+    "total": 34
+  },
+  "encoding/iso-2022-jp-decoder.any.js#dedicatedworker": {
+    "total": 34
+  },
+  "encoding/iso-2022-jp-encoder.html": {
+    "total": 12
+  },
+  "encoding/json-document-utf8.html": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "application/json with no charset is decoded as UTF-8 under a windows-1251 parent frame": "TIMEOUT",
+      "application/json;charset=utf-8 is decoded as UTF-8": "NOTRUN",
+      "application/json;charset=windows-1251 honors the explicit charset": "NOTRUN",
+      "text/json with no charset is decoded as UTF-8": "NOTRUN"
+    }
+  },
+  "encoding/legacy-mb-schinese/gb18030/gb18030-decoder.any.js": {
+    "total": 275
+  },
+  "encoding/legacy-mb-schinese/gb18030/gb18030-decoder.any.js#dedicatedworker": {
+    "total": 275
+  },
+  "encoding/legacy-mb-schinese/gb18030/gb18030-encoder.html": {
+    "total": 254
+  },
+  "encoding/legacy-mb-schinese/gbk/gbk-decoder.any.js": {
+    "total": 82
+  },
+  "encoding/legacy-mb-schinese/gbk/gbk-decoder.any.js#dedicatedworker": {
+    "total": 82
+  },
+  "encoding/legacy-mb-schinese/gbk/gbk-encoder.html": {
+    "total": 49
+  },
+  "encoding/remove-only-one-bom.html": {
+    "total": 3
+  },
+  "encoding/replacement-encodings.any.js": {
+    "total": 12
+  },
+  "encoding/replacement-encodings.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "encoding/sharedarraybuffer.https.html": {
+    "total": 1
+  },
+  "encoding/single-byte-decoder-iframe.window.js": {
+    "total": 168
+  },
+  "encoding/single-byte-decoder.any.js?TextDecoder": {
+    "total": 168
+  },
+  "encoding/single-byte-decoder.any.js?XMLHttpRequest": {
+    "total": 168
+  },
+  "encoding/sniffing.html": {
+    "total": 1
+  },
+  "encoding/streams/backpressure.any.js": {
+    "total": 4
+  },
+  "encoding/streams/backpressure.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "encoding/streams/backpressure.any.js#sharedworker": {
+    "total": 4
+  },
+  "encoding/streams/decode-attributes.any.js": {
+    "total": 28
+  },
+  "encoding/streams/decode-attributes.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "encoding/streams/decode-attributes.any.js#sharedworker": {
+    "total": 28
+  },
+  "encoding/streams/decode-bad-chunks.any.js": {
+    "total": 5
+  },
+  "encoding/streams/decode-bad-chunks.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "encoding/streams/decode-bad-chunks.any.js#sharedworker": {
+    "total": 5
+  },
+  "encoding/streams/decode-ignore-bom.any.js": {
+    "total": 12
+  },
+  "encoding/streams/decode-ignore-bom.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "encoding/streams/decode-ignore-bom.any.js#sharedworker": {
+    "total": 12
+  },
+  "encoding/streams/decode-incomplete-input.any.js": {
+    "total": 2
+  },
+  "encoding/streams/decode-incomplete-input.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "encoding/streams/decode-incomplete-input.any.js#sharedworker": {
+    "total": 2
+  },
+  "encoding/streams/decode-non-utf8.any.js": {
+    "total": 13
+  },
+  "encoding/streams/decode-non-utf8.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "encoding/streams/decode-non-utf8.any.js#sharedworker": {
+    "total": 13
+  },
+  "encoding/streams/decode-split-character.any.js": {
+    "total": 11
+  },
+  "encoding/streams/decode-split-character.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "encoding/streams/decode-split-character.any.js#sharedworker": {
+    "total": 11
+  },
+  "encoding/streams/decode-utf8.any.js": {
+    "total": 12
+  },
+  "encoding/streams/decode-utf8.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "encoding/streams/decode-utf8.any.js#sharedworker": {
+    "total": 12
+  },
+  "encoding/streams/encode-bad-chunks.any.js": {
+    "total": 6
+  },
+  "encoding/streams/encode-bad-chunks.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "encoding/streams/encode-bad-chunks.any.js#sharedworker": {
+    "total": 6
+  },
+  "encoding/streams/encode-utf8.any.js": {
+    "total": 19
+  },
+  "encoding/streams/encode-utf8.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "encoding/streams/encode-utf8.any.js#sharedworker": {
+    "total": 19
+  },
+  "encoding/streams/invalid-realm.window.js": {
+    "total": 4
+  },
+  "encoding/streams/readable-writable-properties.any.js": {
+    "total": 2
+  },
+  "encoding/streams/readable-writable-properties.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "encoding/streams/readable-writable-properties.any.js#sharedworker": {
+    "total": 2
+  },
+  "encoding/streams/realms.window.js": {
+    "total": 12,
+    "failures": {
+      "the output chunks when read is called after write should come from the same realm as the constructor of TextEncoderStream": "FAIL",
+      "the output chunks when write is called with a pending read should come from the same realm as the constructor of TextEncoderStream": "FAIL",
+      "the result object when read is called after write should come from the same realm as the constructor of TextDecoderStream": "FAIL",
+      "the result object when write is called with a pending read should come from the same realm as the constructor of TextDecoderStream": "FAIL"
+    }
+  },
+  "encoding/textdecoder-arguments.any.js": {
+    "total": 4,
+    "failures": {
+      "TextDecoder decode() with array buffer detached during arg conversion": "FAIL"
+    }
+  },
+  "encoding/textdecoder-arguments.any.js#dedicatedworker": {
+    "total": 4,
+    "failures": {
+      "TextDecoder decode() with array buffer detached during arg conversion": "FAIL"
+    }
+  },
+  "encoding/textdecoder-byte-order-marks.any.js": {
+    "total": 3
+  },
+  "encoding/textdecoder-byte-order-marks.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "encoding/textdecoder-copy.any.js": {
+    "total": 2
+  },
+  "encoding/textdecoder-copy.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "encoding/textdecoder-copy.any.js#sharedworker": {
+    "total": 2
+  },
+  "encoding/textdecoder-eof.any.js": {
+    "total": 2
+  },
+  "encoding/textdecoder-eof.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?1-1000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?1001-2000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?2001-3000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?3001-4000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?4001-5000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?5001-6000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?6001-7000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js#dedicatedworker?7001-last": {
+    "total": 168
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?1-1000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?1001-2000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?2001-3000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?3001-4000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?4001-5000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?5001-6000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?6001-7000": {
+    "total": 1000
+  },
+  "encoding/textdecoder-fatal-single-byte.any.js?7001-last": {
+    "total": 168
+  },
+  "encoding/textdecoder-fatal-streaming.any.js": {
+    "total": 2
+  },
+  "encoding/textdecoder-fatal-streaming.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "encoding/textdecoder-fatal.any.js": {
+    "total": 36
+  },
+  "encoding/textdecoder-fatal.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "encoding/textdecoder-ignorebom.any.js": {
+    "total": 4
+  },
+  "encoding/textdecoder-ignorebom.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "encoding/textdecoder-labels.any.js": {
+    "total": 222
+  },
+  "encoding/textdecoder-labels.any.js#dedicatedworker": {
+    "total": 222
+  },
+  "encoding/textdecoder-mistakes.any.js": {
+    "total": 87
+  },
+  "encoding/textdecoder-mistakes.any.js#dedicatedworker": {
+    "total": 87
+  },
+  "encoding/textdecoder-streaming.any.js": {
+    "total": 32
+  },
+  "encoding/textdecoder-streaming.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "encoding/textdecoder-streaming.any.js#sharedworker": {
+    "total": 32
+  },
+  "encoding/textdecoder-utf16-surrogates.any.js": {
+    "total": 10
+  },
+  "encoding/textdecoder-utf16-surrogates.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "encoding/textencoder-constructor-non-utf.any.js": {
+    "total": 79
+  },
+  "encoding/textencoder-constructor-non-utf.any.js#dedicatedworker": {
+    "total": 79
+  },
+  "encoding/textencoder-utf16-surrogates.any.js": {
+    "total": 7
+  },
+  "encoding/textencoder-utf16-surrogates.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "encoding/unsupported-encodings.any.js": {
+    "total": 14
+  },
+  "encoding/unsupported-encodings.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "encoding/unsupported-labels.window.js": {
+    "total": 158
+  },
+  "encoding/utf-32-from-win1252.html": {
+    "total": 8,
+    "failures": {
+      "Expect resources/utf-32-little-endian-bom.xml to parse as UTF-16LE": "FAIL"
+    }
+  },
+  "encoding/utf-32.html": {
+    "total": 8,
+    "failures": {
+      "Expect resources/utf-32-little-endian-bom.xml to parse as UTF-16LE": "FAIL"
+    }
+  }
+}

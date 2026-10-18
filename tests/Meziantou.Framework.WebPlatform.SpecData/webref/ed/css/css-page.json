@@ -1,0 +1,420 @@
+{
+  "spec": {
+    "title": "CSS Paged Media Module Level 3",
+    "url": "https://drafts.csswg.org/css-page-3/"
+  },
+  "properties": [
+    {
+      "name": "page",
+      "href": "https://drafts.csswg.org/css-page-3/#propdef-page",
+      "value": "auto | <custom-ident>",
+      "initial": "auto",
+      "appliesTo": "boxes that create class A break points",
+      "inherited": "no (but see prose)",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "page"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@page",
+      "prose": "Authors can specify various aspects of a page box, such as its dimensions, orientation, and margins, within an @page rule. @page rules are allowed wherever rule-sets are allowed. An @page rule consists of the keyword @page, an optional comma-separated list of page selectors and a block of declarations (said to be in the page context). An @page rule can also contain other at-rules, interleaved between declarations. The current level of this specification only allows margin at-rules inside @page.",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page",
+      "descriptors": [
+        {
+          "name": "size",
+          "href": "https://drafts.csswg.org/css-page-3/#descdef-page-size",
+          "for": "@page",
+          "value": "<length [0,∞]>{1,2} | auto | [ <page-size> || [ portrait | landscape ] ]",
+          "initial": "auto",
+          "computedValue": "specified value, with <length>s made absolute.",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "The page box will be set to a size and orientation chosen by the UA. In the usual case, the page box size and orientation is chosen to match the target media sheet.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-auto",
+              "type": "value",
+              "value": "auto"
+            },
+            {
+              "name": "landscape",
+              "prose": "Specifies that the page’s content be printed in landscape orientation. The longer sides of the page box are horizontal. If a <page-size> is not specified, the size of the page sheet is chosen by the UA.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-landscape",
+              "type": "value",
+              "value": "landscape"
+            },
+            {
+              "name": "portrait",
+              "prose": "Specifies that the page’s content be printed in portrait orientation. The shorter sides of the page box are horizontal. If a <page-size> is not specified, the size of the page sheet is chosen by the UA.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-portrait",
+              "type": "value",
+              "value": "portrait"
+            },
+            {
+              "name": "<length [0,∞]>",
+              "prose": "The page box will be set to the given absolute dimension(s). If only one length value is specified, it sets both the width and height of the page box (i.e., the box is a square). If two length values are specified, the first establishes the page box width, and the second the page box height. Values in units of em and ex refer to the page context’s font. Negative lengths are illegal.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-length-0",
+              "type": "value",
+              "value": "<length [0,∞]>"
+            },
+            {
+              "name": "<page-size>",
+              "prose": "A page size can be specified using one of the following media names. This is the equivalent of specifying size using length values. The definition of the media names comes from Media Standardized Names [PWGMSN].",
+              "href": "https://drafts.csswg.org/css-page-3/#typedef-page-size-page-size",
+              "type": "type",
+              "values": [
+                {
+                  "name": "A5",
+                  "prose": "Equivalent to the size of ISO A5 media: 148mm wide and 210 mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-a5",
+                  "type": "value",
+                  "value": "A5"
+                },
+                {
+                  "name": "A4",
+                  "prose": "Equivalent to the size of ISO A4 media: 210 mm wide and 297 mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-a4",
+                  "type": "value",
+                  "value": "A4"
+                },
+                {
+                  "name": "A3",
+                  "prose": "Equivalent to the size of ISO A3 media: 297mm wide and 420mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-a3",
+                  "type": "value",
+                  "value": "A3"
+                },
+                {
+                  "name": "B5",
+                  "prose": "Equivalent to the size of ISO B5 media: 176mm wide by 250mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-b5",
+                  "type": "value",
+                  "value": "B5"
+                },
+                {
+                  "name": "B4",
+                  "prose": "Equivalent to the size of ISO B4 media: 250mm wide by 353mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-b4",
+                  "type": "value",
+                  "value": "B4"
+                },
+                {
+                  "name": "JIS-B5",
+                  "prose": "Equivalent to the size of JIS B5 media: 182mm wide by 257mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-jis-b5",
+                  "type": "value",
+                  "value": "JIS-B5"
+                },
+                {
+                  "name": "JIS-B4",
+                  "prose": "Equivalent to the size of JIS B4 media: 257mm wide by 364mm high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-jis-b4",
+                  "type": "value",
+                  "value": "JIS-B4"
+                },
+                {
+                  "name": "letter",
+                  "prose": "Equivalent to the size of North American letter media: 8.5 inches wide and 11 inches high",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-letter",
+                  "type": "value",
+                  "value": "letter"
+                },
+                {
+                  "name": "legal",
+                  "prose": "Equivalent to the size of North American legal: 8.5 inches wide by 14 inches high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-legal",
+                  "type": "value",
+                  "value": "legal"
+                },
+                {
+                  "name": "ledger",
+                  "prose": "Equivalent to the size of North American ledger: 11 inches wide by 17 inches high.",
+                  "href": "https://drafts.csswg.org/css-page-3/#valdef-page-size-ledger",
+                  "type": "value",
+                  "value": "ledger"
+                }
+              ],
+              "value": "A5 | A4 | A3 | B5 | B4 | JIS-B5 | JIS-B4 | letter | legal | ledger"
+            }
+          ]
+        },
+        {
+          "name": "page-orientation",
+          "href": "https://drafts.csswg.org/css-page-3/#descdef-page-page-orientation",
+          "for": "@page",
+          "value": "upright | rotate-left | rotate-right",
+          "initial": "upright",
+          "computedValue": "as specified",
+          "values": [
+            {
+              "name": "upright",
+              "prose": "No special orientation is applied; the page is laid out and formatted as normal.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-orientation-upright",
+              "type": "value",
+              "value": "upright"
+            },
+            {
+              "name": "rotate-left",
+              "prose": "After the page has been laid out, if the output medium supports rotation, this value indicates that the page must be displayed rotated a quarter turn to the left (counter-clockwise) of how it was laid out.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-orientation-rotate-left",
+              "type": "value",
+              "value": "rotate-left"
+            },
+            {
+              "name": "rotate-right",
+              "prose": "Same as rotate-left, except the page must be displayed rotated a quarter turn to the right (clockwise) of how it was laid out.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-orientation-rotate-right",
+              "type": "value",
+              "value": "rotate-right"
+            }
+          ]
+        },
+        {
+          "name": "marks",
+          "href": "https://drafts.csswg.org/css-page-3/#descdef-page-marks",
+          "for": "@page",
+          "value": "none | [ crop || cross ]",
+          "initial": "none",
+          "computedValue": "as specified",
+          "values": [
+            {
+              "name": "none",
+              "prose": "Specifies that neither crop marks nor registration marks should be printed: the area outside the bleed area will be completely blank.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-marks-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "crop",
+              "prose": "Specifies that crop marks should be printed. These are typically short lines outside the page box that are effectively extensions of the page box’s four edges, thereby indicating the precise location of those edges without placing any ink near or within the page box itself.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-marks-crop",
+              "type": "value",
+              "value": "crop"
+            },
+            {
+              "name": "cross",
+              "prose": "Specifies that registration marks should be printed. These are typically cross-shaped marks outside each edge of the page box used to align sheets of paper during the printing process.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-marks-cross",
+              "type": "value",
+              "value": "cross"
+            }
+          ]
+        },
+        {
+          "name": "bleed",
+          "href": "https://drafts.csswg.org/css-page-3/#descdef-page-bleed",
+          "for": "@page",
+          "value": "auto | <length>",
+          "initial": "auto",
+          "computedValue": "as specified",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "Computes to 6pt if marks has crop and to zero otherwise.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-bleed-auto",
+              "type": "value",
+              "value": "auto"
+            },
+            {
+              "name": "<length>",
+              "prose": "Specifies by how far outward, in each direction, the bleed area extends past the page box. Values may be negative, but there may be implementation-specific limits.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-bleed-length",
+              "type": "value",
+              "value": "<length>"
+            }
+          ]
+        },
+        {
+          "name": "page-margin-safety",
+          "href": "https://drafts.csswg.org/css-page-3/#descdef-page-page-margin-safety",
+          "for": "@page",
+          "value": "none | clamp | add",
+          "initial": "auto",
+          "computedValue": "as specified",
+          "values": [
+            {
+              "name": "none",
+              "prose": "Margins are not affected by unprintable regions",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-page-margin-safety-none",
+              "type": "value",
+              "value": "none"
+            },
+            {
+              "name": "clamp",
+              "prose": "The used margin values will be the maximum of the resolved value, and <safe-printable-inset> for the given side.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-page-margin-safety-clamp",
+              "type": "value",
+              "value": "clamp"
+            },
+            {
+              "name": "add",
+              "prose": "The used margin values will be the resolved value, plus <safe-printable-inset> for the given side.",
+              "href": "https://drafts.csswg.org/css-page-3/#valdef-page-page-margin-safety-add",
+              "type": "value",
+              "value": "add"
+            }
+          ]
+        }
+      ],
+      "value": "@page <page-selector-list>? { <declaration-rule-list> }",
+      "values": [
+        {
+          "name": ":left",
+          "prose": "All pages are automatically classified by user agents as either left pages or right pages, based on page progression. The :left and :right pseudo-classes only match left or right pages, respectively.",
+          "href": "https://drafts.csswg.org/css-page-3/#valdef-page-left",
+          "type": "value",
+          "value": ":left"
+        },
+        {
+          "name": ":right",
+          "prose": "All pages are automatically classified by user agents as either left pages or right pages, based on page progression. The :left and :right pseudo-classes only match left or right pages, respectively.",
+          "href": "https://drafts.csswg.org/css-page-3/#valdef-page-right",
+          "type": "value",
+          "value": ":right"
+        },
+        {
+          "name": ":first",
+          "prose": "The :first pseudo-class matches the first printed page of a document.",
+          "href": "https://drafts.csswg.org/css-page-3/#valdef-page-first",
+          "type": "value",
+          "value": ":first"
+        },
+        {
+          "name": ":blank",
+          "prose": "The :blank pseudo-class matches content-empty pages that appear as a result of forced page breaks.",
+          "href": "https://drafts.csswg.org/css-page-3/#valdef-page-blank",
+          "type": "value",
+          "value": ":blank"
+        }
+      ]
+    },
+    {
+      "name": "@top-left-corner",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-left-corner",
+      "descriptors": [],
+      "value": "@top-left-corner { <declaration-list> };"
+    },
+    {
+      "name": "@top-left",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-left",
+      "descriptors": [],
+      "value": "@top-left { <declaration-list> };"
+    },
+    {
+      "name": "@top-center",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-center",
+      "descriptors": [],
+      "value": "@top-center { <declaration-list> };"
+    },
+    {
+      "name": "@top-right",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-right",
+      "descriptors": [],
+      "value": "@top-right { <declaration-list> };"
+    },
+    {
+      "name": "@top-right-corner",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-right-corner",
+      "descriptors": [],
+      "value": "@top-right-corner { <declaration-list> };"
+    },
+    {
+      "name": "@bottom-left-corner",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-left-corner",
+      "descriptors": [],
+      "value": "@bottom-left-corner { <declaration-list> };"
+    },
+    {
+      "name": "@bottom-left",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-left",
+      "descriptors": [],
+      "value": "@bottom-left { <declaration-list> };"
+    },
+    {
+      "name": "@bottom-center",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-center",
+      "descriptors": [],
+      "value": "@bottom-center { <declaration-list> };"
+    },
+    {
+      "name": "@bottom-right",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-right",
+      "descriptors": [],
+      "value": "@bottom-right { <declaration-list> };"
+    },
+    {
+      "name": "@bottom-right-corner",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-right-corner",
+      "descriptors": [],
+      "value": "@bottom-right-corner { <declaration-list> };"
+    },
+    {
+      "name": "@left-top",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-top",
+      "descriptors": [],
+      "value": "@left-top { <declaration-list> };"
+    },
+    {
+      "name": "@left-middle",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-middle",
+      "descriptors": [],
+      "value": "@left-middle { <declaration-list> };"
+    },
+    {
+      "name": "@left-bottom",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-bottom",
+      "descriptors": [],
+      "value": "@left-bottom { <declaration-list> };"
+    },
+    {
+      "name": "@right-top",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-top",
+      "descriptors": [],
+      "value": "@right-top { <declaration-list> };"
+    },
+    {
+      "name": "@right-middle",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-middle",
+      "descriptors": [],
+      "value": "@right-middle { <declaration-list> };"
+    },
+    {
+      "name": "@right-bottom",
+      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-bottom",
+      "descriptors": [],
+      "value": "@right-bottom { <declaration-list> };"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<page-selector-list>",
+      "href": "https://drafts.csswg.org/css-page-3/#typedef-page-selector-list",
+      "type": "type",
+      "value": "<page-selector>#"
+    },
+    {
+      "name": "<page-selector>",
+      "href": "https://drafts.csswg.org/css-page-3/#typedef-page-selector",
+      "type": "type",
+      "value": "[ <ident-token>? <pseudo-page>* ]!"
+    },
+    {
+      "name": "<pseudo-page>",
+      "href": "https://drafts.csswg.org/css-page-3/#typedef-pseudo-page",
+      "type": "type",
+      "value": ": [ left | right | first | blank ]"
+    },
+    {
+      "name": "<safe-printable-inset>",
+      "prose": "Let this value be <safe-printable-inset>, which is a <length>.",
+      "href": "https://drafts.csswg.org/css-page-3/#typedef-safe-printable-inset",
+      "type": "type"
+    }
+  ]
+}

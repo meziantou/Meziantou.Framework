@@ -1,0 +1,1224 @@
+{
+  "shadow-dom/Document-caretPositionFromPoint.tentative.html": {
+    "total": 14
+  },
+  "shadow-dom/Document-prototype-adoptNode.html": {
+    "total": 2
+  },
+  "shadow-dom/Document-prototype-currentScript.html": {
+    "total": 8
+  },
+  "shadow-dom/Document-prototype-importNode.html": {
+    "total": 2
+  },
+  "shadow-dom/DocumentOrShadowRoot-prototype-elementFromPoint.html": {
+    "total": 41
+  },
+  "shadow-dom/Element-interface-attachShadow-custom-element.html": {
+    "total": 6
+  },
+  "shadow-dom/Element-interface-attachShadow.html": {
+    "total": 6
+  },
+  "shadow-dom/Element-interface-shadowRoot-attribute.html": {
+    "total": 3
+  },
+  "shadow-dom/Extensions-to-Event-Interface.html": {
+    "total": 16
+  },
+  "shadow-dom/HTMLSlotElement-interface.html": {
+    "total": 18
+  },
+  "shadow-dom/HighlightRegistry-highlightsFromPoint.html": {
+    "total": 4
+  },
+  "shadow-dom/MouseEvent-prototype-offsetX-offsetY.html": {
+    "total": 3,
+    "failures": {
+      "MouseEvent's offsetX and offsetY attributes must be relative to the shadow host when an event is dispatched inside its shadow tree.": "FAIL",
+      "MouseEvent's offsetX and offsetY attributes must be relative to the target.": "FAIL"
+    }
+  },
+  "shadow-dom/Node-prototype-cloneNode.html": {
+    "total": 4
+  },
+  "shadow-dom/Range-prototype-insertNode.html": {
+    "total": 1
+  },
+  "shadow-dom/ShadowRoot-interface.html": {
+    "total": 12
+  },
+  "shadow-dom/Slottable-mixin.html": {
+    "total": 4
+  },
+  "shadow-dom/accesskey.tentative.html": {
+    "total": 2
+  },
+  "shadow-dom/assign-slottables-after-removing-shadow-tree-from-document.html": {
+    "total": 1
+  },
+  "shadow-dom/attach-shadow-non-html-namespace.html": {
+    "total": 304
+  },
+  "shadow-dom/attachShadow-with-ShadowRoot.html": {
+    "total": 2
+  },
+  "shadow-dom/build-deep-detached-shadow-then-append-text.html": {
+    "total": 1
+  },
+  "shadow-dom/capturing-and-bubbling-event-listeners-across-shadow-trees.html": {
+    "total": 5
+  },
+  "shadow-dom/declarative/declarative-after-attachshadow.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/declarative-parser-interaction.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-attachment.html": {
+    "total": 654
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-available-to-element-internals.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-basic.html": {
+    "total": 22
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-opt-in.html": {
+    "total": 120
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-repeats-2.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-repeats-slot-assignment.html": {
+    "total": 2
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-repeats.html": {
+    "total": 3
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-serialization.html": {
+    "total": 2
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-slot-assignment-serialization.html": {
+    "total": 3
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-slot-assignment.html": {
+    "total": 8
+  },
+  "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/declarative-with-disabled-shadow.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/gethtml-ordering.html": {
+    "total": 3
+  },
+  "shadow-dom/declarative/gethtml.html": {
+    "total": 6908
+  },
+  "shadow-dom/declarative/innerhtml-before-closing-tag.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/innerhtml-on-ordinary-template.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/move-template-before-closing-tag.html": {
+    "total": 3
+  },
+  "shadow-dom/declarative/script-access.html": {
+    "total": 2
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-disconnect-iframe.html": {
+    "total": 1,
+    "failures": {
+      "Destroying iframe during async adoptedStyleSheets fetch does not crash.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-disconnect.html": {
+    "total": 1,
+    "failures": {
+      "Disconnecting and reconnecting host during async fetch still applies styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-duplicate-bare-specifier.html": {
+    "total": 1,
+    "failures": {
+      "Bare specifier and resolved URL are not deduplicated but share the same CSSStyleSheet.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-duplicate-importmap.html": {
+    "total": 1,
+    "failures": {
+      "Duplicate bare specifiers via import map are deduplicated and applied.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-duplicate.html": {
+    "total": 1,
+    "failures": {
+      "Duplicate specifiers in the attribute are deduplicated.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-failure.html": {
+    "total": 1,
+    "failures": {
+      "Async fetch failure: 404 leaves placeholder empty, valid specifier still works.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-clear.html": {
+    "total": 1,
+    "failures": {
+      "Clearing adoptedStyleSheets before fetch prevents styles from being applied.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-insertrule.html": {
+    "total": 1,
+    "failures": {
+      "Fetched sheet replaces placeholder including manually-inserted rules.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-reinsert-same.html": {
+    "total": 1,
+    "failures": {
+      "Placeholder removed and reinserted at same position is replaced by fetched sheet.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-reinsert-swap.html": {
+    "total": 1,
+    "failures": {
+      "Placeholders reinserted in swapped positions reflect new cascade order after fetch.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-remove-middle.html": {
+    "total": 1,
+    "failures": {
+      "Removing middle placeholder before fetch excludes it from final adoptedStyleSheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-mutation-replacesync.html": {
+    "total": 1,
+    "failures": {
+      "Fetched sheet replaces placeholder including replaceSync content.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-ordering.html": {
+    "total": 1,
+    "failures": {
+      "Multiple async-fetched CSS modules maintain attribute order in adoptedStyleSheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch-shared.html": {
+    "total": 1,
+    "failures": {
+      "Shared CSS module specifier across shadow roots produces the same CSSStyleSheet.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-async-fetch.html": {
+    "total": 1,
+    "failures": {
+      "Async-fetched CSS module replaces placeholder and applies styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-basic.html": {
+    "total": 2,
+    "failures": {
+      "Styles from the adoptedStyleSheets are applied to elements.": "FAIL",
+      "adoptedStyleSheets is populated from a <template> element's shadowrootadoptedstylesheets attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-clonenode-async-fetch.html": {
+    "total": 1,
+    "failures": {
+      "cloneNode handles both placeholder and resolved async-fetched adoptedStyleSheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-clonenode.html": {
+    "total": 11,
+    "failures": {
+      "Adopted stylesheets resolved from the cloned shadow root style the cloned tree.": "FAIL",
+      "cloneNode(true) followed by getHTML() round-trips the shadowrootadoptedstylesheets attribute.": "FAIL",
+      "cloneNode(true) on a non-clonable host does not produce a shadow root regardless of shadowrootadoptedstylesheets.": "FAIL",
+      "cloneNode(true) preserves order of multiple shadowrootadoptedstylesheets specifiers.": "FAIL",
+      "cloneNode(true) preserves resolution semantics for whitespace-padded shadowrootadoptedstylesheets values.": "FAIL",
+      "cloneNode(true) re-processes shadowrootadoptedstylesheets and the clone shares the resolved sheet.": "FAIL",
+      "cloneNode(true) reflects only the shadowrootadoptedstylesheets attribute, not script mutations to adoptedStyleSheets.": "FAIL",
+      "document.importNode does NOT inherit the source document's import map resolution.": "FAIL",
+      "document.importNode resolves shadowrootadoptedstylesheets against the destination document.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-fetched-module.html": {
+    "total": 1,
+    "failures": {
+      "Already-fetched module populates adoptedStyleSheets synchronously and applies styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-idl-absent-and-empty.html": {
+    "total": 2,
+    "failures": {
+      "shadowRootAdoptedStyleSheets reflects absent and authored-empty content attributes correctly.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-idl-feature-detection.html": {
+    "total": 1,
+    "failures": {
+      "shadowRootAdoptedStyleSheets is exposed as a configurable, enumerable accessor on HTMLTemplateElement.prototype.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-idl-reflection.html": {
+    "total": 2,
+    "failures": {
+      "Empty-string assignment and removeAttribute() are distinguishable on shadowRootAdoptedStyleSheets.": "FAIL",
+      "shadowRootAdoptedStyleSheets reflects the shadowrootadoptedstylesheets content attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-invalid-specifier.html": {
+    "total": 2,
+    "failures": {
+      "Mixed valid/invalid specifiers: only valid ones produce entries and apply styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-async.html": {
+    "total": 1,
+    "failures": {
+      "Modulepreload after shadow root creation resolves the placeholder.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-basic.html": {
+    "total": 1,
+    "failures": {
+      "Modulepreloaded CSS module is available synchronously for shadowrootadoptedstylesheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-failure.html": {
+    "total": 2,
+    "failures": {
+      "Failed modulepreload (404) results in empty sheet for shadowrootadoptedstylesheets.": "FAIL",
+      "Mixed valid/invalid modulepreloads: valid ones work, failed ones leave empty sheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-identity.html": {
+    "total": 1,
+    "failures": {
+      "Modulepreload, import(), and shadowrootadoptedstylesheets all share the same CSSStyleSheet.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-nested.html": {
+    "total": 1,
+    "failures": {
+      "Nested shadow roots with modulepreloaded CSS independently resolve their styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-ordering.html": {
+    "total": 1,
+    "failures": {
+      "Modulepreloaded CSS modules maintain attribute order in adoptedStyleSheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-modulepreload-shared.html": {
+    "total": 1,
+    "failures": {
+      "Modulepreloaded CSS module is shared across multiple shadow roots.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-multiple.html": {
+    "total": 2,
+    "failures": {
+      "Styles from the sheets applied via shadowrootadoptedstylesheets are applied to elements.": "FAIL",
+      "adoptedStyleSheets is populated from a <template> element's shadowrootadoptedstylesheets attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-nested-async.html": {
+    "total": 1,
+    "failures": {
+      "Nested shadow roots independently resolve async adoptedStyleSheets.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-nested-sync.html": {
+    "total": 1,
+    "failures": {
+      "Nested sync: shadow roots independently resolve specifiers and apply styles.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-placeholder-identity.html": {
+    "total": 1,
+    "failures": {
+      "Placeholder CSSStyleSheet is replaced by a different object after fetch.": "FAIL"
+    }
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-same-document.html": {
+    "total": 1
+  },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-serialization.html": {
+    "total": 4,
+    "failures": {
+      "Element.getHTML() round-trips shadowrootadoptedstylesheets across absent, empty, basic, and whitespace values.": "FAIL",
+      "getHTML() ignores script-added entries in adoptedStyleSheets and emits only the authored shadowrootadoptedstylesheets value.": "FAIL",
+      "getHTML() with an empty authored shadowrootadoptedstylesheets value is unaffected by script mutations.": "FAIL"
+    }
+  },
+  "shadow-dom/directionality-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/directionality-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/dragenter-related-target.html": {
+    "total": 1
+  },
+  "shadow-dom/dragleave-related-target.html": {
+    "total": 1
+  },
+  "shadow-dom/event-composed-path-after-dom-mutation.html": {
+    "total": 2
+  },
+  "shadow-dom/event-composed-path-with-related-target.html": {
+    "total": 13
+  },
+  "shadow-dom/event-composed-path.html": {
+    "total": 11
+  },
+  "shadow-dom/event-composed.html": {
+    "total": 9
+  },
+  "shadow-dom/event-dispatch-order.tentative.html": {
+    "total": 1
+  },
+  "shadow-dom/event-inside-shadow-tree.html": {
+    "total": 12
+  },
+  "shadow-dom/event-inside-slotted-node.html": {
+    "total": 20
+  },
+  "shadow-dom/event-post-dispatch-listenerless.html": {
+    "total": 3
+  },
+  "shadow-dom/event-post-dispatch-no-listeners.html": {
+    "total": 5
+  },
+  "shadow-dom/event-post-dispatch.html": {
+    "total": 16
+  },
+  "shadow-dom/event-with-related-target.html": {
+    "total": 18
+  },
+  "shadow-dom/execcommand-insertList-in-shadow.html": {
+    "total": 1,
+    "failures": {
+      "Toggle off List for all the child nodes in the ShadowRoot": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/delegatesFocus-highlight-sibling.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-fallback-default-tabindex.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-fallback.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-nested-2levels.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-nested-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-nested-fallback.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-nested.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-shadow-in-fallback.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-shadow-in-slot.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slot-with-tabindex.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slots-in-slot.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-slots.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-web-component-radio.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-navigation-with-delegatesFocus.html": {
+    "total": 16
+  },
+  "shadow-dom/focus-navigation/focus-navigation.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-negative-tabindex-at-end-of-shadow-tree.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/focus-nested-slots.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-reverse-unassignable-slot.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-reverse-unassigned-slot.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-unassignable-slot.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/focus-with-negative-index.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/menu/tentative/focus-menu-elements.html": {
+    "total": 1,
+    "failures": {
+      "Focus navigation should skip over other menuitems in menubars.": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/carousel-grid-order.html": {
+    "total": 1,
+    "failures": {
+      "Grid items in carousel should follow grid-order reading flow": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/flex-flow.html": {
+    "total": 3
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/flex-visual-order.html": {
+    "total": 4
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-auto-flow-reading-order.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-columns.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-across-scopes.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-on-shadow-host.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-pseudo-elements.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-display-contents.html": {
+    "total": 3
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-iframe.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-nested-grids.html": {
+    "total": 3
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-popover.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-position-absolute.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-position-fixed.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-with-slots.html": {
+    "total": 7
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-order.html": {
+    "total": 4
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-rows.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/normal.html": {
+    "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/source-order-invalid.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/source-order-valid.html": {
+    "total": 5
+  },
+  "shadow-dom/focus-navigation/tentative/focus-navigation-scroller-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/tentative/focus-navigation-scroller-interactive-child.html": {
+    "total": 1,
+    "failures": {
+      "While focusing a keyboard-focusable scroller, adding interactive content should not cancel focusability": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/tentative/focus-navigation-scroller-tabindex.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/tentative/focus-scroller-layout-update.html": {
+    "total": 1,
+    "failures": {
+      "When checking that element is a scroller, layout information should be up to date.": "FAIL"
+    }
+  },
+  "shadow-dom/focus-within-shadow.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/DocumentOrShadowRoot-activeElement.html": {
+    "total": 6
+  },
+  "shadow-dom/focus/ShadowRoot-delegatesFocus.html": {
+    "total": 3
+  },
+  "shadow-dom/focus/blur-on-shadow-host-delegatesFocus.html": {
+    "total": 2
+  },
+  "shadow-dom/focus/click-focus-delegatesFocus-click.html": {
+    "total": 6
+  },
+  "shadow-dom/focus/click-focus-delegatesFocus-tabindex-varies.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/click-focus-delegatesFocus-tabindex-zero.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/click-focus-slot-ancestor.html": {
+    "total": 3,
+    "failures": {
+      "Select on non-focusable non-editable slot in a contenteditable shadow DOM and inside focusable div will select text": "FAIL"
+    }
+  },
+  "shadow-dom/focus/delegatesFocus-tabindex-change.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-autofocus.html": {
+    "total": 5
+  },
+  "shadow-dom/focus/focus-click-on-shadow-host.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-method-delegatesFocus-nested-browsing-context.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-method-delegatesFocus.html": {
+    "total": 15
+  },
+  "shadow-dom/focus/focus-method-with-delegatesFocus.html": {
+    "total": 8
+  },
+  "shadow-dom/focus/focus-preserved-on-slot-reorder.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-pseudo-matches-on-shadow-host.html": {
+    "total": 20
+  },
+  "shadow-dom/focus/focus-pseudo-on-shadow-host-1.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/focus/focus-pseudo-on-shadow-host-2.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/focus/focus-pseudo-on-shadow-host-3.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/focus/focus-scroll-under-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-selector-delegatesFocus.html": {
+    "total": 12
+  },
+  "shadow-dom/focus/focus-shadowhost-display-none.html": {
+    "total": 2
+  },
+  "shadow-dom/focus/focus-slot-box-generated-tabindex-0.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tab-on-shadow-host.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-negative-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-negative.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-slot-one.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-varying-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-varying-tabindex-2.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-varying-tabindex-3.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-varying-tabindex.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-delegatesFocus.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-host-negative.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-host-not-set-scrollable.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-host-not-set.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-host-one.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero-host-scrollable.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/focus-tabindex-order-shadow-zero.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/text-selection-with-delegatesFocus-on-slotted-content.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/text-selection-with-delegatesFocus-text-control.html": {
+    "total": 1
+  },
+  "shadow-dom/focus/text-selection-with-delegatesFocus.html": {
+    "total": 2
+  },
+  "shadow-dom/form-control-form-attribute.html": {
+    "total": 3
+  },
+  "shadow-dom/getElementById-dynamic-001.html": {
+    "total": 1
+  },
+  "shadow-dom/getElementById-dynamic-002.html": {
+    "total": 1
+  },
+  "shadow-dom/historical.html": {
+    "total": 5
+  },
+  "shadow-dom/host-with-namespace.xhtml": {
+    "total": 2
+  },
+  "shadow-dom/imperative-slot-api-cross-shadow-root.html": {
+    "total": 2,
+    "failures": {
+      "HTMLSlotElement.assign drops DidSlotChange for previous_slot in different shadow root": "FAIL"
+    }
+  },
+  "shadow-dom/imperative-slot-api-disconnected.html": {
+    "total": 1
+  },
+  "shadow-dom/imperative-slot-api-slotchange.html": {
+    "total": 13
+  },
+  "shadow-dom/imperative-slot-api.html": {
+    "total": 16
+  },
+  "shadow-dom/imperative-slot-fallback-clear.html": {
+    "total": 2
+  },
+  "shadow-dom/imperative-slot-initial-fallback.html": {
+    "total": 2
+  },
+  "shadow-dom/imperative-slot-layout-invalidation-001.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/innerHTML-setter.xhtml": {
+    "total": 4
+  },
+  "shadow-dom/input-element-list.html": {
+    "total": 2
+  },
+  "shadow-dom/input-type-radio.html": {
+    "total": 1
+  },
+  "shadow-dom/inserting-fragment-under-shadow-host.html": {
+    "total": 1
+  },
+  "shadow-dom/invalidate-sibling-different-slots.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/layout-slot-no-longer-assigned.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/layout-slot-no-longer-fallback.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/leaktests/get-elements.html": {
+    "total": 5
+  },
+  "shadow-dom/leaktests/html-collection.html": {
+    "total": 9
+  },
+  "shadow-dom/leaktests/selection.html": {
+    "total": 1,
+    "failures": {
+      "selection API should not leak nodes in Shadow DOM.": "FAIL"
+    }
+  },
+  "shadow-dom/leaktests/window-frames.html": {
+    "total": 1
+  },
+  "shadow-dom/manual-slot-assignment-no-wrong-unassign.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/nested-hover-pseudo-class-removal.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/offsetParent-across-shadow-boundaries.html": {
+    "total": 22
+  },
+  "shadow-dom/offsetTop-offsetLeft-across-shadow-boundaries.html": {
+    "total": 3
+  },
+  "shadow-dom/reference-target/tentative/aria-labelledby.html": {
+    "total": 5,
+    "failures": {
+      "Label 1": "FAIL",
+      "Label 2": "FAIL",
+      "Label 3": "FAIL",
+      "aria-labelledby": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/commandfor.html": {
+    "total": 3,
+    "failures": {
+      "Shadow root reference target works with .commandForElement property.": "FAIL",
+      "Shadow root reference target works with commandfor attribute via options.": "FAIL",
+      "Shadow root reference target works with commandfor attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/dom-mutation.html": {
+    "total": 15,
+    "failures": {
+      ".labels property is updated when ID changes on input": "FAIL",
+      ".labels property is updated when for attribute changes on label outside of shadow root": "FAIL",
+      ".labels property is updated when reference target changes on shadow root": "FAIL",
+      ".labels property is updated when wrapped label changes": "FAIL",
+      "Changing the ID of the nested referenced element results in an empty computed label": "FAIL",
+      "Changing the ID of the referenced element results in an empty computed label": "FAIL",
+      "Changing the inner host's ID from a valid to an invalid value breaks the association": "FAIL",
+      "Changing the inner host's ID from an invalid to a valid value establishes the association": "FAIL",
+      "Changing the middle shadow's reference target from a valid to an invalid ID breaks the association": "FAIL",
+      "Changing the middle shadow's reference target from an invalid to a valid ID establishes the association": "FAIL",
+      "Changing the nested referenceTarget to reference a different element updates the computed label": "FAIL",
+      "Changing the reference target ID updates the computed label": "FAIL",
+      "New referenced element prepended to the shadow supercedes the existing label": "FAIL",
+      "Removing the referenced element results in an empty computed label": "FAIL",
+      "The existing label supercedes new element (with same id as the existing label) appended to the shadow": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/event-path.html": {
+    "harness": "ERROR",
+    "total": 12,
+    "failures": {
+      "Event path includes all shadow hosts and shadow roots up to the root of the source, but non-bubbling event fires only where currentTarget == retargeted original target": "FAIL",
+      "Event path should go all the way to window if source is not in a shadow, but should only fire when currentTarget == retargeted original target": "FAIL",
+      "Event path skips root containing neither source nor target. Non-bubbling event fires only where currentTarget == retargeted original target": "FAIL",
+      "Event propagates to source's shadow tree only; target in deeper shadow root": "FAIL",
+      "beforetoggle event propagates to source's shadow tree only; target in deeper shadow root": "FAIL",
+      "beforetoggle event propagates to source's shadow tree only; target in deeper shadow root; showPopover called directly with source option": "FAIL",
+      "interest event propagates to source's shadow tree only; target in deeper shadow root": "NOTRUN",
+      "loseinterest event propagates to source's shadow tree only; target in deeper shadow root": "NOTRUN",
+      "submit event propagates to submitter's shadow tree only; target in deeper shadow root": "FAIL",
+      "toggle event propagates to source's shadow tree only; target in deeper shadow root": "TIMEOUT"
+    }
+  },
+  "shadow-dom/reference-target/tentative/form.html": {
+    "total": 8,
+    "failures": {
+      "Changing the reference target of a nested shadow root sets form association": "FAIL",
+      "Form association is updated when form is inserted in or removed from shadow DOM, including in nested shadow DOM": "FAIL",
+      "Form association works for image inputs, which aren't in the elements collection": "FAIL",
+      "Reference target works with form attribute via options.": "FAIL",
+      "Reference target works with form attribute.": "FAIL",
+      "Reference target works with form-associated custom element.": "FAIL",
+      "Reference target works with nested shadow trees.": "FAIL",
+      "Reference target works with setAttribute('form')": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/gethtml-serialization.html": {
+    "total": 3,
+    "failures": {
+      "shadowrootreferencetarget is serialized before shadowrootcustomelementregistry": "FAIL",
+      "shadowrootreferencetarget is serialized in the expected order": "FAIL",
+      "shadowrootreferencetarget with no value is serialized as empty string": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/interestfor.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Shadow root reference target works with .interestForElement property.": "FAIL",
+      "Shadow root reference target works with interestfor attribute via options.": "FAIL",
+      "Shadow root reference target works with interestfor attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/label-descendant.html": {
+    "total": 22,
+    "failures": {
+      "Changing the reference target causes label association to change for .labels": "FAIL",
+      "Changing the reference target causes label association to change for computed name": "FAIL",
+      "Implicit <label> association should apply to only the first labelable custom element for .labels": "FAIL",
+      "Implicit <label> association should apply to only the first labelable custom element for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'button' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'button' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'input' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'input' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'meter' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'meter' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'output' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'output' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'progress' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'progress' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'select' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'select' for computed name": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'textarea' for .labels": "FAIL",
+      "Implicit <label> association should work with a custom element targeting 'textarea' for computed name": "FAIL",
+      "Label applies to descendant custom element that uses shadowrootreferencetarget (Input 1 via Options)": "FAIL",
+      "Label applies to descendant custom element that uses shadowrootreferencetarget (Input 1)": "FAIL",
+      "Label applies to multiple layers of descendant custom elements that use shadowrootreferencetarget (Input 2 via Options)": "FAIL",
+      "Label applies to multiple layers of descendant custom elements that use shadowrootreferencetarget (Input 2)": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/label-for.html": {
+    "total": 12,
+    "failures": {
+      "Attaching a shadow root, inserting and removing a shadow host, and changing reference targets all cause label association to be updated": "FAIL",
+      "Label for attribute targeting a custom element using shadowrootreferencetarget inside multiple layers of shadow roots works for .labels property": "FAIL",
+      "Label for attribute targeting a custom element using shadowrootreferencetarget inside multiple layers of shadow roots works for computed name": "FAIL",
+      "Label for attribute targeting a custom element using shadowrootreferencetarget works for .labels property": "FAIL",
+      "Label for attribute targeting a custom element using shadowrootreferencetarget works for computed name": "FAIL",
+      "Modifying the reference target changes .labels when using label/for": "FAIL",
+      "Modifying the reference target changes the computed label when using label/for": "FAIL",
+      "Moving an input from one shadow root to another causes its .labels to be updated": "FAIL",
+      "Multiple labels targeting a custom element using shadowrootreferencetarget inside multiple layers of shadow roots works for .labels property": "FAIL",
+      "Multiple labels targeting a custom element using shadowrootreferencetarget inside multiple layers of shadow roots works for computed name": "FAIL",
+      "Setting .htmlFor property to target a custom element using shadowrootreferencetarget works for .labels": "FAIL",
+      "Setting .htmlFor property to target a custom element using shadowrootreferencetarget works for computed name": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/popovertarget.html": {
+    "total": 3,
+    "failures": {
+      "Shadow root reference target works with .popoverTargetElement property.": "FAIL",
+      "Shadow root reference target works with popovertarget attribute via options.": "FAIL",
+      "Shadow root reference target works with popovertarget attribute.": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/property-reflection-idl-setters.html": {
+    "total": 2055
+  },
+  "shadow-dom/reference-target/tentative/property-reflection-imperative-setup.html": {
+    "total": 2055,
+    "failures": {
+      "button.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "fieldset.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "input.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "input.list has reflection behavior ReflectsHostReadOnly when pointing to datalist with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to button with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to input with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to meter with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to output with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to progress with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to select with reference target with imperative setup": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to textarea with reference target with imperative setup": "FAIL",
+      "object.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "output.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "select.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL",
+      "textarea.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target with imperative setup": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/property-reflection.html": {
+    "total": 2056,
+    "failures": {
+      "The .labels property of the referenced input element should point to the referencing label element": "FAIL",
+      "button.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "fieldset.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "input.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "input.list has reflection behavior ReflectsHostReadOnly when pointing to datalist with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to button with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to input with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to meter with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to output with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to progress with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to select with reference target": "FAIL",
+      "label.control has reflection behavior ReflectsHostReadOnly when pointing to textarea with reference target": "FAIL",
+      "object.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "output.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "select.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL",
+      "textarea.form has reflection behavior ReflectsHostReadOnly when pointing to form with reference target": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/reference-target-basics.html": {
+    "total": 6,
+    "failures": {
+      "<template> shadowrootreferencetarget sets referenceTarget on shadow root": "FAIL",
+      "Empty shadowrootreferencetarget attribute is reflected as empty string": "FAIL",
+      "Passing empty string referencetarget in ShadowRootInit is reflected as empty string": "FAIL",
+      "ShadowRoot.referenceTarget defaults to null when shadow is created declaratively": "FAIL",
+      "ShadowRoot.referenceTarget defaults to null when shadow is created imperatively": "FAIL",
+      "ShadowRootInitDict can be used to set referenceTarget on shadow root": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/shadowrootreferencetarget-idl-reflection.html": {
+    "total": 5,
+    "failures": {
+      "Setting shadowRootReferenceTarget to null removes the shadowrootreferencetarget content attribute": "FAIL",
+      "Setting shadowRootReferenceTarget updates the shadowrootreferencetarget content attribute": "FAIL",
+      "shadowRootReferenceTarget getter reflects the shadowrootreferencetarget content attribute": "FAIL",
+      "shadowRootReferenceTarget getter returns null when the content attribute is absent": "FAIL",
+      "shadowRootReferenceTarget is present on HTMLTemplateElement": "FAIL"
+    }
+  },
+  "shadow-dom/scroll-restore-shadow.html": {
+    "total": 1
+  },
+  "shadow-dom/scroll-to-the-fragment-in-shadow-tree.html": {
+    "total": 10
+  },
+  "shadow-dom/shadow-root-clonable.html": {
+    "total": 6
+  },
+  "shadow-dom/shadow-style-invalidation-vw-units.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-001.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-002.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-003.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-004.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-005.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-006.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-007.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-fallback-content-008.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/slot-reconciliation-at-node-removal.html": {
+    "total": 1
+  },
+  "shadow-dom/slotchange-customelements.html": {
+    "total": 1
+  },
+  "shadow-dom/slotchange-event.html": {
+    "total": 32
+  },
+  "shadow-dom/slotchange.html": {
+    "total": 17
+  },
+  "shadow-dom/slots-fallback-in-document.html": {
+    "total": 2
+  },
+  "shadow-dom/slots-fallback.html": {
+    "total": 13
+  },
+  "shadow-dom/slots-outside-shadow-dom.html": {
+    "total": 1
+  },
+  "shadow-dom/slots.html": {
+    "total": 26
+  },
+  "shadow-dom/touch-event-retargeting-leak.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/extensions-to-element-interface/attributes/test-006.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/extensions-to-element-interface/methods/test-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/extensions-to-element-interface/methods/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/activeElement-confirm-return-null.html": {
+    "total": 3
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-007.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-009.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-010.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-011.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-012.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-attributes/test-013.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-methods/test-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-methods/test-004.html": {
+    "total": 1,
+    "failures": {
+      "A_10_01_02_04_T01": "FAIL"
+    }
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-methods/test-006.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-methods/test-007.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/elements-and-dom-objects/shadowroot-object/shadowroot-methods/test-010.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/event-dispatch/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/event-dispatch/test-003.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/event-retargeting/test-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/events/event-retargeting/test-003.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/retargeting-focus-events/test-001.html": {
+    "total": 6
+  },
+  "shadow-dom/untriaged/events/retargeting-focus-events/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/retargeting-focus-events/test-003.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/retargeting-relatedtarget/test-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/retargeting-relatedtarget/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/retargeting-relatedtarget/test-003.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/events/test-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/html-elements-in-shadow-trees/html-forms/test-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/html-elements-in-shadow-trees/html-forms/test-002.html": {
+    "total": 3
+  },
+  "shadow-dom/untriaged/html-elements-in-shadow-trees/html-forms/test-003.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/html-elements-in-shadow-trees/inert-html-elements/test-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/html-elements-in-shadow-trees/inert-html-elements/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/shadow-trees/nested-shadow-trees/nested_tree_reftest.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/untriaged/shadow-trees/reprojection/reprojection-001.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/untriaged/shadow-trees/shadow-root-001.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/untriaged/shadow-trees/shadow-root-002.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-001.html": {
+    "total": 14
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/dom-tree-accessors-002.html": {
+    "total": 3
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/ownerdocument-001.html": {
+    "total": 6
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/ownerdocument-002.html": {
+    "total": 18
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/selectors-api-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/selectors-api-002.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/shadow-root-001.html": {
+    "total": 4
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/test-005.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/test-007.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/test-009.html": {
+    "total": 14
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/test-011.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/window-named-properties-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/window-named-properties-002.html": {
+    "total": 8
+  },
+  "shadow-dom/untriaged/shadow-trees/upper-boundary-encapsulation/window-named-properties-003.html": {
+    "total": 111
+  },
+  "shadow-dom/untriaged/styles/not-apply-in-shadow-root-001.html": {
+    "reftest": "PASS"
+  },
+  "shadow-dom/untriaged/styles/test-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/styles/test-003.html": {
+    "total": 3
+  },
+  "shadow-dom/untriaged/styles/test-005.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/styles/test-008.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/user-interaction/active-element/test-001.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/user-interaction/active-element/test-002.html": {
+    "total": 1
+  },
+  "shadow-dom/untriaged/user-interaction/editing/inheritance-of-content-editable-001.html": {
+    "total": 3
+  },
+  "shadow-dom/untriaged/user-interaction/ranges-and-selections/test-001.html": {
+    "total": 2
+  },
+  "shadow-dom/untriaged/user-interaction/ranges-and-selections/test-002.html": {
+    "total": 2,
+    "failures": {
+      "A_07_01_02_T01": "FAIL"
+    }
+  },
+  "shadow-dom/wheel-event-related-target.html": {
+    "total": 1,
+    "failures": {
+      "wheel relatedTarget should be retargeted to shadow host when entering shadow DOM": "FAIL"
+    }
+  }
+}

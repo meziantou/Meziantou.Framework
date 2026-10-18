@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-BI": {
+      "identity": {
+        "language": "fr",
+        "territory": "BI"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

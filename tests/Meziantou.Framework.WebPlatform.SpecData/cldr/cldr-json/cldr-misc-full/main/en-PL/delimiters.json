@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-PL": {
+      "identity": {
+        "language": "en",
+        "territory": "PL"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,352 @@
+{
+  "spec": {
+    "title": "CSS Animations Module Level 1",
+    "url": "https://drafts.csswg.org/css-animations-1/"
+  },
+  "properties": [
+    {
+      "name": "animation-name",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-name",
+      "value": "[ none | <keyframes-name> ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either a case-sensitive css identifier or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No keyframes are specified at all, so there will be no animation. Any other animations properties specified for this animation have no effect.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-name-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<keyframes-name>",
+          "prose": "The animation will use the keyframes with the name specified by the <keyframes-name>, if they exist. If no @keyframes rule with that name exists, there is no animation.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-name-keyframes-name",
+          "type": "value",
+          "value": "<keyframes-name>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-name",
+        "animationName"
+      ]
+    },
+    {
+      "name": "animation-duration",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-duration",
+      "value": "<time [0s,∞]>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "<time [0s,∞]>",
+          "prose": "Specifies the length of time that an animation takes to complete one cycle. A negative <time> is invalid. If the <time> is 0s, like the initial value, the keyframes of the animation have no effect, but the animation itself still occurs instantaneously. Specifically, start and end events are fired; if animation-fill-mode is set to backwards or both, the first frame of the animation, as defined by animation-direction, will be displayed during the animation-delay. After the animation-delay the last frame of the animation, as defined by animation-direction, will be displayed if animation-fill-mode is set to forwards or both. If animation-fill-mode is set to none the animation will have no visible effect.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-duration-time-0s",
+          "type": "value",
+          "value": "<time [0s,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-duration",
+        "animationDuration"
+      ]
+    },
+    {
+      "name": "animation-timing-function",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-timing-function",
+      "value": "<easing-function>#",
+      "initial": "ease",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a computed <easing-function>",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "animation-timing-function",
+        "animationTimingFunction"
+      ]
+    },
+    {
+      "name": "animation-iteration-count",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-iteration-count",
+      "value": "<single-animation-iteration-count>#",
+      "initial": "1",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either a number or the keyword infinite",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "infinite",
+          "prose": "The animation will repeat forever.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-iteration-count-infinite",
+          "type": "value",
+          "value": "infinite"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "The animation will repeat the specified number of times. If the number is not an integer, the animation will end partway through its last cycle. Negative numbers are invalid. A value of 0 is valid and, similar to an animation-duration of 0s, causes the animation to occur instantaneously.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-iteration-count-number-0",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-iteration-count",
+        "animationIterationCount"
+      ]
+    },
+    {
+      "name": "animation-direction",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-direction",
+      "value": "<single-animation-direction>#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "All iterations of the animation are played as specified.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-direction-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "reverse",
+          "prose": "All iterations of the animation are played in the reverse direction from the way they were specified.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-direction-reverse",
+          "type": "value",
+          "value": "reverse"
+        },
+        {
+          "name": "alternate",
+          "prose": "The animation cycle iterations that are odd counts are played in the normal direction, and the animation cycle iterations that are even counts are played in a reverse direction.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-direction-alternate",
+          "type": "value",
+          "value": "alternate"
+        },
+        {
+          "name": "alternate-reverse",
+          "prose": "The animation cycle iterations that are odd counts are played in the reverse direction, and the animation cycle iterations that are even counts are played in a normal direction.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-direction-alternate-reverse",
+          "type": "value",
+          "value": "alternate-reverse"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-direction",
+        "animationDirection"
+      ]
+    },
+    {
+      "name": "animation-play-state",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-play-state",
+      "value": "<single-animation-play-state>#",
+      "initial": "running",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "running",
+          "prose": "While this property is set to running, the animation proceeds as normal.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-play-state-running",
+          "type": "value",
+          "value": "running"
+        },
+        {
+          "name": "paused",
+          "prose": "While this property is set to paused, the animation is paused. The animation continues to apply to the element with the progress it had made before being paused. When unpaused (set back to running), it restarts from where it left off, as if the \"clock\" that controls the animation had stopped and started again. If the property is set to paused during the delay phase of the animation, the delay clock is also paused and resumes as soon as animation-play-state is set back to running.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-play-state-paused",
+          "type": "value",
+          "value": "paused"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-play-state",
+        "animationPlayState"
+      ]
+    },
+    {
+      "name": "animation-delay",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-delay",
+      "value": "<time>#",
+      "initial": "0s",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a duration",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "<time>",
+          "prose": "The <time> defines how long of a delay there is between the start of the animation (when the animation is applied to the element via these properties) and when it begins executing. A delay of 0s (the initial value) means that the animation will execute as soon as it is applied. A negative delay is valid. Similar to a delay of 0s, it means that the animation executes immediately, but is automatically progressed by the absolute value of the delay, as if the animation had started the specified time in the past, and so it appears to start partway through its active duration. If an animation’s keyframes have an implied starting value, the values are taken from the time the animation starts, not some time in the past.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-delay-time",
+          "type": "value",
+          "value": "<time>"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-delay",
+        "animationDelay"
+      ]
+    },
+    {
+      "name": "animation-fill-mode",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation-fill-mode",
+      "value": "<single-animation-fill-mode>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a keyword as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The animation has no effect when it is applied but not executing.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-fill-mode-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "forwards",
+          "prose": "After the animation ends (as determined by its animation-iteration-count), the animation will apply the property values for the time the animation ended. When animation-iteration-count is an integer greater than zero, the values applied will be those for the end of the last completed iteration of the animation (rather than the values for the start of the iteration that would be next). When animation-iteration-count is zero, the values applied will be those that would start the first iteration (just as when animation-fill-mode is backwards).",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-fill-mode-forwards",
+          "type": "value",
+          "value": "forwards"
+        },
+        {
+          "name": "backwards",
+          "prose": "During the period defined by animation-delay, the animation will apply the property values defined in the keyframe that will start the first iteration of the animation. These are either the values of the from keyframe (when animation-direction is normal or alternate) or those of the to keyframe (when animation-direction is reverse or alternate-reverse).",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-fill-mode-backwards",
+          "type": "value",
+          "value": "backwards"
+        },
+        {
+          "name": "both",
+          "prose": "The effects of both forwards and backwards fill apply.",
+          "href": "https://drafts.csswg.org/css-animations-1/#valdef-animation-fill-mode-both",
+          "type": "value",
+          "value": "both"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-fill-mode",
+        "animationFillMode"
+      ]
+    },
+    {
+      "name": "animation",
+      "href": "https://drafts.csswg.org/css-animations-1/#propdef-animation",
+      "value": "<single-animation>#",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "animation"
+      ],
+      "longhands": [
+        "animation-name",
+        "animation-duration",
+        "animation-timing-function",
+        "animation-delay",
+        "animation-iteration-count",
+        "animation-direction",
+        "animation-fill-mode",
+        "animation-play-state",
+        "animation-timeline"
+      ],
+      "resetLonghands": [
+        "animation-range",
+        "animation-trigger"
+      ]
+    }
+  ],
+  "atrules": [
+    {
+      "name": "@keyframes",
+      "prose": "Keyframes are specified using the @keyframes at-rule, defined as follows:",
+      "href": "https://drafts.csswg.org/css-animations-1/#at-ruledef-keyframes",
+      "descriptors": [],
+      "value": "@keyframes <keyframes-name> { <qualified-rule-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<keyframes-name>",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-keyframes-name",
+      "type": "type",
+      "value": "<custom-ident> | <string>"
+    },
+    {
+      "name": "<keyframe-block>",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-keyframe-block",
+      "type": "type",
+      "value": "<keyframe-selector># { <declaration-list> }"
+    },
+    {
+      "name": "<keyframe-selector>",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-keyframe-selector",
+      "type": "type",
+      "value": "from | to | <percentage [0,100]>"
+    },
+    {
+      "name": "<single-animation-iteration-count>",
+      "value": "infinite | <number [0,∞]>",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-single-animation-iteration-count",
+      "type": "type"
+    },
+    {
+      "name": "<single-animation-direction>",
+      "value": "normal | reverse | alternate | alternate-reverse",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-single-animation-direction",
+      "type": "type"
+    },
+    {
+      "name": "<single-animation-play-state>",
+      "value": "running | paused",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-single-animation-play-state",
+      "type": "type"
+    },
+    {
+      "name": "<single-animation-fill-mode>",
+      "value": "none | forwards | backwards | both",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-single-animation-fill-mode",
+      "type": "type"
+    },
+    {
+      "name": "<single-animation>",
+      "value": "<time [0s,∞]> || <easing-function> || <time> || <single-animation-iteration-count> || <single-animation-direction> || <single-animation-fill-mode> || <single-animation-play-state> || [ none | <keyframes-name> ]",
+      "href": "https://drafts.csswg.org/css-animations-1/#typedef-single-animation",
+      "type": "type"
+    }
+  ]
+}

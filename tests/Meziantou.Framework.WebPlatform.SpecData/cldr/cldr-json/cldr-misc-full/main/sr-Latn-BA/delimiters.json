@@ -1,0 +1,17 @@
+{
+  "main": {
+    "sr-Latn-BA": {
+      "identity": {
+        "language": "sr",
+        "script": "Latn",
+        "territory": "BA"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

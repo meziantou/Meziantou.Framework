@@ -1,0 +1,64 @@
+{
+  "spec": {
+    "title": "CSS Linked Parameters Module Level 1",
+    "url": "https://drafts.csswg.org/css-link-params-1/"
+  },
+  "properties": [
+    {
+      "name": "link-parameters",
+      "href": "https://drafts.csswg.org/css-link-params-1/#propdef-link-parameters",
+      "value": "none | <param()>#",
+      "initial": "none",
+      "appliesTo": "all elements and pseudo-elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "link-parameters",
+        "linkParameters"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "param()",
+      "prose": "All three methods of setting link parameters share the same syntax for defining a parameter, using the param() function:",
+      "href": "https://drafts.csswg.org/css-link-params-1/#funcdef-param",
+      "type": "function",
+      "value": "param( <param-spec> , <declaration-value>? )"
+    },
+    {
+      "name": "<param-spec>",
+      "href": "https://drafts.csswg.org/css-link-params-1/#typedef-param-spec",
+      "type": "type",
+      "value": "color | accent-color | [ <dashed-ident> <css-type>? ]",
+      "values": [
+        {
+          "name": "color",
+          "prose": "Name: color Type: <color> Value: The second argument, if specified. Otherwise, the value of color on the element.",
+          "href": "https://drafts.csswg.org/css-link-params-1/#valdef-param-color",
+          "type": "value",
+          "value": "color"
+        },
+        {
+          "name": "accent-color",
+          "prose": "Name: accent-color Type: <color> Value: The second argument, if specified. Otherwise, the value of accent-color on the element.",
+          "href": "https://drafts.csswg.org/css-link-params-1/#valdef-param-accent-color",
+          "type": "value",
+          "value": "accent-color"
+        },
+        {
+          "name": "<dashed-ident>",
+          "prose": "Name: the <dashed-ident> Type: the <css-type>, if specified. Value: The second argument, if specified. Otherwise, the value of the custom property with the specified name on the element.",
+          "href": "https://drafts.csswg.org/css-link-params-1/#valdef-param-dashed-ident",
+          "type": "value",
+          "value": "<dashed-ident>"
+        }
+      ]
+    }
+  ]
+}

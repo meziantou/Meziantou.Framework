@@ -1,0 +1,1688 @@
+{
+  "spec": {
+    "title": "XMLHttpRequest Standard",
+    "url": "https://xhr.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "XMLHttpRequest",
+          "FormData",
+          "ProgressEvent"
+        ],
+        "DedicatedWorker": [
+          "XMLHttpRequest"
+        ],
+        "SharedWorker": [
+          "XMLHttpRequest"
+        ],
+        "Worker": [
+          "FormData",
+          "ProgressEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "XMLHttpRequestEventTarget",
+          "XMLHttpRequestUpload"
+        ],
+        "DedicatedWorker": [
+          "XMLHttpRequestEventTarget",
+          "XMLHttpRequestUpload"
+        ],
+        "SharedWorker": [
+          "XMLHttpRequestEventTarget",
+          "XMLHttpRequestUpload"
+        ]
+      }
+    },
+    "idlNames": {
+      "XMLHttpRequestEventTarget": {
+        "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker)]\ninterface XMLHttpRequestEventTarget : EventTarget {\n  // event handlers\n  attribute EventHandler onloadstart;\n  attribute EventHandler onprogress;\n  attribute EventHandler onabort;\n  attribute EventHandler onerror;\n  attribute EventHandler onload;\n  attribute EventHandler ontimeout;\n  attribute EventHandler onloadend;\n};",
+        "type": "interface",
+        "name": "XMLHttpRequestEventTarget",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onloadstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onloadstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onprogress",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onprogress"
+          },
+          {
+            "type": "attribute",
+            "name": "onabort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onabort"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onload",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onload"
+          },
+          {
+            "type": "attribute",
+            "name": "ontimeout",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-ontimeout"
+          },
+          {
+            "type": "attribute",
+            "name": "onloadend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onloadend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#xmlhttprequesteventtarget"
+      },
+      "XMLHttpRequestUpload": {
+        "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker)]\ninterface XMLHttpRequestUpload : XMLHttpRequestEventTarget {\n};",
+        "type": "interface",
+        "name": "XMLHttpRequestUpload",
+        "inheritance": "XMLHttpRequestEventTarget",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#xmlhttprequestupload"
+      },
+      "XMLHttpRequestResponseType": {
+        "fragment": "enum XMLHttpRequestResponseType {\n  \"\",\n  \"arraybuffer\",\n  \"blob\",\n  \"document\",\n  \"json\",\n  \"text\"\n};",
+        "type": "enum",
+        "name": "XMLHttpRequestResponseType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype"
+          },
+          {
+            "type": "enum-value",
+            "value": "arraybuffer",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-arraybuffer"
+          },
+          {
+            "type": "enum-value",
+            "value": "blob",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-blob"
+          },
+          {
+            "type": "enum-value",
+            "value": "document",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-document"
+          },
+          {
+            "type": "enum-value",
+            "value": "json",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-json"
+          },
+          {
+            "type": "enum-value",
+            "value": "text",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-text"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://xhr.spec.whatwg.org/#xmlhttprequestresponsetype"
+      },
+      "XMLHttpRequest": {
+        "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker)]\ninterface XMLHttpRequest : XMLHttpRequestEventTarget {\n  constructor();\n\n  // event handler\n  attribute EventHandler onreadystatechange;\n\n  // states\n  const unsigned short UNSENT = 0;\n  const unsigned short OPENED = 1;\n  const unsigned short HEADERS_RECEIVED = 2;\n  const unsigned short LOADING = 3;\n  const unsigned short DONE = 4;\n  readonly attribute unsigned short readyState;\n\n  // request\n  undefined open(ByteString method, USVString url);\n  undefined open(ByteString method, USVString url, boolean async, optional USVString? username = null, optional USVString? password = null);\n  undefined setRequestHeader(ByteString name, ByteString value);\n           attribute unsigned long timeout;\n           attribute boolean withCredentials;\n  [SameObject] readonly attribute XMLHttpRequestUpload upload;\n  undefined send(optional (Document or XMLHttpRequestBodyInit)? body = null);\n  undefined abort();\n\n  // response\n  readonly attribute USVString responseURL;\n  readonly attribute unsigned short status;\n  readonly attribute ByteString statusText;\n  ByteString? getResponseHeader(ByteString name);\n  ByteString getAllResponseHeaders();\n  undefined overrideMimeType(DOMString mime);\n           attribute XMLHttpRequestResponseType responseType;\n  readonly attribute any response;\n  readonly attribute USVString responseText;\n  [Exposed=Window] readonly attribute Document? responseXML;\n};",
+        "type": "interface",
+        "name": "XMLHttpRequest",
+        "inheritance": "XMLHttpRequestEventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest"
+          },
+          {
+            "type": "attribute",
+            "name": "onreadystatechange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#handler-xhr-onreadystatechange"
+          },
+          {
+            "type": "const",
+            "name": "UNSENT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-unsent"
+          },
+          {
+            "type": "const",
+            "name": "OPENED",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-opened"
+          },
+          {
+            "type": "const",
+            "name": "HEADERS_RECEIVED",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-headers_received"
+          },
+          {
+            "type": "const",
+            "name": "LOADING",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-loading"
+          },
+          {
+            "type": "const",
+            "name": "DONE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-done"
+          },
+          {
+            "type": "attribute",
+            "name": "readyState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-readystate"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "method",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "method",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "async",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "username",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "password",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open-method-url-async-username-password"
+          },
+          {
+            "type": "operation",
+            "name": "setRequestHeader",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader"
+          },
+          {
+            "type": "attribute",
+            "name": "timeout",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-timeout"
+          },
+          {
+            "type": "attribute",
+            "name": "withCredentials",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-withcredentials"
+          },
+          {
+            "type": "attribute",
+            "name": "upload",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XMLHttpRequestUpload"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-upload"
+          },
+          {
+            "type": "operation",
+            "name": "send",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Document"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "XMLHttpRequestBodyInit"
+                    }
+                  ]
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-abort"
+          },
+          {
+            "type": "attribute",
+            "name": "responseURL",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responseurl"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-status"
+          },
+          {
+            "type": "attribute",
+            "name": "statusText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-statustext"
+          },
+          {
+            "type": "operation",
+            "name": "getResponseHeader",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getresponseheader"
+          },
+          {
+            "type": "operation",
+            "name": "getAllResponseHeaders",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getallresponseheaders"
+          },
+          {
+            "type": "operation",
+            "name": "overrideMimeType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "mime",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-overridemimetype"
+          },
+          {
+            "type": "attribute",
+            "name": "responseType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XMLHttpRequestResponseType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetype"
+          },
+          {
+            "type": "attribute",
+            "name": "response",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-response"
+          },
+          {
+            "type": "attribute",
+            "name": "responseText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetext"
+          },
+          {
+            "type": "attribute",
+            "name": "responseXML",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Document"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsexml"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#xmlhttprequest"
+      },
+      "FormDataEntryValue": {
+        "fragment": "typedef (File or USVString) FormDataEntryValue;",
+        "type": "typedef",
+        "name": "FormDataEntryValue",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "File"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://xhr.spec.whatwg.org/#formdataentryvalue"
+      },
+      "FormData": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FormData {\n  constructor(optional HTMLFormElement form, optional HTMLElement? submitter = null);\n\n  undefined append(USVString name, USVString value);\n  undefined append(USVString name, Blob blobValue, optional USVString filename);\n  undefined delete(USVString name);\n  FormDataEntryValue? get(USVString name);\n  sequence<FormDataEntryValue> getAll(USVString name);\n  boolean has(USVString name);\n  undefined set(USVString name, USVString value);\n  undefined set(USVString name, Blob blobValue, optional USVString filename);\n  iterable<USVString, FormDataEntryValue>;\n};",
+        "type": "interface",
+        "name": "FormData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "form",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLFormElement"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "submitter",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "HTMLElement"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata"
+          },
+          {
+            "type": "operation",
+            "name": "append",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-append"
+          },
+          {
+            "type": "operation",
+            "name": "append",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "blobValue",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "filename",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-append-blob"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-delete"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "FormDataEntryValue"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-get"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FormDataEntryValue"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-getall"
+          },
+          {
+            "type": "operation",
+            "name": "has",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-has"
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-set"
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "blobValue",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "filename",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://xhr.spec.whatwg.org/#dom-formdata-set-blob"
+          },
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "USVString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FormDataEntryValue"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#formdata"
+      },
+      "ProgressEvent": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface ProgressEvent : Event {\n  constructor(DOMString type, optional ProgressEventInit eventInitDict = {});\n\n  readonly attribute boolean lengthComputable;\n  readonly attribute double loaded;\n  readonly attribute double total;\n};",
+        "type": "interface",
+        "name": "ProgressEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProgressEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://xhr.spec.whatwg.org/#dom-progressevent-progressevent"
+          },
+          {
+            "type": "attribute",
+            "name": "lengthComputable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-progressevent-lengthcomputable"
+          },
+          {
+            "type": "attribute",
+            "name": "loaded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-progressevent-loaded"
+          },
+          {
+            "type": "attribute",
+            "name": "total",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://xhr.spec.whatwg.org/#dom-progressevent-total"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#progressevent"
+      },
+      "ProgressEventInit": {
+        "fragment": "dictionary ProgressEventInit : EventInit {\n  boolean lengthComputable = false;\n  double loaded = 0;\n  double total = 0;\n};",
+        "type": "dictionary",
+        "name": "ProgressEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "lengthComputable",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-progresseventinit-lengthcomputable"
+          },
+          {
+            "type": "field",
+            "name": "loaded",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-progresseventinit-loaded"
+          },
+          {
+            "type": "field",
+            "name": "total",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://xhr.spec.whatwg.org/#dom-progresseventinit-total"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://xhr.spec.whatwg.org/#progresseventinit"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XMLHttpRequestEventTarget",
+        "XMLHttpRequestUpload",
+        "XMLHttpRequest",
+        "FormData",
+        "ProgressEvent"
+      ],
+      "DedicatedWorker": [
+        "XMLHttpRequestEventTarget",
+        "XMLHttpRequestUpload",
+        "XMLHttpRequest"
+      ],
+      "SharedWorker": [
+        "XMLHttpRequestEventTarget",
+        "XMLHttpRequestUpload",
+        "XMLHttpRequest"
+      ],
+      "Worker": [
+        "FormData",
+        "ProgressEvent"
+      ]
+    },
+    "dependencies": {
+      "XMLHttpRequestEventTarget": [
+        "EventTarget",
+        "EventHandler"
+      ],
+      "XMLHttpRequestUpload": [
+        "XMLHttpRequestEventTarget"
+      ],
+      "XMLHttpRequest": [
+        "XMLHttpRequestEventTarget",
+        "EventHandler",
+        "XMLHttpRequestUpload",
+        "Document",
+        "XMLHttpRequestBodyInit",
+        "XMLHttpRequestResponseType"
+      ],
+      "FormData": [
+        "HTMLFormElement",
+        "HTMLElement",
+        "Blob",
+        "FormDataEntryValue"
+      ],
+      "ProgressEvent": [
+        "Event",
+        "ProgressEventInit"
+      ],
+      "ProgressEventInit": [
+        "EventInit"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "Document",
+      "XMLHttpRequestBodyInit",
+      "File",
+      "HTMLFormElement",
+      "HTMLElement",
+      "Blob",
+      "Event",
+      "EventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

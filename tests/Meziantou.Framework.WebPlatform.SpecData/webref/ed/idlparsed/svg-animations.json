@@ -1,0 +1,631 @@
+{
+  "spec": {
+    "title": "SVG Animations",
+    "url": "https://svgwg.org/specs/animations/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "TimeEvent",
+          "SVGAnimationElement",
+          "SVGAnimateElement",
+          "SVGSetElement",
+          "SVGAnimateMotionElement",
+          "SVGMPathElement",
+          "SVGAnimateTransformElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "TimeEvent": {
+        "fragment": "[Exposed=Window]\ninterface TimeEvent : Event {\n\n  readonly attribute WindowProxy? view;\n  readonly attribute long detail;\n\n  undefined initTimeEvent(DOMString typeArg, optional Window? viewArg = null, optional long detailArg = 0);\n};",
+        "type": "interface",
+        "name": "TimeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "view",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WindowProxy"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true
+          },
+          {
+            "type": "attribute",
+            "name": "detail",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true
+          },
+          {
+            "type": "operation",
+            "name": "initTimeEvent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "typeArg",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "viewArg",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "Window"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "detailArg",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGAnimationElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGAnimationElement : SVGElement {\n\n  readonly attribute SVGElement? targetElement;\n\n  attribute EventHandler onbegin;\n  attribute EventHandler onend;\n  attribute EventHandler onrepeat;\n\n  float getStartTime();\n  float getCurrentTime();\n  float getSimpleDuration();\n\n  undefined beginElement();\n  undefined beginElementAt(float offset);\n  undefined endElement();\n  undefined endElementAt(float offset);\n};",
+        "type": "interface",
+        "name": "SVGAnimationElement",
+        "inheritance": "SVGElement",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "targetElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "SVGElement"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true
+          },
+          {
+            "type": "attribute",
+            "name": "onbegin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false
+          },
+          {
+            "type": "attribute",
+            "name": "onend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false
+          },
+          {
+            "type": "attribute",
+            "name": "onrepeat",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false
+          },
+          {
+            "type": "operation",
+            "name": "getStartTime",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "getCurrentTime",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "getSimpleDuration",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "beginElement",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "beginElementAt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "offset",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "endElement",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": ""
+          },
+          {
+            "type": "operation",
+            "name": "endElementAt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "offset",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": ""
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGAnimateElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGAnimateElement : SVGAnimationElement {\n};",
+        "type": "interface",
+        "name": "SVGAnimateElement",
+        "inheritance": "SVGAnimationElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGSetElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGSetElement : SVGAnimationElement {\n};",
+        "type": "interface",
+        "name": "SVGSetElement",
+        "inheritance": "SVGAnimationElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGAnimateMotionElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGAnimateMotionElement : SVGAnimationElement {\n};",
+        "type": "interface",
+        "name": "SVGAnimateMotionElement",
+        "inheritance": "SVGAnimationElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGMPathElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGMPathElement : SVGElement {\n};",
+        "type": "interface",
+        "name": "SVGMPathElement",
+        "inheritance": "SVGElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      },
+      "SVGAnimateTransformElement": {
+        "fragment": "[Exposed=Window]\ninterface SVGAnimateTransformElement : SVGAnimationElement {\n};",
+        "type": "interface",
+        "name": "SVGAnimateTransformElement",
+        "inheritance": "SVGAnimationElement",
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {
+      "SVGAnimationElement": [
+        {
+          "fragment": "SVGAnimationElement includes SVGTests;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGAnimationElement",
+          "includes": "SVGTests"
+        }
+      ],
+      "SVGMPathElement": [
+        {
+          "fragment": "SVGMPathElement includes SVGURIReference;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGMPathElement",
+          "includes": "SVGURIReference"
+        }
+      ],
+      "SVGSVGElement": [
+        {
+          "fragment": "partial interface SVGSVGElement {\n  undefined pauseAnimations();\n  undefined unpauseAnimations();\n  boolean animationsPaused();\n  float getCurrentTime();\n  undefined setCurrentTime(float seconds);\n};",
+          "type": "interface",
+          "name": "SVGSVGElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "pauseAnimations",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": ""
+            },
+            {
+              "type": "operation",
+              "name": "unpauseAnimations",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": ""
+            },
+            {
+              "type": "operation",
+              "name": "animationsPaused",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": ""
+            },
+            {
+              "type": "operation",
+              "name": "getCurrentTime",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "float"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": ""
+            },
+            {
+              "type": "operation",
+              "name": "setCurrentTime",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "seconds",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "float"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": ""
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "TimeEvent",
+        "SVGAnimationElement",
+        "SVGAnimateElement",
+        "SVGSetElement",
+        "SVGAnimateMotionElement",
+        "SVGMPathElement",
+        "SVGAnimateTransformElement"
+      ]
+    },
+    "dependencies": {
+      "TimeEvent": [
+        "Event",
+        "WindowProxy",
+        "Window"
+      ],
+      "SVGAnimationElement": [
+        "SVGElement",
+        "EventHandler",
+        "SVGTests"
+      ],
+      "SVGAnimateElement": [
+        "SVGAnimationElement"
+      ],
+      "SVGSetElement": [
+        "SVGAnimationElement"
+      ],
+      "SVGAnimateMotionElement": [
+        "SVGAnimationElement"
+      ],
+      "SVGMPathElement": [
+        "SVGElement",
+        "SVGURIReference"
+      ],
+      "SVGAnimateTransformElement": [
+        "SVGAnimationElement"
+      ],
+      "SVGSVGElement": []
+    },
+    "externalDependencies": [
+      "Event",
+      "WindowProxy",
+      "Window",
+      "SVGElement",
+      "EventHandler",
+      "SVGSVGElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

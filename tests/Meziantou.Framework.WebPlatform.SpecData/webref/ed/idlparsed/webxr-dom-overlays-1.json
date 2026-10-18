@@ -1,0 +1,205 @@
+{
+  "spec": {
+    "title": "WebXR DOM Overlays Module",
+    "url": "https://immersive-web.github.io/dom-overlays/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "XRDOMOverlayInit": {
+        "fragment": "dictionary XRDOMOverlayInit {\n  required Element root;\n};",
+        "type": "dictionary",
+        "name": "XRDOMOverlayInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "root",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/dom-overlays/#dom-xrdomoverlayinit-root"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/dom-overlays/#dictdef-xrdomoverlayinit"
+      },
+      "XRDOMOverlayType": {
+        "fragment": "enum XRDOMOverlayType {\n  \"screen\",\n  \"floating\",\n  \"head-locked\"\n};",
+        "type": "enum",
+        "name": "XRDOMOverlayType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "screen",
+            "href": "https://immersive-web.github.io/dom-overlays/#dom-xrdomoverlaytype-screen"
+          },
+          {
+            "type": "enum-value",
+            "value": "floating",
+            "href": "https://immersive-web.github.io/dom-overlays/#dom-xrdomoverlaytype-floating"
+          },
+          {
+            "type": "enum-value",
+            "value": "head-locked",
+            "href": "https://immersive-web.github.io/dom-overlays/#dom-xrdomoverlaytype-head-locked"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/dom-overlays/#enumdef-xrdomoverlaytype"
+      },
+      "XRDOMOverlayState": {
+        "fragment": "dictionary XRDOMOverlayState {\n  XRDOMOverlayType type;\n\n};",
+        "type": "dictionary",
+        "name": "XRDOMOverlayState",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRDOMOverlayType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/dom-overlays/#dom-xrdomoverlaystate-type"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/dom-overlays/#dictdef-xrdomoverlaystate"
+      }
+    },
+    "idlExtendedNames": {
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler onbeforexrselect;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onbeforexrselect",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://immersive-web.github.io/dom-overlays/#dom-globaleventhandlers-onbeforexrselect"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRSessionInit": [
+        {
+          "fragment": "partial dictionary XRSessionInit {\n  XRDOMOverlayInit? domOverlay;\n};",
+          "type": "dictionary",
+          "name": "XRSessionInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "domOverlay",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRDOMOverlayInit"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://immersive-web.github.io/dom-overlays/#dom-xrsessioninit-domoverlay"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  readonly attribute XRDOMOverlayState? domOverlayState;\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "domOverlayState",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "XRDOMOverlayState"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/dom-overlays/#dom-xrsession-domoverlaystate"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "GlobalEventHandlers": [
+        "EventHandler"
+      ],
+      "XRSessionInit": [
+        "XRDOMOverlayInit"
+      ],
+      "XRSession": [
+        "XRDOMOverlayState"
+      ],
+      "XRDOMOverlayInit": [
+        "Element"
+      ],
+      "XRDOMOverlayState": [
+        "XRDOMOverlayType"
+      ]
+    },
+    "externalDependencies": [
+      "GlobalEventHandlers",
+      "EventHandler",
+      "XRSessionInit",
+      "XRSession",
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

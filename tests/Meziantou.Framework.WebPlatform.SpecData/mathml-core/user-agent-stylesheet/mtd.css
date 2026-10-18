@@ -1,0 +1,7 @@
+mtd {
+  display: table-cell;
+  /* Centering inside table cells should rely on box alignment properties.
+     See https://github.com/w3c/mathml-core/issues/156 */
+  text-align: center;
+  padding: 0.5ex 0.4em;
+}

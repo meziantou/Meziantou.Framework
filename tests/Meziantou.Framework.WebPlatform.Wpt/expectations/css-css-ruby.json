@@ -1,0 +1,499 @@
+{
+  "css/css-ruby/abs-in-ruby-base-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/abs-in-ruby-base.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/abs-in-ruby-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/block-ruby-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/block-ruby-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/block-ruby-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/block-ruby-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/block-ruby-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/br-clear-all-000.html": {
+    "total": 1
+  },
+  "css/css-ruby/br-clear-all-001.html": {
+    "total": 1
+  },
+  "css/css-ruby/br-clear-all-002.html": {
+    "total": 1
+  },
+  "css/css-ruby/break-within-bases/basic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/break-within-bases/no-break-opportunity-at-end.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/break-within-bases/nowrap.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/collapse-trailing-whitespace.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/empty-ruby-base-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/empty-ruby-text-container-abs.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/empty-ruby-text-container-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/empty-ruby-text-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/improperly-contained-annotation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/inheritance.html": {
+    "total": 8
+  },
+  "css/css-ruby/interlinear-block-margin-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/intra-base-white-space-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/line-break-around-ruby-001.html": {
+    "total": 6
+  },
+  "css/css-ruby/line-spacing-on-edges.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Line-over ruby on the first line: <rt> box top is above the block container top": "FAIL",
+      "Two IFCs with line-height: 1.5em in a multicol container: second IFC first-line <rt> top is above first IFC bottom": "FAIL",
+      "Two IFCs with line-height: 1.5em: second IFC first-line <rt> top is above first IFC bottom": "FAIL"
+    }
+  },
+  "css/css-ruby/line-spacing.html": {
+    "total": 11
+  },
+  "css/css-ruby/nested-ruby-pairing-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/parsing/ruby-align-invalid.html": {
+    "total": 4
+  },
+  "css/css-ruby/parsing/ruby-align-valid.html": {
+    "total": 4
+  },
+  "css/css-ruby/parsing/ruby-merge-invalid.html": {
+    "total": 6
+  },
+  "css/css-ruby/parsing/ruby-merge-valid.html": {
+    "total": 3
+  },
+  "css/css-ruby/parsing/ruby-overhang-invalid.html": {
+    "total": 11
+  },
+  "css/css-ruby/parsing/ruby-overhang-valid.html": {
+    "total": 3
+  },
+  "css/css-ruby/parsing/ruby-position-invalid.html": {
+    "total": 5
+  },
+  "css/css-ruby/parsing/ruby-position-valid.html": {
+    "total": 3
+  },
+  "css/css-ruby/position-relative.html": {
+    "total": 3
+  },
+  "css/css-ruby/pseudo-first-letter.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/pseudo-first-line.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/rb-display-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/rbc-rtc-basic-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/root-block-ruby.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/root-ruby.xhtml": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/rt-display-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/rt-display-blockified.html": {
+    "total": 2
+  },
+  "css/css-ruby/rt-text-indent-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-align-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-align-001a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-align-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-align-002a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-align-space-around.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-annotation-pairing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-annotation-with-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-autohide-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-autohide-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-autohide-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-autohide-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-base-container-abs.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-base-container-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-base-different-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-bidi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-bidi-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-bidi-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-bidi-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-box-generation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-box-generation-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-box-generation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-box-generation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-box-generation-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-box-model-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-insertion-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-insertion-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-insertion-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-insertion-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-insertion-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-removal-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-removal-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-dynamic-removal-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-float-handling-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-blocks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-blocks-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-blocks-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-blocks-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-blocks-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-inlinize-recursive-simple.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-intra-level-whitespace-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-intra-level-whitespace-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-intra-level-whitespace-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-intrinsic-isize-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-intrinsic-isize-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-intrinsic-isize-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-justification-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-justification-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-lang-specific-style-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-layout-internal-boxes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-break-suppression-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-break-suppression-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-break-suppression-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-break-suppression-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-break-suppression-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-breaking-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-breaking-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-line-breaking-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-no-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-no-overlap.html": {
+    "total": 1
+  },
+  "css/css-ruby/ruby-overhang-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-013.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-overhang-spaces-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-019.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-overhang-spaces-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-align-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-align-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-align-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-align-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-align-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-no-overlap.html": {
+    "total": 1
+  },
+  "css/css-ruby/ruby-overhang-spaces-non-bmp-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-non-bmp-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-text-spacing-trim-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-text-spacing-trim-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-overhang-spaces-vertical-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-ruby/ruby-position-alternate.html": {
+    "total": 7
+  },
+  "css/css-ruby/ruby-position.html": {
+    "total": 6
+  },
+  "css/css-ruby/ruby-reflow-001-opaqueruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-reflow-001-transparentruby.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-span-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-tab-in-base-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-tab-in-base-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-tab-in-base-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-collapse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-combine-upright-001a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-combine-upright-001b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-combine-upright-002a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-combine-upright-002b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-text-dynamic-style.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-whitespace-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-whitespace-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-with-floats-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-with-floats-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/ruby-with-floats-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ruby/whitespace-ruby-beside-float.html": {
+    "reftest": "PASS"
+  }
+}

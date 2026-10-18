@@ -1,0 +1,1540 @@
+{
+  "spec": {
+    "title": "Media Source Extensions™",
+    "url": "https://w3c.github.io/media-source/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "MediaSource",
+          "ManagedMediaSource",
+          "BufferedChangeEvent"
+        ],
+        "DedicatedWorker": [
+          "MediaSource",
+          "ManagedMediaSource",
+          "BufferedChangeEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "MediaSourceHandle",
+          "SourceBuffer",
+          "SourceBufferList",
+          "ManagedSourceBuffer",
+          "AudioTrack",
+          "VideoTrack",
+          "TextTrack"
+        ],
+        "DedicatedWorker": [
+          "MediaSourceHandle",
+          "SourceBuffer",
+          "SourceBufferList",
+          "ManagedSourceBuffer"
+        ]
+      }
+    },
+    "idlNames": {
+      "ReadyState": {
+        "fragment": "enum ReadyState {\n  \"closed\",\n  \"open\",\n  \"ended\",\n};",
+        "type": "enum",
+        "name": "ReadyState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "closed",
+            "href": "https://w3c.github.io/media-source/#dom-readystate-closed"
+          },
+          {
+            "type": "enum-value",
+            "value": "open",
+            "href": "https://w3c.github.io/media-source/#dom-readystate-open"
+          },
+          {
+            "type": "enum-value",
+            "value": "ended",
+            "href": "https://w3c.github.io/media-source/#dom-readystate-ended"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-source/#dom-readystate"
+      },
+      "EndOfStreamError": {
+        "fragment": "enum EndOfStreamError {\n  \"network\",\n  \"decode\",\n};",
+        "type": "enum",
+        "name": "EndOfStreamError",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "network",
+            "href": "https://w3c.github.io/media-source/#dom-endofstreamerror-network"
+          },
+          {
+            "type": "enum-value",
+            "value": "decode",
+            "href": "https://w3c.github.io/media-source/#dom-endofstreamerror-decode"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-source/#dom-endofstreamerror"
+      },
+      "MediaSource": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface MediaSource : EventTarget {\n    constructor();\n\n    [SameObject, Exposed=DedicatedWorker]\n    readonly  attribute MediaSourceHandle handle;\n    readonly  attribute SourceBufferList sourceBuffers;\n    readonly  attribute SourceBufferList activeSourceBuffers;\n    readonly  attribute ReadyState readyState;\n\n    attribute unrestricted double duration;\n    attribute EventHandler onsourceopen;\n    attribute EventHandler onsourceended;\n    attribute EventHandler onsourceclose;\n\n    static readonly attribute boolean canConstructInDedicatedWorker;\n\n    SourceBuffer addSourceBuffer(DOMString type);\n    undefined removeSourceBuffer(SourceBuffer sourceBuffer);\n    undefined endOfStream(optional EndOfStreamError error);\n    undefined setLiveSeekableRange(double start, double end);\n    undefined clearLiveSeekableRange();\n    static boolean isTypeSupported(DOMString type);\n};",
+        "type": "interface",
+        "name": "MediaSource",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "handle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaSourceHandle"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "DedicatedWorker"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-handle"
+          },
+          {
+            "type": "attribute",
+            "name": "sourceBuffers",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SourceBufferList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-sourcebuffers"
+          },
+          {
+            "type": "attribute",
+            "name": "activeSourceBuffers",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SourceBufferList"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-activesourcebuffers"
+          },
+          {
+            "type": "attribute",
+            "name": "readyState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadyState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-readystate"
+          },
+          {
+            "type": "attribute",
+            "name": "duration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-duration"
+          },
+          {
+            "type": "attribute",
+            "name": "onsourceopen",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-onsourceopen"
+          },
+          {
+            "type": "attribute",
+            "name": "onsourceended",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-onsourceended"
+          },
+          {
+            "type": "attribute",
+            "name": "onsourceclose",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-onsourceclose"
+          },
+          {
+            "type": "attribute",
+            "name": "canConstructInDedicatedWorker",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "static",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-canconstructindedicatedworker"
+          },
+          {
+            "type": "operation",
+            "name": "addSourceBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SourceBuffer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-addsourcebuffer"
+          },
+          {
+            "type": "operation",
+            "name": "removeSourceBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "sourceBuffer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SourceBuffer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-removesourcebuffer"
+          },
+          {
+            "type": "operation",
+            "name": "endOfStream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "error",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "EndOfStreamError"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-endofstream"
+          },
+          {
+            "type": "operation",
+            "name": "setLiveSeekableRange",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "start",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "end",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-setliveseekablerange"
+          },
+          {
+            "type": "operation",
+            "name": "clearLiveSeekableRange",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-clearliveseekablerange"
+          },
+          {
+            "type": "operation",
+            "name": "isTypeSupported",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "static",
+            "href": "https://w3c.github.io/media-source/#dom-mediasource-istypesupported"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-mediasource"
+      },
+      "MediaSourceHandle": {
+        "fragment": "[Transferable, Exposed=(Window,DedicatedWorker)]\ninterface MediaSourceHandle {};",
+        "type": "interface",
+        "name": "MediaSourceHandle",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-mediasourcehandle"
+      },
+      "AppendMode": {
+        "fragment": "enum AppendMode {\n  \"segments\",\n  \"sequence\",\n};",
+        "type": "enum",
+        "name": "AppendMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "segments",
+            "href": "https://w3c.github.io/media-source/#dom-appendmode-segments"
+          },
+          {
+            "type": "enum-value",
+            "value": "sequence",
+            "href": "https://w3c.github.io/media-source/#dom-appendmode-sequence"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/media-source/#dom-appendmode"
+      },
+      "SourceBuffer": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface SourceBuffer : EventTarget {\n  attribute AppendMode mode;\n  readonly  attribute boolean updating;\n  readonly  attribute TimeRanges buffered;\n  attribute double timestampOffset;\n  [Exposed=Window] readonly  attribute AudioTrackList audioTracks;\n  [Exposed=Window] readonly  attribute VideoTrackList videoTracks;\n  [Exposed=Window] readonly  attribute TextTrackList textTracks;\n  attribute double appendWindowStart;\n  attribute unrestricted double appendWindowEnd;\n\n  attribute EventHandler onupdatestart;\n  attribute EventHandler onupdate;\n  attribute EventHandler onupdateend;\n  attribute EventHandler onerror;\n  attribute EventHandler onabort;\n\n  undefined appendBuffer(BufferSource data);\n  undefined abort();\n  undefined changeType(DOMString type);\n  undefined remove(double start, unrestricted double end);\n};",
+        "type": "interface",
+        "name": "SourceBuffer",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "mode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AppendMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-mode"
+          },
+          {
+            "type": "attribute",
+            "name": "updating",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-updating"
+          },
+          {
+            "type": "attribute",
+            "name": "buffered",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TimeRanges"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-buffered"
+          },
+          {
+            "type": "attribute",
+            "name": "timestampOffset",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-timestampoffset"
+          },
+          {
+            "type": "attribute",
+            "name": "audioTracks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioTrackList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-audiotracks"
+          },
+          {
+            "type": "attribute",
+            "name": "videoTracks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VideoTrackList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-videotracks"
+          },
+          {
+            "type": "attribute",
+            "name": "textTracks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TextTrackList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-texttracks"
+          },
+          {
+            "type": "attribute",
+            "name": "appendWindowStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowstart"
+          },
+          {
+            "type": "attribute",
+            "name": "appendWindowEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unrestricted double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowend"
+          },
+          {
+            "type": "attribute",
+            "name": "onupdatestart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdatestart"
+          },
+          {
+            "type": "attribute",
+            "name": "onupdate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdate"
+          },
+          {
+            "type": "attribute",
+            "name": "onupdateend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdateend"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onabort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-onabort"
+          },
+          {
+            "type": "operation",
+            "name": "appendBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-appendbuffer"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-abort"
+          },
+          {
+            "type": "operation",
+            "name": "changeType",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-changetype"
+          },
+          {
+            "type": "operation",
+            "name": "remove",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "start",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "end",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unrestricted double"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/media-source/#dom-sourcebuffer-remove"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-sourcebuffer"
+      },
+      "SourceBufferList": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface SourceBufferList : EventTarget {\n  readonly attribute unsigned long length;\n\n  attribute EventHandler onaddsourcebuffer;\n  attribute EventHandler onremovesourcebuffer;\n\n  getter SourceBuffer (unsigned long index);\n};",
+        "type": "interface",
+        "name": "SourceBufferList",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebufferlist-length"
+          },
+          {
+            "type": "attribute",
+            "name": "onaddsourcebuffer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebufferlist-onaddsourcebuffer"
+          },
+          {
+            "type": "attribute",
+            "name": "onremovesourcebuffer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-sourcebufferlist-onremovesourcebuffer"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SourceBuffer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-sourcebufferlist"
+      },
+      "ManagedMediaSource": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface ManagedMediaSource : MediaSource {\n  constructor();\n  readonly attribute boolean streaming;\n  attribute EventHandler onstartstreaming;\n  attribute EventHandler onendstreaming;\n};",
+        "type": "interface",
+        "name": "ManagedMediaSource",
+        "inheritance": "MediaSource",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/media-source/#dom-managedmediasource-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "streaming",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-managedmediasource-streaming"
+          },
+          {
+            "type": "attribute",
+            "name": "onstartstreaming",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-managedmediasource-onstartstreaming"
+          },
+          {
+            "type": "attribute",
+            "name": "onendstreaming",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-managedmediasource-onendstreaming"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-managedmediasource"
+      },
+      "BufferedChangeEvent": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface BufferedChangeEvent : Event {\n  constructor(DOMString type, optional BufferedChangeEventInit eventInitDict = {});\n\n  [SameObject] readonly attribute TimeRanges addedRanges;\n  [SameObject] readonly attribute TimeRanges removedRanges;\n};",
+        "type": "interface",
+        "name": "BufferedChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferedChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/media-source/#dom-bufferedchangeevent-constructor"
+          },
+          {
+            "type": "attribute",
+            "name": "addedRanges",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TimeRanges"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-bufferedchangeevent-addedranges"
+          },
+          {
+            "type": "attribute",
+            "name": "removedRanges",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TimeRanges"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/media-source/#dom-bufferedchangeevent-removedranges"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-bufferedchangeevent"
+      },
+      "BufferedChangeEventInit": {
+        "fragment": "dictionary BufferedChangeEventInit : EventInit {\n  TimeRanges addedRanges;\n  TimeRanges removedRanges;\n};",
+        "type": "dictionary",
+        "name": "BufferedChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "addedRanges",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TimeRanges"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-addedranges"
+          },
+          {
+            "type": "field",
+            "name": "removedRanges",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TimeRanges"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-removedranges"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit"
+      },
+      "ManagedSourceBuffer": {
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface ManagedSourceBuffer : SourceBuffer {\n  attribute EventHandler onbufferedchange;\n};",
+        "type": "interface",
+        "name": "ManagedSourceBuffer",
+        "inheritance": "SourceBuffer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onbufferedchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/media-source/#dom-managedsourcebuffer-onbufferedchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/media-source/#dom-managedsourcebuffer"
+      }
+    },
+    "idlExtendedNames": {
+      "AudioTrack": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface AudioTrack {\n  readonly attribute SourceBuffer? sourceBuffer;\n};",
+          "type": "interface",
+          "name": "AudioTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sourceBuffer",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "SourceBuffer"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/media-source/#dom-audiotrack-sourcebuffer"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "VideoTrack": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface VideoTrack {\n  readonly attribute SourceBuffer? sourceBuffer;\n};",
+          "type": "interface",
+          "name": "VideoTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sourceBuffer",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "SourceBuffer"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/media-source/#dom-videotrack-sourcebuffer"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "TextTrack": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface TextTrack {\n  readonly attribute SourceBuffer? sourceBuffer;\n};",
+          "type": "interface",
+          "name": "TextTrack",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sourceBuffer",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "SourceBuffer"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/media-source/#dom-texttrack-sourcebuffer"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MediaSource",
+        "MediaSourceHandle",
+        "SourceBuffer",
+        "SourceBufferList",
+        "ManagedMediaSource",
+        "BufferedChangeEvent",
+        "ManagedSourceBuffer",
+        "AudioTrack",
+        "VideoTrack",
+        "TextTrack"
+      ],
+      "DedicatedWorker": [
+        "MediaSource",
+        "MediaSourceHandle",
+        "SourceBuffer",
+        "SourceBufferList",
+        "ManagedMediaSource",
+        "BufferedChangeEvent",
+        "ManagedSourceBuffer"
+      ]
+    },
+    "dependencies": {
+      "MediaSource": [
+        "EventTarget",
+        "MediaSourceHandle",
+        "SourceBufferList",
+        "ReadyState",
+        "EventHandler",
+        "SourceBuffer",
+        "EndOfStreamError"
+      ],
+      "MediaSourceHandle": [],
+      "SourceBuffer": [
+        "EventTarget",
+        "AppendMode",
+        "TimeRanges",
+        "AudioTrackList",
+        "VideoTrackList",
+        "TextTrackList",
+        "EventHandler",
+        "BufferSource"
+      ],
+      "SourceBufferList": [
+        "EventTarget",
+        "EventHandler",
+        "SourceBuffer"
+      ],
+      "ManagedMediaSource": [
+        "MediaSource",
+        "EventHandler"
+      ],
+      "BufferedChangeEvent": [
+        "Event",
+        "BufferedChangeEventInit",
+        "TimeRanges"
+      ],
+      "BufferedChangeEventInit": [
+        "EventInit",
+        "TimeRanges"
+      ],
+      "ManagedSourceBuffer": [
+        "SourceBuffer",
+        "EventHandler"
+      ],
+      "AudioTrack": [
+        "SourceBuffer"
+      ],
+      "VideoTrack": [
+        "SourceBuffer"
+      ],
+      "TextTrack": [
+        "SourceBuffer"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "TimeRanges",
+      "AudioTrackList",
+      "VideoTrackList",
+      "TextTrackList",
+      "BufferSource",
+      "Event",
+      "EventInit",
+      "AudioTrack",
+      "VideoTrack",
+      "TextTrack"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

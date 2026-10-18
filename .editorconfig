@@ -169,3 +169,38 @@ dotnet_diagnostic.MFAS0055.severity = none
 # MA0182: Avoid unused internal types
 # These helpers are compiled into every Meziantou.Framework.Imaging.*Tests project, and each project uses only some of them.
 dotnet_diagnostic.MA0182.severity = none
+
+[{src,tests,tools,fuzz,benchmarks,samples}/Meziantou.Framework.WebPlatform*/**.cs]
+# Meziantou.Framework.WebPlatform implements the web platform specifications: its code mirrors their algorithms and WebIDL.
+# CA1502: Avoid excessive complexity. The spec algorithms mirror the spec step numbering: long methods and switch statements.
+dotnet_diagnostic.CA1502.severity = none
+# CA1707, CA1716: The names mirror WebIDL (e.g. HTMLElement, DOMTokenList).
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1716.severity = none
+# CA1822: Mark members as static. The WebIDL members are instance members even when the implementation does not use instance data.
+dotnet_diagnostic.CA1822.severity = suggestion
+# MA0048: File name must match type name. The files are organized by specification area: the interface mixins are partial
+# classes spread across files and the generated files contain many types.
+dotnet_diagnostic.MA0048.severity = none
+# CA1054, CA1055, CA1056: URLs are strings parsed by the WHATWG URL parser: System.Uri does not follow the URL specification.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+# CA1065: The WebIDL attribute getters and stringifiers throw the exceptions required by the specifications (e.g. XPathResult).
+dotnet_diagnostic.CA1065.severity = none
+# CA1508: The flow analysis reports false positives on the tree traversals (e.g. properties of other nodes).
+dotnet_diagnostic.CA1508.severity = none
+
+[tools/Meziantou.Framework.WebPlatform*/**.cs]
+# MA0009: The tools only process the pinned specification data.
+dotnet_diagnostic.MA0009.severity = none
+
+[tests/Meziantou.Framework.WebPlatform*/**.cs]
+# MA0002, MA0009: The assertions compare sequences of strings with the default comparer, and the regular expressions only process test data.
+dotnet_diagnostic.MA0002.severity = none
+dotnet_diagnostic.MA0009.severity = none
+# CA1034: The data of the theories are nested records.
+dotnet_diagnostic.CA1034.severity = none
+
+[{src,tests,tools}/Meziantou.Framework.WebPlatform*/**.g.cs]
+generated_code = true

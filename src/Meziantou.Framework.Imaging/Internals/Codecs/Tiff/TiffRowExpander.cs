@@ -29,7 +29,6 @@ internal sealed class TiffRowExpander : IDisposable
     private readonly TiffPage _page;
     private readonly int _width;
     private readonly IccPipeline? _inkConversion;
-    private readonly byte[]? _grayLookup;
     private PooledBuffer? _palette;
     private PooledBuffer? _inks;
 
@@ -50,10 +49,6 @@ internal sealed class TiffRowExpander : IDisposable
         if (page.IsPalette)
         {
             _palette = CreatePalette(page, scope);
-        }
-        else if (page.IsGrayscale && page.BitsPerSample < 8)
-        {
-            _grayLookup = CreateGrayLookup(page);
         }
         else if (page.IsCmyk && page.DecodedBitsPerSample == 16)
         {
@@ -138,19 +133,6 @@ internal sealed class TiffRowExpander : IDisposable
         }
     }
 
-    private static byte[] CreateGrayLookup(TiffPage page)
-    {
-        var max = (1 << page.BitsPerSample) - 1;
-        var lookup = new byte[max + 1];
-        for (var i = 0; i <= max; i++)
-        {
-            var value = i * 255 / max;
-            lookup[i] = (byte)(page.IsWhiteIsZero ? 255 - value : value);
-        }
-
-        return lookup;
-    }
-
     /// <summary>Reads the sample of a pixel of a row of 1, 2, 4 or 8-bit samples, the first sample of a byte in its most significant bits.</summary>
     private static int ReadPackedSample(ReadOnlySpan<byte> stored, int x, int bits)
     {
@@ -178,14 +160,7 @@ internal sealed class TiffRowExpander : IDisposable
     }
 
     private void ExpandPackedGray(ReadOnlySpan<byte> stored, Span<byte> destination)
-    {
-        var bits = _page.BitsPerSample;
-        var lookup = _grayLookup!;
-        for (var x = 0; x < _width; x++)
-        {
-            destination[x] = lookup[ReadPackedSample(stored, x, bits)];
-        }
-    }
+        => PackedGraySamples.Expand(stored, _page.BitsPerSample, _width, _page.IsWhiteIsZero, destination);
 
     private void ExpandInks(ReadOnlySpan<byte> stored, Span<byte> destination)
     {

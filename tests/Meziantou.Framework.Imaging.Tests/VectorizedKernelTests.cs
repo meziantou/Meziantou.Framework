@@ -370,6 +370,53 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PackedGrayRowsMatchTheScalarReference()
+    {
+        var random = new Random(61);
+        foreach (var bits in new[] { 1, 2, 4 })
+        {
+            foreach (var width in new[] { 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 33, 100, 2049 })
+            {
+                var packed = new byte[((width * bits) + 7) / 8];
+                for (var round = 0; round < 4; round++)
+                {
+                    random.NextBytes(packed);
+                    foreach (var invert in new[] { false, true })
+                    {
+                        // The bytes after the row must not be written
+                        var expected = new byte[width + 9];
+                        var actual = new byte[width + 9];
+                        PackedGraySamples.ExpandScalar(packed, bits, width, invert, expected);
+                        PackedGraySamples.Expand(packed, bits, width, invert, actual);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+
+        // Every byte value, in both orders
+        var values = new byte[256];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = (byte)i;
+        }
+
+        foreach (var bits in new[] { 1, 2, 4 })
+        {
+            foreach (var invert in new[] { false, true })
+            {
+                var width = values.Length * 8 / bits;
+                var expected = new byte[width];
+                var actual = new byte[width];
+                PackedGraySamples.ExpandScalar(values, bits, width, invert, expected);
+                PackedGraySamples.Expand(values, bits, width, invert, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void IndexedRowsMatchTheScalarReferences()
     {
         var random = new Random(43);

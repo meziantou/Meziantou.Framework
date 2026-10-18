@@ -218,7 +218,6 @@ internal sealed class PngSampleFormat
     private void ExpandGray(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
         var depth = BitDepth;
-        var scale = 255 / ((1 << depth) - 1);
         if (!_hasKey)
         {
             if (depth == 8)
@@ -227,14 +226,11 @@ internal sealed class PngSampleFormat
                 return;
             }
 
-            for (var x = 0; x < width; x++)
-            {
-                destination[x] = (byte)(ReadPackedSample(scanline, x, depth) * scale);
-            }
-
+            PackedGraySamples.Expand(scanline, depth, width, invert: false, destination);
             return;
         }
 
+        var scale = 255 / ((1 << depth) - 1);
         for (var x = 0; x < width; x++)
         {
             var sample = ReadPackedSample(scanline, x, depth);

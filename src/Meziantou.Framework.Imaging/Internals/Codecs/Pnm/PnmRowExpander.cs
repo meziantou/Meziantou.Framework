@@ -44,11 +44,7 @@ internal sealed class PnmRowExpander
         if (header.IsBitmap)
         {
             // A set bit is black; the bits past the width are padding
-            for (var x = 0; x < width; x++)
-            {
-                destination[x] = (stored[x >> 3] & (0x80 >> (x & 7))) != 0 ? (byte)0 : byte.MaxValue;
-            }
-
+            PackedGraySamples.Expand(stored, bits: 1, width, invert: true, destination);
             return;
         }
 

@@ -19,6 +19,13 @@ These instructions complete the repository-level `AGENTS.md`.
   `FontResourceLimitException`, raised by `FontErrors`); each caller converts them at its public boundary (Imaging:
   `FontExceptionTranslation`). Decoding the image of a bitmap glyph needs image codecs: the reader gives the bytes and a
   `BitmapGlyphFormat`, the caller decodes them.
+- **The callers.** Imaging wraps a face in its public `Font` (see its AGENTS.md). WebPlatform reads fonts through
+  `Css/Fonts/FontFile.cs` and `OpenTypeFont.cs`, which add the rules of CSS (the metrics of the browsers, the family names
+  of every language, the style) and catch the exceptions of the reader: a malformed glyph gives no value there. WebPlatform
+  and its test and fuzz projects set `DisableTransitiveProjectReferences`: the types of `Meziantou.Framework.Unicode`
+  (`UnicodeScript`, `UnicodeProperties`, `UnicodeBidi`, `Hyphenator`, in the `Meziantou.Framework` namespace) would hide
+  the types of the same names of WebPlatform. A change of behavior of the reader is checked with the tests of both
+  libraries, and with the web-platform-tests of WebPlatform (`css/WOFF2`, `css/css-fonts`).
 - Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, the
   script development specifications of Microsoft, Unicode). Never copy or port code from font libraries (FreeType,
   HarfBuzz, the woff2 reference code, fontTools, ...): they are test oracles only, their source is never read to write

@@ -5299,14 +5299,15 @@ in document order (the [painter's model](https://svgwg.org/svg2-draft/render.htm
 
 ## Fonts
 
-Text is measured with fonts read by a managed font reader (`Css/Fonts`, namespace
-`Meziantou.Framework.WebPlatform.Css.Fonts`): there is no native dependency (no FreeType, no HarfBuzz), so the library
-stays AOT-compatible and the results are the same on every machine. The fonts installed on the machine are never used.
+Text is measured with fonts read by the managed font reader of `Meziantou.Framework.Fonts`, which
+`Meziantou.Framework.Imaging` also uses (`Css/Fonts`, namespace `Meziantou.Framework.WebPlatform.Css.Fonts`, adapts it to
+CSS): there is no native dependency (no FreeType, no HarfBuzz), so the library stays AOT-compatible and the results are
+the same on every machine. The fonts installed on the machine are never used.
 
 ### Font files
 
-`FontFile.Load` decodes a font file and returns null when it is invalid (the font is then not loaded, like in the
-browsers that sanitize the web fonts):
+`FontFile.Load` decodes a font file with the font reader and returns null when it is invalid (the font is then not
+loaded, like in the browsers that sanitize the web fonts):
 
 - OpenType and TrueType fonts (`0x00010000`, `OTTO`, `true`) and font collections (`ttcf`, one `OpenTypeFont` per face);
 - [WOFF 1.0](https://www.w3.org/TR/WOFF/) (the tables are decompressed with zlib) and
@@ -5320,17 +5321,19 @@ browsers that sanitize the web fonts):
 
 `FontFile.Data` is the sfnt data after decoding (an OpenType font or a collection) and `OpenTypeFont.FaceIndex` the
 index of a face in it: a rendering backend creates its typefaces from them and draws the glyph ids positioned by the
-layout. The outlines (`glyf`, `CFF`) are not parsed, except the bounding boxes of the glyph headers.
+layout. The outlines are decoded only for the bounding boxes of the glyphs that do not declare them (`CFF`, `CFF2`).
 
-A face is created only when the tables that the layout needs are valid: `head` (magic number, units per em from 16 to
-16384, format of `loca`), `maxp` (at least one glyph), `hhea` and `hmtx` (the long metrics), `cmap`, and outlines
-(`glyf` and `loca`, `CFF`, `CFF2`, `CBDT`, `sbix` or `SVG`). The other tables are read on demand with bounds-checked
-reads (`FontBinary`): a malformed table reads zeros, it never throws. The `font` fuzzing target (see
+A face is created only when the font reader validates it (the table directory, `head`, `maxp`, `hhea`, `hmtx`, the
+structure of `cmap`, and the headers of the other tables it understands; a malformed `COLR` table rejects the font) and
+it has outlines (`glyf` and `loca`, `CFF`, `CFF2`, `CBDT`, `sbix` or `SVG`). A malformed glyph, or a malformed table
+read for a glyph, gives no value: `OpenTypeFont` catches the exceptions of the font reader. The layout tables (`GSUB`,
+`GPOS`, `GDEF`, `kern`) are read by the shaping engine with bounds-checked reads (`FontBinary`): a malformed table reads
+zeros, it never throws. The `font` fuzzing target (see
 [fuzzing.md](fuzzing.md)) loads any input and reads every kind of data.
 
 ### Tables
 
-`OpenTypeFont` reads, in font units (divide by `UnitsPerEm` and multiply by the font size):
+`OpenTypeFont` gives, in font units (divide by `UnitsPerEm` and multiply by the font size):
 
 | Table | Data |
 |---|---|
@@ -5341,13 +5344,13 @@ reads (`FontBinary`): a malformed table reads zeros, it never throws. The `font`
 | `post` | italic angle, underline position and thickness, fixed pitch |
 | `name` | family, subfamily, full and PostScript names (the typographic names first; the English Windows names, then the Unicode and the Macintosh Roman names) |
 | `cmap` | formats 0, 4, 6, 10, 12 and 13 (the full repertoire subtables first; the symbol fonts also map U+0020-00FF to U+F020-F0FF), and format 14 (variation sequences: `TryGetGlyphId(codePoint, variationSelector)`) |
-| `kern` | the horizontal format 0 subtables of the Microsoft and Apple versions |
+| `kern` | the horizontal format 0 subtables of the Microsoft and Apple versions (read by the shaping engine) |
 | `GSUB`, `GPOS` | `OpenTypeLayoutTable` (parsed lazily, immutable, cached per font): the script and language system lists, the features, the feature variations and the lookups (`OpenTypeLookup`, extensions resolved), applied by the shaping engine (see [Text shaping](#text-shaping)): GSUB lookup types 1-8, GPOS lookup types 1-9 |
 | `GDEF` | `OpenTypeGdef`: the glyph classes, the mark attachment classes, the mark glyph sets, the ligature caret values (formats 1 and 3) and the item variation store (the deltas of the device tables) |
-| `glyf`, `loca` | the bounding boxes of the glyphs |
-| `CFF ` | the bounding boxes of the glyphs: the Type 2 charstrings are interpreted (subroutines, hints skipped, flex) and the extrema of the curves computed (`OpenTypeFont.Cff.cs`, cached per glyph); the CID-keyed fonts use their FDSelect. `CFF2` is not read |
-| `MATH` | `OpenTypeFont.MathTable` (`OpenTypeMath`): the MathConstants (`GetConstant(MathConstant)`, the percent scale downs, `DisplayOperatorMinHeight`, `RadicalDegreeBottomRaisePercent`), the italics corrections and top accent attachments of the glyphs, and the MathVariants (`GetConstruction(glyph, vertical)`: the size variants and the glyph assembly, `MinConnectorOverlap`); the device tables are ignored |
-| `fvar`, `avar`, `HVAR`, `MVAR` | variable fonts: see below |
+| `glyf`, `loca` | the bounding boxes the glyph headers declare |
+| `CFF `, `CFF2` | the bounding boxes of the decoded outlines (cached per glyph) |
+| `MATH` | `OpenTypeFont.MathTable` (`OpenTypeMath`): the MathConstants (`GetConstant(MathConstant)`, the percent scale downs, `DisplayOperatorMinHeight`, `RadicalDegreeBottomRaisePercent`), the italics corrections and top accent attachments of the glyphs, and the MathVariants (`GetConstruction(glyph, vertical)`: the size variants and the glyph assembly, `MinConnectorOverlap`); the variation index device tables vary the values of an instance, the other device tables are ignored |
+| `fvar`, `avar`, `HVAR`, `MVAR`, `gvar` | variable fonts: see below |
 
 `FontMetrics` (`OpenTypeFont.Metrics`, `GetMetrics(instance)`) selects the ascent, the descent and the line gap like the
 browsers ([CSS Inline](https://drafts.csswg.org/css-inline-3/#ascent-descent)): the typographic metrics of `OS/2` when
@@ -5363,14 +5366,12 @@ layout): they run the lookups of the shaping engine on a buffer of one or two gl
 ### Variable fonts
 
 `OpenTypeFont.Variations` exposes the axes and the named instances of `fvar`. `CreateInstance(settings)` creates an
-instance from the values of its axes in user coordinates (e.g. `wght` 650; the missing axes have their default value):
-the values are clamped, normalized, rounded to `F2DOT14` and mapped by the segment maps of `avar`, then, with `avar`
-version 2, the delta of each axis in its item variation store (evaluated at the coordinates of the segment maps, the item
-from the axis index map) is added, rounded to `F2DOT14` units and clamped, as HarfBuzz. The instance is passed to `GetAdvanceWidth` (deltas of `HVAR`),
-`GetMetrics` (deltas of `MVAR`: ascender, descender and line gap when the typographic metrics are used, x-height, cap
-height, underline, strikeout, subscript and superscript offsets) and `GetKerning` (deltas of the `GDEF` item variation
-store). A variable font without `HVAR` (whose advance variations are only in the phantom points of `gvar`) has the
-advances of its default instance.
+instance from the values of its axes in user coordinates (e.g. `wght` 650; the missing axes have their default value): it
+is the face of the font reader at these values, which clamps, normalizes and maps them with `avar` (versions 1 and 2).
+The instance is passed to `GetAdvanceWidth` (deltas of `HVAR`, else the phantom points of `gvar`; an advance is a whole
+number of font units, as in HarfBuzz and FreeType), `GetMetrics` (deltas of `MVAR`: ascender, descender and line gap,
+x-height, cap height, underline, strikeout, subscript and superscript offsets) and `GetKerning` (deltas of the `GDEF`
+item variation store, rounded to font units).
 
 ### Color fonts
 

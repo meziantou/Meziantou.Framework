@@ -160,7 +160,7 @@ internal sealed class OpenTypeGdef
             return 0;
 
         var device = baseOffset + deviceOffset;
-        return FontBinary.U16(table, device + 4) == 0x8000 ? FontVariations.GetDelta(VariationStore, FontBinary.U16(table, device), FontBinary.U16(table, device + 2), instance) : 0;
+        return FontBinary.U16(table, device + 4) == 0x8000 ? instance.Face.GetLayoutDelta(FontBinary.U16(table, device), FontBinary.U16(table, device + 2)) : 0;
     }
 
     private double GetDeviceDelta(int baseOffset, int deviceOffset, FontVariationInstance? instance) => GetDeviceDelta(Data, baseOffset, deviceOffset, instance);

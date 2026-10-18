@@ -80,14 +80,14 @@ internal static class MathStretchyGlyphs
         {
             foreach (var variant in construction.Variants)
             {
-                size = Math.Max(size, openType.GetAdvanceWidth(variant.Glyph));
+                size = Math.Max(size, openType.GetAdvanceWidth((ushort)variant.Glyph));
             }
 
             if (IsValidAssembly(construction, openType.MathTable.MinConnectorOverlap))
             {
                 foreach (var part in construction.AssemblyParts)
                 {
-                    size = Math.Max(size, openType.GetAdvanceWidth(part.Glyph));
+                    size = Math.Max(size, openType.GetAdvanceWidth((ushort)part.Glyph));
                 }
             }
         }
@@ -125,9 +125,9 @@ internal static class MathStretchyGlyphs
         var lastTried = glyph;
         foreach (var variant in construction.Variants)
         {
-            lastTried = variant.Glyph;
+            lastTried = (ushort)variant.Glyph;
             if (variant.AdvanceMeasurement >= targetUnits)
-                return ShapeGlyph(font, emSize, variant.Glyph);
+                return ShapeGlyph(font, emSize, (ushort)variant.Glyph);
         }
 
         var overlap = math.MinConnectorOverlap;
@@ -221,7 +221,7 @@ internal static class MathStretchyGlyphs
         double maxDescent = 0;
         foreach (var part in parts)
         {
-            var (advance, ascent, descent) = GetGlyphMetrics(openType, part.Glyph);
+            var (advance, ascent, descent) = GetGlyphMetrics(openType, (ushort)part.Glyph);
             maxWidth = Math.Max(maxWidth, advance);
             maxAscent = Math.Max(maxAscent, ascent);
             maxDescent = Math.Max(maxDescent, descent);
@@ -230,7 +230,7 @@ internal static class MathStretchyGlyphs
             {
                 // Vertical: the parts are drawn from the bottom (the alphabetic baseline of the assembly) upwards, the bottom of
                 // their bounding box at the position; horizontal: their origins from the left
-                glyphs[index++] = vertical ? new MathPlacedGlyph(part.Glyph, 0, (-position - descent) * scale) : new MathPlacedGlyph(part.Glyph, position * scale, 0);
+                glyphs[index++] = vertical ? new MathPlacedGlyph((ushort)part.Glyph, 0, (-position - descent) * scale) : new MathPlacedGlyph((ushort)part.Glyph, position * scale, 0);
                 position += part.FullAdvance - overlap;
             }
         }

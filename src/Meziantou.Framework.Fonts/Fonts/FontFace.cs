@@ -491,6 +491,10 @@ internal sealed class FontFace
         return false;
     }
 
+    /// <summary>Gets the position of a table in <see cref="FontData.Bytes"/>.</summary>
+    /// <returns><see langword="false"/> when the face does not have the table.</returns>
+    public bool TryGetTableRange(uint tag, out int offset, out int length) => _directory.TryFind(tag, out offset, out length);
+
     /// <summary>Gets the glyph of a character, or 0 when the font has none.</summary>
     public int MapCodePoint(int codePoint) => _cmap.Map(codePoint);
 
@@ -872,6 +876,13 @@ internal sealed class FontFace
         return _colr.Build(Data.Bytes.AsSpan(_colrOffset, _colrLength), this, glyphId, (uint)palette < (uint)PaletteCount ? palette : 0, scratch, ref budget);
     }
 
+    /// <summary>Gets a value indicating whether the font has color glyphs made of layers (version 0 of the <c>COLR</c> table).</summary>
+    public bool HasColorLayers => _colr is { HasLayerRecords: true };
+
+    /// <summary>Tells whether a glyph is a color glyph made of layers (version 0 of the <c>COLR</c> table).</summary>
+    public bool IsLayeredColorGlyph(int glyphId)
+        => _colr is not null && (uint)glyphId < (uint)GlyphCount && _colr.HasLayers(Data.Bytes.AsSpan(_colrOffset, _colrLength), glyphId);
+
     /// <summary>
     /// Gets the layers of a color glyph of version 0 of the <c>COLR</c> table, from the bottom one: the glyph whose
     /// outline each layer fills and the index of its color in the palette.
@@ -883,6 +894,9 @@ internal sealed class FontFace
 
     /// <summary>Gets a value indicating whether the font has a <c>MATH</c> table.</summary>
     public bool HasMathTable => _math is not null;
+
+    /// <summary>Gets a value indicating whether the <c>MATH</c> table of the font has constants.</summary>
+    public bool HasMathConstants => _math is { HasConstants: true };
 
     /// <summary>Gets a constant of mathematical layout, with the delta of the instance of a variable font; 0 when the font has none.</summary>
     /// <exception cref="InvalidFontException">The value is malformed.</exception>
@@ -934,6 +948,19 @@ internal sealed class FontFace
     /// <summary>Gets a name of the font by its identifier in the <c>name</c> table.</summary>
     public string? GetName(int nameId)
         => TryGetTable(FontTags.Name, out var name) && name.Length >= 6 ? NameTable.Find(name.Span, nameId) : null;
+
+    /// <summary>Gets the values a name of the font has in every language of the <c>name</c> table, each one once.</summary>
+    /// <exception cref="InvalidFontException">The table is malformed.</exception>
+    public IReadOnlyList<string> GetNames(int nameId)
+    {
+        var names = new List<string>();
+        if (TryGetTable(FontTags.Name, out var name) && name.Length >= 6)
+        {
+            NameTable.FindAll(name.Span, nameId, names);
+        }
+
+        return names;
+    }
 
     /// <summary>
     /// Gets the delta of a value of the layout tables for the instance, from the item variation store of the GDEF

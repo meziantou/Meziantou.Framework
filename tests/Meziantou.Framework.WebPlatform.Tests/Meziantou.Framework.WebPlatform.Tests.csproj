@@ -5,6 +5,8 @@
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
     <!-- Test method names describe behavior with underscores -->
     <NoWarn>$(NoWarn);CA1707;CA1515;CA2007</NoWarn>
+    <!-- As the library: the types of Meziantou.Framework.Unicode would hide the types of the same names of the library -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
@@ -12,6 +14,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Wasmtime\Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
@@ -19,5 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Meziantou.Framework.Fonts.MathConstant" Alias="MathConstant" />
   </ItemGroup>
 </Project>

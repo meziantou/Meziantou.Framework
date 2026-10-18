@@ -126,8 +126,8 @@ public sealed class ColorFontTests : IDisposable
         cpal.AsSpan(14).Clear();
         new byte[] { 1, 2, 3, 255, 40, 50, 60, 128 }.CopyTo(cpal, 14);
 
-        byte[] data = [.. colr, .. cpal];
-        var glyphs = OpenTypeColorGlyphs.Create(data, (0, colr.Length), (colr.Length, cpal.Length));
+        var font = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr), ("CPAL", cpal)))!.Faces[0];
+        var glyphs = font.ColorGlyphs;
         Assert.NotNull(glyphs);
         Assert.Equal(1, glyphs.PaletteCount);
         Assert.Null(glyphs.LightPalette);
@@ -143,21 +143,62 @@ public sealed class ColorFontTests : IDisposable
         Assert.False(glyphs.IsColorGlyph(6));
 
         // Without CPAL table, only the layers in the color of the text are drawn
-        glyphs = OpenTypeColorGlyphs.Create(data, (0, colr.Length), (-1, 0));
+        glyphs = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr)))!.Faces[0].ColorGlyphs;
         Assert.NotNull(glyphs);
         Assert.Equal(0, glyphs.PaletteCount);
         Assert.True(glyphs.TryGetLayers(5, out layers));
         Assert.Equal([new ColorGlyphLayer(11, OpenTypeColorGlyphs.ForegroundPaletteIndex)], layers);
 
-        // A table without base glyph record (e.g. only the paint graphs of the version 1), or whose records are outside of the table
+        // A table without base glyph record (e.g. only the paint graphs of the version 1) has no color glyph; a font whose
+        // records are outside of the table is malformed, and is not loaded
         Write16(colr, 2, 0);
-        Assert.Null(OpenTypeColorGlyphs.Create(colr, (0, colr.Length), (-1, 0)));
+        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr)))!.Faces[0].ColorGlyphs);
         Write16(colr, 2, 200);
-        Assert.Null(OpenTypeColorGlyphs.Create(colr, (0, colr.Length), (-1, 0)));
-        Assert.Null(OpenTypeColorGlyphs.Create(colr, (-1, 0), (-1, 0)));
+        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr))));
+        Assert.Null(BundledFonts.Ahem.Font.ColorGlyphs);
 
         static void Write16(byte[] data, int offset, ushort value) => BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(offset), value);
         static void Write32(byte[] data, int offset, uint value) => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(offset), value);
+    }
+
+    /// <summary>Adds tables to an OpenType font (or replaces them): the table directory is written again, without checksums.</summary>
+    private static byte[] AddTables(byte[] font, params (string Tag, byte[] Data)[] added)
+    {
+        var tables = new SortedDictionary<uint, byte[]>();
+        var count = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
+        for (var i = 0; i < count; i++)
+        {
+            var record = font.AsSpan(12 + (i * 16), 16);
+            var offset = (int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]);
+            var length = (int)BinaryPrimitives.ReadUInt32BigEndian(record[12..]);
+            tables[BinaryPrimitives.ReadUInt32BigEndian(record)] = font.AsSpan(offset, length).ToArray();
+        }
+
+        foreach (var (tag, data) in added)
+        {
+            tables[BinaryPrimitives.ReadUInt32BigEndian(System.Text.Encoding.ASCII.GetBytes(tag))] = data;
+        }
+
+        var output = new List<byte>();
+        var header = new byte[12 + (16 * tables.Count)];
+        BinaryPrimitives.WriteUInt32BigEndian(header, BinaryPrimitives.ReadUInt32BigEndian(font));
+        BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(4), (ushort)tables.Count);
+        output.AddRange(header);
+        var index = 0;
+        foreach (var (tag, data) in tables)
+        {
+            var record = 12 + (index++ * 16);
+            BinaryPrimitives.WriteUInt32BigEndian(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(output)[record..], tag);
+            BinaryPrimitives.WriteUInt32BigEndian(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(output)[(record + 8)..], (uint)output.Count);
+            BinaryPrimitives.WriteUInt32BigEndian(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(output)[(record + 12)..], (uint)data.Length);
+            output.AddRange(data);
+            while (output.Count % 4 != 0)
+            {
+                output.Add(0);
+            }
+        }
+
+        return [.. output];
     }
 
     [Fact]

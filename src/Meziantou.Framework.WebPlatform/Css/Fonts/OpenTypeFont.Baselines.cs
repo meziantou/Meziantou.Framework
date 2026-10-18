@@ -61,7 +61,6 @@ internal readonly record struct UsedFontBaselines
 /// <summary>The baselines of the fonts: the BASE table (https://learn.microsoft.com/typography/opentype/spec/base).</summary>
 internal sealed partial class OpenTypeFont
 {
-    private const uint BaseTableTag = 0x42415345; // BASE
     private const uint HangingBaselineTag = 0x68616E67; // hang
     private const uint IdeographicBaselineTag = 0x6964656F; // ideo
     private const uint RomanBaselineTag = 0x726F6D6E; // romn
@@ -77,91 +76,32 @@ internal sealed partial class OpenTypeFont
     /// <summary>
     /// Returns the baselines of the horizontal axis of the BASE table: the coordinates of the baseline tags <c>hang</c>,
     /// <c>ideo</c>, <c>idtp</c>, <c>icfb</c>, <c>icft</c>, <c>math</c> and <c>romn</c> of the default script (<c>DFLT</c>, else
-    /// <c>latn</c>, else the first script).
+    /// <c>latn</c>), as the font reader reads them.
     /// </summary>
     public FontBaselines GetBaselines() => _baselines ??= ReadBaselines();
 
     private FontBaselines ReadBaselines()
     {
-        var table = GetTable(BaseTableTag);
-        if (table.Length < 8)
-            return FontBaselines.None;
-
-        // The horizontal axis table: the list of the baseline tags and the list of the scripts
-        var axis = FontBinary.U16(table, 4);
-        if (axis == 0)
-            return FontBaselines.None;
-
-        var tagList = FontBinary.U16(table, axis);
-        var scriptList = FontBinary.U16(table, axis + 2);
-        if (tagList == 0 || scriptList == 0)
-            return FontBaselines.None;
-
-        var tagCount = FontBinary.U16(table, axis + tagList);
-        var scriptCount = FontBinary.U16(table, axis + scriptList);
-        var scriptOffset = 0;
-        for (var i = 0; i < scriptCount; i++)
+        try
         {
-            var record = axis + scriptList + 2 + (i * 6);
-            var tag = FontBinary.U32(table, record);
-            var offset = FontBinary.U16(table, record + 4);
-            if (tag == DefaultScriptTag || (tag == LatinScriptTag && scriptOffset == 0) || i == 0)
+            ReadOnlySpan<uint> scripts = [DefaultScriptTag, LatinScriptTag];
+            var hanging = Get(Face, scripts, HangingBaselineTag);
+            var ideographic = Get(Face, scripts, IdeographicBaselineTag);
+            var alphabetic = Get(Face, scripts, RomanBaselineTag);
+            return new FontBaselines(hanging, ideographic, alphabetic)
             {
-                scriptOffset = axis + scriptList + offset;
-                if (tag == DefaultScriptTag)
-                    break;
-            }
+                IdeographicOver = Get(Face, scripts, IdeographicTopBaselineTag),
+                IdeographicInkUnder = Get(Face, scripts, IdeographicFaceBottomBaselineTag),
+                IdeographicInkOver = Get(Face, scripts, IdeographicFaceTopBaselineTag),
+                Mathematical = Get(Face, scripts, MathBaselineTag),
+            };
+        }
+        catch (Meziantou.Framework.Fonts.FontException)
+        {
+            return FontBaselines.None;
         }
 
-        // The base values of the script: a coordinate per baseline tag
-        var valuesOffset = scriptOffset == 0 ? 0 : FontBinary.U16(table, scriptOffset);
-        if (valuesOffset == 0)
-            return FontBaselines.None;
-
-        var values = scriptOffset + valuesOffset;
-        var coordCount = FontBinary.U16(table, values + 2);
-        double? hanging = null, ideographic = null, alphabetic = null, ideographicOver = null, inkUnder = null, inkOver = null, mathematical = null;
-        for (var i = 0; i < Math.Min(coordCount, tagCount); i++)
-        {
-            var tag = FontBinary.U32(table, axis + tagList + 2 + (i * 4));
-            var coordOffset = FontBinary.U16(table, values + 4 + (i * 2));
-            if (coordOffset == 0)
-                continue;
-
-            // All the formats of the BaseCoord tables start with the format and the coordinate
-            double coordinate = FontBinary.I16(table, values + coordOffset + 2);
-            switch (tag)
-            {
-                case HangingBaselineTag:
-                    hanging = coordinate;
-                    break;
-                case IdeographicBaselineTag:
-                    ideographic = coordinate;
-                    break;
-                case RomanBaselineTag:
-                    alphabetic = coordinate;
-                    break;
-                case IdeographicTopBaselineTag:
-                    ideographicOver = coordinate;
-                    break;
-                case IdeographicFaceBottomBaselineTag:
-                    inkUnder = coordinate;
-                    break;
-                case IdeographicFaceTopBaselineTag:
-                    inkOver = coordinate;
-                    break;
-                case MathBaselineTag:
-                    mathematical = coordinate;
-                    break;
-            }
-        }
-
-        return new FontBaselines(hanging, ideographic, alphabetic)
-        {
-            IdeographicOver = ideographicOver,
-            IdeographicInkUnder = inkUnder,
-            IdeographicInkOver = inkOver,
-            Mathematical = mathematical,
-        };
+        static double? Get(Meziantou.Framework.Fonts.FontFace face, ReadOnlySpan<uint> scripts, uint baseline)
+            => face.TryGetBaseline(isVertical: false, scripts, baseline, out var coordinate) ? coordinate : null;
     }
 }

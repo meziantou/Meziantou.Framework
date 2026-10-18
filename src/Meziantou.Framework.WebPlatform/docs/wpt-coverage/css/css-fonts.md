@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 152 | 166 | 0 | 92% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 355 | 379 | 1 | 94% |
-| **All** | **513** | **551** | **1** | **93%** |
+| [Reftests](#reftests) | 354 | 379 | 1 | 94% |
+| **All** | **512** | **551** | **1** | **93%** |
 
 ## Stable tests
 
@@ -568,7 +568,7 @@
 | [`variations/slnt-backslant-variable.html`](https://wpt.fyi/results/css/css-fonts/variations/slnt-backslant-variable.html) | Pass | 1 / 1 |  |  |
 | [`variations/slnt-variable.html`](https://wpt.fyi/results/css/css-fonts/variations/slnt-variable.html) | Pass | 1 / 1 |  |  |
 | [`variations/variable-avar2-rvrn.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-avar2-rvrn.html) | Pass | 1 / 1 |  |  |
-| [`variations/variable-avar2-warp.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-avar2-warp.html) | Pass | 1 / 1 |  |  |
+| [`variations/variable-avar2-warp.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-avar2-warp.html) | Fail | 0 / 1 | TEST BUG | the fonts of the test (avar version 2) and of the reference (avar version 1) are not the same design: at `wght` 900 and `wdth` 75, the normalized `wght` coordinate is 8192 in the first one and 8193 in the second one (in 2.14 units, as HarfBuzz computes them), so the outlines of the third `H` differ by a fraction of a font unit and a few antialiased pixels of its edges differ; the test has no fuzzy tolerance |
 | [`variations/variable-box-font.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-box-font.html) | Pass | 1 / 1 |  |  |
 | [`variations/variable-gpos-avar2.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-gpos-avar2.html) | Pass | 1 / 1 |  |  |
 | [`variations/variable-gpos-m2b.html`](https://wpt.fyi/results/css/css-fonts/variations/variable-gpos-m2b.html) | Pass | 1 / 1 |  |  |

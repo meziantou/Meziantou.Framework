@@ -21,5 +21,9 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
   </ItemGroup>
 </Project>

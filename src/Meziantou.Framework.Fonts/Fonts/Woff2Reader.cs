@@ -39,13 +39,18 @@ internal static class Woff2Reader
         if (tableCount == 0)
             throw FontErrors.Invalid("the WOFF2 file has no table.");
 
+        // Section 3, "WOFF2 Header": the length is the size of the whole file.
+        if (FontBinary.UInt32(header, 8) != data.Length)
+            throw FontErrors.Invalid("the WOFF2 file declares another length than its size.");
+
         var cursor = HeaderLength;
         var tables = ReadTableDirectory(data, ref cursor, tableCount, limits, out var sourceLength);
         uint collectionVersion = 0;
         var faces = flavor == FontTags.Collection ? ReadCollectionDirectory(data, ref cursor, tableCount, out collectionVersion) : [new Face(flavor, CreateSequence(tableCount))];
-        AssignTables(tables, faces);
+        AssignTables(tables, faces, isCollection: flavor == FontTags.Collection);
 
         var compressed = FontBinary.Slice(data, cursor, compressedLength);
+        EnsureNoExtraneousData(header, cursor + (long)compressedLength, data.Length);
         var scope = environment.CreateAllocator("WOFF2");
         if (sourceLength > Array.MaxLength)
             throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, scope.Limit, sourceLength);
@@ -68,6 +73,31 @@ internal static class Woff2Reader
     }
 
     /// <summary>Reads the table directory: section 4.1.</summary>
+    /// <summary>
+    /// Section 5, "Extraneous data": a file that has data between its blocks or after its last one is rejected. The
+    /// metadata block and the private data block, when the file has them, each start at the first 4-byte boundary after
+    /// the previous block, and the file ends with its last block, padded to 4 bytes at most.
+    /// </summary>
+    private static void EnsureNoExtraneousData(ReadOnlySpan<byte> header, long compressedEnd, long fileLength)
+    {
+        var end = Pad4(compressedEnd);
+        foreach (var (offset, length) in ((uint Offset, uint Length)[])[(FontBinary.UInt32(header, 28), FontBinary.UInt32(header, 32)), (FontBinary.UInt32(header, 40), FontBinary.UInt32(header, 44))])
+        {
+            if (offset == 0)
+                continue;
+
+            if (offset != end)
+                throw FontErrors.Invalid("the blocks of the WOFF2 file are not contiguous.");
+
+            end = Pad4((long)offset + length);
+        }
+
+        if (end != Pad4(fileLength))
+            throw FontErrors.Invalid("the WOFF2 file has data after its last block.");
+
+        static long Pad4(long length) => (length + 3) & ~3L;
+    }
+
     private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, FontResourceLimits limits, out long sourceLength)
     {
         var tables = new Table[tableCount];
@@ -103,7 +133,7 @@ internal static class Woff2Reader
             if (transformed && tag == FontTags.Loca && length != 0)
                 throw FontErrors.InvalidTable(tag, "has data in its transformed form, which is always empty.");
 
-            tables[i] = new Table { Tag = tag, IsTransformed = transformed, SourceOffset = sourceLength, SourceLength = length, Owner = -1, Partner = -1 };
+            tables[i] = new Table { Tag = tag, IsTransformed = transformed, OriginalLength = originalLength, SourceOffset = sourceLength, SourceLength = length, Owner = -1, Partner = -1 };
             sourceLength += length;
             if (!transformed)
             {
@@ -166,7 +196,7 @@ internal static class Woff2Reader
     }
 
     /// <summary>Finds the tables each face needs to reverse the transformations, and pairs each glyph table with its location table.</summary>
-    private static void AssignTables(Table[] tables, Face[] faces)
+    private static void AssignTables(Table[] tables, Face[] faces, bool isCollection)
     {
         for (var faceIndex = 0; faceIndex < faces.Length; faceIndex++)
         {
@@ -193,6 +223,11 @@ internal static class Woff2Reader
             var hasTransformedLoca = face.Loca >= 0 && tables[face.Loca].IsTransformed;
             if (hasTransformedGlyf != hasTransformedLoca)
                 throw FontErrors.Invalid("the glyph table and the glyph location table of the WOFF2 file are not transformed together.");
+
+            // Section 5.2, "Collection font entries": the location table of a font of a collection follows its glyph table in
+            // the table directory, which pairs them.
+            if (isCollection && (face.Glyf >= 0 || face.Loca >= 0) && face.Loca != face.Glyf + 1)
+                throw FontErrors.Invalid("the glyph location table of a font of the WOFF2 file does not follow its glyph table.");
 
             if (hasTransformedGlyf)
             {
@@ -372,6 +407,11 @@ internal static class Woff2Reader
             var declaresLongOffsets = FontBinary.Int16(GetSource(source, tables[face.Head]), 50) != 0;
             if (declaresLongOffsets != tables[face.Glyf].HasLongOffsets)
                 throw FontErrors.InvalidTable(FontTags.Head, "and the transformed glyph table of the WOFF2 file disagree on the format of the glyph locations.");
+
+            // Section 5.3, "Transformed loca table format": the length of the rebuilt table is the one the directory declares.
+            var loca = tables[face.Loca];
+            if (loca.OutputLength != loca.OriginalLength)
+                throw FontErrors.InvalidTable(FontTags.Loca, $"is declared {loca.OriginalLength} bytes long, and its reconstruction is {loca.OutputLength} bytes long.");
         }
 
         return font;
@@ -426,6 +466,9 @@ internal static class Woff2Reader
     {
         public uint Tag;
         public bool IsTransformed;
+
+        /// <summary>The length of the table in the font the file was made from.</summary>
+        public long OriginalLength;
 
         /// <summary>Where the stored form of the table is in the expanded stream.</summary>
         public long SourceOffset;

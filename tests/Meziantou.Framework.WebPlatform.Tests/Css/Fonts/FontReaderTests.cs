@@ -241,7 +241,8 @@ public sealed class FontReaderTests
         Assert.Equal([1.0], black.NormalizedCoordinates);
         Assert.Equal(1366, font.GetAdvanceWidth(a, regular));
         Assert.Equal(1479, font.GetAdvanceWidth(a, bold));
-        Assert.Equal(1422.5, font.GetAdvanceWidth(a, semiBold));
+        // An advance is a whole number of font units in an instance too: the delta is rounded, as in HarfBuzz and FreeType
+        Assert.Equal(1423, font.GetAdvanceWidth(a, semiBold));
         Assert.Equal(1366, font.GetAdvanceWidth(v, bold));
 
         // The kerning of the instances (the variation indexes of the GPOS value records)

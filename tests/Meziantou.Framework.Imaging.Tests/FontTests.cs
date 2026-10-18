@@ -1659,10 +1659,20 @@ public sealed class FontTests
         AssertInvalid(Edit(valid, data => data[49] = 97), "WOFF2");
 
         // A length with a leading zero, or of more than 32 bits.
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x80, 96, .. valid.AsSpan(50)], "malformed length");
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x9F, 0xFF, 0xFF, 0xFF, 0x7F, .. valid.AsSpan(50)], "malformed length");
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x81, 0x80, 0x80, 0x80, 0x80, 0x00, .. valid.AsSpan(50)], "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x80, 96, .. valid.AsSpan(50)]), "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x9F, 0xFF, 0xFF, 0xFF, 0x7F, .. valid.AsSpan(50)]), "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x81, 0x80, 0x80, 0x80, 0x80, 0x00, .. valid.AsSpan(50)]), "malformed length");
         Assert.Throws<InvalidImageContentException>(() => Font.Load(valid.AsSpan(0, 30)));
+
+        // The header gives the size of the file, and the file ends with its last block.
+        AssertInvalid(Edit(valid, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), (uint)data.Length - 4)), "another length than its size");
+        AssertInvalid(WithFileLength([.. valid, 0, 0, 0, 0]), "after its last block");
+
+        static byte[] WithFileLength(byte[] data)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), (uint)data.Length);
+            return data;
+        }
 
         static byte[] Edit(byte[] data, Action<byte[]> edit)
         {

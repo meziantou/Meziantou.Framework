@@ -97,6 +97,12 @@ internal sealed class ColrTable
         }
     }
 
+    /// <summary>Gets a value indicating whether the records of version 0 describe glyphs.</summary>
+    public bool HasLayerRecords => _baseGlyphCount != 0;
+
+    /// <summary>Tells whether the records of version 0 describe a glyph.</summary>
+    public bool HasLayers(ReadOnlySpan<byte> table, int glyphId) => FindLayers(table, glyphId, out _, out _);
+
     /// <summary>Tells whether the table describes a glyph.</summary>
     public bool HasGlyph(ReadOnlySpan<byte> table, int glyphId) => FindPaint(table, glyphId) != 0 || FindLayers(table, glyphId, out _, out _);
 

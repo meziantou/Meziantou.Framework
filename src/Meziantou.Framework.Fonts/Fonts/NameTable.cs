@@ -40,7 +40,7 @@ internal static class NameTable
             var language = FontBinary.UInt16(record, 4);
             var priority = platform switch
             {
-                3 when encoding is 1 or 10 => language == 0x0409 ? 4 : 3,
+                3 when encoding is 0 or 1 or 10 => language == 0x0409 ? 4 : 3,
                 0 => 2,
                 1 when encoding == 0 => 1,
                 _ => 0,
@@ -60,6 +60,38 @@ internal static class NameTable
 
         var value = bestPlatform == 1 ? DecodeMacintoshRoman(best) : Encoding.BigEndianUnicode.GetString(best);
         return value.Length == 0 ? null : value;
+    }
+
+    /// <summary>
+    /// Adds the values a name has in every language: those of the Unicode platform, of the Windows platform (Unicode and
+    /// symbol encodings) and of the Macintosh platform in the Roman encoding, each value once.
+    /// </summary>
+    public static void FindAll(ReadOnlySpan<byte> table, int nameId, List<string> names)
+    {
+        if (table.IsEmpty)
+            return;
+
+        var count = FontBinary.UInt16(table, 2);
+        var storageOffset = FontBinary.UInt16(table, 4);
+        var records = FontBinary.Slice(table, 6, (long)count * RecordLength);
+        for (var i = 0; i < count; i++)
+        {
+            var record = records.Slice(i * RecordLength, RecordLength);
+            if (FontBinary.UInt16(record, 6) != nameId)
+                continue;
+
+            var platform = FontBinary.UInt16(record, 0);
+            var encoding = FontBinary.UInt16(record, 2);
+            if (!(platform == 0 || (platform == 3 && encoding is 0 or 1 or 10) || (platform == 1 && encoding == 0)))
+                continue;
+
+            var data = FontBinary.Slice(table, (long)storageOffset + FontBinary.UInt16(record, 10), FontBinary.UInt16(record, 8));
+            var value = platform == 1 ? DecodeMacintoshRoman(data) : Encoding.BigEndianUnicode.GetString(data);
+            if (value.Length != 0 && !names.Contains(value, StringComparer.Ordinal))
+            {
+                names.Add(value);
+            }
+        }
     }
 
     // The upper half of the Mac OS Roman character set (the lower half is ASCII), in the order of its bytes from 0x80:

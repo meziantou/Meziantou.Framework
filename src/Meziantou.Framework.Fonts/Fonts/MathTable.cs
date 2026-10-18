@@ -65,6 +65,9 @@ internal sealed class MathTable
         static int GetOffset(ReadOnlySpan<byte> table, int parent, int offset) => offset == 0 || parent + offset >= table.Length ? 0 : parent + offset;
     }
 
+    /// <summary>Gets a value indicating whether the table has constants.</summary>
+    public bool HasConstants => _constants != 0;
+
     /// <summary>Gets a constant, in font units, or as a percentage for the scales and the raise of the degree of a radical; 0 when the table has no constants.</summary>
     public int GetConstant(ReadOnlySpan<byte> table, FontFace face, MathConstant constant)
     {

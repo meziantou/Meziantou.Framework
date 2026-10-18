@@ -3,15 +3,13 @@ using System.Buffers.Binary;
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
 /// <summary>
-/// Bounds-checked big-endian reads of the data types of OpenType (https://learn.microsoft.com/typography/opentype/spec/otff#data-types).
-/// A read outside of the data returns 0 and a slice outside of the data is empty: a malformed font cannot make the reader
-/// throw, it only reads zeros (the tables whose structure is required are validated when the font is loaded).
+/// Bounds-checked big-endian reads of the data types of OpenType (https://learn.microsoft.com/typography/opentype/spec/otff#data-types),
+/// for the layout tables the shaper reads. A read outside of the data returns 0 and a slice outside of the data is empty: a
+/// malformed table cannot make the shaper throw, it only reads zeros.
 /// </summary>
 internal static class FontBinary
 {
     public static byte U8(ReadOnlySpan<byte> data, int offset) => (uint)offset < (uint)data.Length ? data[offset] : (byte)0;
-
-    public static sbyte I8(ReadOnlySpan<byte> data, int offset) => (sbyte)U8(data, offset);
 
     public static ushort U16(ReadOnlySpan<byte> data, int offset) => offset >= 0 && offset <= data.Length - 2 ? BinaryPrimitives.ReadUInt16BigEndian(data[offset..]) : (ushort)0;
 
@@ -20,11 +18,6 @@ internal static class FontBinary
     public static uint U24(ReadOnlySpan<byte> data, int offset) => offset >= 0 && offset <= data.Length - 3 ? (uint)((data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2]) : 0u;
 
     public static uint U32(ReadOnlySpan<byte> data, int offset) => offset >= 0 && offset <= data.Length - 4 ? BinaryPrimitives.ReadUInt32BigEndian(data[offset..]) : 0u;
-
-    public static int I32(ReadOnlySpan<byte> data, int offset) => (int)U32(data, offset);
-
-    /// <summary>A 16.16 fixed-point number (<c>Fixed</c>).</summary>
-    public static double Fixed(ReadOnlySpan<byte> data, int offset) => I32(data, offset) / 65536.0;
 
     /// <summary>A 2.14 fixed-point number (<c>F2DOT14</c>).</summary>
     public static double F2Dot14(ReadOnlySpan<byte> data, int offset) => I16(data, offset) / 16384.0;
@@ -37,27 +30,6 @@ internal static class FontBinary
 
     /// <summary>The range of the data, or an empty span when the range is outside of the data.</summary>
     public static ReadOnlySpan<byte> Slice(ReadOnlySpan<byte> data, long offset, long length) => IsInRange(data, offset, length) ? data.Slice((int)offset, (int)length) : default;
-
-    /// <summary>The checksum of a table (https://learn.microsoft.com/typography/opentype/spec/otff#calculating-checksums).</summary>
-    public static uint CalculateChecksum(ReadOnlySpan<byte> data)
-    {
-        var sum = 0u;
-        var i = 0;
-        for (; i + 4 <= data.Length; i += 4)
-        {
-            sum += BinaryPrimitives.ReadUInt32BigEndian(data[i..]);
-        }
-
-        if (i < data.Length)
-        {
-            Span<byte> last = stackalloc byte[4];
-            last.Clear();
-            data[i..].CopyTo(last);
-            sum += BinaryPrimitives.ReadUInt32BigEndian(last);
-        }
-
-        return sum;
-    }
 }
 
 /// <summary>The tags of the OpenType tables and of the layout and variation records (https://learn.microsoft.com/typography/opentype/spec/otff#data-types).</summary>

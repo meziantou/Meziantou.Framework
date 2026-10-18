@@ -8,11 +8,22 @@
     <!-- Every public member is documented (CS1591). The parameters do not have to be documented (CS1573). -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <!--
+      Meziantou.Framework.Fonts depends on Meziantou.Framework.Unicode, whose types (UnicodeScript, UnicodeProperties, ...)
+      are in the Meziantou.Framework namespace and would hide the types of the same names of this library: the library
+      only compiles against its direct references.
+    -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
     <Description>Spec-compliant HTML, XML, SVG and CSS parser exposing the browser DOM API (WHATWG DOM, HTML, URL, Encoding, Selectors, CSSOM, DOM XPath).</Description>
     <PackageTags>html;xml;svg;mathml;css;dom;parser;selectors;xpath;cssom;layout;web-platform</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="Meziantou.Framework.WebPlatform.Html" />
+    <!-- The types of the MATH table of the font reader, which the MathML layout uses -->
+    <Using Include="Meziantou.Framework.Fonts.MathConstant" Alias="MathConstant" />
+    <Using Include="Meziantou.Framework.Fonts.MathGlyphConstruction" Alias="MathGlyphConstruction" />
+    <Using Include="Meziantou.Framework.Fonts.MathGlyphPart" Alias="MathGlyphPart" />
+    <Using Include="Meziantou.Framework.Fonts.MathGlyphVariant" Alias="MathGlyphVariant" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
@@ -47,10 +58,23 @@
     <None Include="Unicode\Segmentation\LICENSES.txt;Unicode\Segmentation\README.md" Pack="true" PackagePath="segmentation/%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The font reader, shared with Meziantou.Framework.Imaging; its API is internal -->
+    <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->
     <PackageReference Include="System.IO.Hashing" Version="11.0.0-rc.1.26425.128" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\tools\Meziantou.Framework.WebPlatform.Analyzers\Meziantou.Framework.WebPlatform.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
+
+  <!-- The library uses the internal API of Meziantou.Framework.Fonts: it depends on the exact version of that package -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.Fonts'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
 </Project>

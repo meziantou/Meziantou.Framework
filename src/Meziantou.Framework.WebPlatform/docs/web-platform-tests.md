@@ -505,6 +505,7 @@ reflect the current state.
 | `WPT_REPORT=/path/report.jsonl` | Write the detailed results (including the failure messages) as JSON lines |
 | `WPT_REFTESTS=0` | Do not run the reftests |
 | `WPT_REFTEST_IMAGES=/path` | Save the images of the failing reftests (test, reference, differences) |
+| `WPT_TIMEOUT_MULTIPLIER=3` | Multiply the longest duration of a test (60 s, `MaxDuration`), as the `--timeout-multiplier` option of wptrunner; 3 by default on a CI agent (`CI=true`), whose shared cores make the heaviest tests 5 to 8 times slower |
 
 ```bash
 WPT_UPDATE_EXPECTATIONS=1 dotnet test --project tests/Meziantou.Framework.WebPlatform.Wpt
@@ -521,7 +522,7 @@ crash, the hang dump of the test platform): the expectations of the tests that d
 The test platform is started with `--hangdump --hangdump-timeout 10m` (`Meziantou.NET.Sdk.Test`): when no test starts
 nor completes for 10 minutes, it writes `TestResults/Meziantou.Framework.WebPlatform.Wpt_<process id>_hang.dmp` and kills
 the test host (exit code 7; the tests that did not run are reported as not run). The duration of a test is bounded
-(`MaxDuration`, checked by its event loop), so a hang dump means that the process itself is blocked: the stacks of the
+(`MaxDuration`, 60 s times `WPT_TIMEOUT_MULTIPLIER`, checked by its event loop), so a hang dump means that the process itself is blocked: the stacks of the
 dump tell what it waits for (`dotnet-dump analyze <dump> -c "clrstack -all"` for the managed frames,
 `lldb -c <dump> -b -o "bt all"` for the native ones).
 

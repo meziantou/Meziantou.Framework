@@ -528,6 +528,14 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
                 if (remaining.IsEmpty)
                     return ParseStatus.NeedMoreData(1);
 
+                if (_storedFilled == 0 && remaining.Length >= storedRowLength)
+                {
+                    // The whole row is in the input: it is expanded from there
+                    consumed += storedRowLength;
+                    EmitRow(ref lease, remaining[..storedRowLength]);
+                    continue;
+                }
+
                 var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
                 remaining[..take].CopyTo(_storedRow!.Span[_storedFilled..]);
                 _storedFilled += take;
@@ -536,7 +544,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
                     continue;
 
                 _storedFilled = 0;
-                EmitRow(ref lease);
+                EmitRow(ref lease, _storedRow.Span[..storedRowLength]);
             }
 
             return ParseStatus.Complete;
@@ -674,7 +682,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
         var lease = default(PixelLease);
         try
         {
-            EmitRow(ref lease);
+            EmitRow(ref lease, _storedRow!.Span[.._header.StoredRowLength]);
         }
         finally
         {
@@ -682,23 +690,46 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
         }
     }
 
-    /// <summary>Emits the stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
-    private void EmitRow(scoped ref PixelLease lease)
+    /// <summary>Emits a stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
+    private void EmitRow(scoped ref PixelLease lease, ReadOnlySpan<byte> stored)
     {
         if (_walk == StructureWalk.Decode)
         {
-            var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.PixelFormat))];
-            _expander!.ExpandRow(_storedRow!.Span[.._header.StoredRowLength], source);
-            if (!lease.IsActive)
-            {
-                lease = _decoder!.LeaseRows();
-            }
-
-            _decoder!.WriteRow(lease, _rowIndex, source);
+            DecodeRow(ref lease, stored);
         }
 
         _rowIndex++;
         _context.CancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private void DecodeRow(scoped ref PixelLease lease, ReadOnlySpan<byte> stored)
+    {
+        var decoder = _decoder!;
+
+        // The first row is expanded before the frame starts, so that a malformed row is reported before a frame limit
+        if (_rowIndex > 0)
+        {
+            if (!lease.IsActive)
+            {
+                lease = decoder.LeaseRows();
+            }
+
+            var destination = decoder.GetDirectRow(lease, _rowIndex);
+            if (!destination.IsEmpty)
+            {
+                _expander!.ExpandRow(stored, destination);
+                return;
+            }
+        }
+
+        var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.PixelFormat))];
+        _expander!.ExpandRow(stored, source);
+        if (!lease.IsActive)
+        {
+            lease = decoder.LeaseRows();
+        }
+
+        decoder.WriteRow(lease, _rowIndex, source);
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

@@ -271,6 +271,14 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                 if (remaining.IsEmpty)
                     return ParseStatus.NeedMoreData(1);
 
+                if (_storedFilled == 0 && remaining.Length >= storedRowLength)
+                {
+                    // The whole row is in the input: it is expanded from there
+                    Advance(ref consumed, storedRowLength);
+                    EmitRow(ref lease, remaining[..storedRowLength]);
+                    continue;
+                }
+
                 var take = Math.Min(remaining.Length, storedRowLength - _storedFilled);
                 if (_walk == StructureWalk.Decode)
                 {
@@ -283,7 +291,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                     continue;
 
                 _storedFilled = 0;
-                EmitRow(ref lease);
+                EmitRow(ref lease, _walk == StructureWalk.Decode ? _storedRow!.Span[..storedRowLength] : default);
             }
 
             return ParseStatus.Complete;
@@ -370,7 +378,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                 if (_storedFilled == storedRowLength)
                 {
                     _storedFilled = 0;
-                    EmitRow(ref lease);
+                    EmitRow(ref lease, _walk == StructureWalk.Decode ? _storedRow!.Span[..storedRowLength] : default);
                 }
             }
 
@@ -410,23 +418,47 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             throw TgaFormat.Unsupported("The TGA extension area declares premultiplied alpha (attributes type 4); the working pixel formats store straight alpha and this version never divides it out.", "Attributes type: premultiplied alpha");
     }
 
-    /// <summary>Emits the stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
-    private void EmitRow(scoped ref PixelLease lease)
+    /// <summary>Emits a stored row through a lease of the frame, taken on the first row a parser call emits.</summary>
+    private void EmitRow(scoped ref PixelLease lease, ReadOnlySpan<byte> stored)
     {
         if (_walk == StructureWalk.Decode)
         {
-            var source = _sourceRow!.Span[..Layout.SourceRowLength];
-            Layout.ExpandRow(_storedRow!.Span[..Layout.StoredRowLength], source);
-            if (!lease.IsActive)
-            {
-                lease = _decoder!.LeaseRows();
-            }
-
-            _decoder!.WriteRow(lease, Header.IsTopToBottom ? _rowIndex : Header.Height - 1 - _rowIndex, source);
+            DecodeRow(ref lease, stored);
         }
 
         _rowIndex++;
         _context.CancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private void DecodeRow(scoped ref PixelLease lease, ReadOnlySpan<byte> stored)
+    {
+        var decoder = _decoder!;
+        var y = Header.IsTopToBottom ? _rowIndex : Header.Height - 1 - _rowIndex;
+
+        // The first row is expanded before the frame starts, so that a malformed row is reported before a frame limit
+        if (_rowIndex > 0)
+        {
+            if (!lease.IsActive)
+            {
+                lease = decoder.LeaseRows();
+            }
+
+            var destination = decoder.GetDirectRow(lease, y);
+            if (!destination.IsEmpty)
+            {
+                Layout.ExpandRow(stored, destination);
+                return;
+            }
+        }
+
+        var source = _sourceRow!.Span[..Layout.SourceRowLength];
+        Layout.ExpandRow(stored, source);
+        if (!lease.IsActive)
+        {
+            lease = decoder.LeaseRows();
+        }
+
+        decoder.WriteRow(lease, y, source);
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

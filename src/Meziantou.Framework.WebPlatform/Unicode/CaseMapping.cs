@@ -1,11 +1,9 @@
-using System.Text;
-
 namespace Meziantou.Framework.WebPlatform.Unicode;
 
 /// <summary>
 /// The full case mappings of Unicode (https://www.unicode.org/versions/latest/core-spec/chapter-3/#G33992, default case
-/// conversion) without the mappings that depend on the language or on the context: the unconditional mappings of
-/// SpecialCasing.txt (generated, <see cref="SpecialCasingData"/>), else the simple mappings of the invariant culture.
+/// conversion) without the mappings that depend on the language or on the context, in UTF-16: the unconditional mappings of
+/// SpecialCasing.txt, else the simple mappings (<see cref="UnicodeProperties.GetUppercaseMapping(int, Span{int})"/>).
 /// </summary>
 internal static class CaseMapping
 {
@@ -15,59 +13,25 @@ internal static class CaseMapping
     /// <summary>Writes the full uppercase mapping of a code point (e.g. <c>ß</c> → <c>SS</c>, <c>ﬃ</c> → <c>FFI</c>) in UTF-16; returns its length.</summary>
     public static int ToUpper(int codePoint, Span<char> destination)
     {
-        var index = SpecialCasingData.UppercaseCodePoints.BinarySearch(codePoint);
-        if (index >= 0)
-            return CopyMapping(SpecialCasingData.UppercaseStarts, SpecialCasingData.UppercaseChars, index, destination);
-
-        // The simple mappings that the invariant culture does not have (their lowercase is another letter: i, s)
-        if (codePoint is 0x0131 or 0x017F)
-        {
-            destination[0] = codePoint == 0x0131 ? 'I' : 'S';
-            return 1;
-        }
-
-        return Rune.IsValid(codePoint) ? Rune.ToUpperInvariant(new Rune(codePoint)).EncodeToUtf16(destination) : WriteCodePoint(codePoint, destination);
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        return WriteUtf16(mapping[..UnicodeProperties.GetUppercaseMapping(codePoint, mapping)], destination);
     }
 
     /// <summary>
-    /// Writes the titlecase mapping of a code point (the first letter of a word, e.g. <c>ﬁ</c> → <c>Fi</c>) in UTF-16; returns
-    /// its length: the titlecase mappings of SpecialCasing.txt that differ from the uppercase mapping, else the uppercase mapping.
+    /// Writes the titlecase mapping of a code point (the first letter of a word, e.g. <c>ﬁ</c> → <c>Fi</c>, <c>ǆ</c> → <c>ǅ</c>)
+    /// in UTF-16; returns its length.
     /// </summary>
     public static int ToTitle(int codePoint, Span<char> destination)
     {
-        var index = SpecialCasingData.TitlecaseCodePoints.BinarySearch(codePoint);
-        if (index >= 0)
-            return CopyMapping(SpecialCasingData.TitlecaseStarts, SpecialCasingData.TitlecaseChars, index, destination);
-
-        // The simple titlecase mappings of UnicodeData.txt that differ from the uppercase mappings: the Latin digraphs
-        // (U+01C4 to U+01CC, U+01F1 to U+01F3) have a titlecase form, and the Georgian letters (Mkhedruli) are their own
-        // titlecase (their uppercase is Mtavruli)
-        switch (codePoint)
-        {
-            case >= 0x01C4 and <= 0x01CC:
-                destination[0] = (char)(0x01C5 + ((codePoint - 0x01C4) / 3 * 3));
-                return 1;
-
-            case >= 0x01F1 and <= 0x01F3:
-                destination[0] = (char)0x01F2;
-                return 1;
-
-            case (>= 0x10D0 and <= 0x10FA) or (>= 0x10FD and <= 0x10FF):
-                destination[0] = (char)codePoint;
-                return 1;
-        }
-
-        return ToUpper(codePoint, destination);
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        return WriteUtf16(mapping[..UnicodeProperties.GetTitlecaseMapping(codePoint, mapping)], destination);
     }
 
-    /// <summary>Writes the full lowercase mapping of a code point (e.g. <c>İ</c> → <c>i̇</c>) in UTF-16; returns its length.</summary>
+    /// <summary>Writes the full lowercase mapping of a code point (e.g. <c>İ</c> → <c>i</c> U+0307) in UTF-16; returns its length.</summary>
     public static int ToLower(int codePoint, Span<char> destination)
     {
-        var index = SpecialCasingData.LowercaseCodePoints.BinarySearch(codePoint);
-        if (index >= 0)
-            return CopyMapping(SpecialCasingData.LowercaseStarts, SpecialCasingData.LowercaseChars, index, destination);
-
-        return Rune.IsValid(codePoint) ? Rune.ToLowerInvariant(new Rune(codePoint)).EncodeToUtf16(destination) : WriteCodePoint(codePoint, destination);
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        return WriteUtf16(mapping[..UnicodeProperties.GetLowercaseMapping(codePoint, mapping)], destination);
     }
 
     /// <summary>Whether the full uppercase mapping of a code point is not the code point itself (Changes_When_Uppercased, without the context).</summary>
@@ -76,10 +40,8 @@ internal static class CaseMapping
         if (codePoint < 0x80)
             return codePoint is >= 'a' and <= 'z';
 
-        if (SpecialCasingData.UppercaseCodePoints.BinarySearch(codePoint) >= 0 || codePoint is 0x0131 or 0x017F)
-            return true;
-
-        return Rune.IsValid(codePoint) && Rune.ToUpperInvariant(new Rune(codePoint)).Value != codePoint;
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        return UnicodeProperties.GetUppercaseMapping(codePoint, mapping) != 1 || mapping[0] != codePoint;
     }
 
     /// <summary>Whether the full lowercase mapping of a code point is not the code point itself (Changes_When_Lowercased, without the context).</summary>
@@ -88,27 +50,27 @@ internal static class CaseMapping
         if (codePoint < 0x80)
             return codePoint is >= 'A' and <= 'Z';
 
-        if (SpecialCasingData.LowercaseCodePoints.BinarySearch(codePoint) >= 0)
-            return true;
-
-        return Rune.IsValid(codePoint) && Rune.ToLowerInvariant(new Rune(codePoint)).Value != codePoint;
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        return UnicodeProperties.GetLowercaseMapping(codePoint, mapping) != 1 || mapping[0] != codePoint;
     }
 
-    private static int CopyMapping(ReadOnlySpan<ushort> starts, ReadOnlySpan<ushort> chars, int index, Span<char> destination)
+    // A code point that is not a scalar value (a lone surrogate) is its own mapping: it is written as is
+    private static int WriteUtf16(ReadOnlySpan<int> codePoints, Span<char> destination)
     {
-        var start = starts[index];
-        var length = starts[index + 1] - start;
-        for (var i = 0; i < length; i++)
+        var length = 0;
+        foreach (var codePoint in codePoints)
         {
-            destination[i] = (char)chars[start + i];
+            if (codePoint < 0x10000)
+            {
+                destination[length++] = (char)codePoint;
+            }
+            else
+            {
+                destination[length++] = (char)(0xD7C0 + (codePoint >> 10));
+                destination[length++] = (char)(0xDC00 | (codePoint & 0x3FF));
+            }
         }
 
         return length;
-    }
-
-    private static int WriteCodePoint(int codePoint, Span<char> destination)
-    {
-        destination[0] = (char)codePoint;
-        return 1;
     }
 }

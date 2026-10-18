@@ -50,6 +50,7 @@ public static partial class UnicodeFuzzTargets
         new("unicode-confusables", Confusables) { Seeds = GetConfusableSeeds, Dictionary = [.. TextTokens, "\u0440", "\u0435", "\u043E", "\u0455", "\u217C", "\u0131", "rn", "m", "vv", "w", "paypal", "p\u0430\u0443\u0440\u0430l"] },
         new("unicode-hyphenator", Hyphenation) { Seeds = GetHyphenatorSeeds, Dictionary = HyphenatorTokens },
         new("unicode-line-break-dictionary", LineBreakDictionaryTarget) { Seeds = GetLineBreakDictionarySeeds, Dictionary = [.. TextTokens, .. ThaiWords, "#", "\t1"] },
+        new("unicode-idna", Idna) { Seeds = GetIdnaSeeds, Dictionary = [.. TextTokens, "xn--", "\u3002", "\uFF0E", "\u00DF", "\u03C2", "\u1E9E", "\u2163", "_", "example", "com"] },
     ];
 
     /// <summary>Reads the code point at an index, as the library does: an unpaired surrogate is returned as is.</summary>

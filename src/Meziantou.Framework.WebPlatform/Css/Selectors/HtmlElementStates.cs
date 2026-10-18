@@ -657,7 +657,7 @@ internal static class HtmlElementStates
     {
         foreach (var rune in text.EnumerateRunes())
         {
-            var bidiClass = UnicodeProperties.GetBidiClass(rune.Value);
+            var bidiClass = CharacterProperties.GetBidiClass(rune.Value);
             if (bidiClass == BidiClass.L)
                 return true;
 

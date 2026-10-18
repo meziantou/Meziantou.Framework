@@ -21,4 +21,8 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The conformance files of the Unicode version of Meziantou.Framework.Unicode, written by tools/Meziantou.Framework.Unicode.Generator -->
+    <EmbeddedResource Include="..\Meziantou.Framework.Unicode.Tests\files\BidiTest.txt.gz;..\Meziantou.Framework.Unicode.Tests\files\BidiCharacterTest.txt.gz;..\Meziantou.Framework.Unicode.Tests\files\GraphemeBreakTest.txt.gz;..\Meziantou.Framework.Unicode.Tests\files\LineBreakTest.txt.gz;..\Meziantou.Framework.Unicode.Tests\files\WordBreakTest.txt.gz" LogicalName="unicode/%(FileName)%(Extension)" Link="Unicode\files\%(FileName)%(Extension)" />
+  </ItemGroup>
 </Project>

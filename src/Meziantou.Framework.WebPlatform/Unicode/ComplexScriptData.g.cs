@@ -1085,3 +1085,9 @@ internal static partial class ArabicPresentationFormsData
     ];
 
 }
+
+/// <summary>The scripts that have joining characters in ArabicShaping.txt (the shapers apply the joining features to them).</summary>
+internal static partial class ArabicJoiningScripts
+{
+    public static bool HasJoining(UnicodeScript script) => script is UnicodeScript.Adlam or UnicodeScript.Arabic or UnicodeScript.Chorasmian or UnicodeScript.HanifiRohingya or UnicodeScript.Mandaic or UnicodeScript.Manichaean or UnicodeScript.Mongolian or UnicodeScript.Nko or UnicodeScript.OldUyghur or UnicodeScript.PhagsPa or UnicodeScript.PsalterPahlavi or UnicodeScript.Sogdian or UnicodeScript.Syriac;
+}

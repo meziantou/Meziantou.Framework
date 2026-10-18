@@ -61,6 +61,9 @@ if (await PropertyTablesWriter.WriteAsync(outputPath))
 if (await NormalizationWriter.WriteAsync(outputPath))
     outputUpdated = true;
 
+if (await IdnaWriter.WriteAsync(outputPath))
+    outputUpdated = true;
+
 // RemoveDiacritics belongs to Meziantou.Framework: the table changes the version of that package only.
 var frameworkUpdated = await DiacriticsWriter.WriteAsync(root / "src" / "Meziantou.Framework" / "StringExtensions.g.cs");
 if (frameworkUpdated)

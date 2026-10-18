@@ -213,6 +213,10 @@ public sealed class UnicodeTests
     {
         Assert.True(UnicodeEmoji.HasEmojiPresentation(new Rune(0x1F600)));
         Assert.False(UnicodeEmoji.HasEmojiPresentation(new Rune('A')));
+        Assert.True(UnicodeEmoji.HasEmojiPresentation(0x1F600));
+        Assert.False(UnicodeEmoji.HasEmojiPresentation('A'));
+        Assert.False(UnicodeEmoji.HasEmojiPresentation(0xD800));
+        Assert.False(UnicodeEmoji.HasEmojiPresentation(-1));
     }
 
     [Fact]
@@ -220,6 +224,10 @@ public sealed class UnicodeTests
     {
         Assert.True(UnicodeEmoji.IsEmojiModifier(new Rune(0x1F3FB)));
         Assert.False(UnicodeEmoji.IsEmojiModifier(new Rune('A')));
+        Assert.True(UnicodeEmoji.IsEmojiModifier(0x1F3FB));
+        Assert.False(UnicodeEmoji.IsEmojiModifier('A'));
+        Assert.False(UnicodeEmoji.IsEmojiModifier(0xD800));
+        Assert.False(UnicodeEmoji.IsEmojiModifier(-1));
     }
 
     [Fact]
@@ -227,6 +235,10 @@ public sealed class UnicodeTests
     {
         Assert.True(UnicodeEmoji.IsEmojiModifierBase(new Rune(0x1F44B)));
         Assert.False(UnicodeEmoji.IsEmojiModifierBase(new Rune('A')));
+        Assert.True(UnicodeEmoji.IsEmojiModifierBase(0x1F44B));
+        Assert.False(UnicodeEmoji.IsEmojiModifierBase('A'));
+        Assert.False(UnicodeEmoji.IsEmojiModifierBase(0xD800));
+        Assert.False(UnicodeEmoji.IsEmojiModifierBase(-1));
     }
 
     [Fact]
@@ -234,6 +246,10 @@ public sealed class UnicodeTests
     {
         Assert.True(UnicodeEmoji.IsEmojiComponent(new Rune(0x0023)));
         Assert.False(UnicodeEmoji.IsEmojiComponent(new Rune('A')));
+        Assert.True(UnicodeEmoji.IsEmojiComponent(0x0023));
+        Assert.False(UnicodeEmoji.IsEmojiComponent('A'));
+        Assert.False(UnicodeEmoji.IsEmojiComponent(0xD800));
+        Assert.False(UnicodeEmoji.IsEmojiComponent(-1));
     }
 
     [Fact]
@@ -241,6 +257,10 @@ public sealed class UnicodeTests
     {
         Assert.True(UnicodeEmoji.IsExtendedPictographic(new Rune(0x1F600)));
         Assert.False(UnicodeEmoji.IsExtendedPictographic(new Rune('A')));
+        Assert.True(UnicodeEmoji.IsExtendedPictographic(0x1F600));
+        Assert.False(UnicodeEmoji.IsExtendedPictographic('A'));
+        Assert.False(UnicodeEmoji.IsExtendedPictographic(0xD800));
+        Assert.False(UnicodeEmoji.IsExtendedPictographic(-1));
     }
 
     [Fact]
@@ -2581,5 +2601,269 @@ public sealed class UnicodeTests
         Assert.True(runs[0] != runs[1]);
         Assert.False(runs[0].Equals((object)runs[1]));
         Assert.Equal(default, new UnicodeScriptRun());
+    }
+
+    [Theory]
+    [InlineData('a', true, true)]
+    [InlineData('Z', true, true)]
+    [InlineData('_', false, true)]
+    [InlineData('0', false, true)]
+    [InlineData('$', false, false)]
+    [InlineData(' ', false, false)]
+    [InlineData(0x00B7, false, true)] // MIDDLE DOT (Other_ID_Continue)
+    [InlineData(0x0300, false, true)] // COMBINING GRAVE ACCENT
+    [InlineData(0x2118, true, true)] // SCRIPT CAPITAL P (Other_ID_Start)
+    [InlineData(0x309B, true, true)] // KATAKANA-HIRAGANA VOICED SOUND MARK (Other_ID_Start)
+    [InlineData(0x4E00, true, true)]
+    [InlineData(0x16EE, true, true)] // RUNIC ARLAUG SYMBOL (Nl)
+    [InlineData(0x1F600, false, false)]
+    [InlineData(0xD800, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0x110000, false, false)]
+    public void IsIdStart_IsIdContinue(int codePoint, bool idStart, bool idContinue)
+    {
+        Assert.Equal(idStart, UnicodeProperties.IsIdStart(codePoint));
+        Assert.Equal(idContinue, UnicodeProperties.IsIdContinue(codePoint));
+    }
+
+    [Fact]
+    public void IsIdStart_ImpliesIsIdContinue()
+    {
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (UnicodeProperties.IsIdStart(codePoint))
+            {
+                Assert.True(UnicodeProperties.IsIdContinue(codePoint), $"U+{codePoint:X4}");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData('a', 'A')]
+    [InlineData('A', 'A')]
+    [InlineData(0x01C6, 0x01C5)] // dž → Dž
+    [InlineData(0x01C4, 0x01C5)] // DŽ → Dž
+    [InlineData(0x01F3, 0x01F2)] // dz → Dz
+    [InlineData(0x10D0, 0x10D0)] // Georgian Mkhedruli letters are their own titlecase
+    [InlineData(0x00DF, 0x00DF)]
+    [InlineData(-1, -1)]
+    public void ToSimpleTitlecase(int codePoint, int expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.ToSimpleTitlecase(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x61, "A")]
+    [InlineData(0xDF, "SS")]
+    [InlineData(0xFB03, "FFI")]
+    [InlineData(0x149, "\u02BCN")]
+    [InlineData(0x390, "\u0399\u0308\u0301")]
+    [InlineData(0x10428, "\U00010400")]
+    [InlineData(0x41, "A")]
+    [InlineData(0x31, "1")]
+    [InlineData(0x17F, "S")]
+    [InlineData(0x131, "I")]
+    [InlineData(0x10D0, "\u1C90")] // Georgian Mkhedruli → Mtavruli
+    public void GetUppercaseMapping(int codePoint, string expected)
+    {
+        Span<int> buffer = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        var length = UnicodeProperties.GetUppercaseMapping(codePoint, buffer);
+        Assert.Equal(expected, ToString(buffer[..length]));
+    }
+
+    [Theory]
+    [InlineData(0xFB01, "Fi")]
+    [InlineData(0xDF, "Ss")]
+    [InlineData(0x1F80, "\u1F88")]
+    [InlineData(0x61, "A")]
+    [InlineData(0x1C6, "\u01C5")]
+    [InlineData(0x1F1, "\u01F2")]
+    [InlineData(0x10D0, "\u10D0")]
+    public void GetTitlecaseMapping(int codePoint, string expected)
+    {
+        Span<int> buffer = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        var length = UnicodeProperties.GetTitlecaseMapping(codePoint, buffer);
+        Assert.Equal(expected, ToString(buffer[..length]));
+    }
+
+    [Theory]
+    [InlineData(0x130, "i\u0307")]
+    [InlineData(0x41, "a")]
+    [InlineData(0x10400, "\U00010428")]
+    [InlineData(0x3A3, "\u03C3")] // The final sigma depends on the context: it is not applied
+    [InlineData(0x31, "1")]
+    public void GetLowercaseMapping(int codePoint, string expected)
+    {
+        Span<int> buffer = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        var length = UnicodeProperties.GetLowercaseMapping(codePoint, buffer);
+        Assert.Equal(expected, ToString(buffer[..length]));
+    }
+
+    [Fact]
+    public void GetCaseMapping_IsTheSimpleMappingWhenItIsOneCodePoint()
+    {
+        Span<int> buffer = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        for (var codePoint = -1; codePoint <= 0x110000; codePoint++)
+        {
+            var length = UnicodeProperties.GetUppercaseMapping(codePoint, buffer);
+            Assert.InRange(length, 1, UnicodeProperties.MaxCaseMappingLength);
+            if (length == 1)
+            {
+                // The only one-to-one full mappings that are not the simple mapping are the ones of SpecialCasing.txt
+                // to the code point itself (e.g. the Greek letters with a prosgegrammeni, whose simple mapping is
+                // their titlecase form)
+                Assert.True(buffer[0] == UnicodeProperties.ToSimpleUppercase(codePoint) || buffer[0] == codePoint, $"U+{codePoint:X4}");
+            }
+
+            length = UnicodeProperties.GetLowercaseMapping(codePoint, buffer);
+            Assert.InRange(length, 1, UnicodeProperties.MaxCaseMappingLength);
+            if (length == 1)
+            {
+                Assert.Equal(UnicodeProperties.ToSimpleLowercase(codePoint), buffer[0]);
+            }
+
+            length = UnicodeProperties.GetTitlecaseMapping(codePoint, buffer);
+            Assert.InRange(length, 1, UnicodeProperties.MaxCaseMappingLength);
+            if (length == 1)
+            {
+                Assert.Equal(UnicodeProperties.ToSimpleTitlecase(codePoint), buffer[0]);
+            }
+        }
+    }
+
+    [Fact]
+    public void GetCaseMapping_ThrowsWhenTheDestinationIsTooSmall()
+    {
+        Assert.Throws<ArgumentException>("destination", () => UnicodeProperties.GetUppercaseMapping('a', []));
+        Assert.Throws<ArgumentException>("destination", () => UnicodeProperties.GetUppercaseMapping(0xDF, new int[1]));
+        Assert.Throws<ArgumentException>("destination", () => UnicodeProperties.GetLowercaseMapping(0x130, new int[1]));
+        Assert.Throws<ArgumentException>("destination", () => UnicodeProperties.GetTitlecaseMapping(0xFB01, new int[1]));
+    }
+
+    // RFC 3492, section 7.1
+    [Theory]
+    [InlineData("\u0644\u064A\u0647\u0645\u0627\u0628\u062A\u0643\u0644\u0645\u0648\u0634\u0639\u0631\u0628\u064A\u061F", "egbpdaj6bu4bxfgehfvwxn")]
+    [InlineData("\u4ED6\u4EEC\u4E3A\u4EC0\u4E48\u4E0D\u8BF4\u4E2D\u6587", "ihqwcrb4cv8a8dqg056pqjye")]
+    [InlineData("Pro\u010Dprost\u011Bnemluv\u00ED\u010Desky", "Proprostnemluvesky-uyb24dma41a")]
+    [InlineData("\u05DC\u05DE\u05D4\u05D4\u05DD\u05E4\u05E9\u05D5\u05D8\u05DC\u05D0\u05DE\u05D3\u05D1\u05E8\u05D9\u05DD\u05E2\u05D1\u05E8\u05D9\u05EA", "4dbcagdahymbxekheh6e0a7fei0b")]
+    [InlineData("3\u5E74B\u7D44\u91D1\u516B\u5148\u751F", "3B-ww4c5e180e575a65lsy2b")]
+    [InlineData("-> $1.00 <-", "-> $1.00 <--")]
+    [InlineData("b\u00FCcher", "bcher-kva")]
+    [InlineData("", "")]
+    public void Punycode_RoundTrips(string decoded, string encoded)
+    {
+        Assert.True(UnicodeIdna.TryEncodePunycode(decoded, out var actualEncoded));
+        Assert.Equal(encoded, actualEncoded);
+        Assert.True(UnicodeIdna.TryDecodePunycode(encoded, out var actualDecoded));
+        Assert.Equal(decoded, actualDecoded);
+    }
+
+    [Theory]
+    [InlineData("b\u00FCcher")] // Not ASCII
+    [InlineData("a-!")] // Not a base-36 digit
+    [InlineData("a-b")] // Truncated
+    [InlineData("99999999999")] // Overflow
+    public void Punycode_RejectsInvalidInput(string value)
+    {
+        Assert.False(UnicodeIdna.TryDecodePunycode(value, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("example.com", "example.com")]
+    [InlineData("EXAMPLE.com", "example.com")]
+    [InlineData("B\u00FCcher.example", "xn--bcher-kva.example")]
+    [InlineData("fa\u00DF.de", "xn--fa-hia.de")]
+    [InlineData("\u2163.example", "iv.example")] // Mapped (ROMAN NUMERAL FOUR)
+    [InlineData("a\u00AD.example", "a.example")] // Ignored (SOFT HYPHEN)
+    [InlineData("\uFF21\uFF22\u3002com", "ab.com")] // Fullwidth letters and ideographic full stop
+    public void TryToAscii_ConvertsValidNames(string domainName, string expected)
+    {
+        Assert.True(UnicodeIdna.TryToAscii(domainName, out var result));
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a..b")]
+    [InlineData("example.com.")] // The root label is empty
+    [InlineData("-example.com")]
+    [InlineData("ab--c.com")]
+    [InlineData("exa_mple.com")]
+    [InlineData("xn--a.com")] // Decodes to a disallowed code point
+    [InlineData("xn--a!.com")] // Invalid Punycode
+    [InlineData("\u0301a.com")] // Starts with a mark
+    [InlineData("a\u200Db.com")] // ZWJ without a virama
+    [InlineData("\u05D0a.com")] // Bidi rule
+    [InlineData("\uFFFD.com")]
+    public void TryToAscii_RejectsInvalidNames(string domainName)
+    {
+        Assert.False(UnicodeIdna.TryToAscii(domainName, out var result));
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void TryToAscii_VerifiesTheDnsLength()
+    {
+        var label = new string('a', 64);
+        Assert.False(UnicodeIdna.TryToAscii(label + ".com", out _));
+        Assert.True(UnicodeIdna.TryToAscii(label + ".com", new UnicodeIdnaOptions { VerifyDnsLength = false }, out var result));
+        Assert.Equal(label + ".com", result);
+
+        Assert.True(UnicodeIdna.TryToAscii("example.com.", new UnicodeIdnaOptions { VerifyDnsLength = false }, out result));
+        Assert.Equal("example.com.", result);
+        Assert.True(UnicodeIdna.TryToAscii("a..b", new UnicodeIdnaOptions { VerifyDnsLength = false }, out result));
+        Assert.Equal("a..b", result);
+    }
+
+    [Fact]
+    public void TryToAscii_AppliesTheOptions()
+    {
+        Assert.False(UnicodeIdna.TryToAscii("exa_mple.com", out _));
+        Assert.True(UnicodeIdna.TryToAscii("exa_mple.com", new UnicodeIdnaOptions { UseStd3AsciiRules = false }, out var result));
+        Assert.Equal("exa_mple.com", result);
+
+        Assert.False(UnicodeIdna.TryToAscii("-a.com", out _));
+        Assert.True(UnicodeIdna.TryToAscii("-a.com", new UnicodeIdnaOptions { CheckHyphens = false }, out result));
+        Assert.Equal("-a.com", result);
+
+        Assert.True(UnicodeIdna.TryToAscii("fa\u00DF.de", new UnicodeIdnaOptions { TransitionalProcessing = true }, out result));
+        Assert.Equal("fass.de", result);
+
+        Assert.False(UnicodeIdna.TryToAscii("a\u200Db.com", new UnicodeIdnaOptions { UseStd3AsciiRules = false }, out _));
+        Assert.True(UnicodeIdna.TryToAscii("a\u200Db.com", new UnicodeIdnaOptions { CheckJoiners = false }, out result));
+        Assert.Equal("xn--ab-m1t.com", result);
+    }
+
+    [Theory]
+    [InlineData("xn--bcher-kva.example", "b\u00FCcher.example", false)]
+    [InlineData("B\u00FCcher.Example", "b\u00FCcher.example", false)]
+    [InlineData("xn--a!.com", "xn--a!.com", true)]
+    [InlineData("xn--ab-m1t.com", "a\u200Db.com", true)]
+    [InlineData("example.com.", "example.com.", false)]
+    [InlineData("a..b", "a..b", true)]
+    [InlineData("", "", true)]
+    public void ToUnicode(string domainName, string expected, bool expectedErrors)
+    {
+        Assert.Equal(expected, UnicodeIdna.ToUnicode(domainName, out var hasErrors));
+        Assert.Equal(expectedErrors, hasErrors);
+    }
+
+    [Fact]
+    public void Idna_ThrowsOnNull()
+    {
+        Assert.Throws<ArgumentNullException>("domainName", () => UnicodeIdna.TryToAscii(null!, out _));
+        Assert.Throws<ArgumentNullException>("domainName", () => UnicodeIdna.ToUnicode(null!, out _));
+    }
+
+    private static string ToString(ReadOnlySpan<int> codePoints)
+    {
+        var result = new StringBuilder();
+        foreach (var codePoint in codePoints)
+        {
+            result.Append(char.ConvertFromUtf32(codePoint));
+        }
+
+        return result.ToString();
     }
 }

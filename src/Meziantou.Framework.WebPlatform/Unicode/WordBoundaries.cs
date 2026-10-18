@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using WordBreak = Meziantou.Framework.UnicodeWordBreak;
 
 namespace Meziantou.Framework.WebPlatform.Unicode;
 
@@ -41,7 +42,7 @@ internal static class WordBoundaries
         {
             var codePoint = GraphemeClusters.ReadCodePoint(text, i, out var length);
             starts[index] = i;
-            properties[index] = UnicodeProperties.GetWordBreakProperties(codePoint);
+            properties[index] = GetWordBreakProperties(codePoint);
             var wordBreak = (WordBreak)(properties[index] & 0x1F);
             if (index > 0 && IsIgnorable(wordBreak) && (WordBreak)(properties[effective[effectiveCount - 1]] & 0x1F) is not (WordBreak.CR or WordBreak.LF or WordBreak.Newline))
             {
@@ -121,7 +122,7 @@ internal static class WordBoundaries
         {
             var codePoint = GraphemeClusters.ReadCodePoint(segment, i, out var length);
             i += length;
-            var wordBreak = (WordBreak)(UnicodeProperties.GetWordBreakProperties(codePoint) & 0x1F);
+            var wordBreak = UnicodeProperties.GetWordBreak(codePoint);
             if (wordBreak is WordBreak.ALetter or WordBreak.HebrewLetter or WordBreak.Numeric or WordBreak.Katakana)
                 return true;
 
@@ -133,6 +134,9 @@ internal static class WordBoundaries
 
         return false;
     }
+
+    /// <summary>The packed word break properties of a code point: Word_Break (bits 0-4) and Extended_Pictographic (bit 5).</summary>
+    private static byte GetWordBreakProperties(int codePoint) => (byte)((int)UnicodeProperties.GetWordBreak(codePoint) | (UnicodeEmoji.IsExtendedPictographic(codePoint) ? 0x20 : 0));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsIgnorable(WordBreak value) => value is WordBreak.Extend or WordBreak.Format or WordBreak.ZWJ;
@@ -236,6 +240,6 @@ internal static class WordBoundaries
             => position >= 0 && position < effective.Length ? (WordBreak)(properties[effective[position]] & 0x1F) : WordBreak.Other;
 
         static bool IsHangul(ReadOnlySpan<char> text, ReadOnlySpan<int> starts, int index)
-            => UnicodeProperties.IsHangul(GraphemeClusters.ReadCodePoint(text, starts[index], out _));
+            => CharacterProperties.IsHangul(GraphemeClusters.ReadCodePoint(text, starts[index], out _));
     }
 }

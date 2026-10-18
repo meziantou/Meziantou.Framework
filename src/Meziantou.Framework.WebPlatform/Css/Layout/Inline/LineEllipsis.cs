@@ -200,7 +200,7 @@ internal sealed class LineEllipsis
 
             var before = builder.Length > 0 ? GetLastCodePoint(builder) : -1;
             var after = i + 1 < text.Length ? GraphemeClusters.ReadCodePoint(text, i + 1, out _) : -1;
-            if (before < 0 || after < 0 || !LineBreaker.IsSegmentBreakRemoved(before, after) || UnicodeProperties.IsExtendedPictographic(before) || UnicodeProperties.IsExtendedPictographic(after))
+            if (before < 0 || after < 0 || !LineBreaker.IsSegmentBreakRemoved(before, after) || UnicodeEmoji.IsExtendedPictographic(before) || UnicodeEmoji.IsExtendedPictographic(after))
             {
                 builder.Append(' ');
             }
@@ -236,7 +236,7 @@ internal sealed class LineEllipsis
         for (var i = 0; i < text.Length; i++)
         {
             var c = text[i];
-            if (UnicodeProperties.IsBidiMirrored(c) && UnicodeProperties.GetBidiMirroringGlyph(c) is var mirrored and >= 0 and <= 0xFFFF)
+            if (UnicodeProperties.IsBidiMirrored(c) && CharacterProperties.GetBidiMirroringGlyph(c) is var mirrored and >= 0 and <= 0xFFFF)
             {
                 buffer ??= text.ToArray();
                 buffer[i] = (char)mirrored;

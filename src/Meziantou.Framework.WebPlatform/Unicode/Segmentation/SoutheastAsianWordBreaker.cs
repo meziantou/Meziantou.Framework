@@ -56,10 +56,10 @@ internal sealed class SoutheastAsianWordBreaker
     /// </summary>
     public static UnicodeScript GetDictionaryScript(int codePoint)
     {
-        if (UnicodeProperties.GetLineBreakClass(codePoint) != LineBreakClass.SA)
+        if (CharacterProperties.GetLineBreakClass(codePoint) != LineBreakClass.SA)
             return UnicodeScript.Unknown;
 
-        var script = UnicodeProperties.GetScript(codePoint);
+        var script = UnicodeScripts.GetScript(codePoint);
         return script is UnicodeScript.Thai or UnicodeScript.Lao or UnicodeScript.Myanmar or UnicodeScript.Khmer ? script : UnicodeScript.Unknown;
     }
 
@@ -74,7 +74,7 @@ internal sealed class SoutheastAsianWordBreaker
     };
 
     /// <summary>Whether a character is one of the characters of the engine (the characters of the line breaking class SA of its script).</summary>
-    public bool Handles(int codePoint) => UnicodeProperties.GetLineBreakClass(codePoint) == LineBreakClass.SA && UnicodeProperties.GetScript(codePoint) == _script;
+    public bool Handles(int codePoint) => CharacterProperties.GetLineBreakClass(codePoint) == LineBreakClass.SA && UnicodeScripts.GetScript(codePoint) == _script;
 
     /// <summary>
     /// Adds the word boundaries inside a range of the text whose characters are all handled by the engine (<see cref="Handles"/>)

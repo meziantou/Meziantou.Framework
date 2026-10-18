@@ -234,17 +234,15 @@ public sealed class OpenTypeShapingTests : IDisposable
     [Fact]
     public void Scripts()
     {
-        Assert.Equal(UnicodeScript.Latin, UnicodeProperties.GetScript('a'));
-        Assert.Equal(UnicodeScript.Common, UnicodeProperties.GetScript(' '));
-        Assert.Equal(UnicodeScript.Arabic, UnicodeProperties.GetScript(0x0628));
-        Assert.Equal(UnicodeScript.Inherited, UnicodeProperties.GetScript(0x0301));
-        Assert.Equal(UnicodeScript.Mongolian, UnicodeProperties.GetScript(0x1820));
+        Assert.Equal(UnicodeScript.Latin, UnicodeScripts.GetScript('a'));
+        Assert.Equal(UnicodeScript.Common, UnicodeScripts.GetScript(' '));
+        Assert.Equal(UnicodeScript.Arabic, UnicodeScripts.GetScript(0x0628));
+        Assert.Equal(UnicodeScript.Inherited, UnicodeScripts.GetScript(0x0301));
+        Assert.Equal(UnicodeScript.Mongolian, UnicodeScripts.GetScript(0x1820));
 
         // The tatweel is used by several joining scripts
-        var extensions = UnicodeProperties.GetScriptExtensions(0x0640).ToArray().Select(value => (UnicodeScript)value).ToArray();
-        Assert.Contains(UnicodeScript.Arabic, extensions);
-        Assert.Contains(UnicodeScript.Syriac, extensions);
-        Assert.True(UnicodeProperties.GetScriptExtensions('a').IsEmpty);
+        Assert.True(UnicodeScripts.HasScriptExtension(0x0640, UnicodeScript.Arabic));
+        Assert.True(UnicodeScripts.HasScriptExtension(0x0640, UnicodeScript.Syriac));
     }
 
     [Fact]
@@ -259,12 +257,12 @@ public sealed class OpenTypeShapingTests : IDisposable
     [Fact]
     public void JoiningTypes()
     {
-        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x0628, UnicodeCategory.OtherLetter));
-        Assert.Equal((int)ArabicJoiningType.R, ArabicShaper.GetJoiningType(0x0627, UnicodeCategory.OtherLetter));
-        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x064B, UnicodeCategory.NonSpacingMark));
-        Assert.Equal((int)ArabicJoiningType.U, ArabicShaper.GetJoiningType('a', UnicodeCategory.LowercaseLetter));
-        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x1820, UnicodeCategory.OtherLetter));
-        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x200B, UnicodeCategory.Format));
+        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x0628));
+        Assert.Equal((int)ArabicJoiningType.R, ArabicShaper.GetJoiningType(0x0627));
+        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x064B));
+        Assert.Equal((int)ArabicJoiningType.U, ArabicShaper.GetJoiningType('a'));
+        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x1820));
+        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x200B));
     }
 
     [Theory]

@@ -20,6 +20,7 @@ internal static class ConformanceFilesWriter
         "ucd/BidiTest.txt",
         "ucd/BidiCharacterTest.txt",
         "ucd/NormalizationTest.txt",
+        "idna/IdnaTestV2.txt",
     ];
 
     public static async Task<bool> WriteAsync(FullPath root)
@@ -52,8 +53,8 @@ internal static class ConformanceFilesWriter
             # Unicode conformance test files
 
             The `*.txt.gz` files of this directory are the conformance test files of the Unicode Character Database
-            {{Ucd.Version}}, the version the tables of `Meziantou.Framework.Unicode` are generated from. They are
-            compressed with gzip and otherwise unmodified.
+            and of Unicode IDNA Compatibility Processing {{Ucd.Version}}, the version the tables of
+            `Meziantou.Framework.Unicode` are generated from. They are compressed with gzip and otherwise unmodified.
 
             | File | Source | Size (bytes) | SHA-256 of the decompressed content |
             | --- | --- | --- | --- |
@@ -94,9 +95,9 @@ internal static class ConformanceFilesWriter
             - License: <https://www.unicode.org/license.txt>
 
             The tables of this package (`*.g.cs`, `Resources/UnicodeData.bin`) are generated from the data files of
-            the Unicode Character Database and of the Unicode security mechanisms by
-            `tools/Meziantou.Framework.Unicode.Generator`. The algorithms are written from the Unicode Standard
-            Annexes #9, #14, #15, #24 and #29 and the Unicode Technical Standard #39.
+            the Unicode Character Database, of the Unicode security mechanisms and of Unicode IDNA Compatibility
+            Processing by `tools/Meziantou.Framework.Unicode.Generator`. The algorithms are written from the Unicode
+            Standard Annexes #9, #14, #15, #24 and #29 and the Unicode Technical Standards #39 and #46.
 
             ```
             {{license.Replace("\n", "\n            ", StringComparison.Ordinal)}}

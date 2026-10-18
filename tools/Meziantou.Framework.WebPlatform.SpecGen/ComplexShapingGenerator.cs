@@ -13,7 +13,8 @@ namespace SpecGen;
 /// DerivedCoreProperties.txt, UnicodeData.txt, Blocks.txt, Scripts.txt and the additional categories of Microsoft
 /// (tests/Meziantou.Framework.WebPlatform.SpecData/harfbuzz/src/ms-use);</item>
 /// <item>the prohibited vowel sequences (gen-vowel-constraints.py, ms-use/IndicShapingInvalidCluster.txt);</item>
-/// <item>the Arabic presentation forms of the fallback shaping (gen-arabic-table.py, UnicodeData.txt).</item>
+/// <item>the Arabic presentation forms of the fallback shaping (gen-arabic-table.py, UnicodeData.txt);</item>
+/// <item>the scripts that have joining characters (ArabicShaping.txt, Scripts.txt).</item>
 /// </list>
 /// </summary>
 internal static class ComplexShapingGenerator
@@ -50,6 +51,7 @@ internal static class ComplexShapingGenerator
         GenerateUseCategories(context, data, use);
         GenerateVowelConstraints(context, data);
         GenerateArabicPresentationForms(context, data);
+        GenerateArabicJoiningScripts(context, data);
         context.WriteFile(context.Source("Unicode", "ComplexScriptData.g.cs"), data.ToString().TrimEnd('\n') + "\n");
     }
 
@@ -66,7 +68,7 @@ internal static class ComplexShapingGenerator
     private static Dictionary<int, string> ReadProperty(string path, int field = 1, Func<string, string>? transform = null)
     {
         var values = new Dictionary<int, string>();
-        foreach (var (start, end, fields) in UnicodeGenerator.ReadDataFile(path))
+        foreach (var (start, end, fields) in UnicodeDataFile.ReadDataFile(path))
         {
             var value = transform is null ? fields[field] : transform(fields[field]);
             for (var u = start; u <= end; u++)
@@ -413,13 +415,13 @@ internal static class ComplexShapingGenerator
         writer.Line($"/// <summary>");
         writer.Line($"/// The categories of the characters of the Indic, Khmer and Myanmar shapers (HarfBuzz's <c>hb_indic_get_categories</c>,");
         writer.Line($"/// gen-indic-table.py): <c>Values[Get(codePoint)]</c> is the category (<c>IndicCategory</c>) in the low byte and the position");
-        writer.Line($"/// (<c>IndicPosition</c>) in the high byte. From IndicSyllabicCategory.txt (Unicode {UnicodeGenerator.Version(syllabicPath)}),");
+        writer.Line($"/// (<c>IndicPosition</c>) in the high byte. From IndicSyllabicCategory.txt (Unicode {UnicodeDataFile.Version(syllabicPath)}),");
         writer.Line($"/// IndicPositionalCategory.txt and Blocks.txt, with the overrides of HarfBuzz.");
         writer.Line($"/// </summary>");
         using (writer.Block("internal static partial class IndicCategoryData"))
         {
             writer.Line("/// <summary>The values of the categories (the trie gives their index).</summary>");
-            UnicodeGenerator.WriteArray(writer, "Values", "ushort", uniqueValues.Select(v => (ushort)v));
+            UnicodeDataFile.WriteArray(writer, "Values", "ushort", uniqueValues.Select(v => (ushort)v));
             WriteTrie(writer, values);
         }
 
@@ -480,7 +482,7 @@ internal static class ComplexShapingGenerator
 
         var joining = ReadProperty(context.SpecData("unicode", "ArabicShaping.txt"), field: 2);
         var ignorable = new HashSet<int>();
-        foreach (var (start, end, fields) in UnicodeGenerator.ReadDataFile(context.SpecData("unicode", "DerivedCoreProperties.txt")))
+        foreach (var (start, end, fields) in UnicodeDataFile.ReadDataFile(context.SpecData("unicode", "DerivedCoreProperties.txt")))
         {
             if (fields[1] == "Default_Ignorable_Code_Point")
             {
@@ -493,7 +495,7 @@ internal static class ComplexShapingGenerator
 
         // UnicodeData.txt: the lines are read one by one (the ranges are not expanded, as gen-use-table.py)
         var generalCategories = new Dictionary<int, string>();
-        foreach (var (start, _, fields) in UnicodeGenerator.ReadDataFile(context.SpecData("unicode", "UnicodeData.txt")))
+        foreach (var (start, _, fields) in UnicodeDataFile.ReadDataFile(context.SpecData("unicode", "UnicodeData.txt")))
         {
             generalCategories[start] = fields[2];
         }
@@ -520,7 +522,7 @@ internal static class ComplexShapingGenerator
         writer.Line("/// <summary>");
         writer.Line("/// The categories of the characters of the Universal Shaping Engine (HarfBuzz's <c>hb_use_get_category</c>, gen-use-table.py,");
         writer.Line($"/// https://learn.microsoft.com/typography/script-development/use): the <c>UseCategory</c> of each code point, from the Unicode");
-        writer.Line($"/// Character Database (Unicode {UnicodeGenerator.Version(syllabicPath)}) and the additional categories of Microsoft.");
+        writer.Line($"/// Character Database (Unicode {UnicodeDataFile.Version(syllabicPath)}) and the additional categories of Microsoft.");
         writer.Line("/// </summary>");
         using (writer.Block("internal static partial class UseCategoryData"))
         {
@@ -905,7 +907,7 @@ internal static class ComplexShapingGenerator
         var last = shapes.Keys.Max();
         writer.Line("/// <summary>");
         writer.Line("/// The Arabic presentation forms of the fallback shaping of the fonts without the Arabic features (HarfBuzz's");
-        writer.Line($"/// hb-ot-shaper-arabic-table.hh, gen-arabic-table.py), from the decompositions of UnicodeData.txt (Unicode {UnicodeGenerator.Version(context.SpecData("unicode", "Scripts.txt"))}).");
+        writer.Line($"/// hb-ot-shaper-arabic-table.hh, gen-arabic-table.py), from the decompositions of UnicodeData.txt (Unicode {UnicodeDataFile.Version(context.SpecData("unicode", "Scripts.txt"))}).");
         writer.Line("/// </summary>");
         using (writer.Block("internal static partial class ArabicPresentationFormsData"))
         {
@@ -1015,9 +1017,9 @@ internal static class ComplexShapingGenerator
         var index2Type = d.Length / (1 << s2) > 256 ? "ushort" : "byte";
         writer.Line("/// <summary>The value of a code point.</summary>");
         writer.Line("public static byte Get(int codePoint) => (uint)codePoint > 0x10FFFF ? (byte)0 : Data[(Index2[(Index1[codePoint >> " + (s1 + s2).ToString(CultureInfo.InvariantCulture) + "] << " + s1.ToString(CultureInfo.InvariantCulture) + ") | ((codePoint >> " + s2.ToString(CultureInfo.InvariantCulture) + ") & " + ((1 << s1) - 1).ToString(CultureInfo.InvariantCulture) + ")] << " + s2.ToString(CultureInfo.InvariantCulture) + ") | (codePoint & " + ((1 << s2) - 1).ToString(CultureInfo.InvariantCulture) + ")];").Line();
-        UnicodeGenerator.WriteArray(writer, "Index1", index1Type, i1);
-        UnicodeGenerator.WriteArray(writer, "Index2", index2Type, i2);
-        UnicodeGenerator.WriteArray(writer, "Data", "byte", d);
+        UnicodeDataFile.WriteArray(writer, "Index1", index1Type, i1);
+        UnicodeDataFile.WriteArray(writer, "Index2", index2Type, i2);
+        UnicodeDataFile.WriteArray(writer, "Data", "byte", d);
     }
 
     private static void WriteHexArray(CodeWriter writer, string name, string type, IEnumerable<int> values, int perLine)
@@ -1030,5 +1032,35 @@ internal static class ComplexShapingGenerator
         }
 
         writer.Line("];").Line();
+    }
+
+    /// <summary>The scripts of the joining characters of ArabicShaping.txt (except Common and Inherited): the shapers apply the joining features to them.</summary>
+    private static void GenerateArabicJoiningScripts(GeneratorContext context, CodeWriter writer)
+    {
+        var joining = new List<int>();
+        foreach (var (start, _, fields) in UnicodeDataFile.ReadDataFile(context.SpecData("unicode", "ArabicShaping.txt")))
+        {
+            if (fields[2] is not ("T" or "U"))
+            {
+                joining.Add(start);
+            }
+        }
+
+        var scriptOfCodePoint = new Dictionary<int, string>();
+        foreach (var (start, end, fields) in UnicodeDataFile.ReadDataFile(context.SpecData("unicode", "Scripts.txt")))
+        {
+            for (var codePoint = start; codePoint <= end; codePoint++)
+            {
+                scriptOfCodePoint[codePoint] = fields[1];
+            }
+        }
+
+        var joiningScripts = joining.Select(codePoint => scriptOfCodePoint.GetValueOrDefault(codePoint, "Unknown")).Where(script => script is not ("Common" or "Inherited" or "Unknown")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        writer.Line();
+        writer.Line("/// <summary>The scripts that have joining characters in ArabicShaping.txt (the shapers apply the joining features to them).</summary>");
+        using (writer.Block("internal static partial class ArabicJoiningScripts"))
+        {
+            writer.Line("public static bool HasJoining(UnicodeScript script) => script is " + string.Join(" or ", joiningScripts.Select(script => "UnicodeScript." + script.Replace("_", "", StringComparison.Ordinal))) + ";");
+        }
     }
 }

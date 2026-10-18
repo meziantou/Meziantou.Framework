@@ -37,7 +37,7 @@ internal static partial class JapanesePhraseBreaker
         if (codePoint is 0x30FC or 0xFF70 or 0xFF9E or 0xFF9F)
             return true;
 
-        return UnicodeProperties.GetScript(codePoint) is UnicodeScript.Han or UnicodeScript.Hiragana or UnicodeScript.Katakana;
+        return UnicodeScripts.GetScript(codePoint) is UnicodeScript.Han or UnicodeScript.Hiragana or UnicodeScript.Katakana;
     }
 
     /// <summary>

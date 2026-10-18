@@ -324,7 +324,7 @@ public sealed class IdbDatabase : EventTarget
             }
 
             var valid = codePoint is '$' or '_'
-                || (first ? Unicode.UnicodeProperties.IsIdStart(codePoint) : Unicode.UnicodeProperties.IsIdContinue(codePoint) || codePoint is 0x200C or 0x200D);
+                || (first ? UnicodeProperties.IsIdStart(codePoint) : UnicodeProperties.IsIdContinue(codePoint) || codePoint is 0x200C or 0x200D);
             if (!valid)
                 return false;
 

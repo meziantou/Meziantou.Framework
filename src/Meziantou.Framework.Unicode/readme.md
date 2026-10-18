@@ -1,8 +1,8 @@
 # Meziantou.Framework.Unicode
 
 This package provides Unicode text algorithms and data that do not depend on the Unicode version of the runtime or on
-ICU: character properties, grapheme, word and line segmentation, normalization, the bidirectional algorithm, script
-runs, and confusable detection. The data is the one of Unicode 18.0.0.
+ICU: character properties, case mappings, grapheme, word and line segmentation, normalization, the bidirectional
+algorithm, script runs, internationalized domain names (IDNA), and confusable detection. The data is the one of Unicode 18.0.0.
 
 ```csharp
 using Meziantou.Framework;
@@ -66,7 +66,7 @@ UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana); // true
 ## Character properties
 
 `UnicodeProperties` gives the properties of a code point that text processing needs: segmentation, bidirectional
-ordering, shaping and case. Every method takes an `int`, never throws and never allocates: the value is read from a
+ordering, shaping, identifiers and case. Every method takes an `int` and never allocates: the value is read from a
 table indexed by the code point.
 
 ```csharp
@@ -82,7 +82,21 @@ UnicodeProperties.GetVerticalOrientation(0x300C);    // TransformedRotated
 UnicodeProperties.GetJoiningType(0x0628);            // DualJoining
 UnicodeProperties.GetIndicSyllabicCategory(0x094D);  // Virama
 UnicodeProperties.IsDefaultIgnorable(0x00AD);        // true
+UnicodeProperties.IsIdStart('a');                    // true (UAX #31)
+UnicodeProperties.IsIdContinue('0');                 // true
 UnicodeProperties.ToSimpleLowercase('A');            // 'a'
+UnicodeProperties.ToSimpleTitlecase(0x01C6);         // 0x01C5 ('ǅ')
+```
+
+The full case mappings can map a code point to several ones. They are the unconditional mappings of
+`SpecialCasing.txt`, else the simple mappings: the mappings that depend on the language (Turkish, Lithuanian) or on
+the context (the final sigma) are not applied.
+
+```csharp
+Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+var length = UnicodeProperties.GetUppercaseMapping('ß', mapping);   // 2: 'S', 'S'
+length = UnicodeProperties.GetTitlecaseMapping(0xFB01, mapping);    // 2: 'F', 'i' (the "ﬁ" ligature)
+length = UnicodeProperties.GetLowercaseMapping(0x0130, mapping);    // 2: 'i', U+0307
 ```
 
 - The values are those of one version of the Unicode Standard, `UnicodeProperties.UnicodeVersion` (18.0.0), whatever
@@ -263,6 +277,24 @@ UnicodeBidi.GetVisualOrder(levels, visualToLogical); // 0 1 2 3 6 5 4 7
 - `ResolveLevels` has an overload that takes its workspace from the caller (`GetWorkspaceLength`) and does not
   allocate.
 - Mirroring (rule L4) is `UnicodeProperties.TryGetBidiMirroringGlyph`.
+
+## Internationalized domain names
+
+`UnicodeIdna` implements Unicode IDNA Compatibility Processing ([UTS #46](https://www.unicode.org/reports/tr46/)) and
+Punycode ([RFC 3492](https://www.rfc-editor.org/rfc/rfc3492)). Unlike `System.Globalization.IdnMapping`, it does not
+depend on ICU, so it gives the same results on every platform and in globalization-invariant mode.
+
+```csharp
+UnicodeIdna.TryToAscii("Bücher.example", out var ascii);       // true, "xn--bcher-kva.example"
+UnicodeIdna.ToUnicode("xn--bcher-kva.example", out var hasErrors); // "bücher.example", false
+
+// The flags of UTS #46: the defaults enable every check, with nontransitional processing
+var options = new UnicodeIdnaOptions { UseStd3AsciiRules = false, VerifyDnsLength = false };
+UnicodeIdna.TryToAscii("exa_mple.com", options, out ascii);     // true, "exa_mple.com"
+
+UnicodeIdna.TryEncodePunycode("bücher", out var encoded);       // true, "bcher-kva"
+UnicodeIdna.TryDecodePunycode("bcher-kva", out var decoded);    // true, "bücher"
+```
 
 ## Character information
 

@@ -547,7 +547,7 @@ public abstract partial class CanvasRenderingContext2DBase
             char[]? mirrored = null;
             for (var i = 0; i < text.Length; i++)
             {
-                if (UnicodeProperties.IsBidiMirrored(text[i]) && UnicodeProperties.GetBidiMirroringGlyph(text[i]) is var mirror and >= 0 and <= 0xFFFF)
+                if (UnicodeProperties.IsBidiMirrored(text[i]) && CharacterProperties.GetBidiMirroringGlyph(text[i]) is var mirror and >= 0 and <= 0xFFFF)
                 {
                     mirrored ??= text.ToArray();
                     mirrored[i] = (char)mirror;

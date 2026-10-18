@@ -366,6 +366,28 @@ public sealed class Mp4Tests
         }
     }
 
+    [Fact]
+    public void WriteTags_AtomRunningToTheEndOfMoov_DoesNotTakeInTheNewTags()
+    {
+        // A size of 0 declares an atom that runs to the end of its parent, so the udta the writer appends after
+        // it must not be read as part of it. basic.m4a ends with moov, which ends with udta: the udta is cut off
+        // and replaced by such an atom.
+        var source = File.ReadAllBytes(GetTestFilePath("basic.m4a"));
+        var moov = (int)FindTopLevelAtom(source, "moov");
+        var udta = IndexOfAtomType(source, "udta") - 4;
+        Assert.Equal(source.Length, moov + (int)ReadAtomSize(source, moov));
+
+        byte[] bytes = [.. source.AsSpan(0, udta), 0, 0, 0, 0, .. "free"u8];
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(moov), (uint)(bytes.Length - moov));
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Mp4).IsSuccess);
+
+        output.Position = 0;
+        Assert.Equal("Title", MediaFile.ReadTags(output, MediaFormat.Mp4).Value.Title);
+    }
+
     private static int IndexOfAtomType(byte[] data, string atomType)
     {
         var needle = Encoding.Latin1.GetBytes(atomType);

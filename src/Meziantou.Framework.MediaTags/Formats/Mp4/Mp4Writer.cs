@@ -245,8 +245,24 @@ internal sealed class Mp4Writer : IMediaTagWriter
         return BuildAtom("meta", ms.ToArray());
     }
 
+    /// <summary>
+    /// Gets the bytes of an atom of moov, to copy them to the rebuilt moov.
+    /// </summary>
+    /// <remarks>
+    /// A size of 0 declares an atom that runs to the end of its parent. Copied as is, it would take in the atoms
+    /// this writer appends after it, the new udta included, and the written tags would not read back. Its size is
+    /// written out instead; it fits, as moov is at most <see cref="Mp4Atom.MaxMoovSize"/> bytes.
+    /// </remarks>
     private static ReadOnlySpan<byte> GetAtomBytes(Mp4Atom atom, Mp4Atom moovAtom, byte[] moovData)
-        => moovData.AsSpan((int)(atom.Position - moovAtom.Position), (int)atom.Size);
+    {
+        var bytes = moovData.AsSpan((int)(atom.Position - moovAtom.Position), (int)atom.Size);
+        if (BinaryPrimitives.ReadUInt32BigEndian(bytes) != 0)
+            return bytes;
+
+        var result = bytes.ToArray();
+        BinaryPrimitives.WriteUInt32BigEndian(result, (uint)atom.Size);
+        return result;
+    }
 
     private static byte[] BuildHandlerAtom()
     {

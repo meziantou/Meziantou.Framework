@@ -116,15 +116,17 @@ public sealed class TurbulencePrimitive : FilterPrimitive
         var isFractal = Type == FilterTurbulenceType.FractalNoise;
         var values = result.Values;
         Span<double> color = stackalloc double[4];
+        Span<double> sums = stackalloc double[4];
         for (var y = subregion.Top; y < subregion.Bottom; y++)
         {
             context.Processor.CancellationToken.ThrowIfCancellationRequested();
             for (var x = subregion.Left; x < subregion.Right; x++)
             {
                 var (pointX, pointY) = context.Processor.ToDrawing(x, y);
+                GetTurbulence(pointX * frequencyX, pointY * frequencyY, octaves, isFractal, isStitching, stitch, sums);
                 for (var channel = 0; channel < 4; channel++)
                 {
-                    var sum = GetTurbulence(channel, pointX * frequencyX, pointY * frequencyY, octaves, isFractal, isStitching, stitch);
+                    var sum = sums[channel];
                     var value = isFractal ? (sum + 1) / 2 : sum;
 
                     // Written so that a value that is not a number is zero
@@ -211,10 +213,50 @@ public sealed class TurbulencePrimitive : FilterPrimitive
         }
     }
 
-    private static int GradientIndex(int channel, int index, int component) => (((channel * (LatticeSize + LatticeSize + 2)) + index) * 2) + component;
+    // The gradients of the four channels at a point of the lattice are side by side: the noise computes them together
+    private static int GradientIndex(int channel, int index, int component) => (((index * 4) + channel) * 2) + component;
+
+    /// <summary>
+    /// The sums of the octaves at a point for the four channels: <see cref="GetTurbulence(int, double, double, int, bool, bool, Stitch)"/>
+    /// for each channel, with the same operations in the same order, the points of the lattice being found once for all four.
+    /// </summary>
+    internal void GetTurbulence(double x, double y, int octaves, bool isFractal, bool isStitching, Stitch stitch, Span<double> sums)
+    {
+        sums = sums[..4];
+        sums.Clear();
+        double ratio = 1;
+        for (var octave = 0; octave < octaves; octave++)
+        {
+            GetNoise(x, y, isStitching, stitch, out var red, out var green, out var blue, out var alpha);
+            sums[0] += (isFractal ? red : Math.Abs(red)) / ratio;
+            sums[1] += (isFractal ? green : Math.Abs(green)) / ratio;
+            sums[2] += (isFractal ? blue : Math.Abs(blue)) / ratio;
+            sums[3] += (isFractal ? alpha : Math.Abs(alpha)) / ratio;
+            x *= 2;
+            y *= 2;
+            ratio *= 2;
+            if (isStitching)
+            {
+                stitch.Width *= 2;
+                stitch.WrapX = (2 * stitch.WrapX) - PerlinOffset;
+                stitch.Height *= 2;
+                stitch.WrapY = (2 * stitch.WrapY) - PerlinOffset;
+            }
+        }
+    }
+
+    /// <summary>The noise of an octave at a point for the four channels: <see cref="GetNoise(int, double, double, bool, Stitch)"/> for each of them.</summary>
+    private void GetNoise(double x, double y, bool isStitching, Stitch stitch, out double red, out double green, out double blue, out double alpha)
+    {
+        var lattice = new LatticeCell(_lattice, x, y, isStitching, stitch);
+        red = lattice.GetNoise(_gradients, 0);
+        green = lattice.GetNoise(_gradients, 1);
+        blue = lattice.GetNoise(_gradients, 2);
+        alpha = lattice.GetNoise(_gradients, 3);
+    }
 
     /// <summary>The sum of the octaves at a point: <c>turbulence</c> of the reference code.</summary>
-    private double GetTurbulence(int channel, double x, double y, int octaves, bool isFractal, bool isStitching, Stitch stitch)
+    internal double GetTurbulence(int channel, double x, double y, int octaves, bool isFractal, bool isStitching, Stitch stitch)
     {
         double sum = 0;
         double ratio = 1;
@@ -237,68 +279,92 @@ public sealed class TurbulencePrimitive : FilterPrimitive
         return sum;
     }
 
-    /// <summary>The noise of an octave at a point: <c>noise2</c> of the reference code. The integer parts are truncated toward zero, as in C.</summary>
+    /// <summary>The noise of an octave at a point: <c>noise2</c> of the reference code.</summary>
     private double GetNoise(int channel, double x, double y, bool isStitching, Stitch stitch)
+        => new LatticeCell(_lattice, x, y, isStitching, stitch).GetNoise(_gradients, channel);
+
+    /// <summary>The cell of the lattice a point is in, and where the point is in it: the part of <c>noise2</c> of the reference code that does not depend on the channel.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct LatticeCell
     {
-        var t = x + PerlinOffset;
-        var whole = (long)t;
-        var bx0 = whole & LatticeMask;
-        var bx1 = (bx0 + 1) & LatticeMask;
-        var rx0 = t - whole;
-        var rx1 = rx0 - 1;
-        t = y + PerlinOffset;
-        whole = (long)t;
-        var by0 = whole & LatticeMask;
-        var by1 = (by0 + 1) & LatticeMask;
-        var ry0 = t - whole;
-        var ry1 = ry0 - 1;
-        if (isStitching)
+        private readonly int _b00;
+        private readonly int _b10;
+        private readonly int _b01;
+        private readonly int _b11;
+        private readonly double _rx0;
+        private readonly double _rx1;
+        private readonly double _ry0;
+        private readonly double _ry1;
+        private readonly double _sx;
+        private readonly double _sy;
+
+        /// <remarks>The integer parts are truncated toward zero, as in C.</remarks>
+        public LatticeCell(int[] lattice, double x, double y, bool isStitching, Stitch stitch)
         {
-            if (bx0 >= stitch.WrapX)
+            var t = x + PerlinOffset;
+            var whole = (long)t;
+            var bx0 = whole & LatticeMask;
+            var bx1 = (bx0 + 1) & LatticeMask;
+            _rx0 = t - whole;
+            _rx1 = _rx0 - 1;
+            t = y + PerlinOffset;
+            whole = (long)t;
+            var by0 = whole & LatticeMask;
+            var by1 = (by0 + 1) & LatticeMask;
+            _ry0 = t - whole;
+            _ry1 = _ry0 - 1;
+            if (isStitching)
             {
-                bx0 -= stitch.Width;
+                if (bx0 >= stitch.WrapX)
+                {
+                    bx0 -= stitch.Width;
+                }
+
+                if (bx1 >= stitch.WrapX)
+                {
+                    bx1 -= stitch.Width;
+                }
+
+                if (by0 >= stitch.WrapY)
+                {
+                    by0 -= stitch.Height;
+                }
+
+                if (by1 >= stitch.WrapY)
+                {
+                    by1 -= stitch.Height;
+                }
             }
 
-            if (bx1 >= stitch.WrapX)
-            {
-                bx1 -= stitch.Width;
-            }
-
-            if (by0 >= stitch.WrapY)
-            {
-                by0 -= stitch.Height;
-            }
-
-            if (by1 >= stitch.WrapY)
-            {
-                by1 -= stitch.Height;
-            }
+            bx0 &= LatticeMask;
+            bx1 &= LatticeMask;
+            by0 &= LatticeMask;
+            by1 &= LatticeMask;
+            var i = lattice[bx0];
+            var j = lattice[bx1];
+            _b00 = lattice[i + by0];
+            _b10 = lattice[j + by0];
+            _b01 = lattice[i + by1];
+            _b11 = lattice[j + by1];
+            _sx = SCurve(_rx0);
+            _sy = SCurve(_ry0);
         }
 
-        bx0 &= LatticeMask;
-        bx1 &= LatticeMask;
-        by0 &= LatticeMask;
-        by1 &= LatticeMask;
-        var i = _lattice[bx0];
-        var j = _lattice[bx1];
-        var b00 = _lattice[i + by0];
-        var b10 = _lattice[j + by0];
-        var b01 = _lattice[i + by1];
-        var b11 = _lattice[j + by1];
-        var sx = SCurve(rx0);
-        var sy = SCurve(ry0);
-        var u = (rx0 * _gradients[GradientIndex(channel, b00, 0)]) + (ry0 * _gradients[GradientIndex(channel, b00, 1)]);
-        var v = (rx1 * _gradients[GradientIndex(channel, b10, 0)]) + (ry0 * _gradients[GradientIndex(channel, b10, 1)]);
-        var a = Lerp(sx, u, v);
-        u = (rx0 * _gradients[GradientIndex(channel, b01, 0)]) + (ry1 * _gradients[GradientIndex(channel, b01, 1)]);
-        v = (rx1 * _gradients[GradientIndex(channel, b11, 0)]) + (ry1 * _gradients[GradientIndex(channel, b11, 1)]);
-        var b = Lerp(sx, u, v);
-        return Lerp(sy, a, b);
+        public double GetNoise(double[] gradients, int channel)
+        {
+            var u = (_rx0 * gradients[GradientIndex(channel, _b00, 0)]) + (_ry0 * gradients[GradientIndex(channel, _b00, 1)]);
+            var v = (_rx1 * gradients[GradientIndex(channel, _b10, 0)]) + (_ry0 * gradients[GradientIndex(channel, _b10, 1)]);
+            var a = Lerp(_sx, u, v);
+            u = (_rx0 * gradients[GradientIndex(channel, _b01, 0)]) + (_ry1 * gradients[GradientIndex(channel, _b01, 1)]);
+            v = (_rx1 * gradients[GradientIndex(channel, _b11, 0)]) + (_ry1 * gradients[GradientIndex(channel, _b11, 1)]);
+            var b = Lerp(_sx, u, v);
+            return Lerp(_sy, a, b);
+        }
     }
 
     /// <summary>The lattice wrapping of the stitching: <c>StitchInfo</c> of the reference code.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private struct Stitch
+    internal struct Stitch
     {
         public long Width;
         public long Height;

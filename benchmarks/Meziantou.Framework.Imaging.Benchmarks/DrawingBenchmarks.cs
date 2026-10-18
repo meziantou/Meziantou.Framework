@@ -31,6 +31,7 @@ public class DrawingBenchmarks : IDisposable
     private Brush _radial = null!;
     private Brush _sweep = null!;
     private PointD[] _dots = null!;
+    private FilterGraph _turbulence = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -57,6 +58,7 @@ public class DrawingBenchmarks : IDisposable
         _horizontal = new LinearGradientBrush(new PointD(0, 0), new PointD(Width, 0), Stops);
         _radial = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat };
         _sweep = new SweepGradientBrush(new PointD(512, 384), Stops);
+        _turbulence = new FilterGraph(new TurbulencePrimitive(FilterTurbulenceType.FractalNoise, 0.02, 0.03, 4, 7) { Subregion = new RectangleD(0, 0, 512, 384) });
 
         // The dots of a text: small shapes on a grid, at positions that are not whole pixels
         var dots = new List<PointD>();
@@ -259,6 +261,14 @@ public class DrawingBenchmarks : IDisposable
     public int FilterBackdrop()
     {
         _image.Draw(static canvas => canvas.FilterBackdrop(ColorMatrix.CreateSepia(0.4)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Fractal noise of four octaves over 512x384 pixels: filter graph")]
+    public int Turbulence()
+    {
+        _image.Draw(_turbulence, static (canvas, graph) => canvas.Filter(graph, static _ => { }));
         return _image.Width;
     }
 

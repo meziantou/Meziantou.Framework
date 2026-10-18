@@ -1801,6 +1801,46 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingTurbulenceOfTheFourChannelsMatchesTheReferenceOfEachChannel()
+    {
+        var random = new Random(20261019);
+        Span<double> sums = stackalloc double[4];
+        foreach (var seed in new[] { 0, 7, 12345, -3, int.MaxValue })
+        {
+            var primitive = new TurbulencePrimitive(FilterTurbulenceType.Turbulence, 0.1, 0.1, 1, seed);
+            for (var i = 0; i < 2000; i++)
+            {
+                // Points on both sides of the origin, near the lattice and far from it, and stitching on tiles of any position
+                var scale = random.Next(3) switch
+                {
+                    0 => 4,
+                    1 => 300,
+                    _ => 3000,
+                };
+                var x = (random.NextDouble() - 0.5) * scale;
+                var y = random.Next(8) == 0 ? Math.Floor(x) : (random.NextDouble() - 0.5) * scale;
+                var octaves = random.Next(0, 9);
+                var isFractal = random.Next(2) == 0;
+                var isStitching = random.Next(2) == 0;
+                var stitch = new TurbulencePrimitive.Stitch
+                {
+                    Width = random.Next(1, 300),
+                    Height = random.Next(1, 300),
+                    WrapX = 4096 + random.Next(-300, 600),
+                    WrapY = 4096 + random.Next(-300, 600),
+                };
+
+                primitive.GetTurbulence(x, y, octaves, isFractal, isStitching, stitch, sums);
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(primitive.GetTurbulence(channel, x, y, octaves, isFractal, isStitching, stitch)), BitConverter.DoubleToInt64Bits(sums[channel]));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingColorMatrixMatchesTheScalarReference()
     {
         var random = new Random(20261016);

@@ -237,6 +237,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Blur 1.5 of the whole 1024x768 canvas: blur of the backdrop")]
+    public int BlurBackdrop()
+    {
+        _image.Draw(static canvas => canvas.BlurBackdrop(1.5));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("Sepia color matrix over the canvas: filter of the backdrop")]
     public int FilterBackdrop()
     {

@@ -1,4 +1,6 @@
+using System.Numerics;
 using System.Runtime.Intrinsics;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -1687,6 +1689,68 @@ public sealed class VectorizedKernelTests
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(colors));
                 DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(colors));
                 Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingSourceOfColorsMatchesThePixelByPixelFormulas()
+    {
+        // A run of full coverage stores the colors; a pixel on its own always goes through the formulas
+        var random = new Random(20261018);
+        CheckSource<byte>(random, byte.MaxValue);
+        CheckSource<ushort>(random, ushort.MaxValue);
+
+        static void CheckSource<TSample>(Random random, int max)
+            where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        {
+            int[] lengths = [16, 17, 31, 64, 101];
+            foreach (var length in lengths)
+            {
+                for (var round = 0; round < 64; round++)
+                {
+                    var pixels = new TSample[length * 4];
+                    var colors = new ushort[length * 4];
+                    var coverage = new uint[length];
+                    var fullShare = round % 4;
+                    for (var i = 0; i < length; i++)
+                    {
+                        for (var c = 0; c < 4; c++)
+                        {
+                            pixels[(i * 4) + c] = TSample.CreateTruncating(random.Next(max + 1));
+                            colors[(i * 4) + c] = (ushort)random.Next(max + 1);
+                        }
+
+                        // Transparent pixels with a hidden color, and paints without opacity
+                        if (random.Next(4) == 0)
+                        {
+                            pixels[(i * 4) + 3] = TSample.Zero;
+                        }
+
+                        if (random.Next(4) == 0)
+                        {
+                            colors[(i * 4) + 3] = 0;
+                        }
+
+                        coverage[i] = fullShare == 3 || random.Next(3) < fullShare ? CoverageRasterizer.FullCoverage : random.Next(3) switch
+                        {
+                            0 => 0,
+                            1 => (uint)random.Next(1, 256),
+                            _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                        };
+                    }
+
+                    var expected = (TSample[])pixels.Clone();
+                    for (var i = 0; i < length; i++)
+                    {
+                        DrawingKernels.Composite<TSample>(expected.AsSpan(i * 4, 4), 4, coverage.AsSpan(i, 1), new DrawingSource(colors.AsSpan(i * 4, 4), CompositeMode.Source));
+                    }
+
+                    var actual = (TSample[])pixels.Clone();
+                    DrawingKernels.Composite<TSample>(actual, 4, coverage, new DrawingSource(colors, CompositeMode.Source));
+                    Assert.Equal(expected, actual);
+                }
             }
         }
     }

@@ -312,8 +312,18 @@ internal static class DrawingKernels
         }
 
         // A short run is cheaper pixel by pixel than searched for runs
-        if (coverage.Length >= MinFullRunSearchLength && source.Colors.IsEmpty && TryCompositeFullRuns(samples, channels, coverage, source))
-            return;
+        if (coverage.Length >= MinFullRunSearchLength)
+        {
+            if (source.Colors.IsEmpty)
+            {
+                if (TryCompositeFullRuns(samples, channels, coverage, source))
+                    return;
+            }
+            else if (source.Mode == CompositeMode.Source && channels == 4 && TryReplaceFullRuns(samples, coverage, source.Colors))
+            {
+                return;
+            }
+        }
 
         CompositeCore(samples, channels, coverage, source);
     }
@@ -406,6 +416,73 @@ internal static class DrawingKernels
 
             var next = coverage[start..].IndexOf(Full);
             first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>
+    /// Replaces pixels with a color of their own (<see cref="CompositeMode.Source"/>, color then alpha): the runs of full
+    /// coverage get their colors as they are; the other pixels go through the formulas.
+    /// </summary>
+    /// <returns><see langword="false"/> when no pixel is covered entirely.</returns>
+    /// <remarks>
+    /// With <c>q = Q</c>, the operator has <c>S = M Q sa</c> and <c>D = 0</c>: the alpha is <c>round(S / (M Q)) = sa</c>
+    /// and the color <c>round(sc S / S) = sc</c>, as the scalar path computes them (<c>S / 2 &lt; S</c>). A paint without
+    /// opacity makes the pixel transparent black, or leaves it as it is when it was transparent.
+    /// </remarks>
+    private static bool TryReplaceFullRuns<TSample>(Span<TSample> samples, ReadOnlySpan<uint> coverage, ReadOnlySpan<ushort> colors)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        var start = 0;
+        while (true)
+        {
+            if (first > start)
+            {
+                CompositeWithOperator(samples[(start * 4)..(first * 4)], 4, coverage[start..first], new DrawingSource(colors[(start * 4)..(first * 4)], CompositeMode.Source));
+            }
+
+            if (first == coverage.Length)
+                return true;
+
+            var length = coverage[first..].IndexOfAnyExcept(Full);
+            if (length < 0)
+            {
+                length = coverage.Length - first;
+            }
+
+            ReplacePixels(samples.Slice(first * 4, length * 4), colors.Slice(first * 4, length * 4));
+            start = first + length;
+            if (start == coverage.Length)
+                return true;
+
+            var next = coverage[start..].IndexOf(Full);
+            first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>Writes a color to each pixel of a run (color then alpha): a color without opacity erases the pixel, unless it is transparent already.</summary>
+    private static void ReplacePixels<TSample>(Span<TSample> pixels, ReadOnlySpan<ushort> colors)
+        where TSample : unmanaged, IBinaryInteger<TSample>
+    {
+        for (var i = 0; i + 4 <= pixels.Length; i += 4)
+        {
+            var color = colors.Slice(i, 4);
+            var pixel = pixels.Slice(i, 4);
+            if (color[3] != 0)
+            {
+                pixel[0] = TSample.CreateTruncating(color[0]);
+                pixel[1] = TSample.CreateTruncating(color[1]);
+                pixel[2] = TSample.CreateTruncating(color[2]);
+                pixel[3] = TSample.CreateTruncating(color[3]);
+            }
+            else if (pixel[3] != TSample.Zero)
+            {
+                pixel.Clear();
+            }
         }
     }
 

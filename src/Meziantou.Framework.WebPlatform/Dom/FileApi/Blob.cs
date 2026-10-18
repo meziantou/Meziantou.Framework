@@ -76,17 +76,22 @@ public class Blob : Scripting.IStructuredSerializable
         return [.. bytes];
     }
 
-    /// <summary>https://w3c.github.io/FileAPI/#convert-line-endings-to-native: CR LF, CR and LF are replaced with the native line ending.</summary>
+    /// <summary>
+    /// https://w3c.github.io/FileAPI/#convert-line-endings-to-native: CR LF, CR and LF are replaced with the native line ending.
+    /// The native line ending is the one of the platform that the document sees, not the one of the host: the documents do
+    /// not know the operating system (<c>navigator.platform</c> is empty), so it is LF on every host, as a browser that does
+    /// not run on Windows.
+    /// </summary>
     private static string ConvertLineEndingsToNative(string text)
     {
-        var nativeLineEnding = OperatingSystem.IsWindows() ? "\r\n" : "\n";
+        const char NativeLineEnding = '\n';
         var result = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)
         {
             var c = text[i];
             if (c == '\r')
             {
-                result.Append(nativeLineEnding);
+                result.Append(NativeLineEnding);
                 if (i + 1 < text.Length && text[i + 1] == '\n')
                 {
                     i++;
@@ -94,7 +99,7 @@ public class Blob : Scripting.IStructuredSerializable
             }
             else if (c == '\n')
             {
-                result.Append(nativeLineEnding);
+                result.Append(NativeLineEnding);
             }
             else
             {

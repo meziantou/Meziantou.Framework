@@ -54,8 +54,8 @@ public sealed class BlobTests : IDisposable
     public async Task Constructor_NativeLineEndings()
     {
         var blob = new Blob(["a\r\nb\rc\nd"], new BlobPropertyBag { Endings = "native" });
-        var newLine = OperatingSystem.IsWindows() ? "\r\n" : "\n";
-        Assert.Equal("a" + newLine + "b" + newLine + "c" + newLine + "d", await blob.Text());
+        // LF on every host: the documents do not know the operating system (navigator.platform is empty)
+        Assert.Equal("a\nb\nc\nd", await blob.Text());
         Assert.Equal("a\r\nb\rc\nd", await new Blob(["a\r\nb\rc\nd"]).Text());
     }
 

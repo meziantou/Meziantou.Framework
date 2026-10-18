@@ -10,7 +10,7 @@ public class BlobPropertyBag
 
     /// <summary>
     /// Gets how the line endings of the string parts are converted (https://w3c.github.io/FileAPI/#dom-blobpropertybag-endings):
-    /// <c>transparent</c> (unchanged) or <c>native</c> (converted to the line endings of the platform).
+    /// <c>transparent</c> (unchanged) or <c>native</c> (converted to the native line ending, LF on every host: the documents do not know the operating system).
     /// </summary>
     [IdlMember("endings", "https://w3c.github.io/FileAPI/#dom-blobpropertybag-endings")]
     public string Endings { get; init; } = "transparent";

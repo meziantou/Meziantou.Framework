@@ -27,7 +27,14 @@ internal static partial class CssColorConversion
         if (IsInGamut(rgb, 0, 1))
             return rgb;
 
-        var origin = FromXyz("oklch", ToXyz(space, channels));
+        // The OkLab and OkLCh colors are not converted through XYZ: the round trip can move a lightness of 100% just below it
+        // (by an ulp, depending on the cube root of the platform), and the anchor of the ray would then be outside of the gamut
+        var origin = space switch
+        {
+            "oklch" => channels,
+            "oklab" => LabToLch(channels, 0.000004),
+            _ => FromXyz("oklch", ToXyz(space, channels)),
+        };
         var lightness = origin[0];
         if (lightness >= 1)
             return Clip(FromXyz(destination, OklabToXyz([1, 0, 0])));
@@ -37,6 +44,12 @@ internal static partial class CssColorConversion
 
         var hue = double.IsNaN(origin[2]) ? 0 : origin[2];
         var anchor = FromXyz(linearSpace, OklabToXyz(LchToLab([lightness, 0, hue])));
+
+        // The achromatic color of a lightness very close to 0% or 100% can be just outside of the gamut (the white points of
+        // OkLab and of the RGB space differ by the rounding of their matrices): it is the closest color of the gamut
+        if (!IsInGamut(anchor, 0, 1))
+            return Clip(Map(Clip(anchor), LinearToSrgb));
+
         var current = FromXyz(linearSpace, OklabToXyz(LchToLab([lightness, origin[1], hue])));
         if (!IsInGamut(current, 0, 1))
         {

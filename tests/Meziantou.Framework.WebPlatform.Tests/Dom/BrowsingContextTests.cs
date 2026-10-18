@@ -1219,8 +1219,18 @@ public sealed class BrowsingContextTests
         {
             DocumentLoader = new DelegateDocumentLoader(async (_, cancellationToken) =>
             {
-                using var registration = cancellationToken.Register(() => canceled.TrySetResult());
-                await Task.Delay(Timeout.Infinite, cancellationToken);
+                // Not a callback registered on the token: the continuation of Task.Delay can run synchronously in Cancel, before
+                // the callbacks registered first, and leaving the method would then unregister the callback before it runs
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    canceled.TrySetResult();
+                    throw;
+                }
+
                 return null;
             }),
         });

@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24,137 | 28,847 | 2,948 | 93% |
+| [Stable](#stable-tests) | 24,136 | 28,847 | 2,949 | 93% |
 | [Tentative](#tentative-tests) | 1,077 | 2,932 | 820 | 51% |
 | [Reftests](#reftests) | 27,007 | 28,524 | 226 | 95% |
-| **All** | **52,221** | **60,303** | **3,994** | **93%** |
+| **All** | **52,220** | **60,303** | **3,995** | **93%** |
 
 ## Stable tests
 
@@ -389,7 +389,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`webrtc-priority`](wpt-coverage/webrtc-priority.md) | 0 | 2 | 2 | – |
 | [`webrtc-stats`](wpt-coverage/webrtc-stats.md) | 0 | 9 | 9 | – |
 | [`webrtc-svc`](wpt-coverage/webrtc-svc.md) | 0 | 5 | 5 | – |
-| [`websockets`](wpt-coverage/websockets.md) | 197 | 204 | 0 | 97% |
+| [`websockets`](wpt-coverage/websockets.md) | 196 | 204 | 1 | 97% |
 | [`webstorage`](wpt-coverage/webstorage.md) | 51 | 54 | 0 | 94% |
 | [`webtransport`](wpt-coverage/webtransport.md) | 0 | 32 | 32 | – |
 | [`webusb`](wpt-coverage/webusb.md) | 0 | 32 | 32 | – |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 315 | 327 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 11 | 11 | – |
-| **Total (343 sections)** | **24,137** | **28,847** | **2,948** | **93%** |
+| **Total (343 sections)** | **24,136** | **28,847** | **2,949** | **93%** |
 
 ## Tentative tests
 

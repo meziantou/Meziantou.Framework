@@ -4329,13 +4329,17 @@ public sealed class DrawingSessionTests
     {
         // The surfaces of a graph that reads neither the drawing nor its alpha hold only the pixels its subregions cover.
         // After a primitive that reads the drawing in an empty subregion, and that nothing reads, the graph computes on
-        // surfaces of the whole layer, and gives the same pixels. The last two graphs filter a backdrop, whose edges are
-        // mirrored.
+        // surfaces of the whole layer, and gives the same pixels, on layers of 8-bit and of 16-bit samples. The last two
+        // graphs filter a backdrop, whose edges are mirrored.
         var isBackdrop = index >= 13;
-        var expected = DrawGraph(new FilterGraph([new OffsetPrimitive(default) { Input = FilterInput.SourceGraphic, Subregion = new RectangleD(0, 0, 0, 0) }, .. CreatePrimitives(index, 1)]), isBackdrop);
-        var actual = DrawGraph(new FilterGraph(CreatePrimitives(index, 0)), isBackdrop);
+        var expected = DrawGraph<Rgba32>(new FilterGraph([new OffsetPrimitive(default) { Input = FilterInput.SourceGraphic, Subregion = new RectangleD(0, 0, 0, 0) }, .. CreatePrimitives(index, 1)]), isBackdrop);
+        var actual = DrawGraph<Rgba32>(new FilterGraph(CreatePrimitives(index, 0)), isBackdrop);
         Assert.Equal(expected, actual);
         Assert.True(Array.Exists(actual, pixel => pixel.A != 0 && pixel != new Rgba32(200, 40, 90)));
+
+        var expectedWide = DrawGraph<Rgba64>(new FilterGraph([new OffsetPrimitive(default) { Input = FilterInput.SourceGraphic, Subregion = new RectangleD(0, 0, 0, 0) }, .. CreatePrimitives(index, 1)]), isBackdrop);
+        var actualWide = DrawGraph<Rgba64>(new FilterGraph(CreatePrimitives(index, 0)), isBackdrop);
+        Assert.Equal(expectedWide, actualWide);
 
         static FilterPrimitive[] CreatePrimitives(int index, int first)
         {
@@ -4373,9 +4377,10 @@ public sealed class DrawingSessionTests
             };
         }
 
-        static Rgba32[] DrawGraph(FilterGraph graph, bool isBackdrop)
+        static TPixel[] DrawGraph<TPixel>(FilterGraph graph, bool isBackdrop)
+            where TPixel : unmanaged
         {
-            using var image = new Image<Rgba32>(64, 48);
+            using var image = new Image<TPixel>(64, 48);
             var paint = new SolidBrush(new Rgba32(200, 40, 90));
             image.Draw(canvas =>
             {
@@ -4390,7 +4395,7 @@ public sealed class DrawingSessionTests
                 }
             }, Ct);
 
-            var pixels = new Rgba32[image.Width * image.Height];
+            var pixels = new TPixel[image.Width * image.Height];
             for (var i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = image.Frames[0][i % image.Width, i / image.Width];

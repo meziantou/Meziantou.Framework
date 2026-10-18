@@ -135,7 +135,7 @@ internal static class ImageIO
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
         var origin = stream.CanSeek ? stream.Position : 0;
-        using var input = new ImageInputBuffer(stream, ownsStream, context);
+        using var input = new ImageInputBuffer(stream, ownsStream, context, ImageInputBuffer.GetDecodeCapacity(stream, ownsStream, context));
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
             return codec.DecodeRandomAccess(source, ImageDecodeRequest.Create(options, pixelFormat), context);
@@ -154,7 +154,7 @@ internal static class ImageIO
     {
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
-        var input = new ImageInputBuffer(stream, ownsStream, context);
+        var input = new ImageInputBuffer(stream, ownsStream, context, ImageInputBuffer.GetDecodeCapacity(stream, ownsStream, context));
         await using (input.ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();

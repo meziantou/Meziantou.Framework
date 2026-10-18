@@ -31,6 +31,9 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     /// <summary>The default capacity of the read buffer.</summary>
     public const int DefaultCapacity = 16 * 1024;
 
+    /// <summary>The largest capacity of the first buffer of a file opened by a path overload (<see cref="GetDecodeCapacity"/>).</summary>
+    public const int MaxFileCapacity = 128 * 1024;
+
     private readonly Stream _stream;
     private readonly bool _ownsStream;
     private readonly ImageCodecContext _context;
@@ -50,6 +53,27 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
         _ownsStream = ownsStream;
         _context = context;
         InitialCapacity = initialCapacity;
+    }
+
+    /// <summary>
+    /// Gets the capacity of the first buffer of a decode. A stream the library owns is a file opened by a path overload,
+    /// which has no buffer of its own (<see cref="ImageIO.OpenFile"/>), so every fill is a read call: its first buffer holds
+    /// up to <see cref="MaxFileCapacity"/> bytes, bounded by the rest of the file and the encoded-byte limit. Other streams,
+    /// and identification (which mostly reads headers), use <see cref="DefaultCapacity"/>.
+    /// </summary>
+    /// <param name="stream">The source stream.</param>
+    /// <param name="ownsStream">Whether the library opened the stream.</param>
+    /// <param name="context">The operation context.</param>
+    /// <returns>The capacity, never less than <see cref="DefaultCapacity"/>.</returns>
+    public static int GetDecodeCapacity(Stream stream, bool ownsStream, ImageCodecContext context)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
+        if (!ownsStream || stream is not FileStream { CanSeek: true } file)
+            return DefaultCapacity;
+
+        var remaining = Math.Min(file.Length - file.Position, context.Limits.MaxEncodedBytes);
+        return (int)Math.Clamp(remaining, DefaultCapacity, MaxFileCapacity);
     }
 
     /// <summary>Gets the capacity of the first buffer (tests use small values to exercise growth and compaction).</summary>

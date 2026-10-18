@@ -27,6 +27,7 @@ public class DrawingBenchmarks : IDisposable
     private VectorPath _clipPath = null!;
     private Brush _linear = null!;
     private Brush _vertical = null!;
+    private Brush _horizontal = null!;
     private Brush _radial = null!;
     private Brush _sweep = null!;
     private PointD[] _dots = null!;
@@ -53,6 +54,7 @@ public class DrawingBenchmarks : IDisposable
         _clipPath = new VectorPathBuilder().AddEllipse(new PointD(512, 384), 480, 340).Build();
         _linear = new LinearGradientBrush(new PointD(40, 30), new PointD(980, 700), Stops) { SpreadMode = GradientSpreadMode.Reflect };
         _vertical = new LinearGradientBrush(new PointD(0, 0), new PointD(0, Height), Stops);
+        _horizontal = new LinearGradientBrush(new PointD(0, 0), new PointD(Width, 0), Stops);
         _radial = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat };
         _sweep = new SweepGradientBrush(new PointD(512, 384), Stops);
 
@@ -148,6 +150,14 @@ public class DrawingBenchmarks : IDisposable
     public int FillVerticalGradient()
     {
         _image.Draw(_vertical, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Horizontal linear gradient with four stops: fill of an ellipse covering most of the canvas")]
+    public int FillHorizontalGradient()
+    {
+        _image.Draw(_horizontal, static (canvas, brush) => canvas.FillEllipse(brush, new PointD(512, 384), 500, 370));
         return _image.Width;
     }
 

@@ -508,6 +508,39 @@ public sealed class DrawingGradientTests
     }
 
     [Fact]
+    public void AHorizontalGradientPaintsEveryRowWithTheColorsOfItsFormula()
+    {
+        // The colors of a row of a horizontal gradient are computed once; stretched vertically, the gradient takes the
+        // path of a transformed brush, whose parameter is the same: the inverse brings x back as it is
+        var random = new Random(20261018);
+        GradientStop[] stops = [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 20000)), new(1, new Rgba64(65535, 65535, 0, 0))];
+        GradientSpreadMode[] spreads = [GradientSpreadMode.Pad, GradientSpreadMode.Repeat, GradientSpreadMode.Reflect, GradientSpreadMode.Transparent];
+        GradientColorSpace[] spaces = [GradientColorSpace.Encoded, GradientColorSpace.LinearSrgb, GradientColorSpace.Oklab];
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgba64, PixelFormat.Rgb24 })
+        {
+            foreach (var spread in spreads)
+            {
+                foreach (var space in spaces)
+                {
+                    var start = new PointD((random.NextDouble() * 20) - 5, random.NextDouble() * 10);
+                    var end = new PointD(start.X + (random.Next(2) == 0 ? -1 : 1) * ((random.NextDouble() * 15) + 1), start.Y);
+                    var brush = new LinearGradientBrush(start, end, stops) { SpreadMode = spread, ColorSpace = space };
+                    var stretched = new LinearGradientBrush(start, end, stops) { SpreadMode = spread, ColorSpace = space, Transform = AffineTransform.CreateScale(1, 2) };
+                    var center = new PointD(random.NextDouble() * 24, random.NextDouble() * 16);
+                    Assert.Equal(FillEllipse(format, stretched, center), FillEllipse(format, brush, center));
+                }
+            }
+        }
+
+        static int[] FillEllipse(PixelFormat format, Brush brush, PointD center)
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 24, 16, new Random(1).Next);
+            image.Frames[0].Draw(canvas => canvas.FillEllipse(brush, center, 10, 6), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void AGradientIsWeightedByTheCoverage()
     {
         // White on the left half of each pixel of a black row: half of the gradient color.

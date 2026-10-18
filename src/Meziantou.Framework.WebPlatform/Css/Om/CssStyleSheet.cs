@@ -12,6 +12,7 @@ public abstract class StyleSheet
     private protected StyleSheet(MediaList media)
     {
         Media = media;
+        media.SetOwner(this);
     }
 
     /// <summary>Gets the media type of the style sheet, always <c>text/css</c>.</summary>
@@ -30,6 +31,25 @@ public abstract class StyleSheet
     [IdlMember("parentStyleSheet", "https://drafts.csswg.org/cssom/#dom-stylesheet-parentstylesheet")]
     public CssStyleSheet? ParentStyleSheet { get; internal set; }
 
+    /// <summary>
+    /// The document the style sheet applies to: the document of the owner node of the root style sheet, or the constructor
+    /// document of a constructed style sheet (null for a style sheet that applies to no document). Its changes through the CSSOM
+    /// change the version of the style sheets of this document (see <see cref="Cascade.CssStyleVersion"/>).
+    /// </summary>
+    internal Document? StyleDocument
+    {
+        get
+        {
+            var sheet = this;
+            while (sheet.ParentStyleSheet is { } parent)
+            {
+                sheet = parent;
+            }
+
+            return sheet.OwnerNode?.NodeDocument ?? (sheet as CssStyleSheet)?.ConstructorDocument;
+        }
+    }
+
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-title: the title of a link element is a reference to its attribute.</summary>
     [IdlMember("title", "https://drafts.csswg.org/cssom/#dom-stylesheet-title")]
     public string? Title { get; internal set; }
@@ -46,7 +66,7 @@ public abstract class StyleSheet
         set
         {
             field = value;
-            Cascade.CssStyleVersion.Increment();
+            Cascade.CssStyleVersion.Increment(StyleDocument);
         }
     }
 }
@@ -354,7 +374,7 @@ public sealed partial class CssStyleSheet : StyleSheet
         if (DisallowModification)
             throw new DomException("The style sheet cannot be modified", "NotAllowedError");
 
-        CssRuleParser.RemoveRule(_rules, index);
+        CssRuleParser.RemoveRule(_rules, index, this);
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace: the style sheet is parsed synchronously.</summary>
@@ -366,7 +386,7 @@ public sealed partial class CssStyleSheet : StyleSheet
             return Task.FromException<CssStyleSheet>(new DomException("The style sheet cannot be modified", "NotAllowedError"));
 
         SetRules(new CssRuleParser(sheet: null) { Quirks = IsQuirksMode }.ParseStylesheet(text, allowImport: false));
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(this);
         return Task.FromResult(this);
     }
 
@@ -381,7 +401,7 @@ public sealed partial class CssStyleSheet : StyleSheet
             throw new DomException("The style sheet cannot be modified", "NotAllowedError");
 
         SetRules(new CssRuleParser(sheet: null) { Quirks = IsQuirksMode }.ParseStylesheet(text, allowImport: false));
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(this);
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule</summary>
@@ -432,7 +452,8 @@ public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
         get
         {
             // The style sheet of a processing instruction or of a link element is set when it is fetched, which does not mutate the tree
-            var version = ((long)Cascade.CssStyleVersion.Current << 32) | (uint)_root.NodeDocument.DomVersion;
+            var document = _root.NodeDocument;
+            var version = ((long)document.StyleSheetsVersion << 32) | (uint)document.DomVersion;
             if (version != _version)
             {
                 var sheets = new List<CssStyleSheet>();

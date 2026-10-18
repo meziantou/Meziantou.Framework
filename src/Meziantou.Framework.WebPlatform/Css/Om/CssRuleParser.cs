@@ -301,13 +301,13 @@ internal sealed partial class CssRuleParser
         list.Insert((int)index, rule);
         rule.ParentRule = parentRule;
         rule.SetParentStyleSheet(sheet);
-        CssStyleVersion.Increment();
+        CssStyleVersion.Increment(sheet);
         sheet?.RequestCssResourcesUpdate();
         return index;
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#remove-a-css-rule</summary>
-    public static void RemoveRule(List<CssRule> list, uint index)
+    public static void RemoveRule(List<CssRule> list, uint index, CssStyleSheet? sheet)
     {
         if (index >= (uint)list.Count)
             throw DomException.IndexSize("The index is greater than the number of rules");
@@ -326,7 +326,7 @@ internal sealed partial class CssRuleParser
             importedSheet.ParentStyleSheet = null;
         }
 
-        CssStyleVersion.Increment();
+        CssStyleVersion.Increment(sheet);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

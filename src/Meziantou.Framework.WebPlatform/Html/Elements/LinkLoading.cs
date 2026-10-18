@@ -569,7 +569,7 @@ public partial class HtmlLinkElement
     private void OnStyleSheetChanged()
     {
         // The style sheet list of the document is recomputed when the version changes (the tree does not change)
-        CssStyleVersion.Increment();
+        CssStyleVersion.Increment(NodeDocument);
         NodeDocument.RequestCssResourcesUpdate();
     }
 

@@ -99,7 +99,7 @@ internal static class CssImportFetching
                 {
                     var importedSheet = new CssStyleSheet(rule, parent, text, url, responseUrl, sameOrigin);
                     rule.StyleSheet = importedSheet;
-                    Cascade.CssStyleVersion.Increment();
+                    Cascade.CssStyleVersion.Increment(importedSheet);
                     FetchImports(importedSheet);
                 }
                 else

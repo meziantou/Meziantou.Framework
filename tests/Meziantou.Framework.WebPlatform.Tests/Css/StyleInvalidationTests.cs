@@ -1,5 +1,6 @@
 using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.Extensions.Time.Testing;
 
@@ -7,11 +8,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.Css;
 
 /// <summary>
 /// The invalidation of the computed styles element by element (see StyleEngine.Invalidation.cs): the styles of the elements a
-/// change may affect are computed again, the other styles are kept (the same <see cref="ComputedStyle"/> instances). The tests
-/// do not run in parallel with the other tests: a change of a style sheet through the CSSOM by another test (the process-wide
-/// CssStyleVersion) invalidates all the styles.
+/// change may affect are computed again, the other styles are kept (the same <see cref="ComputedStyle"/> instances).
 /// </summary>
-[Collection(nameof(StyleInvalidationCollection))]
 public sealed class StyleInvalidationTests : IDisposable
 {
     private const string Green = "rgb(0, 128, 0)";
@@ -94,6 +92,108 @@ public sealed class StyleInvalidationTests : IDisposable
         var before = ComputeAll(document);
         Find(document, "#a").ClassList.Add("unused");
         Assert.Empty(Restyled(document, before));
+    }
+
+    private Document ParseWithStyleSheets()
+    {
+        var document = Parse("<style>#a { color: red } @media all { #b { color: red } }</style><div id=a></div><div id=b></div>");
+        document.AdoptedStyleSheets.Add(new CssStyleSheet(document));
+        return document;
+    }
+
+    private static void ChangeStyleSheet(Document document, string change)
+    {
+        var sheet = (CssStyleSheet)document.StyleSheets[0];
+        switch (change)
+        {
+            case "insertRule":
+                sheet.InsertRule("#a { color: green }", sheet.CssRules.Length);
+                break;
+            case "deleteRule":
+                sheet.DeleteRule(0);
+                break;
+            case "declaration":
+                ((CssStyleRule)sheet.CssRules[0]).Style.SetProperty("color", "green");
+                break;
+            case "selectorText":
+                ((CssStyleRule)sheet.CssRules[0]).SelectorText = "#b";
+                break;
+            case "media":
+                sheet.Media.MediaText = "print";
+                break;
+            case "disabled":
+                sheet.Disabled = true;
+                break;
+            case "groupingRule":
+                ((CssMediaRule)sheet.CssRules[1]).InsertRule("#b { color: green }", 1);
+                break;
+            case "ruleMedia":
+                ((CssMediaRule)sheet.CssRules[1]).Media.AppendMedium("print");
+                break;
+            case "adoptedStyleSheets":
+                var adopted = new CssStyleSheet(document);
+                adopted.ReplaceSync("#a { color: green }");
+                document.AdoptedStyleSheets.Add(adopted);
+                break;
+            case "replaceSync":
+                document.AdoptedStyleSheets[0].ReplaceSync("#a { color: green }");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(change), change, message: null);
+        }
+    }
+
+    [Theory]
+    [InlineData("insertRule")]
+    [InlineData("deleteRule")]
+    [InlineData("declaration")]
+    [InlineData("selectorText")]
+    [InlineData("media")]
+    [InlineData("disabled")]
+    [InlineData("groupingRule")]
+    [InlineData("ruleMedia")]
+    [InlineData("adoptedStyleSheets")]
+    [InlineData("replaceSync")]
+    public void StyleSheetChange_InvalidatesTheStylesOfTheDocument(string change)
+    {
+        var document = ParseWithStyleSheets();
+        var engine = document.GetStyleEngine();
+        var before = ComputeAll(document);
+        var version = engine.Version;
+
+        ChangeStyleSheet(document, change);
+        Assert.NotEqual(version, engine.Version);
+        Assert.NotEmpty(Restyled(document, before));
+    }
+
+    [Theory]
+    [InlineData("insertRule")]
+    [InlineData("deleteRule")]
+    [InlineData("declaration")]
+    [InlineData("selectorText")]
+    [InlineData("media")]
+    [InlineData("disabled")]
+    [InlineData("groupingRule")]
+    [InlineData("ruleMedia")]
+    [InlineData("adoptedStyleSheets")]
+    [InlineData("replaceSync")]
+    public void StyleSheetChangeOfAnotherDocument_KeepsTheStylesAndTheLayout(string change)
+    {
+        var document = ParseWithStyleSheets();
+        var other = ParseWithStyleSheets();
+        var engine = document.GetStyleEngine();
+        var layoutEngine = document.GetLayoutEngine();
+        layoutEngine.EnsureLayout();
+        var before = ComputeAll(document);
+        var version = engine.Version;
+        var layoutCount = layoutEngine.LayoutCount;
+
+        ChangeStyleSheet(other, change);
+        Assert.Equal(version, engine.Version);
+        Assert.Empty(Restyled(document, before));
+        Assert.False(layoutEngine.NeedsLayout);
+        layoutEngine.EnsureLayout();
+        Assert.Equal(layoutCount, layoutEngine.LayoutCount);
     }
 
     [Fact]
@@ -343,6 +443,3 @@ public sealed class StyleInvalidationTests : IDisposable
         Assert.Equal("rgb(125, 125, 125)", Get(document, "#div", "--c"));
     }
 }
-
-[CollectionDefinition(nameof(StyleInvalidationCollection), DisableParallelization = true)]
-public sealed class StyleInvalidationCollection;

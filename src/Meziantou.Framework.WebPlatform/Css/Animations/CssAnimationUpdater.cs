@@ -180,7 +180,7 @@ internal static class CssAnimationUpdater
         {
             NameIndex = index,
             KeyframesRule = parameters.Rule,
-            KeyframesCacheKey = (CssStyleVersion.Current, parameters.Easing),
+            KeyframesCacheKey = (style.Element.NodeDocument.StyleSheetsVersion, parameters.Easing),
             StylePaused = parameters.Paused,
             TimelineReference = parameters.Timeline,
             TimelineTreeScope = style.TryGetCascadedValue("animation-timeline", out var timelineCascaded) ? timelineCascaded.TreeScope : null,
@@ -205,7 +205,7 @@ internal static class CssAnimationUpdater
         {
             if (!animation.KeyframesOverridden)
             {
-                var cacheKey = (CssStyleVersion.Current, parameters.Easing);
+                var cacheKey = (style.Element.NodeDocument.StyleSheetsVersion, parameters.Easing);
                 if (!ReferenceEquals(animation.KeyframesRule, parameters.Rule) || !Equals(animation.KeyframesCacheKey, cacheKey))
                 {
                     animation.KeyframesRule = parameters.Rule;

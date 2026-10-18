@@ -97,7 +97,7 @@ internal sealed class LayoutWorklet : Worklet
             return;
 
         // The computed display of the children depends on the childDisplay of the layout, and the boxes on its registration
-        CssStyleVersion.Increment();
+        CssStyleVersion.Increment(Document);
         Document.InvalidateLayout(rebuildBoxTree: true);
     }
 

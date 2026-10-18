@@ -153,8 +153,8 @@ internal sealed partial class StyleEngine
         if (!work.Collect(invalidations))
             return false;
 
-        // (the styles computed by the cascades of the checks are computed with the current versions: a change of the process-wide
-        // CssStyleVersion by another document is seen by the next update, as in the layout, see SuspendUpdates)
+        // (the styles computed by the cascades of the checks are computed with the current versions: a change of a version is
+        // seen by the next update, as in the layout, see SuspendUpdates)
         var previousRecalculating = _recalculating;
         _recalculating = true;
         _updatesSuspended++;

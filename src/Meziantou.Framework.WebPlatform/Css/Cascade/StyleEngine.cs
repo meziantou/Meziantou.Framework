@@ -785,8 +785,8 @@ internal sealed partial class StyleEngine
     {
         EnsureUpToDate();
 
-        // The styles are computed for one version: a change of the process-wide CssStyleVersion by another document while they
-        // are computed (e.g. when a style reads the environment) is seen by the next read, so that a style never inherits from
+        // The styles are computed for one version: a change of the versions while they are computed (e.g. when a style reads
+        // the environment) is seen by the next read, so that a style never inherits from
         // the style of its parent of another generation (see SuspendUpdates)
         _updatesSuspended++;
         try
@@ -828,7 +828,7 @@ internal sealed partial class StyleEngine
             }
 
             // (a style may be computed by the computation of another one, e.g. when the styles are computed again after a change
-            // of the process-wide CssStyleVersion: it is not computed twice, its descendants would inherit from the first one)
+            // of the style sheets: it is not computed twice, its descendants would inherit from the first one)
             for (var i = missing.Count - 1; i >= 0; i--)
             {
                 if (!_styles.ContainsKey((missing[i], null)))
@@ -1245,9 +1245,9 @@ internal sealed partial class StyleEngine
 
     /// <summary>
     /// Suspends the checks of the versions the computed styles depend on until the returned scope is disposed: the layout reads
-    /// the styles of the whole document for one version (see <see cref="Layout.LayoutEngine"/>). Without it, a change of the
-    /// process-wide <see cref="CssStyleVersion"/> by another document in the middle of the box tree construction would start a
-    /// new generation of styles, and lose the styles computed so far as the before-change styles of the transitions
+    /// the styles of the whole document for one version (see <see cref="Layout.LayoutEngine"/>). Without it, a change of a
+    /// version (e.g. <see cref="Document.StyleSheetsVersion"/>) in the middle of the box tree construction would start a new
+    /// generation of styles, and lose the styles computed so far as the before-change styles of the transitions
     /// (https://drafts.csswg.org/css-transitions-1/#before-change-style).
     /// </summary>
     internal UpdateSuspension SuspendUpdates()
@@ -1275,7 +1275,7 @@ internal sealed partial class StyleEngine
         var environment = _environmentOverride ?? CreateEnvironment(_document);
         var domVersion = _document.DomVersion;
         var elementStateVersion = _document.ElementStateVersion;
-        var styleVersion = CssStyleVersion.Current;
+        var styleVersion = _document.StyleSheetsVersion;
         var animationVersion = _document.AnimationsOrNull?.Version ?? 0;
 
         // The computed values of the font-relative units depend on the fonts (e.g. a web font was loaded)

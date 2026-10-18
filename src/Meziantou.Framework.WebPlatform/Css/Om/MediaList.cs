@@ -16,6 +16,9 @@ public sealed class MediaList : IReadOnlyList<string>
     /// <summary>Called when the media queries change (e.g. to update the media attribute of the owner node).</summary>
     private readonly Action<string>? _changed;
 
+    /// <summary>The style sheet or the rule (@media, @import) the media queries belong to.</summary>
+    private object? _owner;
+
     internal MediaList(string? mediaText = null, Action<string>? changed = null)
     {
         if (!string.IsNullOrEmpty(mediaText))
@@ -31,6 +34,20 @@ public sealed class MediaList : IReadOnlyList<string>
         _queries.AddRange(MediaQueries.ParseList(values));
     }
 
+    /// <summary>
+    /// Sets the style sheet or the rule the media queries belong to, unless it is already set (the style sheet imported by an
+    /// @import rule shares the media list of the rule).
+    /// </summary>
+    internal void SetOwner(object owner) => _owner ??= owner;
+
+    /// <summary>The document whose styles depend on the media queries.</summary>
+    private Document? StyleDocument => _owner switch
+    {
+        StyleSheet sheet => sheet.StyleDocument,
+        CssRule rule => rule.ParentStyleSheet?.StyleDocument,
+        _ => null,
+    };
+
     /// <summary>https://drafts.csswg.org/cssom/#dom-medialist-mediatext</summary>
     [IdlMember("mediaText", "https://drafts.csswg.org/cssom/#dom-medialist-mediatext")]
     public string MediaText
@@ -44,7 +61,7 @@ public sealed class MediaList : IReadOnlyList<string>
                 _queries.AddRange(MediaQueries.ParseList(value));
             }
 
-            Cascade.CssStyleVersion.Increment();
+            Cascade.CssStyleVersion.Increment(StyleDocument);
             _changed?.Invoke(MediaText);
         }
     }
@@ -84,7 +101,7 @@ public sealed class MediaList : IReadOnlyList<string>
             return;
 
         _queries.Add(queries[0]);
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(StyleDocument);
         _changed?.Invoke(MediaText);
     }
 
@@ -97,7 +114,7 @@ public sealed class MediaList : IReadOnlyList<string>
         if (queries.Count != 1 || _queries.RemoveAll(q => q == queries[0]) == 0)
             throw DomException.NotFound("The medium is not in the list");
 
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(StyleDocument);
         _changed?.Invoke(MediaText);
     }
 

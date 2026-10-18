@@ -62,6 +62,6 @@ public static partial class Css
             throw new DomException($"'{initialValue}' is not a valid initial value for the syntax '{definition.Syntax}'", "SyntaxError");
 
         propertySet.Add(name, new CustomPropertyRegistration(name, syntax, definition.Inherits, initialValue));
-        CssStyleVersion.Increment();
+        CssStyleVersion.Increment(document);
     }
 }

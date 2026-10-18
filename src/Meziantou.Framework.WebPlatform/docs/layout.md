@@ -421,7 +421,7 @@ the output that the geometry APIs, the observers and the painting read.
   nor lazy element (`LayoutEngine.RequestRenderingUpdates()` registers a document without computing its layout).
 - A geometry read during a layout pass returns the tree being computed (no re-entrancy).
 - The layout suspends the checks of the style versions while it runs (`StyleEngine.SuspendUpdates`): it reads the styles of
-  one version. Otherwise, a change of the process-wide `CssStyleVersion` by another document in the middle of the box tree
+  one version. Otherwise, a change of a version (e.g. `Document.StyleSheetsVersion`) in the middle of the box tree
   construction would start a new generation of styles and lose the styles computed so far as the before-change styles of
   the transitions.
 - The documents of the `iframe`s are laid out with the size of their viewport (the initial containing block is the
@@ -5461,7 +5461,7 @@ element from its computed font properties:
   The lists are discarded when the font faces or the environment change (`FontSelector.Version` is
   incremented when a font face is loaded or fails to load, is added to or removed from the font face set, or when the
   descriptors of a font face created by a script change; `StyleEngine` recomputes the styles when it changes). When the DOM
-  or a style sheet changes (the version of the style sheets is process-wide: it also changes with the other documents), the
+  or a style sheet of the document changes (`Document.StyleSheetsVersion`), the
   font faces of the trees are collected again and the lists are kept when they are the same faces with the same descriptors
   and fonts (`HasCurrentFaces`, `WebFontFace.IsCurrent`): the styles keep sharing the lists, which the inline layout compares
   by reference to shape the texts of sibling inline boxes together, and the lists keep their caches of shaped texts.

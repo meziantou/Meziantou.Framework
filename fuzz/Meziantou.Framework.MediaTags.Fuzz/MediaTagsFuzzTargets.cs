@@ -10,6 +10,7 @@ namespace Meziantou.Framework.MediaTags.Fuzz;
 /// the file starts in the stream, nor on how many bytes each read returns. A successful write produces a file that reads
 /// back, in the same format, with the tags it was given, and writing the tags read from it again changes none of them.
 /// </summary>
+/// <remarks>An empty text field is the same as a missing one: the writers do not write it.</remarks>
 public static class MediaTagsFuzzTargets
 {
     private const string TestFilesPrefix = "TestFiles/";
@@ -295,6 +296,12 @@ public static class MediaTagsFuzzTargets
         {
             if (fields is not null && !fields.Contains(name))
                 return;
+
+            // The writers do not write an empty text, so it reads back as a missing one
+            if (value is "")
+            {
+                value = null;
+            }
 
             builder.Append(name).Append(": ").Append(FuzzAssert.Format(value is IFormattable formattable ? formattable.ToString(format: null, CultureInfo.InvariantCulture) : value)).Append('\n');
         }

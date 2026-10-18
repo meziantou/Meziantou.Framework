@@ -95,7 +95,7 @@ public partial class Document
         if (!engine.BeginAnimationFlush())
         {
             UpdateLayoutForContainerQueries(engine);
-            engine.CommitTransitionCancellations();
+            engine.CommitPendingCancellations();
             return;
         }
 
@@ -125,13 +125,13 @@ public partial class Document
         _animations?.UpdateCssNamedTimelines(engine);
         engine.PruneBeforeChangeStyles();
         UpdateLayoutForContainerQueries(engine);
-        engine.CommitTransitionCancellations();
+        engine.CommitPendingCancellations();
     }
 
     /// <summary>
     /// Updates the layout when the styles depend on the sizes of the size containers: the layout computes the styles of their
     /// descendants again with the sizes of the containers, and so their animations (https://drafts.csswg.org/css-conditional-5/#animated-containers).
-    /// The styles are then settled: the transitions canceled by them are canceled (see <see cref="Css.Cascade.StyleEngine.CommitTransitionCancellations"/>).
+    /// The styles are then settled: the transitions and animations canceled by them are canceled (see <see cref="Css.Cascade.StyleEngine.CommitPendingCancellations"/>).
     /// </summary>
     private void UpdateLayoutForContainerQueries(Css.Cascade.StyleEngine engine)
     {

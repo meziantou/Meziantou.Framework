@@ -74,6 +74,13 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// <summary>The position of the animation in the global animation list (https://drafts.csswg.org/web-animations-1/#global-animation-list).</summary>
     internal long GlobalIndex { get; private protected set; }
 
+    /// <summary>
+    /// Whether the CSS transition or CSS animation was canceled by a style that the layout may compute again with the size of its
+    /// query container: it has no effect, and it is canceled once the styles are settled, unless the style is discarded (it then
+    /// runs again, see <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>).
+    /// </summary>
+    internal bool IsCancellationPending { get; set; }
+
     internal override Window? RelevantGlobal => _realmWindow ?? _timeline?.Document?.RelevantWindow;
 
     Window? IRealmBoundPlatformObject.RealmWindow => _realmWindow;

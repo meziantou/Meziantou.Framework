@@ -1,3 +1,4 @@
+using Meziantou.Framework.WebPlatform.Animations;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
@@ -217,6 +218,93 @@ public sealed class ContainerQueryLayoutTests : IDisposable
         Assert.Empty(target.GetAnimations());
         RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
         Assert.Equal(1, canceled);
+    }
+
+    [Fact]
+    public void Animation_KeepsRunningWhenTheContainerIsLaidOutAgain()
+    {
+        // The container next to the float is laid out in the whole width to measure it, then beside the float: the style of the
+        // descendants computed with the first size does not cancel the animation started with the second one
+        var document = ParseAnimationNextToFloat("animation-name: narrow");
+        var target = document.GetElementById("target")!;
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
+        var events = RecordAnimationEvents(target);
+        ((HtmlElement)document.Body!.FirstElementChild!).Style.SetProperty("width", "300px");
+        Assert.Equal("0px", Get(document, "target", "width"));
+
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60)); // The animation starts
+        var animation = Assert.IsType<CssAnimation>(Assert.Single(target.GetAnimations()));
+        Assert.Equal("narrow", animation.AnimationName);
+        for (var i = 0; i < 4; i++)
+        {
+            RunFrame(TimeSpan.FromMilliseconds(250));
+        }
+
+        Assert.Same(animation, Assert.Single(target.GetAnimations()));
+        Assert.Equal(1000d, animation.CurrentTime!.Value.Value);
+        Assert.Equal("100px", Get(document, "target", "width"));
+        Assert.Equal(["animationcancel:wide", "animationstart:narrow"], events);
+    }
+
+    [Fact]
+    public void Animation_KeepsItsTimingWhenTheContainerIsLaidOutAgain()
+    {
+        var document = ParseAnimationNextToFloat("animation-duration: 20s; animation-play-state: paused");
+        var target = document.GetElementById("target")!;
+        var animation = Assert.IsType<CssAnimation>(Assert.Single(target.GetAnimations()));
+        RunFrame(TimeSpan.FromMilliseconds(1000));
+        var events = RecordAnimationEvents(target);
+        ((HtmlElement)document.Body!.FirstElementChild!).Style.SetProperty("width", "300px");
+        Assert.Equal(AnimationPlayState.Paused, animation.PlayState);
+
+        for (var i = 0; i < 4; i++)
+        {
+            RunFrame(TimeSpan.FromMilliseconds(250));
+        }
+
+        Assert.Same(animation, Assert.Single(target.GetAnimations()));
+        Assert.Equal(AnimationPlayState.Paused, animation.PlayState);
+        Assert.Equal(20000d, animation.EffectValue!.Duration);
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public void Animation_CanceledByTheStyleOfTheNewSize()
+    {
+        var document = ParseAnimationNextToFloat("animation-name: narrow");
+        var target = document.GetElementById("target")!;
+        var floatElement = (HtmlElement)document.Body!.FirstElementChild!;
+        floatElement.Style.SetProperty("width", "300px");
+        Assert.Equal("0px", Get(document, "target", "width"));
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
+        var events = RecordAnimationEvents(target);
+
+        // The container is wide again: the animation of the narrow style is canceled
+        floatElement.Style.SetProperty("width", "100px");
+        Assert.Equal("wide", Assert.IsType<CssAnimation>(Assert.Single(target.GetAnimations())).AnimationName);
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
+        Assert.Equal(["animationcancel:narrow", "animationstart:wide"], events);
+    }
+
+    /// <summary>Parses a container next to a float whose descendant runs the <c>wide</c> animation, and the declarations when the container is narrow.</summary>
+    private Document ParseAnimationNextToFloat(string narrowDeclarations)
+    {
+        var document = Parse(Float + "<div id=c style='container-type: inline-size; overflow: hidden'><div id=target></div></div>"
+            + "<style>@keyframes wide { from, to { width: 50px } } @keyframes narrow { from { width: 0 } to { width: 1000px } }"
+            + "#target { animation: wide 10s linear } @container (width < 600px) { #target { " + narrowDeclarations + " } }</style>");
+        Assert.Equal("50px", Get(document, "target", "width"));
+        return document;
+    }
+
+    private static List<string> RecordAnimationEvents(Element target)
+    {
+        var events = new List<string>();
+        foreach (var type in new[] { "animationstart", "animationiteration", "animationend", "animationcancel" })
+        {
+            target.AddEventListener(type, e => events.Add(e.Type + ":" + ((AnimationEvent)e).AnimationName));
+        }
+
+        return events;
     }
 
     private Document ParseTransitionNextToFloat()

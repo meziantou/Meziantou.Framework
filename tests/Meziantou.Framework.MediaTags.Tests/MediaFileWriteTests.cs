@@ -273,6 +273,20 @@ public sealed class MediaFileWriteTests
     }
 
     [Fact]
+    public void WriteTags_Mp3EndingInsideItsTagHeader_IsRefused()
+    {
+        // Kept as audio, the cut-off header would be completed by the ID3v1 tag written after it, into a header
+        // that declares a size past the end of the file.
+        using var input = new MemoryStream("ID3\u0004\u0000Mb"u8.ToArray());
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo(), MediaFormat.Mp3);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
     public void WriteTags_DoesNotTouchAnUnrelatedFileNamedAfterTheTarget()
     {
         // The temporary file used to stage the new content must not have a name a caller could already be

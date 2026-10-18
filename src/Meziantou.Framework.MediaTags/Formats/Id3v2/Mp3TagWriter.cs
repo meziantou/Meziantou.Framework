@@ -10,9 +10,21 @@ internal sealed class Mp3TagWriter : IMediaTagWriter
         {
             inputStream.Position = 0;
 
-            // Determine where the audio data starts (skip existing ID3v2 tag).
-            if (!Id3v2Reader.TryGetTagSize(inputStream, out var existingTagSize))
-                return MediaTagResult.Failure(MediaTagError.CorruptFile, "The ID3v2 tag declares a size that runs past the end of the file.");
+            // Determine where the audio data starts (skip existing ID3v2 tags). Some taggers prepend a new tag
+            // without removing the old one. Only the first is read, but every one is skipped: otherwise a write
+            // leaves a stale tag at the start of the audio, and removing the tags brings it back.
+            var existingTagSize = 0L;
+            while (true)
+            {
+                inputStream.Position = existingTagSize;
+                if (!Id3v2Reader.TryGetTagSize(inputStream, out var tagSize))
+                    return MediaTagResult.Failure(MediaTagError.CorruptFile, "The ID3v2 tag declares a size that runs past the end of the file.");
+
+                if (tagSize == 0)
+                    break;
+
+                existingTagSize += tagSize;
+            }
 
             // Determine where the audio data ends (check for ID3v1 tag)
             var audioEnd = inputStream.Length;

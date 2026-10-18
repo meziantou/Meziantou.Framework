@@ -420,13 +420,33 @@ public sealed class Mp3Id3v2Tests
             Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", TrackTotal = 12, DiscTotal = 3 }).IsSuccess);
 
             var tags = MediaFile.ReadTags(tempFile).Value;
+            Assert.Null(tags.TrackNumber);
             Assert.Equal(12, tags.TrackTotal);
+            Assert.Null(tags.DiscNumber);
             Assert.Equal(3, tags.DiscTotal);
         }
         finally
         {
             File.Delete(tempFile);
         }
+    }
+
+    [Fact]
+    public void RemoveTags_StackedId3v2Tags_RemovesThemAll()
+    {
+        // Some taggers prepend a new tag without removing the old one. Only the first is read, so removing it
+        // alone would bring back the tags of the second.
+        var source = File.ReadAllBytes(GetTestFilePath("basic.mp3"));
+        Assert.Equal("Test Title", MediaFile.ReadTags(new MemoryStream(source), MediaFormat.Mp3).Value.Title);
+        byte[] bytes = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 0, .. source];
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.False(written.AsSpan().StartsWith("ID3"u8));
+        Assert.Null(MediaFile.ReadTags(new MemoryStream(written), MediaFormat.Mp3).Value.Title);
     }
 
     [Fact]

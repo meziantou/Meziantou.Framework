@@ -458,10 +458,34 @@ public sealed class FontTests
         Assert.Equal(16, font.Face.GetLegacyKerning(2, 3));
         Assert.False(Load(Subtable(Horizontal | Minimum, (2, 3, 2))).Face.HasLegacyKerning);
 
-        // The version 1.0 of the table, which Apple defines, and a table too short for its header are not read.
+        // The version 1.0 of the table, which Apple defines: a 32-bit header, then subtables with a 32-bit length, a
+        // coverage (bit 15: vertical, the format in the low byte) and a tuple index. The pairs of format 0 are the ones
+        // of version 0; a vertical subtable and a subtable of another format are skipped.
+        static byte[] AppleSubtable(int coverage, params (int Left, int Right, int Value)[] pairs)
+        {
+            var writer = new FontWriter();
+            writer.UInt32((uint)(16 + (pairs.Length * 6)));
+            writer.UInt16(coverage);
+            writer.UInt16(0);
+            writer.UInt16(pairs.Length);
+            writer.Zeros(6);
+            foreach (var (left, right, value) in pairs)
+            {
+                writer.UInt16(left);
+                writer.UInt16(right);
+                writer.Int16(value);
+            }
+
+            return writer.ToArray();
+        }
+
         var builder = FontSamples.Boxes();
+        builder.RawTables["kern"] = [0, 1, 0, 0, 0, 0, 0, 3, .. AppleSubtable(0x8000, (2, 3, 1)), .. AppleSubtable(0x0002, (2, 3, 2)), .. AppleSubtable(0, (2, 3, 5))];
+        Assert.Equal(5, FontTestSupport.Load(builder).Face.GetLegacyKerning(2, 3));
         builder.RawTables["kern"] = [0, 1, 0, 0, 0, 0, 0, 1, .. Subtable(Horizontal, (2, 3, 5))];
         Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
+
+        // A table too short for its header is not read.
         builder.RawTables["kern"] = [0, 0];
         Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
 
@@ -487,6 +511,46 @@ public sealed class FontTests
         Assert.Equal(-88, font.Face.GetLegacyKerning(0, 12));
         Assert.Equal((10999 % 200) - 100, font.Face.GetLegacyKerning(97, 38));
         Assert.Equal(0, font.Face.GetLegacyKerning(97, 39));
+    }
+
+    [Fact]
+    public void TheCaretsOfALigatureAreReadFromTheGlyphDefinitionTable()
+    {
+        // A GDEF header (version 1.0) whose list of ligature carets covers two glyphs: the box A with two carets of
+        // format 1 (a coordinate), the box B with a caret of format 2 (a point of the outline), which is not read.
+        ushort[] gdef =
+        [
+            1, 0, 0, 0, 12, 0,
+
+            // The list: the coverage, the number of ligatures and their offsets.
+            30, 2, 8, 22,
+
+            // The box A: two carets, then the carets.
+            2, 6, 10, 1, 100, 1, 300,
+
+            // The box B.
+            1, 4, 2, 5,
+
+            // The coverage, format 1.
+            1, 2, FontSamples.BoxA, FontSamples.BoxB,
+        ];
+        var builder = FontSamples.Boxes();
+        builder.RawTables["GDEF"] = [.. gdef.SelectMany(value => new[] { (byte)(value >> 8), (byte)value })];
+        var face = FontTestSupport.Load(builder).Face;
+
+        Span<int> carets = stackalloc int[4];
+        Assert.Equal(2, face.GetLigatureCarets(FontSamples.BoxA, carets));
+        Assert.Equal([100, 300], carets[..2].ToArray());
+        Assert.Equal(0, face.GetLigatureCarets(FontSamples.BoxB, carets));
+        Assert.Equal(0, face.GetLigatureCarets(FontSamples.BoxC, carets));
+        Assert.Equal(0, face.GetLigatureCarets(10_000, carets));
+
+        // The carets beyond the room given are left out.
+        Assert.Equal(1, face.GetLigatureCarets(FontSamples.BoxA, carets[..1]));
+        Assert.Equal(100, carets[0]);
+
+        // A font without the table has no carets.
+        Assert.Equal(0, FontTestSupport.Load(FontSamples.Boxes()).Face.GetLigatureCarets(FontSamples.BoxA, carets));
     }
 
     [Theory]

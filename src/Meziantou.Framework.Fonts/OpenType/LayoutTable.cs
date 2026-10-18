@@ -180,6 +180,9 @@ internal sealed class LayoutTable
     /// <summary>Gets the index, in the feature list, of a feature of a language system.</summary>
     public static int GetFeatureIndex(ReadOnlySpan<byte> table, int languageSystem, int index) => FontBinary.UInt16(table, languageSystem + 6 + (index * 2));
 
+    /// <summary>Gets the number of features of the feature list.</summary>
+    public int GetFeatureListCount(ReadOnlySpan<byte> table) => FontBinary.UInt16(table, _features);
+
     /// <summary>Gets the tag of a feature of the feature list, or 0 when the index is not one of its features.</summary>
     public uint GetFeatureTag(ReadOnlySpan<byte> table, int feature)
         => (uint)feature < (uint)FontBinary.UInt16(table, _features) ? FontBinary.UInt32(table, _features + 2 + (feature * 6)) : 0;

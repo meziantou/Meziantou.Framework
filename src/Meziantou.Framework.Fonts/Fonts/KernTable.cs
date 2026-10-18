@@ -6,9 +6,10 @@ namespace Meziantou.Framework.Fonts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Only what the OpenType specification describes is read: version 0 of the table, and its horizontal subtables of
-/// format 0 (sorted pairs) that hold kerning values. Minimum values, cross-stream adjustments, the class-based format 2
-/// and the versions of the table Apple defines are skipped: the font is then used without them.
+/// Version 0 of the table (OpenType specification) and version 1.0 (Apple TrueType Reference Manual, "The 'kern'
+/// table") are read: their horizontal subtables of format 0 (sorted pairs) that hold kerning values. Minimum values,
+/// cross-stream adjustments, the variation subtables of version 1.0 and the other formats are skipped: the font is
+/// then used without them.
 /// </para>
 /// <para>
 /// The subtables are validated when the table is read, so a lookup never fails. A subtable declares its length in 16
@@ -35,6 +36,9 @@ internal sealed class KernTable
 
     public static KernTable Read(ReadOnlySpan<byte> table)
     {
+        if (table.Length >= 8 && FontBinary.UInt32(table, 0) == 0x00010000)
+            return ReadAppleTable(table);
+
         if (table.Length < HeaderLength || FontBinary.UInt16(table, 0) != 0)
             return new KernTable([]);
 
@@ -70,6 +74,46 @@ internal sealed class KernTable
 
             // A subtable shorter than its header would not advance.
             if (length < SubtableHeaderLength)
+                break;
+
+            offset += length;
+        }
+
+        return new KernTable([.. subtables]);
+    }
+
+    /// <summary>
+    /// Reads version 1.0 of the table: a 32-bit version and count, then subtables whose header is a 32-bit length, a
+    /// coverage (bit 15: vertical, bit 14: cross-stream, bit 13: variation; the low byte is the format) and a tuple
+    /// index. The data of format 0 is the one of version 0.
+    /// </summary>
+    private static KernTable ReadAppleTable(ReadOnlySpan<byte> table)
+    {
+        const int AppleHeaderLength = 8;
+        const int AppleSubtableHeaderLength = 8;
+        var count = FontBinary.UInt32(table, 4);
+        var subtables = new List<Subtable>();
+        long offset = AppleHeaderLength;
+        for (var i = 0L; i < count; i++)
+        {
+            if (offset + AppleSubtableHeaderLength > table.Length)
+                break;
+
+            long length = FontBinary.UInt32(table, (int)offset);
+            var coverage = FontBinary.UInt16(table, (int)offset + 4);
+            if ((coverage & 0xFF) == 0 && (coverage & 0xE000) == 0 && offset + AppleSubtableHeaderLength + Format0HeaderLength <= table.Length)
+            {
+                var pairCount = FontBinary.UInt16(table, (int)offset + AppleSubtableHeaderLength);
+                var pairs = offset + AppleSubtableHeaderLength + Format0HeaderLength;
+                var pairsLength = (long)pairCount * PairLength;
+                if (pairs + pairsLength <= Math.Min(table.Length, offset + length) && pairCount > 0)
+                {
+                    subtables.Add(new Subtable((int)pairs, pairCount, IsOverride: false));
+                }
+            }
+
+            // A subtable shorter than its header would not advance.
+            if (length < AppleSubtableHeaderLength)
                 break;
 
             offset += length;

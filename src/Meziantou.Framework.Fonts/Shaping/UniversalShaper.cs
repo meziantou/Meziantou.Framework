@@ -670,11 +670,12 @@ internal static class UniversalShaper
     /// Gives the glyphs the bits of the features that apply to a part of them: the reph at the start of a cluster, and
     /// the topographical features.
     /// </summary>
-    /// <param name="info">The characters of the run, cut into clusters.</param>
+    /// <param name="buffer">The characters of the run, cut into clusters, and the characters around it.</param>
     /// <param name="firstBit">The bit of the first feature of the plan in the masks of the glyphs.</param>
     /// <param name="script">The script of the run.</param>
-    public static void SetMasks(Span<GlyphInfo> info, int firstBit, UnicodeScript script)
+    public static void SetMasks(GlyphBuffer buffer, int firstBit, UnicodeScript script)
     {
+        var info = buffer.Info;
         // "Feature application is scoped to the first three glyphs in a cluster."
         for (var start = 0; start < info.Length;)
         {
@@ -690,7 +691,7 @@ internal static class UniversalShaper
 
         if (HasJoiningLetters(script))
         {
-            ArabicShaper.SetFormMasks(info, [firstBit + Isol, firstBit + Fina, -1, -1, firstBit + Medi, -1, firstBit + Init]);
+            ArabicShaper.SetFormMasks(buffer, [firstBit + Isol, firstBit + Fina, -1, -1, firstBit + Medi, -1, firstBit + Init]);
 
             // A free variation selector of Mongolian is of the form of its letter: the lookups of the form see both.
             var forms = (1u << (firstBit + Isol)) | (1u << (firstBit + Init)) | (1u << (firstBit + Medi)) | (1u << (firstBit + Fina));

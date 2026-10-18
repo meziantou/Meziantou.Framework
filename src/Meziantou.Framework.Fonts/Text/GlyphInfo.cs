@@ -43,6 +43,13 @@ internal struct GlyphInfo
     /// </summary>
     public const int Hidden = 0x10;
 
+    /// <summary>
+    /// The text cannot be broken before the glyph without shaping the two parts again: what the font did here depends
+    /// on characters on both sides (a contextual rule, a pair of glyphs, joined letters, a syllable). The glyph is never
+    /// the first of its range: a break before it would change the glyphs or their positions.
+    /// </summary>
+    public const int UnsafeToBreak = 0x20;
+
     /// <summary>The identifier of the glyph; before the characters are mapped, their code point.</summary>
     public int Glyph;
 
@@ -105,4 +112,7 @@ internal struct GlyphInfo
 
     /// <summary>Gets a value indicating whether the glyph still stands for a default ignorable character.</summary>
     public readonly bool IsIgnorable => (Flags & (DefaultIgnorable | Substituted)) == DefaultIgnorable;
+
+    /// <summary>Gets a value indicating whether the text cannot be broken before the glyph without shaping it again (<see cref="UnsafeToBreak"/>).</summary>
+    public readonly bool IsUnsafeToBreak => (Flags & UnsafeToBreak) != 0;
 }

@@ -962,6 +962,14 @@ internal sealed class FontFace
         return names;
     }
 
+    /// <summary>Gets the positions of the carets inside a ligature glyph, in font units along its advance, from the <c>GDEF</c> table.</summary>
+    /// <param name="glyphId">The ligature glyph.</param>
+    /// <param name="carets">Receives the positions, in the order of the components of the ligature.</param>
+    /// <returns>The number of carets the font gives for the glyph; 0 when it gives none.</returns>
+    /// <exception cref="InvalidFontException">The list of the carets is malformed.</exception>
+    public int GetLigatureCarets(int glyphId, Span<int> carets)
+        => Gdef is null || (uint)glyphId >= (uint)GlyphCount ? 0 : Gdef.GetLigatureCarets(GdefData.Span, this, glyphId, carets);
+
     /// <summary>
     /// Gets the delta of a value of the layout tables for the instance, from the item variation store of the GDEF
     /// table, rounded to a font unit; 0 for the default instance.

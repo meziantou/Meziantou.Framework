@@ -53,9 +53,66 @@ internal sealed class GlyphBuffer
     /// <summary>Gets the positions of the glyphs, once <see cref="CreatePositions"/> was called.</summary>
     public Span<GlyphPosition> Positions => _positionStorage.AsSpan(0, _positionCount)[..Length];
 
-    /// <summary>Removes every glyph.</summary>
+    /// <summary>The greatest number of characters of context kept on each side of a run.</summary>
+    public const int MaxContextLength = 5;
+
+    private readonly int[] _preContext = new int[MaxContextLength];
+    private readonly int[] _postContext = new int[MaxContextLength];
+    private int _preContextLength;
+    private int _postContextLength;
+
+    /// <summary>Gets the characters of the text before the run, from the nearest one, which change how its first characters are shaped (the letters that join).</summary>
+    public ReadOnlySpan<int> PreContext => _preContext.AsSpan(0, _preContextLength);
+
+    /// <summary>Gets the characters of the text after the run, from the nearest one.</summary>
+    public ReadOnlySpan<int> PostContext => _postContext.AsSpan(0, _postContextLength);
+
+    /// <summary>
+    /// Sets the characters of the text around the run, which is shaped as a part of a longer text: the letters of a
+    /// joining script take the forms they have in the text. The first characters of each side are kept, from the
+    /// nearest one.
+    /// </summary>
+    /// <param name="before">The characters before the run, from the nearest one.</param>
+    /// <param name="after">The characters after the run, from the nearest one.</param>
+    public void SetContext(ReadOnlySpan<int> before, ReadOnlySpan<int> after)
+    {
+        _preContextLength = Math.Min(before.Length, MaxContextLength);
+        before[.._preContextLength].CopyTo(_preContext);
+        _postContextLength = Math.Min(after.Length, MaxContextLength);
+        after[.._postContextLength].CopyTo(_postContext);
+    }
+
+    /// <summary>
+    /// Marks the glyphs of a range that a break would separate from what the font did with the glyphs before them:
+    /// those whose cluster is not the smallest of the range (<see cref="GlyphInfo.UnsafeToBreak"/>).
+    /// </summary>
+    public void MarkUnsafeToBreak(int start, int end)
+    {
+        start = Math.Max(start, 0);
+        end = Math.Min(end, Length);
+        if (end - start < 2)
+            return;
+
+        var cluster = _info[start].Cluster;
+        for (var i = start + 1; i < end; i++)
+        {
+            cluster = Math.Min(cluster, _info[i].Cluster);
+        }
+
+        for (var i = start; i < end; i++)
+        {
+            if (_info[i].Cluster != cluster)
+            {
+                _info[i].Flags |= GlyphInfo.UnsafeToBreak;
+            }
+        }
+    }
+
+    /// <summary>Removes every glyph and the context.</summary>
     public void Clear()
     {
+        _preContextLength = 0;
+        _postContextLength = 0;
         Length = 0;
         _operations = 0;
         _nextLigatureId = 0;

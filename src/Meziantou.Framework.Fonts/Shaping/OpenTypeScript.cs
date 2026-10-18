@@ -12,6 +12,36 @@ internal static class OpenTypeScript
     /// <summary>The largest number of tags <see cref="GetTags"/> writes.</summary>
     public const int MaxTagCount = 6;
 
+    private static readonly Lazy<Dictionary<uint, UnicodeScript>> ScriptsByCode = new(CreateScriptsByCode);
+
+    /// <summary>
+    /// Gets the Unicode script of an ISO 15924 code, as a big-endian tag (<c>Latn</c> is <c>0x4C61746E</c>). The code
+    /// of Hiragana and Katakana together (<c>Hrkt</c>) is Katakana, whose tag is the one of both; an unknown code is
+    /// <see cref="UnicodeScript.Unknown"/>.
+    /// </summary>
+    public static UnicodeScript FromIso15924(uint code)
+    {
+        if (code == (((uint)'H' << 24) | ((uint)'r' << 16) | ((uint)'k' << 8) | 't'))
+            return UnicodeScript.Katakana;
+
+        return ScriptsByCode.Value.TryGetValue(code, out var script) ? script : UnicodeScript.Unknown;
+    }
+
+    private static Dictionary<uint, UnicodeScript> CreateScriptsByCode()
+    {
+        var result = new Dictionary<uint, UnicodeScript>();
+        foreach (var script in Enum.GetValues<UnicodeScript>())
+        {
+            var code = UnicodeScripts.GetIso15924Code(script);
+            if (code.Length == 4)
+            {
+                result.TryAdd(((uint)code[0] << 24) | ((uint)code[1] << 16) | ((uint)code[2] << 8) | code[3], script);
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Gets the tags to look for in a script list, by order of preference: the tags of the script, then the default
     /// script, then the tags fonts use in its place.

@@ -215,6 +215,7 @@ internal sealed partial class LayoutApplier
 
         ApplyValue(data, parent, record, format1, ref _buffer.Positions[index]);
         ApplyValue(data, parent, record + length1, format2, ref _buffer.Positions[second]);
+        _buffer.MarkUnsafeToBreak(index, second + 1);
 
         // The second glyph is the first one of the next pair, unless the lookup moved it.
         index = format2 != 0 ? second + 1 : second;
@@ -256,6 +257,7 @@ internal sealed partial class LayoutApplier
 
         ReadAnchor(data, subtable + entry, out var entryX, out var entryY);
         ReadAnchor(data, subtable + exit, out var exitX, out var exitY);
+        _buffer.MarkUnsafeToBreak(previous, index + 1);
         var positions = _buffer.Positions;
         ref var first = ref positions[previous];
         ref var second = ref positions[index];

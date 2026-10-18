@@ -42,12 +42,18 @@ internal static class HangulShaper
     private const int SyllableCount = LeadingCount * VowelCount * TrailingCount;
     private const int DottedCircle = 0x25CC;
 
-    /// <summary>The features of the model: one per position in a block, applied with the features every script has.</summary>
+    /// <summary>
+    /// The features of the model: one per position in a block, applied with the features every script has. The
+    /// contextual alternates (<c>calt</c>) are not in the standard order of the features of Hangul: some fonts give
+    /// them the lookups of the letters of a block, which would also change the letters that are not in one. They
+    /// apply to the other characters of the run.
+    /// </summary>
     public static ShaperPlan Plan { get; } = new(
         [
             new(ShapingFeature.ToTag("ljmo"), 1, ShaperFeatureFlags.PerGlyph),
             new(ShapingFeature.ToTag("vjmo"), 1, ShaperFeatureFlags.PerGlyph),
             new(ShapingFeature.ToTag("tjmo"), 1, ShaperFeatureFlags.PerGlyph),
+            new(ShapingFeature.ToTag("calt"), 1, ShaperFeatureFlags.PerGlyph),
         ],
         finalStage: 1);
 
@@ -179,10 +185,14 @@ internal static class HangulShaper
         }
     }
 
-    /// <summary>Gives the letters of the blocks drawn with letters the bit of the feature of their position.</summary>
+    /// <summary>
+    /// Gives the letters of the blocks drawn with letters the bit of the feature of their position, and the glyphs
+    /// that are not letters the bit of the contextual alternates, which only a horizontal line has.
+    /// </summary>
     /// <param name="info">The glyphs of the run.</param>
     /// <param name="firstBit">The bit of the first feature in the masks of the glyphs.</param>
-    public static void SetMasks(Span<GlyphInfo> info, int firstBit)
+    /// <param name="isVertical">Whether the run is a vertical line of upright glyphs.</param>
+    public static void SetMasks(Span<GlyphInfo> info, int firstBit, bool isVertical)
     {
         foreach (ref var glyph in info)
         {
@@ -190,6 +200,11 @@ internal static class HangulShaper
             {
                 glyph.Mask |= 1u << (firstBit + glyph.ShaperData - Leading);
                 glyph.ShaperData = 0;
+            }
+
+            if (!isVertical && !IsLeading(glyph.CodePoint) && !IsVowel(glyph.CodePoint) && !IsTrailing(glyph.CodePoint))
+            {
+                glyph.Mask |= 1u << (firstBit + 3);
             }
         }
     }

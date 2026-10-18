@@ -95,65 +95,58 @@ internal static partial class ArabicShaper
     }
 
     /// <summary>Gives each letter the bit of the feature of its form.</summary>
-    /// <param name="info">The characters of the run, in the order of the text.</param>
+    /// <param name="buffer">The characters of the run, in the order of the text, and the characters around it.</param>
     /// <param name="firstBit">The bit of the first form in the masks of the glyphs.</param>
-    public static void SetFormMasks(Span<GlyphInfo> info, int firstBit)
+    public static void SetFormMasks(GlyphBuffer buffer, int firstBit)
     {
-        SetFormMasks(info, [firstBit + Isolated, firstBit + Final, firstBit + Final2, firstBit + Final3, firstBit + Medial, firstBit + Medial2, firstBit + Initial]);
+        SetFormMasks(buffer, [firstBit + Isolated, firstBit + Final, firstBit + Final2, firstBit + Final3, firstBit + Medial, firstBit + Medial2, firstBit + Initial]);
     }
 
     /// <summary>Gives each letter the bit of the feature of its form.</summary>
-    /// <param name="info">The characters of the run, in the order of the text.</param>
+    /// <param name="buffer">
+    /// The characters of the run, in the order of the text, and the characters around it: a letter at an end of the run
+    /// joins a letter of the text beyond it (<see cref="GlyphBuffer.PreContext"/>, <see cref="GlyphBuffer.PostContext"/>).
+    /// Two letters that join cannot be shaped apart: the second one is unsafe to break before.
+    /// </param>
     /// <param name="bits">
     /// The bit of each form in the masks of the glyphs, in the order isolated, final, second final, third final,
     /// medial, second medial, initial; a negative value for a form that has no feature.
     /// </param>
-    public static void SetFormMasks(Span<GlyphInfo> info, ReadOnlySpan<int> bits)
+    public static void SetFormMasks(GlyphBuffer buffer, ReadOnlySpan<int> bits)
     {
-        // The letter before the current one, the marks and format characters between them left out.
-        var previous = -1;
+        var info = buffer.Info;
+
+        // The letter before the current one, the marks and format characters between them left out: a letter of the
+        // context before the run has no glyph (its index is BeforeRun), and its form is not set.
+        const int None = -1;
+        const int BeforeRun = -2;
+        var previous = None;
+        var previousCodePoint = 0;
         var previousType = UnicodeJoiningType.NonJoining;
         var previousForm = NoForm;
+        foreach (var codePoint in buffer.PreContext)
+        {
+            var type = UnicodeProperties.GetJoiningType(codePoint);
+            if (type == UnicodeJoiningType.Transparent)
+                continue;
+
+            previous = BeforeRun;
+            previousCodePoint = codePoint;
+            previousType = type;
+            break;
+        }
+
         for (var i = 0; i < info.Length; i++)
         {
             var type = UnicodeProperties.GetJoiningType(info[i].CodePoint);
             if (type == UnicodeJoiningType.Transparent)
                 continue;
 
-            var form = NoForm;
-            if (type != UnicodeJoiningType.NonJoining)
+            var form = Step(info[i].CodePoint, type, previous, previousCodePoint, previousType, ref previousForm);
+            if (form == Final || form == Final2 || form == Final3)
             {
-                // R1 to R7: two letters join when the first one joins on the side of the second and the second on
-                // the side of the first. A join-causing character (the tatweel, the zero width joiner) joins on both
-                // sides.
-                var joins = previous >= 0 && JoinsNext(previousType) && JoinsPrevious(type);
-                form = joins ? Final : Isolated;
-                if (joins)
-                {
-                    previousForm = previousForm == Final ? Medial : Initial;
-                }
-
-                if (UnicodeProperties.GetJoiningGroup(info[i].CodePoint) == UnicodeJoiningGroup.Alaph)
-                {
-                    // An alaph that does not join the letter before it has two forms of its own at the end of a
-                    // word: one after dalath and rish, one after the other letters that do not join it.
-                    if (!joins && previous >= 0 && previousType == UnicodeJoiningType.RightJoining)
-                    {
-                        form = UnicodeProperties.GetJoiningGroup(info[previous].CodePoint) == UnicodeJoiningGroup.DalathRish ? Final3 : Final2;
-                    }
-                }
-
-                // The alaph before this letter is not at the end of its word: joined, it has a form of its own;
-                // not joined, it is the plain letter.
-                if (previous >= 0 && JoinsPrevious(type) && UnicodeProperties.GetJoiningGroup(info[previous].CodePoint) == UnicodeJoiningGroup.Alaph)
-                {
-                    previousForm = previousForm switch
-                    {
-                        Final => Medial2,
-                        Final2 or Final3 => Isolated,
-                        _ => previousForm,
-                    };
-                }
+                // The letter joins the one before it.
+                buffer.MarkUnsafeToBreak(Math.Max(previous, 0), i + 1);
             }
 
             if (previous >= 0 && previousForm != NoForm && bits[previousForm] >= 0)
@@ -162,13 +155,65 @@ internal static partial class ArabicShaper
             }
 
             previous = i;
+            previousCodePoint = info[i].CodePoint;
             previousType = type;
             previousForm = form;
+        }
+
+        // The letter after the run, which can make the last letter of the run join it.
+        foreach (var codePoint in buffer.PostContext)
+        {
+            var type = UnicodeProperties.GetJoiningType(codePoint);
+            if (type == UnicodeJoiningType.Transparent)
+                continue;
+
+            Step(codePoint, type, previous, previousCodePoint, previousType, ref previousForm);
+            break;
         }
 
         if (previous >= 0 && previousForm != NoForm && bits[previousForm] >= 0)
         {
             info[previous].Mask |= 1u << bits[previousForm];
+        }
+
+        // Returns the form of a letter from the letter before it, and changes the form of that letter.
+        static int Step(int codePoint, UnicodeJoiningType type, int previous, int previousCodePoint, UnicodeJoiningType previousType, ref int previousForm)
+        {
+            if (type == UnicodeJoiningType.NonJoining)
+                return NoForm;
+
+            // R1 to R7: two letters join when the first one joins on the side of the second and the second on the side
+            // of the first. A join-causing character (the tatweel, the zero width joiner) joins on both sides.
+            var joins = previous != None && JoinsNext(previousType) && JoinsPrevious(type);
+            var form = joins ? Final : Isolated;
+            if (joins)
+            {
+                previousForm = previousForm == Final ? Medial : Initial;
+            }
+
+            if (UnicodeProperties.GetJoiningGroup(codePoint) == UnicodeJoiningGroup.Alaph)
+            {
+                // An alaph that does not join the letter before it has two forms of its own at the end of a word: one
+                // after dalath and rish, one after the other letters that do not join it.
+                if (!joins && previous != None && previousType == UnicodeJoiningType.RightJoining)
+                {
+                    form = UnicodeProperties.GetJoiningGroup(previousCodePoint) == UnicodeJoiningGroup.DalathRish ? Final3 : Final2;
+                }
+            }
+
+            // The alaph before this letter is not at the end of its word: joined, it has a form of its own; not joined,
+            // it is the plain letter.
+            if (previous != None && JoinsPrevious(type) && UnicodeProperties.GetJoiningGroup(previousCodePoint) == UnicodeJoiningGroup.Alaph)
+            {
+                previousForm = previousForm switch
+                {
+                    Final => Medial2,
+                    Final2 or Final3 => Isolated,
+                    _ => previousForm,
+                };
+            }
+
+            return form;
         }
     }
 

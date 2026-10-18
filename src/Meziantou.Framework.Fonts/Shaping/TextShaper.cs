@@ -134,16 +134,21 @@ internal static class TextShaper
     /// </param>
     /// <param name="scratch">The working storage that measures the outlines of a font without vertical origins, or <see langword="null"/> when the run is horizontal.</param>
     /// <param name="cache">What the runs of a layout share about their fonts, or <see langword="null"/> when the run is shaped on its own.</param>
+    /// <param name="areCharactersMirrored">
+    /// <see langword="true"/> when the caller already replaced the characters of a right-to-left run by their mirrored
+    /// forms (rule L4 of the Unicode Bidirectional Algorithm): they are not replaced again, and the mirrored characters
+    /// that have no mirrored form still get the mirrored forms of the font (<c>rtlm</c>).
+    /// </param>
     /// <exception cref="InvalidFontException">A layout table of the font is malformed.</exception>
     /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
-    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null)
+    public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null, bool areCharactersMirrored = false)
     {
         buffer.StartShaping();
         SetCharacterProperties(buffer);
         FormClusters(buffer);
         if (isRightToLeft)
         {
-            Mirror(buffer, face);
+            Mirror(buffer, face, areCharactersMirrored);
         }
 
         // What depends on the font and the settings of the run only is computed where it is used, by the first run that
@@ -216,6 +221,13 @@ internal static class TextShaper
         var plan = planned.Features!;
         var composesPresentationForms = planned.ComposesPresentationForms;
         Normalize(buffer, face, shaper, composesPresentationForms);
+
+        // A font without vertical forms (no vert feature) may have the presentation forms of the vertical punctuation
+        if (isVertical && !(face.Gsub is { } verticalTable && verticalTable.FindFeature(face.GsubData.Span, Vert) != LayoutTable.NoFeature))
+        {
+            UseVerticalPresentationForms(buffer, face);
+        }
+
         MapGlyphs(buffer, face);
         if (hasThaiPrivateUseForms)
         {
@@ -235,7 +247,7 @@ internal static class TextShaper
 
         var lookups = planned.Substitutions;
         var hasFractions = planned.HasFractions;
-        SetMasks(buffer, plan, hasFractions, shaper, script);
+        SetMasks(buffer, plan, hasFractions, shaper, script, isVertical);
         // A font of Arabic made before OpenType Layout has no substitution for the script: its letters take their forms
         // from the presentation forms it has as characters.
         if (!isPlanned)
@@ -642,15 +654,34 @@ internal static class TextShaper
     /// closing one. The mirrored character is used when the font has it; otherwise the font is asked to mirror the
     /// glyph with its <c>rtlm</c> feature.
     /// </summary>
-    private static void Mirror(GlyphBuffer buffer, FontFace face)
+    /// <summary>Replaces the punctuation of a vertical run by its vertical presentation forms, those the font has.</summary>
+    private static void UseVerticalPresentationForms(GlyphBuffer buffer, FontFace face)
+    {
+        foreach (ref var info in buffer.Info)
+        {
+            var form = VerticalForms.Get(info.CodePoint);
+            if (form != info.CodePoint && face.MapCodePoint(form) != 0)
+            {
+                var cluster = info.Cluster;
+                SetCharacterProperties(ref info, form);
+                info.Cluster = cluster;
+            }
+        }
+    }
+
+    private static void Mirror(GlyphBuffer buffer, FontFace face, bool areCharactersMirrored)
     {
         foreach (ref var info in buffer.Info)
         {
             if (!UnicodeProperties.IsBidiMirrored(info.CodePoint))
                 continue;
 
-            if (UnicodeProperties.TryGetBidiMirroringGlyph(info.CodePoint, out var mirrored) && face.MapCodePoint(mirrored) != 0)
+            if (UnicodeProperties.TryGetBidiMirroringGlyph(info.CodePoint, out var mirrored) && (areCharactersMirrored || face.MapCodePoint(mirrored) != 0))
             {
+                // A character the caller mirrored is the mirrored form of another one, which it replaced.
+                if (areCharactersMirrored)
+                    continue;
+
                 var cluster = info.Cluster;
                 SetCharacterProperties(ref info, mirrored);
                 info.Cluster = cluster;
@@ -937,6 +968,13 @@ internal static class TextShaper
     private const int SpaceNarrow = 11;
     private const int SpaceEm5 = 12;
 
+    /// <summary>
+    /// Determines whether a space character is drawn with the space of a font that has no glyph for it, with a width
+    /// of its own (a fraction of the em, the width of a digit...): the spaces of the General Punctuation block, the
+    /// no-break spaces and the ideographic space.
+    /// </summary>
+    public static bool IsSynthesizedSpace(int codePoint) => GetSpaceKind(codePoint) != 0;
+
     private static int GetSpaceKind(int codePoint)
     {
         return codePoint switch
@@ -1050,17 +1088,17 @@ internal static class TextShaper
     /// Gives each glyph the mask of the features that apply to it: all of them, and around a fraction slash the
     /// features that make the digits before it a numerator and the digits after it a denominator.
     /// </summary>
-    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions, ScriptShaperKind shaper, UnicodeScript script)
+    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions, ScriptShaperKind shaper, UnicodeScript script, bool isVertical)
     {
         var info = buffer.Info;
         plan.SetMasks(info);
         if (shaper == ScriptShaperKind.Arabic)
         {
-            ArabicShaper.SetFormMasks(info, FirstShaperBit);
+            ArabicShaper.SetFormMasks(buffer, FirstShaperBit);
         }
         else if (shaper == ScriptShaperKind.Hangul)
         {
-            HangulShaper.SetMasks(info, FirstShaperBit);
+            HangulShaper.SetMasks(info, FirstShaperBit, isVertical);
         }
         else if (shaper == ScriptShaperKind.Indic)
         {
@@ -1077,7 +1115,23 @@ internal static class TextShaper
         else if (shaper == ScriptShaperKind.Universal)
         {
             UniversalShaper.FindSyllables(info);
-            UniversalShaper.SetMasks(info, FirstShaperBit, script);
+            UniversalShaper.SetMasks(buffer, FirstShaperBit, script);
+        }
+
+        // The model of a script shapes a syllable as a whole: its glyphs are reordered and ligated together.
+        if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar or ScriptShaperKind.Universal)
+        {
+            for (var start = 0; start < info.Length;)
+            {
+                var end = start + 1;
+                while (end < info.Length && info[end].Syllable == info[start].Syllable)
+                {
+                    end++;
+                }
+
+                buffer.MarkUnsafeToBreak(start, end);
+                start = end;
+            }
         }
 
         foreach (ref var glyph in info)
@@ -1392,6 +1446,10 @@ internal static class TextShaper
                 positions[previous].XAdvance += first;
                 positions[i].XAdvance += second;
                 positions[i].XOffset += second;
+                if (adjustment != 0)
+                {
+                    buffer.MarkUnsafeToBreak(previous, i + 1);
+                }
             }
 
             previous = i;

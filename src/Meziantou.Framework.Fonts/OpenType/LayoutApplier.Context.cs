@@ -234,10 +234,15 @@ internal sealed partial class LayoutApplier
             if (!_ignoresContext && (backtrackCount != 0 || lookaheadCount != 0))
                 return false;
         }
-        else if (!MatchBackward(index, backtrackCount, kind, backtrack, backtrackBase)
-            || !MatchForward(last, lookaheadCount, kind, lookahead, lookaheadBase, isContext: true, default, out _))
+        else if (!MatchBackward(index, backtrackCount, kind, backtrack, backtrackBase, out var first)
+            || !MatchForward(last, lookaheadCount, kind, lookahead, lookaheadBase, isContext: true, default, out var lookaheadLast))
         {
             return false;
+        }
+        else
+        {
+            // The rule saw every glyph from its backtrack to its lookahead: shaping them apart could give other glyphs.
+            _buffer.MarkUnsafeToBreak(first, lookaheadLast + 1);
         }
 
         // Each lookup applies at one glyph of the sequence, which is the sequence as the previous lookups left it: a
@@ -334,11 +339,12 @@ internal sealed partial class LayoutApplier
     }
 
     /// <summary>Matches values against the glyphs that precede a glyph, the nearest first.</summary>
-    private bool MatchBackward(int start, int count, LayoutMatchKind kind, int values, int valuesBase)
+    private bool MatchBackward(int start, int count, LayoutMatchKind kind, int values, int valuesBase, out int first)
     {
         var data = _data.Span;
         var info = _buffer.Info;
         var index = start;
+        first = start;
         for (var i = 0; i < count; i++)
         {
             var value = FontBinary.UInt16(data, values + (i * 2));
@@ -360,6 +366,7 @@ internal sealed partial class LayoutApplier
             }
         }
 
+        first = index;
         return true;
     }
 

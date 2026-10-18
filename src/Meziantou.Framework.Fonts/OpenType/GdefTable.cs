@@ -5,16 +5,21 @@ namespace Meziantou.Framework.Fonts;
 /// glyph (base, ligature, mark, component), the attachment class of the marks, and sets of marks, which the lookups of
 /// the other layout tables use to choose the glyphs they skip.
 /// </summary>
-/// <remarks>The header is validated when the table is read. The attachment points and the ligature carets are not used.</remarks>
+/// <remarks>
+/// The header is validated when the table is read. The positions of the carets inside the ligatures are read for the
+/// callers that place a caret in a ligature; the attachment points are not used.
+/// </remarks>
 internal sealed class GdefTable
 {
     private readonly int _glyphClasses;
     private readonly int _markAttachmentClasses;
     private readonly int _markGlyphSets;
+    private readonly int _ligatureCarets;
 
-    private GdefTable(int glyphClasses, int markAttachmentClasses, int markGlyphSets, int variationStore)
+    private GdefTable(int glyphClasses, int ligatureCarets, int markAttachmentClasses, int markGlyphSets, int variationStore)
     {
         _glyphClasses = glyphClasses;
+        _ligatureCarets = ligatureCarets;
         _markAttachmentClasses = markAttachmentClasses;
         _markGlyphSets = markGlyphSets;
         VariationStore = variationStore;
@@ -38,6 +43,7 @@ internal sealed class GdefTable
 
         var minor = FontBinary.UInt16(table, 2);
         var glyphClasses = Validate(table, FontBinary.UInt16(table, 4));
+        var ligatureCarets = Validate(table, FontBinary.UInt16(table, 8));
         var markAttachmentClasses = Validate(table, FontBinary.UInt16(table, 10));
         var markGlyphSets = minor >= 2 && table.Length >= 14 ? Validate(table, FontBinary.UInt16(table, 12)) : 0;
         var variationStore = 0;
@@ -48,7 +54,7 @@ internal sealed class GdefTable
             variationStore = offset != 0 && offset <= table.Length - 8 && FontBinary.UInt16(table, (int)offset) == 1 ? (int)offset : 0;
         }
 
-        return new GdefTable(glyphClasses, markAttachmentClasses, markGlyphSets, variationStore);
+        return new GdefTable(glyphClasses, ligatureCarets, markAttachmentClasses, markGlyphSets, variationStore);
     }
 
     /// <summary>Gets the class of a glyph as the bits of <see cref="GlyphInfo"/>, or 0 for a glyph without class.</summary>
@@ -80,6 +86,60 @@ internal sealed class GdefTable
 
         var coverage = FontBinary.Offset32(table, _markGlyphSets + 4 + (set * 4));
         return coverage != 0 && LayoutCommon.GetCoverage(table, FontBinary.AddOffset(_markGlyphSets, coverage), glyph) != LayoutCommon.NotCovered;
+    }
+
+    /// <summary>
+    /// Gets the positions of the carets inside a ligature glyph, in font units along its advance: OpenType specification,
+    /// "GDEF", "Ligature Caret List Table". A caret value of format 3 varies with the instance of a variable font.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="face">The font, for the deltas of its instance.</param>
+    /// <param name="glyph">The ligature glyph.</param>
+    /// <param name="carets">Receives the positions, in the order of the components of the ligature.</param>
+    /// <returns>
+    /// The number of carets the table gives for the glyph (at most the length of <paramref name="carets"/>); 0 when the
+    /// table gives none, or gives one by a point of the outline (format 2), which is not read.
+    /// </returns>
+    /// <exception cref="InvalidFontException">The list is malformed.</exception>
+    public int GetLigatureCarets(ReadOnlySpan<byte> table, FontFace face, int glyph, Span<int> carets)
+    {
+        if (_ligatureCarets == 0)
+            return 0;
+
+        var index = LayoutCommon.GetCoverage(table, _ligatureCarets + FontBinary.UInt16(table, _ligatureCarets), glyph);
+        if (index == LayoutCommon.NotCovered || index >= FontBinary.UInt16(table, _ligatureCarets + 2))
+            return 0;
+
+        var ligature = _ligatureCarets + FontBinary.UInt16(table, _ligatureCarets + 4 + (index * 2));
+        var count = Math.Min(FontBinary.UInt16(table, ligature), carets.Length);
+        for (var i = 0; i < count; i++)
+        {
+            var caret = ligature + FontBinary.UInt16(table, ligature + 2 + (i * 2));
+            switch (FontBinary.UInt16(table, caret))
+            {
+                case 1:
+                    carets[i] = FontBinary.Int16(table, caret + 2);
+                    break;
+
+                case 3:
+                    {
+                        var value = FontBinary.Int16(table, caret + 2);
+                        var device = FontBinary.UInt16(table, caret + 4);
+                        if (device != 0 && face.Instance is not null && FontBinary.UInt16(table, caret + device + 4) == 0x8000)
+                        {
+                            value += face.GetLayoutDelta(FontBinary.UInt16(table, caret + device), FontBinary.UInt16(table, caret + device + 2));
+                        }
+
+                        carets[i] = value;
+                        break;
+                    }
+
+                default:
+                    return 0;
+            }
+        }
+
+        return count;
     }
 
     private static int Validate(ReadOnlySpan<byte> table, int offset) => offset != 0 && offset <= table.Length - 4 ? offset : 0;

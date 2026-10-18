@@ -245,12 +245,13 @@ internal sealed partial class LayoutApplier
         var lookaheadCount = FontBinary.UInt16(data, lookahead);
         var substitutes = lookahead + 2 + (lookaheadCount * 2);
         if (coverage >= FontBinary.UInt16(data, substitutes)
-            || !MatchBackward(index, backtrackCount, LayoutMatchKind.Coverage, subtable + 6, subtable)
-            || !MatchForward(index, lookaheadCount, LayoutMatchKind.Coverage, lookahead + 2, subtable, isContext: true, default, out _))
+            || !MatchBackward(index, backtrackCount, LayoutMatchKind.Coverage, subtable + 6, subtable, out var first)
+            || !MatchForward(index, lookaheadCount, LayoutMatchKind.Coverage, lookahead + 2, subtable, isContext: true, default, out var last))
         {
             return false;
         }
 
+        _buffer.MarkUnsafeToBreak(first, last + 1);
         SetGlyph(ref info, FontBinary.UInt16(data, substitutes + 2 + (coverage * 2)), history: 0, impliedClass: 0);
         return true;
     }

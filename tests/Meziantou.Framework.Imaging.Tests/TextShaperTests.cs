@@ -104,6 +104,12 @@ public sealed class TextShaperTests
 
         // The non-breaking hyphen is drawn as the hyphen.
         Assert.Equal("12=0+512", Format(Shape(font, "\u2011")));
+
+        // The space and the characters that are not spaces have no width of their own.
+        Assert.True(TextShaper.IsSynthesizedSpace(0x2007));
+        Assert.True(TextShaper.IsSynthesizedSpace(0x3000));
+        Assert.False(TextShaper.IsSynthesizedSpace(' '));
+        Assert.False(TextShaper.IsSynthesizedSpace('A'));
     }
 
     [Fact]
@@ -118,6 +124,64 @@ public sealed class TextShaperTests
         var builder = FontSamples.Boxes();
         builder.KerningPairs[(FontSamples.BoxA, FontSamples.BoxA)] = -3;
         Assert.Equal("2=0+1022|2=1@-1,0+1023", Format(Shape(FontTestSupport.Load(builder), "AA")));
+    }
+
+    [Fact]
+    public void AKernedPairIsUnsafeToBreakBetween()
+    {
+        // A text cut between the glyphs of a kerned pair would lose the adjustment: the second glyph says so.
+        var buffer = Shape(Boxes, "ABC");
+        Assert.Equal([false, true, false], buffer.Info.ToArray().Select(glyph => glyph.IsUnsafeToBreak));
+        buffer = Shape(Boxes, "AB", new ShapingFeature("kern", 0));
+        Assert.Equal([false, false], buffer.Info.ToArray().Select(glyph => glyph.IsUnsafeToBreak));
+    }
+
+    [Fact]
+    public void TheCharactersOfARightToLeftRunAreMirroredUnlessTheCallerMirroredThem()
+    {
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap['('] = FontSamples.BoxA;
+        builder.CharacterMap[')'] = FontSamples.BoxB;
+        var font = FontTestSupport.Load(builder);
+
+        int Shape(bool isRightToLeft, bool areCharactersMirrored)
+        {
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
+            TextShaper.AddText(buffer, "(");
+            TextShaper.Shape(buffer, font.Face, UnicodeScript.Common, languages: [], isRightToLeft, [], areCharactersMirrored: areCharactersMirrored);
+            return buffer.Info[0].Glyph;
+        }
+
+        Assert.Equal(FontSamples.BoxA, Shape(isRightToLeft: false, areCharactersMirrored: false));
+        Assert.Equal(FontSamples.BoxB, Shape(isRightToLeft: true, areCharactersMirrored: false));
+        Assert.Equal(FontSamples.BoxA, Shape(isRightToLeft: true, areCharactersMirrored: true));
+    }
+
+    [Fact]
+    public void TheLayoutTablesCanBeQueriedWithoutShaping()
+    {
+        var builder = FontSamples.Boxes();
+        builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("smcp", FontSamples.BoxA, FontSamples.BoxB), ("vert", FontSamples.BoxC, FontSamples.BoxA));
+        var face = FontTestSupport.Load(builder).Face;
+        var smcp = ShapingFeature.ToTag("smcp");
+        Assert.True(LayoutQueries.HasFeature(face, isPositioning: false, smcp));
+        Assert.False(LayoutQueries.HasFeature(face, isPositioning: true, smcp));
+        Assert.False(LayoutQueries.HasFeature(face, isPositioning: false, ShapingFeature.ToTag("c2sc")));
+        Assert.True(LayoutQueries.HasFeature(face, isPositioning: false, UnicodeScript.Latin, smcp));
+
+        // What a feature does to a glyph on its own.
+        Assert.True(LayoutQueries.WouldSubstitute(face, UnicodeScript.Latin, smcp, FontSamples.BoxA));
+        Assert.False(LayoutQueries.WouldSubstitute(face, UnicodeScript.Latin, smcp, FontSamples.BoxC));
+        Assert.Equal(FontSamples.BoxB, LayoutQueries.GetSingleSubstitution(face, smcp, FontSamples.BoxA, LayoutQueries.DefaultScript));
+        Assert.Equal(FontSamples.BoxC, LayoutQueries.GetSingleSubstitution(face, smcp, FontSamples.BoxC, LayoutQueries.DefaultScript));
+        Assert.True(LayoutQueries.HasVerticalAlternate(face, FontSamples.BoxC));
+        Assert.False(LayoutQueries.HasVerticalAlternate(face, FontSamples.BoxA));
+
+        // A font without positioning table has the pairs of its legacy kerning table, on the advance of the first glyph.
+        var (first, second) = LayoutQueries.GetPairAdjustment(Boxes.Face, ShapingFeature.ToTag("kern"), FontSamples.BoxA, FontSamples.BoxB, LayoutQueries.DefaultScript);
+        Assert.Equal(-128, first.XAdvance);
+        Assert.Equal(default, second);
+        Assert.Equal(default, LayoutQueries.GetPairAdjustment(Boxes.Face, ShapingFeature.ToTag("kern"), FontSamples.BoxA, FontSamples.BoxC, LayoutQueries.DefaultScript));
     }
 
     [Fact]
@@ -161,6 +225,12 @@ public sealed class TextShaperTests
         Assert.Equal("vai ", Tags(UnicodeScript.Vai)[0]);
         Assert.Equal(new[] { "dev3", "dev2", "deva", "DFLT", "dflt", "latn" }, Tags(UnicodeScript.Devanagari));
         Assert.Equal(new[] { "mym2", "mymr", "DFLT", "dflt", "latn" }, Tags(UnicodeScript.Myanmar));
+
+        // A script from its ISO 15924 code; the code of Hiragana and Katakana together is the one of Katakana.
+        Assert.Equal(UnicodeScript.Latin, OpenTypeScript.FromIso15924(ShapingFeature.ToTag("Latn")));
+        Assert.Equal(UnicodeScript.Arabic, OpenTypeScript.FromIso15924(ShapingFeature.ToTag("Arab")));
+        Assert.Equal(UnicodeScript.Katakana, OpenTypeScript.FromIso15924(ShapingFeature.ToTag("Hrkt")));
+        Assert.Equal(UnicodeScript.Unknown, OpenTypeScript.FromIso15924(ShapingFeature.ToTag("Qaaa")));
     }
 
     [Theory]
@@ -192,16 +262,59 @@ public sealed class TextShaperTests
         // zero width non-joiner and a space on none. In Syriac, beth joins on both sides; he, dalath, rish and alaph on
         // their right side only, and an alaph has a form of its own in the middle of a word (med2), at the end of a word
         // after a letter that does not join it (fin2) and after dalath or rish (fin3).
+        Assert.Equal(expected, GetForms(ParseCharacters(text), before: [], after: []));
+    }
+
+    [Theory]
+    [InlineData("", "0628", "", "isol")]
+    [InlineData("0628", "0628", "", "fina")]
+    [InlineData("", "0628", "0628", "init")]
+    [InlineData("0628", "0628", "0628", "medi")]
+    [InlineData("064E 0628", "0628", "064E 0628", "medi")]
+    [InlineData("0627", "0628", "", "isol")]
+    [InlineData("0020", "0628 0627", "", "init fina")]
+    [InlineData("0628", "0627", "0628", "fina")]
+    public void TheLettersAtTheEndsOfARunJoinTheLettersAroundIt(string before, string text, string after, string expected)
+    {
+        // The context is the text around the run, from the nearest character: the marks in it are transparent, as in
+        // the run, and an alef, which joins on its right side only, does not join the letter after it.
+        Assert.Equal(expected, GetForms(ParseCharacters(text), ParseCharacters(before), ParseCharacters(after)));
+    }
+
+    [Fact]
+    public void JoinedLettersAreUnsafeToBreakBetween()
+    {
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
+        foreach (var (codePoint, cluster) in ((int, int)[])[(0x0628, 0), (0x0628, 1), (0x0020, 2), (0x0628, 3)])
+        {
+            buffer.Add(codePoint, cluster);
+        }
+
+        ArabicShaper.SetFormMasks(buffer, firstBit: 5);
+        Assert.Equal([false, true, false, false], buffer.Info.ToArray().Select(glyph => glyph.IsUnsafeToBreak));
+    }
+
+    private static int[] ParseCharacters(string text) => text.Length == 0 ? [] : [.. text.Split(' ').Select(item => int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture))];
+
+    private static string GetForms(int[] text, int[] before, int[] after)
+    {
         string[] names = ["isol", "fina", "fin2", "fin3", "medi", "med2", "init"];
-        var info = text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();
-        ArabicShaper.SetFormMasks(info, firstBit: 5);
-        var forms = info.Select(glyph =>
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
+        for (var i = 0; i < text.Length; i++)
+        {
+            buffer.Add(text[i], i);
+        }
+
+        // The context is given from the nearest character
+        buffer.SetContext([.. before.Reverse()], after);
+        ArabicShaper.SetFormMasks(buffer, firstBit: 5);
+        var forms = buffer.Info.ToArray().Select(glyph =>
         {
             var isLetter = UnicodeProperties.GetGeneralCategory(glyph.CodePoint) == UnicodeCategory.OtherLetter;
             var bits = glyph.Mask >> 5;
             return !isLetter ? "." : bits == 0 ? "none" : System.Numerics.BitOperations.IsPow2(bits) ? names[System.Numerics.BitOperations.Log2(bits)] : "several";
         });
-        Assert.Equal(expected, string.Join(' ', forms));
+        return string.Join(' ', forms);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Meziantou.Framework.Imaging.TestHarness;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
@@ -10,8 +11,6 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// </summary>
 public sealed class CorpusScopeTests
 {
-    private static readonly FullPath ProjectDirectory = FullPath.FromPath(AppContext.BaseDirectory) / "TestProjects";
-
     [Fact]
     public void EveryFixtureFormatBelongsToOneTestProject()
     {
@@ -34,7 +33,7 @@ public sealed class CorpusScopeTests
     private static void AssertDeclaredOnce(string propertyName, string[] expected)
     {
         var declarations = new List<(string Value, string Project)>();
-        foreach (var path in Directory.EnumerateFiles(ProjectDirectory, "*.xml"))
+        foreach (var path in Directory.EnumerateDirectories(RepositoryPaths.Root / "tests", "Meziantou.Framework.Imaging.*Tests").SelectMany(directory => Directory.EnumerateFiles(directory, "*.csproj")))
         {
             var project = XDocument.Load(path);
             foreach (var property in project.Descendants(propertyName))

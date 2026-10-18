@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
-    <ImagingTestCopyFixtures>false</ImagingTestCopyFixtures>
   </PropertyGroup>
 
   <ItemGroup>

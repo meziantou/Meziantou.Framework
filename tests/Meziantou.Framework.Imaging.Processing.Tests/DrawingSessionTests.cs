@@ -3786,6 +3786,26 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void TheFiltersOfAChainReadWhatIsDrawnBeyondTheCanvasAfterTheBlurOfAGraph()
+    {
+        // A blur or a drop shadow of a graph whose region holds what is drawn beyond the canvas leaves it to the next
+        // filter: a blur that reads beyond the canvas keeps white the rectangle that goes beyond the left edge, and an
+        // offset brings in the square drawn beyond it, as they do alone
+        var region = new RectangleD(-10, -10, 60, 26);
+        foreach (var primitive in new FilterPrimitive[] { new GaussianBlurPrimitive(1), new GaussianBlurPrimitive(0), new DropShadowPrimitive(new Rgba32(255, 255, 255), default, 1, 1) })
+        {
+            using var band = new Image<Rgba32>(40, 6);
+            band.Draw(canvas => canvas.Filter(new FilterChain(new FilterGraph(primitive) { Region = region }, new BlurFilter(1)), layer => layer.FillRectangle(White, new RectangleD(-5, -5, 35, 16))), Ct);
+            Assert.Equal(new Rgba32(255, 255, 255), band.Frames[0][0, 3]);
+            Assert.Equal(new Rgba32(255, 255, 255), band.Frames[0][0, 0]);
+
+            using var graph = new Image<Rgba32>(20, 4);
+            graph.Draw(canvas => canvas.Filter(new FilterChain(new FilterGraph(primitive) { Region = region }, new FilterGraph(new OffsetPrimitive(new PointD(10, 0))) { Region = region }), layer => layer.FillRectangle(White, new RectangleD(-8, 0, 4, 4))), Ct);
+            Assert.NotEqual(0, graph.Frames[0][4, 1].A);
+        }
+    }
+
+    [Fact]
     public void AShadowCastFromFartherThanTheCanvasIsCastFromAWindowOfItsOwn()
     {
         // WPT css/filter-effects/filters-drop-shadow-003.html: a square 1000 pixels above and to the left of the canvas,

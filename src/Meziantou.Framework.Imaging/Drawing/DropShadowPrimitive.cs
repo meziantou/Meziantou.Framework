@@ -55,6 +55,7 @@ public sealed class DropShadowPrimitive : FilterPrimitive
         var (red, green, blue, alpha) = context.GetColor(Color);
         var processor = context.Processor;
         var edges = processor.Edges;
+        var extent = processor.Extent;
         processor.Edges = context.GetInputSubregion(0);
         try
         {
@@ -63,6 +64,7 @@ public sealed class DropShadowPrimitive : FilterPrimitive
         finally
         {
             processor.Edges = edges;
+            processor.Extent = extent;
         }
 
         FilterGraphContext.ClearOutside(result, subregion);

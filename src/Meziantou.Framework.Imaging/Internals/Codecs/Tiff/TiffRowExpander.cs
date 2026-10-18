@@ -247,15 +247,14 @@ internal sealed class TiffRowExpander : IDisposable
 
                 break;
 
+            case 2 when !invert:
+                SixteenBitSamples.ExpandGrayAlpha(stored, width, destination, _page.IsBigEndian);
+                break;
+
             case 2:
                 for (var x = 0; x < width; x++)
                 {
-                    var gray = ReadWord(stored, x * 2);
-                    if (invert)
-                    {
-                        gray = (ushort)(ushort.MaxValue - gray);
-                    }
-
+                    var gray = (ushort)(ushort.MaxValue - ReadWord(stored, x * 2));
                     var offset = x * 4;
                     samples[offset] = gray;
                     samples[offset + 1] = gray;
@@ -267,15 +266,7 @@ internal sealed class TiffRowExpander : IDisposable
 
             case 3:
                 // There is no 16-bit RGB pixel format: the samples are widened to Rgba64 with an opaque alpha channel
-                for (var x = 0; x < width; x++)
-                {
-                    var offset = x * 4;
-                    samples[offset] = ReadWord(stored, x * 3);
-                    samples[offset + 1] = ReadWord(stored, (x * 3) + 1);
-                    samples[offset + 2] = ReadWord(stored, (x * 3) + 2);
-                    samples[offset + 3] = ushort.MaxValue;
-                }
-
+                SixteenBitSamples.ExpandRgbOpaque(stored, width, destination, _page.IsBigEndian);
                 break;
 
             default:

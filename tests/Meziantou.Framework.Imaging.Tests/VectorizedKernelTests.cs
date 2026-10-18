@@ -88,7 +88,7 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void PngSampleExpansionsMatchTheScalarReferences()
+    public void SampleExpansionsMatchTheScalarReferences()
     {
         var random = new Random(59);
         for (var width = 0; width <= 37; width++)
@@ -96,8 +96,28 @@ public sealed class VectorizedKernelTests
             var scanline = new byte[width * 6];
             random.NextBytes(scanline);
             Check(PngSampleFormat.ExpandGrayAlpha8Scalar, PngSampleFormat.ExpandGrayAlpha8, scanline.AsSpan(0, width * 2).ToArray(), width, width * 4);
-            Check(PngSampleFormat.ExpandGrayAlpha16Scalar, PngSampleFormat.ExpandGrayAlpha16, scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
-            Check(PngSampleFormat.ExpandRgb16OpaqueScalar, PngSampleFormat.ExpandRgb16Opaque, scanline, width, width * 8);
+            foreach (var bigEndian in new[] { false, true })
+            {
+                Check((s, w, d) => SixteenBitSamples.ExpandGrayAlphaScalar(s, w, d, bigEndian), (s, w, d) => SixteenBitSamples.ExpandGrayAlpha(s, w, d, bigEndian), scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
+                Check((s, w, d) => SixteenBitSamples.ExpandRgbOpaqueScalar(s, w, d, bigEndian), (s, w, d) => SixteenBitSamples.ExpandRgbOpaque(s, w, d, bigEndian), scanline, width, width * 8);
+            }
+
+            // The two byte orders read the same samples from byte-swapped rows
+            var swapped = new byte[scanline.Length];
+            for (var i = 0; i + 1 < scanline.Length; i += 2)
+            {
+                swapped[i] = scanline[i + 1];
+                swapped[i + 1] = scanline[i];
+            }
+
+            var bigEndianPixels = new byte[width * 8];
+            var littleEndianPixels = new byte[width * 8];
+            SixteenBitSamples.ExpandRgbOpaqueScalar(scanline, width, bigEndianPixels, bigEndian: true);
+            SixteenBitSamples.ExpandRgbOpaqueScalar(swapped, width, littleEndianPixels, bigEndian: false);
+            Assert.Equal(bigEndianPixels, littleEndianPixels);
+            SixteenBitSamples.ExpandGrayAlphaScalar(scanline, width, bigEndianPixels, bigEndian: true);
+            SixteenBitSamples.ExpandGrayAlphaScalar(swapped, width, littleEndianPixels, bigEndian: false);
+            Assert.Equal(bigEndianPixels, littleEndianPixels);
         }
 
         static void Check(Expansion reference, Expansion expansion, byte[] scanline, int width, int length)

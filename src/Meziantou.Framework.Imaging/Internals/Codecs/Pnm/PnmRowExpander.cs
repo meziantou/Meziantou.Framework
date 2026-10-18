@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// Values up to <c>MAXVAL</c> 4,096 are normalized through a precomputed table; larger maximums are computed per sample.
-/// A sample greater than <c>MAXVAL</c> is malformed and rejected instead of being clamped.
+/// A sample greater than <c>MAXVAL</c> is malformed and rejected instead of being clamped; at <c>MAXVAL</c> 65535, where no
+/// sample can be greater, the 16-bit rows are converted without a check.
 /// </remarks>
 internal sealed class PnmRowExpander
 {
@@ -50,7 +51,16 @@ internal sealed class PnmRowExpander
 
         if (header.Is16Bit)
         {
-            Expand16(stored, unsafe(MemoryMarshal.Cast<byte, ushort>(destination)));
+            if (header.MaxValue == ushort.MaxValue)
+            {
+                // No 16-bit sample can be greater than MAXVAL
+                Expand16Identity(stored, destination);
+            }
+            else
+            {
+                Expand16(stored, unsafe(MemoryMarshal.Cast<byte, ushort>(destination)));
+            }
+
             return;
         }
 
@@ -107,19 +117,39 @@ internal sealed class PnmRowExpander
         }
     }
 
+    private void Expand16Identity(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        var width = _header.Width;
+        switch (_header.TupleType)
+        {
+            case PnmTupleType.BlackAndWhiteAlpha:
+            case PnmTupleType.GrayscaleAlpha:
+                SixteenBitSamples.ExpandGrayAlpha(stored, width, destination, bigEndian: true);
+                break;
+
+            case PnmTupleType.Rgb:
+                SixteenBitSamples.ExpandRgbOpaque(stored, width, destination, bigEndian: true);
+                break;
+
+            default:
+                // Gray and RGBA tuples are already the decoded layout
+                SampleEndianness.ReadBigEndian(stored[..destination.Length], unsafe(MemoryMarshal.Cast<byte, ushort>(destination)));
+                break;
+        }
+    }
+
     private void Expand16(ReadOnlySpan<byte> stored, Span<ushort> destination)
     {
         var header = _header;
         var width = header.Width;
         var max = header.MaxValue;
-        var identity = max == 65535;
         switch (header.TupleType)
         {
             case PnmTupleType.BlackAndWhite:
             case PnmTupleType.Grayscale:
                 for (var x = 0; x < width; x++)
                 {
-                    destination[x] = Scale(ReadSample(stored, x), max, identity);
+                    destination[x] = Scale(ReadSample(stored, x), max, identity: false);
                 }
 
                 break;
@@ -128,12 +158,12 @@ internal sealed class PnmRowExpander
             case PnmTupleType.GrayscaleAlpha:
                 for (var x = 0; x < width; x++)
                 {
-                    var gray = Scale(ReadSample(stored, x * 2), max, identity);
+                    var gray = Scale(ReadSample(stored, x * 2), max, identity: false);
                     var offset = x * 4;
                     destination[offset] = gray;
                     destination[offset + 1] = gray;
                     destination[offset + 2] = gray;
-                    destination[offset + 3] = Scale(ReadSample(stored, (x * 2) + 1), max, identity);
+                    destination[offset + 3] = Scale(ReadSample(stored, (x * 2) + 1), max, identity: false);
                 }
 
                 break;
@@ -142,9 +172,9 @@ internal sealed class PnmRowExpander
                 for (var x = 0; x < width; x++)
                 {
                     var offset = x * 4;
-                    destination[offset] = Scale(ReadSample(stored, x * 3), max, identity);
-                    destination[offset + 1] = Scale(ReadSample(stored, (x * 3) + 1), max, identity);
-                    destination[offset + 2] = Scale(ReadSample(stored, (x * 3) + 2), max, identity);
+                    destination[offset] = Scale(ReadSample(stored, x * 3), max, identity: false);
+                    destination[offset + 1] = Scale(ReadSample(stored, (x * 3) + 1), max, identity: false);
+                    destination[offset + 2] = Scale(ReadSample(stored, (x * 3) + 2), max, identity: false);
                     destination[offset + 3] = ushort.MaxValue;
                 }
 
@@ -153,7 +183,7 @@ internal sealed class PnmRowExpander
             default:
                 for (var i = 0; i < destination.Length; i++)
                 {
-                    destination[i] = Scale(ReadSample(stored, i), max, identity);
+                    destination[i] = Scale(ReadSample(stored, i), max, identity: false);
                 }
 
                 break;

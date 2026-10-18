@@ -5,18 +5,21 @@ namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 /// <summary>A font face installed by the host (<see cref="InstalledFontCollection"/>).</summary>
 internal sealed class InstalledFont
 {
-    private FontSelectionCapabilities? _capabilities;
+    // Not a nullable field assigned on first use: a collection can be shared by the browsing contexts of several threads,
+    // and a struct is not written atomically (another thread could read a partially written value)
+    private readonly Lazy<FontSelectionCapabilities> _capabilities;
 
     internal InstalledFont(OpenTypeFont font)
     {
         Font = font;
+        _capabilities = new Lazy<FontSelectionCapabilities>(() => FontSelectionCapabilities.FromFont(font), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>The font.</summary>
     public OpenTypeFont Font { get; }
 
     /// <summary>The styles of the font (its weight, width and style, or the ranges of its variation axes), for the font matching.</summary>
-    public FontSelectionCapabilities Capabilities => _capabilities ??= FontSelectionCapabilities.FromFont(Font);
+    public FontSelectionCapabilities Capabilities => _capabilities.Value;
 
     /// <inheritdoc />
     public override string ToString() => Font.ToString();

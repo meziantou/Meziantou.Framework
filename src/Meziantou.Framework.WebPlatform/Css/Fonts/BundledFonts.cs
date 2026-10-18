@@ -4,13 +4,17 @@ namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 internal sealed class BundledFont
 {
     private readonly Lazy<OpenTypeFont> _font;
-    private FontSelectionCapabilities? _capabilities;
+
+    // Not a nullable field assigned on first use: the bundled fonts are shared by the documents of all the threads, and a
+    // struct is not written atomically (another thread could read a partially written value)
+    private readonly Lazy<FontSelectionCapabilities> _capabilities;
 
     internal BundledFont(string family, string fileName)
     {
         Family = family;
         FileName = fileName;
         _font = new Lazy<OpenTypeFont>(Load, LazyThreadSafetyMode.ExecutionAndPublication);
+        _capabilities = new Lazy<FontSelectionCapabilities>(() => FontSelectionCapabilities.FromFont(Font), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>The family name of the font.</summary>
@@ -23,7 +27,7 @@ internal sealed class BundledFont
     public OpenTypeFont Font => _font.Value;
 
     /// <summary>The styles of the font (its weight, width and style, or the ranges of its variation axes), for the font matching.</summary>
-    public FontSelectionCapabilities Capabilities => _capabilities ??= FontSelectionCapabilities.FromFont(Font);
+    public FontSelectionCapabilities Capabilities => _capabilities.Value;
 
     private OpenTypeFont Load()
     {

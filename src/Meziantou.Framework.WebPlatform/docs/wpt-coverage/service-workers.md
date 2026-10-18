@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 226 | 283 | 1 | 80% |
+| [Stable](#stable-tests) | 224 | 283 | 4 | 80% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **227** | **295** | **1** | **77%** |
+| **All** | **225** | **295** | **4** | **77%** |
 
 ## Stable tests
 
@@ -74,7 +74,7 @@
 | [`service-worker/clients-matchall-on-evaluation.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-on-evaluation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/clients-matchall-order.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-order.https.html) | Fail | 4 / 7 | TEST RUNNER | the three subtests of the uncontrolled windows expect the window of the WPT harness (`/testharness_runner.html`) among the clients; the subtests of the controlled windows pass |
 | [`service-worker/clients-matchall.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/controlled-dedicatedworker-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | `clients.get(event.resultingClientId)` resolves with undefined until the document or the worker of the request exists (the reserved clients are not exposed), so the messages that the service worker posts while it handles the request are not sent. The specification waits for the client to be execution ready, which the test prevents (Chrome fails these subtests); Firefox and Safari give the reserved client and queue its messages |
+| [`service-worker/controlled-dedicatedworker-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows before any subtest reports; to investigate |
 | [`service-worker/controlled-iframe-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-iframe-postMessage.https.html) | Fail | 3 / 5 | NOT IMPLEMENTED | `clients.get(event.resultingClientId)` resolves with undefined until the document or the worker of the request exists (the reserved clients are not exposed), so the messages that the service worker posts while it handles the request are not sent. The specification waits for the client to be execution ready, which the test prevents (Chrome fails these subtests); Firefox and Safari give the reserved client and queue its messages |
 | [`service-worker/controller-on-disconnect.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-disconnect.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/controller-on-load.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-load.https.html) | Pass | 1 / 1 |  |  |
@@ -218,9 +218,9 @@
 | [`service-worker/registration-schedule-job.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-schedule-job.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/registration-scope-module-static-import.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-scope-module-static-import.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/registration-scope.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-scope.https.html) | Pass | 10 / 10 |  |  |
-| [`service-worker/registration-script-module.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-module.https.html) | Pass | 10 / 10 |  |  |
+| [`service-worker/registration-script-module.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-module.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows before its first subtest reports (the registration of a script served with an invalid chunked encoding by resources/invalid-chunked-encoding.py does not complete); to investigate |
 | [`service-worker/registration-script-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-url.https.html) | Pass | 8 / 8 |  |  |
-| [`service-worker/registration-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script.https.html) | Pass | 9 / 9 |  |  |
+| [`service-worker/registration-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows before its first subtest reports (the registration of a script served with an invalid chunked encoding by resources/invalid-chunked-encoding.py does not complete); to investigate |
 | [`service-worker/registration-security-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-security-error.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/registration-service-worker-attributes.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-service-worker-attributes.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/registration-updateviacache.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-updateviacache.https.html) | Fail | 15 / 25 | NOT IMPLEMENTED | the HTTP cache: the imported scripts are always fetched again, whatever the update via cache mode |

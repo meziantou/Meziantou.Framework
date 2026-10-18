@@ -58,6 +58,13 @@ public sealed class CssTransition : Animation
     /// <summary>https://drafts.csswg.org/css-transitions-1/#reversing-shortening-factor</summary>
     internal double ReversingShorteningFactor { get; init; } = 1;
 
+    /// <summary>
+    /// Whether the transition was canceled by a style that the layout may compute again with the size of its query container:
+    /// it has no effect, and it is canceled once the styles are settled, unless the style is discarded (it then runs again, see
+    /// <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>).
+    /// </summary>
+    internal bool IsCancellationPending { get; set; }
+
     internal override void FlushPendingStyle() => OwningElement?.NodeDocument.FlushAnimationStyles();
 
     internal void PlayByStyle() => PlayCore(autoRewind: true);
@@ -69,6 +76,17 @@ public sealed class CssTransition : Animation
         QueueDeclarativeEvents();
         OwningElement = null;
         GlobalIndex = NextGlobalIndex();
+    }
+
+    /// <summary>
+    /// Cancels a transition started by a style that the layout discarded (see <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>):
+    /// it was not sampled yet, and its effect is removed from the effect stack of its target (the layout may start and discard
+    /// a transition each time it lays out a query container).
+    /// </summary>
+    internal void Discard()
+    {
+        CancelByStyle();
+        SetEffectCore(null);
     }
 
     // A transition canceled through the API is no longer a running transition of its owning element

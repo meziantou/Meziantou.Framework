@@ -170,6 +170,70 @@ public sealed class ContainerQueryLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Transition_KeepsRunningWhenTheContainerIsLaidOutAgain()
+    {
+        // The container next to the float is laid out in the whole width to measure it, then beside the float: the style of the
+        // descendants computed with the first size does not cancel the transition started with the second one
+        var document = ParseTransitionNextToFloat();
+        ((HtmlElement)document.Body!.FirstElementChild!).Style.SetProperty("width", "300px");
+        Assert.Equal("100px", Get(document, "target", "width"));
+
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60)); // The transition starts
+        RunFrame(TimeSpan.FromMilliseconds(500));
+        Assert.Equal("200px", Get(document, "target", "width"));
+        Assert.Single(document.GetElementById("target")!.GetAnimations());
+        Assert.Single(document.Animations.GetElementAnimations(document.GetElementById("target")!)!.Get(pseudoElement: null)!);
+    }
+
+    [Fact]
+    public void Transition_KeepsRunningWhenTheLayoutIsComputedAgain()
+    {
+        // The layout is computed again before the next frame (e.g. a change of the process-wide version of the styles by
+        // another document computes the styles and the layout again)
+        var document = ParseTransitionNextToFloat();
+        ((HtmlElement)document.Body!.FirstElementChild!).Style.SetProperty("width", "300px");
+        Assert.Equal("100px", Get(document, "target", "width"));
+
+        document.GetLayoutEngine().SetNeedsLayout();
+        Assert.Equal("100px", Get(document, "target", "width"));
+        Assert.Single(document.GetElementById("target")!.GetAnimations());
+    }
+
+    [Fact]
+    public void Transition_CanceledByTheStyleOfTheNewSize()
+    {
+        var document = ParseTransitionNextToFloat();
+        var target = document.GetElementById("target")!;
+        var canceled = 0;
+        target.AddEventListener("transitioncancel", _ => canceled++);
+        var floatElement = (HtmlElement)document.Body!.FirstElementChild!;
+        floatElement.Style.SetProperty("width", "300px");
+        Assert.Equal("100px", Get(document, "target", "width"));
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
+
+        // The container is wide again: the transition to the narrow style is canceled (its current value is the new value)
+        floatElement.Style.SetProperty("width", "100px");
+        Assert.Equal("100px", Get(document, "target", "width"));
+        Assert.Empty(target.GetAnimations());
+        RunFrame(TimeSpan.FromMilliseconds(1000d / 60));
+        Assert.Equal(1, canceled);
+    }
+
+    private Document ParseTransitionNextToFloat()
+    {
+        var document = Parse(Float + "<div id=c style='container-type: inline-size; overflow: hidden'><div id=target></div></div>"
+            + "<style>#target { width: 100px; transition: width 1s linear } @container (width < 600px) { #target { width: 300px } }</style>");
+        Assert.Equal("100px", Get(document, "target", "width"));
+        return document;
+    }
+
+    private void RunFrame(TimeSpan duration)
+    {
+        _clock.Advance(duration);
+        _contexts.EventLoop.RunUntilIdle();
+    }
+
+    [Fact]
     public void TopLayerDescendants_StyledAgain()
     {
         // The modal dialogs are in the top layer (children of the viewport): their boxes are built again with their new styles

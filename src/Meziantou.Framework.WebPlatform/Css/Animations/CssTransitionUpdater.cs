@@ -44,8 +44,12 @@ internal static class CssTransitionUpdater
             && before is not null && !before.IsDisplayNoneForAnimations();
     }
 
-    /// <summary>Updates the transitions of the element of the style after a style change; returns whether they changed.</summary>
-    public static bool Update(ComputedStyle style, ComputedStyle? before)
+    /// <summary>
+    /// Updates the transitions of the element of the style after a style change; returns whether they changed. When the layout
+    /// may compute the style again (<paramref name="changes"/> is not null), the canceled transitions are only pending
+    /// cancellation, and the changes are recorded so that they can be undone (see <see cref="TransitionChanges"/>).
+    /// </summary>
+    public static bool Update(ComputedStyle style, ComputedStyle? before, TransitionChanges? changes)
     {
         var element = style.Element;
         var pseudoElement = style.PseudoElement;
@@ -108,7 +112,7 @@ internal static class CssTransitionUpdater
                     && IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete))
                 {
                     transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
-                    transitions.Completed.Remove(property);
+                    RemoveCompleted(transitions, property, changes);
                     transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1);
                     changed = true;
                     continue;
@@ -118,7 +122,7 @@ internal static class CssTransitionUpdater
             // Step 2: a completed transition whose end value is not the after-change value is removed
             if (completed is not null && !string.Equals(completed, afterValue, StringComparison.Ordinal))
             {
-                transitions!.Completed.Remove(property);
+                RemoveCompleted(transitions!, property, changes);
             }
 
             // Step 3: the transitions of a property that no longer has a matching transition-property are canceled
@@ -126,12 +130,15 @@ internal static class CssTransitionUpdater
             {
                 if (running is not null)
                 {
-                    transitions!.Running.Remove(property);
-                    running.CancelByStyle();
+                    Cancel(transitions!, running, changes);
                     changed = true;
                 }
 
-                transitions?.Completed.Remove(property);
+                if (transitions is not null)
+                {
+                    RemoveCompleted(transitions, property, changes);
+                }
+
                 continue;
             }
 
@@ -140,8 +147,7 @@ internal static class CssTransitionUpdater
             {
                 var currentValue = GetValue(style, property);
                 var output = GetTimingFunctionOutput(running);
-                transitions!.Running.Remove(property);
-                running.CancelByStyle();
+                Cancel(transitions!, running, changes);
                 changed = true;
                 if (string.Equals(currentValue, afterValue, StringComparison.Ordinal) || parameters.CombinedDuration <= 0 || !IsTransitionable(context, property, currentValue, afterValue, parameters.AllowDiscrete))
                     continue;
@@ -156,11 +162,11 @@ internal static class CssTransitionUpdater
                         Delay = parameters.Delay < 0 ? parameters.Delay * factor : parameters.Delay,
                     };
 
-                    transitions.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor);
+                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor);
                 }
                 else
                 {
-                    transitions.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1);
+                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1);
                 }
             }
         }
@@ -171,6 +177,29 @@ internal static class CssTransitionUpdater
         }
 
         return changed;
+    }
+
+    /// <summary>Cancels a running transition, or makes its cancellation pending when the changes are recorded.</summary>
+    private static void Cancel(ElementTransitions transitions, CssTransition running, TransitionChanges? changes)
+    {
+        transitions.Running.Remove(running.TransitionProperty);
+        if (changes is null)
+        {
+            running.CancelByStyle();
+        }
+        else
+        {
+            running.IsCancellationPending = true;
+            (changes.PendingCancellations ??= []).Add(running);
+        }
+    }
+
+    private static void RemoveCompleted(ElementTransitions transitions, string property, TransitionChanges? changes)
+    {
+        if (transitions.Completed.Remove(property, out var value) && changes is not null)
+        {
+            (changes.RemovedCompleted ??= new(StringComparer.Ordinal)).TryAdd(property, value);
+        }
     }
 
     /// <summary>
@@ -361,4 +390,23 @@ internal static class CssTransitionUpdater
 
         return 0;
     }
+}
+
+/// <summary>
+/// The changes of the transitions of an element by the computations of its style in a generation of styles that the layout may
+/// compute again with the size of its query container (see <see cref="StyleEngine.InvalidateQueryContainerDescendants"/>): the
+/// layout may lay out the container more than once (e.g. to measure it), and a discarded style must not have changed the
+/// transitions. The transitions it started are canceled, and the ones it canceled run again: they are only canceled once the
+/// styles are settled (see <see cref="StyleEngine.CommitTransitionCancellations"/>).
+/// </summary>
+/// <param name="generation">The last transition generation before the first computation: the transitions started by the computations have a greater generation.</param>
+internal sealed class TransitionChanges(long generation)
+{
+    public long Generation { get; } = generation;
+
+    /// <summary>The running transitions canceled by the computations, whose cancellation is pending (see <see cref="CssTransition.IsCancellationPending"/>).</summary>
+    public List<CssTransition>? PendingCancellations { get; set; }
+
+    /// <summary>The end values of the completed transitions removed by the computations, by property.</summary>
+    public Dictionary<string, string>? RemovedCompleted { get; set; }
 }

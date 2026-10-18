@@ -32,6 +32,9 @@ public partial class Document
     /// <summary>Returns the style engine that computes the styles of the elements of the document.</summary>
     internal StyleEngine GetStyleEngine() => _styleEngine ??= new StyleEngine(this);
 
+    /// <summary>The style engine of the document, or null when no style was computed.</summary>
+    internal StyleEngine? StyleEngineOrNull => _styleEngine;
+
     /// <summary>The last environment of the document returned by <see cref="StyleEngine.CreateEnvironment"/>, reused while the viewport is the same.</summary>
     internal MediaEnvironment? LastMediaEnvironment { get; set; }
 

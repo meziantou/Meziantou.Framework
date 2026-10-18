@@ -325,6 +325,9 @@ internal sealed class DocumentAnimations
     {
         _frameRequested = false;
 
+        // The transitions canceled by the styles are canceled before they are sampled (see StyleEngine.CommitTransitionCancellations)
+        _document.StyleEngineOrNull?.CommitTransitionCancellations();
+
         // Update the current time of the timelines (the time never goes backwards); the scroll-driven timelines are sampled once,
         // as the step 1 of "update animations and send events" (https://drafts.csswg.org/scroll-animations-1/#event-loop)
         _timelineTime = _timelineTime is { } previous ? Math.Max(previous, now) : now;

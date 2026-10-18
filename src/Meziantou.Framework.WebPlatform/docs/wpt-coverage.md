@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24,136 | 28,847 | 2,949 | 93% |
+| [Stable](#stable-tests) | 24,133 | 28,847 | 2,952 | 93% |
 | [Tentative](#tentative-tests) | 1,077 | 2,932 | 820 | 51% |
 | [Reftests](#reftests) | 27,007 | 28,524 | 226 | 95% |
-| **All** | **52,220** | **60,303** | **3,995** | **93%** |
+| **All** | **52,217** | **60,303** | **3,998** | **93%** |
 
 ## Stable tests
 
@@ -242,7 +242,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`idle-detection`](wpt-coverage/idle-detection.md) | 0 | 10 | 10 | – |
 | [`imagebitmap-renderingcontext`](wpt-coverage/imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
 | [`import-maps`](wpt-coverage/import-maps.md) | 47 | 48 | 0 | 98% |
-| [`IndexedDB`](wpt-coverage/IndexedDB.md) | 222 | 229 | 2 | 98% |
+| [`IndexedDB`](wpt-coverage/IndexedDB.md) | 221 | 229 | 3 | 98% |
 | [`inert`](wpt-coverage/inert.md) | 24 | 29 | 0 | 83% |
 | [`infrastructure`](wpt-coverage/infrastructure.md) | 0 | 99 | 99 | – |
 | [`input-device-capabilities`](wpt-coverage/input-device-capabilities.md) | 0 | 1 | 1 | – |
@@ -361,7 +361,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`virtual-keyboard`](wpt-coverage/virtual-keyboard.md) | 0 | 3 | 3 | – |
 | [`visual-viewport`](wpt-coverage/visual-viewport.md) | 16 | 19 | 0 | 84% |
 | [`wai-aria`](wpt-coverage/wai-aria.md) | 20 | 21 | 0 | 95% |
-| [`wasm`](wpt-coverage/wasm.md) | 323 | 338 | 0 | 96% |
+| [`wasm`](wpt-coverage/wasm.md) | 321 | 338 | 2 | 96% |
 | [`web-animations`](wpt-coverage/web-animations.md) | 115 | 136 | 0 | 85% |
 | [`web-based-payment-handler`](wpt-coverage/web-based-payment-handler.md) | 0 | 10 | 10 | – |
 | [`web-extensions`](wpt-coverage/web-extensions.md) | 0 | 6 | 6 | – |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 315 | 327 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 11 | 11 | – |
-| **Total (343 sections)** | **24,136** | **28,847** | **2,949** | **93%** |
+| **Total (343 sections)** | **24,133** | **28,847** | **2,952** | **93%** |
 
 ## Tentative tests
 

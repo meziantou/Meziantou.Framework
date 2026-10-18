@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 222 | 229 | 2 | 98% |
+| [Stable](#stable-tests) | 221 | 229 | 3 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **222** | **229** | **2** | **98%** |
+| **All** | **221** | **229** | **3** | **98%** |
 
 ## Stable tests
 
@@ -177,8 +177,8 @@
 | [`idbversionchangeevent.any.js`](https://wpt.fyi/results/IndexedDB/idbversionchangeevent.any.js) | Pass | 3 / 3 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/IndexedDB/idlharness.any.js) | Pass | 621 / 621 |  |  |
 | [`index_sort_order.any.js`](https://wpt.fyi/results/IndexedDB/index_sort_order.any.js) | Pass | 3 / 3 |  |  |
-| [`interleaved-cursors-large.any.js`](https://wpt.fyi/results/IndexedDB/interleaved-cursors-large.any.js) | Disabled | – | PERFORMANCE | Runs ~5 seconds per global here but exceeds the maximum duration of the runner (1 minute) on the x64 Linux CI agents under the load of the other tests: it opens 250 cursors that it advances one step at a time in turn; it passes when it completes |
-| [`interleaved-cursors-small.any.js`](https://wpt.fyi/results/IndexedDB/interleaved-cursors-small.any.js) | Pass | 9 / 9 |  |  |
+| [`interleaved-cursors-large.any.js`](https://wpt.fyi/results/IndexedDB/interleaved-cursors-large.any.js) | Disabled | – | PERFORMANCE | Runs ~5 seconds per global here but exceeds the maximum duration of the runner (1 minute) on the CI agents under the load of the other tests: the tests open up to 250 cursors that they advance one step at a time in turn; they pass when they complete |
+| [`interleaved-cursors-small.any.js`](https://wpt.fyi/results/IndexedDB/interleaved-cursors-small.any.js) | Disabled | – | PERFORMANCE | Runs ~5 seconds per global here but exceeds the maximum duration of the runner (1 minute) on the CI agents under the load of the other tests: the tests open up to 250 cursors that they advance one step at a time in turn; they pass when they complete |
 | [`key-conversion-exceptions.any.js`](https://wpt.fyi/results/IndexedDB/key-conversion-exceptions.any.js) | Pass | 81 / 81 |  |  |
 | [`key_invalid.any.js`](https://wpt.fyi/results/IndexedDB/key_invalid.any.js) | Pass | 103 / 103 |  |  |
 | [`key_valid.any.js`](https://wpt.fyi/results/IndexedDB/key_valid.any.js) | Pass | 54 / 54 |  |  |

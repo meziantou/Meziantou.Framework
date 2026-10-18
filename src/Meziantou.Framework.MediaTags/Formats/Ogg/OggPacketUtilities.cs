@@ -114,8 +114,14 @@ internal static class OggPacketUtilities
     /// Reads every page of the stream.
     /// </summary>
     /// <exception cref="InvalidDataException">
+    /// <para>
     /// The pages do not run to the end of the stream. The writer rebuilds the file from these pages, so stopping
     /// at a damaged page and reporting success would silently cut off all the audio after it.
+    /// </para>
+    /// <para>
+    /// A page does not have the checksum it declares. The writer computes the checksum of every page it writes,
+    /// so the damaged page would come out looking valid, and a player that skips it today would decode it.
+    /// </para>
     /// </exception>
     public static List<OggPage> ReadAllPages(Stream stream)
     {
@@ -137,6 +143,9 @@ internal static class OggPacketUtilities
 
                 break;
             }
+
+            if (!page.VerifyChecksum())
+                throw new InvalidDataException($"The OGG page at offset {pagePosition} does not have the checksum it declares.");
 
             pages.Add(page);
         }

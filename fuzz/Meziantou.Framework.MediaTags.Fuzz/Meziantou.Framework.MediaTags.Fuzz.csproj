@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.MediaTags. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fixtures of the unit tests (one file per format and tag layout) are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.MediaTags.Tests\TestFiles\*" LogicalName="TestFiles/%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
+  </ItemGroup>
+</Project>

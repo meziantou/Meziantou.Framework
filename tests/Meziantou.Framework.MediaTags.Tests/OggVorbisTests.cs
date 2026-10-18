@@ -319,6 +319,25 @@ public sealed class OggVorbisTests
     }
 
     [Fact]
+    public void WriteTags_PageWithAWrongChecksum_IsRefused()
+    {
+        // Every written page gets a fresh checksum, so a corrupt audio page would come out looking valid and a
+        // player that skips it today would decode it.
+        var bytes = File.ReadAllBytes(GetTestFilePath("basic.ogg"));
+        bytes[^1] ^= 0xFF;
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.OggVorbis);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+
+        input.Position = 0;
+        Assert.True(MediaFile.ReadTags(input, MediaFormat.OggVorbis).IsSuccess);
+    }
+
+    [Fact]
     public void WriteTags_CommentPacketSpanningHundredsOfPages_IsReadBack()
     {
         // A page holds at most 65,025 bytes, so this picture spreads the comment packet over about 90 pages.

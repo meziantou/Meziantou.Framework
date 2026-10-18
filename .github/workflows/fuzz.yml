@@ -63,6 +63,7 @@ jobs:
           - { project: Meziantou.Framework.JsonPath.Fuzz, component: jsonpath }
           - { project: Meziantou.Framework.Language.Fuzz, component: language }
           - { project: Meziantou.Framework.Markdown.Fuzz, component: markdown }
+          - { project: Meziantou.Framework.MediaTags.Fuzz, component: media-tags }
           - { project: Meziantou.Framework.SyntaxHighlighting.Fuzz, component: syntax-highlighting }
           - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
           - { project: Meziantou.Framework.Toml.Fuzz, component: toml }
@@ -175,6 +176,7 @@ jobs:
           - { project: Meziantou.Framework.JsonPath.Fuzz, component: jsonpath }
           - { project: Meziantou.Framework.Language.Fuzz, component: language }
           - { project: Meziantou.Framework.Markdown.Fuzz, component: markdown }
+          - { project: Meziantou.Framework.MediaTags.Fuzz, component: media-tags }
           - { project: Meziantou.Framework.SyntaxHighlighting.Fuzz, component: syntax-highlighting }
           - { project: Meziantou.Framework.TdsServer.Fuzz, component: tds-server }
           - { project: Meziantou.Framework.Toml.Fuzz, component: toml }

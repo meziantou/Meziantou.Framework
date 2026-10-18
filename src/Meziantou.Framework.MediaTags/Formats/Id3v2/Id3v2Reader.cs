@@ -353,8 +353,10 @@ internal static class Id3v2Reader
     /// </summary>
     /// <returns>
     /// <see langword="false"/> when a tag header is present but its declared size runs past the end of the
-    /// stream. A writer must not treat those bytes as audio, and must not treat the tag as absent either: doing
-    /// the first drops the audio and doing the second embeds a stale tag in the audio stream.
+    /// stream, or when the stream ends inside a header. A writer must not treat those bytes as audio, and must not
+    /// treat the tag as absent either: doing the first drops the audio and doing the second embeds a stale tag in
+    /// the audio stream. A cut-off header kept as audio also becomes a header once the ID3v1 tag that follows it
+    /// supplies its last bytes.
     /// </returns>
     public static bool TryGetTagSize(Stream stream, out int tagSize)
     {
@@ -362,10 +364,11 @@ internal static class Id3v2Reader
 
         var originalPosition = stream.Position;
         Span<byte> headerBytes = stackalloc byte[10];
-        if (stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false) < 10)
+        var bytesRead = stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false);
+        if (bytesRead < 10)
         {
             stream.Position = originalPosition;
-            return true;
+            return !headerBytes[..bytesRead].StartsWith("ID3"u8);
         }
 
         if (!Id3v2Header.TryParse(headerBytes, out var header))
@@ -430,7 +433,7 @@ internal static class Id3v2Reader
                 {
                     // Lenient: a malformed part does not discard the part that could be read.
                     _ = TagFieldMapping.TryParseNumberPair(ReadTextFrame(data), out var number, out var total);
-                    tags.TrackNumber = number;
+                    tags.TrackNumber = GetPosition(number, total);
                     tags.TrackTotal ??= total;
                 }
                 break;
@@ -439,7 +442,7 @@ internal static class Id3v2Reader
                 if (tags.DiscNumber is null)
                 {
                     _ = TagFieldMapping.TryParseNumberPair(ReadTextFrame(data), out var number, out var total);
-                    tags.DiscNumber = number;
+                    tags.DiscNumber = GetPosition(number, total);
                     tags.DiscTotal ??= total;
                 }
                 break;
@@ -501,6 +504,12 @@ internal static class Id3v2Reader
                 break;
         }
     }
+
+    /// <summary>
+    /// Gets the position part of a TRCK or TPOS frame. "0/total" is how Id3v2Writer stores a known total with an
+    /// unknown position, so reading it as position 0 would invent a value on every read-modify-write.
+    /// </summary>
+    private static int? GetPosition(int? number, int? total) => number is 0 && total is not null ? null : number;
 
     private static string ReadTextFrame(ReadOnlySpan<byte> data)
     {

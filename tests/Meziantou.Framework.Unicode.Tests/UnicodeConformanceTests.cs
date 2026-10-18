@@ -323,6 +323,101 @@ public sealed class UnicodeConformanceTests
         Assert.True(count > 90000, $"Only {count} cases were run");
     }
 
+    [Fact]
+    public void Idna_MatchesIdnaTestV2()
+    {
+        var transitionalOptions = new UnicodeIdnaOptions { TransitionalProcessing = true };
+        var count = 0;
+        var failures = new List<string>();
+        foreach (var line in ReadLines("IdnaTestV2.txt.gz"))
+        {
+            var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
+            var content = commentIndex >= 0 ? line[..commentIndex] : line;
+            if (string.IsNullOrWhiteSpace(content))
+                continue;
+
+            // source; toUnicode; toUnicodeStatus; toAsciiN; toAsciiNStatus; toAsciiT; toAsciiTStatus
+            var fields = content.Split(';').Select(field => field.Trim()).ToArray();
+            var source = UnescapeIdnaField(fields[0]);
+            var expectedUnicode = fields[1].Length == 0 ? source : UnescapeIdnaField(fields[1]);
+            var unicodeStatus = fields[2];
+            var expectedAsciiN = fields[3].Length == 0 ? expectedUnicode : UnescapeIdnaField(fields[3]);
+            var asciiNStatus = fields[4].Length == 0 ? unicodeStatus : fields[4];
+            var expectedAsciiT = fields[5].Length == 0 ? expectedAsciiN : UnescapeIdnaField(fields[5]);
+            var asciiTStatus = fields[6].Length == 0 ? asciiNStatus : fields[6];
+
+            count++;
+            string? error = null;
+            var unicode = UnicodeIdna.ToUnicode(source, out var hasErrors);
+            if (hasErrors != IsIdnaError(unicodeStatus))
+            {
+                error = $"ToUnicode reports errors={hasErrors}, expected {unicodeStatus}";
+            }
+            else if (!hasErrors && !string.Equals(unicode, expectedUnicode, StringComparison.Ordinal))
+            {
+                error = $"ToUnicode returns '{unicode}', expected '{expectedUnicode}'";
+            }
+
+            error ??= CompareToAscii(source, options: null, expectedAsciiN, asciiNStatus, "ToAsciiN");
+            error ??= CompareToAscii(source, transitionalOptions, expectedAsciiT, asciiTStatus, "ToAsciiT");
+            if (error is not null)
+            {
+                failures.Add(failures.Count < 20 ? $"{line}: {error}" : "");
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            Assert.Fail($"{failures.Count} of {count} cases of IdnaTestV2.txt fail:\n{string.Join('\n', failures.Take(20))}");
+        }
+
+        Assert.True(count > 6000, $"Only {count} cases were run");
+
+        static string? CompareToAscii(string source, UnicodeIdnaOptions? options, string expected, string status, string name)
+        {
+            var success = UnicodeIdna.TryToAscii(source, options, out var result);
+            if (success == IsIdnaError(status))
+                return $"{name} returns {success}, expected {status}";
+
+            if (success && !string.Equals(result, expected, StringComparison.Ordinal))
+                return $"{name} returns '{result}', expected '{expected}'";
+
+            return null;
+        }
+    }
+
+    /// <summary>A status of IdnaTestV2.txt: a list of error codes in brackets; <c>[]</c> means no error.</summary>
+    private static bool IsIdnaError(string status) => status.Length > 0 && status != "[]";
+
+    /// <summary>Unescapes a field of IdnaTestV2.txt: <c>\uXXXX</c>, <c>\x{XXXX}</c>, and <c>""</c> for the empty string.</summary>
+    private static string UnescapeIdnaField(string value)
+    {
+        if (value == "\"\"")
+            return "";
+
+        var result = new StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] == '\\' && i + 5 < value.Length && value[i + 1] == 'u')
+            {
+                AppendCodePoint(result, int.Parse(value.AsSpan(i + 2, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                i += 5;
+            }
+            else if (value[i] == '\\' && i + 2 < value.Length && value[i + 1] == 'x' && value[i + 2] == '{')
+            {
+                var end = value.IndexOf('}', i + 3, StringComparison.Ordinal);
+                AppendCodePoint(result, int.Parse(value.AsSpan(i + 3, end - i - 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                i = end;
+            }
+            else
+            {
+                result.Append(value[i]);
+            }
+        }
+
+        return result.ToString();
+    }
+
     /// <summary>Parses the levels of a bidi test: -1 stands for a character the algorithm removes, whose level is not specified.</summary>
     private static int[] ParseLevels(string value)
     {

@@ -5,7 +5,6 @@ using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Unicode;
 using SharedShapingFeature = Meziantou.Framework.Fonts.ShapingFeature;
 using SharedTextShaper = Meziantou.Framework.Fonts.TextShaper;
-using UnicodeScript = Meziantou.Framework.WebPlatform.Unicode.UnicodeScript;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Fonts;
 
@@ -60,14 +59,14 @@ public sealed class HarfBuzzShapingTests
         var script = UnicodeScript.Common;
         if (GetOption("--script") is { } scriptCode)
         {
-            var tag = ((uint)char.ToUpperInvariant(scriptCode[0]) << 24) | ((uint)char.ToLowerInvariant(scriptCode[1]) << 16) | ((uint)char.ToLowerInvariant(scriptCode[2]) << 8) | char.ToLowerInvariant(scriptCode[3]);
-            script = (UnicodeScript)ScriptCodes.Codes.IndexOf(tag);
+            var code = char.ToUpperInvariant(scriptCode[0]) + scriptCode[1..].ToLowerInvariant();
+            script = Enum.GetValues<UnicodeScript>().FirstOrDefault(value => string.Equals(UnicodeScripts.GetIso15924Code(value), code, StringComparison.Ordinal));
         }
         else
         {
             foreach (var codePoint in codePoints)
             {
-                var value = UnicodeProperties.GetScript(codePoint);
+                var value = UnicodeScripts.GetScript(codePoint);
                 if (value is not (UnicodeScript.Common or UnicodeScript.Inherited or UnicodeScript.Unknown))
                 {
                     script = value;
@@ -114,7 +113,7 @@ public sealed class HarfBuzzShapingTests
         }
 
         var languages = GetOption("--language") is { } language ? OpenTypeLanguage.GetTags(language) : [];
-        SharedTextShaper.Shape(buffer, font.Face, OpenTypeScript.FromIso15924(ScriptCodes.Codes[(int)script]), languages, direction == Direction.RightToLeft, [.. features], direction == Direction.TopToBottom);
+        SharedTextShaper.Shape(buffer, font.Face, ShapingWorkspace.GetScript(script), languages, direction == Direction.RightToLeft, [.. features], direction == Direction.TopToBottom);
 
         // HarfBuzz outputs the glyphs in the visual order, and replaces the default ignorable characters by the space glyph
         // (or removes them when the font has no space), as the shaper

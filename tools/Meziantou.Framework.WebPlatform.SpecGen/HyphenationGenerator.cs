@@ -6,7 +6,7 @@ namespace SpecGen;
 
 /// <summary>
 /// Compiles the hyphenation patterns of hyph-utf8 (https://github.com/hyphenation/tex-hyphen, the source of the dictionaries
-/// of Chrome on Android, Linux and ChromeOS and of Firefox) into the dictionaries of <c>Hyphenator</c>, the automatic
+/// of Chrome on Android, Linux and ChromeOS and of Firefox) into the dictionaries of <c>HyphenationDictionary</c>, the automatic
 /// hyphenation of <c>hyphens: auto</c> (https://drafts.csswg.org/css-text-4/#hyphenation).
 /// </summary>
 /// <remarks>
@@ -30,7 +30,7 @@ internal static class HyphenationGenerator
     private const byte FormatVersion = 1;
 
     /// <summary>
-    /// The dictionaries: the name (the locale of the dictionary of Chrome, see <c>Hyphenator</c>) and the source (the language of
+    /// The dictionaries: the name (the locale of the dictionary of Chrome, see <c>HyphenationDictionary</c>) and the source (the language of
     /// the hyph-utf8 files). Only the patterns under a license that allows their redistribution in this library are included:
     /// the patterns available only under the GPL, the LGPL or the MPL (cs, hu, hy, lv, sr-cyrl) are not. Serbian uses the
     /// Serbo-Croatian patterns (LPPL), whose Cyrillic and Latin variants hyphenate the same words.
@@ -105,7 +105,7 @@ internal static class HyphenationGenerator
 
         var writer = new CodeWriter("tests/Meziantou.Framework.WebPlatform.SpecData/hyphenation (hyph-utf8)");
         writer.Line("namespace Meziantou.Framework.WebPlatform.Unicode;").Line();
-        using (writer.Block("internal sealed partial class Hyphenator"))
+        using (writer.Block("internal sealed partial class HyphenationDictionary"))
         {
             writer.Summary("The names of the dictionaries: the locales of the dictionaries of Chrome (lowercase).");
             writer.Line("private static readonly string[] DictionaryNames = [" + string.Join(", ", Dictionaries.Select(d => CodeWriter.Literal(d.Name))) + "];");
@@ -114,7 +114,7 @@ internal static class HyphenationGenerator
             writer.Line("private static readonly string[] DictionaryResources = [" + string.Join(", ", resourceNames.Select(CodeWriter.Literal)) + "];");
         }
 
-        context.WriteFile(Path.Combine(outputDirectory, "Hyphenator.Dictionaries.g.cs"), writer.ToString());
+        context.WriteFile(Path.Combine(outputDirectory, "HyphenationDictionary.Dictionaries.g.cs"), writer.ToString());
     }
 
     /// <summary>The simple lowercase mappings of the BMP (field 13 of UnicodeData.txt), used to match the uppercase letters.</summary>

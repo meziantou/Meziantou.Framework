@@ -136,6 +136,17 @@ public sealed class CssAnimation : Animation
         Disassociate();
     }
 
+    /// <summary>
+    /// Cancels an animation created by a style that the layout discarded (see <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>):
+    /// it was not sampled yet, and its effect is removed from the effect stack of its target (the layout may create and discard
+    /// an animation each time it lays out a query container).
+    /// </summary>
+    internal void Discard()
+    {
+        CancelByStyle();
+        SetEffectCore(null);
+    }
+
     /// <summary>Removes the association with the owning element: the animation becomes an animation of the global animation list.</summary>
     internal void Disassociate()
     {

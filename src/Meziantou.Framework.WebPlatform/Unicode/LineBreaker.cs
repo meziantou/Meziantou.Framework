@@ -165,8 +165,8 @@ internal sealed class LineBreaker
 
         return UnicodeProperties.GetEastAsianWidth(codePoint) switch
         {
-            EastAsianWidth.F or EastAsianWidth.H => !UnicodeProperties.IsHangul(codePoint),
-            EastAsianWidth.W => !UnicodeProperties.IsHangul(codePoint) && !UnicodeProperties.IsEmojiPresentationParticipating(codePoint),
+            UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Halfwidth => !CharacterProperties.IsHangul(codePoint),
+            UnicodeEastAsianWidth.Wide => !CharacterProperties.IsHangul(codePoint) && !CharacterProperties.IsEmojiPresentationParticipating(codePoint),
             _ => false,
         };
     }
@@ -181,7 +181,7 @@ internal sealed class LineBreaker
         if (codePoint is 0xFF5E or 0x3000)
             return true;
 
-        return UnicodeProperties.IsEastAsianFullwidthWideOrHalfwidth(codePoint)
+        return CharacterProperties.IsEastAsianFullwidthWideOrHalfwidth(codePoint)
             && UnicodeProperties.GetGeneralCategory(codePoint) is >= UnicodeCategory.ConnectorPunctuation and <= UnicodeCategory.OtherPunctuation;
     }
 
@@ -191,10 +191,10 @@ internal sealed class LineBreaker
     private static bool IsAmbiguousPunctuationOrSymbol(int codePoint)
     {
         var width = UnicodeProperties.GetEastAsianWidth(codePoint);
-        if (width == EastAsianWidth.A)
+        if (width == UnicodeEastAsianWidth.Ambiguous)
             return UnicodeProperties.GetGeneralCategory(codePoint) is (>= UnicodeCategory.ConnectorPunctuation and <= UnicodeCategory.OtherPunctuation) or UnicodeCategory.MathSymbol or UnicodeCategory.ModifierSymbol or UnicodeCategory.OtherSymbol;
 
-        return width is EastAsianWidth.W or EastAsianWidth.N && codePoint > 0x7F && UnicodeProperties.IsEmojiPresentationParticipating(codePoint);
+        return width is UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Neutral && codePoint > 0x7F && CharacterProperties.IsEmojiPresentationParticipating(codePoint);
     }
 
     // Splits the text into combining character sequences (LB9, LB10) and resolves the classes (LB1 and the CSS tailorings). The
@@ -206,7 +206,7 @@ internal sealed class LineBreaker
         var units = _units;
         var count = 0;
         var run = 0;
-        var grapheme = default(GraphemeClusterBreaker);
+        var nextGraphemeBoundary = 0;
         var previousClass = BK; // any class that prevents LB9; only read after the first code point
         for (var i = 0; i < text.Length;)
         {
@@ -217,8 +217,14 @@ internal sealed class LineBreaker
             }
 
             var options = runs[run].Options;
-            var resolved = Resolve(codePoint, UnicodeProperties.GetLineBreakClass(codePoint), options, out var southeastAsianLetter);
-            var graphemeBoundary = options.IsUnicodeDefault || grapheme.IsBoundaryBefore(UnicodeProperties.GetSegmentationProperties(codePoint));
+            var resolved = Resolve(codePoint, CharacterProperties.GetLineBreakClass(codePoint), options, out var southeastAsianLetter);
+            var graphemeBoundary = i == nextGraphemeBoundary;
+            if (graphemeBoundary)
+            {
+                nextGraphemeBoundary = i + Framework.Unicode.GetGraphemeClusterLength(text[i..]);
+            }
+
+            graphemeBoundary |= options.IsUnicodeDefault;
 
             if (count > 0 && resolved is CM or ZWJ && previousClass is not (BK or CR or LF or NL or SP or ZW))
             {
@@ -457,7 +463,7 @@ internal sealed class LineBreaker
             {
                 // Breaks before the centered punctuation marks, before the suffixes and after the prefixes whose East_Asian_Width is A, F or W
                 if (codePoint is 0x30FB or 0xFF1A or 0xFF1B or 0xFF65 or 0x203C or 0x2047 or 0x2048 or 0x2049 or 0xFF01 or 0xFF1F
-                    || (value is PO or PR && UnicodeProperties.GetEastAsianWidth(codePoint) is EastAsianWidth.A or EastAsianWidth.F or EastAsianWidth.W))
+                    || (value is PO or PR && UnicodeProperties.GetEastAsianWidth(codePoint) is UnicodeEastAsianWidth.Ambiguous or UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Wide))
                 {
                     value = ID;
                 }
@@ -492,7 +498,7 @@ internal sealed class LineBreaker
         => UnicodeProperties.GetGeneralCategory(codePoint) is <= UnicodeCategory.OtherLetter or (>= UnicodeCategory.DecimalDigitNumber and <= UnicodeCategory.OtherNumber);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsEastAsian(in Unit unit) => UnicodeProperties.IsEastAsianFullwidthWideOrHalfwidth(unit.BaseCodePoint);
+    private static bool IsEastAsian(in Unit unit) => CharacterProperties.IsEastAsianFullwidthWideOrHalfwidth(unit.BaseCodePoint);
 
     // [AK ◌ AS] of LB28a
     private static bool IsAksara(in Unit unit) => unit.Class is AK or AS || unit.BaseCodePoint == 0x25CC;
@@ -805,7 +811,7 @@ internal sealed class LineBreaker
             return NoBreak;
 
         // LB30b: EB × EM, [\p{Extended_Pictographic}&\p{Cn}] × EM
-        if (bClass == EM && (aClass == EB || (UnicodeProperties.IsExtendedPictographic(a.BaseCodePoint) && UnicodeProperties.GetGeneralCategory(a.BaseCodePoint) == UnicodeCategory.OtherNotAssigned)))
+        if (bClass == EM && (aClass == EB || (UnicodeEmoji.IsExtendedPictographic(a.BaseCodePoint) && UnicodeProperties.GetGeneralCategory(a.BaseCodePoint) == UnicodeCategory.OtherNotAssigned)))
             return NoBreak;
 
         // LB31

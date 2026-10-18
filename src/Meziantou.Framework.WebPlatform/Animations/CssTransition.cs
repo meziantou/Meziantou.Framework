@@ -71,6 +71,17 @@ public sealed class CssTransition : Animation
         GlobalIndex = NextGlobalIndex();
     }
 
+    /// <summary>
+    /// Cancels a transition started by a style that the layout discarded (see <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>):
+    /// it was not sampled yet, and its effect is removed from the effect stack of its target (the layout may start and discard
+    /// a transition each time it lays out a query container).
+    /// </summary>
+    internal void Discard()
+    {
+        CancelByStyle();
+        SetEffectCore(null);
+    }
+
     // A transition canceled through the API is no longer a running transition of its owning element
     private protected override void OnCanceledByScript()
     {

@@ -341,7 +341,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// </summary>
     private void UpdateCssConnectedFaces()
     {
-        var version = (_document.DomVersion, Cascade.CssStyleVersion.Current);
+        var version = (_document.DomVersion, _document.StyleSheetsVersion);
         if (version == _styleSheetsVersion)
             return;
 

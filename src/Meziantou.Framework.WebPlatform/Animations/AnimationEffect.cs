@@ -307,10 +307,16 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
         }
     }
 
-    /// <summary>The local time: the current time of the associated animation (https://drafts.csswg.org/web-animations-1/#local-time).</summary>
-    internal double? LocalTime => Animation is WorkletAnimation workletAnimation
-        ? (workletAnimation.PlayStateValue == AnimationPlayState.Idle ? null : WorkletLocalTime)
-        : Animation?.CurrentTimeValue;
+    /// <summary>
+    /// The local time: the current time of the associated animation (https://drafts.csswg.org/web-animations-1/#local-time). A
+    /// CSS transition or CSS animation whose cancellation is pending has no effect, as if it was canceled (see <see cref="Animation.IsCancellationPending"/>).
+    /// </summary>
+    internal double? LocalTime => Animation switch
+    {
+        WorkletAnimation workletAnimation => workletAnimation.PlayStateValue == AnimationPlayState.Idle ? null : WorkletLocalTime,
+        { IsCancellationPending: true } => null,
+        _ => Animation?.CurrentTimeValue,
+    };
 
     /// <summary>
     /// The local time of an effect of a worklet animation (https://drafts.css-houdini.org/css-animation-worklet-1/#worklet-animation-desc:

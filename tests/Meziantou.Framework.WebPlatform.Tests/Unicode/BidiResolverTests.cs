@@ -1,5 +1,6 @@
 using System.Text;
 using Meziantou.Framework.WebPlatform.Css.Layout;
+using CssUnicodeBidi = Meziantou.Framework.WebPlatform.Css.Layout.UnicodeBidi;
 using Meziantou.Framework.WebPlatform.Unicode;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Unicode;
@@ -84,38 +85,38 @@ public sealed class BidiResolverTests
     public void CssIsolateAndOverride()
     {
         // <p dir=ltr>abc <span dir=rtl>DEF ghi</span> jkl</p>: the span is an isolate (unicode-bidi: isolate)
-        var text = Text("abc ") + BidiControls.GetInlineStart(UnicodeBidi.Isolate, isRightToLeft: true) + Text("DEF ghi") + BidiControls.GetInlineEnd(UnicodeBidi.Isolate) + " jkl";
+        var text = Text("abc ") + BidiControls.GetInlineStart(CssUnicodeBidi.Isolate, isRightToLeft: true) + Text("DEF ghi") + BidiControls.GetInlineEnd(CssUnicodeBidi.Isolate) + " jkl";
         Assert.Equal("abc ghi FED jkl", Visual(text, BidiParagraphDirection.LeftToRight));
 
         // <bdo dir=rtl>abc</bdo> (unicode-bidi: isolate-override)
-        text = "x " + BidiControls.GetInlineStart(UnicodeBidi.IsolateOverride, isRightToLeft: true) + "abc" + BidiControls.GetInlineEnd(UnicodeBidi.IsolateOverride) + " y";
+        text = "x " + BidiControls.GetInlineStart(CssUnicodeBidi.IsolateOverride, isRightToLeft: true) + "abc" + BidiControls.GetInlineEnd(CssUnicodeBidi.IsolateOverride) + " y";
         Assert.Equal("x cba y", Visual(text, BidiParagraphDirection.LeftToRight));
 
         // unicode-bidi: bidi-override on a block container
-        text = BidiControls.GetBlockContainerStart(UnicodeBidi.BidiOverride, isRightToLeft: true) + "abc def" + BidiControls.GetBlockContainerEnd(UnicodeBidi.BidiOverride);
-        Assert.Equal("fed cba", Visual(text, BidiControls.GetParagraphDirection(UnicodeBidi.BidiOverride, isRightToLeft: true)));
+        text = BidiControls.GetBlockContainerStart(CssUnicodeBidi.BidiOverride, isRightToLeft: true) + "abc def" + BidiControls.GetBlockContainerEnd(CssUnicodeBidi.BidiOverride);
+        Assert.Equal("fed cba", Visual(text, BidiControls.GetParagraphDirection(CssUnicodeBidi.BidiOverride, isRightToLeft: true)));
 
         // unicode-bidi: plaintext on a block container: rules P2 and P3, whatever the direction of the block container (a
         // paragraph without strong character is left-to-right)
-        Assert.Equal(BidiParagraphDirection.AutoLeftToRight, BidiControls.GetParagraphDirection(UnicodeBidi.Plaintext, isRightToLeft: true));
+        Assert.Equal(BidiParagraphDirection.AutoLeftToRight, BidiControls.GetParagraphDirection(CssUnicodeBidi.Plaintext, isRightToLeft: true));
         Assert.Equal("CBA abc", Visual(Text("ABC abc"), BidiParagraphDirection.LeftToRight));
-        Assert.Equal("abc CBA", Visual(Text("ABC abc"), BidiControls.GetParagraphDirection(UnicodeBidi.Plaintext, isRightToLeft: false)));
+        Assert.Equal("abc CBA", Visual(Text("ABC abc"), BidiControls.GetParagraphDirection(CssUnicodeBidi.Plaintext, isRightToLeft: false)));
     }
 
     [Fact]
     public void ControlCodes()
     {
-        Assert.Equal("", BidiControls.GetInlineStart(UnicodeBidi.Normal, isRightToLeft: true));
-        Assert.Equal(new string([BidiControls.RightToLeftEmbedding]), BidiControls.GetInlineStart(UnicodeBidi.Embed, isRightToLeft: true));
-        Assert.Equal(new string([BidiControls.FirstStrongIsolate, BidiControls.LeftToRightOverride]), BidiControls.GetInlineStart(UnicodeBidi.IsolateOverride, isRightToLeft: false));
-        Assert.Equal(new string([BidiControls.PopDirectionalFormatting, BidiControls.PopDirectionalIsolate]), BidiControls.GetInlineEnd(UnicodeBidi.IsolateOverride));
-        Assert.Equal(new string([BidiControls.FirstStrongIsolate]), BidiControls.GetInlineStart(UnicodeBidi.Plaintext, isRightToLeft: true));
-        Assert.Equal("", BidiControls.GetBlockContainerStart(UnicodeBidi.Isolate, isRightToLeft: true));
+        Assert.Equal("", BidiControls.GetInlineStart(CssUnicodeBidi.Normal, isRightToLeft: true));
+        Assert.Equal(new string([BidiControls.RightToLeftEmbedding]), BidiControls.GetInlineStart(CssUnicodeBidi.Embed, isRightToLeft: true));
+        Assert.Equal(new string([BidiControls.FirstStrongIsolate, BidiControls.LeftToRightOverride]), BidiControls.GetInlineStart(CssUnicodeBidi.IsolateOverride, isRightToLeft: false));
+        Assert.Equal(new string([BidiControls.PopDirectionalFormatting, BidiControls.PopDirectionalIsolate]), BidiControls.GetInlineEnd(CssUnicodeBidi.IsolateOverride));
+        Assert.Equal(new string([BidiControls.FirstStrongIsolate]), BidiControls.GetInlineStart(CssUnicodeBidi.Plaintext, isRightToLeft: true));
+        Assert.Equal("", BidiControls.GetBlockContainerStart(CssUnicodeBidi.Isolate, isRightToLeft: true));
 
-        Assert.Equal(BidiClass.ON, BidiControls.GetAtomicInlineClass(isReplaced: false, UnicodeBidi.BidiOverride, isRightToLeft: true));
-        Assert.Equal(BidiClass.ON, BidiControls.GetAtomicInlineClass(isReplaced: true, UnicodeBidi.Isolate, isRightToLeft: true));
-        Assert.Equal(BidiClass.R, BidiControls.GetAtomicInlineClass(isReplaced: true, UnicodeBidi.Embed, isRightToLeft: true));
-        Assert.Equal(BidiClass.L, BidiControls.GetAtomicInlineClass(isReplaced: true, UnicodeBidi.BidiOverride, isRightToLeft: false));
+        Assert.Equal(BidiClass.ON, BidiControls.GetAtomicInlineClass(isReplaced: false, CssUnicodeBidi.BidiOverride, isRightToLeft: true));
+        Assert.Equal(BidiClass.ON, BidiControls.GetAtomicInlineClass(isReplaced: true, CssUnicodeBidi.Isolate, isRightToLeft: true));
+        Assert.Equal(BidiClass.R, BidiControls.GetAtomicInlineClass(isReplaced: true, CssUnicodeBidi.Embed, isRightToLeft: true));
+        Assert.Equal(BidiClass.L, BidiControls.GetAtomicInlineClass(isReplaced: true, CssUnicodeBidi.BidiOverride, isRightToLeft: false));
     }
 
     [Fact]
@@ -132,7 +133,7 @@ public sealed class BidiResolverTests
         Assert.Equal(1, resolver.Levels[3]);
         Assert.Equal(1, resolver.Levels[2]);
 
-        classes[3] = BidiControls.GetAtomicInlineClass(isReplaced: true, UnicodeBidi.Embed, isRightToLeft: false);
+        classes[3] = BidiControls.GetAtomicInlineClass(isReplaced: true, CssUnicodeBidi.Embed, isRightToLeft: false);
         resolver.Resolve(text, classes, BidiParagraphDirection.LeftToRight);
         Assert.Equal(0, resolver.Levels[3]);
         Assert.Equal(0, resolver.Levels[2]);
@@ -195,24 +196,24 @@ public sealed class BidiResolverTests
     [Fact]
     public void Properties()
     {
-        Assert.Equal(BidiClass.R, UnicodeProperties.GetBidiClass(0x05D0));
-        Assert.Equal(BidiClass.AL, UnicodeProperties.GetBidiClass(0x0627));
-        Assert.Equal(BidiClass.AN, UnicodeProperties.GetBidiClass(0x0661));
-        Assert.Equal(BidiClass.FSI, UnicodeProperties.GetBidiClass(0x2068));
-        Assert.Equal(BidiClass.BN, UnicodeProperties.GetBidiClass(0x200D));
+        Assert.Equal(BidiClass.R, CharacterProperties.GetBidiClass(0x05D0));
+        Assert.Equal(BidiClass.AL, CharacterProperties.GetBidiClass(0x0627));
+        Assert.Equal(BidiClass.AN, CharacterProperties.GetBidiClass(0x0661));
+        Assert.Equal(BidiClass.FSI, CharacterProperties.GetBidiClass(0x2068));
+        Assert.Equal(BidiClass.BN, CharacterProperties.GetBidiClass(0x200D));
 
-        Assert.Equal(BidiPairedBracketType.Open, UnicodeProperties.GetBidiPairedBracketType('['));
-        Assert.Equal(BidiPairedBracketType.Close, UnicodeProperties.GetBidiPairedBracketType(')'));
-        Assert.Equal(BidiPairedBracketType.None, UnicodeProperties.GetBidiPairedBracketType('<'));
-        Assert.Equal(']', UnicodeProperties.GetBidiPairedBracket('['));
-        Assert.Equal('a', UnicodeProperties.GetBidiPairedBracket('a'));
+        Assert.Equal(UnicodeBidiPairedBracketType.Open, UnicodeProperties.GetBidiPairedBracketType('['));
+        Assert.Equal(UnicodeBidiPairedBracketType.Close, UnicodeProperties.GetBidiPairedBracketType(')'));
+        Assert.Equal(UnicodeBidiPairedBracketType.None, UnicodeProperties.GetBidiPairedBracketType('<'));
+        Assert.Equal(']', CharacterProperties.GetBidiPairedBracket('['));
+        Assert.Equal('a', CharacterProperties.GetBidiPairedBracket('a'));
 
         // L4
-        Assert.Equal(')', UnicodeProperties.GetBidiMirroringGlyph('('));
-        Assert.Equal('<', UnicodeProperties.GetBidiMirroringGlyph('>'));
-        Assert.Equal(-1, UnicodeProperties.GetBidiMirroringGlyph('a'));
+        Assert.Equal(')', CharacterProperties.GetBidiMirroringGlyph('('));
+        Assert.Equal('<', CharacterProperties.GetBidiMirroringGlyph('>'));
+        Assert.Equal(-1, CharacterProperties.GetBidiMirroringGlyph('a'));
         Assert.True(UnicodeProperties.IsBidiMirrored(0x2211));
-        Assert.Equal(-1, UnicodeProperties.GetBidiMirroringGlyph(0x2211));
+        Assert.Equal(-1, CharacterProperties.GetBidiMirroringGlyph(0x2211));
         Assert.False(UnicodeProperties.IsBidiMirrored('a'));
     }
 }

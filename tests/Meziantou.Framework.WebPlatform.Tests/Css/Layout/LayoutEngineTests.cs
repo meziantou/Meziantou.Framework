@@ -104,8 +104,7 @@ public sealed class LayoutEngineTests : IDisposable
         ((HtmlElement)document.GetElementById("target")!).Style.SetProperty("height", "30px");
         RunFrames();
 
-        // NeedsLayout is not checked: the version of the styles includes the process-global CssStyleVersion, which the tests
-        // running in parallel increment (the layout would then be computed again by the next read)
+        Assert.False(engine.NeedsLayout);
         Assert.True(engine.LayoutCount > count);
         Assert.Equal(30, engine.GetFragments(document.GetElementById("target")!)[0].Size.Height);
     }

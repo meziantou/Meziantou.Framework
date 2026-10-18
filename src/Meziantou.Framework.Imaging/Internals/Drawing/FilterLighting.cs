@@ -28,7 +28,7 @@ internal static class FilterLighting
     {
         var input = context.GetInput(0);
         var alphas = input.Values;
-        var edges = Rectangle.Intersect(context.Region, input.Bounds);
+        var edges = Rectangle.Intersect(context.Region, context.SurfaceBounds);
         var light = source.Place(context.Processor);
         var (red, green, blue, _) = context.GetColor(color);
         var values = result.Values;
@@ -140,7 +140,15 @@ internal static class FilterLighting
             }
         }
 
-        static double Alpha(Span<float> alphas, FilterSurface input, int x, int y) => alphas[input.IndexOf(x, y) + 3];
+        // Transparent beyond the input, which may hold only a part of the filtered surface
+        static double Alpha(Span<float> alphas, FilterSurface input, int x, int y)
+        {
+            var bounds = input.Bounds;
+            if (x < bounds.Left || x >= bounds.Right || y < bounds.Top || y >= bounds.Bottom)
+                return 0;
+
+            return alphas[input.IndexOf(x, y) + 3];
+        }
 
         // Written so that a value that is not a number is zero
         static double Clamp(double value) => value > 0 ? (value < 1 ? value : 1) : 0;

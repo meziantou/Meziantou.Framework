@@ -22,8 +22,12 @@ internal static class CssAnimationUpdater
         return style.HasCascadedValue("animation-name") || style.Element.NodeDocument.AnimationsOrNull?.GetCssAnimations(style.Element, style.PseudoElement) is { Count: > 0 };
     }
 
-    /// <summary>Updates the CSS animations of the element of the style; returns whether they changed.</summary>
-    public static bool Update(ComputedStyle style)
+    /// <summary>
+    /// Updates the CSS animations of the element of the style; returns whether they changed. When the layout may compute the
+    /// style again (<paramref name="changes"/> is not null), the canceled animations are only pending cancellation, and the
+    /// changes are recorded so that they can be undone (see <see cref="AnimationChanges"/>).
+    /// </summary>
+    public static bool Update(ComputedStyle style, AnimationChanges? changes)
     {
         var element = style.Element;
         var pseudoElement = style.PseudoElement;
@@ -108,7 +112,16 @@ internal static class CssAnimationUpdater
 
         foreach (var animation in unmatched)
         {
-            animation.CancelByStyle();
+            if (changes is null)
+            {
+                animation.CancelByStyle();
+            }
+            else
+            {
+                animation.IsCancellationPending = true;
+                (changes.PendingCancellations ??= []).Add(animation);
+            }
+
             changed = true;
         }
 
@@ -180,7 +193,7 @@ internal static class CssAnimationUpdater
         {
             NameIndex = index,
             KeyframesRule = parameters.Rule,
-            KeyframesCacheKey = (CssStyleVersion.Current, parameters.Easing),
+            KeyframesCacheKey = (style.Element.NodeDocument.StyleSheetsVersion, parameters.Easing),
             StylePaused = parameters.Paused,
             TimelineReference = parameters.Timeline,
             TimelineTreeScope = style.TryGetCascadedValue("animation-timeline", out var timelineCascaded) ? timelineCascaded.TreeScope : null,
@@ -205,7 +218,7 @@ internal static class CssAnimationUpdater
         {
             if (!animation.KeyframesOverridden)
             {
-                var cacheKey = (CssStyleVersion.Current, parameters.Easing);
+                var cacheKey = (style.Element.NodeDocument.StyleSheetsVersion, parameters.Easing);
                 if (!ReferenceEquals(animation.KeyframesRule, parameters.Rule) || !Equals(animation.KeyframesCacheKey, cacheKey))
                 {
                     animation.KeyframesRule = parameters.Rule;
@@ -386,4 +399,20 @@ internal static class CssAnimationUpdater
         "accumulate" => CompositeOperation.Accumulate,
         _ => CompositeOperation.Replace,
     };
+}
+
+/// <summary>
+/// The changes of the CSS animations of an element by the computations of its style in a generation of styles that the layout
+/// may compute again with the size of its query container (see <see cref="StyleEngine.InvalidateQueryContainerDescendants"/>):
+/// the layout may lay out the container more than once (e.g. to measure it), and a discarded style must not have changed the
+/// animations. The animations it created are canceled, and the ones it canceled run again: they are only canceled once the
+/// styles are settled (see <see cref="StyleEngine.CommitPendingCancellations"/>).
+/// </summary>
+/// <param name="animations">The CSS animations of the element before the first computation.</param>
+internal sealed class AnimationChanges(List<CssAnimation>? animations)
+{
+    public List<CssAnimation>? Animations { get; } = animations;
+
+    /// <summary>The CSS animations canceled by the computations, whose cancellation is pending (see <see cref="Animation.IsCancellationPending"/>).</summary>
+    public List<CssAnimation>? PendingCancellations { get; set; }
 }

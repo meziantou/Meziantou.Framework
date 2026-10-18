@@ -43,7 +43,7 @@ internal static class MathStretchyGlyphs
 
             if (UnicodeProperties.IsBidiMirrored(codePoint))
             {
-                var mirroredCodePoint = UnicodeProperties.GetBidiMirroringGlyph(codePoint);
+                var mirroredCodePoint = CharacterProperties.GetBidiMirroringGlyph(codePoint);
                 glyph = mirroredCodePoint >= 0 ? font.GetGlyph(mirroredCodePoint) : (ushort)0;
                 return glyph != 0;
             }

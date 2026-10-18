@@ -21,9 +21,11 @@ Sources:
 - `mathml-core`: the source of [MathML Core](https://w3c.github.io/mathml-core/) (`spec.html`) and the files of its user
   agent style sheet (`user-agent-stylesheet`)
 - `webref`: curated WebIDL, parsed WebIDL, element definitions and CSS definitions from [w3c/webref](https://github.com/w3c/webref)
-- `unicode`: Unicode Character Database files, the UTS #46 IDNA mapping table, and the conformance tests of the text
-  segmentation algorithms (`LineBreakTest.txt`, `GraphemeBreakTest.txt`) and of the bidirectional algorithm (`BidiTest.txt`,
-  `BidiCharacterTest.txt`), which must match the version of the data
+- `unicode`: the Unicode Character Database file the lowercase mappings of the hyphenation dictionaries are generated from
+  (`UnicodeData.txt`). The URLs name a version (`Public/18.0.0/`), the one of
+  `tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt`: the other Unicode data comes from the
+  `Meziantou.Framework.Unicode` package, so the two move together. The conformance tests of the text segmentation and of the
+  bidirectional algorithm are the files of the package (`tests/Meziantou.Framework.Unicode.Tests/files`)
 - `chardetng`: the data of [chardetng](https://github.com/hsivonen/chardetng), the encoding detector of Firefox (Apache-2.0
   or MIT license: `COPYRIGHT`, `LICENSE-MIT`), pinned to a release tag: `src/data.rs` has the classes of the bytes of the
   single-byte encodings, the scores of the pairs of classes of each family of languages, and the most frequent ideographs
@@ -84,7 +86,7 @@ Sources:
     its last subtag (`Css/Layout/BoxTree/LanguageQuotes.g.cs`), for `quotes: auto`.
   - `HyphenationGenerator` compiles the hyphenation patterns of each language into a packed trie, the embedded resources
     `Unicode/Hyphenation/*.hyph` (Brotli-compressed binary files, compared after decompression by `--check`), with the table of
-    the dictionaries (`Hyphenator.Dictionaries.g.cs`) and the license notices of the sources (`LICENSES.txt`). See
+    the dictionaries (`HyphenationDictionary.Dictionaries.g.cs`) and the license notices of the sources (`LICENSES.txt`). See
     [layout.md](layout.md#hyphenation). To add a language, add its files to `sources.json` and to the `Dictionaries` of the
     generator after checking its license, then run `update hyphenation`.
   - `SegmentationGenerator` compiles the word lists of the `icu` source into the embedded resources
@@ -125,11 +127,10 @@ token with the contents and pull requests write permissions) to run it.
 
 ## Implementation notes
 
-- Unicode data (IDNA mapping, NFC, Joining_Type, Vertical_Orientation, Default_Ignorable_Code_Point, Script and
-  Script_Extensions, the Arabic joining types of `ArabicShaping.txt`, the bidi properties,
-  see [layout.md](layout.md#bidirectional-text), and the Line_Break, East_Asian_Width, Grapheme_Cluster_Break,
-  General_Category... of the text segmentation, see [layout.md](layout.md#text-segmentation)) is generated from the UCD
-  instead of using `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`, whose behavior depends on the OS, the ICU
-  version, the runtime and the globalization mode.
+- The Unicode data does not depend on the OS, the ICU version, the runtime or the globalization mode, unlike
+  `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`. The properties of the code points (the bidi properties, see
+  [layout.md](layout.md#bidirectional-text), the Line_Break, East_Asian_Width, Grapheme_Cluster_Break, General_Category...
+  of the text segmentation, see [layout.md](layout.md#text-segmentation), Script and Script_Extensions, Joining_Type,
+  Vertical_Orientation...), NFC, the case mappings and IDNA come from the `Meziantou.Framework.Unicode` package.
 - When a test suite lags behind the specification data (for instance, IDNA tests generated from an older Unicode
   version), the affected tests are skipped with an explicit reason instead of pinning older data.

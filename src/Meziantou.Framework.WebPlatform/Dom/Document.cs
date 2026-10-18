@@ -217,6 +217,12 @@ public partial class Document : Node
     internal int DomVersion => _domVersion;
 
     /// <summary>
+    /// The version of the style sheets of the document, changed when one of them changes through the CSSOM (see
+    /// <see cref="Css.Cascade.CssStyleVersion"/>).
+    /// </summary>
+    internal int StyleSheetsVersion { get; set; } = Css.Cascade.CssStyleVersion.Next();
+
+    /// <summary>
     /// Increments <see cref="DomVersion"/> for a change that <see cref="StyleInvalidations"/> does not describe: all the computed
     /// styles are invalidated.
     /// </summary>

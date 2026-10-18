@@ -222,7 +222,7 @@ styles builds it again. Which cached styles are discarded depends on the change:
   descendants are discarded (they inherit from it), and the styles of the removed and of the inserted nodes are discarded (a
   node moved by `moveBefore()` or removed and inserted again keeps its styles as its before-change styles). A change of the
   style of the root or body element discards all the styles (the viewport units depend on their scrollbar gutters).
-- **All the styles**: a change of a style sheet (through the CSSOM: the process-wide `CssStyleVersion`, or a style sheet of
+- **All the styles**: a change of a style sheet (through the CSSOM: `Document.StyleSheetsVersion`, or a style sheet of
   the document added, removed or changed), of the environment (the viewport, the user preferences), of the fonts, of the
   visited links, of the snapshots of the scroll-state queries and of the scroll markers, and the changes that are not
   recorded: the other attribute changes (only the `class`, `id`, `style`, `data-*` and `aria-*` attributes are invalidated
@@ -240,7 +240,7 @@ styles builds it again. Which cached styles are discarded depends on the change:
   and the style engines with an environment override (the printing, the minifier) always invalidate all their styles.
 
 A style is computed for one version: the checks of the versions are suspended while `GetStyle` computes a style and its
-ancestors (a change of the process-wide `CssStyleVersion` by another document is seen by the next read), a style computed by
+ancestors (a change of the versions while it is computed is seen by the next read), a style computed by
 the computation of another one is not computed again, and the styles of the descendants computed while the style of an element
 is replaced by its style with the effects of its new animations are discarded: the styles kept by the invalidations by element
 never inherit from a style of another generation. With the

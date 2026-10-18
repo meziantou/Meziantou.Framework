@@ -923,7 +923,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         // The declarations of a style attribute are updated with the attribute, which invalidates the computed styles
         if (_ownerNode is null)
         {
-            Cascade.CssStyleVersion.Increment();
+            Cascade.CssStyleVersion.Increment(_parentRule);
             _parentRule?.ParentStyleSheet?.RequestCssResourcesUpdate();
             return;
         }

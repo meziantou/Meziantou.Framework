@@ -5,10 +5,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
 
 /// <summary>
 /// The incremental update of the box tree and of the layout after a change. The tests do not run in parallel with the other
-/// tests: a change of a style sheet through the CSSOM by another test (the process-wide CssStyleVersion) invalidates all the
-/// styles.
+/// tests: <see cref="LayoutEngine.VerifyIncrementalLayout"/> is process-wide.
 /// </summary>
-[Collection(nameof(StyleInvalidationCollection))]
+[Collection(nameof(IncrementalLayoutCollection))]
 public sealed class IncrementalLayoutTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
@@ -330,3 +329,6 @@ public sealed class IncrementalLayoutTests : IDisposable
     }
 #pragma warning restore CA5394
 }
+
+[CollectionDefinition(nameof(IncrementalLayoutCollection), DisableParallelization = true)]
+public sealed class IncrementalLayoutCollection;

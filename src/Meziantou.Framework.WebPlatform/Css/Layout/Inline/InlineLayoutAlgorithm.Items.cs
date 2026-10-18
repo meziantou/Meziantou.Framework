@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
@@ -1003,7 +1002,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // The characters below U+0590 are left-to-right or neutral: the bidi algorithm is not needed
         if (c >= 0x0590 && !_needsBidi)
         {
-            _needsBidi = char.IsSurrogate(c) || UnicodeProperties.GetBidiClass(c) is BidiClass.R or BidiClass.AL or BidiClass.AN
+            _needsBidi = char.IsSurrogate(c) || CharacterProperties.GetBidiClass(c) is BidiClass.R or BidiClass.AL or BidiClass.AN
                 or BidiClass.LRE or BidiClass.RLE or BidiClass.LRO or BidiClass.RLO or BidiClass.PDF or BidiClass.LRI or BidiClass.RLI or BidiClass.FSI or BidiClass.PDI;
         }
     }
@@ -1183,7 +1182,7 @@ internal sealed partial class InlineLayoutAlgorithm
         static ReadOnlySpan<LineBreakOptionsRun> CollectionsMarshalAsSpan(List<LineBreakOptionsRun> list) => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(list);
 
         // The characters that forbid the break between them and an atomic inline
-        static bool IsGlue(int codePoint) => codePoint != 0xA0 && UnicodeProperties.GetLineBreakClass(codePoint) is LineBreakClass.GL or LineBreakClass.WJ or LineBreakClass.ZWJ;
+        static bool IsGlue(int codePoint) => codePoint != 0xA0 && CharacterProperties.GetLineBreakClass(codePoint) is LineBreakClass.GL or LineBreakClass.WJ or LineBreakClass.ZWJ;
 
         // The bidi controls are combining marks for the line breaking: no opportunity before them
         static bool IsCombiningControl(char c) => c is >= (char)0x202A and <= (char)0x202E or >= (char)0x2066 and <= (char)0x2069;
@@ -1752,29 +1751,14 @@ internal sealed partial class InlineLayoutAlgorithm
                 i++;
             }
 
-            var type = GetJoiningType(codePoint);
-            if (type == ArabicJoiningType.T)
+            var type = UnicodeProperties.GetJoiningType(codePoint);
+            if (type == UnicodeJoiningType.Transparent)
                 continue;
 
-            return type == ArabicJoiningType.U ? 0 : codePoint;
+            return type == UnicodeJoiningType.NonJoining ? 0 : codePoint;
         }
 
         return 0;
-    }
-
-    /// <summary>
-    /// The Joining_Type of a character (https://www.unicode.org/reports/tr44/#Joining_Type): the characters the data does not
-    /// list are transparent when they are marks or format characters, else non-joining (Unicode Standard, section 9.2).
-    /// </summary>
-    internal static ArabicJoiningType GetJoiningType(int codePoint)
-    {
-        var starts = ArabicJoiningData.RangeStarts;
-        var index = starts.BinarySearch(codePoint);
-        var type = (ArabicJoiningType)ArabicJoiningData.RangeValues[index >= 0 ? index : ~index - 1];
-        if (type != ArabicJoiningType.X)
-            return type;
-
-        return UnicodeProperties.GetGeneralCategory(codePoint) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark or UnicodeCategory.Format ? ArabicJoiningType.T : ArabicJoiningType.U;
     }
 
     private static readonly uint HalfWidthsTag = OpenTypeTag.FromString("hwid");
@@ -1792,7 +1776,7 @@ internal sealed partial class InlineLayoutAlgorithm
         foreach (var rune in text.EnumerateRunes())
         {
             // (the combining marks are part of the typographic character unit of their base)
-            if (UnicodeProperties.GetGraphemeClusterBreak(rune.Value) is not (GraphemeClusterBreak.Extend or GraphemeClusterBreak.ZWJ or GraphemeClusterBreak.SpacingMark))
+            if (UnicodeProperties.GetGraphemeClusterBreak(rune.Value) is not (UnicodeGraphemeClusterBreak.Extend or UnicodeGraphemeClusterBreak.ZWJ or UnicodeGraphemeClusterBreak.SpacingMark))
             {
                 count++;
             }
@@ -1943,7 +1927,7 @@ internal sealed partial class InlineLayoutAlgorithm
         var index = -1;
         for (var i = 0; i < text.Length; i++)
         {
-            if (UnicodeProperties.IsBidiMirrored(text[i]) && UnicodeProperties.GetBidiMirroringGlyph(text[i]) >= 0)
+            if (UnicodeProperties.IsBidiMirrored(text[i]) && CharacterProperties.GetBidiMirroringGlyph(text[i]) >= 0)
             {
                 index = i;
                 break;
@@ -1963,7 +1947,7 @@ internal sealed partial class InlineLayoutAlgorithm
         for (var i = index; i < buffer.Length; i++)
         {
             var c = buffer[i];
-            if (UnicodeProperties.IsBidiMirrored(c) && UnicodeProperties.GetBidiMirroringGlyph(c) is var mirrored and >= 0 and <= 0xFFFF)
+            if (UnicodeProperties.IsBidiMirrored(c) && CharacterProperties.GetBidiMirroringGlyph(c) is var mirrored and >= 0 and <= 0xFFFF)
             {
                 buffer[i] = (char)mirrored;
             }

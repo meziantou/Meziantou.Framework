@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// With hardware vector support, <see cref="Transform(Span{double}, Span{byte}, int, bool)"/> runs each pass on two
-/// columns (then rows) at once, or on <see cref="Vector{T}.Count"/> of them with wider vectors: every lane performs exactly
+/// columns (then rows) at once, four with AVX2, or on <see cref="Vector{T}.Count"/> of them with other wider vectors: every lane performs exactly
 /// the operations of the scalar reference (<see cref="TransformScalar"/>) in the same order, without fused multiply-adds,
 /// so the samples are bit-identical. The scalar shortcut for columns without AC coefficients is skipped there; it is
 /// itself exact (the full formula reduces to <c>x0 * C0</c> when the other inputs are zero). The transform of 12-bit
@@ -124,7 +124,11 @@ internal static class JpegIdct
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (see <see cref="IsSparse(int)"/>).</param>
     public static void Transform(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
     {
-        if (Vector128.IsHardwareAccelerated && Vector<double>.Count == 2)
+        if (Avx2.IsSupported)
+        {
+            TransformAvx2(coefficients, destination, stride, sparse);
+        }
+        else if (Vector128.IsHardwareAccelerated && Vector<double>.Count == 2)
         {
             TransformVector128(coefficients, destination, stride, sparse);
         }
@@ -143,17 +147,34 @@ internal static class JpegIdct
     /// <param name="quantization">The 64 quantization values, as doubles.</param>
     /// <param name="block">The 64 dequantized coefficients.</param>
     /// <remarks>
-    /// With 128-bit hardware vectors, the coefficients are widened and converted two at a time; every conversion is exact
-    /// and the product is the same IEEE multiplication, so the values are identical.
+    /// With 128-bit hardware vectors, the coefficients are widened and converted two at a time (four with AVX2, from 32-bit
+    /// integers on x64, which has no 64-bit integer conversion before AVX-512); every conversion is exact and the product
+    /// is the same IEEE multiplication, so the values are identical.
     /// </remarks>
     public static void Dequantize(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
     {
-        if (!Vector128.IsHardwareAccelerated)
+        if (Avx2.IsSupported)
+        {
+            DequantizeAvx2(coefficients, quantization, block);
+        }
+        else if (Sse2.IsSupported)
+        {
+            DequantizeSse2(coefficients, quantization, block);
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            DequantizeVector128(coefficients, quantization, block);
+        }
+        else
         {
             DequantizeScalar(coefficients, quantization, block);
-            return;
         }
+    }
 
+    /// <summary>The dequantization with <see cref="Vector128{T}"/>: the coefficients are widened to 64-bit integers, then converted two at a time.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void DequantizeVector128(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
+    {
         // Bounds are checked once here; the loop below uses unchecked references
         ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients[..64]));
         ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization[..64]));
@@ -171,6 +192,47 @@ internal static class JpegIdct
         {
             var product = Vector128.ConvertToDouble(values) * unsafe(Vector128.LoadUnsafe(ref scales, (nuint)index));
             unsafe { product.StoreUnsafe(ref destination, (nuint)index); }
+        }
+    }
+
+    /// <summary>The dequantization with AVX2: eight coefficients widened to 32-bit integers, then converted four at a time.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void DequantizeAvx2(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
+    {
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients[..64]));
+        ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization[..64]));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block[..64]));
+        for (var i = 0; i < 64; i += 8)
+        {
+            var integers = Avx2.ConvertToVector256Int32(unsafe(Vector128.LoadUnsafe(ref source, (nuint)i)));
+            var low = Avx.ConvertToVector256Double(integers.GetLower()) * unsafe(Vector256.LoadUnsafe(ref scales, (nuint)i));
+            var high = Avx.ConvertToVector256Double(integers.GetUpper()) * unsafe(Vector256.LoadUnsafe(ref scales, (nuint)(i + 4)));
+            unsafe { low.StoreUnsafe(ref destination, (nuint)i); }
+            unsafe { high.StoreUnsafe(ref destination, (nuint)(i + 4)); }
+        }
+    }
+
+    /// <summary>The dequantization with SSE2: the coefficients are widened to 32-bit integers, then converted two at a time.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void DequantizeSse2(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block)
+    {
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients[..64]));
+        ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization[..64]));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block[..64]));
+        for (var i = 0; i < 64; i += 8)
+        {
+            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)i)));
+            Store(low, ref scales, ref destination, i);
+            Store(high, ref scales, ref destination, i + 4);
+        }
+
+        // CVTDQ2PD converts the two lower integers
+        static void Store(Vector128<int> values, ref double scales, ref double destination, int index)
+        {
+            var low = Sse2.ConvertToVector128Double(values) * unsafe(Vector128.LoadUnsafe(ref scales, (nuint)index));
+            var high = Sse2.ConvertToVector128Double(Sse2.UnpackHigh(values.AsInt64(), values.AsInt64()).AsInt32()) * unsafe(Vector128.LoadUnsafe(ref scales, (nuint)(index + 2)));
+            unsafe { low.StoreUnsafe(ref destination, (nuint)index); }
+            unsafe { high.StoreUnsafe(ref destination, (nuint)(index + 2)); }
         }
     }
 
@@ -348,6 +410,12 @@ internal static class JpegIdct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void StoreSamples(Vector128<double> o0, Vector128<double> o1, Vector128<double> o2, Vector128<double> o3, Vector128<double> o4, Vector128<double> o5, Vector128<double> o6, Vector128<double> o7, ref byte destination, int stride)
     {
+        if (Sse2.IsSupported)
+        {
+            StoreSamplesSse2(o0, o1, o2, o3, o4, o5, o6, o7, ref destination, stride);
+            return;
+        }
+
         var r0 = RoundAndClamp(o0);
         var r1 = RoundAndClamp(o1);
         var r2 = RoundAndClamp(o2);
@@ -370,6 +438,39 @@ internal static class JpegIdct
 
         // The values are integers in 0..255: the conversion is exact
         static Vector128<ulong> ToUInt64(Vector128<double> value) => Vector128.ConvertToInt64(value).AsUInt64();
+    }
+
+    /// <summary>
+    /// The x64 form of <see cref="StoreSamples"/>, which has no 64-bit integer conversion before AVX-512. The rounded values
+    /// are clamped to 255 only: CVTTPD2DQ converts them exactly (a value below the range of 32-bit integers becomes
+    /// <see cref="int.MinValue"/>), and the saturating packs clamp the negative ones to 0, as <see cref="ToSample"/> does.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreSamplesSse2(Vector128<double> o0, Vector128<double> o1, Vector128<double> o2, Vector128<double> o3, Vector128<double> o4, Vector128<double> o5, Vector128<double> o6, Vector128<double> o7, ref byte destination, int stride)
+    {
+        var r0 = Round(o0);
+        var r1 = Round(o1);
+        var r2 = Round(o2);
+        var r3 = Round(o3);
+        var r4 = Round(o4);
+        var r5 = Round(o5);
+        var r6 = Round(o6);
+        var r7 = Round(o7);
+        var first = Sse2.PackSignedSaturate(
+            Combine(Sse2.UnpackLow(r0, r1), Sse2.UnpackLow(r2, r3)),
+            Combine(Sse2.UnpackLow(r4, r5), Sse2.UnpackLow(r6, r7)));
+        var second = Sse2.PackSignedSaturate(
+            Combine(Sse2.UnpackHigh(r0, r1), Sse2.UnpackHigh(r2, r3)),
+            Combine(Sse2.UnpackHigh(r4, r5), Sse2.UnpackHigh(r6, r7)));
+        var rows = Sse2.PackUnsignedSaturate(first, second).AsUInt64();
+        unsafe { Unsafe.WriteUnaligned(ref destination, rows.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows.GetElement(1)); }
+
+        static Vector128<double> Round(Vector128<double> value) => Sse2.Min(Vector128.Floor(value + Vector128.Create(128.5)), Vector128.Create(255.0));
+
+        // The four integers of two pairs: CVTTPD2DQ writes its two results in the lower half
+        static Vector128<int> Combine(Vector128<double> low, Vector128<double> high) =>
+            Sse2.UnpackLow(Sse2.ConvertToVector128Int32WithTruncation(low).AsInt64(), Sse2.ConvertToVector128Int32WithTruncation(high).AsInt64()).AsInt32();
     }
 
     /// <summary>Gets the lanes 0 of two vectors: <c>(a[0], b[0])</c>.</summary>
@@ -396,6 +497,116 @@ internal static class JpegIdct
             return Sse2.UnpackHigh(a, b);
 
         return Vector128.Create(a.GetElement(1), b.GetElement(1));
+    }
+
+    /// <summary>
+    /// The transform with AVX2: four columns, then four rows at once. The row pass reads each 4x4 quadrant of the column
+    /// pass transposed in registers, so that lane <c>k</c> holds row <c>y + k</c>, and the samples are converted to 32-bit
+    /// integers (x64 has no 64-bit integer conversion before AVX-512), packed to bytes and regrouped by row.
+    /// </summary>
+    internal static void TransformAvx2(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
+    {
+        // Bounds are checked once here; the loops below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+
+        if (sparse)
+        {
+            // Columns 0 to 3 (rows 4 to 7 are zero); the columns 4 to 7 are zero and stay so
+            Transform1D(
+                Load256(ref block, 0), Load256(ref block, 8), Load256(ref block, 16), Load256(ref block, 24),
+                out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            Store256(c0, c1, c2, c3, c4, c5, c6, c7, ref block, 0);
+
+            // Rows, four at a time (the samples 4 to 7 of each row are zero)
+            for (var y = 0; y < 8; y += 4)
+            {
+                Transpose(Load256(ref block, y * 8), Load256(ref block, (y * 8) + 8), Load256(ref block, (y * 8) + 16), Load256(ref block, (y * 8) + 24), out var x0, out var x1, out var x2, out var x3);
+                Transform1D(x0, x1, x2, x3, out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+                StoreSamplesAvx2(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
+            }
+
+            return;
+        }
+
+        // Columns, four at a time: block[v * 8 + u] -> block[y * 8 + u]
+        for (var u = 0; u < 8; u += 4)
+        {
+            Transform1D(
+                Load256(ref block, u), Load256(ref block, 8 + u), Load256(ref block, 16 + u), Load256(ref block, 24 + u),
+                Load256(ref block, 32 + u), Load256(ref block, 40 + u), Load256(ref block, 48 + u), Load256(ref block, 56 + u),
+                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            Store256(o0, o1, o2, o3, o4, o5, o6, o7, ref block, u);
+        }
+
+        // Rows, four at a time: lane k is row y + k
+        for (var y = 0; y < 8; y += 4)
+        {
+            ref var rows = ref unsafe(Unsafe.Add(ref block, y * 8));
+            Transpose(Load256(ref rows, 0), Load256(ref rows, 8), Load256(ref rows, 16), Load256(ref rows, 24), out var x0, out var x1, out var x2, out var x3);
+            Transpose(Load256(ref rows, 4), Load256(ref rows, 12), Load256(ref rows, 20), Load256(ref rows, 28), out var x4, out var x5, out var x6, out var x7);
+            Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            StoreSamplesAvx2(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
+        }
+
+        static Vector256<double> Load256(ref double block, int index) => unsafe(Vector256.LoadUnsafe(ref block, (nuint)index));
+    }
+
+    /// <summary>Stores the outputs of a column pass: <c>o[y]</c> at <c>block[y * 8 + u]</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Store256(Vector256<double> o0, Vector256<double> o1, Vector256<double> o2, Vector256<double> o3, Vector256<double> o4, Vector256<double> o5, Vector256<double> o6, Vector256<double> o7, ref double block, int u)
+    {
+        unsafe { o0.StoreUnsafe(ref block, (nuint)u); }
+        unsafe { o1.StoreUnsafe(ref block, (nuint)(8 + u)); }
+        unsafe { o2.StoreUnsafe(ref block, (nuint)(16 + u)); }
+        unsafe { o3.StoreUnsafe(ref block, (nuint)(24 + u)); }
+        unsafe { o4.StoreUnsafe(ref block, (nuint)(32 + u)); }
+        unsafe { o5.StoreUnsafe(ref block, (nuint)(40 + u)); }
+        unsafe { o6.StoreUnsafe(ref block, (nuint)(48 + u)); }
+        unsafe { o7.StoreUnsafe(ref block, (nuint)(56 + u)); }
+    }
+
+    /// <summary>Transposes a 4x4 matrix of doubles: <c>t[j][k] = r[k][j]</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Transpose(Vector256<double> r0, Vector256<double> r1, Vector256<double> r2, Vector256<double> r3, out Vector256<double> t0, out Vector256<double> t1, out Vector256<double> t2, out Vector256<double> t3)
+    {
+        // (r0[0], r1[0], r0[2], r1[2]), (r0[1], r1[1], r0[3], r1[3]), and the same for r2 and r3
+        var low01 = Avx.UnpackLow(r0, r1);
+        var high01 = Avx.UnpackHigh(r0, r1);
+        var low23 = Avx.UnpackLow(r2, r3);
+        var high23 = Avx.UnpackHigh(r2, r3);
+        t0 = Avx.Permute2x128(low01, low23, 0x20);
+        t1 = Avx.Permute2x128(high01, high23, 0x20);
+        t2 = Avx.Permute2x128(low01, low23, 0x31);
+        t3 = Avx.Permute2x128(high01, high23, 0x31);
+    }
+
+    /// <summary>
+    /// Writes four rows of samples: <c>o[n]</c> holds the sample <c>n</c> of the row <c>k</c> in lane <c>k</c>. The rounded
+    /// values are clamped to 255 only: VCVTTPD2DQ converts them exactly (a value below the range of 32-bit integers becomes
+    /// <see cref="int.MinValue"/>), and the saturating packs clamp the negative ones to 0, as <see cref="ToSample"/> does.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreSamplesAvx2(Vector256<double> o0, Vector256<double> o1, Vector256<double> o2, Vector256<double> o3, Vector256<double> o4, Vector256<double> o5, Vector256<double> o6, Vector256<double> o7, ref byte destination, int stride)
+    {
+        // Byte n * 4 + k is the sample n of the row k, for n = 0..3 (then 4..7)
+        var first = Sse2.PackUnsignedSaturate(Sse2.PackSignedSaturate(ToInt32(o0), ToInt32(o1)), Sse2.PackSignedSaturate(ToInt32(o2), ToInt32(o3)));
+        var second = Sse2.PackUnsignedSaturate(Sse2.PackSignedSaturate(ToInt32(o4), ToInt32(o5)), Sse2.PackSignedSaturate(ToInt32(o6), ToInt32(o7)));
+
+        // Byte k * 4 + n, then the two halves of each row together
+        var byRow = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        first = Ssse3.Shuffle(first, byRow);
+        second = Ssse3.Shuffle(second, byRow);
+        var rows01 = Sse2.UnpackLow(first.AsInt32(), second.AsInt32()).AsUInt64();
+        var rows23 = Sse2.UnpackHigh(first.AsInt32(), second.AsInt32()).AsUInt64();
+        unsafe { Unsafe.WriteUnaligned(ref destination, rows01.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows01.GetElement(1)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * stride), rows23.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * stride), rows23.GetElement(1)); }
+
+        static Vector128<int> ToInt32(Vector256<double> value) => Avx.ConvertToVector128Int32WithTruncation(Avx.Min(Avx.Floor(value + Vector256.Create(128.5)), Vector256.Create(255.0)));
     }
 
     /// <summary>The transform with <see cref="Vector{T}"/>, <see cref="Vector{T}.Count"/> columns (then rows) at once.</summary>
@@ -590,6 +801,59 @@ internal static class JpegIdct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Transform1D(Vector<double> x0, Vector<double> x1, Vector<double> x2, Vector<double> x3,
         out Vector<double> o0, out Vector<double> o1, out Vector<double> o2, out Vector<double> o3, out Vector<double> o4, out Vector<double> o5, out Vector<double> o6, out Vector<double> o7)
+    {
+        var a = C0 * x0;
+        var p = C2 * x2;
+        var q = C6 * x2;
+        var e0 = a + p;
+        var e1 = a + q;
+        var e2 = a - q;
+        var e3 = a - p;
+        var d0 = (C1 * x1) + (C3 * x3);
+        var d1 = (C3 * x1) - (C7 * x3);
+        var d2 = (C5 * x1) - (C1 * x3);
+        var d3 = (C7 * x1) - (C5 * x3);
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector256{T}"/> form of the eight-input <c>Transform1D</c>: the same expressions, lane by lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector256<double> x0, Vector256<double> x1, Vector256<double> x2, Vector256<double> x3, Vector256<double> x4, Vector256<double> x5, Vector256<double> x6, Vector256<double> x7,
+        out Vector256<double> o0, out Vector256<double> o1, out Vector256<double> o2, out Vector256<double> o3, out Vector256<double> o4, out Vector256<double> o5, out Vector256<double> o6, out Vector256<double> o7)
+    {
+        var a = C0 * (x0 + x4);
+        var b = C0 * (x0 - x4);
+        var p = (C2 * x2) + (C6 * x6);
+        var q = (C6 * x2) - (C2 * x6);
+        var e0 = a + p;
+        var e1 = b + q;
+        var e2 = b - q;
+        var e3 = a - p;
+        var d0 = (C1 * x1) + (C3 * x3) + (C5 * x5) + (C7 * x7);
+        var d1 = (C3 * x1) - (C7 * x3) - (C1 * x5) - (C5 * x7);
+        var d2 = (C5 * x1) - (C1 * x3) + (C7 * x5) + (C3 * x7);
+        var d3 = (C7 * x1) - (C5 * x3) + (C3 * x5) - (C1 * x7);
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector256{T}"/> form of the four-input <c>Transform1D</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector256<double> x0, Vector256<double> x1, Vector256<double> x2, Vector256<double> x3,
+        out Vector256<double> o0, out Vector256<double> o1, out Vector256<double> o2, out Vector256<double> o3, out Vector256<double> o4, out Vector256<double> o5, out Vector256<double> o6, out Vector256<double> o7)
     {
         var a = C0 * x0;
         var p = C2 * x2;

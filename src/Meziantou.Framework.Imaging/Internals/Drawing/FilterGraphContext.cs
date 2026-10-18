@@ -5,11 +5,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>Computes the primitives of a <see cref="FilterGraph"/>, one after the other, and keeps their results as long as a primitive reads them.</summary>
 /// <remarks>
 /// <para>
-/// Every result is a surface of the bounds of the filtered surface, transparent outside the subregion of its
-/// primitive. A result is kept in the colors its primitive computed with; an input in other colors is converted, once,
-/// to the colors of the primitive that reads it: each color is divided by the alpha, decoded or encoded by the transfer
-/// function of sRGB (<see cref="SrgbTransfer"/>), and multiplied by the alpha again. The alpha of a pixel is never
-/// converted, and the drawing (<see cref="FilterInputKind.SourceGraphic"/>) is in sRGB.
+/// Every result is a surface of the same pixels (<see cref="Bounds"/>), transparent outside the subregion of its
+/// primitive: those of the filtered surface when a primitive reads the drawing or its alpha, and otherwise only those the
+/// subregions cover, which the filtered surface is transparent beyond. A result is kept in the colors its primitive
+/// computed with; an input in other colors is converted, once, to the colors of the primitive that reads it: each color
+/// is divided by the alpha, decoded or encoded by the transfer function of sRGB (<see cref="SrgbTransfer"/>), and
+/// multiplied by the alpha again. The alpha of a pixel is never converted, and the drawing
+/// (<see cref="FilterInputKind.SourceGraphic"/>) is in sRGB.
 /// </para>
 /// <para>
 /// The subregion of a primitive is in pixels of the canvas: those whose center is in the box of the image of the
@@ -40,17 +42,13 @@ internal sealed class FilterGraphContext : IDisposable
         _results = new Entry[primitives.Count];
         _lastUses = new int[primitives.Count];
         _sourceGraphic = new Entry { Subregion = Region, Space = FilterColorSpace.Srgb, Kind = FilterInputKind.SourceGraphic };
-
-        // The drawing is what it is within the region: a layer can hold what is drawn beyond the canvas, which a
-        // region of the canvas does not read
-        if (Rectangle.Intersect(source.Bounds, Region) != source.Bounds)
-        {
-            ClearOutside(source, Region);
-        }
-
         _sourceAlpha = new Entry { Subregion = Region, Space = FilterColorSpace.Srgb, Kind = FilterInputKind.SourceAlpha };
 
-        // The last primitive that reads each result: the result of the last primitive is the output of the graph
+        // The subregion of each primitive, and the last primitive that reads each result: the result of the last
+        // primitive is the output of the graph
+        var readsSource = false;
+        var dependsOnOrigin = false;
+        var covered = Rectangle.Empty;
         for (var index = 0; index < primitives.Count; index++)
         {
             var primitive = primitives[index];
@@ -61,10 +59,37 @@ internal sealed class FilterGraphContext : IDisposable
                 {
                     _lastUses[resultIndex] = index;
                 }
+                else
+                {
+                    readsSource = true;
+                }
             }
+
+            var subregion = GetSubregion(primitive, index);
+            _results[index].Subregion = subregion;
+            covered = Union(covered, Rectangle.Intersect(subregion, source.Bounds));
+            dependsOnOrigin |= primitive.DependsOnSurfaceOrigin(processor.EdgeOverride);
         }
 
         _lastUses[^1] = primitives.Count;
+
+        // A primitive reads its inputs within their subregions only, and what is beyond a surface as transparent, as
+        // the results are beyond their subregions: the pixels no subregion covers make no difference
+        if (readsSource)
+        {
+            Bounds = source.Bounds;
+
+            // The drawing is what it is within the region: a layer can hold what is drawn beyond the canvas, which a
+            // region of the canvas does not read
+            if (Rectangle.Intersect(source.Bounds, Region) != source.Bounds)
+            {
+                ClearOutside(source, Region);
+            }
+        }
+        else
+        {
+            Bounds = dependsOnOrigin && !covered.IsEmpty ? Rectangle.FromLTRB(source.Bounds.Left, source.Bounds.Top, covered.Right, covered.Bottom) : covered;
+        }
     }
 
     /// <summary>Gets the processor of the filters, for the lengths of the primitives and the operations they share.</summary>
@@ -79,6 +104,16 @@ internal sealed class FilterGraphContext : IDisposable
     /// <summary>Gets the subregion of the primitive being computed, which may go beyond the filtered surface.</summary>
     public Rectangle Subregion { get; private set; }
 
+    /// <summary>
+    /// Gets the pixels the surfaces of the inputs and of the results hold: those of the filtered surface when a primitive
+    /// reads the drawing or its alpha, and otherwise those the subregions cover (from the left and top of the filtered
+    /// surface when a primitive depends on them, <see cref="FilterPrimitive.DependsOnSurfaceOrigin"/>).
+    /// </summary>
+    public Rectangle Bounds { get; }
+
+    /// <summary>Gets the pixels of the filtered surface: the results are transparent on those beyond <see cref="Bounds"/>.</summary>
+    public Rectangle SurfaceBounds => _source.Bounds;
+
     /// <summary>Computes every primitive, and writes the result of the last one to the filtered surface, in sRGB.</summary>
     public void Run()
     {
@@ -88,15 +123,14 @@ internal sealed class FilterGraphContext : IDisposable
             var primitive = _primitives[index];
             _current = primitive;
             _currentIndex = index;
-            var subregion = GetSubregion(primitive, index);
+            var subregion = _results[index].Subregion;
             Subregion = subregion;
             var space = primitive.IsColorSpaceNeutral
                 ? (primitive.InputCount > 0 ? GetEntry(primitive.GetInput(0), index).Space : FilterColorSpace.Srgb)
                 : primitive.ColorSpace;
-            var result = new FilterSurface(_processor.Scope, _source.Bounds);
+            var result = new FilterSurface(_processor.Scope, Bounds);
             try
             {
-                result.Values.Clear();
                 var area = Rectangle.Intersect(subregion, _source.Bounds);
                 if (!area.IsEmpty)
                 {
@@ -124,7 +158,17 @@ internal sealed class FilterGraphContext : IDisposable
 
         _current = null;
         var output = GetSurface(ref _results[^1], FilterColorSpace.Srgb);
-        output.Values.CopyTo(_source.Values);
+        if (Bounds == _source.Bounds)
+        {
+            output.Values.CopyTo(_source.Values);
+            return;
+        }
+
+        _source.Values.Clear();
+        for (var y = Bounds.Top; y < Bounds.Bottom; y++)
+        {
+            output.GetRow(y).CopyTo(_source.Values[_source.IndexOf(Bounds.Left, y)..]);
+        }
     }
 
     /// <summary>Gets an input of the primitive being computed, in the colors it computes with (in its own colors for a primitive whose colors make no difference).</summary>
@@ -263,14 +307,22 @@ internal sealed class FilterGraphContext : IDisposable
             if (inputIndex < 0)
                 return Region;
 
-            var subregion = _results[inputIndex].Subregion;
-            if (subregion.IsEmpty)
-                continue;
-
-            union = union.IsEmpty ? subregion : Rectangle.FromLTRB(Math.Min(union.Left, subregion.Left), Math.Min(union.Top, subregion.Top), Math.Max(union.Right, subregion.Right), Math.Max(union.Bottom, subregion.Bottom));
+            union = Union(union, _results[inputIndex].Subregion);
         }
 
         return union;
+    }
+
+    /// <summary>Gets the smallest rectangle that contains two rectangles, the empty ones left out.</summary>
+    private static Rectangle Union(Rectangle a, Rectangle b)
+    {
+        if (b.IsEmpty)
+            return a;
+
+        if (a.IsEmpty)
+            return b;
+
+        return Rectangle.FromLTRB(Math.Min(a.Left, b.Left), Math.Min(a.Top, b.Top), Math.Max(a.Right, b.Right), Math.Max(a.Bottom, b.Bottom));
     }
 
     /// <summary>Gets the surface of an entry in some colors, converted from the other colors the first time.</summary>
@@ -283,7 +335,7 @@ internal sealed class FilterGraphContext : IDisposable
 
             if (entry.Linear is null)
             {
-                entry.Linear = new FilterSurface(_processor.Scope, _source.Bounds);
+                entry.Linear = new FilterSurface(_processor.Scope, Bounds);
                 Convert(_source, entry.Linear, decode: true);
             }
 
@@ -295,7 +347,7 @@ internal sealed class FilterGraphContext : IDisposable
             // Black has the same colors in both spaces
             if (entry.Srgb is null)
             {
-                entry.Srgb = new FilterSurface(_processor.Scope, _source.Bounds);
+                entry.Srgb = new FilterSurface(_processor.Scope, Bounds);
                 var source = _source.Values;
                 var target = entry.Srgb.Values;
                 target.Clear();
@@ -313,7 +365,7 @@ internal sealed class FilterGraphContext : IDisposable
             return surface;
 
         var other = space == FilterColorSpace.Srgb ? entry.Linear! : entry.Srgb!;
-        surface = new FilterSurface(_processor.Scope, _source.Bounds);
+        surface = new FilterSurface(_processor.Scope, Bounds);
         Convert(other, surface, decode: space == FilterColorSpace.LinearRgb);
         SetSurface(ref entry, space, surface);
         return surface;

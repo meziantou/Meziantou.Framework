@@ -35,8 +35,8 @@ internal sealed partial class LayoutEngine
         if (EnsureLayout() is null)
             return null;
 
-        // The painting reads the styles and the fragments of the layout it paints: a change of the process-wide CssStyleVersion
-        // by another document in the middle of the painting would start a new generation of styles, and the parts of the
+        // The painting reads the styles and the fragments of the layout it paints: a change of a version (e.g. the version of
+        // the style sheets of the document) in the middle of the painting would start a new generation of styles, and the parts of the
         // painting that read the fragments of an element (e.g. the content of a foreignObject element) would lay the document
         // out again and paint the fragments of two layouts. The updates of the styles are suspended, and the layout is brought
         // up to date with the generation of styles that is painted (the steps that follow a layout may have started a new one)

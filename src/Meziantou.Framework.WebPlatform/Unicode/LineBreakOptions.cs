@@ -31,7 +31,7 @@ internal enum LineBreakOpportunity : byte
 
     /// <summary>
     /// An automatic hyphenation opportunity of <c>hyphens: auto</c>, found by the hyphenation dictionary of the language of the
-    /// text (<see cref="Hyphenator"/>): it is added by the inline layout, not by <see cref="LineBreaker"/>. As after a soft hyphen,
+    /// text (<see cref="HyphenationDictionary"/>): it is added by the inline layout, not by <see cref="LineBreaker"/>. As after a soft hyphen,
     /// a hyphen is displayed at the end of the line when it breaks there (https://drafts.csswg.org/css-text-4/#hyphenation).
     /// </summary>
     AutoHyphen,

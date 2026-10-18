@@ -15,7 +15,7 @@ public sealed class BidiConformanceTests
         var resolver = new BidiResolver();
         string[] expectedLevels = [];
         int[] expectedOrder = [];
-        foreach (var rawLine in File.ReadLines(TestPaths.SpecData("unicode", "BidiTest.txt")))
+        foreach (var rawLine in UnicodeConformanceFiles.ReadLines("BidiTest.txt"))
         {
             var hash = rawLine.IndexOf('#', StringComparison.Ordinal);
             var line = (hash >= 0 ? rawLine[..hash] : rawLine).Trim();
@@ -64,7 +64,7 @@ public sealed class BidiConformanceTests
         var failures = new List<string>();
         var count = 0;
         var resolver = new BidiResolver();
-        foreach (var rawLine in File.ReadLines(TestPaths.SpecData("unicode", "BidiCharacterTest.txt")))
+        foreach (var rawLine in UnicodeConformanceFiles.ReadLines("BidiCharacterTest.txt"))
         {
             var hash = rawLine.IndexOf('#', StringComparison.Ordinal);
             var line = (hash >= 0 ? rawLine[..hash] : rawLine).Trim();

@@ -202,7 +202,7 @@ internal static partial class TextShaper
         var count = 0;
         var orientation = options.Orientation;
         MatchedFont? previousFont = null;
-        var scripts = new ScriptItemizer(stackalloc int[ScriptItemizer.MaxBrackets], stackalloc byte[ScriptItemizer.MaxBrackets]);
+        var scripts = new ScriptItemizer(stackalloc int[ScriptItemizer.MaxBrackets], stackalloc UnicodeScript[ScriptItemizer.MaxBrackets]);
         var index = 0;
         while (index < text.Length)
         {
@@ -269,8 +269,8 @@ internal static partial class TextShaper
                 TextShapingOrientation.VerticalUpright => true,
                 TextShapingOrientation.VerticalMixed => UnicodeProperties.GetVerticalOrientation(codePoint) switch
                 {
-                    VerticalOrientation.U or VerticalOrientation.Tu => true,
-                    VerticalOrientation.Tr => font.Font.HasVerticalAlternate(font.GetGlyph(codePoint)),
+                    UnicodeVerticalOrientation.Upright or UnicodeVerticalOrientation.TransformedUpright => true,
+                    UnicodeVerticalOrientation.TransformedRotated => font.Font.HasVerticalAlternate(font.GetGlyph(codePoint)),
                     _ => false,
                 },
                 _ => false,
@@ -290,7 +290,7 @@ internal static partial class TextShaper
                 // or when the font has the precomposed character of the base and the mark (the shaping composes them, as in the
                 // browsers: "e" followed by U+0301 is drawn with the glyph of U+00E9)
                 MatchedFont markFont;
-                if (Nfc.ComposePair(composedBase, mark) is var composed and >= 0 && font.HasGlyph(composed))
+                if (UnicodeNormalization.TryComposeCanonical(composedBase, mark, out var composed) && font.HasGlyph(composed))
                 {
                     markFont = font;
                     composedBase = composed;
@@ -317,13 +317,13 @@ internal static partial class TextShaper
     /// scripts Common and Inherited take the script of the run, unless their Script_Extensions exclude it; a closing paired
     /// bracket takes the script of its opening bracket. The characters before the first script take the script that follows.
     /// </summary>
-    private ref struct ScriptItemizer(Span<int> bracketCodePoints, Span<byte> bracketScripts)
+    private ref struct ScriptItemizer(Span<int> bracketCodePoints, Span<UnicodeScript> bracketScripts)
     {
         /// <summary>The maximum number of opened brackets that are tracked.</summary>
         public const int MaxBrackets = 32;
 
         private readonly Span<int> _bracketCodePoints = bracketCodePoints;
-        private readonly Span<byte> _bracketScripts = bracketScripts;
+        private readonly Span<UnicodeScript> _bracketScripts = bracketScripts;
         private UnicodeScript _current = UnicodeScript.Common;
         private int _bracketCount;
 
@@ -334,7 +334,12 @@ internal static partial class TextShaper
             if (codePoint < 0x80 && _current == UnicodeScript.Latin && codePoint is not ('(' or ')' or '[' or ']' or '{' or '}'))
                 return UnicodeScript.Latin;
 
-            var script = UnicodeProperties.GetScript(codePoint);
+            var script = UnicodeScripts.GetScript(codePoint);
+
+            // The Script_Extensions, when they are not the Script property
+            Span<UnicodeScript> extensionBuffer = stackalloc UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+            var extensionCount = UnicodeScripts.GetScriptExtensions(codePoint, extensionBuffer);
+            ReadOnlySpan<UnicodeScript> extensions = extensionCount > 1 || extensionBuffer[0] != script ? extensionBuffer[..extensionCount] : [];
 
             // Hiragana and Katakana have the same OpenType script (kana): a text that mixes them is one run (e.g. their kerning)
             if (script is UnicodeScript.Hiragana or UnicodeScript.Katakana)
@@ -342,35 +347,35 @@ internal static partial class TextShaper
                 script = UnicodeScript.KatakanaOrHiragana;
             }
 
-            var extensions = UnicodeProperties.GetScriptExtensions(codePoint);
             if (script is UnicodeScript.Common or UnicodeScript.Inherited or UnicodeScript.Unknown)
             {
-                // A character used by some scripts only (e.g. the Arabic tatweel) changes the script when it excludes the current one
-                if (!extensions.IsEmpty && _current != UnicodeScript.Common && !extensions.Contains((byte)_current))
+                // A character used by some scripts only (e.g. the Arabic tatweel) changes the script when it excludes the current
+                // one: the first of its scripts by ISO 15924 code
+                if (!extensions.IsEmpty && _current != UnicodeScript.Common && !extensions.Contains(_current))
                 {
-                    _current = (UnicodeScript)extensions[0];
+                    _current = GetFirstByIso15924Code(extensions);
                 }
 
-                switch (codePoint < 0x28 ? BidiPairedBracketType.None : UnicodeProperties.GetBidiPairedBracketType(codePoint))
+                switch (codePoint < 0x28 ? UnicodeBidiPairedBracketType.None : UnicodeProperties.GetBidiPairedBracketType(codePoint))
                 {
-                    case BidiPairedBracketType.Open:
+                    case UnicodeBidiPairedBracketType.Open:
                         if (_bracketCount < MaxBrackets)
                         {
-                            _bracketCodePoints[_bracketCount] = UnicodeProperties.GetBidiPairedBracket(codePoint);
-                            _bracketScripts[_bracketCount] = (byte)_current;
+                            _bracketCodePoints[_bracketCount] = CharacterProperties.GetBidiPairedBracket(codePoint);
+                            _bracketScripts[_bracketCount] = _current;
                             _bracketCount++;
                         }
 
                         break;
 
-                    case BidiPairedBracketType.Close:
+                    case UnicodeBidiPairedBracketType.Close:
                         // The closing bracket of an opening bracket (the brackets opened after it are closed too)
                         for (var i = _bracketCount - 1; i >= 0; i--)
                         {
                             if (_bracketCodePoints[i] == codePoint)
                             {
                                 _bracketCount = i;
-                                var opening = (UnicodeScript)_bracketScripts[i];
+                                var opening = _bracketScripts[i];
                                 if (opening != UnicodeScript.Common)
                                 {
                                     _current = opening;
@@ -387,7 +392,7 @@ internal static partial class TextShaper
             }
 
             // A character of several scripts keeps the current one when it is one of them
-            if (!extensions.IsEmpty && extensions.Contains((byte)_current))
+            if (!extensions.IsEmpty && extensions.Contains(_current))
                 return _current;
 
             // The brackets opened before the first script take it
@@ -395,12 +400,26 @@ internal static partial class TextShaper
             {
                 for (var i = 0; i < _bracketCount; i++)
                 {
-                    _bracketScripts[i] = (byte)script;
+                    _bracketScripts[i] = script;
                 }
             }
 
             _current = script;
             return script;
+        }
+
+        private static UnicodeScript GetFirstByIso15924Code(ReadOnlySpan<UnicodeScript> scripts)
+        {
+            var result = scripts[0];
+            for (var i = 1; i < scripts.Length; i++)
+            {
+                if (string.CompareOrdinal(UnicodeScripts.GetIso15924Code(scripts[i]), UnicodeScripts.GetIso15924Code(result)) < 0)
+                {
+                    result = scripts[i];
+                }
+            }
+
+            return result;
         }
 
         /// <summary>Gives the first script of the text to the characters before it.</summary>
@@ -898,7 +917,7 @@ internal static partial class TextShaper
                 // The invisible characters have no letter spacing, nor the letters of the cursive scripts, whose connections would
                 // break (https://drafts.csswg.org/css-text-4/#cursive-tracking: as Chrome and Firefox, for the joining scripts)
                 if (options.LetterSpacing != 0 && codePoints[i].Cluster == codePoints[i].Index && codePoint != '\n' && !UnicodeProperties.IsDefaultIgnorable(codePoint)
-                    && !ArabicJoiningScripts.HasJoining(UnicodeProperties.GetScript(codePoint)))
+                    && !CharacterProperties.IsJoiningScript(UnicodeScripts.GetScript(codePoint)))
                 {
                     units++;
                 }
@@ -983,18 +1002,18 @@ internal static partial class TextShaper
         {
             var position = index;
             var next = ReadCodePoint(text, ref position);
-            if (UnicodeProperties.IsVariationSelector(next))
+            if (CharacterProperties.IsVariationSelector(next))
                 return next;
         }
 
-        if (emoji == FontEmojiVariant.Normal || codePoint < 0x23 || !UnicodeProperties.IsEmojiPresentationParticipating(codePoint))
+        if (emoji == FontEmojiVariant.Normal || codePoint < 0x23 || !CharacterProperties.IsEmojiPresentationParticipating(codePoint))
             return 0;
 
         return emoji switch
         {
             FontEmojiVariant.Text => TextPresentationSelector,
             FontEmojiVariant.Emoji => EmojiPresentationSelector,
-            _ => UnicodeProperties.IsEmojiPresentation(codePoint) ? EmojiPresentationSelector : TextPresentationSelector,
+            _ => UnicodeEmoji.HasEmojiPresentation(codePoint) ? EmojiPresentationSelector : TextPresentationSelector,
         };
     }
 
@@ -1023,7 +1042,7 @@ internal static partial class TextShaper
         if (codePoint < 0x300)
             return false;
 
-        return codePoint is 0x200C or 0x200D or (>= 0x1F3FB and <= 0x1F3FF) or (>= 0xE0020 and <= 0xE007F) || UnicodeProperties.IsMark(codePoint);
+        return codePoint is 0x200C or 0x200D or (>= 0x1F3FB and <= 0x1F3FF) or (>= 0xE0020 and <= 0xE007F) || CharacterProperties.IsMark(codePoint);
     }
 
     /// <summary>The word-separator characters (https://drafts.csswg.org/css-text-4/#word-separator).</summary>

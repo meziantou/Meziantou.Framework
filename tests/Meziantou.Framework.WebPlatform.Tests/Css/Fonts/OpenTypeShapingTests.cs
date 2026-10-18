@@ -231,6 +231,26 @@ public sealed class OpenTypeShapingTests : IDisposable
     }
 
     [Fact]
+    public void JoiningScripts()
+    {
+        // The scripts of the characters that join (ArabicShaping.txt), from the data of Meziantou.Framework.Unicode
+        var scripts = new HashSet<UnicodeScript>();
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF || UnicodeProperties.GetJoiningType(codePoint) is UnicodeJoiningType.NonJoining or UnicodeJoiningType.Transparent)
+                continue;
+
+            var script = UnicodeScripts.GetScript(codePoint);
+            if (script is not (UnicodeScript.Common or UnicodeScript.Inherited or UnicodeScript.Unknown))
+            {
+                scripts.Add(script);
+            }
+        }
+
+        Assert.Equal(scripts.Order(), Enum.GetValues<UnicodeScript>().Where(CharacterProperties.IsJoiningScript).Order());
+    }
+
+    [Fact]
     public void ScriptTags()
     {
         // The scripts of the text, by their ISO 15924 code, have the tags of the OpenType registry
@@ -250,17 +270,15 @@ public sealed class OpenTypeShapingTests : IDisposable
     [Fact]
     public void Scripts()
     {
-        Assert.Equal(UnicodeScript.Latin, UnicodeProperties.GetScript('a'));
-        Assert.Equal(UnicodeScript.Common, UnicodeProperties.GetScript(' '));
-        Assert.Equal(UnicodeScript.Arabic, UnicodeProperties.GetScript(0x0628));
-        Assert.Equal(UnicodeScript.Inherited, UnicodeProperties.GetScript(0x0301));
-        Assert.Equal(UnicodeScript.Mongolian, UnicodeProperties.GetScript(0x1820));
+        Assert.Equal(UnicodeScript.Latin, UnicodeScripts.GetScript('a'));
+        Assert.Equal(UnicodeScript.Common, UnicodeScripts.GetScript(' '));
+        Assert.Equal(UnicodeScript.Arabic, UnicodeScripts.GetScript(0x0628));
+        Assert.Equal(UnicodeScript.Inherited, UnicodeScripts.GetScript(0x0301));
+        Assert.Equal(UnicodeScript.Mongolian, UnicodeScripts.GetScript(0x1820));
 
         // The tatweel is used by several joining scripts
-        var extensions = UnicodeProperties.GetScriptExtensions(0x0640).ToArray().Select(value => (UnicodeScript)value).ToArray();
-        Assert.Contains(UnicodeScript.Arabic, extensions);
-        Assert.Contains(UnicodeScript.Syriac, extensions);
-        Assert.True(UnicodeProperties.GetScriptExtensions('a').IsEmpty);
+        Assert.True(UnicodeScripts.HasScriptExtension(0x0640, UnicodeScript.Arabic));
+        Assert.True(UnicodeScripts.HasScriptExtension(0x0640, UnicodeScript.Syriac));
     }
 
     [Fact]
@@ -270,17 +288,6 @@ public sealed class OpenTypeShapingTests : IDisposable
         var shaped = Shape("a (\u0628) b", "direction: rtl", singleFont: false);
         Assert.Equal(7, shaped.Glyphs.Length);
         Assert.Equal([A, B], GlyphIds(shaped).Where(glyph => glyph is A or B));
-    }
-
-    [Fact]
-    public void JoiningTypes()
-    {
-        Assert.Equal(ArabicJoiningType.D, InlineLayoutAlgorithm.GetJoiningType(0x0628));
-        Assert.Equal(ArabicJoiningType.R, InlineLayoutAlgorithm.GetJoiningType(0x0627));
-        Assert.Equal(ArabicJoiningType.T, InlineLayoutAlgorithm.GetJoiningType(0x064B));
-        Assert.Equal(ArabicJoiningType.U, InlineLayoutAlgorithm.GetJoiningType('a'));
-        Assert.Equal(ArabicJoiningType.D, InlineLayoutAlgorithm.GetJoiningType(0x1820));
-        Assert.Equal(ArabicJoiningType.T, InlineLayoutAlgorithm.GetJoiningType(0x200B));
     }
 
     [Theory]

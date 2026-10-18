@@ -1,10 +1,6 @@
-extern alias UnicodeLibrary;
-
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.WebPlatform.Unicode;
 using SharedFontFace = Meziantou.Framework.Fonts.FontFace;
-using SharedScript = UnicodeLibrary::Meziantou.Framework.UnicodeScript;
-using UnicodeScript = Meziantou.Framework.WebPlatform.Unicode.UnicodeScript;
 
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
@@ -23,8 +19,6 @@ internal sealed class ShapingWorkspace : IDisposable
 
     // A run is as long as the text of the document that has it: the length of the text is not limited here.
     private static readonly FontResourceLimits Limits = new() { MaxFontBytes = FontFile.Environment.Limits.MaxFontBytes, MaxTextGlyphs = Array.MaxLength };
-
-    private static readonly SharedScript[] Scripts = CreateScripts();
 
     private readonly Dictionary<(string? Language, uint Override), uint[]> _languages = [];
 
@@ -53,8 +47,11 @@ internal sealed class ShapingWorkspace : IDisposable
         }
     }
 
-    /// <summary>The script of the shaper for a script of the text, by its ISO 15924 code.</summary>
-    public static SharedScript GetScript(UnicodeScript script) => (uint)script < (uint)Scripts.Length ? Scripts[(int)script] : SharedScript.Unknown;
+    /// <summary>
+    /// The script of the shaper for a script of the text: a run of Hiragana and Katakana together is shaped as Katakana,
+    /// whose OpenType tag (<c>kana</c>) is the one of both.
+    /// </summary>
+    public static UnicodeScript GetScript(UnicodeScript script) => script == UnicodeScript.KatakanaOrHiragana ? UnicodeScript.Katakana : script;
 
     /// <summary>
     /// The tags of the language systems of a run, by order of preference: the one of <c>font-language-override</c>, then
@@ -106,16 +103,4 @@ internal sealed class ShapingWorkspace : IDisposable
     }
 
     public void Dispose() => Scratch.Dispose();
-
-    private static SharedScript[] CreateScripts()
-    {
-        var codes = ScriptCodes.Codes;
-        var scripts = new SharedScript[codes.Length];
-        for (var i = 0; i < codes.Length; i++)
-        {
-            scripts[i] = OpenTypeScript.FromIso15924(codes[i]);
-        }
-
-        return scripts;
-    }
 }

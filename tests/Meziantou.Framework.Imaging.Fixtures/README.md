@@ -11,9 +11,8 @@ Independent reference data for the conformance and interop tests, extended with 
   `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
-- The folder is copied to `<test output>/Fixtures` by the conformance and interop test projects
-  (`FixtureRoot.GetDirectory()`). Tests never read fixtures from the source tree, never download anything and never run
-  the generator.
+- The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
+  and never run the generator.
 - `GoldenCorpus.Default` loads the manifest and validates it completely (`FixtureManifestValidator`) before any pixel
   comparison; `CorpusManifestTests` reports every problem.
 - Licensing and provenance rules: [Licensing and provenance](#licensing-and-provenance). Feature coverage:

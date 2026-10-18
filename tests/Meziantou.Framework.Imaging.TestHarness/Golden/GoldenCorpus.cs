@@ -31,7 +31,7 @@ public sealed class GoldenCorpus
         _fixtures = manifest.Fixtures.ToDictionary(entry => entry.Id, entry => new GoldenFixture(rootDirectory, entry), StringComparer.Ordinal);
     }
 
-    /// <summary>Gets the corpus copied next to the test assembly (validated once per process).</summary>
+    /// <summary>Gets the corpus of the repository (validated once per process).</summary>
     public static GoldenCorpus Default => DefaultCorpus.Value;
 
     /// <summary>Gets the corpus root directory.</summary>

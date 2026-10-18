@@ -23,10 +23,4 @@
     <!-- Synthetic ICC profiles shared with the corpus generator -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Apple ImageIO frame dumper shared with the corpus generator -->
-    <None Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\imageio_frames.swift" Link="imageio_frames.swift" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

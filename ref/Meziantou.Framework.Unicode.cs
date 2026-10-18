@@ -543,12 +543,17 @@ namespace Meziantou.Framework
     public static class UnicodeEmoji
     {
         public static bool HasEmojiPresentation(System.Text.Rune rune) => throw null;
+        public static bool HasEmojiPresentation(int codePoint) => throw null;
         public static bool IsEmoji(System.Text.Rune rune) => throw null;
         public static bool IsEmoji(int codePoint) => throw null;
         public static bool IsEmojiComponent(System.Text.Rune rune) => throw null;
+        public static bool IsEmojiComponent(int codePoint) => throw null;
         public static bool IsEmojiModifier(System.Text.Rune rune) => throw null;
+        public static bool IsEmojiModifier(int codePoint) => throw null;
         public static bool IsEmojiModifierBase(System.Text.Rune rune) => throw null;
+        public static bool IsEmojiModifierBase(int codePoint) => throw null;
         public static bool IsExtendedPictographic(System.Text.Rune rune) => throw null;
+        public static bool IsExtendedPictographic(int codePoint) => throw null;
     }
 
     public enum UnicodeGraphemeClusterBreak : byte
@@ -578,6 +583,28 @@ namespace Meziantou.Framework
         public readonly System.Range Current { get => throw null; }
         public readonly Meziantou.Framework.UnicodeGraphemeClusterEnumerator GetEnumerator() => throw null;
         public bool MoveNext() => throw null;
+    }
+
+    public static class UnicodeIdna
+    {
+        public static string ToUnicode(string domainName, out bool hasErrors) => throw null;
+        public static string ToUnicode(string domainName, Meziantou.Framework.UnicodeIdnaOptions? options, out bool hasErrors) => throw null;
+        public static bool TryDecodePunycode(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? result) => throw null;
+        public static bool TryEncodePunycode(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? result) => throw null;
+        public static bool TryToAscii(string domainName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? result) => throw null;
+        public static bool TryToAscii(string domainName, Meziantou.Framework.UnicodeIdnaOptions? options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? result) => throw null;
+    }
+
+    public sealed class UnicodeIdnaOptions
+    {
+        public bool CheckBidi { get => throw null; init { } }
+        public bool CheckHyphens { get => throw null; init { } }
+        public bool CheckJoiners { get => throw null; init { } }
+        public static Meziantou.Framework.UnicodeIdnaOptions Default { get => throw null; }
+        public bool IgnoreInvalidPunycode { get => throw null; init { } }
+        public bool TransitionalProcessing { get => throw null; init { } }
+        public bool UseStd3AsciiRules { get => throw null; init { } }
+        public bool VerifyDnsLength { get => throw null; init { } }
     }
 
     public enum UnicodeIndicConjunctBreak : byte
@@ -871,6 +898,7 @@ namespace Meziantou.Framework
 
     public static class UnicodeProperties
     {
+        public static int MaxCaseMappingLength { get => throw null; }
         public static System.Version UnicodeVersion { get => throw null; }
         public static Meziantou.Framework.UnicodeBidirectionalCategory GetBidiClass(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeBidiPairedBracketType GetBidiPairedBracketType(int codePoint) => throw null;
@@ -884,11 +912,17 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeJoiningGroup GetJoiningGroup(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeJoiningType GetJoiningType(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakClass GetLineBreakClass(int codePoint) => throw null;
+        public static int GetLowercaseMapping(int codePoint, System.Span<int> destination) => throw null;
+        public static int GetTitlecaseMapping(int codePoint, System.Span<int> destination) => throw null;
+        public static int GetUppercaseMapping(int codePoint, System.Span<int> destination) => throw null;
         public static Meziantou.Framework.UnicodeVerticalOrientation GetVerticalOrientation(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeWordBreak GetWordBreak(int codePoint) => throw null;
         public static bool IsBidiMirrored(int codePoint) => throw null;
         public static bool IsDefaultIgnorable(int codePoint) => throw null;
+        public static bool IsIdContinue(int codePoint) => throw null;
+        public static bool IsIdStart(int codePoint) => throw null;
         public static int ToSimpleLowercase(int codePoint) => throw null;
+        public static int ToSimpleTitlecase(int codePoint) => throw null;
         public static int ToSimpleUppercase(int codePoint) => throw null;
         public static bool TryGetBidiMirroringGlyph(int codePoint, out int mirrored) => throw null;
         public static bool TryGetBidiPairedBracket(int codePoint, out int paired) => throw null;

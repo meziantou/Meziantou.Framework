@@ -5,9 +5,10 @@ namespace Meziantou.Framework;
 /// <summary>Provides the properties of a code point defined by the Unicode Character Database.</summary>
 /// <remarks>
 /// <para>
-/// Every method takes a code point as an <see cref="int"/>, never throws and never allocates: the values are read
-/// from tables indexed by the code point. An integer that is not a code point (negative, or greater than U+10FFFF)
-/// has the default value of the property, the one of a code point the standard does not list.
+/// Every method takes a code point as an <see cref="int"/> and never allocates: the values are read from tables
+/// indexed by the code point. Only the methods that write to a buffer throw, when the buffer is too small. An integer
+/// that is not a code point (negative, or greater than U+10FFFF) has the default value of the property, the one of a
+/// code point the standard does not list.
 /// </para>
 /// <para>
 /// The values are those of one version of the Unicode Standard, <see cref="UnicodeVersion"/>, whatever the version
@@ -34,6 +35,24 @@ public static class UnicodeProperties
     public static bool IsDefaultIgnorable(int codePoint)
     {
         return (UnicodeTables.GeneralTuples[UnicodeTables.GetGeneral(codePoint) * 2] & 0x20) != 0;
+    }
+
+    /// <summary>Determines whether a code point has the ID_Start property: whether it can start an identifier.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns><see langword="true"/> when the code point is a letter or a letter number that can start an identifier.</returns>
+    /// <seealso href="https://www.unicode.org/reports/tr31/" />
+    public static bool IsIdStart(int codePoint)
+    {
+        return (UnicodeTables.GeneralTuples[UnicodeTables.GetGeneral(codePoint) * 2] & 0x40) != 0;
+    }
+
+    /// <summary>Determines whether a code point has the ID_Continue property: whether it can follow the first code point of an identifier.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns><see langword="true"/> when the code point can be part of an identifier after its first code point, like a letter, a digit or a combining mark.</returns>
+    /// <seealso href="https://www.unicode.org/reports/tr31/" />
+    public static bool IsIdContinue(int codePoint)
+    {
+        return (UnicodeTables.GeneralTuples[UnicodeTables.GetGeneral(codePoint) * 2] & 0x80) != 0;
     }
 
     /// <summary>Gets the Canonical_Combining_Class of a code point.</summary>
@@ -186,13 +205,65 @@ public static class UnicodeProperties
     /// <param name="codePoint">The code point.</param>
     /// <returns>The lowercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 8);
+    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 12);
 
     /// <summary>Gets the Simple_Uppercase_Mapping of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The uppercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 8) + 4);
+    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 4);
+
+    /// <summary>Gets the Simple_Titlecase_Mapping of a code point: the form of the code point at the start of a word.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>
+    /// The titlecase code point, or <paramref name="codePoint"/> when it has no mapping. It is the
+    /// <see cref="ToSimpleUppercase(int)"/> mapping, except for a few code points such as the Latin digraphs
+    /// (<c>ǆ</c> → <c>ǅ</c>) and the Georgian Mkhedruli letters.
+    /// </returns>
+    /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
+    public static int ToSimpleTitlecase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 8);
+
+    /// <summary>Gets the greatest number of code points a full case mapping writes for a code point.</summary>
+    /// <seealso cref="GetLowercaseMapping(int, Span{int})"/>
+    /// <seealso cref="GetUppercaseMapping(int, Span{int})"/>
+    /// <seealso cref="GetTitlecaseMapping(int, Span{int})"/>
+    public static int MaxCaseMappingLength => 3;
+
+    /// <summary>Gets the full Lowercase_Mapping of a code point, which can be several code points (<c>İ</c>, U+0130, → U+0069 U+0307).</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <param name="destination">The buffer that receives the code points of the mapping.</param>
+    /// <returns>The number of code points written. It is 1, <paramref name="codePoint"/> itself, when the code point has no mapping.</returns>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is too small. <see cref="MaxCaseMappingLength"/> elements are always enough.</exception>
+    /// <remarks>
+    /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
+    /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// </remarks>
+    public static int GetLowercaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Lowercase);
+
+    /// <summary>Gets the full Uppercase_Mapping of a code point, which can be several code points (<c>ß</c> → <c>SS</c>).</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <param name="destination">The buffer that receives the code points of the mapping.</param>
+    /// <returns>The number of code points written. It is 1, <paramref name="codePoint"/> itself, when the code point has no mapping.</returns>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is too small. <see cref="MaxCaseMappingLength"/> elements are always enough.</exception>
+    /// <remarks>
+    /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
+    /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// </remarks>
+    public static int GetUppercaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Uppercase);
+
+    /// <summary>Gets the full Titlecase_Mapping of a code point, which can be several code points (<c>ﬁ</c> → <c>Fi</c>).</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <param name="destination">The buffer that receives the code points of the mapping.</param>
+    /// <returns>The number of code points written. It is 1, <paramref name="codePoint"/> itself, when the code point has no mapping.</returns>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is too small. <see cref="MaxCaseMappingLength"/> elements are always enough.</exception>
+    /// <remarks>
+    /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
+    /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// </remarks>
+    public static int GetTitlecaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Titlecase);
 
     internal static EmojiProperties GetEmojiProperties(int codePoint)
     {
@@ -215,6 +286,48 @@ public static class UnicodeProperties
         return tuples[index] | (tuples[index + 1] << 8);
     }
 
+    private static int GetCaseMapping(int codePoint, Span<int> destination, CaseMappingKind kind)
+    {
+        // 6-byte entries: the code point, the offset of its mappings in the pool, then the lengths of the mappings.
+        var records = UnicodeTables.SpecialCasingMappings;
+        var offset = UnicodeTableReader.FindRecord(records, 6, codePoint);
+        if (offset < 0)
+        {
+            if (destination.IsEmpty)
+                throw new ArgumentException("The destination is too small", nameof(destination));
+
+            destination[0] = kind switch
+            {
+                CaseMappingKind.Lowercase => ToSimpleLowercase(codePoint),
+                CaseMappingKind.Uppercase => ToSimpleUppercase(codePoint),
+                _ => ToSimpleTitlecase(codePoint),
+            };
+            return 1;
+        }
+
+        var index = records[offset + 3] | (records[offset + 4] << 8);
+        var lengths = records[offset + 5];
+        var lowercaseLength = lengths & 0x3;
+        var titlecaseLength = (lengths >> 2) & 0x3;
+        var (start, length) = kind switch
+        {
+            CaseMappingKind.Lowercase => (index, lowercaseLength),
+            CaseMappingKind.Titlecase => (index + lowercaseLength, titlecaseLength),
+            _ => (index + lowercaseLength + titlecaseLength, (lengths >> 4) & 0x3),
+        };
+
+        if (destination.Length < length)
+            throw new ArgumentException("The destination is too small", nameof(destination));
+
+        var pool = UnicodeTables.SpecialCasingPool;
+        for (var i = 0; i < length; i++)
+        {
+            destination[i] = UnicodeTableReader.ReadUInt24(pool, (start + i) * 3);
+        }
+
+        return length;
+    }
+
     private static bool TryFindPair(ReadOnlySpan<byte> pairs, int codePoint, out int value)
     {
         // 6-byte entries: the code point, then the value.
@@ -227,5 +340,12 @@ public static class UnicodeProperties
 
         value = UnicodeTableReader.ReadUInt24(pairs, offset + 3);
         return true;
+    }
+
+    private enum CaseMappingKind
+    {
+        Lowercase,
+        Uppercase,
+        Titlecase,
     }
 }

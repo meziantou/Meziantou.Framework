@@ -177,6 +177,30 @@ internal sealed class ColrTable
         return 0;
     }
 
+    /// <summary>
+    /// Gets the layers a glyph has in the records of version 0: the glyph whose outline each layer fills and the index of
+    /// its color in the palette, from the bottom layer.
+    /// </summary>
+    /// <returns><see langword="null"/> when the records of version 0 do not describe the glyph.</returns>
+    /// <exception cref="InvalidFontException">The layers of the glyph are outside the layers of the table.</exception>
+    public ColorLayer[]? GetLayers(ReadOnlySpan<byte> table, int glyphId)
+    {
+        if (!FindLayers(table, glyphId, out var first, out var count))
+            return null;
+
+        if (first + count > _layerCount)
+            throw FontErrors.InvalidTable(FontTags.Colr, "has a glyph whose layers are outside its layers.");
+
+        var layers = new ColorLayer[count];
+        for (var i = 0; i < layers.Length; i++)
+        {
+            var record = _layers + ((first + i) * 4);
+            layers[i] = new ColorLayer(FontBinary.UInt16(table, record), FontBinary.UInt16(table, record + 2));
+        }
+
+        return layers;
+    }
+
     /// <summary>Finds the layers of a glyph in the records of version 0.</summary>
     private bool FindLayers(ReadOnlySpan<byte> table, int glyphId, out int first, out int count)
     {

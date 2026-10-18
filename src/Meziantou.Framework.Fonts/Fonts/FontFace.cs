@@ -33,6 +33,9 @@ internal sealed class FontFace
     private readonly int _gsubLength;
     private readonly int _gposOffset;
     private readonly int _gposLength;
+    private readonly MathTable? _math;
+    private readonly int _mathOffset;
+    private readonly int _mathLength;
     private readonly CffTable? _cff;
     private readonly int _cffOffset;
     private readonly int _cffLength;
@@ -106,7 +109,13 @@ internal sealed class FontFace
         if (UnitsPerEm is < 16 or > 16384)
             throw FontErrors.InvalidTable(FontTags.Head, $"declares {UnitsPerEm} units per em; the valid range is 16 to 16384.");
 
+        HeadFlags = FontBinary.UInt16(head, 16);
+        XMin = FontBinary.Int16(head, 36);
+        YMin = FontBinary.Int16(head, 38);
+        XMax = FontBinary.Int16(head, 40);
+        YMax = FontBinary.Int16(head, 42);
         var macStyle = FontBinary.UInt16(head, 44);
+        MacStyle = macStyle;
         var locationFormat = FontBinary.Int16(head, 50);
         if (locationFormat is not (0 or 1))
             throw FontErrors.InvalidTable(FontTags.Head, $"declares the unknown location format {locationFormat}.");
@@ -136,12 +145,16 @@ internal sealed class FontFace
         if (TryGetTable(FontTags.Vhea, out var vheaMemory) && vheaMemory.Length >= 36
             && _directory.TryFind(FontTags.Vmtx, out var vmtxOffset, out var vmtxLength))
         {
-            var count = FontBinary.UInt16(vheaMemory.Span, 34);
+            var vhea = vheaMemory.Span;
+            var count = FontBinary.UInt16(vhea, 34);
             if (count != 0 && count <= GlyphCount && vmtxLength >= (long)count * 4)
             {
                 _verticalMetricCount = count;
                 _vmtxOffset = vmtxOffset;
                 _vmtxLength = vmtxLength;
+                VerticalAscender = FontBinary.Int16(vhea, 4);
+                VerticalDescender = FontBinary.Int16(vhea, 6);
+                VerticalLineGap = FontBinary.Int16(vhea, 8);
             }
         }
 
@@ -166,10 +179,16 @@ internal sealed class FontFace
         {
             var os2 = os2Memory.Span;
             HasOs2 = true;
+            Os2Version = FontBinary.UInt16(os2, 0);
+            AverageCharWidth = FontBinary.Int16(os2, 2);
             Weight = FontBinary.UInt16(os2, 4);
+            WidthClass = FontBinary.UInt16(os2, 6);
+            SubscriptYOffset = FontBinary.Int16(os2, 16);
+            SuperscriptYOffset = FontBinary.Int16(os2, 24);
             StrikeoutSize = FontBinary.Int16(os2, 26);
             StrikeoutPosition = FontBinary.Int16(os2, 28);
             var selection = FontBinary.UInt16(os2, 62);
+            Selection = selection;
             IsItalic = (selection & 0x0001) != 0;
             UseTypoMetrics = (selection & 0x0080) != 0;
             TypoAscender = FontBinary.Int16(os2, 68);
@@ -194,6 +213,7 @@ internal sealed class FontFace
         {
             var post = postMemory.Span;
             HasPost = true;
+            ItalicAngle = FontBinary.Int32(post, 4) / 65536.0;
             UnderlinePosition = FontBinary.Int16(post, 8);
             UnderlineThickness = FontBinary.Int16(post, 10);
             IsMonospaced = FontBinary.UInt32(post, 12) != 0;
@@ -221,6 +241,13 @@ internal sealed class FontFace
         {
             var kern = KernTable.Read(file.Slice(_kernOffset, _kernLength));
             _kern = kern.IsEmpty ? null : kern;
+        }
+
+        // MATH: the constants and the glyph variants of mathematical layout. A table whose header is not understood is
+        // left out: the font then has no mathematical data.
+        if (_directory.TryFind(FontTags.Math, out _mathOffset, out _mathLength))
+        {
+            _math = MathTable.Read(file.Slice(_mathOffset, _mathLength));
         }
 
         // The layout tables. A table whose header is not understood is left out: the font is used without it.
@@ -365,7 +392,43 @@ internal sealed class FontFace
 
     public int HorizontalLineGap { get; private set; }
 
+    /// <summary>Gets <c>head.flags</c>.</summary>
+    public int HeadFlags { get; }
+
+    /// <summary>Gets <c>head.macStyle</c>: bit 0 is bold, bit 1 is italic.</summary>
+    public int MacStyle { get; }
+
+    /// <summary>Gets the left of the box of all the glyphs of the font (<c>head.xMin</c>), in font units.</summary>
+    public int XMin { get; }
+
+    /// <summary>Gets the bottom of the box of all the glyphs of the font (<c>head.yMin</c>), in font units.</summary>
+    public int YMin { get; }
+
+    /// <summary>Gets the right of the box of all the glyphs of the font (<c>head.xMax</c>), in font units.</summary>
+    public int XMax { get; }
+
+    /// <summary>Gets the top of the box of all the glyphs of the font (<c>head.yMax</c>), in font units.</summary>
+    public int YMax { get; }
+
     public bool HasOs2 { get; }
+
+    /// <summary>Gets the version of the OS/2 table; 0 when the font has none.</summary>
+    public int Os2Version { get; }
+
+    /// <summary>Gets <c>OS/2.xAvgCharWidth</c>, in font units; 0 when the font has no OS/2 table.</summary>
+    public int AverageCharWidth { get; }
+
+    /// <summary>Gets <c>OS/2.usWidthClass</c>, from 1 (ultra-condensed) to 9 (ultra-expanded); 5 when the font has no OS/2 table.</summary>
+    public int WidthClass { get; } = 5;
+
+    /// <summary>Gets <c>OS/2.fsSelection</c>; 0 when the font has no OS/2 table.</summary>
+    public int Selection { get; }
+
+    /// <summary>Gets <c>OS/2.ySubscriptYOffset</c>: how far below the baseline subscripts are, in font units, positive downward.</summary>
+    public int SubscriptYOffset { get; private set; }
+
+    /// <summary>Gets <c>OS/2.ySuperscriptYOffset</c>: how far above the baseline superscripts are, in font units.</summary>
+    public int SuperscriptYOffset { get; private set; }
 
     public bool UseTypoMetrics { get; }
 
@@ -388,6 +451,9 @@ internal sealed class FontFace
     public int StrikeoutSize { get; private set; }
 
     public bool HasPost { get; }
+
+    /// <summary>Gets <c>post.italicAngle</c>, in degrees counterclockwise from the vertical; 0 for an upright font.</summary>
+    public double ItalicAngle { get; }
 
     public int UnderlinePosition { get; private set; }
 
@@ -478,6 +544,89 @@ internal sealed class FontFace
 
     /// <summary>Gets a value indicating whether the font has vertical metrics of its own (<c>vhea</c> and <c>vmtx</c>).</summary>
     public bool HasVerticalMetrics => _verticalMetricCount != 0;
+
+    /// <summary>Gets <c>vhea.vertTypoAscender</c>, in font units; 0 when the font has no vertical metrics.</summary>
+    public int VerticalAscender { get; private set; }
+
+    /// <summary>Gets <c>vhea.vertTypoDescender</c>, in font units; 0 when the font has no vertical metrics.</summary>
+    public int VerticalDescender { get; private set; }
+
+    /// <summary>Gets <c>vhea.vertTypoLineGap</c>, in font units; 0 when the font has no vertical metrics.</summary>
+    public int VerticalLineGap { get; private set; }
+
+    /// <summary>Gets the left side bearing of a glyph in the <c>hmtx</c> table, in font units: the one of the default instance of a variable font.</summary>
+    public int GetLeftSideBearing(int glyphId)
+    {
+        if ((uint)glyphId >= (uint)GlyphCount)
+            return 0;
+
+        // The glyphs after the last metric have their bearing alone, after the metrics. A table that ends before them
+        // (which old fonts do) gives them 0.
+        var hmtx = Data.Bytes.AsSpan(_hmtxOffset, _hmtxLength);
+        var offset = glyphId < _horizontalMetricCount ? (glyphId * 4) + 2 : (_horizontalMetricCount * 4) + ((glyphId - _horizontalMetricCount) * 2);
+        return offset + 2 <= hmtx.Length ? FontBinary.Int16(hmtx, offset) : 0;
+    }
+
+    /// <summary>
+    /// Gets the top side bearing of a glyph in the <c>vmtx</c> table, in font units: the one of the default instance of
+    /// a variable font; 0 when the font has no vertical metrics.
+    /// </summary>
+    public int GetTopSideBearing(int glyphId)
+    {
+        if ((uint)glyphId >= (uint)GlyphCount || _verticalMetricCount == 0)
+            return 0;
+
+        var vmtx = Data.Bytes.AsSpan(_vmtxOffset, _vmtxLength);
+        var offset = glyphId < _verticalMetricCount ? (glyphId * 4) + 2 : (_verticalMetricCount * 4) + ((glyphId - _verticalMetricCount) * 2);
+        return offset + 2 <= vmtx.Length ? FontBinary.Int16(vmtx, offset) : 0;
+    }
+
+    /// <summary>
+    /// Gets the box of the outline of a glyph, in font units: the box the <c>glyf</c> table declares for the glyph in a
+    /// font with TrueType outlines that does not vary them, otherwise the box of the points of its outline, rounded
+    /// outward.
+    /// </summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="scratch">The working storage of the outline, when it has to be decoded.</param>
+    /// <param name="bounds">The box.</param>
+    /// <returns><see langword="false"/> for a glyph without outline, such as a space.</returns>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The outlines of the font are in a format that is not supported.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    public bool TryGetGlyphBounds(int glyphId, GlyphScratch scratch, out GlyphBox bounds)
+    {
+        bounds = default;
+        if ((uint)glyphId >= (uint)GlyphCount)
+            return false;
+
+        if (Outlines == FontOutlineKind.TrueType && (_instance is null || _gvar is null))
+        {
+            // The box the font declares for the glyph, at the start of its description
+            var bytes = Data.Bytes.AsSpan();
+            var loca = bytes.Slice(_locaOffset, _locaLength);
+            long start = _hasLongLocations ? FontBinary.UInt32(loca, glyphId * 4) : FontBinary.UInt16(loca, glyphId * 2) * 2;
+            long end = _hasLongLocations ? FontBinary.UInt32(loca, (glyphId + 1) * 4) : FontBinary.UInt16(loca, (glyphId + 1) * 2) * 2;
+            if (end - start < 10 || end > _glyfLength)
+                return false;
+
+            var glyph = bytes.Slice(_glyfOffset + (int)start, 10);
+            bounds = new GlyphBox(FontBinary.Int16(glyph, 2), FontBinary.Int16(glyph, 4), FontBinary.Int16(glyph, 6), FontBinary.Int16(glyph, 8));
+            return true;
+        }
+
+        if (Outlines == FontOutlineKind.None)
+            return false;
+
+        // The box of the points of the outline, which is the box of an outline that has a point at each extremum
+        var sink = new GlyphBoundsSink();
+        var budget = new GlyphBudget(Data.Limits);
+        DecodeOutline(glyphId, sink, scratch, ref budget);
+        if (sink.IsEmpty)
+            return false;
+
+        bounds = new GlyphBox((int)Math.Floor(sink.MinX), (int)Math.Floor(sink.MinY), (int)Math.Ceiling(sink.MaxX), (int)Math.Ceiling(sink.MaxY));
+        return true;
+    }
 
     /// <summary>
     /// Gets the ascender and the descender a line of horizontal text has, as two heights from the baseline: those of
@@ -651,38 +800,12 @@ internal sealed class FontFace
     {
         top = 0;
         height = 0;
-        if ((uint)glyphId >= (uint)GlyphCount)
+        var isDeclared = Outlines == FontOutlineKind.TrueType && (_instance is null || _gvar is null);
+        if ((!isDeclared && scratch is null) || !TryGetGlyphBounds(glyphId, scratch!, out var bounds))
             return;
 
-        var bytes = Data.Bytes.AsSpan();
-        if (Outlines == FontOutlineKind.TrueType && (_instance is null || _gvar is null))
-        {
-            // The box the font declares for the glyph, at the start of its description
-            var loca = bytes.Slice(_locaOffset, _locaLength);
-            long start = _hasLongLocations ? FontBinary.UInt32(loca, glyphId * 4) : FontBinary.UInt16(loca, glyphId * 2) * 2;
-            long end = _hasLongLocations ? FontBinary.UInt32(loca, (glyphId + 1) * 4) : FontBinary.UInt16(loca, (glyphId + 1) * 2) * 2;
-            if (end - start < 10 || end > _glyfLength)
-                return;
-
-            var glyph = bytes.Slice(_glyfOffset + (int)start, 10);
-            var yMin = FontBinary.Int16(glyph, 4);
-            top = FontBinary.Int16(glyph, 8);
-            height = top - yMin;
-            return;
-        }
-
-        if (Outlines == FontOutlineKind.None || scratch is null)
-            return;
-
-        // The box of the points of the outline, which is the box of an outline that has a point at each extremum
-        var sink = new GlyphBoundsSink();
-        var budget = new GlyphBudget(Data.Limits);
-        DecodeOutline(glyphId, sink, scratch, ref budget);
-        if (sink.IsEmpty)
-            return;
-
-        top = (int)Math.Ceiling(sink.MaxY);
-        height = top - (int)Math.Floor(sink.MinY);
+        top = bounds.YMax;
+        height = bounds.YMax - bounds.YMin;
     }
 
     /// <summary>Gets a value indicating whether the font has glyphs that are drawn with their own colors.</summary>
@@ -748,6 +871,56 @@ internal sealed class FontFace
 
         return _colr.Build(Data.Bytes.AsSpan(_colrOffset, _colrLength), this, glyphId, (uint)palette < (uint)PaletteCount ? palette : 0, scratch, ref budget);
     }
+
+    /// <summary>
+    /// Gets the layers of a color glyph of version 0 of the <c>COLR</c> table, from the bottom one: the glyph whose
+    /// outline each layer fills and the index of its color in the palette.
+    /// </summary>
+    /// <returns><see langword="null"/> when the glyph has no layers; a glyph of version 1 has paints, see <see cref="BuildColorGlyph"/>.</returns>
+    /// <exception cref="InvalidFontException">The layers of the glyph are malformed.</exception>
+    public ColorLayer[]? GetColorLayers(int glyphId)
+        => _colr is null || (uint)glyphId >= (uint)GlyphCount ? null : _colr.GetLayers(Data.Bytes.AsSpan(_colrOffset, _colrLength), glyphId);
+
+    /// <summary>Gets a value indicating whether the font has a <c>MATH</c> table.</summary>
+    public bool HasMathTable => _math is not null;
+
+    /// <summary>Gets a constant of mathematical layout, with the delta of the instance of a variable font; 0 when the font has none.</summary>
+    /// <exception cref="InvalidFontException">The value is malformed.</exception>
+    public int GetMathConstant(MathConstant constant) => _math?.GetConstant(Data.Bytes.AsSpan(_mathOffset, _mathLength), this, constant) ?? 0;
+
+    /// <summary>Gets the italics correction of a glyph of mathematical layout, in font units.</summary>
+    /// <returns><see langword="false"/> when the font gives none for the glyph.</returns>
+    /// <exception cref="InvalidFontException">The subtable is malformed.</exception>
+    public bool TryGetMathItalicsCorrection(int glyphId, out int value)
+    {
+        value = 0;
+        return _math is not null && _math.TryGetItalicsCorrection(Data.Bytes.AsSpan(_mathOffset, _mathLength), this, glyphId, out value);
+    }
+
+    /// <summary>Gets where an accent above a glyph of mathematical layout is centered, in font units from its origin.</summary>
+    /// <returns><see langword="false"/> when the font gives none for the glyph.</returns>
+    /// <exception cref="InvalidFontException">The subtable is malformed.</exception>
+    public bool TryGetMathTopAccentAttachment(int glyphId, out int value)
+    {
+        value = 0;
+        return _math is not null && _math.TryGetTopAccentAttachment(Data.Bytes.AsSpan(_mathOffset, _mathLength), this, glyphId, out value);
+    }
+
+    /// <summary>Tells whether a glyph of mathematical layout is an extended shape, such as a large operator.</summary>
+    /// <exception cref="InvalidFontException">The subtable is malformed.</exception>
+    public bool IsMathExtendedShape(int glyphId) => _math is not null && _math.IsExtendedShape(Data.Bytes.AsSpan(_mathOffset, _mathLength), glyphId);
+
+    /// <summary>Gets how much two parts of the assembly of a glyph of mathematical layout overlap at least, in font units.</summary>
+    /// <exception cref="InvalidFontException">The subtable is malformed.</exception>
+    public int MathMinConnectorOverlap => _math?.GetMinConnectorOverlap(Data.Bytes.AsSpan(_mathOffset, _mathLength)) ?? 0;
+
+    /// <summary>Gets how a glyph of mathematical layout grows along a direction: its larger forms and its assembly.</summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="isVertical"><see langword="true"/> for the forms that are taller, <see langword="false"/> for the wider ones.</param>
+    /// <returns><see langword="null"/> when the glyph does not grow in the direction.</returns>
+    /// <exception cref="InvalidFontException">The subtables of the glyph are malformed.</exception>
+    public MathGlyphConstruction? GetMathGlyphConstruction(int glyphId, bool isVertical)
+        => _math?.GetConstruction(Data.Bytes.AsSpan(_mathOffset, _mathLength), this, glyphId, isVertical);
 
     /// <summary>Gets the axes of a variable font; empty for a font that does not vary.</summary>
     public ReadOnlySpan<FontAxisRecord> Axes => _fvar is null ? default : _fvar.Axes;
@@ -932,6 +1105,26 @@ internal sealed class FontFace
 
                 case FontTags.MetricUnderlineOffset:
                     UnderlinePosition += delta;
+                    break;
+
+                case FontTags.MetricSubscriptYOffset:
+                    SubscriptYOffset += delta;
+                    break;
+
+                case FontTags.MetricSuperscriptYOffset:
+                    SuperscriptYOffset += delta;
+                    break;
+
+                case FontTags.MetricVerticalAscender:
+                    VerticalAscender += delta;
+                    break;
+
+                case FontTags.MetricVerticalDescender:
+                    VerticalDescender += delta;
+                    break;
+
+                case FontTags.MetricVerticalLineGap:
+                    VerticalLineGap += delta;
                     break;
             }
         }

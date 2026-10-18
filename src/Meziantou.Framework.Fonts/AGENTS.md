@@ -79,6 +79,11 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
     FreeType has drawn the same segments within two units; the tests accept 0.005 unit, the precision of the single
     precision numbers of HarfBuzz. Advances and metrics are exact. `FontVariationTests` has the literals, computed by
     hand from `FontSamples.Variable` and `VariableCharstrings`.
+- **Mathematical layout** (`MathTable`): the constants, the italics corrections, the top accent attachments, the
+  extended shapes and the constructions (variants and assemblies) of the `MATH` table. A value whose device table is a
+  variation index varies with the instance (the store of `GDEF`, as `GPOS`); the device tables of one size and
+  `MathKernInfo` are not read. The header and the constants are validated when the face is created, the subtables of
+  a glyph when it is looked up.
 - **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
   which format the font gives for the data, and `BitmapGlyphDecoder` rejects data of another one. The bitmaps without colors
   of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,

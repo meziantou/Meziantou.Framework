@@ -46,6 +46,7 @@ internal static class FontTags
     public const uint Cbdt = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
     public const uint Eblc = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'L' << 8) | 'C';
     public const uint Ebdt = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
+    public const uint Math = ((uint)'M' << 24) | ((uint)'A' << 16) | ((uint)'T' << 8) | 'H';
 
     // Axes of a variable font
     public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';
@@ -62,6 +63,11 @@ internal static class FontTags
     public const uint MetricStrikeoutOffset = ((uint)'s' << 24) | ((uint)'t' << 16) | ((uint)'r' << 8) | 'o';
     public const uint MetricUnderlineSize = ((uint)'u' << 24) | ((uint)'n' << 16) | ((uint)'d' << 8) | 's';
     public const uint MetricUnderlineOffset = ((uint)'u' << 24) | ((uint)'n' << 16) | ((uint)'d' << 8) | 'o';
+    public const uint MetricSubscriptYOffset = ((uint)'s' << 24) | ((uint)'b' << 16) | ((uint)'y' << 8) | 'o';
+    public const uint MetricSuperscriptYOffset = ((uint)'s' << 24) | ((uint)'p' << 16) | ((uint)'y' << 8) | 'o';
+    public const uint MetricVerticalAscender = ((uint)'v' << 24) | ((uint)'a' << 16) | ((uint)'s' << 8) | 'c';
+    public const uint MetricVerticalDescender = ((uint)'v' << 24) | ((uint)'d' << 16) | ((uint)'s' << 8) | 'c';
+    public const uint MetricVerticalLineGap = ((uint)'v' << 24) | ((uint)'l' << 16) | ((uint)'g' << 8) | 'p';
 
     /// <summary>Formats a tag for a message: its four characters when they are printable, its hexadecimal value otherwise.</summary>
     public static string Format(uint tag)

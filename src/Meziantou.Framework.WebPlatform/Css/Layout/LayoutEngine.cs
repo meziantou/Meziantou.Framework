@@ -484,8 +484,8 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns the used track sizes of a grid container computed by the last layout (see <see cref="LayoutContext.OnGridLaidOut"/>):
     /// the columns (the tracks of its inline axis) and the rows. It does not compute the layout: the box must come from the
-    /// fragments of the current layout (a forced layout may build the box tree again, e.g. when another document changed the
-    /// process-wide style version, and the sizes are recorded for the new boxes).
+    /// fragments of the current layout (a forced layout may build the box tree again, e.g. when a style sheet of the document
+    /// changed, and the sizes are recorded for the new boxes).
     /// </summary>
     public bool TryGetGridTrackSizes(ContainerBox box, [NotNullWhen(true)] out GridTrackSizes? columns, [NotNullWhen(true)] out GridTrackSizes? rows)
     {

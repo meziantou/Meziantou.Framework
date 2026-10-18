@@ -288,7 +288,7 @@ public abstract class CssGroupingRule : CssRule
 
     /// <summary>Removes the child rule at the given index.</summary>
     [IdlMember("deleteRule", "https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule")]
-    public void DeleteRule(uint index) => CssRuleParser.RemoveRule(_rules, index);
+    public void DeleteRule(uint index) => CssRuleParser.RemoveRule(_rules, index, ParentStyleSheet);
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-3/#the-cssconditionrule-interface</summary>
@@ -337,7 +337,7 @@ public sealed class CssStyleRule : CssGroupingRule
             if (parser.ParseStyleRuleSelector(values, nested: ParentRule?.IsNestedInStyleRule() ?? false, scoped: ParentRule?.IsInScopeRule() ?? false, source) is { } selectors)
             {
                 Selectors = selectors;
-                Cascade.CssStyleVersion.Increment();
+                Cascade.CssStyleVersion.Increment(this);
             }
         }
     }
@@ -387,6 +387,7 @@ public sealed class CssMediaRule : CssConditionRule
     internal CssMediaRule(MediaList media)
     {
         Media = media;
+        media.SetOwner(this);
     }
 
     /// <summary>Gets the media query list of the rule.</summary>
@@ -585,6 +586,7 @@ public sealed class CssImportRule : CssRule
     {
         Href = href;
         Media = media;
+        media.SetOwner(this);
         LayerName = layerName;
         SupportsText = supportsText;
         SupportsMatches = supportsMatches;
@@ -881,7 +883,7 @@ public sealed class CssKeyframesRule : CssRule
     /// <summary>The animations that use the keyframes are updated (https://drafts.csswg.org/css-animations-1/#keyframes).</summary>
     internal void OnKeyframesChanged()
     {
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(this);
         ParentStyleSheet?.RequestCssResourcesUpdate();
     }
 
@@ -1201,7 +1203,7 @@ public sealed class CssCounterStyleRule : CssRule
             if (CssRuleParser.ParseCounterStyleName(CssParser.ParseListOfComponentValues(value)) is { } name)
             {
                 _name = name;
-                Cascade.CssStyleVersion.Increment();
+                Cascade.CssStyleVersion.Increment(this);
             }
         }
     }
@@ -1243,7 +1245,7 @@ public sealed class CssCounterStyleRule : CssRule
             return;
         }
 
-        Cascade.CssStyleVersion.Increment();
+        Cascade.CssStyleVersion.Increment(this);
 
         // The system is symbolic when the descriptor is omitted
         static string GetSystemKeyword(string? system)

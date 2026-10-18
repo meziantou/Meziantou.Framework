@@ -48,7 +48,7 @@ public partial class Document
         if (!_cssResourcesUpdateRequested || !IsFullyActive || BrowsingContext is null)
             return false;
 
-        var version = (DomVersion, ElementStateVersion, Css.Cascade.CssStyleVersion.Current);
+        var version = (DomVersion, ElementStateVersion, StyleSheetsVersion);
         if (version == _cssImagesVersion)
             return false;
 
@@ -88,7 +88,7 @@ public partial class Document
             return;
 
         // The computed styles only change when the tree, the state of an element or a style sheet changes
-        var version = (DomVersion, ElementStateVersion, Css.Cascade.CssStyleVersion.Current, _cueRenderingVersion);
+        var version = (DomVersion, ElementStateVersion, StyleSheetsVersion, _cueRenderingVersion);
         if (version == _cssResourcesVersion)
             return;
 

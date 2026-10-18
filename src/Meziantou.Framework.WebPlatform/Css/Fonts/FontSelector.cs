@@ -170,14 +170,14 @@ internal sealed class FontSelector
     private void EnsureCurrent()
     {
         var engine = _document.GetStyleEngine();
-        var snapshot = (_document.DomVersion, CssStyleVersion.Current, Version, engine.Environment);
-        if (snapshot.DomVersion == _snapshot.Dom && snapshot.Current == _snapshot.Style && snapshot.Version == _snapshot.Version && ReferenceEquals(snapshot.Environment, _snapshot.Environment))
+        var snapshot = (_document.DomVersion, _document.StyleSheetsVersion, Version, engine.Environment);
+        if (snapshot.DomVersion == _snapshot.Dom && snapshot.StyleSheetsVersion == _snapshot.Style && snapshot.Version == _snapshot.Version && ReferenceEquals(snapshot.Environment, _snapshot.Environment))
             return;
 
-        // The style version is process-wide (it changes with the style sheets of the other documents) and the DOM version
-        // changes with any mutation: the lists are kept when the font faces are still the same. The styles of the elements
-        // then keep sharing the lists (the texts of the elements that share a list are shaped together, see
-        // InlineLayoutAlgorithm.CanShapeTogether) and their caches of shaped texts.
+        // The version of the style sheets changes with any change of a style sheet and the DOM version changes with any
+        // mutation: the lists are kept when the font faces are still the same. The styles of the elements then keep sharing
+        // the lists (the texts of the elements that share a list are shaped together, see InlineLayoutAlgorithm.CanShapeTogether)
+        // and their caches of shaped texts.
         var facesMayBeCurrent = snapshot.Version == _snapshot.Version && snapshot.Environment == _snapshot.Environment;
         _snapshot = snapshot;
         if (facesMayBeCurrent && HasCurrentFaces())

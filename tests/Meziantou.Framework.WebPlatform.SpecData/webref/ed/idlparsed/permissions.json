@@ -1,0 +1,405 @@
+{
+  "spec": {
+    "title": "Permissions",
+    "url": "https://w3c.github.io/permissions/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator",
+          "Permissions",
+          "PermissionStatus"
+        ],
+        "Worker": [
+          "WorkerNavigator",
+          "Permissions",
+          "PermissionStatus"
+        ]
+      }
+    },
+    "idlNames": {
+      "Permissions": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Permissions {\n  Promise<PermissionStatus> query(object permissionDesc);\n};",
+        "type": "interface",
+        "name": "Permissions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "query",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PermissionStatus"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "permissionDesc",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "object"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/permissions/#dom-permissions-query"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/permissions/#dom-permissions"
+      },
+      "PermissionDescriptor": {
+        "fragment": "dictionary PermissionDescriptor {\n  required DOMString name;\n};",
+        "type": "dictionary",
+        "name": "PermissionDescriptor",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/permissions/#dom-permissiondescriptor-name"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/permissions/#dom-permissiondescriptor"
+      },
+      "PermissionStatus": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PermissionStatus : EventTarget {\n  readonly attribute PermissionState state;\n  readonly attribute DOMString name;\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "PermissionStatus",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PermissionState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/permissions/#dom-permissionstatus-state"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/permissions/#dom-permissionstatus-name"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/permissions/#dom-permissionstatus-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/permissions/#dom-permissionstatus"
+      },
+      "PermissionState": {
+        "fragment": "enum PermissionState {\n  \"granted\",\n  \"denied\",\n  \"prompt\",\n};",
+        "type": "enum",
+        "name": "PermissionState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "granted",
+            "href": "https://w3c.github.io/permissions/#dom-permissionstate-granted"
+          },
+          {
+            "type": "enum-value",
+            "value": "denied",
+            "href": "https://w3c.github.io/permissions/#dom-permissionstate-denied"
+          },
+          {
+            "type": "enum-value",
+            "value": "prompt",
+            "href": "https://w3c.github.io/permissions/#dom-permissionstate-prompt"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/permissions/#dom-permissionstate"
+      },
+      "PermissionSetParameters": {
+        "fragment": "dictionary PermissionSetParameters {\n  required object descriptor;\n  required PermissionState state;\n};",
+        "type": "dictionary",
+        "name": "PermissionSetParameters",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "descriptor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/permissions/#dom-permissionsetparameters-descriptor"
+          },
+          {
+            "type": "field",
+            "name": "state",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PermissionState"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/permissions/#dom-permissionsetparameters-state"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/permissions/#dom-permissionsetparameters"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=(Window)]\npartial interface Navigator {\n  [SameObject] readonly attribute Permissions permissions;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "permissions",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Permissions"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/permissions/#dom-navigator-permissions"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "[Exposed=(Worker)]\npartial interface WorkerNavigator {\n  [SameObject] readonly attribute Permissions permissions;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "permissions",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Permissions"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/permissions/#dom-workernavigator-permissions"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "Permissions",
+        "PermissionStatus"
+      ],
+      "Worker": [
+        "WorkerNavigator",
+        "Permissions",
+        "PermissionStatus"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Permissions"
+      ],
+      "WorkerNavigator": [
+        "Permissions"
+      ],
+      "Permissions": [
+        "PermissionStatus"
+      ],
+      "PermissionDescriptor": [],
+      "PermissionStatus": [
+        "EventTarget",
+        "PermissionState",
+        "EventHandler"
+      ],
+      "PermissionSetParameters": [
+        "PermissionState"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator",
+      "WorkerNavigator",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

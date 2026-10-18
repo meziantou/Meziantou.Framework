@@ -1,0 +1,3033 @@
+{
+  "spec": {
+    "title": "Web Cryptography API Level 2",
+    "url": "https://w3c.github.io/webcrypto/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Crypto",
+          "CryptoKey",
+          "SubtleCrypto"
+        ],
+        "Worker": [
+          "Crypto",
+          "CryptoKey",
+          "SubtleCrypto"
+        ]
+      }
+    },
+    "idlNames": {
+      "Crypto": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Crypto {\n  [SecureContext] readonly attribute SubtleCrypto subtle;\n  ArrayBufferView getRandomValues(ArrayBufferView array);\n  [SecureContext] DOMString randomUUID();\n};",
+        "type": "interface",
+        "name": "Crypto",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "subtle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SubtleCrypto"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-Crypto-attribute-subtle"
+          },
+          {
+            "type": "operation",
+            "name": "getRandomValues",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBufferView"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "array",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBufferView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-Crypto-method-getRandomValues"
+          },
+          {
+            "type": "operation",
+            "name": "randomUUID",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-Crypto-method-randomUUID"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-Crypto"
+      },
+      "AlgorithmIdentifier": {
+        "fragment": "typedef (object or DOMString) AlgorithmIdentifier;",
+        "type": "typedef",
+        "name": "AlgorithmIdentifier",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcrypto/#dom-algorithmidentifier"
+      },
+      "HashAlgorithmIdentifier": {
+        "fragment": "typedef AlgorithmIdentifier HashAlgorithmIdentifier;",
+        "type": "typedef",
+        "name": "HashAlgorithmIdentifier",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "AlgorithmIdentifier"
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcrypto/#dom-hashalgorithmidentifier"
+      },
+      "Algorithm": {
+        "fragment": "dictionary Algorithm {\n  required DOMString name;\n};",
+        "type": "dictionary",
+        "name": "Algorithm",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-algorithm-name"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-Algorithm"
+      },
+      "KeyAlgorithm": {
+        "fragment": "dictionary KeyAlgorithm {\n  required DOMString name;\n};",
+        "type": "dictionary",
+        "name": "KeyAlgorithm",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-keyalgorithm-name"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-KeyAlgorithm"
+      },
+      "KeyType": {
+        "fragment": "enum KeyType { \"public\", \"private\", \"secret\" };",
+        "type": "enum",
+        "name": "KeyType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "public",
+            "href": "https://w3c.github.io/webcrypto/#dom-keytype-public"
+          },
+          {
+            "type": "enum-value",
+            "value": "private",
+            "href": "https://w3c.github.io/webcrypto/#dom-keytype-private"
+          },
+          {
+            "type": "enum-value",
+            "value": "secret",
+            "href": "https://w3c.github.io/webcrypto/#dom-keytype-secret"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcrypto/#dom-keytype"
+      },
+      "CryptoKey": {
+        "fragment": "[SecureContext,Exposed=(Window,Worker),Serializable]\ninterface CryptoKey {\n  readonly attribute KeyType type;\n  readonly attribute boolean extractable;\n  readonly attribute object algorithm;\n  readonly attribute object usages;\n};",
+        "type": "interface",
+        "name": "CryptoKey",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "KeyType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-cryptokey-type"
+          },
+          {
+            "type": "attribute",
+            "name": "extractable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-cryptokey-extractable"
+          },
+          {
+            "type": "attribute",
+            "name": "algorithm",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-cryptokey-algorithm"
+          },
+          {
+            "type": "attribute",
+            "name": "usages",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/webcrypto/#dom-cryptokey-usages"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-CryptoKey"
+      },
+      "SubtleCrypto": {
+        "fragment": "[SecureContext,Exposed=(Window,Worker)]\ninterface SubtleCrypto {\n  Promise<ArrayBuffer> encrypt(\n    AlgorithmIdentifier algorithm,\n    CryptoKey key,\n    BufferSource data\n  );\n  Promise<ArrayBuffer> decrypt(\n    AlgorithmIdentifier algorithm,\n    CryptoKey key,\n    BufferSource data\n  );\n  Promise<ArrayBuffer> sign(\n    AlgorithmIdentifier algorithm,\n    CryptoKey key,\n    BufferSource data\n  );\n  Promise<boolean> verify(\n    AlgorithmIdentifier algorithm,\n    CryptoKey key,\n    BufferSource signature,\n    BufferSource data\n  );\n  Promise<ArrayBuffer> digest(\n    AlgorithmIdentifier algorithm,\n    BufferSource data\n  );\n\n  Promise<(CryptoKey or CryptoKeyPair)> generateKey(\n    AlgorithmIdentifier algorithm,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n  Promise<CryptoKey> deriveKey(\n    AlgorithmIdentifier algorithm,\n    CryptoKey baseKey,\n    AlgorithmIdentifier derivedKeyType,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n  Promise<ArrayBuffer> deriveBits(\n    AlgorithmIdentifier algorithm,\n    CryptoKey baseKey,\n    optional [EnforceRange] unsigned long? length = null\n  );\n\n  Promise<CryptoKey> importKey(\n    KeyFormat format,\n    (BufferSource or JsonWebKey) keyData,\n    AlgorithmIdentifier algorithm,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n  Promise<(ArrayBuffer or JsonWebKey)> exportKey(\n    KeyFormat format,\n    CryptoKey key\n  );\n\n  Promise<ArrayBuffer> wrapKey(\n    KeyFormat format,\n    CryptoKey key,\n    CryptoKey wrappingKey,\n    AlgorithmIdentifier wrapAlgorithm\n  );\n  Promise<CryptoKey> unwrapKey(\n    KeyFormat format,\n    BufferSource wrappedKey,\n    CryptoKey unwrappingKey,\n    AlgorithmIdentifier unwrapAlgorithm,\n    AlgorithmIdentifier unwrappedKeyAlgorithm,\n    boolean extractable,\n    sequence<KeyUsage> keyUsages\n  );\n};",
+        "type": "interface",
+        "name": "SubtleCrypto",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "encrypt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-encrypt"
+          },
+          {
+            "type": "operation",
+            "name": "decrypt",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-decrypt"
+          },
+          {
+            "type": "operation",
+            "name": "sign",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-sign"
+          },
+          {
+            "type": "operation",
+            "name": "verify",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "signature",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-verify"
+          },
+          {
+            "type": "operation",
+            "name": "digest",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-digest"
+          },
+          {
+            "type": "operation",
+            "name": "generateKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CryptoKey"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CryptoKeyPair"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "extractable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyUsages",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyUsage"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-generateKey"
+          },
+          {
+            "type": "operation",
+            "name": "deriveKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "baseKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "derivedKeyType",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "extractable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyUsages",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyUsage"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-deriveKey"
+          },
+          {
+            "type": "operation",
+            "name": "deriveBits",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "baseKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "length",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "EnforceRange",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-deriveBits"
+          },
+          {
+            "type": "operation",
+            "name": "importKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyData",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BufferSource"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "JsonWebKey"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "algorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "extractable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyUsages",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyUsage"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-importKey"
+          },
+          {
+            "type": "operation",
+            "name": "exportKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ArrayBuffer"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "JsonWebKey"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-exportKey"
+          },
+          {
+            "type": "operation",
+            "name": "wrapKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "key",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "wrappingKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "wrapAlgorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-wrapKey"
+          },
+          {
+            "type": "operation",
+            "name": "unwrapKey",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "wrappedKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BufferSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "unwrappingKey",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CryptoKey"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "unwrapAlgorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "unwrappedKeyAlgorithm",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlgorithmIdentifier"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "extractable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "keyUsages",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "KeyUsage"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto-method-unwrapKey"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-SubtleCrypto"
+      },
+      "RsaOtherPrimesInfo": {
+        "fragment": "dictionary RsaOtherPrimesInfo {\n  // The following fields are defined in Section 6.3.2.7 of JSON Web Algorithms\n  DOMString r;\n  DOMString d;\n  DOMString t;\n};",
+        "type": "dictionary",
+        "name": "RsaOtherPrimesInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "r",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-rsaotherprimesinfo-r"
+          },
+          {
+            "type": "field",
+            "name": "d",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-rsaotherprimesinfo-d"
+          },
+          {
+            "type": "field",
+            "name": "t",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-rsaotherprimesinfo-t"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaOtherPrimesInfo"
+      },
+      "JsonWebKey": {
+        "fragment": "dictionary JsonWebKey {\n  // The following fields are defined in Section 3.1 of JSON Web Key\n  DOMString kty;\n  DOMString use;\n  sequence<DOMString> key_ops;\n  DOMString alg;\n\n  // The following fields are defined in JSON Web Key Parameters Registration\n  boolean ext;\n\n  // The following fields are defined in Section 6 of JSON Web Algorithms\n  DOMString crv;\n  DOMString x;\n  DOMString y;\n  DOMString d;\n  DOMString n;\n  DOMString e;\n  DOMString p;\n  DOMString q;\n  DOMString dp;\n  DOMString dq;\n  DOMString qi;\n  sequence<RsaOtherPrimesInfo> oth;\n  DOMString k;\n};",
+        "type": "dictionary",
+        "name": "JsonWebKey",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "kty",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-kty"
+          },
+          {
+            "type": "field",
+            "name": "use",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-use"
+          },
+          {
+            "type": "field",
+            "name": "key_ops",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-key_ops"
+          },
+          {
+            "type": "field",
+            "name": "alg",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-alg"
+          },
+          {
+            "type": "field",
+            "name": "ext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-ext"
+          },
+          {
+            "type": "field",
+            "name": "crv",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-crv"
+          },
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-y"
+          },
+          {
+            "type": "field",
+            "name": "d",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-d"
+          },
+          {
+            "type": "field",
+            "name": "n",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-n"
+          },
+          {
+            "type": "field",
+            "name": "e",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-e"
+          },
+          {
+            "type": "field",
+            "name": "p",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-p"
+          },
+          {
+            "type": "field",
+            "name": "q",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-q"
+          },
+          {
+            "type": "field",
+            "name": "dp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-dp"
+          },
+          {
+            "type": "field",
+            "name": "dq",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-dq"
+          },
+          {
+            "type": "field",
+            "name": "qi",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-qi"
+          },
+          {
+            "type": "field",
+            "name": "oth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RsaOtherPrimesInfo"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-oth"
+          },
+          {
+            "type": "field",
+            "name": "k",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dom-jsonwebkey-k"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-JsonWebKey"
+      },
+      "BigInteger": {
+        "fragment": "typedef Uint8Array BigInteger;",
+        "type": "typedef",
+        "name": "BigInteger",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "Uint8Array"
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcrypto/#dfn-BigInteger"
+      },
+      "CryptoKeyPair": {
+        "fragment": "dictionary CryptoKeyPair {\n  CryptoKey publicKey;\n  CryptoKey privateKey;\n};",
+        "type": "dictionary",
+        "name": "CryptoKeyPair",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "publicKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CryptoKey"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-CryptoKeyPair-publicKey"
+          },
+          {
+            "type": "field",
+            "name": "privateKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CryptoKey"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-CryptoKeyPair-privateKey"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-CryptoKeyPair"
+      },
+      "RsaKeyGenParams": {
+        "fragment": "dictionary RsaKeyGenParams : Algorithm {\n  required [EnforceRange] unsigned long modulusLength;\n  required BigInteger publicExponent;\n};",
+        "type": "dictionary",
+        "name": "RsaKeyGenParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "modulusLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyGenParams-modulusLength"
+          },
+          {
+            "type": "field",
+            "name": "publicExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BigInteger"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyGenParams-publicExponent"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyGenParams"
+      },
+      "RsaHashedKeyGenParams": {
+        "fragment": "dictionary RsaHashedKeyGenParams : RsaKeyGenParams {\n  required HashAlgorithmIdentifier hash;\n};",
+        "type": "dictionary",
+        "name": "RsaHashedKeyGenParams",
+        "inheritance": "RsaKeyGenParams",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedKeyGenParams-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedKeyGenParams"
+      },
+      "RsaKeyAlgorithm": {
+        "fragment": "dictionary RsaKeyAlgorithm : KeyAlgorithm {\n  required [EnforceRange] unsigned long modulusLength;\n  required BigInteger publicExponent;\n};",
+        "type": "dictionary",
+        "name": "RsaKeyAlgorithm",
+        "inheritance": "KeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "modulusLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyAlgorithm-modulusLength"
+          },
+          {
+            "type": "field",
+            "name": "publicExponent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BigInteger"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyAlgorithm-publicExponent"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaKeyAlgorithm"
+      },
+      "RsaHashedKeyAlgorithm": {
+        "fragment": "dictionary RsaHashedKeyAlgorithm : RsaKeyAlgorithm {\n  required KeyAlgorithm hash;\n};",
+        "type": "dictionary",
+        "name": "RsaHashedKeyAlgorithm",
+        "inheritance": "RsaKeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "KeyAlgorithm"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedKeyAlgorithm-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedKeyAlgorithm"
+      },
+      "RsaHashedImportParams": {
+        "fragment": "dictionary RsaHashedImportParams : Algorithm {\n  required HashAlgorithmIdentifier hash;\n};",
+        "type": "dictionary",
+        "name": "RsaHashedImportParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedImportParams-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaHashedImportParams"
+      },
+      "RsaPssParams": {
+        "fragment": "dictionary RsaPssParams : Algorithm {\n  required [EnforceRange] unsigned long saltLength;\n};",
+        "type": "dictionary",
+        "name": "RsaPssParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "saltLength",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaPssParams-saltLength"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaPssParams"
+      },
+      "RsaOaepParams": {
+        "fragment": "dictionary RsaOaepParams : Algorithm {\n  BufferSource label;\n};",
+        "type": "dictionary",
+        "name": "RsaOaepParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "label",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-RsaOaepParams-label"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-RsaOaepParams"
+      },
+      "EcdsaParams": {
+        "fragment": "dictionary EcdsaParams : Algorithm {\n  required HashAlgorithmIdentifier hash;\n};",
+        "type": "dictionary",
+        "name": "EcdsaParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-EcdsaParams-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-EcdsaParams"
+      },
+      "NamedCurve": {
+        "fragment": "typedef DOMString NamedCurve;",
+        "type": "typedef",
+        "name": "NamedCurve",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "DOMString"
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcrypto/#dfn-NamedCurve"
+      },
+      "EcKeyGenParams": {
+        "fragment": "dictionary EcKeyGenParams : Algorithm {\n  required NamedCurve namedCurve;\n};",
+        "type": "dictionary",
+        "name": "EcKeyGenParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "namedCurve",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NamedCurve"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyGenParams-namedCurve"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyGenParams"
+      },
+      "EcKeyAlgorithm": {
+        "fragment": "dictionary EcKeyAlgorithm : KeyAlgorithm {\n  required NamedCurve namedCurve;\n};",
+        "type": "dictionary",
+        "name": "EcKeyAlgorithm",
+        "inheritance": "KeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "namedCurve",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NamedCurve"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyAlgorithm-namedCurve"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyAlgorithm"
+      },
+      "EcKeyImportParams": {
+        "fragment": "dictionary EcKeyImportParams : Algorithm {\n  required NamedCurve namedCurve;\n};",
+        "type": "dictionary",
+        "name": "EcKeyImportParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "namedCurve",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NamedCurve"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyImportParams-namedCurve"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-EcKeyImportParams"
+      },
+      "EcdhKeyDeriveParams": {
+        "fragment": "dictionary EcdhKeyDeriveParams : Algorithm {\n  required CryptoKey public;\n};",
+        "type": "dictionary",
+        "name": "EcdhKeyDeriveParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "public",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CryptoKey"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-EcdhKeyDeriveParams-public"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-EcdhKeyDeriveParams"
+      },
+      "AesCtrParams": {
+        "fragment": "dictionary AesCtrParams : Algorithm {\n  required BufferSource counter;\n  required [EnforceRange] octet length;\n};",
+        "type": "dictionary",
+        "name": "AesCtrParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "counter",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesCtrParams-counter"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesCtrParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesCtrParams"
+      },
+      "AesKeyAlgorithm": {
+        "fragment": "dictionary AesKeyAlgorithm : KeyAlgorithm {\n  required [EnforceRange] unsigned short length;\n};",
+        "type": "dictionary",
+        "name": "AesKeyAlgorithm",
+        "inheritance": "KeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesKeyAlgorithm-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesKeyAlgorithm"
+      },
+      "AesKeyGenParams": {
+        "fragment": "dictionary AesKeyGenParams : Algorithm {\n  required [EnforceRange] unsigned short length;\n};",
+        "type": "dictionary",
+        "name": "AesKeyGenParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesKeyGenParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesKeyGenParams"
+      },
+      "AesDerivedKeyParams": {
+        "fragment": "dictionary AesDerivedKeyParams : Algorithm {\n  required [EnforceRange] unsigned short length;\n};",
+        "type": "dictionary",
+        "name": "AesDerivedKeyParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesDerivedKeyParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesDerivedKeyParams"
+      },
+      "AesCbcParams": {
+        "fragment": "dictionary AesCbcParams : Algorithm {\n  required BufferSource iv;\n};",
+        "type": "dictionary",
+        "name": "AesCbcParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "iv",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesCbcParams-iv"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesCbcParams"
+      },
+      "AesGcmParams": {
+        "fragment": "dictionary AesGcmParams : Algorithm {\n  required BufferSource iv;\n  BufferSource additionalData;\n  [EnforceRange] octet tagLength;\n};",
+        "type": "dictionary",
+        "name": "AesGcmParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "iv",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesGcmParams-iv"
+          },
+          {
+            "type": "field",
+            "name": "additionalData",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesGcmParams-additionalData"
+          },
+          {
+            "type": "field",
+            "name": "tagLength",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-AesGcmParams-tagLength"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-AesGcmParams"
+      },
+      "HmacImportParams": {
+        "fragment": "dictionary HmacImportParams : Algorithm {\n  required HashAlgorithmIdentifier hash;\n  [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "HmacImportParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacImportParams-hash"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacImportParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-HmacImportParams"
+      },
+      "HmacKeyAlgorithm": {
+        "fragment": "dictionary HmacKeyAlgorithm : KeyAlgorithm {\n  required KeyAlgorithm hash;\n  required [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "HmacKeyAlgorithm",
+        "inheritance": "KeyAlgorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "KeyAlgorithm"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyAlgorithm-hash"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyAlgorithm-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyAlgorithm"
+      },
+      "HmacKeyGenParams": {
+        "fragment": "dictionary HmacKeyGenParams : Algorithm {\n  required HashAlgorithmIdentifier hash;\n  [EnforceRange] unsigned long length;\n};",
+        "type": "dictionary",
+        "name": "HmacKeyGenParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyGenParams-hash"
+          },
+          {
+            "type": "field",
+            "name": "length",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyGenParams-length"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-HmacKeyGenParams"
+      },
+      "HkdfParams": {
+        "fragment": "dictionary HkdfParams : Algorithm {\n  required HashAlgorithmIdentifier hash;\n  required BufferSource salt;\n  required BufferSource info;\n};",
+        "type": "dictionary",
+        "name": "HkdfParams",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HkdfParams-hash"
+          },
+          {
+            "type": "field",
+            "name": "salt",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HkdfParams-salt"
+          },
+          {
+            "type": "field",
+            "name": "info",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-HkdfParams-info"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-HkdfParams"
+      },
+      "Pbkdf2Params": {
+        "fragment": "dictionary Pbkdf2Params : Algorithm {\n  required BufferSource salt;\n  required [EnforceRange] unsigned long iterations;\n  required HashAlgorithmIdentifier hash;\n};",
+        "type": "dictionary",
+        "name": "Pbkdf2Params",
+        "inheritance": "Algorithm",
+        "members": [
+          {
+            "type": "field",
+            "name": "salt",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-Pbkdf2Params-salt"
+          },
+          {
+            "type": "field",
+            "name": "iterations",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-Pbkdf2Params-iterations"
+          },
+          {
+            "type": "field",
+            "name": "hash",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HashAlgorithmIdentifier"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webcrypto/#dfn-Pbkdf2Params-hash"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcrypto/#dfn-Pbkdf2Params"
+      }
+    },
+    "idlExtendedNames": {
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [SameObject] readonly attribute Crypto crypto;\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "crypto",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Crypto"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/webcrypto/#dom-windoworworkerglobalscope-crypto"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Crypto",
+        "CryptoKey",
+        "SubtleCrypto"
+      ],
+      "Worker": [
+        "Crypto",
+        "CryptoKey",
+        "SubtleCrypto"
+      ]
+    },
+    "dependencies": {
+      "WindowOrWorkerGlobalScope": [
+        "Crypto"
+      ],
+      "Crypto": [
+        "SubtleCrypto",
+        "ArrayBufferView"
+      ],
+      "Algorithm": [],
+      "KeyAlgorithm": [],
+      "CryptoKey": [
+        "KeyType"
+      ],
+      "SubtleCrypto": [
+        "ArrayBuffer",
+        "AlgorithmIdentifier",
+        "CryptoKey",
+        "BufferSource",
+        "CryptoKeyPair",
+        "KeyUsage",
+        "KeyFormat",
+        "JsonWebKey"
+      ],
+      "RsaOtherPrimesInfo": [],
+      "JsonWebKey": [
+        "RsaOtherPrimesInfo"
+      ],
+      "CryptoKeyPair": [
+        "CryptoKey"
+      ],
+      "RsaKeyGenParams": [
+        "Algorithm",
+        "BigInteger"
+      ],
+      "RsaHashedKeyGenParams": [
+        "RsaKeyGenParams",
+        "HashAlgorithmIdentifier"
+      ],
+      "RsaKeyAlgorithm": [
+        "KeyAlgorithm",
+        "BigInteger"
+      ],
+      "RsaHashedKeyAlgorithm": [
+        "RsaKeyAlgorithm",
+        "KeyAlgorithm"
+      ],
+      "RsaHashedImportParams": [
+        "Algorithm",
+        "HashAlgorithmIdentifier"
+      ],
+      "RsaPssParams": [
+        "Algorithm"
+      ],
+      "RsaOaepParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "EcdsaParams": [
+        "Algorithm",
+        "HashAlgorithmIdentifier"
+      ],
+      "EcKeyGenParams": [
+        "Algorithm",
+        "NamedCurve"
+      ],
+      "EcKeyAlgorithm": [
+        "KeyAlgorithm",
+        "NamedCurve"
+      ],
+      "EcKeyImportParams": [
+        "Algorithm",
+        "NamedCurve"
+      ],
+      "EcdhKeyDeriveParams": [
+        "Algorithm",
+        "CryptoKey"
+      ],
+      "AesCtrParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "AesKeyAlgorithm": [
+        "KeyAlgorithm"
+      ],
+      "AesKeyGenParams": [
+        "Algorithm"
+      ],
+      "AesDerivedKeyParams": [
+        "Algorithm"
+      ],
+      "AesCbcParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "AesGcmParams": [
+        "Algorithm",
+        "BufferSource"
+      ],
+      "HmacImportParams": [
+        "Algorithm",
+        "HashAlgorithmIdentifier"
+      ],
+      "HmacKeyAlgorithm": [
+        "KeyAlgorithm"
+      ],
+      "HmacKeyGenParams": [
+        "Algorithm",
+        "HashAlgorithmIdentifier"
+      ],
+      "HkdfParams": [
+        "Algorithm",
+        "HashAlgorithmIdentifier",
+        "BufferSource"
+      ],
+      "Pbkdf2Params": [
+        "Algorithm",
+        "BufferSource",
+        "HashAlgorithmIdentifier"
+      ]
+    },
+    "externalDependencies": [
+      "WindowOrWorkerGlobalScope",
+      "ArrayBufferView",
+      "ArrayBuffer",
+      "BufferSource",
+      "KeyUsage",
+      "KeyFormat",
+      "Uint8Array"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

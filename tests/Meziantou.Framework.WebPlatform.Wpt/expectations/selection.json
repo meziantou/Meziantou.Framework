@@ -1,0 +1,590 @@
+{
+  "selection/Document-open.html": {
+    "total": 1
+  },
+  "selection/addRange-00.html": {
+    "total": 1624
+  },
+  "selection/addRange-04.html": {
+    "total": 1624
+  },
+  "selection/addRange-08.html": {
+    "total": 232
+  },
+  "selection/addRange-12.html": {
+    "total": 928
+  },
+  "selection/addRange-16.html": {
+    "total": 1276
+  },
+  "selection/addRange-20.html": {
+    "total": 928
+  },
+  "selection/addRange-24.html": {
+    "total": 928
+  },
+  "selection/addRange-28.html": {
+    "total": 1624
+  },
+  "selection/addRange-32.html": {
+    "total": 1276
+  },
+  "selection/addRange-36.html": {
+    "total": 1624
+  },
+  "selection/addRange-40.html": {
+    "total": 232
+  },
+  "selection/addRange-44.html": {
+    "total": 232
+  },
+  "selection/addRange-48.html": {
+    "total": 232
+  },
+  "selection/addRange-52.html": {
+    "total": 232
+  },
+  "selection/addRange-56.html": {
+    "total": 116
+  },
+  "selection/addRange.htm": {
+    "total": 1
+  },
+  "selection/addRange.tentative.html": {
+    "total": 1
+  },
+  "selection/anchor-removal.html": {
+    "total": 2
+  },
+  "selection/anonymous/details-ancestor.html": {
+    "total": 1
+  },
+  "selection/anonymous/details-mutate.html": {
+    "total": 1
+  },
+  "selection/anonymous/setBaseAndExtent-start-or-end-in-anonymous-shadow-container.html": {
+    "total": 11
+  },
+  "selection/bidi/modify-extend-by-character.html": {
+    "total": 28
+  },
+  "selection/bidi/modify-move-by-character.html": {
+    "total": 28
+  },
+  "selection/bidi/modify.tentative.html": {
+    "total": 36
+  },
+  "selection/canvas-click.html": {
+    "total": 1
+  },
+  "selection/canvas-drag.html": {
+    "total": 1
+  },
+  "selection/caret-position-should-be-correct-while-moveup-movedown.html": {
+    "total": 24
+  },
+  "selection/caret/after-designMode-off.html": {
+    "reftest": "PASS"
+  },
+  "selection/caret/collapse-pre-linestart-1.html": {
+    "reftest": "PASS"
+  },
+  "selection/caret/collapse-pre-linestart-2.html": {
+    "reftest": "PASS"
+  },
+  "selection/caret/editing-host-has-only-invisible-br.html": {
+    "reftest": "PASS"
+  },
+  "selection/caret/empty-elements.html": {
+    "total": 1
+  },
+  "selection/caret/move-around-contenteditable-false.html": {
+    "total": 11,
+    "failures": {
+      "Move caret from empty editable paragraph to editable text following non-editable text in next paragraph: first arrow-right should move caret before non-editable text": "FAIL",
+      "Move caret from empty editable paragraph to editable text following non-editable text in next paragraph: second arrow-right should move caret after non-editable text": "FAIL"
+    }
+  },
+  "selection/caret/move-around-generated-content.html": {
+    "total": 15
+  },
+  "selection/collapse-00.html": {
+    "total": 2655
+  },
+  "selection/collapse-15.html": {
+    "total": 2655
+  },
+  "selection/collapse-30.html": {
+    "total": 5133
+  },
+  "selection/collapse-45.html": {
+    "total": 2655
+  },
+  "selection/collapse-common-ancestor-1.html": {
+    "reftest": "PASS"
+  },
+  "selection/collapse-common-ancestor-2.html": {
+    "reftest": "PASS"
+  },
+  "selection/collapse-common-ancestor-3.html": {
+    "reftest": "PASS"
+  },
+  "selection/collapse.htm": {
+    "total": 1
+  },
+  "selection/collapseToStartEnd.html": {
+    "total": 57
+  },
+  "selection/contenteditable/cefalse-on-boundaries.html": {
+    "total": 4
+  },
+  "selection/contenteditable/collapse.html": {
+    "total": 3,
+    "failures": {
+      "Selection.collapse() must succeed across siblings": "FAIL",
+      "Selection.collapse() must succeed for the ancestor": "FAIL",
+      "Selection.collapse() must succeed for the descendant": "FAIL"
+    }
+  },
+  "selection/contenteditable/initial-selection-during-focus-event-propagation.html": {
+    "total": 3
+  },
+  "selection/contenteditable/initial-selection-on-focus.tentative.html?div": {
+    "total": 100
+  },
+  "selection/contenteditable/initial-selection-on-focus.tentative.html?span": {
+    "total": 51
+  },
+  "selection/contenteditable/modify-around-inline-element-boundary.tentative.html": {
+    "total": 36
+  },
+  "selection/contenteditable/modify-around-non-editable-span.html": {
+    "total": 16
+  },
+  "selection/contenteditable/modify.tentative.html": {
+    "total": 15
+  },
+  "selection/contenteditable/modifying-selection-with-non-primary-mouse-button.tentative.html?middle": {
+    "total": 7
+  },
+  "selection/contenteditable/modifying-selection-with-non-primary-mouse-button.tentative.html?secondary": {
+    "total": 7
+  },
+  "selection/contenteditable/modifying-selection-with-primary-mouse-button.tentative.html": {
+    "total": 7
+  },
+  "selection/contenteditable/selection-outside-focused-editing-host.tentative.html": {
+    "total": 3
+  },
+  "selection/deleteFromDocument-HTMLDetails.html": {
+    "total": 30
+  },
+  "selection/deleteFromDocument.html": {
+    "total": 60
+  },
+  "selection/document-selectionchange.html": {
+    "total": 5
+  },
+  "selection/drag-disabled-textarea-shadow-dom.html": {
+    "total": 1
+  },
+  "selection/drag-out-of-floated-content.html": {
+    "total": 1
+  },
+  "selection/drag-selection-contenteditable-to-out-of-flow-user-select-none.html": {
+    "total": 1
+  },
+  "selection/drag-selection-extend-to-user-select-none.html": {
+    "total": 4
+  },
+  "selection/extend-00.html": {
+    "total": 2024
+  },
+  "selection/extend-20.html": {
+    "total": 2376
+  },
+  "selection/extend-40.html": {
+    "total": 176
+  },
+  "selection/extend-exception.html": {
+    "total": 1
+  },
+  "selection/extend-selection-backward-on-input.html": {
+    "total": 1
+  },
+  "selection/extend-selection-in-shadow-tree.html": {
+    "total": 1
+  },
+  "selection/fire-selectionchange-event-on-deleting-single-character-inside-inline-element.html": {
+    "total": 3
+  },
+  "selection/fire-selectionchange-event-on-document-if-textcontrol-element-is-in-shadow-tree.html": {
+    "total": 1,
+    "failures": {
+      "selectionchange event fired on the document in case TextControl element is in Shadow Tree": "FAIL"
+    }
+  },
+  "selection/fire-selectionchange-event-on-pressing-backspace.html": {
+    "total": 2
+  },
+  "selection/fire-selectionchange-event-on-textcontrol-element-on-pressing-backspace.html": {
+    "total": 1
+  },
+  "selection/getRangeAt.html": {
+    "total": 4
+  },
+  "selection/getSelection.html": {
+    "total": 18
+  },
+  "selection/idlharness.window.js": {
+    "total": 112
+  },
+  "selection/isCollapsed.html": {
+    "total": 29
+  },
+  "selection/modify-extend-word-trailing-inline-block.tentative.html": {
+    "total": 1
+  },
+  "selection/modify-line-flex-column.tentative.html": {
+    "total": 2
+  },
+  "selection/modify-line-flex-row.tentative.html": {
+    "total": 2
+  },
+  "selection/modify-line-grid-basic.tentative.html": {
+    "total": 2
+  },
+  "selection/modify.tentative.html": {
+    "total": 7
+  },
+  "selection/move-by-word-korean.html": {
+    "total": 4
+  },
+  "selection/move-by-word-with-symbol.html": {
+    "total": 6
+  },
+  "selection/move-paragraph-cross-editing-boundary.tentative.html": {
+    "total": 2
+  },
+  "selection/move-paragraphboundary-cross-editing-boundary.tentative.html": {
+    "total": 2
+  },
+  "selection/move-selection-range-into-different-root.tentative.html": {
+    "total": 16
+  },
+  "selection/onselectionchange-on-distinct-text-controls.html": {
+    "total": 2
+  },
+  "selection/onselectionchange-on-document.html": {
+    "total": 4,
+    "failures": {
+      "has scheduled selectionchange event is set to false at the beginning of a task to fire selectionchange event": "FAIL"
+    }
+  },
+  "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=no": {
+    "total": 30
+  },
+  "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=yes": {
+    "total": 30
+  },
+  "selection/removeAllRanges.html": {
+    "total": 116
+  },
+  "selection/removeRange.html": {
+    "total": 29
+  },
+  "selection/script-and-style-elements.html": {
+    "total": 1,
+    "failures": {
+      "Selection: STYLE and SCRIPT elements should be included in Selection.toString() if they are display!=none": "FAIL"
+    }
+  },
+  "selection/select-end-of-line-image.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Select image at the end of the line.": "FAIL"
+    }
+  },
+  "selection/selectAllChildren.html": {
+    "total": 2242
+  },
+  "selection/selection-content-visibility-hidden.html": {
+    "total": 1
+  },
+  "selection/selection-direction-on-double-click.tentative.html": {
+    "total": 1
+  },
+  "selection/selection-direction-on-single-click.html": {
+    "total": 1
+  },
+  "selection/selection-direction-on-triple-click.tentative.html": {
+    "total": 1
+  },
+  "selection/selection-focused-element-becomes-nonfocusable.html": {
+    "total": 2
+  },
+  "selection/selection-incremental-change-repaint.html": {
+    "reftest": "PASS"
+  },
+  "selection/selection-modify-extend-word-generated-content.html": {
+    "total": 2
+  },
+  "selection/selection-nested-video.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "selection have the same anchor and focus nodes because b and c are in different tree scopes.": "TIMEOUT"
+    }
+  },
+  "selection/selection-range-after-editinghost-removed.html": {
+    "total": 4
+  },
+  "selection/selection-range-after-textcontrol-removed.html?textControl=number": {
+    "total": 2
+  },
+  "selection/selection-range-after-textcontrol-removed.html?textControl=password": {
+    "total": 2
+  },
+  "selection/selection-range-after-textcontrol-removed.html?textControl=text": {
+    "total": 2
+  },
+  "selection/selection-range-after-textcontrol-removed.html?textControl=textarea": {
+    "total": 2
+  },
+  "selection/selection-range-in-shadow-after-the-shadow-removed.tentative.html?mode=closed": {
+    "total": 4,
+    "failures": {
+      "Selection range in shadow should not be as a selection range after the host is removed": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host is replaced with itself (.replaceChild": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host is replaced with itself (.replaceWith)": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host parent is removed": "FAIL"
+    }
+  },
+  "selection/selection-range-in-shadow-after-the-shadow-removed.tentative.html?mode=open": {
+    "total": 4,
+    "failures": {
+      "Selection range in shadow should not be as a selection range after the host is removed": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host is replaced with itself (.replaceChild": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host is replaced with itself (.replaceWith)": "FAIL",
+      "Selection range in shadow should not be as a selection range after the host parent is removed": "FAIL"
+    }
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=1": {
+    "reftest": "PASS"
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=2": {
+    "reftest": "PASS"
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=3": {
+    "reftest": "PASS"
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=6": {
+    "reftest": "PASS"
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=7": {
+    "reftest": "PASS"
+  },
+  "selection/selection-range-painting-after-splitText.html?splitAt=8": {
+    "reftest": "PASS"
+  },
+  "selection/selection-shadow-dom-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "selection/setBaseAndExtent.html": {
+    "total": 120
+  },
+  "selection/shadow-dom/cross-shadow-boundary-1.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-2.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-3.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-4.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-5.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-6.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-extend.html": {
+    "total": 1,
+    "failures": {
+      "Test that extending Selection collapses it if crossing a shadow DOM boundary": "FAIL"
+    }
+  },
+  "selection/shadow-dom/cross-shadow-boundary-img.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-select-document.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/cross-shadow-boundary-select-root.html": {
+    "reftest": "PASS"
+  },
+  "selection/shadow-dom/selection-at-nodes-not-part-of-flattened-tree.html": {
+    "total": 24,
+    "failures": {
+      "Collapse selection to end of the default text": "FAIL",
+      "Extend selection from end of the default span to start of the default span": "FAIL",
+      "Extend selection from start of the default span to end of the default span": "FAIL",
+      "Select all children of the default span": "FAIL",
+      "Select set base to end of the default span and extent to start of the default span": "FAIL",
+      "Select set base to start of the default span and extent to end of the default span": "FAIL",
+      "containsNode of non-assigned node child should return false (when all children of the host is selected)": "FAIL",
+      "containsNode of non-assigned node child should return false (when the host is selected)": "FAIL",
+      "containsNode of non-assigned node should return false (when all children of the host is selected)": "FAIL",
+      "containsNode of non-assigned node should return false (when the host is selected)": "FAIL",
+      "getRangeAt(0).comparePoint of the start of the default span child should return 0 (when all children of the default span is selected)": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Range-isPointInRange.html": {
+    "total": 2,
+    "failures": {
+      "isPointInRange() test for collapsed selection": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-collapse-and-extend.html": {
+    "total": 4
+  },
+  "selection/shadow-dom/tentative/Selection-deleteFromDocument-around-shadow.html": {
+    "total": 31,
+    "failures": {
+      "Selection.deleteFromDocument() when \"<p>abc[def</p><div><shadow-root><span>Inner]Text</span></shadow-root><span>UnassignedText</span></div>\"": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-direction.html": {
+    "total": 7,
+    "failures": {
+      "direction returns \"backward\" when there is a forward selection that crosses shadow boundaries": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges-collapsed.html": {
+    "total": 1,
+    "failures": {
+      "Setting the range to nodes in different shadow trees collapses ordinary ranges, but does not collapse composed ranges.": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges-dom-mutations-removal.html?mode=closed": {
+    "total": 6,
+    "failures": {
+      "Range is across shadow trees. Removing ancestor shadow host rescopes composed range end to parent.": "FAIL",
+      "Range is across shadow trees. Replacing shadowRoot content rescopes new composed range to the shadowRoot.": "FAIL",
+      "Range is fully in shadow tree. Removing parent of shadow host collapses composed StaticRange.": "FAIL",
+      "Range is fully in shadow tree. Removing shadow host collapses composed StaticRange. Note it does not update previously returned composed StaticRange.": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges-dom-mutations-removal.html?mode=open": {
+    "total": 6,
+    "failures": {
+      "Range is across shadow trees. Removing ancestor shadow host rescopes composed range end to parent.": "FAIL",
+      "Range is across shadow trees. Replacing shadowRoot content rescopes new composed range to the shadowRoot.": "FAIL",
+      "Range is fully in shadow tree. Removing parent of shadow host collapses composed StaticRange.": "FAIL",
+      "Range is fully in shadow tree. Removing shadow host collapses composed StaticRange. Note it does not update previously returned composed StaticRange.": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges-range-update.html": {
+    "total": 9,
+    "failures": {
+      "modify createRange() range: added to selection before setStart/setEnd calls.": "FAIL",
+      "modify createRange() range: adding to selection sets the selection": "FAIL",
+      "modify getRangeAt() range: selectNode() innerHost for all ranges.": "FAIL",
+      "modify getRangeAt() range: setEnd() crosses shadow boundary into the shadow DOM and after start, which collapses live range. Composed selection range is not collapsed.": "FAIL",
+      "modify getRangeAt() range: setStart() crosses shadow boundary into the shadow DOM and after end, which collapses both live range and composed selection range.": "FAIL",
+      "modify getRangeAt() range: setStart() crosses shadow boundary into the shadow DOM and before end, which collapses live range. Composed selection range is not collapsed.": "FAIL",
+      "modify getRangeAt() range: setStart() to disconnected node will collapse and remove the live range from the selection.": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges-slot.html": {
+    "total": 3,
+    "failures": {
+      "Setting the range to start on slotted content and end in shadow tree, should follow DOM tree order.": "FAIL",
+      "Setting the range to start on unslotted content and end in shadow tree, should follow DOM tree order.": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-getComposedRanges.html": {
+    "total": 12,
+    "failures": {
+      "getComposedRanges a sequence with a static range pointing to the shadow host when there is a forward selection that crosses shadow boundaries and the shadow tree is not specified as an argument": "FAIL",
+      "getComposedRanges a sequence with a static range that crosses shadow boundaries when there is a forward selection that crosses shadow boundaries and the shadow tree is specified as an argument": "FAIL",
+      "getComposedRanges returns a sequence with a static range without rescoping when there is a selection in an outer shadow tree and the inner shadow tree is specified as an argument": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-isCollapsed.html": {
+    "total": 4,
+    "failures": {
+      "Selection between light and shadow tree is not valid and is collapsed. Composed range is not collapsed": "FAIL",
+      "Selection between two shadow trees is not valid and is collapsed. Composed range is not collapsed": "FAIL",
+      "Selection in shadow tree is not collapsed": "FAIL"
+    }
+  },
+  "selection/shadow-dom/tentative/Selection-later-become-slotted-content.html": {
+    "total": 1
+  },
+  "selection/stringifier.tentative.html": {
+    "total": 1
+  },
+  "selection/stringifier_editable_element.tentative.html": {
+    "harness": "ERROR",
+    "total": 12,
+    "failures": {
+      "Click on a `user-select:none` text prior to toString() doesn't move the seleciton": "NOTRUN",
+      "Click on a text prior to toString() moves the seleciton": "NOTRUN",
+      "select the entire input should result all the content": "FAIL",
+      "select the entire textarea should result all the content": "FAIL",
+      "toString() also works for actual clicking the anchor (with href)": "NOTRUN",
+      "toString() doesn't work for actual clicking the anchor (without href)": "NOTRUN",
+      "toString() works even if a click just occured on a button": "FAIL",
+      "toString() works for programatically calling .click() on anchor (with href)": "NOTRUN",
+      "toString() works for programatically calling .click() on anchor (without href)": "TIMEOUT"
+    }
+  },
+  "selection/textcontrols/click-input-after-iframe-focus.html": {
+    "total": 1
+  },
+  "selection/textcontrols/focus.html": {
+    "total": 1
+  },
+  "selection/textcontrols/initial-selection-during-focus-event-propagation.html?element=password": {
+    "total": 3
+  },
+  "selection/textcontrols/initial-selection-during-focus-event-propagation.html?element=text": {
+    "total": 3
+  },
+  "selection/textcontrols/initial-selection-during-focus-event-propagation.html?element=textarea": {
+    "total": 3
+  },
+  "selection/textcontrols/onselectionchange-content-attribute.html": {
+    "total": 2
+  },
+  "selection/textcontrols/selectionchange-bubble.html": {
+    "total": 4
+  },
+  "selection/textcontrols/selectionchange-on-shadow-dom.html": {
+    "total": 1
+  },
+  "selection/textcontrols/selectionchange.html": {
+    "total": 60
+  },
+  "selection/toString-ff-bug-001.html": {
+    "total": 1
+  },
+  "selection/toString-user-select-none.html": {
+    "total": 3,
+    "failures": {
+      "Selection.toString() excludes basic user-select: none content": "FAIL",
+      "Selection.toString() excludes nested user-select: none content": "FAIL",
+      "Selection.toString() includes selectable children in unselectable container": "FAIL"
+    }
+  },
+  "selection/type.html": {
+    "total": 29
+  },
+  "selection/user-select-on-input-and-contenteditable.html": {
+    "total": 5
+  }
+}

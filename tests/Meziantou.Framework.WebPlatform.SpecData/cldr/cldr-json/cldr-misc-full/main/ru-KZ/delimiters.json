@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ru-KZ": {
+      "identity": {
+        "language": "ru",
+        "territory": "KZ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "„",
+        "alternateQuotationEnd": "“"
+      }
+    }
+  }
+}

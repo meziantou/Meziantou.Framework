@@ -1,0 +1,158 @@
+{
+  "wai-aria/accessibility_properties_basic.tentative.html": {
+    "total": 3,
+    "failures": {
+      "ARIA checkbox with aria-checked true": "FAIL",
+      "HTML checkbox with checked true": "FAIL",
+      "tablist subtree": "FAIL"
+    }
+  },
+  "wai-aria/aria-actions/aria-actions-host-accname-excludes-target.tentative.html": {
+    "total": 1,
+    "failures": {
+      "aria-actions: target excluded from host accname": "FAIL"
+    }
+  },
+  "wai-aria/aria-actions/aria-actions-host-accname-multiple-targets.tentative.html": {
+    "total": 1,
+    "failures": {
+      "aria-actions: every listed direct target is excluded from host name": "FAIL"
+    }
+  },
+  "wai-aria/aria-actions/aria-actions-target-accname-from-aria-label.tentative.html": {
+    "total": 2,
+    "failures": {
+      "aria-actions: host accname excludes labelled target": "FAIL"
+    }
+  },
+  "wai-aria/aria-actions/idl-reflection.tentative.html": {
+    "total": 20,
+    "failures": {
+      "[ElementInternals] ariaActionsElements is null by default": "FAIL",
+      "[Element] Content attribute with resolvable IDREFs reflects to those elements": "FAIL",
+      "[Element] Cross-shadow-tree targets are filtered out": "FAIL",
+      "[Element] Disconnecting a target hides it; reconnecting restores it": "FAIL",
+      "[Element] IDL setter takes precedence over the content attribute value": "FAIL",
+      "[Element] IDL setter writes empty string to the aria-actions content attribute": "FAIL",
+      "[Element] Setting to [] writes empty string to the content attribute": "FAIL",
+      "[Element] Unresolvable IDREFs reflect to an empty list": "FAIL",
+      "[Element] ariaActionsElements is null by default": "FAIL"
+    }
+  },
+  "wai-aria/checked/checked.tentative.html": {
+    "total": 4,
+    "failures": {
+      "checkbox with aria-checked false": "FAIL",
+      "checkbox with aria-checked mixed": "FAIL",
+      "checkbox with aria-checked true": "FAIL",
+      "checkbox with missing aria-checked": "FAIL"
+    }
+  },
+  "wai-aria/heading/invalid-nesting.html": {
+    "total": 14
+  },
+  "wai-aria/idlharness.window.js": {
+    "total": 121,
+    "failures": {
+      "Document interface: operation ariaNotify(DOMString, optional AriaNotificationOptions)": "FAIL",
+      "Element interface: calling ariaNotify(DOMString, optional AriaNotificationOptions) on element with too few arguments must throw TypeError": "FAIL",
+      "Element interface: element must inherit property \"ariaNotify(DOMString, optional AriaNotificationOptions)\" with the proper type": "FAIL",
+      "Element interface: operation ariaNotify(DOMString, optional AriaNotificationOptions)": "FAIL"
+    }
+  },
+  "wai-aria/pressed/pressed.tentative.html": {
+    "total": 4,
+    "failures": {
+      "button with aria-pressed false": "FAIL",
+      "button with aria-pressed mixed": "FAIL",
+      "button with aria-pressed true": "FAIL",
+      "button with missing aria-pressed": "FAIL"
+    }
+  },
+  "wai-aria/role/abstract-roles.html": {
+    "total": 12
+  },
+  "wai-aria/role/basic.html": {
+    "total": 2
+  },
+  "wai-aria/role/button-roles.html": {
+    "total": 10
+  },
+  "wai-aria/role/contextual-roles.html": {
+    "total": 2
+  },
+  "wai-aria/role/contextual-roles.tentative.html": {
+    "total": 2
+  },
+  "wai-aria/role/fallback-roles.html": {
+    "total": 22
+  },
+  "wai-aria/role/form-roles.html": {
+    "total": 2
+  },
+  "wai-aria/role/generic-roles.html": {
+    "total": 1
+  },
+  "wai-aria/role/grid-roles.html": {
+    "total": 10
+  },
+  "wai-aria/role/invalid-roles.html": {
+    "total": 76
+  },
+  "wai-aria/role/list-roles.html": {
+    "total": 3
+  },
+  "wai-aria/role/listbox-roles.html": {
+    "total": 6
+  },
+  "wai-aria/role/menu-roles.html": {
+    "total": 12
+  },
+  "wai-aria/role/region-roles.html": {
+    "total": 2
+  },
+  "wai-aria/role/role_none_conflict_resolution.html": {
+    "total": 7
+  },
+  "wai-aria/role/role_none_conflict_resolution.tentative.html": {
+    "total": 5,
+    "failures": {
+      "JS injected HTML button within another HTML button": "FAIL",
+      "focusable ARIA[role=button] nesting focusable ARIA[role=button]": "FAIL",
+      "focusable ARIA[role=button] nesting non-focusable ARIA[role=button]": "FAIL",
+      "non-focusable ARIA[role=button] nesting focusable ARIA[role=button]": "FAIL",
+      "non-focusable ARIA[role=button] nesting non-focusable ARIA[role=button]": "FAIL"
+    }
+  },
+  "wai-aria/role/role_none_conflict_resolution_spec_ambiguities.tentative.html": {
+    "total": 3,
+    "failures": {
+      "presentational roles conflict - table.with-style[role=none] td[aria-describedby]": "FAIL",
+      "presentational roles conflict - table[role=none] td[aria-describedby]": "FAIL"
+    }
+  },
+  "wai-aria/role/roles.html": {
+    "total": 162
+  },
+  "wai-aria/role/roles.tentative.html": {
+    "total": 2
+  },
+  "wai-aria/role/synonym-roles.html": {
+    "total": 7
+  },
+  "wai-aria/role/tab-roles.html": {
+    "total": 37
+  },
+  "wai-aria/role/table-roles.html": {
+    "total": 9
+  },
+  "wai-aria/role/tree-roles.html": {
+    "total": 7
+  },
+  "wai-aria/subtree/tablist.tentative.html": {
+    "total": 1,
+    "failures": {
+      "accessibility tree for #tablist": "FAIL"
+    }
+  }
+}

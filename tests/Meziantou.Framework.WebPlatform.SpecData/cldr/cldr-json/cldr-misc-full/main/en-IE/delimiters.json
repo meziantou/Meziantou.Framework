@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-IE": {
+      "identity": {
+        "language": "en",
+        "territory": "IE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

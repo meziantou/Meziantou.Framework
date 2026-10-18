@@ -1,0 +1,76 @@
+{
+  "spec": {
+    "title": "CPU Performance API",
+    "url": "https://wicg.github.io/cpu-performance/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator"
+        ]
+      }
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[\n    SecureContext,\n    Exposed=Window\n] partial interface Navigator {\n    readonly attribute unsigned short cpuPerformance;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "cpuPerformance",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned short"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/cpu-performance/#dom-navigator-cpuperformance"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator"
+      ]
+    },
+    "dependencies": {
+      "Navigator": []
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

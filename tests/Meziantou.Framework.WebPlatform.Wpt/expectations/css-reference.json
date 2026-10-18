@@ -1,0 +1,11 @@
+{
+  "css/reference/pass_if_filler_text_match_bold.xht": {
+    "reftest": "PASS"
+  },
+  "css/reference/pass_if_filler_text_match_smallcaps.xht": {
+    "reftest": "PASS"
+  },
+  "css/reference/pass_if_filler_text_underlined.html": {
+    "reftest": "PASS"
+  }
+}

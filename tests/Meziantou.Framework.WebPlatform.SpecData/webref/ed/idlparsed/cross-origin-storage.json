@@ -1,0 +1,321 @@
+{
+  "spec": {
+    "title": "Cross-Origin Storage",
+    "url": "https://wicg.github.io/cross-origin-storage/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CrossOriginStorageManager"
+        ],
+        "Worker": [
+          "CrossOriginStorageManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "CrossOriginStorageManager": {
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface CrossOriginStorageManager {\n  Promise<FileSystemFileHandle> requestFileHandle(\n      CrossOriginStorageRequestFileHandleHash hash,\n      optional CrossOriginStorageRequestFileHandleOptions options = {});\n};",
+        "type": "interface",
+        "name": "CrossOriginStorageManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "requestFileHandle",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemFileHandle"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "hash",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CrossOriginStorageRequestFileHandleHash"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CrossOriginStorageRequestFileHandleOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-crossoriginstoragemanager-requestfilehandle"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/cross-origin-storage/#crossoriginstoragemanager"
+      },
+      "CrossOriginStorageRequestFileHandleHash": {
+        "fragment": "dictionary CrossOriginStorageRequestFileHandleHash {\n  required DOMString value;\n  required DOMString algorithm;\n};",
+        "type": "dictionary",
+        "name": "CrossOriginStorageRequestFileHandleHash",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-crossoriginstoragerequestfilehandlehash-value"
+          },
+          {
+            "type": "field",
+            "name": "algorithm",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-crossoriginstoragerequestfilehandlehash-algorithm"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/cross-origin-storage/#dictdef-crossoriginstoragerequestfilehandlehash"
+      },
+      "CrossOriginStorageRequestFileHandleOptions": {
+        "fragment": "dictionary CrossOriginStorageRequestFileHandleOptions {\n  boolean create = false;\n  (DOMString or sequence<DOMString>) origins;\n};",
+        "type": "dictionary",
+        "name": "CrossOriginStorageRequestFileHandleOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "create",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-crossoriginstoragerequestfilehandleoptions-create"
+          },
+          {
+            "type": "field",
+            "name": "origins",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "dictionary-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-crossoriginstoragerequestfilehandleoptions-origins"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/cross-origin-storage/#dictdef-crossoriginstoragerequestfilehandleoptions"
+      },
+      "NavigatorCrossOriginStorage": {
+        "fragment": "interface mixin NavigatorCrossOriginStorage {\n  [SameObject, SecureContext] readonly attribute CrossOriginStorageManager crossOriginStorage;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorCrossOriginStorage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "crossOriginStorage",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CrossOriginStorageManager"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/cross-origin-storage/#dom-navigatorcrossoriginstorage-crossoriginstorage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/cross-origin-storage/#navigatorcrossoriginstorage"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorCrossOriginStorage;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorCrossOriginStorage"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorCrossOriginStorage;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorCrossOriginStorage"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CrossOriginStorageManager"
+      ],
+      "Worker": [
+        "CrossOriginStorageManager"
+      ]
+    },
+    "dependencies": {
+      "CrossOriginStorageManager": [
+        "FileSystemFileHandle",
+        "CrossOriginStorageRequestFileHandleHash",
+        "CrossOriginStorageRequestFileHandleOptions"
+      ],
+      "CrossOriginStorageRequestFileHandleHash": [],
+      "CrossOriginStorageRequestFileHandleOptions": [],
+      "NavigatorCrossOriginStorage": [
+        "CrossOriginStorageManager"
+      ],
+      "Navigator": [
+        "NavigatorCrossOriginStorage"
+      ],
+      "WorkerNavigator": [
+        "NavigatorCrossOriginStorage"
+      ]
+    },
+    "externalDependencies": [
+      "FileSystemFileHandle"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

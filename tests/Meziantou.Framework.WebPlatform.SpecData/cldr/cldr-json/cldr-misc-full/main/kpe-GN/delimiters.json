@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kpe-GN": {
+      "identity": {
+        "language": "kpe",
+        "territory": "GN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

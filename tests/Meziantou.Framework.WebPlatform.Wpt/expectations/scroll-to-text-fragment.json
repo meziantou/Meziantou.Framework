@@ -1,0 +1,122 @@
+{
+  "scroll-to-text-fragment/drag-selection-over-target-text.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive-no-reveal.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?1-4": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?13-16": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?17-20": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?21-24": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?25-28": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?29-32": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?33-36": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?37-40": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?41-44": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?45-48": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?49-last": {
+    "total": 5
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?5-8": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/find-range-from-text-directive.html?9-12": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/force-load-at-top.html": {
+    "total": 8
+  },
+  "scroll-to-text-fragment/idlharness.window.js": {
+    "total": 21
+  },
+  "scroll-to-text-fragment/iframe-scroll.sub.html": {
+    "total": 2
+  },
+  "scroll-to-text-fragment/iframes.sub.html": {
+    "total": 5
+  },
+  "scroll-to-text-fragment/multi-directive-scroll.html": {
+    "total": 2
+  },
+  "scroll-to-text-fragment/non-html-documents-json.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/non-html-documents.html": {
+    "total": 5
+  },
+  "scroll-to-text-fragment/percent-encoding.html": {
+    "total": 7
+  },
+  "scroll-to-text-fragment/redirects.html": {
+    "total": 14
+  },
+  "scroll-to-text-fragment/same-document-test-sync-load.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/same-document-tests-force-load-at-top.html": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/same-document-tests-no-force-load-at-top.html": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/same-document-tests.html": {
+    "total": 4
+  },
+  "scroll-to-text-fragment/scroll-to-text-diretive-center.html": {
+    "reftest": "PASS"
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-after-DOMContentLoaded.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-api.html": {
+    "total": 2
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-cross-window.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-same-doc.html": {
+    "total": 2
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-scroll-to-center.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-security-replacestate.sub.html": {
+    "total": 7
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment-security.sub.html": {
+    "total": 5
+  },
+  "scroll-to-text-fragment/scroll-to-text-fragment.html": {
+    "total": 44,
+    "failures": {
+      "Test navigation with fragment: Text directive that spans a range larger than the viewport should scroll the start into view.": "FAIL"
+    }
+  },
+  "scroll-to-text-fragment/sequential-focus.html": {
+    "total": 1
+  },
+  "scroll-to-text-fragment/text-directive-mime-type-parameter.html": {
+    "total": 1
+  }
+}

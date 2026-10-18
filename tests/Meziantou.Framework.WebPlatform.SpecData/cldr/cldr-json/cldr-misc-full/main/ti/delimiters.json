@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ti": {
+      "identity": {
+        "language": "ti"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

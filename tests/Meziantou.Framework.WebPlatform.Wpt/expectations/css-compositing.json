@@ -1,0 +1,235 @@
+{
+  "css/compositing/background-blending/background-blend-mode-gradient-image.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/background-blending/background-blend-mode-plus-lighter.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/canvas-composite-modes.html": {
+    "total": 15,
+    "failures": {
+      "globalCompositeOperation destination": "FAIL",
+      "globalCompositeOperation lighter": "FAIL",
+      "globalCompositeOperation plus-darker": "FAIL"
+    }
+  },
+  "css/compositing/inheritance.html": {
+    "total": 6
+  },
+  "css/compositing/isolation/animation/isolation-no-interpolation.html": {
+    "total": 42
+  },
+  "css/compositing/isolation/isolation-establishes-stacking-context.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-animation.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-element-interposed.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-element-overflow-hidden-and-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-element-overflow-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-element-with-transparent-pixels.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-with-3D-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blended-with-transform-and-perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-blending-with-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-border-image.html": {
+    "reftest": "FAIL"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-both-parent-and-blended-with-3D-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-canvas-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-canvas-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-creates-stacking-context.html": {
+    "total": 1,
+    "failures": {
+      "CSS Test: an element with mix-blend-mode other than normal creates a stacking context": "FAIL"
+    }
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-filter.html": {
+    "reftest": "FAIL"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-iframe-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-iframe-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-image.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-intermediate-element-overflow-hidden-and-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-mask.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-overflowing-child-of-blended-element.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-overflowing-child.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-paragraph-background-image.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-paragraph.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-element-overflow-hidden-and-border-radius-2.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-element-overflow-hidden-and-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-element-overflow-scroll-blended-position-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-element-overflow-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-with-3D-transform.html": {
+    "reftest": "FAIL"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-with-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parent-with-text.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-parsing.html": {
+    "total": 17
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-plus-lighter-basic.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-plus-lighter-svg-basic.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-plus-lighter-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-plus-lighter.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-root-element-group.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-rotated-clip.html": {
+    "reftest": "FAIL"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-script.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-sibling-with-3D-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-simple.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-stacking-context-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-stacking-context-002.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-stacking-context-creates-isolation.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-video-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-video.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/mix-blend-mode/mix-blend-mode-with-transform-and-preserve-3D.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/parsing/background-blend-mode-computed-multiple.html": {
+    "total": 7
+  },
+  "css/compositing/parsing/background-blend-mode-computed.html": {
+    "total": 19
+  },
+  "css/compositing/parsing/background-blend-mode-invalid.html": {
+    "total": 2
+  },
+  "css/compositing/parsing/background-blend-mode-valid.html": {
+    "total": 17
+  },
+  "css/compositing/parsing/isolation-computed.html": {
+    "total": 2
+  },
+  "css/compositing/parsing/isolation-invalid.html": {
+    "total": 2
+  },
+  "css/compositing/parsing/isolation-valid.html": {
+    "total": 2
+  },
+  "css/compositing/parsing/mix-blend-mode-computed.html": {
+    "total": 16
+  },
+  "css/compositing/parsing/mix-blend-mode-invalid.html": {
+    "total": 3
+  },
+  "css/compositing/parsing/mix-blend-mode-valid.html": {
+    "total": 16
+  },
+  "css/compositing/root-element-background-image-transparency-001.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-background-image-transparency-002.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-background-image-transparency-003.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-background-image-transparency-004.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-background-margin-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-background-transparency.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-blend-mode.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-filter.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-opacity-change.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/root-element-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/svg/mix-blend-mode-in-svg-image.html": {
+    "reftest": "PASS"
+  },
+  "css/compositing/svg/mix-blend-mode-svg-rectangle.html": {
+    "reftest": "PASS"
+  }
+}

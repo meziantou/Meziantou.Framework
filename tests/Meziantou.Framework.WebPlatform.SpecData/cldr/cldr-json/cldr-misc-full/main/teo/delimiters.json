@@ -1,0 +1,15 @@
+{
+  "main": {
+    "teo": {
+      "identity": {
+        "language": "teo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

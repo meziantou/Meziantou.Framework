@@ -1,0 +1,104 @@
+{
+  "spec": {
+    "title": "Device Memory API",
+    "url": "https://www.w3.org/TR/device-memory/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "NavigatorDeviceMemory": {
+        "fragment": "[\n    SecureContext,\n    Exposed=(Window,Worker)\n] interface mixin NavigatorDeviceMemory {\n    readonly attribute double deviceMemory;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorDeviceMemory",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "deviceMemory",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://www.w3.org/TR/device-memory/#dom-navigatordevicememory-devicememory"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://www.w3.org/TR/device-memory/#navigatordevicememory"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorDeviceMemory;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorDeviceMemory"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorDeviceMemory;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorDeviceMemory"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NavigatorDeviceMemory"
+      ],
+      "Worker": [
+        "NavigatorDeviceMemory"
+      ]
+    },
+    "dependencies": {
+      "NavigatorDeviceMemory": [],
+      "Navigator": [
+        "NavigatorDeviceMemory"
+      ],
+      "WorkerNavigator": [
+        "NavigatorDeviceMemory"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

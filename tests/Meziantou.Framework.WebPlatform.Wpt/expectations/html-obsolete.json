@@ -1,0 +1,57 @@
+{
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html": {
+    "total": 2,
+    "failures": {
+      "'unusual behaviors' of document.all": "FAIL",
+      "'unusual behaviors' of document.all with assignment": "FAIL"
+    }
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html": {
+    "total": 1
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-01.html": {
+    "total": 6
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-02.html": {
+    "total": 7
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-03.html": {
+    "total": 7
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-04.html": {
+    "total": 6
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/heading-obsolete-attributes-01.html": {
+    "total": 1
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/nothing.html": {
+    "total": 5
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/script-IDL-event-htmlfor.html": {
+    "total": 5
+  },
+  "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/window-external.html": {
+    "total": 2
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-events-historical.html": {
+    "total": 2
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-loop.html": {
+    "total": 3
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-min-intrinsic-size.html": {
+    "reftest": "PASS"
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-overflow.html": {
+    "total": 1
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-scrollamount.html": {
+    "total": 3
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-scrolldelay.html": {
+    "total": 4
+  },
+  "html/obsolete/requirements-for-implementations/the-marquee-element-0/marquee-with-trusted-types.html": {
+    "reftest": "PASS"
+  }
+}

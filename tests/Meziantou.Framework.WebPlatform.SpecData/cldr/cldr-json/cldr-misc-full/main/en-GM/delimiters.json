@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-GM": {
+      "identity": {
+        "language": "en",
+        "territory": "GM"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

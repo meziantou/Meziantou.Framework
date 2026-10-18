@@ -1,0 +1,85 @@
+{
+  "html/user-activation/activation-trigger-keyboard-enter.html": {
+    "total": 1
+  },
+  "html/user-activation/activation-trigger-keyboard-escape.html": {
+    "total": 1
+  },
+  "html/user-activation/activation-trigger-mouse-left.html": {
+    "total": 1
+  },
+  "html/user-activation/activation-trigger-mouse-right.html": {
+    "total": 1
+  },
+  "html/user-activation/activation-trigger-pointerevent.html?mouse": {
+    "total": 1
+  },
+  "html/user-activation/activation-trigger-pointerevent.html?pen": {
+    "total": 1,
+    "failures": {
+      "Activation through pen pointerevent click": "FAIL"
+    }
+  },
+  "html/user-activation/activation-trigger-pointerevent.html?touch": {
+    "total": 1,
+    "failures": {
+      "Activation through touch pointerevent click": "FAIL"
+    }
+  },
+  "html/user-activation/activation-trigger-touch.tentative.html": {
+    "harness": "ERROR",
+    "total": 2
+  },
+  "html/user-activation/chained-setTimeout.html": {
+    "total": 7
+  },
+  "html/user-activation/detached-iframe.html": {
+    "total": 1
+  },
+  "html/user-activation/message-event-activation-api-iframe-cross-origin.sub.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Message propagates values on post": "FAIL"
+    }
+  },
+  "html/user-activation/message-event-init.tentative.html": {
+    "total": 2,
+    "failures": {
+      "MessageEventInit user activation not set": "FAIL",
+      "MessageEventInit user activation set": "FAIL"
+    }
+  },
+  "html/user-activation/navigate-to-crossorigin-redirect.html": {
+    "total": 1
+  },
+  "html/user-activation/navigate-to-sameorigin.html": {
+    "total": 1,
+    "failures": {
+      "User activation propagation across a same-origin navigation": "FAIL"
+    }
+  },
+  "html/user-activation/navigation-state-reset-crossorigin.sub.html": {
+    "total": 1
+  },
+  "html/user-activation/navigation-state-reset-sameorigin.html": {
+    "total": 1,
+    "failures": {
+      "Post-navigation state reset.": "FAIL"
+    }
+  },
+  "html/user-activation/no-activation-thru-escape-key.html": {
+    "total": 1
+  },
+  "html/user-activation/propagation-crossorigin.sub.html": {
+    "total": 9
+  },
+  "html/user-activation/propagation-same-and-cross-origin.sub.html": {
+    "total": 3
+  },
+  "html/user-activation/propagation-sameorigin.html": {
+    "total": 9
+  },
+  "html/user-activation/user-activation-interface.html": {
+    "total": 1
+  }
+}

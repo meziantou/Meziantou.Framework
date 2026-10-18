@@ -1,0 +1,1304 @@
+{
+  "html/syntax/charset/after-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-bogus-after-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-bogus.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-head-after-1kb-crlf.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-head-after-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-head-in-1kb-crlf.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/after-head-in-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/baseline.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/document-write.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-comment.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-noscript-after-template-after-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-object.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-script.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-style.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-svg-in-cdata.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-svg.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-template-after-1kb.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-template.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/in-title.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/inheritance-bogus-meta-utf-8.html": {
+    "total": 3
+  },
+  "html/syntax/charset/inheritance-bogus-meta.html": {
+    "total": 4
+  },
+  "html/syntax/charset/meta-charset-double-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-charset-no-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-charset-single-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-commented-out.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-http-equiv-attribute-order.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-http-equiv-double-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-http-equiv-no-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/meta-http-equiv-single-quotes.html": {
+    "total": 1
+  },
+  "html/syntax/charset/ncr.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/non-ascii-in-comment-before.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/non-ascii-in-title-before.html": {
+    "reftest": "PASS"
+  },
+  "html/syntax/charset/with-inheritance.html": {
+    "total": 22
+  },
+  "html/syntax/charset/without-inheritance.html": {
+    "total": 22
+  },
+  "html/syntax/charset/xhr.html": {
+    "total": 22
+  },
+  "html/syntax/parsing-html-fragments/fragment-parse-form-in-template-001.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/fragment-parse-form-in-template-002.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/fragment-parse-form-owner-001.html": {
+    "total": 4
+  },
+  "html/syntax/parsing-html-fragments/innerHTML-setter-default-namespace.xhtml": {
+    "total": 2
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-001.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-003.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-004.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-007.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-009.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-016.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-018.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-030.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-034.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-037.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/the-input-byte-stream-038.html": {
+    "total": 1
+  },
+  "html/syntax/parsing-html-fragments/tokenizer-modes-001.html": {
+    "total": 10
+  },
+  "html/syntax/parsing-xml-fragments/innerHTML-already-started.html": {
+    "total": 5
+  },
+  "html/syntax/parsing/DOMContentLoaded-defer-task-order.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/DOMContentLoaded-defer.html": {
+    "total": 1,
+    "failures": {
+      "The end: DOMContentLoaded and defer scripts": "FAIL"
+    }
+  },
+  "html/syntax/parsing/Document.getElementsByTagName-foreign-01.html": {
+    "total": 37
+  },
+  "html/syntax/parsing/Document.getElementsByTagName-foreign-02.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/Element.getElementsByTagName-foreign-01.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/Element.getElementsByTagName-foreign-02.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/Object-prototype-names.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-document-target.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-inner-loop-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-pagehide.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Adoption agency where pagehide runs script in the middle of the algorithm": "PRECONDITION_FAILED"
+    }
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-shadow-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/adoption-agency-reparenting-template-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/adoption-agency-reparenting.html": {
+    "total": 5
+  },
+  "html/syntax/parsing/adoption_agency_check_the_end_tag_name.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/ambiguous-ampersand.html": {
+    "total": 3
+  },
+  "html/syntax/parsing/cdata-in-integration-point-fragment.html": {
+    "total": 15
+  },
+  "html/syntax/parsing/custom-element-reparenting-shadow-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/custom-element-reparenting-template-cycle.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/custom-element-reparenting.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/doctype-system-identifier-distinction.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/empty-doctype-ids.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/foreign_content_dom_properties.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/form-element-pointer-in-template.html": {
+    "total": 3
+  },
+  "html/syntax/parsing/foster-parenting-into-document-with-element-child.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/foster-parenting-into-template-element.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/foster-parenting-moved-table.window.js": {
+    "total": 6
+  },
+  "html/syntax/parsing/html-integration-point.html": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_url.html?file=adoption01": {
+    "total": 18
+  },
+  "html/syntax/parsing/html5lib_url.html?file=adoption02": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_url.html?file=blocks": {
+    "total": 48
+  },
+  "html/syntax/parsing/html5lib_url.html?file=comments01": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_url.html?file=doctype01": {
+    "total": 37
+  },
+  "html/syntax/parsing/html5lib_url.html?file=domjs-unsafe": {
+    "total": 49
+  },
+  "html/syntax/parsing/html5lib_url.html?file=entities01": {
+    "total": 75
+  },
+  "html/syntax/parsing/html5lib_url.html?file=entities02": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_url.html?file=foreign-fragment": {
+    "total": 66
+  },
+  "html/syntax/parsing/html5lib_url.html?file=html5test-com": {
+    "total": 30
+  },
+  "html/syntax/parsing/html5lib_url.html?file=inbody01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_url.html?file=isindex": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_url.html?file=main-element": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_url.html?file=math": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_url.html?file=menuitem-element": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_url.html?file=namespace-sensitivity": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_url.html?file=pending-spec-changes": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_url.html?file=pending-spec-changes-plain-text-unsafe": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_url.html?file=plain-text-unsafe": {
+    "total": 48
+  },
+  "html/syntax/parsing/html5lib_url.html?file=processing-instructions": {
+    "total": 123
+  },
+  "html/syntax/parsing/html5lib_url.html?file=quirks01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_url.html?file=ruby": {
+    "total": 21
+  },
+  "html/syntax/parsing/html5lib_url.html?file=scriptdata01": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_url.html?file=scripted_adoption01": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_url.html?file=scripted_ark": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_url.html?file=scripted_foster01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_url.html?file=scripted_webkit01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_url.html?file=search-element": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_url.html?file=svg": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tables01": {
+    "total": 19
+  },
+  "html/syntax/parsing/html5lib_url.html?file=template": {
+    "total": 127
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests1": {
+    "total": 112
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests10": {
+    "total": 54
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests11": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests12": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests14": {
+    "total": 7
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests15": {
+    "total": 14
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests16": {
+    "total": 191
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests17": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests18": {
+    "total": 35
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests19": {
+    "total": 107
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests2": {
+    "total": 63
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests20": {
+    "total": 64
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests21": {
+    "total": 23
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests22": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests23": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests24": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests25": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests26": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests3": {
+    "total": 24
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests4": {
+    "total": 9
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests5": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests6": {
+    "total": 52
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests7": {
+    "total": 34
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests8": {
+    "total": 10
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests9": {
+    "total": 27
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tests_innerHTML_1": {
+    "total": 81
+  },
+  "html/syntax/parsing/html5lib_url.html?file=tricky01": {
+    "total": 9
+  },
+  "html/syntax/parsing/html5lib_url.html?file=void-in-phrasing": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_url.html?file=webkit01": {
+    "total": 52
+  },
+  "html/syntax/parsing/html5lib_url.html?file=webkit02": {
+    "total": 48
+  },
+  "html/syntax/parsing/html5lib_write.html?file=adoption01": {
+    "total": 17
+  },
+  "html/syntax/parsing/html5lib_write.html?file=adoption02": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write.html?file=blocks": {
+    "total": 48
+  },
+  "html/syntax/parsing/html5lib_write.html?file=comments01": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_write.html?file=doctype01": {
+    "total": 37
+  },
+  "html/syntax/parsing/html5lib_write.html?file=domjs-unsafe": {
+    "total": 49
+  },
+  "html/syntax/parsing/html5lib_write.html?file=entities01": {
+    "total": 75
+  },
+  "html/syntax/parsing/html5lib_write.html?file=entities02": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write.html?file=html5test-com": {
+    "total": 30
+  },
+  "html/syntax/parsing/html5lib_write.html?file=inbody01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write.html?file=isindex": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write.html?file=main-element": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_write.html?file=menuitem-element": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_write.html?file=namespace-sensitivity": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write.html?file=pending-spec-changes": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_write.html?file=pending-spec-changes-plain-text-unsafe": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write.html?file=plain-text-unsafe": {
+    "total": 37
+  },
+  "html/syntax/parsing/html5lib_write.html?file=processing-instructions": {
+    "total": 123
+  },
+  "html/syntax/parsing/html5lib_write.html?file=quirks01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write.html?file=ruby": {
+    "total": 21
+  },
+  "html/syntax/parsing/html5lib_write.html?file=scriptdata01": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write.html?file=scripted_adoption01": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write.html?file=scripted_ark": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write.html?file=scripted_foster01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write.html?file=scripted_webkit01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write.html?file=search-element": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tables01": {
+    "total": 19
+  },
+  "html/syntax/parsing/html5lib_write.html?file=template": {
+    "total": 123
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests1": {
+    "total": 112
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests10": {
+    "total": 54
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests11": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests12": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests14": {
+    "total": 7
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests15": {
+    "total": 14
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests16": {
+    "total": 191
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests17": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests18": {
+    "total": 35
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests19": {
+    "total": 107
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests2": {
+    "total": 63
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests20": {
+    "total": 64
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests21": {
+    "total": 23
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests22": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests23": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests24": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests25": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests26": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests3": {
+    "total": 24
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests5": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests6": {
+    "total": 39
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests7": {
+    "total": 33
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests8": {
+    "total": 10
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tests9": {
+    "total": 27
+  },
+  "html/syntax/parsing/html5lib_write.html?file=tricky01": {
+    "total": 9
+  },
+  "html/syntax/parsing/html5lib_write.html?file=void-in-phrasing": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write.html?file=webkit01": {
+    "total": 52
+  },
+  "html/syntax/parsing/html5lib_write.html?file=webkit02": {
+    "total": 44
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=adoption01": {
+    "total": 17
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=adoption02": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=blocks": {
+    "total": 48
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=comments01": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=doctype01": {
+    "total": 37
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=domjs-unsafe": {
+    "total": 49
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=entities01": {
+    "total": 75
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=entities02": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=html5test-com": {
+    "total": 30
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=inbody01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=isindex": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=main-element": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=menuitem-element": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=namespace-sensitivity": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=pending-spec-changes": {
+    "total": 3
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=pending-spec-changes-plain-text-unsafe": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=plain-text-unsafe": {
+    "total": 37
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=processing-instructions": {
+    "total": 123
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=quirks01": {
+    "total": 4
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=ruby": {
+    "total": 21
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=scriptdata01": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=scripted_adoption01": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=scripted_ark": {
+    "total": 1
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=scripted_foster01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=scripted_webkit01": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=search-element": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tables01": {
+    "total": 19
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=template": {
+    "total": 123
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests1": {
+    "total": 112
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests10": {
+    "total": 54
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests11": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests12": {
+    "total": 2
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests14": {
+    "total": 7
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests15": {
+    "total": 14
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests16": {
+    "total": 191
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests17": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests18": {
+    "total": 35
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests19": {
+    "total": 107
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests2": {
+    "total": 63
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests20": {
+    "total": 64
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests21": {
+    "total": 23
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests22": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests23": {
+    "total": 5
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests24": {
+    "total": 8
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests25": {
+    "total": 26
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests26": {
+    "total": 20
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests3": {
+    "total": 24
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests5": {
+    "total": 16
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests6": {
+    "total": 39
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests7": {
+    "total": 33
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests8": {
+    "total": 10
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tests9": {
+    "total": 27
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=tricky01": {
+    "total": 9
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=void-in-phrasing": {
+    "total": 13
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=webkit01": {
+    "total": 52
+  },
+  "html/syntax/parsing/html5lib_write_single.html?file=webkit02": {
+    "total": 44
+  },
+  "html/syntax/parsing/html_content_in_foreign_context.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/inhead-noscript-head.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/insert-into-nonempty-document.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/math-parse01.html": {
+    "total": 9
+  },
+  "html/syntax/parsing/math-parse03.html": {
+    "total": 19
+  },
+  "html/syntax/parsing/meta-inhead-insertion-mode.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/misnested-form-in-template.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/named-character-references.html": {
+    "total": 2231
+  },
+  "html/syntax/parsing/newline-normalization-cr-then-lf.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/no-doctype-name.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/noscript-template-querySelector.html": {
+    "total": 3
+  },
+  "html/syntax/parsing/quotes-in-meta.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/template/additions-to-foster-parenting/template-is-a-foster-parent-element.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/template/additions-to-foster-parenting/template-is-not-a-foster-parent-element.html": {
+    "total": 2
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/generating-of-implied-end-tags.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/ignore-body-token.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/ignore-frameset-token.html": {
+    "total": 5
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/ignore-head-token.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/ignore-html-token.html": {
+    "total": 8
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/start-tag-body.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/start-tag-html.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/template/additions-to-the-in-body-insertion-mode/template-end-tag-without-start-one.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-frameset-insertion-mode/end-tag-frameset.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/template/additions-to-the-in-head-insertion-mode/generating-of-implied-end-tags.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-head-insertion-mode/template-end-tag-without-start-one.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/additions-to-the-in-table-insertion-mode/end-tag-table.html": {
+    "total": 1
+  },
+  "html/syntax/parsing/template/appending-to-a-template/template-child-nodes.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/template/clearing-the-stack-back-to-a-given-context/clearing-stack-back-to-a-table-body-context.html": {
+    "total": 33
+  },
+  "html/syntax/parsing/template/clearing-the-stack-back-to-a-given-context/clearing-stack-back-to-a-table-context.html": {
+    "total": 6
+  },
+  "html/syntax/parsing/template/clearing-the-stack-back-to-a-given-context/clearing-stack-back-to-a-table-row-context.html": {
+    "total": 3
+  },
+  "html/syntax/parsing/template/creating-an-element-for-the-token/template-owner-document.html": {
+    "total": 223
+  },
+  "html/syntax/parsing/the-end.html": {
+    "total": 4
+  },
+  "html/syntax/parsing/truncated-markup-declaration-at-eof.html": {
+    "total": 3
+  },
+  "html/syntax/parsing/unclosed-svg-script.html": {
+    "total": 5
+  },
+  "html/syntax/parsing/zero.html": {
+    "total": 14
+  },
+  "html/syntax/serializing-html-fragments/escaping.html": {
+    "total": 9
+  },
+  "html/syntax/serializing-html-fragments/initial-linefeed-pre.html": {
+    "total": 8
+  },
+  "html/syntax/serializing-html-fragments/outerHTML.html": {
+    "total": 112
+  },
+  "html/syntax/serializing-html-fragments/processing-instructions.html": {
+    "total": 3
+  },
+  "html/syntax/serializing-html-fragments/serializing-cdata-in-html-document.html": {
+    "total": 1
+  },
+  "html/syntax/serializing-html-fragments/serializing-lt-gt.html": {
+    "total": 2
+  },
+  "html/syntax/serializing-html-fragments/serializing.html": {
+    "total": 238
+  },
+  "html/syntax/serializing-html-fragments/template.html": {
+    "total": 2
+  },
+  "html/syntax/serializing-xml-fragments/outerHTML.html": {
+    "total": 112
+  },
+  "html/syntax/speculative-charset/speculative-script.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/expect-no-linked-resources/no-speculative-fetch.tentative.optional.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/base-href-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/base-in-dsd.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/base-nonexistent.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/image-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-data-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-src-crossorigin.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-src-loading-lazy.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-src-referrerpolicy-no-referrer.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/img-srcset.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-no-rel.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-alternate-stylesheet.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-preload-as-font-crossorigin.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-preload-as-image.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-preload-as-script.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-preload-as-style.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-crossorigin.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-disabled.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-integrity.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-nomatch-media.tentative.sub.html": {
+    "total": 1,
+    "failures": {
+      "Speculative parsing, document.write(): link-rel-stylesheet-nomatch-media": "FAIL"
+    }
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-referrerpolicy-no-referrer.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-type-text-css.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet-unsupported-type.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/link-rel-stylesheet.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/math-font-face-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/math-font-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/math-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-charset-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-csp-img-src-asterisk.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-csp-img-src-in-dsd.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-csp-img-src-none.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-referrer-no-referrer-img-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/meta-viewport-link-stylesheet-media.tentative.sub.html": {
+    "total": 1,
+    "failures": {
+      "Speculative parsing, document.write(): meta-viewport-link-stylesheet-media": "FAIL"
+    }
+  },
+  "html/syntax/speculative-parsing/generated/document-write/nested-template-shadowrootmode-1.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/nested-template-shadowrootmode-2.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/picture-source-br-img.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/picture-source-no-img.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/picture-source-nomatch-media.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/picture-source-unsupported-type.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-async.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-crossorigin.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-defer.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-integrity.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-module.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-nomodule.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-referrerpolicy-no-referrer.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-type-application-ecmascript.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src-unsupported-type.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-image-href.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-image-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-image-xlinkhref.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-script-href.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/svg-script-xlinkhref.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-img-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-link-stylesheet.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-shadowrootmode-img-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-shadowrootmode-link-stylesheet.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/template-shadowrootmode-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/video-poster.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/document-write/xmp-script-src.tentative.sub.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/base-href-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/base-in-dsd.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/base-nonexistent.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/image-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-data-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-src-crossorigin.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-src-loading-lazy.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-src-referrerpolicy-no-referrer.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/img-srcset.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-no-rel.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-alternate-stylesheet.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-preload-as-font-crossorigin.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-preload-as-image.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-preload-as-script.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-preload-as-style.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-crossorigin.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-disabled.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-integrity.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-nomatch-media.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Speculative parsing, page load: link-rel-stylesheet-nomatch-media": "FAIL"
+    }
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-referrerpolicy-no-referrer.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-type-text-css.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet-unsupported-type.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/link-rel-stylesheet.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/math-font-face-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/math-font-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/math-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-charset-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-csp-img-src-asterisk.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-csp-img-src-in-dsd.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-csp-img-src-none.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-referrer-no-referrer-img-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/meta-viewport-link-stylesheet-media.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Speculative parsing, page load: meta-viewport-link-stylesheet-media": "FAIL"
+    }
+  },
+  "html/syntax/speculative-parsing/generated/page-load/nested-template-shadowrootmode-1.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/nested-template-shadowrootmode-2.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/picture-source-br-img.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/picture-source-no-img.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/picture-source-nomatch-media.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/picture-source-unsupported-type.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-async.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-crossorigin.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-defer.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-integrity.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-module.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-nomodule.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-referrerpolicy-no-referrer.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-type-application-ecmascript.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src-unsupported-type.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-image-href.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-image-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-image-xlinkhref.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-script-href.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/svg-script-xlinkhref.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-img-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-link-stylesheet.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-shadowrootmode-img-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-shadowrootmode-link-stylesheet.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/template-shadowrootmode-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/video-poster.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/speculative-parsing/generated/page-load/xmp-script-src.tentative.html": {
+    "total": 1
+  },
+  "html/syntax/xmldecl/xmldecl-1.html": {
+    "total": 40
+  },
+  "html/syntax/xmldecl/xmldecl-2.html": {
+    "total": 47
+  },
+  "html/syntax/xmldecl/xmldecl-3.html": {
+    "total": 1
+  }
+}

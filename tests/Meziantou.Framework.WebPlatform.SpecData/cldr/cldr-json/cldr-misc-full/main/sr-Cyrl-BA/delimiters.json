@@ -1,0 +1,17 @@
+{
+  "main": {
+    "sr-Cyrl-BA": {
+      "identity": {
+        "language": "sr",
+        "script": "Cyrl",
+        "territory": "BA"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

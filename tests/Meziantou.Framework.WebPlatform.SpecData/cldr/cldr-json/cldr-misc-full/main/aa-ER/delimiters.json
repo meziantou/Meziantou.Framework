@@ -1,0 +1,16 @@
+{
+  "main": {
+    "aa-ER": {
+      "identity": {
+        "language": "aa",
+        "territory": "ER"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

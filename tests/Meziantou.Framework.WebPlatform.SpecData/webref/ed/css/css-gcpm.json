@@ -1,0 +1,138 @@
+{
+  "spec": {
+    "title": "CSS Generated Content for Paged Media Module Level 3",
+    "url": "https://drafts.csswg.org/css-gcpm-3/"
+  },
+  "properties": [
+    {
+      "name": "position",
+      "newValues": "<running()>",
+      "styleDeclaration": [
+        "position"
+      ]
+    },
+    {
+      "name": "content",
+      "newValues": "<element()>",
+      "styleDeclaration": [
+        "content"
+      ]
+    },
+    {
+      "name": "float",
+      "newValues": "footnote",
+      "values": [
+        {
+          "name": "footnote",
+          "prose": "each footnote element is placed in the footnote area of the page",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#valdef-float-footnote",
+          "type": "value",
+          "value": "footnote"
+        }
+      ],
+      "styleDeclaration": [
+        "float"
+      ]
+    },
+    {
+      "name": "footnote-display",
+      "href": "https://drafts.csswg.org/css-gcpm-3/#propdef-footnote-display",
+      "value": "block | inline | compact",
+      "initial": "block",
+      "appliesTo": "elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "block",
+          "prose": "The footnote element is placed in the footnote area as a block element",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#footnote-display-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "The footnote element is placed in the footnote area as an inline element",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#footnote-display-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "compact",
+          "prose": "The user agent determines whether a given footnote element is placed as a block element or an inline element. If two or more footnotes could fit on the same line in the footnote area, they should be placed inline.",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#footnote-display-compact",
+          "type": "value",
+          "value": "compact"
+        }
+      ],
+      "styleDeclaration": [
+        "footnote-display",
+        "footnoteDisplay"
+      ]
+    },
+    {
+      "name": "footnote-policy",
+      "href": "https://drafts.csswg.org/css-gcpm-3/#propdef-footnote-policy",
+      "value": "auto | line | block",
+      "initial": "auto",
+      "appliesTo": "elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The user agent chooses how to render footnotes, and may place the footnote body on a later page than the footnote reference. A footnote body must never be placed on a page before the footnote reference.",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#valdef-footnote-policy-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "line",
+          "prose": "If a given footnote body cannot be placed on the current page due to lack of space, the user agent introduces a forced page break at the start of the line containing the footnote reference, so that both the reference and the footnote body fall on the next page. Note that the user agent must honor widow and orphan settings when doing this, and so may need to insert the page break on an earlier line.",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#footnote-policy-line",
+          "type": "value",
+          "value": "line"
+        },
+        {
+          "name": "block",
+          "prose": "As with line, except a forced page break is introduced before the paragraph that contains the footnote.",
+          "href": "https://drafts.csswg.org/css-gcpm-3/#valdef-footnote-policy-block",
+          "type": "value",
+          "value": "block"
+        }
+      ],
+      "styleDeclaration": [
+        "footnote-policy",
+        "footnotePolicy"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":nth()",
+      "value": ":nth( <a-n-plus-b> [of <custom-ident>]? )",
+      "href": "https://drafts.csswg.org/css-gcpm-3/#selectordef-nth"
+    }
+  ],
+  "values": [
+    {
+      "name": "<content-list>",
+      "href": "https://drafts.csswg.org/css-gcpm-3/#content-list",
+      "type": "type",
+      "value": "[ <string> | <counter()> | <counters()> | <content()> | <attr()> ]+"
+    },
+    {
+      "name": "running()",
+      "value": "running( <custom-ident> )",
+      "href": "https://drafts.csswg.org/css-gcpm-3/#funcdef-running",
+      "type": "function"
+    }
+  ]
+}

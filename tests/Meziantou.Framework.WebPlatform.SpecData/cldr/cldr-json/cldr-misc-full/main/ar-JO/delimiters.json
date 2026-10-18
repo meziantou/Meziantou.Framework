@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-JO": {
+      "identity": {
+        "language": "ar",
+        "territory": "JO"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

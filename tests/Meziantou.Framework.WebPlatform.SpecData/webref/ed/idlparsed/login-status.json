@@ -1,0 +1,161 @@
+{
+  "spec": {
+    "title": "Login Status API",
+    "url": "https://w3c-fedid.github.io/login-status/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "NavigatorLogin"
+        ]
+      }
+    },
+    "idlNames": {
+      "LoginStatus": {
+        "fragment": "enum LoginStatus {\n  \"logged-in\",\n  \"logged-out\",\n};",
+        "type": "enum",
+        "name": "LoginStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "logged-in",
+            "href": "https://w3c-fedid.github.io/login-status/#dom-loginstatus-logged-in"
+          },
+          {
+            "type": "enum-value",
+            "value": "logged-out",
+            "href": "https://w3c-fedid.github.io/login-status/#dom-loginstatus-logged-out"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c-fedid.github.io/login-status/#enumdef-loginstatus"
+      },
+      "NavigatorLogin": {
+        "fragment": "[Exposed=Window, SecureContext]\n\ninterface NavigatorLogin {\n  Promise<undefined> setStatus(LoginStatus status);\n};",
+        "type": "interface",
+        "name": "NavigatorLogin",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "setStatus",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LoginStatus"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c-fedid.github.io/login-status/#dom-navigatorlogin-setstatus"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c-fedid.github.io/login-status/#navigatorlogin"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "partial interface Navigator {\n  [SecureContext] readonly attribute NavigatorLogin login;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "login",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "NavigatorLogin"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c-fedid.github.io/login-status/#dom-navigator-login"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NavigatorLogin"
+      ]
+    },
+    "dependencies": {
+      "NavigatorLogin": [
+        "LoginStatus"
+      ],
+      "Navigator": [
+        "NavigatorLogin"
+      ]
+    },
+    "externalDependencies": [
+      "Navigator"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

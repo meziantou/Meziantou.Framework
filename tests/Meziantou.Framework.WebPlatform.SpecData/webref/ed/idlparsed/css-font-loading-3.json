@@ -1,0 +1,1699 @@
+{
+  "spec": {
+    "title": "CSS Font Loading Module Level 3",
+    "url": "https://drafts.csswg.org/css-font-loading-3/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "FontFace",
+          "FontFaceSetLoadEvent"
+        ],
+        "Worker": [
+          "FontFace",
+          "FontFaceSetLoadEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "FontFaceFeatures",
+          "FontFaceVariationAxis",
+          "FontFaceVariations",
+          "FontFacePalette",
+          "FontFacePalettes",
+          "FontFaceSet"
+        ],
+        "Worker": [
+          "FontFaceFeatures",
+          "FontFaceVariationAxis",
+          "FontFaceVariations",
+          "FontFacePalette",
+          "FontFacePalettes",
+          "FontFaceSet"
+        ]
+      }
+    },
+    "idlNames": {
+      "FontFaceDescriptors": {
+        "fragment": "dictionary FontFaceDescriptors {\n  CSSOMString style = \"normal\";\n  CSSOMString weight = \"normal\";\n  CSSOMString stretch = \"normal\";\n  CSSOMString unicodeRange = \"U+0-10FFFF\";\n  CSSOMString featureSettings = \"normal\";\n  CSSOMString variationSettings = \"normal\";\n  CSSOMString display = \"auto\";\n  CSSOMString ascentOverride = \"normal\";\n  CSSOMString descentOverride = \"normal\";\n  CSSOMString lineGapOverride = \"normal\";\n};",
+        "type": "dictionary",
+        "name": "FontFaceDescriptors",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "style",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-style"
+          },
+          {
+            "type": "field",
+            "name": "weight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-weight"
+          },
+          {
+            "type": "field",
+            "name": "stretch",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-stretch"
+          },
+          {
+            "type": "field",
+            "name": "unicodeRange",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "U+0-10FFFF"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-unicoderange"
+          },
+          {
+            "type": "field",
+            "name": "featureSettings",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-featuresettings"
+          },
+          {
+            "type": "field",
+            "name": "variationSettings",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-variationsettings"
+          },
+          {
+            "type": "field",
+            "name": "display",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-display"
+          },
+          {
+            "type": "field",
+            "name": "ascentOverride",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-ascentoverride"
+          },
+          {
+            "type": "field",
+            "name": "descentOverride",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-descentoverride"
+          },
+          {
+            "type": "field",
+            "name": "lineGapOverride",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "normal"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-linegapoverride"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#dictdef-fontfacedescriptors"
+      },
+      "FontFaceLoadStatus": {
+        "fragment": "enum FontFaceLoadStatus { \"unloaded\", \"loading\", \"loaded\", \"error\" };",
+        "type": "enum",
+        "name": "FontFaceLoadStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "unloaded",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceloadstatus-unloaded"
+          },
+          {
+            "type": "enum-value",
+            "value": "loading",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceloadstatus-loading"
+          },
+          {
+            "type": "enum-value",
+            "value": "loaded",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceloadstatus-loaded"
+          },
+          {
+            "type": "enum-value",
+            "value": "error",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceloadstatus-error"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/css-font-loading-3/#enumdef-fontfaceloadstatus"
+      },
+      "FontFace": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFace {\n  constructor(CSSOMString family, (CSSOMString or BufferSource) source,\n                optional FontFaceDescriptors descriptors = {});\n  attribute CSSOMString family;\n  attribute CSSOMString style;\n  attribute CSSOMString weight;\n  attribute CSSOMString stretch;\n  attribute CSSOMString unicodeRange;\n  attribute CSSOMString featureSettings;\n  attribute CSSOMString variationSettings;\n  attribute CSSOMString display;\n  attribute CSSOMString ascentOverride;\n  attribute CSSOMString descentOverride;\n  attribute CSSOMString lineGapOverride;\n\n  readonly attribute FontFaceLoadStatus status;\n\n  Promise<FontFace> load();\n  readonly attribute Promise<FontFace> loaded;\n};",
+        "type": "interface",
+        "name": "FontFace",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "family",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "source",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CSSOMString"
+                    },
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BufferSource"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "descriptors",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFaceDescriptors"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-fontface"
+          },
+          {
+            "type": "attribute",
+            "name": "family",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-family"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-style"
+          },
+          {
+            "type": "attribute",
+            "name": "weight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-weight"
+          },
+          {
+            "type": "attribute",
+            "name": "stretch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-stretch"
+          },
+          {
+            "type": "attribute",
+            "name": "unicodeRange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-unicoderange"
+          },
+          {
+            "type": "attribute",
+            "name": "featureSettings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-featuresettings"
+          },
+          {
+            "type": "attribute",
+            "name": "variationSettings",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-variationsettings"
+          },
+          {
+            "type": "attribute",
+            "name": "display",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-display"
+          },
+          {
+            "type": "attribute",
+            "name": "ascentOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-ascentoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "descentOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-descentoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "lineGapOverride",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-linegapoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FontFaceLoadStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-status"
+          },
+          {
+            "type": "operation",
+            "name": "load",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-load"
+          },
+          {
+            "type": "attribute",
+            "name": "loaded",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-loaded"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontface"
+      },
+      "FontFaceFeatures": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFaceFeatures {\n  /* The CSSWG is still discussing what goes in here */\n};",
+        "type": "interface",
+        "name": "FontFaceFeatures",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacefeatures"
+      },
+      "FontFaceVariationAxis": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFaceVariationAxis {\n  readonly attribute DOMString name;\n  readonly attribute DOMString axisTag;\n  readonly attribute double minimumValue;\n  readonly attribute double maximumValue;\n  readonly attribute double defaultValue;\n};",
+        "type": "interface",
+        "name": "FontFaceVariationAxis",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacevariationaxis-name"
+          },
+          {
+            "type": "attribute",
+            "name": "axisTag",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacevariationaxis-axistag"
+          },
+          {
+            "type": "attribute",
+            "name": "minimumValue",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacevariationaxis-minimumvalue"
+          },
+          {
+            "type": "attribute",
+            "name": "maximumValue",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacevariationaxis-maximumvalue"
+          },
+          {
+            "type": "attribute",
+            "name": "defaultValue",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacevariationaxis-defaultvalue"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacevariationaxis"
+      },
+      "FontFaceVariations": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFaceVariations {\n  readonly setlike<FontFaceVariationAxis>;\n};",
+        "type": "interface",
+        "name": "FontFaceVariations",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "setlike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFaceVariationAxis"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": true,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacevariations"
+      },
+      "FontFacePalette": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFacePalette {\n  iterable<DOMString>;\n  readonly attribute unsigned long length;\n  getter DOMString (unsigned long index);\n  readonly attribute boolean usableWithLightBackground;\n  readonly attribute boolean usableWithDarkBackground;\n};",
+        "type": "interface",
+        "name": "FontFacePalette",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacepalette-length"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "attribute",
+            "name": "usableWithLightBackground",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacepalette-usablewithlightbackground"
+          },
+          {
+            "type": "attribute",
+            "name": "usableWithDarkBackground",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacepalette-usablewithdarkbackground"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacepalette"
+      },
+      "FontFacePalettes": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFacePalettes {\n  iterable<FontFacePalette>;\n  readonly attribute unsigned long length;\n  getter FontFacePalette (unsigned long index);\n};",
+        "type": "interface",
+        "name": "FontFacePalettes",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFacePalette"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacepalettes-length"
+          },
+          {
+            "type": "operation",
+            "name": "",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FontFacePalette"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacepalettes"
+      },
+      "FontFaceSetLoadEventInit": {
+        "fragment": "dictionary FontFaceSetLoadEventInit : EventInit {\n  sequence<FontFace> fontfaces = [];\n};",
+        "type": "dictionary",
+        "name": "FontFaceSetLoadEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "fontfaces",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesetloadeventinit-fontfaces"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#dictdef-fontfacesetloadeventinit"
+      },
+      "FontFaceSetLoadEvent": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFaceSetLoadEvent : Event {\n  constructor(CSSOMString type, optional FontFaceSetLoadEventInit eventInitDict = {});\n  [SameObject] readonly attribute FrozenArray<FontFace> fontfaces;\n};",
+        "type": "interface",
+        "name": "FontFaceSetLoadEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFaceSetLoadEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesetloadevent-fontfacesetloadevent"
+          },
+          {
+            "type": "attribute",
+            "name": "fontfaces",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesetloadevent-fontfaces"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacesetloadevent"
+      },
+      "FontFaceSetLoadStatus": {
+        "fragment": "enum FontFaceSetLoadStatus { \"loading\", \"loaded\" };",
+        "type": "enum",
+        "name": "FontFaceSetLoadStatus",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "loading",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesetloadstatus-loading"
+          },
+          {
+            "type": "enum-value",
+            "value": "loaded",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesetloadstatus-loaded"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://drafts.csswg.org/css-font-loading-3/#enumdef-fontfacesetloadstatus"
+      },
+      "FontFaceSet": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFaceSet : EventTarget {\n  setlike<FontFace>;\n  FontFaceSet add(FontFace font);\n  boolean delete(FontFace font);\n  undefined clear();\n\n  // events for when loading state changes\n  attribute EventHandler onloading;\n  attribute EventHandler onloadingdone;\n  attribute EventHandler onloadingerror;\n\n  // check and start loads if appropriate\n  // and fulfill promise when all loads complete\n  Promise<sequence<FontFace>> load(CSSOMString font, optional CSSOMString text = \" \");\n\n  // return whether all fonts in the fontlist are loaded\n  // (does not initiate load if not available)\n  boolean check(CSSOMString font, optional CSSOMString text = \" \");\n\n  // async notification that font loading and layout operations are done\n  readonly attribute Promise<FontFaceSet> ready;\n\n  // loading state, \"loading\" while one or more fonts loading, \"loaded\" otherwise\n  readonly attribute FontFaceSetLoadStatus status;\n};",
+        "type": "interface",
+        "name": "FontFaceSet",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "setlike",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFace"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          },
+          {
+            "type": "operation",
+            "name": "add",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FontFaceSet"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "font",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-add"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "font",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFace"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-delete"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-clear"
+          },
+          {
+            "type": "attribute",
+            "name": "onloading",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-onloading"
+          },
+          {
+            "type": "attribute",
+            "name": "onloadingdone",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-onloadingdone"
+          },
+          {
+            "type": "attribute",
+            "name": "onloadingerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-onloadingerror"
+          },
+          {
+            "type": "operation",
+            "name": "load",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "FontFace"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "font",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": " "
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-load"
+          },
+          {
+            "type": "operation",
+            "name": "check",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "font",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": " "
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-check"
+          },
+          {
+            "type": "attribute",
+            "name": "ready",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FontFaceSet"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-ready"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FontFaceSetLoadStatus"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfaceset-status"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfaceset"
+      },
+      "FontFaceSource": {
+        "fragment": "interface mixin FontFaceSource {\n  readonly attribute FontFaceSet fonts;\n};",
+        "type": "interface mixin",
+        "name": "FontFaceSource",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "fonts",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FontFaceSet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacesource-fonts"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-font-loading-3/#fontfacesource"
+      }
+    },
+    "idlExtendedNames": {
+      "FontFace": [
+        {
+          "fragment": "partial interface FontFace {\n  readonly attribute FontFaceFeatures features;\n  readonly attribute FontFaceVariations variations;\n  readonly attribute FontFacePalettes palettes;\n};",
+          "type": "interface",
+          "name": "FontFace",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "features",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFaceFeatures"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-features"
+            },
+            {
+              "type": "attribute",
+              "name": "variations",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFaceVariations"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-variations"
+            },
+            {
+              "type": "attribute",
+              "name": "palettes",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FontFacePalettes"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-palettes"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Document": [
+        {
+          "fragment": "Document includes FontFaceSource;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Document",
+          "includes": "FontFaceSource"
+        }
+      ],
+      "WorkerGlobalScope": [
+        {
+          "fragment": "WorkerGlobalScope includes FontFaceSource;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerGlobalScope",
+          "includes": "FontFaceSource"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FontFace",
+        "FontFaceFeatures",
+        "FontFaceVariationAxis",
+        "FontFaceVariations",
+        "FontFacePalette",
+        "FontFacePalettes",
+        "FontFaceSetLoadEvent",
+        "FontFaceSet"
+      ],
+      "Worker": [
+        "FontFace",
+        "FontFaceFeatures",
+        "FontFaceVariationAxis",
+        "FontFaceVariations",
+        "FontFacePalette",
+        "FontFacePalettes",
+        "FontFaceSetLoadEvent",
+        "FontFaceSet"
+      ]
+    },
+    "dependencies": {
+      "FontFaceDescriptors": [
+        "CSSOMString"
+      ],
+      "FontFace": [
+        "CSSOMString",
+        "BufferSource",
+        "FontFaceDescriptors",
+        "FontFaceLoadStatus",
+        "FontFace",
+        "FontFaceFeatures",
+        "FontFaceVariations",
+        "FontFacePalettes"
+      ],
+      "FontFaceFeatures": [],
+      "FontFaceVariationAxis": [],
+      "FontFaceVariations": [
+        "FontFaceVariationAxis"
+      ],
+      "FontFacePalette": [],
+      "FontFacePalettes": [
+        "FontFacePalette"
+      ],
+      "FontFaceSetLoadEventInit": [
+        "EventInit",
+        "FontFace"
+      ],
+      "FontFaceSetLoadEvent": [
+        "Event",
+        "CSSOMString",
+        "FontFaceSetLoadEventInit",
+        "FontFace"
+      ],
+      "FontFaceSet": [
+        "EventTarget",
+        "FontFace",
+        "FontFaceSet",
+        "EventHandler",
+        "CSSOMString",
+        "FontFaceSetLoadStatus"
+      ],
+      "FontFaceSource": [
+        "FontFaceSet"
+      ],
+      "Document": [
+        "FontFaceSource"
+      ],
+      "WorkerGlobalScope": [
+        "FontFaceSource"
+      ]
+    },
+    "externalDependencies": [
+      "CSSOMString",
+      "BufferSource",
+      "EventInit",
+      "Event",
+      "EventTarget",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

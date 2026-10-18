@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "title": "HTML Media Capture",
+    "url": "https://w3c.github.io/html-media-capture/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "HTMLInputElement": [
+        {
+          "fragment": "partial interface HTMLInputElement {\n    [CEReactions] attribute DOMString capture;\n};",
+          "type": "interface",
+          "name": "HTMLInputElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "capture",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/html-media-capture/#dom-htmlinputelement-capture"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "HTMLInputElement": []
+    },
+    "externalDependencies": [
+      "HTMLInputElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

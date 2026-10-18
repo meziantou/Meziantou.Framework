@@ -1,0 +1,59 @@
+{
+  "accname/aria-owns.html": {
+    "total": 9
+  },
+  "accname/basic.html": {
+    "total": 2
+  },
+  "accname/name/comp_embedded_control.html": {
+    "total": 29
+  },
+  "accname/name/comp_hidden_not_referenced.html": {
+    "total": 8
+  },
+  "accname/name/comp_host_language_label.html": {
+    "total": 88
+  },
+  "accname/name/comp_label.html": {
+    "total": 131
+  },
+  "accname/name/comp_labeledby_non_standard.html": {
+    "total": 3
+  },
+  "accname/name/comp_labelledby.html": {
+    "total": 10
+  },
+  "accname/name/comp_labelledby_hidden_nodes.html": {
+    "total": 27
+  },
+  "accname/name/comp_name_from_content.html": {
+    "total": 79
+  },
+  "accname/name/comp_name_from_content_alt_counter_invalidation.html": {
+    "total": 3
+  },
+  "accname/name/comp_name_from_content_alt_counter_multi_instance.html": {
+    "total": 3
+  },
+  "accname/name/comp_name_from_heading.tentative.html": {
+    "total": 6
+  },
+  "accname/name/comp_name_from_pseudo_content_marker.tentative.html": {
+    "total": 10
+  },
+  "accname/name/comp_text_node.html": {
+    "total": 50
+  },
+  "accname/name/comp_tooltip.html": {
+    "total": 22
+  },
+  "accname/name/comp_tooltip.tentative.html": {
+    "total": 1
+  },
+  "accname/name/shadowdom/basic.html": {
+    "total": 2
+  },
+  "accname/name/shadowdom/slot.html": {
+    "total": 4
+  }
+}

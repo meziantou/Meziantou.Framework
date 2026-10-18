@@ -1,0 +1,1268 @@
+{
+  "html/webappapis/animation-frames/callback-cross-realm-report-exception.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/callback-exception.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/callback-handle.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/callback-invoked.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/callback-multicalls.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/callback-timestamp.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/cancel-invoked.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/cancel-pending.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/nested-raf-not-sync.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/no-interference-timers.html": {
+    "total": 5
+  },
+  "html/webappapis/animation-frames/same-dispatch-time.html": {
+    "total": 1
+  },
+  "html/webappapis/animation-frames/spurious-frame-callbacks-optimization.html": {
+    "total": 1
+  },
+  "html/webappapis/atob/base64.any.js": {
+    "total": 380
+  },
+  "html/webappapis/atob/base64.any.js#dedicatedworker": {
+    "total": 380
+  },
+  "html/webappapis/dynamic-markup-insertion/closing-the-input-stream/document-close-with-pending-script.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/closing-the-input-stream/document.close-01.xhtml": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/closing-the-input-stream/load-event-after-location-set-during-write.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/001.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/002.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/003.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/004.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/005.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/006.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/007.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/008.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/009.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/010.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/011.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/012.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/013.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/014.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/015.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/016.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/017.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/018.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/019.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/020.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/021.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/022.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/023.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/024.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/025.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/026.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/027.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/028.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/029.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/030.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/031.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/032.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/033.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/034.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/035.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/036.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/037.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/038.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/039.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/040.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/041.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/042.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/043.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/044.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/045.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/046.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/047.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/049.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/050.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/051.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/contentType.window.js": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/document.write-01.xhtml": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/document.write-02.html": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/during-readystatechange.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_001.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_002.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_003.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_004.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_005.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_006.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_007.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_008.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_009.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/iframe_010.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-delayed.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-dynamic-import.html": {
+    "total": 1,
+    "failures": {
+      "document.write in an imported module": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-static-import-delayed.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-static-import.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-tla-delayed.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-tla-immediate-promise.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-tla-import.html": {
+    "total": 1,
+    "failures": {
+      "document.write in an imported module": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module-tla-promise.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/module.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/mutation-observer.html": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_001.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_002.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_003.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_004.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_005.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_006.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_007.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_008.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_009.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_010.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_011.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_012.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/script_013.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-write/write-active-document.html": {
+    "total": 1,
+    "failures": {
+      "document.write only writes to active documents": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-01.xhtml": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-02.html": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-03.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-encoding.html": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-style-attribute.html": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-url-base-pushstate.html": {
+    "total": 6
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-url-base.html": {
+    "total": 6
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-url-moretests.html": {
+    "total": 5
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-url-pushstate.html": {
+    "total": 6
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe-url.html": {
+    "total": 6
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Document-parseHTMLUnsafe.html": {
+    "total": 9
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/Element-setHTMLUnsafe-04.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/setHTMLUnsafe-CEReactions.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/setHTMLUnsafe-runScripts.html": {
+    "total": 28
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/setHTMLUnsafe-xml.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/html-unsafe-methods/setHTMLUnsafe.html": {
+    "total": 5
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/002.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/004.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/006.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/011.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/012.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/013.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/014.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/015.html": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/016.html": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js": {
+    "total": 6,
+    "failures": {
+      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (XMLHttpRequest)": "FAIL",
+      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (fetch())": "FAIL",
+      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (image loading)": "FAIL",
+      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (XMLHttpRequest)": "FAIL",
+      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (fetch())": "FAIL",
+      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (image loading)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js": {
+    "total": 3,
+    "failures": {
+      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 1-sec timeout (XMLHttpRequest)": "FAIL",
+      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 1-sec timeout (fetch())": "FAIL",
+      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 4-sec timeout (image loading)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-meta.window.js": {
+    "total": 3,
+    "failures": {
+      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 1-sec timeout (XMLHttpRequest)": "FAIL",
+      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 1-sec timeout (fetch())": "FAIL",
+      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 4-sec timeout (image loading)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js": {
+    "total": 9
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js": {
+    "total": 5,
+    "failures": {
+      "document.open() does not abort documents that are not navigating (image loading)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/active.window.js": {
+    "total": 7
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js": {
+    "total": 6,
+    "failures": {
+      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during beforeunload event)": "FAIL",
+      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during pagehide event)": "FAIL",
+      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during unload event)": "FAIL",
+      "document.open should throw a SecurityError with cross-origin document even when there is an active parser executing script": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-xml.window.js": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-ignore-opens-during-unload.window.js": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-same-origin-domain.sub.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-synchronous-script.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-xml.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/beforeunload.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/crbug-583445-regression.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/custom-element.window.js": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html": {
+    "total": 1,
+    "failures": {
+      "document-open-cancels-javascript-url-navigation": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-01.xhtml": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-02.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-03.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/encoding.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/event-listeners.window.js": {
+    "total": 18
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/form-control-state.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/history-state.window.js": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/history.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js": {
+    "total": 12,
+    "failures": {
+      "document.open should bail out when ignore-opens-during-unload is greater than 0 during beforeunload event (open(parent) while unloading parent and child)": "FAIL",
+      "document.open should bail out when ignore-opens-during-unload is greater than 0 during pagehide event (open(parent) while unloading parent and child)": "FAIL",
+      "document.open should bail out when ignore-opens-during-unload is greater than 0 during unload event (open(parent) while unloading parent and child)": "FAIL",
+      "document.open should bail out when ignore-opens-during-unload is greater than 0 during visibilitychange event (open(parent) while unloading parent and child)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/location-set-and-document-open.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/mutation-observer.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/no-new-global.window.js": {
+    "total": 17
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/open-with-defer-script-during-initial-about-blank-load.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/origin-check-in-document-open-basic.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/origin-check-in-document-open-same-origin-domain.sub.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/quirks.window.js": {
+    "total": 4
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/readiness.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/reload.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Reloading a document.open()'d page should reload the URL of the entry realm's responsible document": "TIMEOUT"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/remove-initial-about-blankness.window.js": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/tasks.window.js": {
+    "total": 10
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/type-argument-plaintext.window.js": {
+    "total": 8
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/type-argument.window.js": {
+    "total": 8
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/unload.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-entry-document-sync-call.window.js": {
+    "total": 3
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-entry-document.window.js": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-fragment.window.js": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url.window.js": {
+    "total": 5,
+    "failures": {
+      "document.open() does not change document's URL (active but not fully active document)": "FAIL"
+    }
+  },
+  "html/webappapis/dynamic-markup-insertion/the-innerhtml-property/annotation-xml-fragment-parsing.html": {
+    "total": 2
+  },
+  "html/webappapis/dynamic-markup-insertion/the-innerhtml-property/innerhtml-and-xml-namespaces.svg": {
+    "total": 14
+  },
+  "html/webappapis/dynamic-markup-insertion/the-outerhtml-property/outerhtml-documentfragment.html": {
+    "total": 1
+  },
+  "html/webappapis/dynamic-markup-insertion/the-outerhtml-property/outerhtml-no-parent.html": {
+    "total": 1
+  },
+  "html/webappapis/events/event-handler-object-environment-instantiation.html": {
+    "total": 1
+  },
+  "html/webappapis/events/event-handler-processing-algorithm-non-booleans.html": {
+    "total": 1
+  },
+  "html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html": {
+    "total": 1
+  },
+  "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js": {
+    "total": 1
+  },
+  "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js#sharedworker": {
+    "total": 1
+  },
+  "html/webappapis/microtask-queuing/queue-microtask.any.js": {
+    "total": 5
+  },
+  "html/webappapis/microtask-queuing/queue-microtask.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "html/webappapis/microtask-queuing/queue-microtask.any.js#sharedworker": {
+    "total": 5
+  },
+  "html/webappapis/microtask-queuing/queue-microtask.window.js": {
+    "total": 2
+  },
+  "html/webappapis/scripting/event-loops/microtask_after_raf.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/microtask_after_script.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/microtask_before_prepare_the_script_element-01.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/microtask_before_prepare_the_script_element-02.xhtml": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/new-scroll-event-dispatched-at-next-updating-rendering-time.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/raf-from-animation-event-serviced-in-same-rendering-update.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/event-loops/task_microtask_ordering.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/event-loops/update-the-rendering-resize-autofocus.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/body-onload.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/compile-event-handler-lexical-scopes-form-owner.html": {
+    "total": 4
+  },
+  "html/webappapis/scripting/events/compile-event-handler-lexical-scopes.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/compile-event-handler-settings-objects.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "html/webappapis/scripting/events/compile-event-handler-symbol-unscopables.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/event-handler-all-global-events.html": {
+    "total": 375
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-body-alt.html": {
+    "total": 118
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-body-window.html": {
+    "total": 140
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-frameset-alt.html": {
+    "total": 118
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-frameset-window.html": {
+    "total": 140
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-no-bc.html": {
+    "total": 3,
+    "failures": {
+      "DOMParser()": "FAIL",
+      "new Document()": "FAIL",
+      "template contents": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-window-frameset.html": {
+    "total": 118
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-window.html": {
+    "total": 118
+  },
+  "html/webappapis/scripting/events/event-handler-attributes-windowless-body.html": {
+    "total": 236
+  },
+  "html/webappapis/scripting/events/event-handler-handleEvent-ignored.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-idl-attribute-realm.window.js": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-javascript.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-no-browsing-context.html": {
+    "total": 12
+  },
+  "html/webappapis/scripting/events/event-handler-non-content-document-idl-attributes.html": {
+    "total": 6
+  },
+  "html/webappapis/scripting/events/event-handler-onmove-01.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Window move event": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/events/event-handler-onmove-02.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Window move event": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/events/event-handler-onresize.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/body-element-synthetic-errorevent.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/body-element-synthetic-event.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/document-synthetic-errorevent.html": {
+    "total": 5
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/document-synthetic-event.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/frameset-element-synthetic-errorevent.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/frameset-element-synthetic-event.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/script-element.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/synthetic-errorevent-click.html": {
+    "total": 4
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/synthetic-errorevent-click.worker.js": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/window-runtime-error.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/window-synthetic-errorevent.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/window-synthetic-event.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/worker.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/workerglobalscope-runtime-error.worker.js": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/workerglobalscope-synthetic-errorevent.worker.js": {
+    "total": 2
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm-error/workerglobalscope-synthetic-event.worker.js": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/event-handler-processing-algorithm.html": {
+    "total": 7
+  },
+  "html/webappapis/scripting/events/event-handler-removal.window.js": {
+    "total": 5
+  },
+  "html/webappapis/scripting/events/event-handler-sourcetext.html": {
+    "total": 5
+  },
+  "html/webappapis/scripting/events/event-handler-spec-example.window.js": {
+    "total": 9
+  },
+  "html/webappapis/scripting/events/event-listener-sandboxed-scripts.html": {
+    "total": 4
+  },
+  "html/webappapis/scripting/events/eventhandler-cancellation.html": {
+    "total": 15
+  },
+  "html/webappapis/scripting/events/inline-event-handler-ordering.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/events/invalid-uncompiled-raw-handler-compiled-late.window.js": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/invalid-uncompiled-raw-handler-compiled-once.window.js": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/invalid-uncompiled-raw-handler-keeps-position.window.js": {
+    "total": 1
+  },
+  "html/webappapis/scripting/events/messageevent-constructor.https.html": {
+    "total": 9
+  },
+  "html/webappapis/scripting/events/onerroreventhandler.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "onerror + !ErrorEvent + Window": "TIMEOUT",
+      "onerror + ErrorEvent + Window": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/events/uncompiled_event_handler_with_scripting_disabled.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/addEventListener.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/body-onerror-compile-error-data-url.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/body-onerror-compile-error.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/body-onerror-runtime-error.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-cross-origin-setInterval.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-cross-origin-setTimeout.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-cross-origin.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-data-url.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-in-attribute.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-in-body-onerror.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-in-setInterval.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-in-setTimeout.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-same-origin-with-hash.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error-same-origin.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/compile-error.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Atomics.waitAsync notification in a Window": "NOTRUN",
+      "Atomics.waitAsync timeout in a Window": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js#dedicatedworker": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Atomics.waitAsync notification in a DedicatedWorkerGlobalScope": "NOTRUN",
+      "Atomics.waitAsync timeout in a DedicatedWorkerGlobalScope": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js": {
+    "total": 1,
+    "failures": {
+      "[[CanBlock]] in a Window": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js#sharedworker": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html": {
+    "total": 14
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html": {
+    "total": 5,
+    "failures": {
+      "Fulfillment handler on fulfilled promise": "FAIL",
+      "Fulfillment handler on pending-then-fulfilled promise": "FAIL",
+      "Rejection handler on pending-then-rejected promise": "FAIL",
+      "Rejection handler on rejected promise": "FAIL",
+      "Thenable resolution": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html": {
+    "total": 6,
+    "failures": {
+      "Fulfillment handler on fulfilled promise": "FAIL",
+      "Fulfillment handler on pending-then-fulfilled promise": "FAIL",
+      "Rejection handler on pending-then-rejected promise": "FAIL",
+      "Rejection handler on rejected promise": "FAIL",
+      "Thenable resolution": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html": {
+    "total": 11,
+    "failures": {
+      "Fulfillment handler on fulfilled promise, using backup incumbent settings object stack": "FAIL",
+      "Fulfillment handler on pending-then-fulfilled promise, using backup incumbent settings object stack": "FAIL",
+      "Rejection handler on pending-then-rejected promise, using backup incumbent settings object stack": "FAIL",
+      "Rejection handler on rejected promise, using backup incumbent settings object stack": "FAIL",
+      "Thenable resolution, using backup incumbent settings object stack": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setInterval.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setTimeout.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-cross-origin.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-data-url.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-in-attribute.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-in-body-onerror.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-in-setInterval.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-in-setTimeout.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-in-window-onerror.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-same-origin-with-hash.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error-same-origin.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/runtime-error.html": {
+    "total": 2
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Promise rejection event should be received for the cross-origin CORS script": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Promise rejection event should be muted for cross-origin non-CORS script": "TIMEOUT",
+      "Promise rejection should be muted if the rejected promise is handled in cross-origin non-CORS script": "NOTRUN",
+      "Promise rejection should be muted if the rejected promise is handled in unhandledrejection event handler in cross-origin non-CORS script": "NOTRUN"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "delayed handling: promise is created in iframe and being rejected elsewhere": "TIMEOUT",
+      "unhandledrejection: promise is created in iframe and being rejected elsewhere": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.dedicatedworker.html": {
+    "total": 6
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.html": {
+    "total": 6
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-onerror.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.dedicatedworker.html": {
+    "total": 36
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.html": {
+    "total": 43
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.serviceworker.https.html": {
+    "total": 37
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.sharedworker.html": {
+    "total": 36
+  },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-resolution-order.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Promise rejection ordering": "TIMEOUT"
+    }
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-event-throw-null.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-parse-error.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-runtime-error-throw.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-runtime-error.html": {
+    "total": 3
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-1.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-2.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-3.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-4.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-5.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/reporterror-cross-realm-method.html": {
+    "total": 1
+  },
+  "html/webappapis/scripting/reporterror.any.js": {
+    "total": 5,
+    "failures": {
+      "self.reportError() doesn't invoke getters": "FAIL",
+      "self.reportError(1)": "FAIL",
+      "self.reportError(undefined)": "FAIL"
+    }
+  },
+  "html/webappapis/scripting/reporterror.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "self.reportError() doesn't invoke getters": "FAIL",
+      "self.reportError(1)": "FAIL",
+      "self.reportError(undefined)": "FAIL"
+    }
+  },
+  "html/webappapis/structured-clone/structured-clone-cross-realm-method.html": {
+    "total": 4
+  },
+  "html/webappapis/structured-clone/structured-clone.any.js": {
+    "total": 152,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/webappapis/structured-clone/structured-clone.any.js#dedicatedworker": {
+    "total": 137,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/clientinformation.window.js": {
+    "total": 2
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/historical.https.window.js": {
+    "total": 5
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator-indexed.html": {
+    "total": 4
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator-window-controls-overlay.tentative.html": {
+    "total": 7,
+    "failures": {
+      "getTitlebarAreaRect return type should be DOMRect": "FAIL",
+      "getTitlebarAreaRect should be a method of the windowControlsOverlay object": "FAIL",
+      "getTitlebarAreaRect should return a empty DOMRect": "FAIL",
+      "ongeometrychange should be a member of the windowControlsOverlay object": "FAIL",
+      "the windowControlsOverlay object should exist on the navigator object": "FAIL",
+      "visible should be a member of the windowControlsOverlay object": "FAIL",
+      "visible should be false": "FAIL"
+    }
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator.any.js": {
+    "total": 12
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator.any.js#dedicatedworker": {
+    "total": 12
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator_user_agent.https.tentative.html": {
+    "total": 2
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigator_user_agent.tentative.html": {
+    "total": 1
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigatorcookies-cookieenabled-true.html": {
+    "total": 1
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/navigatorlanguage.html": {
+    "total": 1
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/per-global.window.js": {
+    "total": 6
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/plugins-and-mimetypes.html": {
+    "total": 3
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment-nosw.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.https.html": {
+    "total": 244,
+    "failures": {
+      "registerProtocolHandler: Attempting to override the \"web+Kelvinsign\" protocol should throw SECURITY_ERR.": "FAIL",
+      "unregisterProtocolHandler: Attempting to override the \"web+Kelvinsign\" protocol should throw SECURITY_ERR.": "FAIL"
+    }
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.tentative.https.html": {
+    "total": 18,
+    "failures": {
+      "registerProtocolHandler: overriding the \"cabal\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"dat\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"did\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"dweb\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"ethereum\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"hyper\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"ipfs\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"ipns\" protocol should work": "FAIL",
+      "registerProtocolHandler: overriding the \"ssb\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"cabal\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"dat\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"did\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"dweb\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"ethereum\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"hyper\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"ipfs\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"ipns\" protocol should work": "FAIL",
+      "unregisterProtocolHandler: overriding the \"ssb\" protocol should work": "FAIL"
+    }
+  },
+  "html/webappapis/system-state-and-capabilities/the-navigator-object/secure_context.html": {
+    "total": 2
+  },
+  "html/webappapis/the-windoworworkerglobalscope-mixin/Worker_Self_Origin.html": {
+    "total": 6
+  },
+  "html/webappapis/timers/arguments.html": {
+    "total": 2
+  },
+  "html/webappapis/timers/clearinterval-from-callback.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/clearinterval-from-callback.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/timers/cleartimeout-clearinterval.any.js": {
+    "total": 2
+  },
+  "html/webappapis/timers/cleartimeout-clearinterval.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "html/webappapis/timers/errors.html": {
+    "total": 4
+  },
+  "html/webappapis/timers/evil-spec-example.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/evil-spec-example.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/timers/missing-timeout-setinterval.any.js": {
+    "total": 2
+  },
+  "html/webappapis/timers/missing-timeout-setinterval.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "html/webappapis/timers/negative-setinterval.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/negative-setinterval.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/timers/negative-settimeout.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/negative-settimeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/timers/setinterval-cross-realm-callback-report-exception.html": {
+    "total": 1
+  },
+  "html/webappapis/timers/setinterval-settimeout-clamping.any.js": {
+    "total": 2
+  },
+  "html/webappapis/timers/setinterval-settimeout-clamping.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "html/webappapis/timers/settimeout-cross-realm-callback-report-exception.html": {
+    "total": 1
+  },
+  "html/webappapis/timers/settimeout-detached-iframe.html": {
+    "total": 1
+  },
+  "html/webappapis/timers/settimeout-setinterval-handles.html": {
+    "total": 2
+  },
+  "html/webappapis/timers/timer-nesting-not-inherited-in-microtask.html": {
+    "total": 2
+  },
+  "html/webappapis/timers/type-long-setinterval.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/type-long-setinterval.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/timers/type-long-settimeout.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/type-long-settimeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/webappapis/update-rendering/child-document-raf-order.html": {
+    "total": 1,
+    "failures": {
+      "Ordering of steps in \"Update the Rendering\" - child document requestAnimationFrame order": "FAIL"
+    }
+  },
+  "html/webappapis/user-prompts/print-during-beforeunload.html": {
+    "total": 1
+  },
+  "html/webappapis/user-prompts/print-during-unload.html": {
+    "total": 1
+  },
+  "html/webappapis/user-prompts/print-in-detached-frame.html": {
+    "total": 1
+  }
+}

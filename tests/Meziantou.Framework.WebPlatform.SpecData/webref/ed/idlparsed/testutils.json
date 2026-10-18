@@ -1,0 +1,89 @@
+{
+  "spec": {
+    "title": "Test Utils Standard",
+    "url": "https://testutils.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "TestUtils": {
+        "fragment": "[Exposed=(Window,Worker)]\nnamespace TestUtils {\n  [NewObject] Promise<undefined> gc();\n};",
+        "type": "namespace",
+        "name": "TestUtils",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "gc",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://testutils.spec.whatwg.org/#dom-testutils-gc"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://testutils.spec.whatwg.org/#namespacedef-testutils"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "TestUtils"
+      ],
+      "Worker": [
+        "TestUtils"
+      ]
+    },
+    "dependencies": {
+      "TestUtils": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

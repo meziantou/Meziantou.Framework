@@ -1,0 +1,462 @@
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.WebPlatform.Css.Layout;
+
+/// <summary>The side of the line a float is placed on (https://drafts.csswg.org/css-writing-modes-4/#line-left): <c>float: left</c> is line-left.</summary>
+internal enum FloatSide : byte
+{
+    LineLeft,
+    LineRight,
+}
+
+/// <summary>The sides of the floats a box is cleared past (the used value of <c>clear</c>, https://drafts.csswg.org/css2/#flow-control).</summary>
+[Flags]
+internal enum ClearSides : byte
+{
+    None = 0,
+    LineLeft = 1,
+    LineRight = 2,
+    Both = LineLeft | LineRight,
+}
+
+/// <summary>
+/// A float placed in a block formatting context: its side, its margin box in the coordinates of the block formatting context
+/// (see <see cref="ExclusionSpace"/>), and the shape of its float area (https://drafts.csswg.org/css-shapes/#float-area) when
+/// <c>shape-outside</c> defines one (null: the margin box).
+/// </summary>
+/// <param name="IsInitialLetter">
+/// Whether the exclusion is the margin box of an initial letter box (https://drafts.csswg.org/css-inline-3/#initial-letter-floats):
+/// it shortens the line boxes as a float does, but it is not a float (see <see cref="ExclusionSpace.AddInitialLetter"/>).
+/// </param>
+[StructLayout(LayoutKind.Auto)]
+internal readonly record struct Exclusion(FloatSide Side, LogicalRect MarginBox, FloatShape? Shape, bool IsInitialLetter = false)
+{
+    /// <summary>
+    /// The block offset of the start of the fragmentainer of a float that was pushed to it (see <see cref="FloatPush"/>), else
+    /// -∞: the float is in a later fragmentainer than the content that starts before that offset, which it does not affect.
+    /// </summary>
+    public double VisibleFrom { get; init; } = double.NegativeInfinity;
+
+    /// <summary>
+    /// Whether the float is not cleared by the boxes that start before <see cref="VisibleFrom"/>: it is in a parallel flow that
+    /// only reaches it in the next fragmentainer. A float that was pushed to the next fragmentainer is cleared by the boxes
+    /// after it, which follow it there.
+    /// </summary>
+    public bool IsDeferred { get; init; }
+}
+
+/// <summary>
+/// The space available at a block offset of a block formatting context next to its floats (a layout opportunity): the
+/// line-left and line-right edges of the space, whether a float intrudes into the containing block there, and the block offset
+/// where the first of these floats ends (where a box that does not fit may be moved down to).
+/// </summary>
+[StructLayout(LayoutKind.Auto)]
+internal readonly record struct LayoutOpportunity(double LineLeft, double LineRight, bool IsShortened, double NextBlockOffset)
+{
+    /// <summary>
+    /// Whether <see cref="NextBlockOffset"/> is a step along a float area defined by <c>shape-outside</c> (see
+    /// <see cref="ExclusionSpace.ShapeStep"/>) rather than the end of a float.
+    /// </summary>
+    public bool StepsAlongShape { get; init; }
+
+    /// <summary>Whether the margin box of a float with a float area defined by <c>shape-outside</c> intrudes into the band: the space depends on the block size of the band.</summary>
+    public bool HasFloatArea { get; init; }
+
+    /// <summary>The inline size of the space (negative when floats from both sides overlap).</summary>
+    public double InlineSize => LineRight - LineLeft;
+}
+
+/// <summary>
+/// The floats placed in a block formatting context (https://drafts.csswg.org/css2/#floats): the areas the line boxes and the
+/// block formatting context roots must avoid, and the positions the boxes with <c>clear</c> are moved past.
+/// </summary>
+/// <remarks>
+/// The coordinates are line-relative (https://drafts.csswg.org/css-writing-modes-4/#line-left), in the writing mode of the
+/// block formatting context root (shared by all the boxes that participate in it): the inline coordinate is the distance from
+/// the line-left edge of the content box of the root (independent of the <c>direction</c> of the boxes), the block coordinate
+/// the distance from its block-start edge (see <see cref="BlockFormattingContextState"/>). The floats are placed by
+/// <see cref="PlaceFloat"/> (the rules 1–9 of https://drafts.csswg.org/css2/#float-position), the layout opportunities of the
+/// line boxes and of the boxes that avoid the floats are given by <see cref="GetOpportunity"/>.
+/// </remarks>
+internal sealed class ExclusionSpace
+{
+    private List<Exclusion>? _exclusions;
+    private double _lineLeftClearOffset = double.NegativeInfinity;
+    private double _lineRightClearOffset = double.NegativeInfinity;
+
+    /// <summary>The block-end edge of the lowest float: no float intrudes into the space below it.</summary>
+    private double _lowestBlockEnd = double.NegativeInfinity;
+
+    /// <summary>
+    /// The highest position of the next float: "The outer top of a floating box may not be higher than the outer top of any
+    /// block or floated box generated by an element earlier in the source document" (rule 5).
+    /// </summary>
+    private double _floatCeiling = double.NegativeInfinity;
+
+    /// <summary>The block-end edges of the lowest initial letter boxes of the line-left and line-right sides (see <see cref="AddInitialLetter"/>).</summary>
+    private double _lineLeftInitialLetterEnd = double.NegativeInfinity;
+    private double _lineRightInitialLetterEnd = double.NegativeInfinity;
+
+    /// <summary>Whether a float is not cleared by the boxes of the previous fragmentainers (see <see cref="Exclusion.IsDeferred"/>).</summary>
+    private bool _hasDeferredFloats;
+
+    /// <summary>The tolerance of the comparison of a position with the start of the fragmentainer of a pushed float.</summary>
+    private const double PushEpsilon = 0.01;
+
+    /// <summary>Whether no float was placed in the block formatting context.</summary>
+    public bool IsEmpty => _exclusions is null;
+
+    /// <summary>The floats placed so far, in placement order.</summary>
+    public IReadOnlyList<Exclusion> Exclusions => _exclusions is null ? [] : _exclusions;
+
+    /// <summary>
+    /// Adds a placed float: <paramref name="marginBox"/> is its margin box in the coordinates of the block formatting context,
+    /// <paramref name="shape"/> its float area when <c>shape-outside</c> defines one.
+    /// </summary>
+    /// <param name="visibleFrom">The block offset of the start of the fragmentainer of a float that was pushed to it (see <see cref="Exclusion.VisibleFrom"/>), else -∞.</param>
+    /// <param name="isDeferred">Whether the float is not cleared by the boxes that start before <paramref name="visibleFrom"/> (see <see cref="Exclusion.IsDeferred"/>).</param>
+    public void Add(FloatSide side, LogicalRect marginBox, FloatShape? shape = null, double visibleFrom = double.NegativeInfinity, bool isDeferred = false)
+    {
+        (_exclusions ??= []).Add(new Exclusion(side, marginBox, shape) { VisibleFrom = visibleFrom, IsDeferred = isDeferred });
+        _hasDeferredFloats |= isDeferred;
+        if (side == FloatSide.LineLeft)
+        {
+            _lineLeftClearOffset = Math.Max(_lineLeftClearOffset, marginBox.BlockEnd);
+        }
+        else
+        {
+            _lineRightClearOffset = Math.Max(_lineRightClearOffset, marginBox.BlockEnd);
+        }
+
+        _lowestBlockEnd = Math.Max(_lowestBlockEnd, marginBox.BlockEnd);
+        _floatCeiling = Math.Max(_floatCeiling, marginBox.BlockStart);
+    }
+
+    /// <summary>
+    /// Adds the margin box of an initial letter box placed at the start of its line (https://drafts.csswg.org/css-inline-3/#initial-letter-floats):
+    /// "Initial letters are not floats: they are in-flow inline-level content that belongs to a line box". The line boxes and
+    /// the boxes that avoid the floats are shortened by it as by a float, but "the clear property does not care about initial
+    /// letters: it neither applies to initial letters nor clears them when applied to nearby floats", and it does not limit
+    /// the position of the next floats (rule 5). A float of its side placed after it is below it: "if such a float originates
+    /// in subsequent lines of content adjacent to a (sunk) initial letter, then that float must clear the initial letter" (a
+    /// float that originates in the line of the initial letter is placed below it too, instead of moving the initial letter
+    /// inward). Returns the index of the exclusion (see <see cref="MoveInitialLetter"/>).
+    /// </summary>
+    public int AddInitialLetter(FloatSide side, LogicalRect marginBox)
+    {
+        (_exclusions ??= []).Add(new Exclusion(side, marginBox, Shape: null, IsInitialLetter: true));
+        UpdateInitialLetterEnds(side, marginBox);
+        return _exclusions.Count - 1;
+    }
+
+    /// <summary>Moves the initial letter box added by <see cref="AddInitialLetter"/> (its position depends on the baseline of its line).</summary>
+    public void MoveInitialLetter(int index, LogicalRect marginBox)
+    {
+        var exclusion = _exclusions![index];
+        _exclusions[index] = exclusion with { MarginBox = marginBox };
+        UpdateInitialLetterEnds(exclusion.Side, marginBox);
+    }
+
+    private void UpdateInitialLetterEnds(FloatSide side, LogicalRect marginBox)
+    {
+        if (side == FloatSide.LineLeft)
+        {
+            _lineLeftInitialLetterEnd = Math.Max(_lineLeftInitialLetterEnd, marginBox.BlockEnd);
+        }
+        else
+        {
+            _lineRightInitialLetterEnd = Math.Max(_lineRightInitialLetterEnd, marginBox.BlockEnd);
+        }
+
+        _lowestBlockEnd = Math.Max(_lowestBlockEnd, marginBox.BlockEnd);
+    }
+
+    /// <summary>
+    /// Returns the block-end edge of the lowest initial letter box of a side, or null when there is none: a block that starts
+    /// with an initial letter "must clear the previous block's initial letter" (https://drafts.csswg.org/css-inline-3/#short-para-initial-letter).
+    /// </summary>
+    public double? GetInitialLetterEnd(FloatSide side)
+    {
+        var end = side == FloatSide.LineLeft ? _lineLeftInitialLetterEnd : _lineRightInitialLetterEnd;
+        return double.IsNegativeInfinity(end) ? null : end;
+    }
+
+    /// <summary>
+    /// Returns the block-end outer edge of the lowest float or initial letter box, or null when there is none: a block formatting
+    /// context root contains its floats (https://drafts.csswg.org/css2/#root-height) and, as in Chrome, the initial letter boxes
+    /// ("The margin box of an initial letter contributes to the size of its containing element",
+    /// https://drafts.csswg.org/css-inline-3/#raised-sunken-caps; the other block containers do not grow).
+    /// </summary>
+    public double? GetContentEnd()
+    {
+        var end = Math.Max(Math.Max(_lineLeftClearOffset, _lineRightClearOffset), Math.Max(_lineLeftInitialLetterEnd, _lineRightInitialLetterEnd));
+        return double.IsNegativeInfinity(end) ? null : end;
+    }
+
+    /// <summary>Returns the floats placed so far, to remove the ones placed after it (see <see cref="Restore"/>).</summary>
+    public Snapshot Save() => new(_exclusions?.Count ?? 0, _lineLeftClearOffset, _lineRightClearOffset, _lowestBlockEnd, _floatCeiling, _lineLeftInitialLetterEnd, _lineRightInitialLetterEnd);
+
+    /// <summary>Removes the floats placed after <see cref="Save"/>.</summary>
+    public void Restore(in Snapshot snapshot)
+    {
+        if (_exclusions is not null)
+        {
+            if (snapshot.Count == 0)
+            {
+                _exclusions = null;
+            }
+            else
+            {
+                _exclusions.RemoveRange(snapshot.Count, _exclusions.Count - snapshot.Count);
+            }
+        }
+
+        _lineLeftClearOffset = snapshot.LineLeftClearOffset;
+        _lineRightClearOffset = snapshot.LineRightClearOffset;
+        _lowestBlockEnd = snapshot.LowestBlockEnd;
+        _floatCeiling = snapshot.FloatCeiling;
+        _lineLeftInitialLetterEnd = snapshot.LineLeftInitialLetterEnd;
+        _lineRightInitialLetterEnd = snapshot.LineRightInitialLetterEnd;
+    }
+
+    /// <summary>The floats placed at some point (see <see cref="Save"/>).</summary>
+    [StructLayout(LayoutKind.Auto)]
+    public readonly record struct Snapshot(int Count, double LineLeftClearOffset, double LineRightClearOffset, double LowestBlockEnd, double FloatCeiling, double LineLeftInitialLetterEnd, double LineRightInitialLetterEnd);
+
+    /// <summary>
+    /// Returns the block offset a box cleared past the floats of the given sides must be placed at: the block-end outer edge of
+    /// the lowest of these floats (https://drafts.csswg.org/css2/#clearance), or null when there is no such float.
+    /// </summary>
+    /// <param name="sides">The sides of the floats to clear.</param>
+    /// <param name="position">
+    /// The position of the box without clearance: the floats of a parallel flow that are in a fragmentainer that starts after it
+    /// are not cleared (the box is in a previous fragmentainer), see <see cref="Exclusion.IsDeferred"/>.
+    /// </param>
+    public double? GetClearanceOffset(ClearSides sides, double position = double.PositiveInfinity)
+    {
+        var offset = double.NegativeInfinity;
+        if (_hasDeferredFloats && !double.IsPositiveInfinity(position))
+        {
+            foreach (var exclusion in CollectionsMarshal.AsSpan(_exclusions))
+            {
+                if (exclusion.IsInitialLetter || (exclusion.IsDeferred && exclusion.VisibleFrom > position + PushEpsilon))
+                    continue;
+
+                if ((sides & (exclusion.Side == FloatSide.LineLeft ? ClearSides.LineLeft : ClearSides.LineRight)) != ClearSides.None)
+                {
+                    offset = Math.Max(offset, exclusion.MarginBox.BlockEnd);
+                }
+            }
+
+            return double.IsNegativeInfinity(offset) ? null : offset;
+        }
+
+        if ((sides & ClearSides.LineLeft) != ClearSides.None)
+        {
+            offset = Math.Max(offset, _lineLeftClearOffset);
+        }
+
+        if ((sides & ClearSides.LineRight) != ClearSides.None)
+        {
+            offset = Math.Max(offset, _lineRightClearOffset);
+        }
+
+        return double.IsNegativeInfinity(offset) ? null : offset;
+    }
+
+    /// <summary>
+    /// Returns the space available next to the floats in the band from <paramref name="blockStart"/> to
+    /// <paramref name="blockStart"/> + <paramref name="blockSize"/> (a single position when the size is 0) of a containing block
+    /// whose content box is at <paramref name="lineLeft"/> and has the inline size <paramref name="inlineSize"/>: the space
+    /// between the line-right edges of the line-left floats and the line-left edges of the line-right floats that intrude into
+    /// the band (https://drafts.csswg.org/css2/#floats).
+    /// </summary>
+    /// <param name="useFloatAreas">
+    /// Whether the float areas defined by <c>shape-outside</c> are used (the line boxes, https://drafts.csswg.org/css-shapes/#relation-to-box-model-and-float-behavior),
+    /// rather than the margin boxes of the floats (the placement of the floats and of the boxes that avoid them).
+    /// </param>
+    public LayoutOpportunity GetOpportunity(double blockStart, double blockSize, double lineLeft, double inlineSize, bool useFloatAreas)
+    {
+        var left = lineLeft;
+        var right = lineLeft + inlineSize;
+        if (_exclusions is null || blockStart >= _lowestBlockEnd)
+            return new LayoutOpportunity(left, right, IsShortened: false, double.PositiveInfinity);
+
+        var blockEnd = blockStart + Math.Max(0, blockSize);
+        var shortened = false;
+        var next = double.PositiveInfinity;
+        var stepsAlongShape = false;
+        var hasFloatArea = false;
+        foreach (var exclusion in CollectionsMarshal.AsSpan(_exclusions))
+        {
+            var rect = exclusion.MarginBox;
+            if (!Intrudes(rect, blockStart, blockEnd) || exclusion.VisibleFrom > blockStart + PushEpsilon)
+                continue;
+
+            double edge;
+            var nextOffset = rect.BlockEnd;
+            var isStep = false;
+            if (useFloatAreas && exclusion.Shape is { } shape)
+            {
+                // The float area: the line-right edge of a line-left float, the line-left edge of a line-right float, in the band
+                // (a band that does not intersect the shape is not shortened by the float)
+                hasFloatArea = true;
+                if (!shape.TryGetLineExtent(blockStart, blockEnd, out var shapeLeft, out var shapeRight))
+                    continue;
+
+                edge = exclusion.Side == FloatSide.LineLeft ? Math.Min(shapeRight, rect.InlineEnd) : Math.Max(shapeLeft, rect.InlineStart);
+
+                // The space next to a float area changes along the float: a line that does not fit is tried again a step below
+                if (blockStart + ShapeStep < nextOffset)
+                {
+                    nextOffset = blockStart + ShapeStep;
+                    isStep = true;
+                }
+            }
+            else
+            {
+                edge = exclusion.Side == FloatSide.LineLeft ? rect.InlineEnd : rect.InlineStart;
+            }
+
+            shortened = true;
+            if (nextOffset < next)
+            {
+                next = nextOffset;
+                stepsAlongShape = isStep;
+            }
+
+            if (exclusion.Side == FloatSide.LineLeft)
+            {
+                left = Math.Max(left, edge);
+            }
+            else
+            {
+                right = Math.Min(right, edge);
+            }
+        }
+
+        return new LayoutOpportunity(left, right, shortened, next) { StepsAlongShape = stepsAlongShape, HasFloatArea = hasFloatArea };
+    }
+
+    /// <summary>
+    /// The distance a line box that does not fit next to a float area defined by <c>shape-outside</c> is moved down before it is
+    /// tried again (https://drafts.csswg.org/css2/#floats: "the line box is shifted downward (and its width recomputed) until
+    /// either some content fits or there are no more floats present"): 1px, as in Blink.
+    /// </summary>
+    public const double ShapeStep = 1;
+
+    /// <summary>
+    /// Returns the edges of the margin boxes of the floats that intrude into the band from <paramref name="blockStart"/> to
+    /// <paramref name="blockStart"/> + <paramref name="blockSize"/>: the line-right edge of the line-left floats and the
+    /// line-left edge of the line-right floats (infinite without float on the side). The floats whose margin box has no inline
+    /// size are ignored: a box cannot overlap them.
+    /// </summary>
+    public (double LineLeft, double LineRight) GetFloatEdges(double blockStart, double blockSize)
+    {
+        var left = double.NegativeInfinity;
+        var right = double.PositiveInfinity;
+        if (_exclusions is null || blockStart >= _lowestBlockEnd)
+            return (left, right);
+
+        var blockEnd = blockStart + Math.Max(0, blockSize);
+        foreach (var exclusion in CollectionsMarshal.AsSpan(_exclusions))
+        {
+            var rect = exclusion.MarginBox;
+            if (rect.InlineEnd <= rect.InlineStart || !Intrudes(rect, blockStart, blockEnd) || exclusion.VisibleFrom > blockStart + PushEpsilon)
+                continue;
+
+            if (exclusion.Side == FloatSide.LineLeft)
+            {
+                left = Math.Max(left, rect.InlineEnd);
+            }
+            else
+            {
+                right = Math.Min(right, rect.InlineStart);
+            }
+        }
+
+        return (left, right);
+    }
+
+    /// <summary>
+    /// Places a float whose margin box has the given size (https://drafts.csswg.org/css2/#float-position) in a containing block
+    /// whose content box is at <paramref name="lineLeft"/> and has the inline size <paramref name="inlineSize"/>, and returns
+    /// the line-left/block-start corner of its margin box. The float is not added (see <see cref="Add"/>).
+    /// </summary>
+    /// <remarks>
+    /// The float is placed as high as possible (rule 8), at or below <paramref name="ceiling"/> (its static position: the top of
+    /// its containing block, of the current line box, or below the block-level boxes before it, rules 4 and 6, and its
+    /// clearance) and the top of the previous floats (rule 5), then as far line-left (or line-right) as possible (rule 9):
+    /// next to the floats of the same side and not past the floats of the other side (rules 2, 3 and 7). A position where it
+    /// does not fit between the floats is skipped down to the block-end edge of the first float that ends there; where no float
+    /// intrudes, it is placed against the edge of the containing block even when it is wider (rule 1).
+    /// </remarks>
+    public LogicalOffset PlaceFloat(FloatSide side, LogicalSize marginBoxSize, double ceiling, double lineLeft, double inlineSize)
+    {
+        // (a float is below the initial letter boxes of its side, see AddInitialLetter)
+        var blockStart = Math.Max(Math.Max(ceiling, _floatCeiling), side == FloatSide.LineLeft ? _lineLeftInitialLetterEnd : _lineRightInitialLetterEnd);
+        while (true)
+        {
+            var opportunity = GetOpportunity(blockStart, marginBoxSize.Block, lineLeft, inlineSize, useFloatAreas: false);
+            var inline = side == FloatSide.LineLeft ? opportunity.LineLeft : opportunity.LineRight - marginBoxSize.Inline;
+            // The sizes are sums of floating-point numbers, and the computed percentages are rounded: ten floats of 0.87em fit in
+            // 8.7em (WPT css/CSS2/values/units-005.xht), and six floats of 16.6666665% fit in their containing block (as in the
+            // browsers, whose sizes are multiples of their layout unit, 1/64px)
+            const double Epsilon = 1.0 / 64;
+            if (!opportunity.IsShortened || opportunity.InlineSize + Epsilon >= marginBoxSize.Inline || double.IsPositiveInfinity(opportunity.NextBlockOffset))
+                return new LogicalOffset(inline, blockStart);
+
+            // The floats of the other side that are outside of the containing block do not narrow it: a float wider than its
+            // containing block is placed against its edge (rule 1) when it does not overlap them (rule 3) and no float of its
+            // side is before it (rule 7: it "may not stick out at the right edge, unless it is already as far to the left as
+            // possible")
+            var (floatLineLeft, floatLineRight) = GetFloatEdges(blockStart, marginBoxSize.Block);
+            if (side == FloatSide.LineLeft
+                ? double.IsNegativeInfinity(floatLineLeft) && floatLineRight >= lineLeft + inlineSize && inline + marginBoxSize.Inline <= floatLineRight
+                : double.IsPositiveInfinity(floatLineRight) && floatLineLeft <= lineLeft && inline >= floatLineLeft)
+            {
+                return new LogicalOffset(inline, blockStart);
+            }
+
+            blockStart = opportunity.NextBlockOffset;
+        }
+    }
+
+    /// <summary>
+    /// Whether the margin box of a float intrudes into the band from <paramref name="blockStart"/> to <paramref name="blockEnd"/>
+    /// (a single position when they are equal). A float without block size does not intrude.
+    /// </summary>
+    private static bool Intrudes(LogicalRect rect, double blockStart, double blockEnd)
+    {
+        if (rect.BlockEnd <= rect.BlockStart || rect.BlockEnd <= blockStart)
+            return false;
+
+        return blockEnd > blockStart ? rect.BlockStart < blockEnd : rect.BlockStart <= blockStart;
+    }
+
+    /// <summary>
+    /// Returns the sides of the floats a box is cleared past: the logical values of <c>clear</c> (https://drafts.csswg.org/css-logical/#float-clear)
+    /// are resolved with the direction of the containing block.
+    /// </summary>
+    public static ClearSides GetClearSides(ClearKind clear, WritingDirection containingBlock) => clear switch
+    {
+        ClearKind.Left => ClearSides.LineLeft,
+        ClearKind.Right => ClearSides.LineRight,
+        ClearKind.Both => ClearSides.Both,
+        ClearKind.InlineStart => containingBlock.IsRightToLeft ? ClearSides.LineRight : ClearSides.LineLeft,
+        ClearKind.InlineEnd => containingBlock.IsRightToLeft ? ClearSides.LineLeft : ClearSides.LineRight,
+        _ => ClearSides.None,
+    };
+
+    /// <summary>
+    /// Returns the side of the line a float is placed on: <c>left</c> and <c>right</c> are line-relative, the logical values of
+    /// <c>float</c> (https://drafts.csswg.org/css-logical/#float-clear) are resolved with the direction of the containing block.
+    /// </summary>
+    public static FloatSide GetFloatSide(FloatKind value, WritingDirection containingBlock) => value switch
+    {
+        FloatKind.Right => FloatSide.LineRight,
+        FloatKind.InlineStart => containingBlock.IsRightToLeft ? FloatSide.LineRight : FloatSide.LineLeft,
+        FloatKind.InlineEnd => containingBlock.IsRightToLeft ? FloatSide.LineLeft : FloatSide.LineRight,
+        _ => FloatSide.LineLeft,
+    };
+}

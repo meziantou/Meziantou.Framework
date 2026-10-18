@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sdh-IQ": {
+      "identity": {
+        "language": "sdh",
+        "territory": "IQ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kcg": {
+      "identity": {
+        "language": "kcg"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

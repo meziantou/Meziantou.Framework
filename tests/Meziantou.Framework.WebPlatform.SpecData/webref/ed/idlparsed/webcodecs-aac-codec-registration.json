@@ -1,0 +1,107 @@
+{
+  "spec": {
+    "title": "AAC WebCodecs Registration",
+    "url": "https://w3c.github.io/webcodecs/aac_codec_registration.html"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "AacEncoderConfig": {
+        "fragment": "dictionary AacEncoderConfig {\n  AacBitstreamFormat format = \"aac\";\n};",
+        "type": "dictionary",
+        "name": "AacEncoderConfig",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "format",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AacBitstreamFormat"
+            },
+            "default": {
+              "type": "string",
+              "value": "aac"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#dom-aacencoderconfig-format"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#dictdef-aacencoderconfig"
+      },
+      "AacBitstreamFormat": {
+        "fragment": "enum AacBitstreamFormat {\n  \"aac\",\n  \"adts\",\n};",
+        "type": "enum",
+        "name": "AacBitstreamFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "aac",
+            "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#dom-aacbitstreamformat-aac"
+          },
+          {
+            "type": "enum-value",
+            "value": "adts",
+            "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#dom-aacbitstreamformat-adts"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#enumdef-aacbitstreamformat"
+      }
+    },
+    "idlExtendedNames": {
+      "AudioEncoderConfig": [
+        {
+          "fragment": "partial dictionary AudioEncoderConfig {\n  AacEncoderConfig aac;\n};",
+          "type": "dictionary",
+          "name": "AudioEncoderConfig",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "aac",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "AacEncoderConfig"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webcodecs/aac_codec_registration.html#dom-audioencoderconfig-aac"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "AudioEncoderConfig": [
+        "AacEncoderConfig"
+      ],
+      "AacEncoderConfig": [
+        "AacBitstreamFormat"
+      ]
+    },
+    "externalDependencies": [
+      "AudioEncoderConfig"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "spec": {
+    "title": "Page Lifecycle",
+    "url": "https://wicg.github.io/page-lifecycle/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "ClientLifecycleState": {
+        "fragment": "enum ClientLifecycleState {\n    \"active\",\n    \"frozen\"\n};",
+        "type": "enum",
+        "name": "ClientLifecycleState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "active",
+            "href": "https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-active"
+          },
+          {
+            "type": "enum-value",
+            "value": "frozen",
+            "href": "https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-frozen"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/page-lifecycle/#enumdef-clientlifecyclestate"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    attribute EventHandler onfreeze;\n    attribute EventHandler onresume;\n    readonly attribute boolean wasDiscarded;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onfreeze",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/page-lifecycle/#dom-document-onfreeze"
+            },
+            {
+              "type": "attribute",
+              "name": "onresume",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/page-lifecycle/#dom-document-onresume"
+            },
+            {
+              "type": "attribute",
+              "name": "wasDiscarded",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/page-lifecycle/#dom-document-wasdiscarded"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Client": [
+        {
+          "fragment": "partial interface Client {\n    readonly attribute ClientLifecycleState lifecycleState;\n};",
+          "type": "interface",
+          "name": "Client",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "lifecycleState",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ClientLifecycleState"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/page-lifecycle/#dom-client-lifecyclestate"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Document": [
+        "EventHandler"
+      ],
+      "Client": [
+        "ClientLifecycleState"
+      ]
+    },
+    "externalDependencies": [
+      "Document",
+      "EventHandler",
+      "Client"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

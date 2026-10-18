@@ -1,0 +1,8 @@
+{
+  "deprecation-reporting/idlharness.any.js": {
+    "total": 2
+  },
+  "deprecation-reporting/idlharness.any.js#dedicatedworker": {
+    "total": 2
+  }
+}

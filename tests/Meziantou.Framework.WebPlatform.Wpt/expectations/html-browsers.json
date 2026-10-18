@@ -1,0 +1,3006 @@
+{
+  "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/broadcastchannel.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that open broadcastchannel does not block bfcache.": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/dedicatedworker.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "BroadcastChannel messages dispatched to dedicated worker in bfcache should be queued.": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/evict-on-message.tentative.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/broadcast-channel.html": {
+    "total": 2,
+    "failures": {
+      "Eligibility (BroadcastChannel closed in the pagehide event)": "PRECONDITION_FAILED",
+      "Eligibility (BroadcastChannel)": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/dedicated-worker.html": {
+    "total": 1,
+    "failures": {
+      "Eligibility: dedicated workers": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-1.html": {
+    "total": 2,
+    "failures": {
+      "Eligibility (in-flight fetch): Header received before BFCache and body received after BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Header received before BFCache and body received when in BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-2.html": {
+    "total": 3,
+    "failures": {
+      "Eligibility (in-flight fetch): Header and body received after BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Header and body received when in BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Header received when in BFCache and body received after BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-cors.html": {
+    "total": 2,
+    "failures": {
+      "Eligibility (in-flight fetch): CORS failed when in BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): CORS succeeded when in BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-redirects.html": {
+    "total": 4,
+    "failures": {
+      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache w/ CSP failing": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Redirect header received when in BFCache": "PRECONDITION_FAILED",
+      "Eligibility (in-flight fetch): Redirect header received when in BFCache w/ CSP passing": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/shared-worker-active-client.window.js": {
+    "total": 1,
+    "failures": {
+      "Eligibility: shared workers with another active client in a separate window": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/eligibility/shared-worker.html": {
+    "total": 1,
+    "failures": {
+      "Eligibility: shared workers": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/events.html": {
+    "total": 5,
+    "failures": {
+      "CrossSite": "PRECONDITION_FAILED",
+      "SameOrigin": "PRECONDITION_FAILED",
+      "SameSite": "PRECONDITION_FAILED",
+      "beforeunload": "PRECONDITION_FAILED",
+      "unload": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/focus.html": {
+    "total": 1,
+    "failures": {
+      "Focus should be kept when page gets into and out of BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/pagehide-event-handler-microtasks.window.js": {
+    "total": 1,
+    "failures": {
+      "Assure microtasks posted by pagehide event handler are dispatched": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/pushstate.https.html": {
+    "total": 2,
+    "failures": {
+      "back navigation to pushState()d page (in BFCache)": "PRECONDITION_FAILED",
+      "back navigation to pushState()d page (not in BFCache)": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/service-worker-client-postmessage.https.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/service-worker-clients-claim.https.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/service-worker-clients-matchall.https.html": {
+    "total": 1,
+    "failures": {
+      "Clients.matchAll() should not list pages in BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/service-worker-controlled-after-restore.https.html": {
+    "total": 1,
+    "failures": {
+      "Pages should remain controlled after restored from BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/service-worker-unregister.https.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/storage-events.html": {
+    "total": 1,
+    "failures": {
+      "Storage events should not be fired for BFCached pages after becoming active": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/back-forward-cache/timers.html": {
+    "total": 1,
+    "failures": {
+      "Timers should be paused when the page is in BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/001.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/PopStateEvent.html": {
+    "total": 5
+  },
+  "html/browsers/browsing-the-web/history-traversal/api-availability.html": {
+    "total": 1,
+    "failures": {
+      "API availability following history traversal": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/browsing_context_name.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/browsing_context_name_cross_origin.html": {
+    "total": 1,
+    "failures": {
+      "Restoring window.name on cross-origin history traversal": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/browsing_context_name_cross_origin_2.html": {
+    "total": 1,
+    "failures": {
+      "Restoring window.name on cross-origin history traversal": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/browsing_context_name_cross_origin_3.html": {
+    "total": 1,
+    "failures": {
+      "Restoring window.name on cross-origin history traversal": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/document-state.https.html": {
+    "total": 2,
+    "failures": {
+      "A navigation's initiator origin and referrer are stored in the document state and used in the document repopulation case": "FAIL",
+      "A navigation's initiator origin and referrer are stored in the document state and used on location.reload()": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/after-load-hash-twice.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/after-load-hash.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/after-load-pushState.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/after-load-replaceState.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/before-load-hash-twice.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/before-load-hash.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/before-load-pushState.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/before-load-replaceState.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/pushState-inside-popstate.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/same-document-traverse-immediate.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/same-document-traverse-wait.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/events.html": {
+    "total": 16
+  },
+  "html/browsers/browsing-the-web/history-traversal/hash-empty-string.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/history-traversal/hashchange-same-fragment-does-not-fire.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/hashchange_event.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/history-traversal-navigate-parent-while-child-loading.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/history-traversal-navigates-multiple-frames.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/iframe-history-restore-about-blank.tentative.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html": {
+    "total": 2,
+    "failures": {
+      "iframe is restored to JS-navigated URL when container traverses back": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-bfcache-restore-iframe.html": {
+    "total": 1,
+    "failures": {
+      "pagereveal event in iframe fires and in correct order on restoration from BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-bfcache-restore.html": {
+    "total": 1,
+    "failures": {
+      "pagereveal event fires and in correct order on restoration from BFCache": "PRECONDITION_FAILED"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-new-document-navigation-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-new-document-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-prerender-activation.https.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-cross-origin.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-initial-navigation.html": {
+    "harness": "TIMEOUT",
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-from-click.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-navigation-hidden-document.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-with-cross-origin-redirect.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "pageswap on navigation with same-origin redirect": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-with-redirect.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-reload-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-replace-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-replace-with-cross-origin-redirect.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "pageswap on navigation with same-origin redirect": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "pageswap on traverse navigation from script": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "pageswap on traverse navigation from script": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/resume-timer-on-history-back.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-basic.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-fragment-scrolling-cross-origin.html": {
+    "total": 1,
+    "failures": {
+      "Manual scroll restoration should take precedent over scrolling to fragment in cross origin navigation": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-fragment-scrolling-samedoc.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-navigation-cross-origin.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-navigation-samedoc.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/popstate_event.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/same-url.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/scroll-restoration-order.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html": {
+    "total": 2,
+    "failures": {
+      "changing srcdoc to about:srcdoc#yo then another srcdoc does two push navigations and we can navigate back": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html": {
+    "total": 2,
+    "failures": {
+      "srcdoc history entries: the container window navigates": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/unset_context_name.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Window.name is reset after navigating to a different origin": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-aux-frame-navigation.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-main-frame-navigation.sub.html": {
+    "total": 1,
+    "failures": {
+      "window.name should equal \"\" after a cross-origin main frame navigation": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-sub-frame-navigation.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-same-origin-aux-frame-navigation.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-same-origin-main-frame-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/window-name-after-same-origin-sub-frame-navigation.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/003.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/004.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/005.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/006.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/007.html": {
+    "total": 1,
+    "failures": {
+      "Link with onclick javascript url and href navigation ": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/008.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/011.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/012.html": {
+    "total": 1,
+    "failures": {
+      "Link with onclick navigation to javascript url with delayed document.write and href navigation ": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/013.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/014.html": {
+    "total": 1,
+    "failures": {
+      " Link with javascript onclick form submission script order ": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/015.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/abort-document-load.html": {
+    "total": 1,
+    "failures": {
+      "Aborting a Document load": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/abort-document-window-stop.sub.window.js": {
+    "total": 1,
+    "failures": {
+      "Child that immediately stops window during loading does not crash": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/about-srcdoc-navigation-blocked.window.js": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/anchor-fragment-form-submit-longfragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/anchor-fragment-form-submit-withpath.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/anchor-fragment-form-submit.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/anchor-jsurl-form-submit.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Anchor element with onclick form submission and href to javascript: url": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/child-navigates-parent-cross-origin.window.js": {
+    "total": 11,
+    "failures": {
+      "Child document attempts to navigate cross-origin parent via location": "FAIL",
+      "Child document attempts to navigate cross-origin parent via location.href": "FAIL",
+      "Child document attempts to navigate cross-origin parent via location.replace()": "FAIL",
+      "Child document attempts to navigate cross-origin parent via non-standard location property": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/child-navigates-parent-same-origin.window.js": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-with-user-activation-in-parent.window.js": {
+    "total": 1,
+    "failures": {
+      "Cross-origin top navigation is blocked without user activation, even if the parent has user activation": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-with-user-activation.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-without-user-activation-nested.window.js": {
+    "total": 1,
+    "failures": {
+      "Cross-origin top navigation is blocked without user activation, even if iframe is nested and its direct parent is same-site": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-without-user-activation.window.js": {
+    "total": 1,
+    "failures": {
+      "Cross-origin top navigation is blocked without user activation": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/empty-iframe-load-event.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/empty_fragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/failure-check-sequence.https.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/form-submit-and-window-stop.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/fragment-replace.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/grandparent_location_aboutsrcdoc.sub.window.js": {
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "cross-origin grandparent sets location in same-doc navigation": "NOTRUN",
+      "cross-origin grandparent sets location to about:srcdoc": "TIMEOUT",
+      "cross-origin grandparent with sandboxed srcdoc grandchild that self navigate": "NOTRUN",
+      "same-origin grandparent sets location in same-doc navigation": "NOTRUN",
+      "same-origin grandparent sets location to about:srcdoc": "NOTRUN",
+      "same-origin grandparent with sandboxed srcdoc grandchild that self navigates": "NOTRUN"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Grandparent with cross-origin sandboxed srdoc grandchild session": "NOTRUN",
+      "Grandparent with cross-origin srdoc grandchild session": "TIMEOUT",
+      "Grandparent with same-origin sandboxed srdoc grandchild session": "NOTRUN",
+      "Grandparent with same-origin srdoc grandchild session": "NOTRUN"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-nosrc.html": {
+    "total": 7
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-fragment.html": {
+    "total": 5
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-pushState-replaceState.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204.html": {
+    "total": 7
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-aboutblank-navigate-immediately.html": {
+    "total": 6
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-aboutblank-wait-for-load.html": {
+    "total": 6
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/initial-content-replacement.html": {
+    "total": 10
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/load-event-iframe-element.html": {
+    "total": 5
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/load-pageshow-events-iframe-contentWindow.html": {
+    "total": 5
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/load-pageshow-events-window-open.html": {
+    "total": 5
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-204-fragment.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-204-pushState-replaceState.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-204.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-aboutblank.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-history-length.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/window-open-nourl.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-string.tentative.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-undefined.tentative.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-global-scope.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-load-as-html.xhtml": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-no-beforeunload.window.js": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Navigating an iframe via location.href to a javascript: URL must not fire beforeunload: string completion": "NOTRUN",
+      "Navigating an iframe via src=\"\" to a javascript: URL after insertion must not fire beforeunload: string completion": "NOTRUN",
+      "Navigating an opened window via location.href to a javascript: URL must not fire beforeunload: string completion": "NOTRUN",
+      "Navigating an opened window via location.href to a javascript: URL must not fire beforeunload: undefined completion": "TIMEOUT",
+      "Navigating an opened window with an iframe via location.href to a javascript: URL must not fire beforeunload on the iframe: string completion": "NOTRUN",
+      "Navigating an opened window with an iframe via location.href to a javascript: URL must not fire beforeunload on the iframe: undefined completion": "NOTRUN"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-query-fragment-components.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-referrer.window.js": {
+    "total": 3,
+    "failures": {
+      "no-referrer referrer policy used to create the starting page": "FAIL",
+      "origin referrer policy used to create the starting page": "FAIL",
+      "unsafe-url referrer policy used to create the starting page": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-return-value-handling-dynamic.html": {
+    "total": 10,
+    "failures": {
+      "DE0D 0041 set in href=\"\" targeting a frame and clicked": "FAIL",
+      "DE0D 0041 set in src=\"\"": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-return-value-handling.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-security-check-failure.sub.html": {
+    "total": 6
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-security-check-multi-globals.sub.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-security-check-same-origin-domain.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-side-effects.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-src-removes-container.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-task-queuing.html": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigating an opened window as part of creation to a javascript: URL must queue a task": "NOTRUN",
+      "Navigating an opened window via location.href to a javascript: URL must queue a task": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/multiple-globals/context-for-location-assign.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/multiple-globals/context-for-location-href.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/multiple-globals/context-for-location.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/multiple-globals/context-for-window-open.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigate-cross-origin-iframe-to-same-url-with-fragment-fire-load-event.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Changing the URL hash of a cross-origin iframe should fire a load event": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigate-cross-origin-iframe-to-same-url-with-fragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigate-cross-origin-iframe-to-same-url.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigate-to-unparseable-url.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigate_too_many_calls.optional.html": {
+    "total": 2,
+    "failures": {
+      "rate-limited navigations cancel pending lazy-load iframe navigations": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-cross-origin.sub.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-data-url.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-form-submit.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-javascript-url.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-same-origin-fragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-same-origin.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/plugin-document.historical.html": {
+    "total": 1,
+    "failures": {
+      "Same-origin PDFs must not create accessible Document objects": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/redirect-to-about.window.js": {
+    "total": 6
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/redirect-to-data.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/redirect-to-unparseable-url.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/after-same-document-navigation.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/javascript.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/navigate.window.js": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/same-document-refresh.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/subresource.any.js": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/refresh/subresource.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-click-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-click-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-click.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-user-click-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-user-click-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-user-click.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-requestsubmit-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-requestsubmit-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-requestsubmit.html": {
+    "total": 1,
+    "failures": {
+      "Replace before load, triggered by formElement.requestSubmit()": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-button-click-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-button-click-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-button-click.html": {
+    "total": 1,
+    "failures": {
+      "Replace before load, triggered by submitButton.click()": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-cross-frame-crossorigin.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-cross-frame.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-popup-crossorigin.sub.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit-popup.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-submit.html": {
+    "total": 1,
+    "failures": {
+      "Replace before load, triggered by same-document formElement.submit()": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/history-pushstate-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/history-pushstate-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/history-pushstate.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/iframe-src-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/iframe-src-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/iframe-src.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-assign-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-assign-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-assign-user-click.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-assign.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-setter-during-load.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-setter-during-pageshow.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-setter-user-click.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-setter-user-mouseup.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/location-setter.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-popup-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-popup-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-popup.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-self-during-load.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-self-during-pageshow.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/window-open-self.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/same-origin-top-navigation-without-user-activation.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function-parent-then-fragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function-parent.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function-src.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-src-about-blank.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/navigating-across-documents/top-level-data-url.window.js": {
+    "total": 8,
+    "failures": {
+      "Navigating a popup using window.open(\"data:text/html,...\", \"\", \"opener\")": "FAIL",
+      "Navigating a popup using window.open(\"data:text/html,...\", \"\", \"undefined\")": "FAIL",
+      "Navigating a popup using window.open(\"resources/redirect.py?location=data%3Atext%2Fhtml%2C...\", \"\", \"opener\")": "FAIL",
+      "Navigating a popup using window.open(\"resources/redirect.py?location=data%3Atext%2Fhtml%2C...\", \"\", \"undefined\")": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-nav.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-traversal.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-same-document-nav.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-same-document-traversal.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-stop.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-traversal-cross-document-nav.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-traversal-cross-document-traversal.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-traversal-same-document-nav.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-traversal-same-document-traversal.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-traversal-stop.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/forward-to-pruned-entry.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/nav-cancelation-1.html": {
+    "total": 1,
+    "failures": {
+      "parent cancels a pending navigation in a same-origin child": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/nav-cancelation-2.sub.html": {
+    "total": 1,
+    "failures": {
+      "grandparent cancels a pending navigation in a cross-origin grandchild": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-nav-cross-document-nav.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-nav-cross-document-traversal.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-nav-same-document-nav.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-nav-same-document-traversal.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-nav-stop.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-cross-document-nav.html": {
+    "total": 1,
+    "failures": {
+      "same-document traversals are not canceled by cross-document navigations": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-cross-document-traversal.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-same-document-nav.html": {
+    "total": 2
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-same-document-traversal-hashchange.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-same-document-traversal-pushstate.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/same-document-traversal-stop.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/read-media/cross-origin-video.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/read-media/pageload-image-in-popup.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/read-media/pageload-image.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/read-media/pageload-video.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/read-text/load-text-plain.html": {
+    "total": 3,
+    "failures": {
+      "Checking document metadata for text file": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addEmbed.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addFrame.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addHTML.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-srcdoc-startOn.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-srcdoc.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-urlType.window.js?urlType=blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "RemoteContextWrapper addIframe": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-urlType.window.js?urlType=blob": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-urlType.window.js?urlType=data": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe-urlType.window.js?urlType=origin": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addIframe.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addObject.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addScripts.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addSharedWorker.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addSharedWorkerNull.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-defaults.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-extra-config.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-features.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-from-window.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-invalid-origin.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-startOn.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-target.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-urlType-data.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-urlType.window.js?urlType=blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper addWindow with urlType": "TIMEOUT"
+    }
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-urlType.window.js?urlType=blob": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWindow-urlType.window.js?urlType=origin": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWorker.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/addWorkerNull.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/constructor.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/createContext-bad-executorCreator.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/getRequestHeaders.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/navigateToNew.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/navigation-bfcache.window.js": {
+    "total": 1,
+    "failures": {
+      "RemoteContextHelper navigation using BFCache": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/navigation-helpers.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/remote-context-helper-tests/navigation-same-document.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/001.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/002.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/003.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/004.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/005.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/006.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/007.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/focus-changes-after-scroll-to-fragment.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/forward-triggers-hashchange.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/fragment-and-encoding-2.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/fragment-and-encoding.html": {
+    "total": 4
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/replacement-enabled.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-frag-non-utf8-encoded-document.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-frag-percent-encoded.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-position-inline-nearest.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-position-vertical-lr.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-position-vertical-rl.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-position.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-restore-on-reload-non-ascii-fragment.html": {
+    "total": 2,
+    "failures": {
+      "Reload preserves scroll position for ASCII fragment": "FAIL",
+      "Reload preserves scroll position for non-ASCII fragment": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-anchor-name.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-id-top.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-top.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/target-pseudo-after-adoption.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/target-pseudo-after-reinsertion.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/001.html": {
+    "total": 1,
+    "failures": {
+      "document.open in unload": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/unloading-documents/002.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/003.html": {
+    "total": 1,
+    "failures": {
+      "document.open in beforeunload with link": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/unloading-documents/004.html": {
+    "total": 1,
+    "failures": {
+      "document.open in beforeunload with button": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/unloading-documents/005.html": {
+    "total": 1,
+    "failures": {
+      "document.open in pagehide in iframe": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-canceling.html": {
+    "total": 22
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-on-history-back.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-on-navigation-of-parent.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-sticky-activation-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-sticky-activation-popup.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/beforeunload-synchronous.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/navigation-during-beforeunload.html": {
+    "total": 3
+  },
+  "html/browsers/browsing-the-web/unloading-documents/navigation-within-beforeunload.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/pagehide-on-history-forward.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt-and-unload-script-closeable.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt-and-unload-script-uncloseable.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt/001.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt/002.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt/003.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/prompt/004.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/001.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/002.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/003.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/004.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/006.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/007.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/008.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/009.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/unload-main-frame-cross-origin.window.js": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/unloading-documents/unload/unload-main-frame-same-origin.window.js": {
+    "total": 1
+  },
+  "html/browsers/history/joint-session-history/joint-session-history-iframe-state.html": {
+    "total": 1
+  },
+  "html/browsers/history/joint-session-history/joint-session-history-only-fully-active.html": {
+    "total": 1
+  },
+  "html/browsers/history/joint-session-history/joint-session-history-remove-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/001.html": {
+    "total": 40
+  },
+  "html/browsers/history/the-history-interface/002.html": {
+    "total": 38
+  },
+  "html/browsers/history/the-history-interface/004.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-history-interface/005.html": {
+    "total": 3
+  },
+  "html/browsers/history/the-history-interface/006.html": {
+    "total": 6
+  },
+  "html/browsers/history/the-history-interface/007.html": {
+    "total": 8
+  },
+  "html/browsers/history/the-history-interface/008.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-history-interface/009.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-history-interface/010.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-history-interface/011.html": {
+    "total": 3
+  },
+  "html/browsers/history/the-history-interface/012.html": {
+    "total": 3
+  },
+  "html/browsers/history/the-history-interface/back-pushstate-back-history-state.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_001.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_002.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_003.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_004.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_005.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_006.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/combination_history_007.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history-associated-with-document.window.js": {
+    "total": 3
+  },
+  "html/browsers/history/the-history-interface/history-state-after-bfcache.window.js": {
+    "total": 1,
+    "failures": {
+      "Navigating back to a bfcached page does not reset history.state": "FAIL"
+    }
+  },
+  "html/browsers/history/the-history-interface/history_back.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_back_1.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_back_cross_realm_method.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_forward.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_forward_1.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_forward_cross_realm_method.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_cross_realm_method.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_minus.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_no_argument.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_plus.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_to_uri.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_too_many_calls.optional.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-history-interface/history_go_undefined.html": {
+    "total": 1,
+    "failures": {
+      "history.forward() with session history": "FAIL"
+    }
+  },
+  "html/browsers/history/the-history-interface/history_go_zero.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_go_zero_which_document.window.js": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_properties_only_fully_active.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_err.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_nooptionalparam.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_too_many_calls.optional.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_too_many_calls_ordering.optional.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_url.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_pushstate_url_rewriting.html": {
+    "total": 35
+  },
+  "html/browsers/history/the-history-interface/history_replacestate.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_replacestate_err.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_replacestate_nooptionalparam.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_replacestate_too_many_calls.optional.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/history_replacestate_too_many_calls_ordering.optional.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-history-interface/history_state.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/iframe_history_go_0.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/joint_session_history/001.html": {
+    "total": 7
+  },
+  "html/browsers/history/the-history-interface/joint_session_history/002.html": {
+    "total": 3,
+    "failures": {
+      "Navigating second iframe": "FAIL"
+    }
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/pushstate-base.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/pushstate-whitespace.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/pushstate.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/replacestate-base.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/replacestate-whitespace.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/pushstate-replacestate-empty-string/replacestate.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse-during-beforeunload.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse-during-unload.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_1.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Multiple history traversals from the same task": "TIMEOUT"
+    }
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_2.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_3.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_4.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_5.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_unload_1.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_write_after_load_1.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Traverse the history after document.write after the load event": "TIMEOUT"
+    }
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_write_after_load_2.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_write_onload_1.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-history-interface/traverse_the_history_write_onload_2.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/allow_prototype_cycle_through_location.sub.html": {
+    "total": 4,
+    "failures": {
+      "cross-origin location has null prototype": "FAIL",
+      "cross-origin, but joined via document.domain, location cycle": "FAIL",
+      "same-origin, different-window location cycle": "FAIL",
+      "same-origin, same-window location cycle": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/assign-replace-from-iframe.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/assign-replace-from-top-to-nested-iframe.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/assign-with-nested-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/assign_after_load.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/assign_before_load.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/create-script-set-location.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/document_location.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-inactive-document.sub.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-new-object.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-redirect-still-mask.sub.html": {
+    "total": 16
+  },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-referrerpolicy-snapshot.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/location-ancestor-origins.sub.html": {
+    "total": 16
+  },
+  "html/browsers/history/the-location-interface/location-encoding-parse.html": {
+    "total": 3
+  },
+  "html/browsers/history/the-location-interface/location-getters-about-blank.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-hash-about-blank.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-hash-setter-empty-string.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-non-configurable-toString-valueOf.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/location-origin-idna.sub.window.js": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-pathname-setter-question-mark.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-prevent-extensions.html": {
+    "total": 2,
+    "failures": {
+      "Object.preventExtensions throws a TypeError": "FAIL",
+      "Reflect.preventExtensions returns false": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-protocol-setter-non-broken-weird.html": {
+    "total": 5
+  },
+  "html/browsers/history/the-location-interface/location-protocol-setter-non-broken.html": {
+    "total": 10
+  },
+  "html/browsers/history/the-location-interface/location-protocol-setter-sameish.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-location-interface/location-protocol-setter-with-colon.sub.html": {
+    "total": 3
+  },
+  "html/browsers/history/the-location-interface/location-protocol-setter.html": {
+    "total": 48
+  },
+  "html/browsers/history/the-location-interface/location-prototype-no-toString-valueOf.html": {
+    "total": 4
+  },
+  "html/browsers/history/the-location-interface/location-prototype-setting-cross-origin-domain.sub.html": {
+    "total": 8,
+    "failures": {
+      "Cross-origin via document.domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Cross-origin via document.domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
+      "Cross-origin via document.domain: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
+      "Cross-origin via document.domain: setting the prototype to its original value via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
+      "Cross-origin via document.domain: the prototype is null": "FAIL",
+      "Cross-origin via document.domain: the prototype must still be its original value": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-prototype-setting-cross-origin.sub.html": {
+    "total": 8,
+    "failures": {
+      "Cross-origin: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Cross-origin: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
+      "Cross-origin: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
+      "Cross-origin: setting the prototype to null via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
+      "Cross-origin: the prototype is null": "FAIL",
+      "Cross-origin: the prototype must still be null": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-prototype-setting-goes-cross-origin-domain.sub.html": {
+    "total": 12,
+    "failures": {
+      "Became cross-origin via document.domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to null via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via Reflect.setPrototypeOf should return false": "FAIL",
+      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
+      "Became cross-origin via document.domain: the prototype is now null": "FAIL",
+      "Became cross-origin via document.domain: the prototype must still be null": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-prototype-setting-same-origin-domain.sub.html": {
+    "total": 8,
+    "failures": {
+      "Same-origin-domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Same-origin-domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
+      "Same-origin-domain: setting the prototype to an empty object via __proto__ should throw a TypeError": "FAIL",
+      "Same-origin-domain: the prototype must still be its original value": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-prototype-setting-same-origin.html": {
+    "total": 8,
+    "failures": {
+      "Same-origin: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
+      "Same-origin: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
+      "Same-origin: setting the prototype to an empty object via __proto__ should throw a TypeError": "FAIL",
+      "Same-origin: the prototype must still be its original value": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/location-stringifier.html": {
+    "total": 6
+  },
+  "html/browsers/history/the-location-interface/location-symbol-toprimitive.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-tojson.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location-valueof.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_assign.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/location_assign_about_blank.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_hash.html": {
+    "total": 6
+  },
+  "html/browsers/history/the-location-interface/location_hash_set_empty_string.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_hashchange_infinite_loop.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_host.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_hostname.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_href.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_origin.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_pathname.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_port.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_protocol.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_reload.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_reload_javascript_url.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/location_replace.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/location_replace_session_history.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "location.replace replaces the active session history entry": "TIMEOUT"
+    }
+  },
+  "html/browsers/history/the-location-interface/location_search.html": {
+    "total": 2
+  },
+  "html/browsers/history/the-location-interface/no-browsing-context.window.js": {
+    "total": 46
+  },
+  "html/browsers/history/the-location-interface/per-global.window.js": {
+    "total": 3
+  },
+  "html/browsers/history/the-location-interface/reload_document_open_write.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/reload_document_write.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/reload_document_write_onload.html": {
+    "total": 1,
+    "failures": {
+      "Reload document with document.written content written in load event": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/replace-with-nested-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/same-hash.html": {
+    "total": 12
+  },
+  "html/browsers/history/the-location-interface/scripted_click_assign_during_load.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/scripted_click_location_assign_during_load.html": {
+    "total": 1,
+    "failures": {
+      "location.assign with click during load": "FAIL"
+    }
+  },
+  "html/browsers/history/the-location-interface/scripted_form_submit_assign_during_load.html": {
+    "total": 1
+  },
+  "html/browsers/history/the-location-interface/security_location_0.htm": {
+    "total": 1
+  },
+  "html/browsers/history/the-session-history-of-browsing-contexts/navigation-in-onload.html": {
+    "total": 1
+  },
+  "html/browsers/offline/browser-state/navigator_online_online.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/api/file-scheme-origin.tentative.any.js": {
+    "total": 1
+  },
+  "html/browsers/origin/api/file-scheme-origin.tentative.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/browsers/origin/api/origin-comparison.any.js": {
+    "total": 4
+  },
+  "html/browsers/origin/api/origin-comparison.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "html/browsers/origin/api/origin-from-global.any.js": {
+    "total": 1
+  },
+  "html/browsers/origin/api/origin-from-global.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "html/browsers/origin/api/origin-from-global.any.js#sharedworker": {
+    "total": 1
+  },
+  "html/browsers/origin/api/origin-from-hyperlinkelementutils.window.js": {
+    "total": 129,
+    "failures": {
+      "Origin.from(MathML <a href=\"about:blank\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"blob:https://example.com/some-guid\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"blob:weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"blob:weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"data:text/plain,opaque\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"ftp://example.com/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"ftp://ftp.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"http://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"http://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://127.0.0.1/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://[::1]/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://example.com/path?query#fragment\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://has.a.port:1234/and/path\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://sub.site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://trailing.slash/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://user:pass@site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://xn--mlauted-m2a.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"https://ümlauted.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(MathML <a href=\"ws://ws.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(MathML <a href=\"wss://wss.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"about:blank\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"blob:https://example.com/some-guid\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"blob:weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"blob:weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"data:text/plain,opaque\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"ftp://example.com/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"ftp://ftp.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"http://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"http://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://127.0.0.1/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://[::1]/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://example.com/path?query#fragment\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://has.a.port:1234/and/path\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://sub.site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://trailing.slash/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://user:pass@site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://xn--mlauted-m2a.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"https://ümlauted.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a href=\"ws://ws.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a href=\"wss://wss.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"about:blank\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"blob:https://example.com/some-guid\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"blob:weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"blob:weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"data:text/plain,opaque\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"ftp://example.com/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"ftp://ftp.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"http://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"http://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://127.0.0.1/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://[::1]/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://example.com/path?query#fragment\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://has.a.port:1234/and/path\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://sub.site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://sub.site.example:123\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://trailing.slash/\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://user:pass@site.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://xn--mlauted-m2a.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"https://ümlauted.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"weird-hierarchical-protocol://host/path?etc\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"weird-protocol:whatever\">) returns an opaque origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"ws://ws.example\">) returns a tuple origin.": "FAIL",
+      "Origin.from(SVG <a xlink:href=\"wss://wss.example\">) returns a tuple origin.": "FAIL"
+    }
+  },
+  "html/browsers/origin/api/origin-from-location.window.js": {
+    "total": 2
+  },
+  "html/browsers/origin/api/origin-from-messageevent-opaque.window.js": {
+    "total": 3
+  },
+  "html/browsers/origin/api/origin-from-messageevent.window.js": {
+    "total": 6
+  },
+  "html/browsers/origin/api/origin-from-origin.any.js": {
+    "total": 25
+  },
+  "html/browsers/origin/api/origin-from-origin.any.js#dedicatedworker": {
+    "total": 25
+  },
+  "html/browsers/origin/api/origin-from-string.any.js": {
+    "total": 27
+  },
+  "html/browsers/origin/api/origin-from-string.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "html/browsers/origin/api/origin-from-url.any.js": {
+    "total": 27
+  },
+  "html/browsers/origin/api/origin-from-url.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "html/browsers/origin/api/origin-from-window.window.js": {
+    "total": 7
+  },
+  "html/browsers/origin/api/origin-from-worker.window.js": {
+    "total": 2
+  },
+  "html/browsers/origin/api/origin-from.any.js": {
+    "total": 9
+  },
+  "html/browsers/origin/api/origin-from.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-due-to-document-domain-only.html": {
+    "total": 1,
+    "failures": {
+      "Cross-origin due to document.domain": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-caching.html": {
+    "total": 4
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-length.html": {
+    "total": 4,
+    "failures": {
+      "Cross-origin Window accessors have correct 'length'": "FAIL",
+      "Cross-origin Window methods have correct 'length'": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-name.html": {
+    "total": 4,
+    "failures": {
+      "Cross-origin Window accessors have correct 'name'": "FAIL",
+      "Cross-origin Window methods have correct 'name'": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-objects-on-new-window.html": {
+    "total": 1,
+    "failures": {
+      "Cross-origin object identity preserved across document.domain": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/cross-origin-objects.html": {
+    "total": 90,
+    "failures": {
+      "Basic sanity-checking (cross-origin)": "FAIL",
+      "Basic sanity-checking (cross-site)": "FAIL",
+      "Basic sanity-checking (same-origin + document.domain)": "FAIL",
+      "Can only enumerate safelisted enumerable properties (cross-origin)": "FAIL",
+      "Can only enumerate safelisted enumerable properties (cross-site)": "FAIL",
+      "Can only enumerate safelisted enumerable properties (same-origin + document.domain)": "FAIL",
+      "Only certain properties are accessible cross-origin (cross-origin)": "FAIL",
+      "Only certain properties are accessible cross-origin (cross-site)": "FAIL",
+      "Only certain properties are accessible cross-origin (same-origin + document.domain)": "FAIL",
+      "Only certain properties are usable as cross-origin this objects (cross-origin)": "FAIL",
+      "Only certain properties are usable as cross-origin this objects (cross-site)": "FAIL",
+      "Only certain properties are usable as cross-origin this objects (same-origin + document.domain)": "FAIL",
+      "Resolving a promise with a cross-origin window with a 'then' subframe should work (cross-origin)": "FAIL",
+      "Resolving a promise with a cross-origin window with a 'then' subframe should work (cross-site)": "FAIL",
+      "Resolving a promise with a cross-origin window with a 'then' subframe should work (same-origin + document.domain)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Location (cross-origin)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Location (cross-site)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Location (same-origin + document.domain)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Window (cross-origin)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Window (cross-site)": "FAIL",
+      "Same-origin observers get different accessors for cross-origin Window (same-origin + document.domain)": "FAIL",
+      "Same-origin observers get different functions for cross-origin objects (cross-origin)": "FAIL",
+      "Same-origin observers get different functions for cross-origin objects (cross-site)": "FAIL",
+      "Same-origin observers get different functions for cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[DefineOwnProperty]] Should throw for cross-origin objects (cross-origin)": "FAIL",
+      "[[DefineOwnProperty]] Should throw for cross-origin objects (cross-site)": "FAIL",
+      "[[DefineOwnProperty]] Should throw for cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[Delete]] Should throw on cross-origin objects (cross-origin)": "FAIL",
+      "[[Delete]] Should throw on cross-origin objects (cross-site)": "FAIL",
+      "[[Delete]] Should throw on cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (cross-origin)": "FAIL",
+      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (cross-site)": "FAIL",
+      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (same-origin + document.domain)": "FAIL",
+      "[[GetPrototypeOf]] should return null (cross-origin)": "FAIL",
+      "[[GetPrototypeOf]] should return null (cross-site)": "FAIL",
+      "[[GetPrototypeOf]] should return null (same-origin + document.domain)": "FAIL",
+      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (cross-origin)": "FAIL",
+      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (cross-site)": "FAIL",
+      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (same-origin + document.domain)": "FAIL",
+      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (cross-origin)": "FAIL",
+      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (cross-site)": "FAIL",
+      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (same-origin + document.domain)": "FAIL",
+      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (cross-origin)": "FAIL",
+      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (cross-site)": "FAIL",
+      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (cross-origin)": "FAIL",
+      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (cross-site)": "FAIL",
+      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[PreventExtensions]] should return false cross-origin objects (cross-origin)": "FAIL",
+      "[[PreventExtensions]] should return false cross-origin objects (cross-site)": "FAIL",
+      "[[PreventExtensions]] should return false cross-origin objects (same-origin + document.domain)": "FAIL",
+      "[[SetPrototypeOf]] should return false (cross-origin)": "FAIL",
+      "[[SetPrototypeOf]] should return false (cross-site)": "FAIL",
+      "[[SetPrototypeOf]] should return false (same-origin + document.domain)": "FAIL",
+      "{}.toString.call() does the right thing on cross-origin objects (cross-origin)": "FAIL",
+      "{}.toString.call() does the right thing on cross-origin objects (cross-site)": "FAIL",
+      "{}.toString.call() does the right thing on cross-origin objects (same-origin + document.domain)": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?assign": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'assign' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?customproperty": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'customproperty' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?hash": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'hash' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?host": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'host' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?hostname": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'hostname' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?pathname": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'pathname' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?port": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'port' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?protocol": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'protocol' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?reload": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'reload' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?search": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'search' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?toString": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'toString' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?valueOf": {
+    "total": 1,
+    "failures": {
+      "Verifying that cross-origin access of 'valueOf' is restricted": "FAIL"
+    }
+  },
+  "html/browsers/origin/cross-origin-objects/window-location-and-location-href-cross-realm-set.html": {
+    "total": 11,
+    "failures": {
+      "Cross-origin location.href getter throws SecurityError in lexical realm": "FAIL",
+      "Cross-origin location.href setter throws TypeError in lexical realm on invalid |this| value": "FAIL",
+      "Cross-origin location.href setter throws TypeError in lexical realm on non-coercible URL argument": "FAIL",
+      "Cross-origin window.location setter throws TypeError in lexical realm on invalid |this| value": "FAIL",
+      "Cross-origin window.location setter throws TypeError in lexical realm on non-coercible URL argument": "FAIL"
+    }
+  },
+  "html/browsers/origin/inheritance/about-blank-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/origin/inheritance/about-blank-window.html": {
+    "total": 1
+  },
+  "html/browsers/origin/inheritance/about-srcdoc.html": {
+    "total": 1
+  },
+  "html/browsers/origin/inheritance/document-write.https.window.js": {
+    "total": 1
+  },
+  "html/browsers/origin/inheritance/javascript-url.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-bad-subdomain.sub.https.html": {
+    "total": 21
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yes-cross-site.sub.https.html": {
+    "total": 2
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yes-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yes-same.sub.https.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yes-subdomain-with-redirect.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yes-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-no-child-yeswithparams-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-no-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-no-same.sub.https.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-no-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-yes-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-yes-same.sub.https.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/1-iframe/parent-yes-child-yes-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-no-child1-no-subdomain-child2-yes-subdomain.sub.https.html": {
+    "total": 7
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-no-child1-no-subdomain-child2-yes-subdomainport.sub.https.html": {
+    "total": 10
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-no-child1-no-subdomain1-child2-yes-subdomain2.sub.https.html": {
+    "total": 10
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-no-child1-yes-subdomain-child2-no-port.sub.https.html": {
+    "total": 10
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-no-child1-yes-subdomain-child2-no-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-no-subdomain-child2-no-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-no-subdomain-child2-no-subdomain2.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-no-subdomain-child2-yes-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-no-subdomain-child2-yes-subdomain2.sub.https.html": {
+    "total": 11
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-no-subdomain-child2-yes-subdomainport.sub.https.html": {
+    "total": 11
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-no-port.sub.https.html": {
+    "total": 11
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-no-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-yes-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-yes-subdomain2.sub.https.html": {
+    "total": 11
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-yes-subdomainport.sub.https.html": {
+    "total": 11
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/about-blank.https.sub.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/document-domain.sub.https.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/cross-origin-isolated.sub.https.html": {
+    "total": 2
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/csp-sandbox-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/csp-sandbox-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/data-to-javascript-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/data-to-javascript-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/data-url-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/data-url-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/javascript-url-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/javascript-url-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/removed-iframe.sub.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/sandboxed-iframe-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/sandboxed-iframe-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/sandboxed-same-origin-iframe-no.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/sandboxed-same-origin-iframe-yes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/getter-special-cases/two-sandboxed-iframes.https.html": {
+    "total": 1
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/going-back.sub.https.html": {
+    "total": 13
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-no-same-2-yes-port.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-no-same-2-yes-subdomain.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-no-subdomain-2-yes-subdomain.sub.https.html": {
+    "total": 7
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-no-subdomain-2-yes-subdomain2.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-subdomain-yes-2-subdomain2-no.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-no-1-yes-subdomain-2-no-subdomain.sub.https.html": {
+    "total": 9
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-yes-1-no-same-2-no-port.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/iframe-navigation/parent-yes-1-no-same-2-no-subdomain.sub.https.html": {
+    "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/insecure-http-opener-https-openee.sub.html": {
+    "total": 2
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/insecure-http-parent-https-children.sub.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/insecure-http.sub.html": {
+    "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-same.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-no-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-no-same.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-no-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-yes-port.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-yes-same.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-yes-openee-yes-subdomain.sub.https.html": {
+    "total": 4
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/regression-1399759.https.sub.html?pipe=header(Origin-Agent-Cluster,%3F0)": {
+    "total": 2
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/regression-1399759.https.sub.html?pipe=header(Origin-Agent-Cluster,%3F1)": {
+    "total": 2
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/removing-iframes.sub.https.html": {
+    "total": 13
+  },
+  "html/browsers/origin/origin-of-data-document.html": {
+    "total": 1
+  },
+  "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain.html": {
+    "total": 4
+  },
+  "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain_access_details.sub.html": {
+    "total": 12,
+    "failures": {
+      "Access evolves correctly for cross-origin objects when we join up via document.domain and then diverge again.": "FAIL",
+      "Access is revoked to Location object when we stop being same effective script origin due to document.domain.": "FAIL"
+    }
+  },
+  "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain_setter.html": {
+    "total": 3
+  },
+  "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain_setter_srcdoc.html": {
+    "total": 3
+  },
+  "html/browsers/origin/relaxing-the-same-origin-restriction/sandboxed-document_domain.html": {
+    "total": 5
+  },
+  "html/browsers/sandboxing/popup-from-initial-empty-sandboxed-document.window.js": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-allow-same-origin.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-allow-scripts.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-disallow-forms.html": {
+    "total": 3
+  },
+  "html/browsers/sandboxing/sandbox-disallow-popups.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-disallow-same-origin.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-disallow-scripts-via-unsandboxed-popup.tentative.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-disallow-scripts.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-document-open-mutation.window.js": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-document-open.html": {
+    "total": 2
+  },
+  "html/browsers/sandboxing/sandbox-inherited-from-initiator-frame.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-inherited-from-initiator-response.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-inherited-from-required-csp.html": {
+    "total": 7,
+    "failures": {
+      "about:blank": "FAIL",
+      "blob URL": "FAIL",
+      "cross-origin": "FAIL",
+      "initial empty document": "FAIL",
+      "same-origin": "FAIL",
+      "srcdoc": "FAIL"
+    }
+  },
+  "html/browsers/sandboxing/sandbox-initial-empty-document-toward-same-origin.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-javascript-window-open.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-navigation-timing.tentative.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-new-execution-context.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-parse-noscript.html": {
+    "reftest": "PASS"
+  },
+  "html/browsers/sandboxing/sandbox-popup-inherits-script-blocking.html": {
+    "total": 1
+  },
+  "html/browsers/sandboxing/sandbox-window-open-srcdoc.html": {
+    "total": 2
+  },
+  "html/browsers/sandboxing/window-open-blank-from-different-initiator.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "No pending navigation": "NOTRUN",
+      "One pending navigation": "TIMEOUT"
+    }
+  },
+  "html/browsers/the-window-object/BarProp.window.js": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/Document-defaultView.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/Window-document.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/accessing-other-browsing-contexts/indexed-browsing-contexts-01.html": {
+    "total": 3
+  },
+  "html/browsers/the-window-object/accessing-other-browsing-contexts/indexed-browsing-contexts-02.html": {
+    "total": 3,
+    "failures": {
+      "Accessing child browsing contexts 1": "FAIL",
+      "Accessing child browsing contexts 3": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/accessing-other-browsing-contexts/indexed-browsing-contexts-03.html": {
+    "total": 1,
+    "failures": {
+      "Indexed child browsing contexts": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/accessing-other-browsing-contexts/iterator.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/accessing-other-browsing-contexts/window_length.html": {
+    "total": 7
+  },
+  "html/browsers/the-window-object/close-method.window.js": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/closed-attribute.window.js": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/defaultstatus.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/document-attribute.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/focus.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/garbage-collection-and-browsing-contexts/discard_iframe_history_1.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/garbage-collection-and-browsing-contexts/discard_iframe_history_2.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/garbage-collection-and-browsing-contexts/discard_iframe_history_3.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/garbage-collection-and-browsing-contexts/discard_iframe_history_4.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/historical.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/length-attribute.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/name-attribute.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/basics.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/changing.html": {
+    "total": 5
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/cross-global-npo.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/cross-origin-named-access.sub.html": {
+    "total": 3,
+    "failures": {
+      "Child accessing its own global (through a changed name) on the cross-origin parent's WindowProxy throws an exception": "FAIL",
+      "Child accessing its own global through a cross-origin parent's WindowProxy throws an exception": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/doc-no-window.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/existing-prop.html": {
+    "total": 4
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/id-non-html-elements.html": {
+    "total": 30
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/live-collection.html": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/multi-match.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/name-attribute-elements.html": {
+    "total": 3
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/named-objects.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/navigated-named-objects.window.js": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/nested-context.html": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/prototype.html": {
+    "total": 4
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/removing.html": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/scoped-to-associated-document.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/strict-mode-redefine-readonly-property.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/window-named-properties.html": {
+    "total": 7
+  },
+  "html/browsers/the-window-object/named-access-on-the-window-object/window-null-names.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/navigate-to-about-blank-while-initial-load-pending.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/noopener-noreferrer-BarProp.window.js": {
+    "total": 3
+  },
+  "html/browsers/the-window-object/noopener-noreferrer-sizing.window.js": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/open-close/close_beforeunload.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/open-close/close_noopener_beforeunload.html": {
+    "total": 2
+  },
+  "html/browsers/the-window-object/open-close/close_pagehide.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/open-close/close_script_defer.html": {
+    "total": 1,
+    "failures": {
+      "Running defer script in window.close()": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/open-close/close_unload.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/open-close/closed-after-close.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/open-close/creating_browsing_context_test_01.html": {
+    "total": 4
+  },
+  "html/browsers/the-window-object/open-close/no_window_open_when_term_nesting_level_nonzero.window.js": {
+    "total": 4
+  },
+  "html/browsers/the-window-object/open-close/open-features-is-popup-condition.html?combination": {
+    "total": 14
+  },
+  "html/browsers/the-window-object/open-close/open-features-is-popup-condition.html?position": {
+    "total": 10
+  },
+  "html/browsers/the-window-object/open-close/open-features-is-popup-condition.html?single-1": {
+    "total": 21
+  },
+  "html/browsers/the-window-object/open-close/open-features-is-popup-condition.html?single-2": {
+    "total": 24
+  },
+  "html/browsers/the-window-object/open-close/open-features-negative-innerwidth-innerheight.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/open-close/open-features-negative-screenx-screeny.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/open-close/open-features-negative-top-left.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/open-close/open-features-negative-width-height.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-height.html": {
+    "total": 14
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-innerheight.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-innerwidth.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-left.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-screenx.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-screeny.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-top.html": {
+    "total": 12
+  },
+  "html/browsers/the-window-object/open-close/open-features-non-integer-width.html": {
+    "total": 14
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-innerheight-innerwidth.html": {
+    "total": 14
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-noopener.html": {
+    "total": 8
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-noreferrer.html": {
+    "total": 8
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-screenx-screeny.html": {
+    "total": 14
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-top-left.html": {
+    "total": 16
+  },
+  "html/browsers/the-window-object/open-close/open-features-tokenization-width-height.html": {
+    "total": 18
+  },
+  "html/browsers/the-window-object/open-close/open_fires_resize.tentative.html": {
+    "total": 3
+  },
+  "html/browsers/the-window-object/open-close/open_initial_size.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/open-close/script-closable-webdriver.html": {
+    "total": 2,
+    "failures": {
+      "A window created by WebDriver is not script-closable once its session history size is greater than 1": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/open-close/script-closable.html": {
+    "total": 6
+  },
+  "html/browsers/the-window-object/proxy-getOwnPropertyDescriptor.html": {
+    "total": 7
+  },
+  "html/browsers/the-window-object/security-window/window-security.https.html": {
+    "total": 124,
+    "failures": {
+      "A SecurityError exception must be thrown when window.onmousewheel is accessed from a different origin.": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/self-et-al.window.js": {
+    "total": 8
+  },
+  "html/browsers/the-window-object/window-aliases.html": {
+    "total": 3
+  },
+  "html/browsers/the-window-object/window-indexed-access-vs-named-access.html": {
+    "total": 10
+  },
+  "html/browsers/the-window-object/window-indexed-properties-delete-no-cache.html": {
+    "total": 2,
+    "failures": {
+      "Absence of index '0' is not cached": "FAIL",
+      "Presence of index '0' is not cached": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-indexed-properties-strict.html": {
+    "total": 6,
+    "failures": {
+      "Borderline numeric key: 2 ** 32 - 2 is an index (strict mode)": "FAIL",
+      "Indexed properties of the window object (strict mode) 1": "FAIL",
+      "Indexed properties of the window object (strict mode) 2": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-indexed-properties.html": {
+    "total": 7,
+    "failures": {
+      "Borderline numeric key: 2 ** 32 - 2 is an index": "FAIL",
+      "Ensure indexed properties have the correct configuration": "FAIL",
+      "Indexed properties of the window object (non-strict mode) 1": "FAIL",
+      "Indexed properties of the window object (non-strict mode) 2": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-open-defaults.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/window-open-invalid-url.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/window-open-noopener-existing-iframe.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/window-open-noopener.html?_parent": {
+    "total": 1,
+    "failures": {
+      "noopener window.open targeting _parent": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-open-noopener.html?_self": {
+    "total": 1,
+    "failures": {
+      "noopener window.open targeting _self": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-open-noopener.html?_top": {
+    "total": 1,
+    "failures": {
+      "noopener window.open targeting _top": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-open-noopener.html?indexed": {
+    "total": 9
+  },
+  "html/browsers/the-window-object/window-open-noreferrer.html": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/window-open-popup-behavior.html": {
+    "total": 51,
+    "failures": {
+      ",noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,menubar=yes,scrollbars=yes,noopener (expect tab)": "FAIL",
+      "location=yes,menubar=yes,scrollbars=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,menubar=yes,scrollbars=yes,noreferrer (expect tab)": "FAIL",
+      "location=yes,scrollbars=yes,status=yes,noopener (expect tab)": "FAIL",
+      "location=yes,scrollbars=yes,status=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,scrollbars=yes,status=yes,noreferrer (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,menubar=yes,noopener (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,menubar=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,menubar=yes,noreferrer (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,menubar=yes,resizable=yes,scrollbars=yes,status=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,status=yes,noopener (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,status=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "location=yes,toolbar=yes,status=yes,noreferrer (expect tab)": "FAIL",
+      "menubar=yes,resizable=yes,scrollbars=yes,noopener (expect tab)": "FAIL",
+      "menubar=yes,resizable=yes,scrollbars=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "menubar=yes,resizable=yes,scrollbars=yes,noreferrer (expect tab)": "FAIL",
+      "resizable=yes,scrollbars=yes,status=yes,noopener (expect tab)": "FAIL",
+      "resizable=yes,scrollbars=yes,status=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "resizable=yes,scrollbars=yes,status=yes,noreferrer (expect tab)": "FAIL",
+      "toolbar=yes,menubar=yes,resizable=yes,noopener (expect tab)": "FAIL",
+      "toolbar=yes,menubar=yes,resizable=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "toolbar=yes,menubar=yes,resizable=yes,noreferrer (expect tab)": "FAIL",
+      "toolbar=yes,resizable=yes,status=yes,noopener (expect tab)": "FAIL",
+      "toolbar=yes,resizable=yes,status=yes,noopener,noreferrer,popup (expect tab)": "FAIL",
+      "toolbar=yes,resizable=yes,status=yes,noreferrer (expect tab)": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-open-windowfeatures-values.html": {
+    "total": 93
+  },
+  "html/browsers/the-window-object/window-opener-unconfigurable.window.js": {
+    "total": 1
+  },
+  "html/browsers/the-window-object/window-properties.https.html": {
+    "total": 181,
+    "failures": {
+      "Window readonly getter in detached iframe: frames": "FAIL",
+      "Window readonly getter in detached iframe: self": "FAIL",
+      "Window readonly getter in detached iframe: window": "FAIL",
+      "Window readonly getter in iframe: frames": "FAIL",
+      "Window readonly getter in iframe: self": "FAIL",
+      "Window readonly getter in iframe: window": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-prototype-chain.html": {
+    "total": 5
+  },
+  "html/browsers/the-window-object/window-reuse-in-nested-browsing-contexts.tentative.html": {
+    "total": 7,
+    "failures": {
+      "after the first iframe load event, navigate iframe with initial src == \"\".": "FAIL",
+      "after the first iframe load event, navigate iframe with initial src == \"about:blank\".": "FAIL",
+      "after the first iframe load event, navigate iframe with no initial src.": "FAIL",
+      "synchronously navigate iframe with initial src == \"\".": "FAIL",
+      "synchronously navigate iframe with initial src == \"about:blank\".": "FAIL",
+      "synchronously navigate iframe with no initial src.": "FAIL"
+    }
+  },
+  "html/browsers/the-window-object/window-reuse.tentative.html": {
+    "total": 2,
+    "failures": {
+      "synchronously navigating window away from initial about:blank should not reuse window": "FAIL"
+    }
+  },
+  "html/browsers/the-windowproxy-exotic-object/document-tree-child-browsing-context-name-property-set.sub.html": {
+    "total": 1
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-define-own-property-unforgeable-same-origin.html": {
+    "total": 8
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prevent-extensions.html": {
+    "total": 2,
+    "failures": {
+      "Object.preventExtensions throws a TypeError": "FAIL",
+      "Reflect.preventExtensions returns false": "FAIL"
+    }
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-cross-origin-domain.sub.html": {
+    "total": 8
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-cross-origin.sub.html": {
+    "total": 8
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-goes-cross-origin-domain.sub.html": {
+    "total": 12
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-same-origin-domain.sub.html": {
+    "total": 8
+  },
+  "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-same-origin.html": {
+    "total": 8
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/named-lookup-noopener.html": {
+    "total": 2
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/named-lookup-scoped-to-browsing-context-group.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/no-proactive-swap-when-other-contexts-in-group.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-closed.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-multiple.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-noopener.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-noreferrer.html": {
+    "total": 1
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-setter.html": {
+    "total": 2
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener-setter.window.js": {
+    "total": 7
+  },
+  "html/browsers/windows/auxiliary-browsing-contexts/opener.html": {
+    "total": 2
+  },
+  "html/browsers/windows/browsing-context-names/choose-_blank-001.html": {
+    "total": 2
+  },
+  "html/browsers/windows/browsing-context-names/choose-_blank-002.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_blank-003.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_current-001.html": {
+    "total": 2
+  },
+  "html/browsers/windows/browsing-context-names/choose-_parent-001.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_parent-002.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_parent-003.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_parent-004.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_self-001.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_self-002.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_top-001.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_top-002.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-_top-003.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-default-001.html": {
+    "total": 2
+  },
+  "html/browsers/windows/browsing-context-names/choose-default-002.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-existing-001.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/choose-existing-unpaired-surrogate.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-names/duplicate-name-order.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context-window.html": {
+    "total": 1
+  },
+  "html/browsers/windows/browsing-context.html": {
+    "total": 3
+  },
+  "html/browsers/windows/clear-window-name.https.html": {
+    "harness": "TIMEOUT",
+    "total": 12,
+    "failures": {
+      "Window.name is not reset if the document.domain is set to the parent domain": "TIMEOUT"
+    }
+  },
+  "html/browsers/windows/consume-user-activation/window-open-multi-global.html": {
+    "total": 1,
+    "failures": {
+      "window.open() and consuming user activation with multiple globals in play": "FAIL"
+    }
+  },
+  "html/browsers/windows/consume-user-activation/window-open.html": {
+    "total": 2
+  },
+  "html/browsers/windows/dangling-markup-window-name.html": {
+    "total": 6
+  },
+  "html/browsers/windows/document-domain-nested-navigate.window.js": {
+    "total": 1
+  },
+  "html/browsers/windows/document-domain-nested-set.window.js": {
+    "total": 1
+  },
+  "html/browsers/windows/document-domain-nested.window.js": {
+    "total": 1
+  },
+  "html/browsers/windows/document-domain-removed-iframe.html": {
+    "total": 4
+  },
+  "html/browsers/windows/embedded-opener-a-form.html": {
+    "total": 1
+  },
+  "html/browsers/windows/embedded-opener-remove-frame.html": {
+    "total": 2
+  },
+  "html/browsers/windows/embedded-opener.html": {
+    "total": 1
+  },
+  "html/browsers/windows/iframe-cross-origin-print.sub.html": {
+    "reftest": "PASS"
+  },
+  "html/browsers/windows/iframe-cross-origin-scaled-print.sub.html": {
+    "reftest": "PASS"
+  },
+  "html/browsers/windows/iframe-nested-print.html": {
+    "reftest": "PASS"
+  },
+  "html/browsers/windows/nested-browsing-contexts/frameElement-siblings.sub.html": {
+    "total": 2
+  },
+  "html/browsers/windows/nested-browsing-contexts/frameElement.sub.html": {
+    "total": 4,
+    "failures": {
+      "The SecurityError must be thrown if the window accesses to frameElement attribute of a Window which does not have the same effective script origin": "FAIL"
+    }
+  },
+  "html/browsers/windows/nested-browsing-contexts/iframe-referrer.html": {
+    "total": 1
+  },
+  "html/browsers/windows/nested-browsing-contexts/name-attribute.window.js": {
+    "total": 24
+  },
+  "html/browsers/windows/nested-browsing-contexts/window-parent-null.html": {
+    "total": 2
+  },
+  "html/browsers/windows/nested-browsing-contexts/window-parent.html": {
+    "total": 3
+  },
+  "html/browsers/windows/nested-browsing-contexts/window-top-null.html": {
+    "total": 2
+  },
+  "html/browsers/windows/nested-browsing-contexts/window-top.html": {
+    "total": 3,
+    "failures": {
+      "One nested iframe": "FAIL",
+      "Two nested iframes": "FAIL"
+    }
+  },
+  "html/browsers/windows/noreferrer-null-opener.html": {
+    "total": 1
+  },
+  "html/browsers/windows/noreferrer-window-name.html": {
+    "total": 3
+  },
+  "html/browsers/windows/opener-string.window.js": {
+    "total": 1
+  },
+  "html/browsers/windows/targeting-cross-origin-nested-browsing-contexts.html": {
+    "total": 1
+  },
+  "html/browsers/windows/targeting-with-embedded-null-in-target.html": {
+    "total": 1
+  }
+}

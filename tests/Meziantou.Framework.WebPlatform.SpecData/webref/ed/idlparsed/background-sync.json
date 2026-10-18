@@ -1,0 +1,361 @@
+{
+  "spec": {
+    "title": "Web Background Synchronization",
+    "url": "https://wicg.github.io/background-sync/spec/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "SyncEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "SyncManager"
+        ],
+        "Worker": [
+          "SyncManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "SyncManager": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface SyncManager {\n  Promise<undefined> register(DOMString tag);\n  Promise<sequence<DOMString>> getTags();\n};",
+        "type": "interface",
+        "name": "SyncManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "register",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tag",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-sync/spec/#dom-syncmanager-register"
+          },
+          {
+            "type": "operation",
+            "name": "getTags",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/background-sync/spec/#dom-syncmanager-gettags"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-sync/spec/#syncmanager"
+      },
+      "SyncEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface SyncEvent : ExtendableEvent {\n  constructor(DOMString type, SyncEventInit init);\n  readonly attribute DOMString tag;\n  readonly attribute boolean lastChance;\n};",
+        "type": "interface",
+        "name": "SyncEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SyncEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/background-sync/spec/#dom-syncevent-syncevent"
+          },
+          {
+            "type": "attribute",
+            "name": "tag",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-sync/spec/#dom-syncevent-tag"
+          },
+          {
+            "type": "attribute",
+            "name": "lastChance",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/background-sync/spec/#dom-syncevent-lastchance"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/background-sync/spec/#syncevent"
+      },
+      "SyncEventInit": {
+        "fragment": "dictionary SyncEventInit : ExtendableEventInit {\n  required DOMString tag;\n  boolean lastChance = false;\n};",
+        "type": "dictionary",
+        "name": "SyncEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "tag",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/background-sync/spec/#dom-synceventinit-tag"
+          },
+          {
+            "type": "field",
+            "name": "lastChance",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://wicg.github.io/background-sync/spec/#dom-synceventinit-lastchance"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/background-sync/spec/#dictdef-synceventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "partial interface ServiceWorkerRegistration {\n  readonly attribute SyncManager sync;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "sync",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "SyncManager"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/background-sync/spec/#dom-serviceworkerregistration-sync"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  attribute EventHandler onsync;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onsync",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/background-sync/spec/#dom-serviceworkerglobalscope-onsync"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "SyncManager"
+      ],
+      "Worker": [
+        "SyncManager"
+      ],
+      "ServiceWorker": [
+        "SyncEvent"
+      ]
+    },
+    "dependencies": {
+      "ServiceWorkerRegistration": [
+        "SyncManager"
+      ],
+      "SyncManager": [],
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ],
+      "SyncEvent": [
+        "ExtendableEvent",
+        "SyncEventInit"
+      ],
+      "SyncEventInit": [
+        "ExtendableEventInit"
+      ]
+    },
+    "externalDependencies": [
+      "ServiceWorkerRegistration",
+      "ServiceWorkerGlobalScope",
+      "EventHandler",
+      "ExtendableEvent",
+      "ExtendableEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

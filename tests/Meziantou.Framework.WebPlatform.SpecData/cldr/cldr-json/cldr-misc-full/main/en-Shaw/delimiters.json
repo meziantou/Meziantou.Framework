@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-Shaw": {
+      "identity": {
+        "language": "en",
+        "script": "Shaw"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cic": {
+      "identity": {
+        "language": "cic"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

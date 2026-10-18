@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bqi": {
+      "identity": {
+        "language": "bqi"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "css/fill-stroke/animation/fill-interpolation.html": {
+    "total": 192
+  },
+  "css/fill-stroke/animation/stroke-color-interpolation.html": {
+    "total": 172,
+    "failures": {
+      "CSS Animations: property <stroke-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "CSS Transitions with transition: all: property <stroke-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "CSS Transitions: property <stroke-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
+      "Web Animations: property <stroke-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL"
+    }
+  },
+  "css/fill-stroke/inheritance.html": {
+    "total": 4,
+    "failures": {
+      "Property text-decoration-fill does not inherit": "FAIL",
+      "Property text-decoration-fill has initial value match-text": "FAIL",
+      "Property text-decoration-stroke does not inherit": "FAIL",
+      "Property text-decoration-stroke has initial value match-text": "FAIL"
+    }
+  },
+  "css/fill-stroke/paint-order-001.html": {
+    "reftest": "PASS"
+  },
+  "css/fill-stroke/text-decoration-fill/text-decoration-fill-computed.tentative.svg": {
+    "total": 7,
+    "failures": {
+      "Property text-decoration-fill value 'context-fill'": "FAIL",
+      "Property text-decoration-fill value 'context-stroke'": "FAIL",
+      "Property text-decoration-fill value 'none'": "FAIL",
+      "Property text-decoration-fill value 'rgb(12, 34, 56)'": "FAIL",
+      "Property text-decoration-fill value 'url(\"https://example.com/\") none'": "FAIL",
+      "Property text-decoration-fill value 'url(\"https://example.com/\") rgb(12, 34, 56)'": "FAIL",
+      "Property text-decoration-fill value 'url(\"https://example.com/\")'": "FAIL"
+    }
+  },
+  "css/fill-stroke/text-decoration-fill/text-decoration-fill-invalid.svg": {
+    "total": 5
+  },
+  "css/fill-stroke/text-decoration-fill/text-decoration-fill-valid.svg": {
+    "total": 7,
+    "failures": {
+      "e.style['text-decoration-fill'] = \"context-fill\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"context-stroke\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"none\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"rgb(12, 34, 56)\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"url(\\\"https://example.com/\\\") none\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"url(\\\"https://example.com/\\\") rgb(12, 34, 56)\" should set the property value": "FAIL",
+      "e.style['text-decoration-fill'] = \"url(\\\"https://example.com/\\\")\" should set the property value": "FAIL"
+    }
+  },
+  "css/fill-stroke/text-decoration-stroke/text-decoration-stroke-computed.tentative.svg": {
+    "total": 7,
+    "failures": {
+      "Property text-decoration-stroke value 'context-fill'": "FAIL",
+      "Property text-decoration-stroke value 'context-stroke'": "FAIL",
+      "Property text-decoration-stroke value 'none'": "FAIL",
+      "Property text-decoration-stroke value 'rgb(12, 34, 56)'": "FAIL",
+      "Property text-decoration-stroke value 'url(\"https://example.com/\") none'": "FAIL",
+      "Property text-decoration-stroke value 'url(\"https://example.com/\") rgb(12, 34, 56)'": "FAIL",
+      "Property text-decoration-stroke value 'url(\"https://example.com/\")'": "FAIL"
+    }
+  },
+  "css/fill-stroke/text-decoration-stroke/text-decoration-stroke-invalid.svg": {
+    "total": 5
+  },
+  "css/fill-stroke/text-decoration-stroke/text-decoration-stroke-valid.svg": {
+    "total": 7,
+    "failures": {
+      "e.style['text-decoration-stroke'] = \"context-fill\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"context-stroke\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"none\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"rgb(12, 34, 56)\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"url(\\\"https://example.com/\\\") none\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"url(\\\"https://example.com/\\\") rgb(12, 34, 56)\" should set the property value": "FAIL",
+      "e.style['text-decoration-stroke'] = \"url(\\\"https://example.com/\\\")\" should set the property value": "FAIL"
+    }
+  },
+  "css/fill-stroke/webkit-text-stroke-computed.html": {
+    "total": 3,
+    "failures": {
+      "Property -webkit-text-stroke value 'green'": "FAIL"
+    }
+  }
+}

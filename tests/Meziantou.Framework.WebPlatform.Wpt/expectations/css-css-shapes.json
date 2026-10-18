@@ -1,0 +1,1171 @@
+{
+  "css/css-shapes/animation/shape-image-threshold-interpolation.html": {
+    "total": 120
+  },
+  "css/css-shapes/animation/shape-margin-composition.html": {
+    "total": 40
+  },
+  "css/css-shapes/animation/shape-margin-interpolation.html": {
+    "total": 120
+  },
+  "css/css-shapes/animation/shape-outside-composition.html": {
+    "total": 140
+  },
+  "css/css-shapes/animation/shape-outside-interpolation.html": {
+    "total": 780
+  },
+  "css/css-shapes/animation/shape-outside-path-interpolation.html": {
+    "total": 478
+  },
+  "css/css-shapes/animation/shape-outside-shape-interpolation.html": {
+    "total": 546,
+    "failures": {
+      "CSS Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Animations: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close) margin-box]": "FAIL",
+      "CSS Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close) margin-box]": "FAIL",
+      "CSS Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close) margin-box]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close) margin-box]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Transitions with transition: all: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0) should be [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close) margin-box]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close) margin-box]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0) should be [shape(from 5px 5px, hline to 5px, vline to -5px, close)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "CSS Transitions: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL",
+      "Web Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
+      "Web Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
+      "Web Animations: property <shape-outside> from [shape(from 5% 5px, arc to 15% -15px of 10px 20px, arc by 15% -5px of 30px 30px cw rotate 30deg large, arc to 25% 20px of 10px 5px small)] to [shape(from 15% 15px, arc to 5% -25px of 20px 30px, arc by 25% -15px of 20px 20px cw rotate 270deg small, arc to 25% 20px of 10px 5px small cw)] at (0.5) should be [shape(from 10% 10px, arc to 10% -20px of 15px 25px ccw small, arc by 20% -10px of 25px 25px rotate 150deg cw large, arc to 25% 20px of 10px 5px cw small)]": "FAIL",
+      "Web Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close) margin-box]": "FAIL",
+      "Web Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close) margin-box] to [path(\"M 15 15 H 25 V -15 Z\") margin-box] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close) margin-box]": "FAIL",
+      "Web Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (0.5) should be [shape(from 10px 10px, hline to 15px, vline to -10px, close)]": "FAIL",
+      "Web Animations: property <shape-outside> from [shape(from 5px 5px, hline to 5px, vline to -5px, close)] to [path(\"M 15 15 H 25 V -15 Z\")] at (1) should be [shape(from 15px 15px, hline to 25px, vline to -15px, close)]": "FAIL"
+    }
+  },
+  "css/css-shapes/basic-shape-circle-ellipse-serialization.html": {
+    "total": 27
+  },
+  "css/css-shapes/basic-shape-interpolation.html": {
+    "total": 3
+  },
+  "css/css-shapes/inheritance.html": {
+    "total": 6
+  },
+  "css/css-shapes/parsing/shape-image-threshold-computed.html": {
+    "total": 6
+  },
+  "css/css-shapes/parsing/shape-image-threshold-invalid.html": {
+    "total": 2
+  },
+  "css/css-shapes/parsing/shape-image-threshold-valid.html": {
+    "total": 5
+  },
+  "css/css-shapes/parsing/shape-margin-computed.html": {
+    "total": 3
+  },
+  "css/css-shapes/parsing/shape-margin-invalid.html": {
+    "total": 2
+  },
+  "css/css-shapes/parsing/shape-margin-valid.html": {
+    "total": 4
+  },
+  "css/css-shapes/parsing/shape-outside-computed.html": {
+    "total": 32
+  },
+  "css/css-shapes/parsing/shape-outside-invalid-position.html": {
+    "total": 10
+  },
+  "css/css-shapes/parsing/shape-outside-path-invalid.html": {
+    "total": 7
+  },
+  "css/css-shapes/parsing/shape-outside-path-valid.html": {
+    "total": 9
+  },
+  "css/css-shapes/parsing/shape-outside-shape-invalid.html": {
+    "total": 9
+  },
+  "css/css-shapes/parsing/shape-outside-shape-valid.html": {
+    "total": 12
+  },
+  "css/css-shapes/parsing/shape-outside-valid-position.html": {
+    "total": 20
+  },
+  "css/css-shapes/shape-functions/circle-function-computed.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-functions/circle-function-invalid.html": {
+    "total": 10
+  },
+  "css/css-shapes/shape-functions/circle-function-valid.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-functions/ellipse-function-computed.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-functions/ellipse-function-invalid.html": {
+    "total": 10
+  },
+  "css/css-shapes/shape-functions/ellipse-function-valid.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-functions/inset-function-computed.html": {
+    "total": 11
+  },
+  "css/css-shapes/shape-functions/inset-function-invalid.html": {
+    "total": 12
+  },
+  "css/css-shapes/shape-functions/inset-function-valid.html": {
+    "total": 11
+  },
+  "css/css-shapes/shape-functions/path-function-computed-collision.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-functions/path-function-computed.html": {
+    "total": 3,
+    "failures": {
+      "Property clip-path value 'path(evenodd, 'M10,10h80v80h-80zM25,25h50v50h-50')'": "FAIL",
+      "Property clip-path value 'path(evenodd, 'M10,10h80v80h-80zM25,25h50v50h-50z')'": "FAIL",
+      "Property clip-path value 'path(nonzero, 'M10,10h80v80h-80zM25,25h50v50h-50z')'": "FAIL"
+    }
+  },
+  "css/css-shapes/shape-functions/path-function-invalid.html": {
+    "total": 2
+  },
+  "css/css-shapes/shape-functions/path-function-valid.html": {
+    "total": 2
+  },
+  "css/css-shapes/shape-functions/polygon-function-computed.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-functions/polygon-function-invalid.html": {
+    "total": 3
+  },
+  "css/css-shapes/shape-functions/polygon-function-round-computed.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-functions/polygon-function-round-invalid.html": {
+    "total": 9
+  },
+  "css/css-shapes/shape-functions/polygon-function-round-valid.html": {
+    "total": 6
+  },
+  "css/css-shapes/shape-functions/polygon-function-rounding-clamp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-functions/polygon-function-valid.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-functions/rect-function-computed.html": {
+    "total": 11
+  },
+  "css/css-shapes/shape-functions/rect-function-invalid.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-functions/rect-function-valid.html": {
+    "total": 11
+  },
+  "css/css-shapes/shape-functions/shape-function-computed.html": {
+    "total": 35
+  },
+  "css/css-shapes/shape-functions/shape-function-invalid.html": {
+    "total": 40
+  },
+  "css/css-shapes/shape-functions/shape-function-valid.html": {
+    "total": 51
+  },
+  "css/css-shapes/shape-functions/xywh-function-computed.html": {
+    "total": 7
+  },
+  "css/css-shapes/shape-functions/xywh-function-invalid.html": {
+    "total": 6
+  },
+  "css/css-shapes/shape-functions/xywh-function-valid.html": {
+    "total": 7
+  },
+  "css/css-shapes/shape-outside-invalid-001.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-circle-000.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-circle-001.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-circle-002.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-circle-003.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-001.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-002.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-003.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-004.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-005.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-ellipse-006.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-inset-001.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-inset-002.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-inset-003.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside-invalid-inset-004.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-circle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-polygon.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-rect.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-retry-push-xywh.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/assorted/float-should-push.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/formatting-context/shape-outside-formatting-context.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-border-radius-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-oversized-float-direction.html": {
+    "total": 2
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-box-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-border-radius-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-border-radius-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-horizontal-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-radial-gradient-001.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-radial-gradient-002.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-radial-gradient-003.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-radial-gradient-004.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-024.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-028.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-047.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-050.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-054.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-055.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-056.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-033.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-035.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-036.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-037.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-038.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-039.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-040.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-041.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-043.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-047.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-050.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-052.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-053.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/ellipse/shape-outside-ellipse-054.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-026.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-027.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-028.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-029.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-030.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-031.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/inset/shape-outside-inset-refcrash.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/path/shape-outside-path-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/path/shape-outside-path-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/path/shape-outside-path-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/path/shape-outside-path-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/polygon/shape-outside-polygon-032.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-000.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/supported-shapes/shape/shape-outside-shape-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/values/shape-image-threshold-000.html": {
+    "total": 10
+  },
+  "css/css-shapes/shape-outside/values/shape-image-threshold-001.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-image-threshold-002.html": {
+    "total": 5
+  },
+  "css/css-shapes/shape-outside/values/shape-image-threshold-003.html": {
+    "total": 3
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-000.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-001.html": {
+    "total": 26
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-002.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-003.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-004.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-margin-005.html": {
+    "total": 3
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-box-000.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-000.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-001.html": {
+    "total": 20
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-002.html": {
+    "total": 136
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-003.html": {
+    "total": 125
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-004.html": {
+    "total": 780
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-005.html": {
+    "total": 52
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-006.html": {
+    "total": 34
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-007.html": {
+    "total": 16
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-008.html": {
+    "total": 24
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-009.html": {
+    "total": 38
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-010.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-circle-011.html": {
+    "total": 14
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-computed-shape-000.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-computed-shape-001.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-000.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-001.html": {
+    "total": 72
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-002.html": {
+    "total": 136
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-003.html": {
+    "total": 125
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-004.html": {
+    "total": 780
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-005.html": {
+    "total": 416
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-006.html": {
+    "total": 51
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-007.html": {
+    "total": 18
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-008.html": {
+    "total": 24
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-009.html": {
+    "total": 38
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-010.html": {
+    "total": 28
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-ellipse-011.html": {
+    "total": 28
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-gradient-computed.html": {
+    "total": 6
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-000.html": {
+    "total": 16
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-001.html": {
+    "total": 684
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-0010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-002.html": {
+    "total": 80
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-003.html": {
+    "total": 520
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-004.html": {
+    "total": 12
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-005.html": {
+    "total": 13
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-006.html": {
+    "total": 22
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-007.html": {
+    "total": 19
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-008.html": {
+    "total": 28
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-inset-009.html": {
+    "total": 28
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-000.html": {
+    "total": 8
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-001.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-002.html": {
+    "total": 6
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-003.html": {
+    "total": 16
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-004.html": {
+    "total": 144
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-005.html": {
+    "total": 12
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-polygon-006.html": {
+    "total": 28
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-arguments-000.html": {
+    "total": 10
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-arguments-001.html": {
+    "total": 4
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-box-pair-000.html": {
+    "total": 16
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-inherit-000.html": {
+    "total": 1
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-initial-000.html": {
+    "total": 2
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-none-000.html": {
+    "total": 2
+  },
+  "css/css-shapes/shape-outside/values/shape-outside-shape-notation-000.html": {
+    "total": 4
+  },
+  "css/css-shapes/spec-examples/shape-outside-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/spec-examples/shape-outside-010.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-011.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-012.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-013.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-014.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-015.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-016.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-017.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-018.html": {
+    "total": 1
+  },
+  "css/css-shapes/spec-examples/shape-outside-019.html": {
+    "total": 1
+  }
+}

@@ -1,0 +1,447 @@
+{
+  "spec": {
+    "title": "Web Periodic Background Synchronization",
+    "url": "https://wicg.github.io/periodic-background-sync/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "ServiceWorker": [
+          "PeriodicSyncEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "ServiceWorkerRegistration",
+          "PeriodicSyncManager"
+        ],
+        "Worker": [
+          "ServiceWorkerRegistration",
+          "PeriodicSyncManager"
+        ]
+      }
+    },
+    "idlNames": {
+      "PeriodicSyncManager": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PeriodicSyncManager {\n    Promise<undefined> register(DOMString tag, optional BackgroundSyncOptions options = {});\n    Promise<sequence<DOMString>> getTags();\n    Promise<undefined> unregister(DOMString tag);\n};",
+        "type": "interface",
+        "name": "PeriodicSyncManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "register",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tag",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BackgroundSyncOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsyncmanager-register"
+          },
+          {
+            "type": "operation",
+            "name": "getTags",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsyncmanager-gettags"
+          },
+          {
+            "type": "operation",
+            "name": "unregister",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "tag",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsyncmanager-unregister"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/periodic-background-sync/#periodicsyncmanager"
+      },
+      "BackgroundSyncOptions": {
+        "fragment": "dictionary BackgroundSyncOptions {\n    [EnforceRange] unsigned long long minInterval = 0;\n};",
+        "type": "dictionary",
+        "name": "BackgroundSyncOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "minInterval",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-backgroundsyncoptions-mininterval"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/periodic-background-sync/#dictdef-backgroundsyncoptions"
+      },
+      "PeriodicSyncEventInit": {
+        "fragment": "dictionary PeriodicSyncEventInit : ExtendableEventInit {\n    required DOMString tag;\n};",
+        "type": "dictionary",
+        "name": "PeriodicSyncEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "tag",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsynceventinit-tag"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/periodic-background-sync/#dictdef-periodicsynceventinit"
+      },
+      "PeriodicSyncEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface PeriodicSyncEvent : ExtendableEvent {\n    constructor(DOMString type, PeriodicSyncEventInit init);\n    readonly attribute DOMString tag;\n};",
+        "type": "interface",
+        "name": "PeriodicSyncEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PeriodicSyncEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsyncevent-periodicsyncevent"
+          },
+          {
+            "type": "attribute",
+            "name": "tag",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/periodic-background-sync/#dom-periodicsyncevent-tag"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/periodic-background-sync/#periodicsyncevent"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n    attribute EventHandler onperiodicsync;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onperiodicsync",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/periodic-background-sync/#dom-serviceworkerglobalscope-onperiodicsync"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "[Exposed=(Window,Worker)]\npartial interface ServiceWorkerRegistration {\n  readonly attribute PeriodicSyncManager periodicSync;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "periodicSync",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "PeriodicSyncManager"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/periodic-background-sync/#dom-serviceworkerregistration-periodicsync"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "Worker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "ServiceWorkerRegistration",
+        "PeriodicSyncManager"
+      ],
+      "Worker": [
+        "ServiceWorkerRegistration",
+        "PeriodicSyncManager"
+      ],
+      "ServiceWorker": [
+        "PeriodicSyncEvent"
+      ]
+    },
+    "dependencies": {
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ],
+      "ServiceWorkerRegistration": [
+        "PeriodicSyncManager"
+      ],
+      "PeriodicSyncManager": [
+        "BackgroundSyncOptions"
+      ],
+      "BackgroundSyncOptions": [],
+      "PeriodicSyncEventInit": [
+        "ExtendableEventInit"
+      ],
+      "PeriodicSyncEvent": [
+        "ExtendableEvent",
+        "PeriodicSyncEventInit"
+      ]
+    },
+    "externalDependencies": [
+      "ServiceWorkerGlobalScope",
+      "EventHandler",
+      "ServiceWorkerRegistration",
+      "ExtendableEventInit",
+      "ExtendableEvent"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

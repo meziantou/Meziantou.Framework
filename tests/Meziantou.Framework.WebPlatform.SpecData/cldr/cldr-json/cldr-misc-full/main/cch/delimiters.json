@@ -1,0 +1,15 @@
+{
+  "main": {
+    "cch": {
+      "identity": {
+        "language": "cch"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

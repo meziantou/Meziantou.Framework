@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-ZM": {
+      "identity": {
+        "language": "en",
+        "territory": "ZM"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+# Real-world pages of the differential testing corpus (downloaded once, cached in artifacts/chromium-diff/pages)
+https://html.spec.whatwg.org/multipage/parsing.html
+https://en.wikipedia.org/wiki/HTML
+https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select
+https://www.w3.org/
+https://github.com/meziantou/Meziantou.Framework
+https://www.python.org/
+https://www.rust-lang.org/
+https://learn.microsoft.com/en-us/dotnet/csharp/
+https://news.ycombinator.com/
+https://www.bbc.com/news
+https://www.meziantou.net/
+# Documentation
+https://html.spec.whatwg.org/multipage/introduction.html
+https://html.spec.whatwg.org/multipage/tables.html
+https://drafts.csswg.org/css-flexbox-1/
+https://www.w3.org/TR/css-grid-1/
+https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Grid_layout/Basic_concepts
+https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/table
+https://docs.python.org/3/library/functions.html
+https://doc.rust-lang.org/book/ch01-01-installation.html
+https://go.dev/doc/effective_go
+https://www.postgresql.org/docs/current/sql-select.html
+https://www.sqlite.org/lang_select.html
+https://www.gnu.org/software/make/manual/make.html
+https://www.rfc-editor.org/rfc/rfc9110.html
+https://nodejs.org/en/about
+https://learn.microsoft.com/en-us/dotnet/api/system.string
+https://getbootstrap.com/docs/5.3/layout/grid/
+# Blogs, news, home pages
+https://blog.rust-lang.org/
+https://devblogs.microsoft.com/dotnet/
+https://jvns.ca/
+https://danluu.com/
+https://text.npr.org/
+https://lite.cnn.com/
+https://www.theguardian.com/international
+https://www.debian.org/
+https://archlinux.org/
+https://www.kernel.org/
+https://example.com/
+https://www.iana.org/help/example-domains
+# Forms, tables, grids, flex
+https://httpbin.org/forms/post
+https://getbootstrap.com/docs/5.3/examples/checkout/
+https://getbootstrap.com/docs/5.3/examples/pricing/
+https://getbootstrap.com/docs/5.3/examples/album/
+https://getbootstrap.com/docs/5.3/examples/dashboard/
+https://www.w3.org/WAI/tutorials/forms/
+https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+https://www.iana.org/assignments/media-types/media-types.xhtml
+https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+https://tailwindcss.com/
+https://picocss.com/
+https://bulma.io/

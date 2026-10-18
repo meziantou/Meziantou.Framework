@@ -1,0 +1,15 @@
+{
+  "main": {
+    "bss": {
+      "identity": {
+        "language": "bss"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

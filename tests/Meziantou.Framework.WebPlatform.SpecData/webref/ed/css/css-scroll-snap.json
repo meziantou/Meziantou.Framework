@@ -1,0 +1,678 @@
+{
+  "spec": {
+    "title": "CSS Scroll Snap Module Level 1",
+    "url": "https://drafts.csswg.org/css-scroll-snap-1/"
+  },
+  "properties": [
+    {
+      "name": "scroll-snap-type",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-snap-type",
+      "value": "none | [ x | y | block | inline | both | pair ] [ mandatory | proximity ]?",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "x",
+          "prose": "The scroll container snaps to snap positions in its horizontal axis only.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "The scroll container snaps to snap positions in its vertical axis only.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "block",
+          "prose": "The scroll container snaps to snap positions in its block axis only.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "The scroll container snaps to snap positions in its inline axis only.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "both",
+          "prose": "The scroll container snaps to snap positions in both of its axes independently (potentially snapping to different elements in each axis).",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-both",
+          "type": "value",
+          "value": "both"
+        },
+        {
+          "name": "pair",
+          "prose": "The scroll container snaps to snap positions in both of its axes together as a single 2D point belonging to a single snap area. A snap area is only eligible as a snap position in a scroll container with pair if it specifies an alignment in both axes (i.e. neither its block nor inline alignment in scroll-snap-align computes to none). Snap areas that specify alignment in only a single axis are ignored.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-pair",
+          "type": "value",
+          "value": "pair"
+        },
+        {
+          "name": "none",
+          "prose": "If specified on a scroll container, the scroll container must not snap.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "mandatory",
+          "prose": "If specified on a scroll container, the scroll container is required to be snapped to a snap position when there are no active scrolling operations. If a valid snap position exists then the scroll container must snap at the termination of a scroll (if none exist then no snapping occurs).",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-mandatory",
+          "type": "value",
+          "value": "mandatory"
+        },
+        {
+          "name": "proximity",
+          "prose": "If specified on a scroll container, the scroll container may snap to a snap position at the termination of a scroll, at the discretion of the UA given the parameters of the scroll.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-type-proximity",
+          "type": "value",
+          "value": "proximity"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-snap-type",
+        "scrollSnapType"
+      ]
+    },
+    {
+      "name": "scroll-padding",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding",
+      "value": "[ auto | <length-percentage [0,∞]> ]{1,4}",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the corresponding dimension of the scroll container’s scrollport",
+      "computedValue": "per side, either the keyword auto or a computed <length-percentage> value",
+      "animationType": "by computed value type",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding",
+        "scrollPadding"
+      ],
+      "longhands": [
+        "scroll-padding-top",
+        "scroll-padding-right",
+        "scroll-padding-bottom",
+        "scroll-padding-left"
+      ]
+    },
+    {
+      "name": "scroll-margin",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin",
+      "value": "<length>{1,4}",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "per side, an absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "scroll-margin",
+        "scrollMargin"
+      ],
+      "longhands": [
+        "scroll-margin-top",
+        "scroll-margin-right",
+        "scroll-margin-bottom",
+        "scroll-margin-left"
+      ]
+    },
+    {
+      "name": "scroll-snap-align",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-snap-align",
+      "value": "[ none | start | end | center ]{1,2}",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "two keywords",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "This box does not define a snap position in the specified axis.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-align-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "start",
+          "prose": "Start alignment of this box’s scroll snap area within the scroll container’s snapport is a snap position in the specified axis.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-align-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "End alignment of this box’s scroll snap area within the scroll container’s snapport is a snap position in the specified axis.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-align-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "center",
+          "prose": "Center alignment of this box’s scroll snap area within the scroll container’s snapport is a snap position in the specified axis.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-align-center",
+          "type": "value",
+          "value": "center"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-snap-align",
+        "scrollSnapAlign"
+      ]
+    },
+    {
+      "name": "scroll-snap-stop",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-snap-stop",
+      "value": "normal | always",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The scroll container may pass over a snap position defined by this element during the execution of a scrolling operation.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-stop-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "always",
+          "prose": "The scroll container must not pass over a snap position defined by this element during the execution of a scrolling operation; it must instead snap to the first of this element’s snap positions.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-snap-stop-always",
+          "type": "value",
+          "value": "always"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-snap-stop",
+        "scrollSnapStop"
+      ]
+    },
+    {
+      "name": "scroll-padding-top",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-top",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "styleDeclaration": [
+        "scroll-padding-top",
+        "scrollPaddingTop"
+      ]
+    },
+    {
+      "name": "scroll-padding-right",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-right",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "styleDeclaration": [
+        "scroll-padding-right",
+        "scrollPaddingRight"
+      ]
+    },
+    {
+      "name": "scroll-padding-bottom",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-bottom",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "styleDeclaration": [
+        "scroll-padding-bottom",
+        "scrollPaddingBottom"
+      ]
+    },
+    {
+      "name": "scroll-padding-left",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-left",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "styleDeclaration": [
+        "scroll-padding-left",
+        "scrollPaddingLeft"
+      ]
+    },
+    {
+      "name": "scroll-padding-inline-start",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-inline-start",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-inline-start",
+        "scrollPaddingInlineStart"
+      ]
+    },
+    {
+      "name": "scroll-padding-block-start",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-block-start",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-block-start",
+        "scrollPaddingBlockStart"
+      ]
+    },
+    {
+      "name": "scroll-padding-inline-end",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-inline-end",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-inline-end",
+        "scrollPaddingInlineEnd"
+      ]
+    },
+    {
+      "name": "scroll-padding-block-end",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-block-end",
+      "value": "auto | <length-percentage [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-padding",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-block-end",
+        "scrollPaddingBlockEnd"
+      ]
+    },
+    {
+      "name": "scroll-padding-block",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-block",
+      "value": "[ auto | <length-percentage [0,∞]> ]{1,2}",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "see individual properties",
+      "animationType": "by computed value",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-block",
+        "scrollPaddingBlock"
+      ],
+      "longhands": [
+        "scroll-padding-block-start",
+        "scroll-padding-block-end"
+      ]
+    },
+    {
+      "name": "scroll-padding-inline",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-inline",
+      "value": "[ auto | <length-percentage [0,∞]> ]{1,2}",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "relative to the scroll container’s scrollport",
+      "computedValue": "see individual properties",
+      "animationType": "by computed value",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Defines an inward offset from the corresponding edge of the scrollport. When applied to the root viewport, the offset is calculated and applied relative to the layout viewport (rather than the visual viewport) the same way as the corresponding inset properties on fixed-positioned boxes; the optimal viewing region is the remaining area that intersects with the visual viewport.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "Indicates that the offset for the corresponding edge of the scrollport is UA-determined. This should generally default to a used length of 0px, but UAs may use heuristics to detect when a non-zero value is more appropriate. For example, a UA could detect when a position:fixed element is being used as an opaque unscrollable “header” that obscures the content below it, and resolve the top offset to the height of that element so that a “page down” operation (such as pressing PgDn) automatically scrolls by one “visible page” of content.",
+          "href": "https://drafts.csswg.org/css-scroll-snap-1/#valdef-scroll-padding-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-padding-inline",
+        "scrollPaddingInline"
+      ],
+      "longhands": [
+        "scroll-padding-inline-start",
+        "scroll-padding-inline-end"
+      ]
+    },
+    {
+      "name": "scroll-margin-top",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-top",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-top",
+        "scrollMarginTop"
+      ]
+    },
+    {
+      "name": "scroll-margin-right",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-right",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-right",
+        "scrollMarginRight"
+      ]
+    },
+    {
+      "name": "scroll-margin-bottom",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-bottom",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-bottom",
+        "scrollMarginBottom"
+      ]
+    },
+    {
+      "name": "scroll-margin-left",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-left",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-left",
+        "scrollMarginLeft"
+      ]
+    },
+    {
+      "name": "scroll-margin-block-start",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-block-start",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-block-start",
+        "scrollMarginBlockStart"
+      ]
+    },
+    {
+      "name": "scroll-margin-inline-start",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-inline-start",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-inline-start",
+        "scrollMarginInlineStart"
+      ]
+    },
+    {
+      "name": "scroll-margin-block-end",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-block-end",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-block-end",
+        "scrollMarginBlockEnd"
+      ]
+    },
+    {
+      "name": "scroll-margin-inline-end",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-inline-end",
+      "value": "<length>",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "scroll-margin",
+      "styleDeclaration": [
+        "scroll-margin-inline-end",
+        "scrollMarginInlineEnd"
+      ]
+    },
+    {
+      "name": "scroll-margin-block",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-block",
+      "value": "<length>{1,2}",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "see individual properties",
+      "animationType": "by computed value type",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "scroll-margin-block",
+        "scrollMarginBlock"
+      ],
+      "longhands": [
+        "scroll-margin-block-start",
+        "scroll-margin-block-end"
+      ]
+    },
+    {
+      "name": "scroll-margin-inline",
+      "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-inline",
+      "value": "<length>{1,2}",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "see individual properties",
+      "animationType": "by computed value type",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "scroll-margin-inline",
+        "scrollMarginInline"
+      ],
+      "longhands": [
+        "scroll-margin-inline-start",
+        "scroll-margin-inline-end"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

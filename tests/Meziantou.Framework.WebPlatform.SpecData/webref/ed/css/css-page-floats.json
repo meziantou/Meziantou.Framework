@@ -1,0 +1,296 @@
+{
+  "spec": {
+    "title": "CSS Page Floats Module Level 3",
+    "url": "https://drafts.csswg.org/css-page-floats-3/"
+  },
+  "properties": [
+    {
+      "name": "float-reference",
+      "href": "https://drafts.csswg.org/css-page-floats-3/#propdef-float-reference",
+      "value": "inline | column | region | page",
+      "initial": "inline",
+      "appliesTo": "all elements.",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "inline",
+          "prose": "The float reference is the line box of the float anchor. The float containing block formatting context is the same as that of the float anchor. The float is an inline float.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-reference-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "column",
+          "prose": "The float reference is the column in a multi column environment in which the float anchor is placed. If the float anchor is not inside a column, the float reference is the line box of the float anchor. The float containing block formatting context is a new block formatting context with the same dimensions and placement as the float reference. The float is a page float.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-reference-column",
+          "type": "value",
+          "value": "column"
+        },
+        {
+          "name": "region",
+          "prose": "The float reference is the region in a region-chain within which the float anchor is placed. If the float anchor is not inside a region, the float reference is the line box of the float anchor. The float containing block formatting context is a new block formatting context with the same dimensions and placement as the float reference. The float is a page float.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-reference-region",
+          "type": "value",
+          "value": "region"
+        },
+        {
+          "name": "page",
+          "prose": "The float reference of the float is the page within which the float anchor is placed. If the float anchor is not inside a page, the float reference is the line box of the float anchor. The float containing block formatting context is a new block formatting context with the same dimensions and placement as the float reference. The float is a page float.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-reference-page",
+          "type": "value",
+          "value": "page"
+        }
+      ],
+      "styleDeclaration": [
+        "float-reference",
+        "floatReference"
+      ]
+    },
+    {
+      "name": "float",
+      "href": "https://drafts.csswg.org/css-page-floats-3/#propdef-float",
+      "value": "block-start | block-end | inline-start | inline-end | snap-block | <snap-block()> | snap-inline | <snap-inline()> | left | right | top | bottom | none",
+      "initial": "none",
+      "appliesTo": "all elements.",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "inline-start",
+          "prose": "If the float reference is a line box, the element generates a box that is floated to the line-start outer edge of the float reference and content flows on the line-end side of the box. If the float reference is not a line box, the element generates a box that is floated to the line-start and block-start outer edges of the float reference.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-inline-start",
+          "type": "value",
+          "value": "inline-start"
+        },
+        {
+          "name": "inline-end",
+          "prose": "If the float reference is a line box, the element generates a box that is floated to the line-ebd outer edge of the float reference and content flows on the line-start side of the box. If the float reference is not a line box, the element generates a box that is floated to the line-end and block-end outer edges of the float reference.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-inline-end",
+          "type": "value",
+          "value": "inline-end"
+        },
+        {
+          "name": "block-start",
+          "prose": "If the float reference is a line box, block-start behaves like inline-start. If the float reference is not a line box, the element generates a box that is floated to the block-start and line-start outer edges of the float reference. The initial value of the max-width or max-height property that refers to the inline size of the float is '100%'. Content flows on the block-end side of the box.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-block-start",
+          "type": "value",
+          "value": "block-start"
+        },
+        {
+          "name": "block-end",
+          "prose": "If the float reference is a line box, block-end behaves like inline-end. If the float reference is not a line box, the element generates a box that is floated to the block-end and line-end outer edges of the float reference. The initial value of the max-width or max-height property that refers to the inline size of the float is '100%'. Content flows on the block-start side of the box.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-block-end",
+          "type": "value",
+          "value": "block-end"
+        },
+        {
+          "name": "left",
+          "prose": "If the float reference is a line box, behaves like inline-start or inline-end, whichever corresponds to line-left for the float reference. Otherwise, behaves like block-end, inline-start or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "If the float reference is a line box, behaves like inline-start or inline-end, whichever corresponds to line-right for the float reference. Otherwise, behaves like block-start, inline-start or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "top",
+          "prose": "Behave like block-start or inline-start depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "bottom",
+          "prose": "Behave like block-end or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "snap-block()",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#funcdef-float-snap-block",
+          "type": "function",
+          "value": "snap-block( <length> , [ start | end | near ]? )"
+        },
+        {
+          "name": "snap-block",
+          "prose": "Behaves as snap-block(2em, near)",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-snap-block",
+          "type": "value",
+          "value": "snap-block"
+        },
+        {
+          "name": "snap-inline()",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#funcdef-float-snap-inline",
+          "type": "function",
+          "value": "snap-inline( <length> , [ left | right | near ]? )"
+        },
+        {
+          "name": "snap-inline",
+          "prose": "same as snap-inline(2em, near)",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-snap-inline",
+          "type": "value",
+          "value": "snap-inline"
+        },
+        {
+          "name": "none",
+          "prose": "The box is not floated.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-float-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "float"
+      ]
+    },
+    {
+      "name": "clear",
+      "href": "https://drafts.csswg.org/css-page-floats-3/#propdef-clear",
+      "value": "inline-start | inline-end | block-start | block-end | left | right | top | bottom | both-inline | both-block | both | none",
+      "initial": "none",
+      "appliesTo": "block-level elements, floats, regions, pages",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "inline-start",
+          "prose": "If applied to an inline float, requires that the block-start outer edge of the box comes after the block-end outer edge of any inline-start-floats with an inline-start-float-reference that resulted from elements earlier in the source document. If applied to a page float, the float reference in which the page float is placed will be seen as full when determining whether it can host subsequent page floats that float in the inline-start direction.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-inline-start",
+          "type": "value",
+          "value": "inline-start"
+        },
+        {
+          "name": "inline-end",
+          "prose": "If applied to a block-level element or an inline float, requires that the block-start outer edge of the box comes after the block-end outer edge of any inline-end-floats with an inline-end-float-reference that resulted from elements earlier in the source document. If applied to a page float, the float reference in which the page float is placed will be seen as full when determining whether it can host subsequent page floats that float in the inline-end direction.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-inline-end",
+          "type": "value",
+          "value": "inline-end"
+        },
+        {
+          "name": "block-start",
+          "prose": "If applied to a block-level element or an inline float, behaves like inline-start. If applied to a page float, the float reference in which the page float is placed will be seen as full when determining whether it can host subsequent page floats that float in the block-start direction.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-block-start",
+          "type": "value",
+          "value": "block-start"
+        },
+        {
+          "name": "block-end",
+          "prose": "If applied to a block-level element or an inline float, behaves like inline-end. If applied to a page float, the float reference in which the page float is placed will be seen as full when determining whether it can host subsequent page floats that float in the block-end direction.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-block-end",
+          "type": "value",
+          "value": "block-end"
+        },
+        {
+          "name": "left",
+          "prose": "Behave like block-end, inline-start or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Behave like block-start, inline-start or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "top",
+          "prose": "Behave like block-start or inline-start depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "bottom",
+          "prose": "Behave like block-end or inline-end depending on the float containing block’s direction and writing-mode.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-bottom",
+          "type": "value",
+          "value": "bottom"
+        },
+        {
+          "name": "both-inline",
+          "prose": "Behave like inline-start and inline-end.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-both-inline",
+          "type": "value",
+          "value": "both-inline"
+        },
+        {
+          "name": "both-block",
+          "prose": "Behave like block-start and block-end.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-both-block",
+          "type": "value",
+          "value": "both-block"
+        },
+        {
+          "name": "both",
+          "prose": "Behave like both-inline.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-both",
+          "type": "value",
+          "value": "both"
+        },
+        {
+          "name": "all",
+          "prose": "Behave like both-block and both-inline.",
+          "href": "https://drafts.csswg.org/css-page-floats-3/#valdef-clear-all",
+          "type": "value",
+          "value": "all"
+        }
+      ],
+      "styleDeclaration": [
+        "clear"
+      ]
+    },
+    {
+      "name": "float-defer",
+      "href": "https://drafts.csswg.org/css-page-floats-3/#propdef-float-defer",
+      "value": "<integer> | last | none",
+      "initial": "none",
+      "appliesTo": "floats",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword or integer",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "float-defer",
+        "floatDefer"
+      ]
+    },
+    {
+      "name": "float-offset",
+      "href": "https://drafts.csswg.org/css-page-floats-3/#propdef-float-offset",
+      "value": "<length-percentage>",
+      "initial": "0",
+      "appliesTo": "floats",
+      "inherited": "no",
+      "percentages": "see prose",
+      "computedValue": "computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "float-offset",
+        "floatOffset"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "raj": {
+      "identity": {
+        "language": "raj"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

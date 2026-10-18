@@ -1,0 +1,28 @@
+{
+  "spec": {
+    "title": "Filter Effects Module Level 2",
+    "url": "https://drafts.csswg.org/filter-effects-2/"
+  },
+  "properties": [
+    {
+      "name": "backdrop-filter",
+      "href": "https://drafts.csswg.org/filter-effects-2/#propdef-backdrop-filter",
+      "value": "none | <filter-value-list>",
+      "initial": "none",
+      "appliesTo": "All elements. In SVG, it applies to container elements without the defs element and all graphics elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose in Filter Effects 1 § 14. Animation of Filters.",
+      "media": "visual",
+      "styleDeclaration": [
+        "backdrop-filter",
+        "backdropFilter"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

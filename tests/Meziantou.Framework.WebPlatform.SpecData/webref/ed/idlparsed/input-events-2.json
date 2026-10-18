@@ -1,0 +1,145 @@
+{
+  "spec": {
+    "title": "Input Events Level 2",
+    "url": "https://w3c.github.io/input-events/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "InputEvent": [
+        {
+          "fragment": "partial interface InputEvent {\n   readonly attribute DataTransfer? dataTransfer;\n   sequence<StaticRange> getTargetRanges();\n};",
+          "type": "interface",
+          "name": "InputEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "dataTransfer",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "DataTransfer"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/input-events/#dom-inputevent-datatransfer"
+            },
+            {
+              "type": "operation",
+              "name": "getTargetRanges",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "StaticRange"
+                  }
+                ]
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/input-events/#dom-inputevent-gettargetranges"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "InputEventInit": [
+        {
+          "fragment": "partial dictionary InputEventInit {\n   DataTransfer? dataTransfer = null;\n   sequence<StaticRange> targetRanges = [];\n};",
+          "type": "dictionary",
+          "name": "InputEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "dataTransfer",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "DataTransfer"
+              },
+              "default": {
+                "type": "null"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/input-events/#dom-inputeventinit-datatransfer"
+            },
+            {
+              "type": "field",
+              "name": "targetRanges",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "sequence",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "dictionary-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "StaticRange"
+                  }
+                ]
+              },
+              "default": {
+                "type": "sequence",
+                "value": []
+              },
+              "required": false,
+              "href": "https://w3c.github.io/input-events/#dom-inputeventinit-targetranges"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "InputEvent": [
+        "DataTransfer",
+        "StaticRange"
+      ],
+      "InputEventInit": [
+        "DataTransfer",
+        "StaticRange"
+      ]
+    },
+    "externalDependencies": [
+      "InputEvent",
+      "DataTransfer",
+      "StaticRange",
+      "InputEventInit"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

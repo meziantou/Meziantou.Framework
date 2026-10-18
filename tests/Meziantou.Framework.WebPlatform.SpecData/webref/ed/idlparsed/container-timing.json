@@ -1,0 +1,262 @@
+{
+  "spec": {
+    "title": "Container Timing API",
+    "url": "https://wicg.github.io/container-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PerformanceContainerTiming"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceContainerTiming": {
+        "fragment": "[Exposed=Window]\ninterface PerformanceContainerTiming : PerformanceEntry {\n    readonly attribute DOMString identifier;\n    readonly attribute DOMRectReadOnly intersectionRect;\n    readonly attribute unsigned long long size;\n    readonly attribute DOMHighResTimeStamp firstRenderTime;\n    readonly attribute HTMLElement? lastPaintedElement;\n    readonly attribute HTMLElement? rootElement;\n\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceContainerTiming",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "identifier",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-identifier"
+          },
+          {
+            "type": "attribute",
+            "name": "intersectionRect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMRectReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-intersectionrect"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-size"
+          },
+          {
+            "type": "attribute",
+            "name": "firstRenderTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-firstrendertime"
+          },
+          {
+            "type": "attribute",
+            "name": "lastPaintedElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "HTMLElement"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement"
+          },
+          {
+            "type": "attribute",
+            "name": "rootElement",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "HTMLElement"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-rootelement"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/container-timing/#performancecontainertiming"
+      }
+    },
+    "idlExtendedNames": {
+      "PerformanceContainerTiming": [
+        {
+          "fragment": "PerformanceContainerTiming includes PaintTimingMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "PerformanceContainerTiming",
+          "includes": "PaintTimingMixin"
+        }
+      ],
+      "HTMLElement": [
+        {
+          "fragment": "partial interface HTMLElement {\n    [CEReactions, Reflect] attribute DOMString containerTiming;\n    [CEReactions, Reflect] attribute boolean containerTimingIgnore;\n};",
+          "type": "interface",
+          "name": "HTMLElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "containerTiming",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/container-timing/#dom-htmlelement-containertiming"
+            },
+            {
+              "type": "attribute",
+              "name": "containerTimingIgnore",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/container-timing/#dom-htmlelement-containertimingignore"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceContainerTiming"
+      ]
+    },
+    "dependencies": {
+      "PerformanceContainerTiming": [
+        "PerformanceEntry",
+        "DOMRectReadOnly",
+        "DOMHighResTimeStamp",
+        "HTMLElement",
+        "PaintTimingMixin"
+      ],
+      "HTMLElement": []
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "DOMRectReadOnly",
+      "DOMHighResTimeStamp",
+      "HTMLElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

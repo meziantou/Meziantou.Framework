@@ -1,0 +1,1392 @@
+{
+  "spec": {
+    "title": "Notifications API Standard",
+    "url": "https://notifications.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Notification"
+        ],
+        "Worker": [
+          "Notification"
+        ],
+        "ServiceWorker": [
+          "NotificationEvent"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "Notification": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Notification : EventTarget {\n  constructor(DOMString title, optional NotificationOptions options = {});\n\n  static readonly attribute NotificationPermission permission;\n  [Exposed=Window] static Promise<NotificationPermission> requestPermission(optional NotificationPermissionCallback deprecatedCallback);\n\n  static readonly attribute unsigned long maxActions;\n\n  attribute EventHandler onclick;\n  attribute EventHandler onshow;\n  attribute EventHandler onerror;\n  attribute EventHandler onclose;\n\n  readonly attribute DOMString title;\n  readonly attribute NotificationDirection dir;\n  readonly attribute DOMString lang;\n  readonly attribute DOMString body;\n  readonly attribute USVString navigate;\n  readonly attribute DOMString tag;\n  readonly attribute USVString image;\n  readonly attribute USVString icon;\n  readonly attribute USVString badge;\n  [SameObject] readonly attribute FrozenArray<unsigned long> vibrate;\n  readonly attribute EpochTimeStamp timestamp;\n  readonly attribute boolean renotify;\n  readonly attribute boolean? silent;\n  readonly attribute boolean requireInteraction;\n  [SameObject] readonly attribute any data;\n  [SameObject] readonly attribute FrozenArray<NotificationAction> actions;\n\n  undefined close();\n};",
+        "type": "interface",
+        "name": "Notification",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "title",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-notification"
+          },
+          {
+            "type": "attribute",
+            "name": "permission",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NotificationPermission"
+            },
+            "extAttrs": [],
+            "special": "static",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-permission"
+          },
+          {
+            "type": "operation",
+            "name": "requestPermission",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationPermission"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "deprecatedCallback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationPermissionCallback"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-requestpermission"
+          },
+          {
+            "type": "attribute",
+            "name": "maxActions",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "static",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-maxactions"
+          },
+          {
+            "type": "attribute",
+            "name": "onclick",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-onclick"
+          },
+          {
+            "type": "attribute",
+            "name": "onshow",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-onshow"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onclose",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-onclose"
+          },
+          {
+            "type": "attribute",
+            "name": "title",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-title"
+          },
+          {
+            "type": "attribute",
+            "name": "dir",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NotificationDirection"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-dir"
+          },
+          {
+            "type": "attribute",
+            "name": "lang",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-lang"
+          },
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-body"
+          },
+          {
+            "type": "attribute",
+            "name": "navigate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-navigate"
+          },
+          {
+            "type": "attribute",
+            "name": "tag",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-tag"
+          },
+          {
+            "type": "attribute",
+            "name": "image",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-image"
+          },
+          {
+            "type": "attribute",
+            "name": "icon",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-icon"
+          },
+          {
+            "type": "attribute",
+            "name": "badge",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-badge"
+          },
+          {
+            "type": "attribute",
+            "name": "vibrate",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-vibrate"
+          },
+          {
+            "type": "attribute",
+            "name": "timestamp",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EpochTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-timestamp"
+          },
+          {
+            "type": "attribute",
+            "name": "renotify",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-renotify"
+          },
+          {
+            "type": "attribute",
+            "name": "silent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-silent"
+          },
+          {
+            "type": "attribute",
+            "name": "requireInteraction",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-requireinteraction"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-data"
+          },
+          {
+            "type": "attribute",
+            "name": "actions",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationAction"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-actions"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://notifications.spec.whatwg.org/#dom-notification-close"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#notification"
+      },
+      "NotificationOptions": {
+        "fragment": "dictionary NotificationOptions {\n  NotificationDirection dir = \"auto\";\n  DOMString lang = \"\";\n  DOMString body = \"\";\n  USVString navigate;\n  DOMString tag = \"\";\n  USVString image;\n  USVString icon;\n  USVString badge;\n  VibratePattern vibrate;\n  EpochTimeStamp timestamp;\n  boolean renotify = false;\n  boolean? silent = null;\n  boolean requireInteraction = false;\n  any data = null;\n  sequence<NotificationAction> actions = [];\n};",
+        "type": "dictionary",
+        "name": "NotificationOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "dir",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NotificationDirection"
+            },
+            "default": {
+              "type": "string",
+              "value": "auto"
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-dir"
+          },
+          {
+            "type": "field",
+            "name": "lang",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-lang"
+          },
+          {
+            "type": "field",
+            "name": "body",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-body"
+          },
+          {
+            "type": "field",
+            "name": "navigate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-navigate"
+          },
+          {
+            "type": "field",
+            "name": "tag",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-tag"
+          },
+          {
+            "type": "field",
+            "name": "image",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-image"
+          },
+          {
+            "type": "field",
+            "name": "icon",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-icon"
+          },
+          {
+            "type": "field",
+            "name": "badge",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-badge"
+          },
+          {
+            "type": "field",
+            "name": "vibrate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "VibratePattern"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-vibrate"
+          },
+          {
+            "type": "field",
+            "name": "timestamp",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EpochTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-timestamp"
+          },
+          {
+            "type": "field",
+            "name": "renotify",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-renotify"
+          },
+          {
+            "type": "field",
+            "name": "silent",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-silent"
+          },
+          {
+            "type": "field",
+            "name": "requireInteraction",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-requireinteraction"
+          },
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-data"
+          },
+          {
+            "type": "field",
+            "name": "actions",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationAction"
+                }
+              ]
+            },
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-actions"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#dictdef-notificationoptions"
+      },
+      "NotificationPermission": {
+        "fragment": "enum NotificationPermission {\n  \"default\",\n  \"denied\",\n  \"granted\"\n};",
+        "type": "enum",
+        "name": "NotificationPermission",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationpermission-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "denied",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationpermission-denied"
+          },
+          {
+            "type": "enum-value",
+            "value": "granted",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationpermission-granted"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://notifications.spec.whatwg.org/#enumdef-notificationpermission"
+      },
+      "NotificationDirection": {
+        "fragment": "enum NotificationDirection {\n  \"auto\",\n  \"ltr\",\n  \"rtl\"\n};",
+        "type": "enum",
+        "name": "NotificationDirection",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationdirection-auto"
+          },
+          {
+            "type": "enum-value",
+            "value": "ltr",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationdirection-ltr"
+          },
+          {
+            "type": "enum-value",
+            "value": "rtl",
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationdirection-rtl"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://notifications.spec.whatwg.org/#enumdef-notificationdirection"
+      },
+      "NotificationAction": {
+        "fragment": "dictionary NotificationAction {\n  required DOMString action;\n  required DOMString title;\n  USVString navigate;\n  USVString icon;\n};",
+        "type": "dictionary",
+        "name": "NotificationAction",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "action",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationaction-action"
+          },
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationaction-title"
+          },
+          {
+            "type": "field",
+            "name": "navigate",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationaction-navigate"
+          },
+          {
+            "type": "field",
+            "name": "icon",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationaction-icon"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#dictdef-notificationaction"
+      },
+      "NotificationPermissionCallback": {
+        "fragment": "callback NotificationPermissionCallback = undefined (NotificationPermission permission);",
+        "type": "callback",
+        "name": "NotificationPermissionCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "permission",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NotificationPermission"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://notifications.spec.whatwg.org/#callbackdef-notificationpermissioncallback"
+      },
+      "GetNotificationOptions": {
+        "fragment": "dictionary GetNotificationOptions {\n  DOMString tag = \"\";\n};",
+        "type": "dictionary",
+        "name": "GetNotificationOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "tag",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-getnotificationoptions-tag"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#dictdef-getnotificationoptions"
+      },
+      "NotificationEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface NotificationEvent : ExtendableEvent {\n  constructor(DOMString type, NotificationEventInit eventInitDict);\n\n  readonly attribute Notification notification;\n  readonly attribute DOMString action;\n};",
+        "type": "interface",
+        "name": "NotificationEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NotificationEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationevent-notificationevent"
+          },
+          {
+            "type": "attribute",
+            "name": "notification",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Notification"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationevent-notification"
+          },
+          {
+            "type": "attribute",
+            "name": "action",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationevent-action"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#notificationevent"
+      },
+      "NotificationEventInit": {
+        "fragment": "dictionary NotificationEventInit : ExtendableEventInit {\n  required Notification notification;\n  DOMString action = \"\";\n};",
+        "type": "dictionary",
+        "name": "NotificationEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "notification",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Notification"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationeventinit-notification"
+          },
+          {
+            "type": "field",
+            "name": "action",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://notifications.spec.whatwg.org/#dom-notificationeventinit-action"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://notifications.spec.whatwg.org/#dictdef-notificationeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "partial interface ServiceWorkerRegistration {\n  Promise<undefined> showNotification(DOMString title, optional NotificationOptions options = {});\n  Promise<sequence<Notification>> getNotifications(optional GetNotificationOptions filter = {});\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "showNotification",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "undefined"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "title",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "NotificationOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification"
+            },
+            {
+              "type": "operation",
+              "name": "getNotifications",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "sequence",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": [
+                      {
+                        "type": "return-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "Notification"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "filter",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "GetNotificationOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-getnotifications"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  attribute EventHandler onnotificationclick;\n  attribute EventHandler onnotificationclose;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onnotificationclick",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclick"
+            },
+            {
+              "type": "attribute",
+              "name": "onnotificationclose",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://notifications.spec.whatwg.org/#dom-serviceworkerglobalscope-onnotificationclose"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Notification"
+      ],
+      "Worker": [
+        "Notification"
+      ],
+      "ServiceWorker": [
+        "NotificationEvent"
+      ]
+    },
+    "dependencies": {
+      "Notification": [
+        "EventTarget",
+        "NotificationOptions",
+        "NotificationPermission",
+        "NotificationPermissionCallback",
+        "EventHandler",
+        "NotificationDirection",
+        "EpochTimeStamp",
+        "NotificationAction"
+      ],
+      "NotificationOptions": [
+        "NotificationDirection",
+        "VibratePattern",
+        "EpochTimeStamp",
+        "NotificationAction"
+      ],
+      "NotificationAction": [],
+      "GetNotificationOptions": [],
+      "ServiceWorkerRegistration": [
+        "NotificationOptions",
+        "Notification",
+        "GetNotificationOptions"
+      ],
+      "NotificationEvent": [
+        "ExtendableEvent",
+        "NotificationEventInit",
+        "Notification"
+      ],
+      "NotificationEventInit": [
+        "ExtendableEventInit",
+        "Notification"
+      ],
+      "ServiceWorkerGlobalScope": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "EpochTimeStamp",
+      "VibratePattern",
+      "ServiceWorkerRegistration",
+      "ExtendableEvent",
+      "ExtendableEventInit",
+      "ServiceWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

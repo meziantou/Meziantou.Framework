@@ -1,0 +1,1373 @@
+using Meziantou.Framework.WebPlatform.Infra;
+using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Fonts;
+
+namespace Meziantou.Framework.WebPlatform.Css.Layout;
+
+/// <summary>
+/// A fragment of the fragment tree (https://drafts.csswg.org/css-break-4/#fragment): the output of the layout. A box of the
+/// box tree generates zero or more fragments (e.g. an inline box split over several lines generates one per line). The
+/// geometry is physical, in CSS px: <see cref="Offset"/> is the position of the fragment relative to the top-left corner of
+/// the border box of its parent fragment (of the line box for the fragments of the inline content).
+/// </summary>
+/// <remarks>
+/// The fragments are created by the formatting contexts: a fragment is created with its size, then its parent sets its
+/// offset when it is placed (see <see cref="FragmentBuilder"/>). The tree is immutable once the layout pass is complete; a
+/// new layout creates a new tree.
+/// </remarks>
+internal abstract class Fragment
+{
+    private static readonly Fragment[] NoChildren = [];
+
+    private protected Fragment(LayoutBox? box, PhysicalSize size, Fragment[]? children)
+    {
+        Box = box;
+        Size = size;
+        _children = NoChildren;
+        SetChildren(children ?? NoChildren);
+    }
+
+    /// <summary>Sets the children of the fragment, whose offsets are set.</summary>
+    private protected void SetChildren(Fragment[] children)
+    {
+        _children = children;
+        HasPendingOutOfFlowDescendants = false;
+        foreach (var child in _children)
+        {
+            child.Parent = this;
+
+            // The absolutely positioned descendants of the atomic inlines of a line wait in their fragments for the block
+            // container (see PositionedLayout.LayoutOutOfFlowDescendants)
+            if (child is BoxFragment { PendingOutOfFlow: not null } || (child.HasPendingOutOfFlowDescendants && (child is LineBoxFragment || child is BoxFragment { Box.IsInlineBox: true })))
+            {
+                HasPendingOutOfFlowDescendants = true;
+            }
+        }
+    }
+
+    /// <summary>The box that generated the fragment (a <see cref="ContainerBox"/> or a <see cref="TextRun"/>), or null for a line box.</summary>
+    public LayoutBox? Box { get; }
+
+    /// <summary>The position of the top-left corner of the fragment relative to the top-left corner of the border box of its parent fragment.</summary>
+    public PhysicalOffset Offset { get; internal set; }
+
+    /// <summary>The size of the fragment (of the border box of a box fragment).</summary>
+    public PhysicalSize Size { get; }
+
+    /// <summary>The rectangle of the fragment in the coordinates of its parent fragment.</summary>
+    public PhysicalRect Rect => new(Offset, Size);
+
+    /// <summary>The parent fragment, or null for the root fragment (the initial containing block) and a fragment that was not placed.</summary>
+    public Fragment? Parent { get; private set; }
+
+    private Fragment[] _children;
+
+    /// <summary>
+    /// Whether a child fragment has out-of-flow candidates whose containing block is an ancestor (see
+    /// <see cref="BoxFragment.PendingOutOfFlow"/>), or a child line box or inline box fragment contains one, when the fragment was created.
+    /// </summary>
+    internal bool HasPendingOutOfFlowDescendants { get; private set; }
+
+    /// <summary>
+    /// The child fragments, in the order of the content, followed by the absolutely positioned boxes whose containing block is
+    /// the box of the fragment (the painting order is decided by the painting).
+    /// </summary>
+    public IReadOnlyList<Fragment> Children => _children;
+
+    /// <summary>The child fragments, without the allocation of an enumerator.</summary>
+    internal ReadOnlySpan<Fragment> ChildrenSpan => _children;
+
+    /// <summary>
+    /// Restores the offsets of the children of the fragment, and makes it their parent again: a fragment kept by the layout result
+    /// cache is used again in the state of its layout (see <see cref="BoxFragment.PrepareForReuse"/>).
+    /// </summary>
+    /// <returns>Whether an offset changed.</returns>
+    private protected bool RestoreChildren(PhysicalOffset[]? offsets)
+    {
+        var changed = false;
+        var children = _children;
+        for (var i = 0; i < children.Length; i++)
+        {
+            var child = children[i];
+            child.Parent = this;
+            if (offsets is not null && child.Offset != offsets[i])
+            {
+                child.Offset = offsets[i];
+                changed = true;
+            }
+
+            if (child is BoxFragment { StickyOffset: var stickyOffset } box && stickyOffset != PhysicalOffset.Zero)
+            {
+                box.StickyOffset = PhysicalOffset.Zero;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    /// <summary>The next fragment generated by the same box, in the order of the fragment tree (see <see cref="LayoutEngine.GetFragments(Dom.Element, string?)"/>).</summary>
+    internal Fragment? NextFragmentOfBox { get; set; }
+
+    /// <summary>
+    /// Whether the fragment (a line box, or a box fragment and its contents) is after the clamp point of a line-clamp container
+    /// (https://drafts.csswg.org/css-overflow-4/#line-clamp, see <see cref="LineClamp"/>): it is laid out (the geometry APIs see it),
+    /// but it is not painted, not hit tested, and it does not contribute to the scrollable overflow. The absolutely positioned
+    /// boxes whose containing block is not hidden are not hidden.
+    /// </summary>
+    internal bool IsHiddenForPaint { get; set; }
+
+    /// <summary>
+    /// Returns the position of the fragment relative to the root of the fragment tree (the initial containing block, whose
+    /// origin is the origin of the document): the sum of the offsets of the fragment and of its ancestors, minus the scroll
+    /// positions of the scroll containers it is in (https://drafts.csswg.org/css-overflow-3/#scroll-position). The scroll
+    /// position of the viewport is not subtracted (see <see cref="LayoutEngine.ToViewport(PhysicalRect)"/>): the fragments of
+    /// the fixed positioned boxes of the viewport, which do not move when it scrolls, are moved by it in the document instead.
+    /// </summary>
+    public PhysicalOffset GetOffsetInRoot()
+    {
+        var x = 0d;
+        var y = 0d;
+        for (var fragment = this; fragment is not null; fragment = fragment.Parent)
+        {
+            x += fragment.Offset.X;
+            y += fragment.Offset.Y;
+            if (fragment.Parent is BoxFragment { ScrollState: { } scrollState } parent)
+            {
+                if (!scrollState.IsViewport)
+                {
+                    // (the ::view-transition pseudo-element of a scoped view transition is not scrolled by its root element)
+                    if (fragment is not BoxFragment { Box.IsScopedViewTransitionRoot: true })
+                    {
+                        x -= scrollState.Offset.X;
+                        y -= scrollState.Offset.Y;
+                    }
+                }
+                else if (fragment is BoxFragment { Box.IsFixedToViewport: true } && parent.Parent is null)
+                {
+                    x += scrollState.Offset.X;
+                    y += scrollState.Offset.Y;
+                }
+            }
+        }
+
+        return new PhysicalOffset(x, y);
+    }
+
+    /// <summary>
+    /// Returns the position of the fragment relative to the root of the fragment tree when all the scroll positions are 0: the
+    /// coordinates of the scrolled contents (for the sticky positioning).
+    /// </summary>
+    internal PhysicalOffset GetOffsetInRootWithoutScrolling()
+    {
+        var x = 0d;
+        var y = 0d;
+        for (var fragment = this; fragment is not null; fragment = fragment.Parent)
+        {
+            x += fragment.Offset.X;
+            y += fragment.Offset.Y;
+        }
+
+        return new PhysicalOffset(x, y);
+    }
+
+    /// <summary>Returns the rectangle of the fragment relative to the root of the fragment tree (see <see cref="GetOffsetInRoot"/>).</summary>
+    public PhysicalRect GetRectInRoot() => new(GetOffsetInRoot(), Size);
+
+    /// <summary>The rectangle of the fragment in its own coordinates (its origin is its top-left corner).</summary>
+    public PhysicalRect LocalRect => new(PhysicalOffset.Zero, Size);
+
+    /// <summary>
+    /// Attaches a fragment that is not a child of <paramref name="parent"/> (it is not in <see cref="Children"/>) to it, at an
+    /// offset: a fragment painted for its parent without being part of the layout, such as the ellipsis of a line
+    /// (<see cref="LineEllipsis"/>).
+    /// </summary>
+    internal void AttachTo(Fragment parent, PhysicalOffset offset)
+    {
+        Parent = parent;
+        Offset = offset;
+    }
+
+    /// <summary>
+    /// Returns a copy of the fragment and of its descendants, without parent: a table header or footer that is repeated in each
+    /// fragment of its table (https://drafts.csswg.org/css-tables-3/#repeated-headers).
+    /// </summary>
+    internal Fragment CloneSubtree()
+    {
+        var clone = (Fragment)MemberwiseClone();
+        clone.Parent = null;
+        if (_children.Length > 0)
+        {
+            var children = new Fragment[_children.Length];
+            for (var i = 0; i < children.Length; i++)
+            {
+                children[i] = _children[i].CloneSubtree();
+                children[i].Parent = clone;
+            }
+
+            clone._children = children;
+        }
+
+        return clone;
+    }
+
+    /// <summary>Appends child fragments (the absolutely positioned boxes laid out once the size of the fragment is known), whose offsets are set.</summary>
+    private protected void AppendChildren(List<BoxFragment> children)
+    {
+        var result = new Fragment[_children.Length + children.Count];
+        _children.CopyTo(result, 0);
+        for (var i = 0; i < children.Count; i++)
+        {
+            children[i].Parent = this;
+            result[_children.Length + i] = children[i];
+        }
+
+        _children = result;
+    }
+}
+
+/// <summary>
+/// A fragment of a <see cref="ContainerBox"/>: the box of an element, of a pseudo-element, an anonymous box or the viewport.
+/// Its size is the size of its border box; the used margins, borders and paddings give the other boxes
+/// (https://drafts.csswg.org/css-box-4/#box-model).
+/// </summary>
+internal sealed class BoxFragment : Fragment
+{
+    public BoxFragment(ContainerBox box, PhysicalSize size, Sides<double> border, Sides<double> padding, Sides<double> margin, Fragment[]? children)
+        : base(box, size, children)
+    {
+        Border = border;
+        Padding = padding;
+        Margin = margin;
+        var layout = box.Style.Layout;
+        WritingDirection = WritingDirection.FromStyle(layout);
+
+        // https://drafts.csswg.org/css-overflow-3/#overflow-properties: overflow does not apply to the inline boxes, and the
+        // overflow of the root and body elements may be propagated to the viewport (see ScrollContainers.GetUsedOverflow);
+        // paint containment clips like overflow: clip (https://drafts.csswg.org/css-contain-2/#containment-paint)
+        var (overflowX, overflowY) = ScrollContainers.GetUsedOverflow(box);
+        var clipsPaint = UsedContainment.HasPaintContainment(box);
+        if (overflowX != OverflowKind.Visible || clipsPaint)
+        {
+            _flags |= OverflowFlags.ClipsX;
+        }
+
+        if (overflowY != OverflowKind.Visible || clipsPaint)
+        {
+            _flags |= OverflowFlags.ClipsY;
+        }
+
+        if (ScrollContainers.IsScrollable(overflowX) || ScrollContainers.IsScrollable(overflowY))
+        {
+            _flags |= OverflowFlags.ScrollContainer;
+        }
+
+        // https://drafts.csswg.org/css-transforms-1/#transformable-element: the non-replaced inline boxes are not transformable
+        if (!box.IsInlineBox && box.Kind is not (ContainerBoxKind.Viewport or ContainerBoxKind.TableGrid) && layout.HasTransform)
+        {
+            _flags |= OverflowFlags.Transformed;
+        }
+
+        _inFlowChildCount = ChildrenSpan.Length;
+    }
+
+    /// <summary>
+    /// The transform of the fragment of a foreignObject element (https://svgwg.org/svg2-draft/embedded.html#ForeignObjectElement),
+    /// set by the SVG layout: a 4x4 matrix (see <see cref="LayoutTransforms.GetMatrix"/>) from the coordinates of the fragment
+    /// (the position x, y of the element in its user space) to the coordinates of the content box of its outermost svg element
+    /// (the offset of the fragment), with the transforms of the element and of its SVG ancestors.
+    /// </summary>
+    public double[]? SvgTransform
+    {
+        get;
+        set
+        {
+            field = value;
+            _flags = value is null ? _flags : (_flags | OverflowFlags.Transformed) & ~OverflowFlags.OverflowComputed;
+        }
+    }
+
+    [Flags]
+    private enum OverflowFlags : byte
+    {
+        None = 0,
+        ClipsX = 1,
+        ClipsY = 2,
+        ScrollContainer = 4,
+        OverflowComputed = 8,
+        Transformed = 16,
+    }
+
+    /// <summary>The data of the scroll containers (and of the viewport), allocated only for them to keep the fragments small.</summary>
+    private sealed class ScrollContainerData
+    {
+        public Sides<double> Scrollbars;
+        public Scrollbars Displayed;
+        public PhysicalRect? InFlowBounds;
+        public double InFlowInlineSize;
+        public LogicalOffset InFlowStart;
+        public ScrollState? State;
+    }
+
+    private OverflowFlags _flags;
+    private ScrollContainerData? _scrollData;
+    private int _inFlowChildCount;
+    private PhysicalRect _scrollableOverflow;
+    private PhysicalRect _inkOverflow;
+
+    private ScrollContainerData ScrollData => _scrollData ??= new ScrollContainerData();
+
+    /// <summary>The number of children that are not absolutely positioned boxes appended by <see cref="AppendOutOfFlowChildren"/> (they are first in <see cref="Fragment.Children"/>).</summary>
+    internal int InFlowChildCount => _inFlowChildCount;
+
+    /// <summary>
+    /// Replaces the children of the fragment that are not absolutely positioned boxes (see <see cref="InFlowChildCount"/>), whose
+    /// offsets are set: the content of a box laid out in another area for its next fragments (see <see cref="InlineVariant"/>).
+    /// </summary>
+    internal void ReplaceInFlowChildren(Fragment[] inFlow)
+    {
+        var outOfFlow = ChildrenSpan[_inFlowChildCount..];
+        var children = new Fragment[inFlow.Length + outOfFlow.Length];
+        inFlow.CopyTo(children, 0);
+        outOfFlow.CopyTo(children.AsSpan(inFlow.Length));
+        SetChildren(children);
+        _inFlowChildCount = inFlow.Length;
+        _flags &= ~OverflowFlags.OverflowComputed;
+    }
+
+    /// <summary>
+    /// The fragment of the box before it was fragmented (https://drafts.csswg.org/css-break-3/#box-splitting), for the fragments of a
+    /// box split by the fragmentation (see <see cref="FragmentSlicer"/>), else null: its size and its edges are the ones of the
+    /// whole box (the resolved values of getComputedStyle); its children are not its children anymore.
+    /// </summary>
+    internal BoxFragment? UnfragmentedFragment { get; private init; }
+
+    /// <summary>
+    /// The box of all the fragments of a box split by the block fragmentation stitched together in the block axis (a fragment
+    /// that is not in the fragment tree: no children), for the fragments of a box with <c>box-decoration-break: slice</c>
+    /// (https://drafts.csswg.org/css-break-3/#valdef-box-decoration-break-slice: "the box is rendered as if it were not fragmented,
+    /// and then sliced by the breaks"), else null. See <see cref="StitchedOffset"/>.
+    /// </summary>
+    internal BoxFragment? StitchedBox { get; private set; }
+
+    /// <summary>The block size of the fragments of the box that precede this one: the offset of this fragment in <see cref="StitchedBox"/>.</summary>
+    internal double StitchedOffset { get; private set; }
+
+    /// <summary>
+    /// Sets the stitched box of the fragments of a box split by the block fragmentation (see <see cref="StitchedBox"/>): the
+    /// fragments, in order, of the box of <paramref name="unfragmented"/>, which follow each other in its block axis.
+    /// </summary>
+    internal static void Stitch(BoxFragment unfragmented, ReadOnlySpan<BoxFragment> slices)
+    {
+        var writingDirection = unfragmented.WritingDirection;
+        var total = 0d;
+        foreach (var slice in slices)
+        {
+            total += writingDirection.ToLogical(slice.Size).Block;
+        }
+
+        var size = writingDirection.ToPhysical(new LogicalSize(writingDirection.ToLogical(unfragmented.Size).Inline, total));
+        var stitched = new BoxFragment(unfragmented.Box, size, unfragmented.Border, unfragmented.Padding, unfragmented.Margin, children: null)
+        {
+            IntrinsicBlockSize = unfragmented.IntrinsicBlockSize,
+        };
+
+        var offset = 0d;
+        foreach (var slice in slices)
+        {
+            slice.StitchedBox = stitched;
+            slice.StitchedOffset = offset;
+            offset += writingDirection.ToLogical(slice.Size).Block;
+        }
+    }
+
+    /// <summary>
+    /// The gaps of a grid, flex or multi-column container that paints gap decorations (https://drafts.csswg.org/css-gaps-1/#gap-decorations),
+    /// in the logical coordinates of the fragment (see <see cref="GapDecorations.GetDecorations"/> for the painted rectangles). Null
+    /// for the other boxes, and for the containers without rule.
+    /// </summary>
+    public GapGeometry? GapGeometry { get; internal set; }
+
+    /// <summary>
+    /// The column boxes of a multi-column container (https://drafts.csswg.org/css-multicol-2/#column-pseudo), in the logical
+    /// coordinates of the fragment, in the order of the columns (the column boxes have no fragment): the originating boxes of the
+    /// <c>::column::scroll-marker</c> pseudo-elements and the snap areas of <c>::column</c>; they contribute to the scrollable
+    /// overflow of the container, as in Blink (the overflow columns extend it to their column boxes, not only to their contents).
+    /// Null for the other boxes.
+    /// </summary>
+    public LogicalRect[]? ColumnRects { get; internal set; }
+
+    /// <summary>
+    /// The metrics of a MathML box laid out by the math layout (the ink extent, the italic correction, the top accent attachment)
+    /// and the graphical items it draws (the fraction bars, the radical symbols, the stretched operators), for the layout of its
+    /// parent and for the painting (<see cref="Painter"/>); null for the other boxes (see <see cref="MathFormattingContext"/>).
+    /// </summary>
+    public MathFragmentData? MathData { get; internal set; }
+
+    /// <summary>
+    /// Creates the fragment of the box in a fragmentainer (https://drafts.csswg.org/css-break-3/#box-splitting): a fragment with the
+    /// given size, edges (the edges at the breaks removed for <c>box-decoration-break: slice</c>) and children (whose offsets are set).
+    /// </summary>
+    internal BoxFragment CreateSlice(PhysicalSize size, Sides<double> border, Sides<double> padding, Sides<double> margin, Fragment[]? children, List<BoxFragment>? outOfFlowChildren, bool isFirst, bool isLast, double? firstBaseline, double? lastBaseline)
+    {
+        var slice = new BoxFragment(Box, size, border, padding, margin, children)
+        {
+            IsFirstFragment = isFirst,
+            IsLastFragment = isLast,
+            FirstBaseline = firstBaseline,
+            LastBaseline = lastBaseline,
+            RelativeOffset = RelativeOffset,
+            StickyOffset = StickyOffset,
+            ResolvedInsets = ResolvedInsets,
+            IntrinsicBlockSize = IntrinsicBlockSize,
+            UnfragmentedFragment = UnfragmentedFragment ?? this,
+            ReplacedContentRect = ReplacedContentRect,
+            MathData = MathData,
+        };
+
+        if (outOfFlowChildren is not null)
+        {
+            slice.AppendOutOfFlowChildren(outOfFlowChildren);
+        }
+
+        return slice;
+    }
+
+    /// <summary>The box of the fragment.</summary>
+    public new ContainerBox Box => (ContainerBox)base.Box!;
+
+    /// <summary>The used widths of the borders (https://drafts.csswg.org/css-backgrounds-3/#border-width).</summary>
+    public Sides<double> Border { get; }
+
+    /// <summary>The used paddings (https://drafts.csswg.org/css-box-4/#paddings).</summary>
+    public Sides<double> Padding { get; }
+
+    /// <summary>
+    /// The used margins (https://drafts.csswg.org/css-box-4/#margins), after the resolution of the <c>auto</c> margins (not
+    /// collapsed: see <see cref="CollapsedMargins"/>). The margins trimmed by the <c>margin-trim</c> of a container are zero.
+    /// </summary>
+    public Sides<double> Margin { get; internal set; }
+
+    /// <summary>
+    /// The used margins of a box whose block-axis margins are trimmed by the <c>margin-trim</c> of a container
+    /// (https://drafts.csswg.org/css-box-4/#margin-trim), or null when none is: like the margins that collapse, the trimmed
+    /// margins are discarded by the layout (they are zero in <see cref="Margin"/>), but they are still the resolved values of the
+    /// margin properties (WPT css/css-box/margin-trim/margin-trim-computed-value.html).
+    /// </summary>
+    internal Sides<double>? UntrimmedMargin { get; set; }
+
+    /// <summary>
+    /// Trims block-axis margins of the box, in the writing mode of its containing block (https://drafts.csswg.org/css-box-4/#margin-trim):
+    /// they become zero in <see cref="Margin"/>, and the used values are kept in <see cref="UntrimmedMargin"/>.
+    /// </summary>
+    internal void TrimMargins(WritingDirection containingBlock, bool blockStart, bool blockEnd)
+    {
+        if (!blockStart && !blockEnd)
+            return;
+
+        var margin = Margin;
+        UntrimmedMargin ??= margin;
+        if (blockStart)
+        {
+            margin = margin.With(containingBlock.BlockStart, 0);
+        }
+
+        if (blockEnd)
+        {
+            margin = margin.With(containingBlock.BlockEnd, 0);
+        }
+
+        Margin = margin;
+    }
+
+    /// <summary>
+    /// The offset of a relatively positioned box (https://drafts.csswg.org/css-position-3/#relpos-insets), and of a box split
+    /// out of a relatively positioned inline box (see <see cref="ContainerBox.SplitInlineParent"/>): <see cref="Fragment.Offset"/>
+    /// includes it (the parent adds it when it places the fragment).
+    /// </summary>
+    public PhysicalOffset RelativeOffset { get; internal set; }
+
+    /// <summary>
+    /// The offset of a sticky positioned box (https://drafts.csswg.org/css-position-3/#stickypos-insets) for the current scroll
+    /// positions (see <see cref="StickyConstraints"/>): <see cref="Fragment.Offset"/> includes it.
+    /// </summary>
+    public PhysicalOffset StickyOffset { get; internal set; }
+
+    /// <summary>
+    /// The default scroll shift of an anchor-positioned box (https://drafts.csswg.org/css-anchor-position-1/#default-scroll-shift): it
+    /// follows the scrolling of its default anchor box since the anchor recalculation point; <see cref="Fragment.Offset"/> includes it.
+    /// </summary>
+    public PhysicalOffset AnchorScrollShift { get; internal set; }
+
+    /// <summary>
+    /// Whether <c>position-visibility</c> hides the box (https://drafts.csswg.org/css-anchor-position-1/#position-visibility): its
+    /// <c>visibility</c> computes to <c>force-hidden</c>, the box and its contents are neither painted nor hit tested.
+    /// </summary>
+    public bool IsForceHidden { get; internal set; }
+
+    /// <summary>
+    /// Whether the box is a line-clamp container (https://drafts.csswg.org/css-overflow-4/#line-clamp, see <see cref="LineClamp"/>):
+    /// its floats are clipped to its block-end content edge when they are painted (WPT css/css-overflow/line-clamp/line-clamp-with-floats-011.html).
+    /// </summary>
+    internal bool IsLineClampContainer { get; init; }
+
+    /// <summary>
+    /// Returns the state of the fragment that its parents may change when they place it (see <see cref="PrepareForReuse"/>), when
+    /// the layout result cache keeps it (see <see cref="LayoutResultCache"/>).
+    /// </summary>
+    internal ReuseState SaveStateForReuse()
+    {
+        var children = ChildrenSpan;
+        PhysicalOffset[]? offsets = null;
+        if (children.Length > 0)
+        {
+            offsets = new PhysicalOffset[children.Length];
+            for (var i = 0; i < children.Length; i++)
+            {
+                offsets[i] = children[i].Offset;
+            }
+        }
+
+        return new ReuseState(Margin, FirstBaseline, LastBaseline, offsets);
+    }
+
+    /// <summary>
+    /// Restores the state of a fragment kept by the layout result cache before it is used again by a new layout pass: its parent
+    /// sets its used margins (a flex or grid item, an absolutely positioned box), hides it, or moves its children and its
+    /// baselines (the alignment of the contents of a table cell); the sticky offsets are applied after each pass.
+    /// </summary>
+    internal void PrepareForReuse(in ReuseState state)
+    {
+        Margin = state.Margin;
+        FirstBaseline = state.FirstBaseline;
+        LastBaseline = state.LastBaseline;
+        IsHiddenForPaint = false;
+        StickyOffset = PhysicalOffset.Zero;
+        if (RestoreChildren(state.ChildOffsets))
+        {
+            _flags &= ~OverflowFlags.OverflowComputed;
+        }
+    }
+
+    /// <summary>The state of a fragment restored when it is used again (see <see cref="SaveStateForReuse"/>).</summary>
+    internal readonly record struct ReuseState(Sides<double> Margin, double? FirstBaseline, double? LastBaseline, PhysicalOffset[]? ChildOffsets);
+
+    /// <summary>The number of the layout pass that created the fragment (<see cref="LayoutContext.Pass"/>), set by <see cref="LayoutContext.LayoutBox"/>.</summary>
+    internal int LayoutPass { get; set; }
+
+    /// <summary>The constraints of a sticky positioned box, to compute its offset for any scroll position (#347), or null.</summary>
+    public StickyPositionConstraints? StickyConstraints { get; internal set; }
+
+    /// <summary>
+    /// The resolved values of the insets of a positioned box (https://drafts.csswg.org/cssom/#resolved-values), in the
+    /// coordinates of the fragment tree (zoomed): the used values (an <c>auto</c> inset of a relatively or absolutely positioned
+    /// box is resolved from the opposite one or from the static position), the specified values in px when the box is
+    /// over-constrained, null for an <c>auto</c> inset of a sticky positioned box. Null for the static boxes.
+    /// </summary>
+    public Sides<double?>? ResolvedInsets { get; internal set; }
+
+    /// <summary>
+    /// The absolutely positioned descendants whose containing block is an ancestor of the box (or an inline box of an ancestor
+    /// block container), with their static positions in the coordinates of this fragment: the ancestor lays them out once its
+    /// size is known (see <see cref="PositionedLayout.LayoutOutOfFlowDescendants"/>). Null when there are none.
+    /// </summary>
+    internal List<OutOfFlowCandidate>? PendingOutOfFlow { get; set; }
+
+    /// <summary>
+    /// The used <c>z-index</c> of the box (https://drafts.csswg.org/css2/#z-index): its integer value for a positioned box, a flex
+    /// or grid item or a box of the top layer, null for <c>auto</c> or when it does not apply. Used by the hit testing and the painting.
+    /// </summary>
+    public int? ZIndex => StackingContexts.GetZIndex(Box);
+
+    /// <summary>Whether the box establishes a stacking context (https://drafts.csswg.org/css2/#stacking-context, see <see cref="StackingContexts.EstablishesStackingContext"/>).</summary>
+    public bool EstablishesStackingContext => StackingContexts.EstablishesStackingContext(Box);
+
+    /// <summary>The writing mode and the direction of the box: the logical axes of its contents.</summary>
+    public WritingDirection WritingDirection { get; }
+
+    /// <summary>
+    /// The first baseline of the fragment (https://drafts.csswg.org/css-align-3/#first-baseline): the distance of the alphabetic
+    /// baseline from the block-start edge of the border box, in the writing mode of the box, or null when it has no baseline.
+    /// </summary>
+    public double? FirstBaseline { get; set; }
+
+    /// <summary>The last baseline of the fragment (https://drafts.csswg.org/css-align-3/#last-baseline), measured like <see cref="FirstBaseline"/>.</summary>
+    public double? LastBaseline { get; set; }
+
+    /// <summary>
+    /// The rectangle the replaced content of a replaced box is painted in (https://drafts.csswg.org/css-images-3/#the-object-fit):
+    /// the concrete object size of its contents sized by <c>object-fit</c> and positioned by <c>object-position</c> in the content
+    /// box, in the coordinates of the fragment (it may overflow the content box, which clips it). Null for the other boxes and
+    /// for the form controls.
+    /// </summary>
+    public PhysicalRect? ReplacedContentRect { get; set; }
+
+    /// <summary>
+    /// Whether the fragment is the first fragment of its box (e.g. the first line of an inline box split over several lines):
+    /// the block-start and inline-start edges (border, padding and margin) are on the first fragment.
+    /// </summary>
+    public bool IsFirstFragment { get; init; } = true;
+
+    /// <summary>Whether the fragment is the last fragment of its box: the block-end and inline-end edges are on the last fragment.</summary>
+    public bool IsLastFragment { get; init; } = true;
+
+    /// <summary>
+    /// The block-axis margins of the box collapsed with the margins of its children (https://drafts.csswg.org/css2/#collapsing-margins),
+    /// and its clearance, when the box participates in the block formatting context of its parent (see
+    /// <see cref="ConstraintSpace.BlockFormattingContext"/>); <see cref="CollapsedBlockMargins.None"/> for the other boxes. The
+    /// parent formatting context collapses them with the margins of the siblings to position the fragment.
+    /// </summary>
+    internal CollapsedBlockMargins CollapsedMargins { get; init; } = CollapsedBlockMargins.None;
+
+    /// <summary>Whether the box clips its contents in at least one axis (<c>overflow</c> is not <c>visible</c>): the overflow of its descendants does not propagate to its ancestors in that axis.</summary>
+    public bool ClipsOverflow => ClipsOverflowX || ClipsOverflowY;
+
+    /// <summary>Whether the box clips its contents horizontally (the used <c>overflow-x</c> is not <c>visible</c>, or paint containment).</summary>
+    public bool ClipsOverflowX => (_flags & OverflowFlags.ClipsX) != OverflowFlags.None;
+
+    /// <summary>Whether the box clips its contents vertically (the used <c>overflow-y</c> is not <c>visible</c>, or paint containment).</summary>
+    public bool ClipsOverflowY => (_flags & OverflowFlags.ClipsY) != OverflowFlags.None;
+
+    /// <summary>
+    /// Makes the fragment not clip its contents: a fragment of a box in a fragmentainer before the first one of the box, which
+    /// only holds an absolutely positioned descendant placed before the box (see <see cref="FragmentSlicer"/>).
+    /// </summary>
+    internal void DisableOverflowClip() => _flags &= ~(OverflowFlags.ClipsX | OverflowFlags.ClipsY);
+
+    /// <summary>
+    /// Whether the box is a scroll container (https://drafts.csswg.org/css-overflow-3/#scroll-container): its used <c>overflow</c>
+    /// is <c>hidden</c>, <c>scroll</c> or <c>auto</c> in at least one axis (after the propagation to the viewport).
+    /// </summary>
+    public bool IsScrollContainer => (_flags & OverflowFlags.ScrollContainer) != OverflowFlags.None;
+
+    /// <summary>
+    /// The scrolling box of the scroll container (or of the viewport for the root fragment): its scroll position, which the
+    /// contents are moved by (see <see cref="Fragment.GetOffsetInRoot"/>). Set by the layout engine after the layout pass;
+    /// null for the other boxes.
+    /// </summary>
+    public ScrollState? ScrollState
+    {
+        get => _scrollData?.State;
+        internal set => ScrollData.State = value;
+    }
+
+    /// <summary>
+    /// The space taken by the classic scrollbars (and the scrollbar gutters, https://drafts.csswg.org/css-overflow-3/#scrollbar-gutter)
+    /// on each side, between the border and the padding: the padding box excludes them.
+    /// </summary>
+    public Sides<double> Scrollbars
+    {
+        get => _scrollData?.Scrollbars ?? default;
+        init
+        {
+            if (value != default)
+            {
+                ScrollData.Scrollbars = value;
+            }
+        }
+    }
+
+    /// <summary>The classic scrollbars displayed by a scroll container (the space they take is in <see cref="Scrollbars"/>, with the gutters).</summary>
+    internal Scrollbars ScrollbarsDisplayed
+    {
+        get => _scrollData?.Displayed ?? Layout.Scrollbars.None;
+        init
+        {
+            if (value != Layout.Scrollbars.None)
+            {
+                ScrollData.Displayed = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The block size of the in-flow contents of the box (from the block-start edge of its content box, with the collapsed
+    /// margins of its last children), or null when it is not known (the inline boxes, the replaced boxes...).
+    /// </summary>
+    internal double? ContentsBlockSize
+    {
+        get => double.IsNaN(_contentsBlockSize) ? null : _contentsBlockSize;
+        init => _contentsBlockSize = value ?? double.NaN;
+    }
+
+    private readonly double _contentsBlockSize = double.NaN;
+
+    /// <summary>
+    /// The inline size of the in-flow contents of a scroll container when it is larger than its content box (from the
+    /// inline-start edge of the content box: the tracks of a grid, https://drafts.csswg.org/css-grid-2/#overflow), or 0.
+    /// </summary>
+    internal double InFlowInlineSize
+    {
+        get => _scrollData?.InFlowInlineSize ?? 0;
+        set
+        {
+            ScrollData.InFlowInlineSize = value;
+            _flags &= ~OverflowFlags.OverflowComputed;
+        }
+    }
+
+    /// <summary>
+    /// The offset of the start edges of the in-flow contents of a scroll container from the start edges of its content box when it is
+    /// negative (the overflowing tracks of a grid lanes container with <c>track-reverse</c>, see <see cref="ContentLayoutResult.InFlowStart"/>), or zero.
+    /// </summary>
+    internal LogicalOffset InFlowStart
+    {
+        get => _scrollData?.InFlowStart ?? default;
+        set
+        {
+            ScrollData.InFlowStart = value;
+            _flags &= ~OverflowFlags.OverflowComputed;
+        }
+    }
+
+    /// <summary>
+    /// The automatic block size of the border box (https://drafts.csswg.org/css-sizing-3/#automatic-size): the block size the box
+    /// would have with an <c>auto</c> block size, before its minimum and maximum sizes, given by its contents (its natural block
+    /// size for a replaced element, the size transferred through its preferred aspect ratio, or <c>contain-intrinsic-size</c>
+    /// with size containment). The flex layout reads the content-based main size of its items from it (the min-content and
+    /// max-content sizes of the block axis, https://drafts.csswg.org/css-sizing-3/#min-content-block-size).
+    /// </summary>
+    internal double IntrinsicBlockSize { get; init; }
+
+    /// <summary>
+    /// The rectangle of the in-flow contents of the box (see <see cref="Layout.InFlowBounds"/>), which the paddings extend in its
+    /// scrolling area (https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-calculation), or null when it has none.
+    /// Computed from <see cref="ContentsBlockSize"/> and the children of the box before its absolutely positioned boxes are
+    /// appended, unless it is set (the viewport).
+    /// </summary>
+    internal PhysicalRect? InFlowBounds
+    {
+        get
+        {
+            if (_scrollData?.InFlowBounds is { } explicitBounds)
+                return explicitBounds;
+
+            if (ContentsBlockSize is not { } contentsBlockSize)
+                return null;
+
+            var content = WritingDirection.ToLogical(ContentBoxRect, Size);
+            var start = InFlowStart;
+            var contentRect = WritingDirection.ToPhysical(new LogicalRect(
+                new LogicalOffset(content.Offset.Inline + start.Inline, content.Offset.Block + start.Block),
+                new LogicalSize(Math.Max(content.Size.Inline, InFlowInlineSize) - start.Inline, Math.Max(0, contentsBlockSize) - start.Block)), Size);
+            // The flex and grid items extend the in-flow contents in both axes: their margin boxes in a scroll container, their border
+            // boxes otherwise (as in the browsers, https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-calculation: "the
+            // margin areas of grid item and flex item boxes")
+            if (FormattingContext.For(Box).Kind is FormattingContextKind.Flex or FormattingContextKind.Grid)
+                return Layout.InFlowBounds.Compute(ChildrenSpan[.._inFlowChildCount], WritingDirection, contentRect, bothAxes: true, includesMargins: IsScrollContainer);
+
+            return Layout.InFlowBounds.Compute(ChildrenSpan[.._inFlowChildCount], WritingDirection, contentRect);
+        }
+
+        set
+        {
+            ScrollData.InFlowBounds = value;
+            _flags &= ~OverflowFlags.OverflowComputed;
+        }
+    }
+
+    /// <summary>The border box, in the coordinates of the fragment (its origin is the top-left corner of the border box).</summary>
+    public PhysicalRect BorderBoxRect => LocalRect;
+
+    /// <summary>The padding box, in the coordinates of the fragment (without the scrollbars: <see cref="Scrollbars"/>), the scrollport of a scroll container.</summary>
+    public PhysicalRect PaddingBoxRect => BorderBoxRect.Contract(Border.Add(Scrollbars));
+
+    /// <summary>The content box, in the coordinates of the fragment.</summary>
+    public PhysicalRect ContentBoxRect => PaddingBoxRect.Contract(Padding);
+
+    /// <summary>The margin box, in the coordinates of the fragment.</summary>
+    public PhysicalRect MarginBoxRect => BorderBoxRect.Expand(Margin);
+
+    /// <summary>
+    /// The scrollable overflow rectangle (https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-rectangle), in the
+    /// coordinates of the fragment: the border box and the scrollable overflow of the descendants, clipped to their overflow
+    /// clip edge in the axes they clip (https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-calculation). The scroll
+    /// positions are not applied.
+    /// </summary>
+    public PhysicalRect ScrollableOverflow
+    {
+        get
+        {
+            EnsureOverflow();
+            return _scrollableOverflow;
+        }
+    }
+
+    /// <summary>
+    /// The ink overflow rectangle (https://drafts.csswg.org/css-overflow-3/#ink-overflow-rectangle), in the coordinates of the
+    /// fragment: the border box and the ink overflow of the descendants, clipped to their overflow clip edge. The decorations
+    /// that do not affect the layout (shadows, outlines, glyph bounds) are not included.
+    /// </summary>
+    public PhysicalRect InkOverflow
+    {
+        get
+        {
+            EnsureOverflow();
+            return _inkOverflow;
+        }
+    }
+
+    /// <summary>
+    /// The overflow clip edge (https://drafts.csswg.org/css-overflow-3/#overflow-clip-edge), in the coordinates of the fragment:
+    /// for a scroll container, its padding box (clamped by <c>overflow-clip-margin</c>, which can only shrink it); for
+    /// <c>overflow: clip</c> and paint containment, the box of <c>overflow-clip-margin</c> (the padding box by default) extended
+    /// by its length (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin). Only the axes that clip are clipped.
+    /// </summary>
+    public PhysicalRect OverflowClipRect
+    {
+        get
+        {
+            var margins = Box.Style.Layout.Overflow.OverflowClipMargin;
+            var padding = PaddingBoxRect;
+            var left = GetEdge(margins.Left, PhysicalSide.Left);
+            var top = GetEdge(margins.Top, PhysicalSide.Top);
+            var right = GetEdge(margins.Right, PhysicalSide.Right);
+            var bottom = GetEdge(margins.Bottom, PhysicalSide.Bottom);
+            if (IsScrollContainer)
+            {
+                left = Math.Max(left, padding.Left);
+                top = Math.Max(top, padding.Top);
+                right = Math.Min(right, padding.Right);
+                bottom = Math.Min(bottom, padding.Bottom);
+            }
+
+            return new PhysicalRect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
+
+            double GetEdge(OverflowClipMargin margin, PhysicalSide side)
+            {
+                // "the border-box value ignores any specified offset" for a scroll container
+                var box = margin.Box ?? VisualBox.PaddingBox;
+                var rect = box switch
+                {
+                    VisualBox.ContentBox => ContentBoxRect,
+                    VisualBox.BorderBox => BorderBoxRect,
+                    _ => padding,
+                };
+                var length = IsScrollContainer && box == VisualBox.BorderBox ? 0 : margin.Length;
+                return side switch
+                {
+                    PhysicalSide.Left => rect.Left - length,
+                    PhysicalSide.Top => rect.Top - length,
+                    PhysicalSide.Right => rect.Right + length,
+                    _ => rect.Bottom + length,
+                };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the scrolling area of the box (https://drafts.csswg.org/cssom-view/#scrolling-area), in the coordinates of the
+    /// fragment at the scroll position 0: its padding box, the scrollable overflow of its contents and its in-flow contents
+    /// extended by its paddings (https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-calculation),
+    /// without the unreachable scrollable overflow region before the scroll origin.
+    /// </summary>
+    public PhysicalRect GetScrollingArea()
+    {
+        var padding = PaddingBoxRect;
+        var contents = ComputeOverflow(out _);
+        var area = contents.Width <= 0 && contents.Height <= 0 ? padding : UnionWithEmpty(padding, contents);
+        if (InFlowBounds is { } inFlow)
+        {
+            // "Additional padding added to the scrollable overflow rectangle as necessary to enable scroll positions that satisfy
+            // the requirements of both place-content: start and place-content: end alignment"
+            area = UnionWithEmpty(area, inFlow.Expand(Padding));
+        }
+
+        return ScrollContainers.ClampToScrollOrigin(area, padding, ScrollContainers.GetScrollOrigin(Box, WritingDirection));
+    }
+
+    /// <summary>
+    /// Moves the in-flow children of the fragment (and the static positions of its pending out-of-flow descendants) by an
+    /// offset: the alignment of the contents of a table cell (https://drafts.csswg.org/css-tables-3/#row-layout, <c>vertical-align</c>).
+    /// The absolutely positioned boxes whose containing block is the box move in the axes where they are at their static
+    /// position (https://drafts.csswg.org/css-position-3/#staticpos-rect: a position of the contents).
+    /// </summary>
+    internal void MoveInFlowChildren(PhysicalOffset offset)
+    {
+        var children = ChildrenSpan;
+        for (var i = 0; i < children.Length; i++)
+        {
+            if (i < _inFlowChildCount)
+            {
+                children[i].Offset += offset;
+            }
+            else if (children[i] is BoxFragment { Box.Style.Layout.Insets.Inset: var insets } outOfFlow)
+            {
+                outOfFlow.Offset += new PhysicalOffset(
+                    insets.Left.IsAuto && insets.Right.IsAuto ? offset.X : 0,
+                    insets.Top.IsAuto && insets.Bottom.IsAuto ? offset.Y : 0);
+            }
+        }
+
+        if (PendingOutOfFlow is { } pending)
+        {
+            foreach (var candidate in pending)
+            {
+                candidate.StaticPosition += offset;
+            }
+        }
+
+        _flags &= ~OverflowFlags.OverflowComputed;
+    }
+
+    /// <summary>Appends the fragments of the absolutely positioned boxes whose containing block is the box (their offsets are set), and updates the overflow.</summary>
+    internal void AppendOutOfFlowChildren(List<BoxFragment> children)
+    {
+        AppendChildren(children);
+        _flags &= ~OverflowFlags.OverflowComputed;
+    }
+
+    private void EnsureOverflow()
+    {
+        if ((_flags & OverflowFlags.OverflowComputed) != OverflowFlags.None)
+            return;
+
+        // The overflow of a deeply nested fragment is computed on a new stack (the computation recurses into the children)
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                EnsureOverflow();
+                return true;
+            });
+            return;
+        }
+
+        var contents = ComputeOverflow(out var ink);
+        _scrollableOverflow = Unite(BorderBoxRect, contents);
+        _inkOverflow = ink;
+        _flags |= OverflowFlags.OverflowComputed;
+    }
+
+    /// <summary>Returns the scrollable overflow of the contents (the union of the contributions of the children, without the border box), and the ink overflow of the box.</summary>
+    private PhysicalRect ComputeOverflow(out PhysicalRect inkOverflow)
+    {
+        var contents = PhysicalRect.Empty;
+        var ink = BorderBoxRect;
+        var isViewport = Box.Kind == ContainerBoxKind.Viewport;
+        var excludesUnreachable = IsScrollContainer || isViewport;
+        var padding = excludesUnreachable ? PaddingBoxRect : default;
+        var scrollOrigin = excludesUnreachable ? ScrollContainers.GetScrollOrigin(Box, WritingDirection) : default;
+        foreach (var child in ChildrenSpan)
+        {
+            // The fixed positioned boxes do not scroll with the viewport (https://drafts.csswg.org/css-overflow-3/#scrollable):
+            // they do not contribute to its scrollable overflow
+            if (isViewport && child is BoxFragment { Box.IsFixedToViewport: true })
+            {
+                ink = ink.Union(child.Rect);
+                continue;
+            }
+
+            // https://drafts.csswg.org/css-view-transitions-2/#scoped-vt-layout: the ::view-transition pseudo-element of a scoped
+            // view transition is painted apart from its root element: it does not extend its scrollable overflow
+            if (child is BoxFragment { Box.IsScopedViewTransitionRoot: true })
+            {
+                ink = ink.Union(child.Rect);
+                continue;
+            }
+
+            if (excludesUnreachable)
+            {
+                // "The border boxes of all boxes for which it is the containing block and whose border boxes are positioned not
+                // wholly within its unreachable scrollable overflow region": the region before the scroll origin
+                var childContents = PhysicalRect.Empty;
+                AddOverflow(child, child.Offset, ref childContents, ref ink);
+                if (!IsWhollyUnreachable(childContents, padding, scrollOrigin))
+                {
+                    contents = Unite(contents, childContents);
+                }
+
+                continue;
+            }
+
+            AddOverflow(child, child.Offset, ref contents, ref ink);
+        }
+
+        // The column boxes of a multi-column container contribute their border boxes, as the boxes it is the containing block of
+        if (ColumnRects is { } columns)
+        {
+            foreach (var column in columns)
+            {
+                var rect = WritingDirection.ToPhysical(column, Size);
+                if (!excludesUnreachable || !IsWhollyUnreachable(rect, padding, scrollOrigin))
+                {
+                    contents = Unite(contents, rect);
+                }
+            }
+        }
+
+        inkOverflow = ink;
+        return contents;
+
+        static void AddOverflow(Fragment fragment, PhysicalOffset offset, ref PhysicalRect scrollable, ref PhysicalRect ink)
+        {
+            // https://drafts.csswg.org/css-overflow-4/#line-clamp: the content hidden after the clamp point is not painted, and it is
+            // not scrollable overflow (WPT css/css-overflow/line-clamp/line-clamp-021.html)
+            if (fragment.IsHiddenForPaint)
+                return;
+
+            switch (fragment)
+            {
+                case BoxFragment box:
+                    box.EnsureOverflow();
+                    var boxScrollable = box._scrollableOverflow;
+                    var boxInk = box._inkOverflow;
+                    var flags = box._flags;
+                    if ((flags & (OverflowFlags.ClipsX | OverflowFlags.ClipsY)) != OverflowFlags.None)
+                    {
+                        // The overflow of the descendants is clipped to the overflow clip edge in the axes that clip
+                        var clip = box.OverflowClipRect;
+                        var clipX = (flags & OverflowFlags.ClipsX) != OverflowFlags.None;
+                        var clipY = (flags & OverflowFlags.ClipsY) != OverflowFlags.None;
+                        boxScrollable = Unite(box.BorderBoxRect, Clip(boxScrollable, clip, clipX, clipY));
+                        boxInk = Clip(boxInk, clip, clipX, clipY).Union(box.BorderBoxRect);
+                    }
+
+                    // https://drafts.csswg.org/css-contain-2/#containment-layout: "If the computed value of the overflow property is
+                    // either visible or clip or a combination thereof, any overflow must be treated as ink overflow": the box
+                    // contributes its border box only
+                    if ((flags & OverflowFlags.ScrollContainer) == OverflowFlags.None && UsedContainment.HasLayoutContainment(box.Box))
+                    {
+                        boxScrollable = box.BorderBoxRect;
+                    }
+
+                    // "accounting for transforms by projecting each box onto the plane of the element that establishes its 3D
+                    // rendering context"
+                    if ((flags & OverflowFlags.Transformed) != OverflowFlags.None && LayoutTransforms.GetMatrix(box) is { } matrix)
+                    {
+                        boxScrollable = LayoutTransforms.TransformRect(boxScrollable, matrix);
+                        boxInk = LayoutTransforms.TransformRect(boxInk, matrix);
+                    }
+
+                    scrollable = Unite(scrollable, boxScrollable.Translate(offset));
+                    ink = ink.Union(boxInk.Translate(offset));
+                    break;
+
+                case LineBoxFragment line:
+                    // The line boxes contribute their contents (https://drafts.csswg.org/css-overflow-3/#scrollable), without the
+                    // glyphs that hang (https://drafts.csswg.org/css-text-4/#hanging)
+                    if (line.NonHangingRect is { } nonHanging)
+                    {
+                        var lineScrollable = PhysicalRect.Empty;
+                        foreach (var child in line.ChildrenSpan)
+                        {
+                            AddOverflow(child, offset + child.Offset, ref lineScrollable, ref ink);
+                        }
+
+                        scrollable = Unite(scrollable, Clip(lineScrollable, nonHanging.Translate(offset), clipX: true, clipY: true));
+                        break;
+                    }
+
+                    foreach (var child in line.ChildrenSpan)
+                    {
+                        AddOverflow(child, offset + child.Offset, ref scrollable, ref ink);
+                    }
+
+                    break;
+
+                default:
+                    scrollable = Unite(scrollable, fragment.LocalRect.Translate(offset));
+                    ink = ink.Union(fragment.LocalRect.Translate(offset));
+                    break;
+            }
+        }
+
+        static PhysicalRect Clip(PhysicalRect rect, PhysicalRect clip, bool clipX, bool clipY)
+        {
+            var left = clipX ? Math.Max(rect.Left, clip.Left) : rect.Left;
+            var right = clipX ? Math.Min(rect.Right, clip.Right) : rect.Right;
+            var top = clipY ? Math.Max(rect.Top, clip.Top) : rect.Top;
+            var bottom = clipY ? Math.Min(rect.Bottom, clip.Bottom) : rect.Bottom;
+            return right < left || bottom < top ? PhysicalRect.Empty : new PhysicalRect(left, top, right - left, bottom - top);
+        }
+
+        static bool IsWhollyUnreachable(PhysicalRect rect, PhysicalRect padding, (PhysicalSide First, PhysicalSide Second) scrollOrigin)
+        {
+            if (rect.Width <= 0 && rect.Height <= 0)
+                return false;
+
+            return IsBeyond(scrollOrigin.First) || IsBeyond(scrollOrigin.Second);
+
+            bool IsBeyond(PhysicalSide side) => side switch
+            {
+                PhysicalSide.Left => rect.Right <= padding.Left,
+                PhysicalSide.Top => rect.Bottom <= padding.Top,
+                PhysicalSide.Right => rect.Left >= padding.Right,
+                _ => rect.Top >= padding.Bottom,
+            };
+        }
+
+    }
+
+    /// <summary>
+    /// Returns the union of two overflow rectangles. As in Blink, a box with a zero size in one axis contributes its extent in the
+    /// other axis (WPT scrollable-overflow-zero-one-axis.html), unlike the "border boxes with zero area do not affect the
+    /// scrollable overflow area" of the specification; a box without size does not.
+    /// </summary>
+    private static PhysicalRect Unite(PhysicalRect a, PhysicalRect b)
+    {
+        if (b.Width <= 0 && b.Height <= 0)
+            return a;
+
+        if (a.Width <= 0 && a.Height <= 0)
+            return b;
+
+        return UnionWithEmpty(a, b);
+    }
+
+    /// <summary>Returns the union of two rectangles, including the empty ones that have a position (a zero width or height).</summary>
+    internal static PhysicalRect UnionWithEmpty(PhysicalRect a, PhysicalRect b)
+    {
+        var left = Math.Min(a.Left, b.Left);
+        var top = Math.Min(a.Top, b.Top);
+        return new PhysicalRect(left, top, Math.Max(a.Right, b.Right) - left, Math.Max(a.Bottom, b.Bottom) - top);
+    }
+}
+
+/// <summary>
+/// A line box (https://drafts.csswg.org/css-inline-3/#line-box): a child of the fragment of the block container whose inline
+/// formatting context it belongs to. Its children are the fragments of the inline content of the line (text fragments, the
+/// fragments of the inline boxes and of the atomic inlines), positioned relative to the line box.
+/// </summary>
+internal sealed class LineBoxFragment : Fragment
+{
+    public LineBoxFragment(PhysicalSize size, double baseline, Fragment[]? children)
+        : base(box: null, size, children)
+    {
+        Baseline = baseline;
+    }
+
+    /// <summary>The position of the alphabetic baseline of the line (https://drafts.csswg.org/css-inline-3/#baseline): its distance from the block-start edge of the line box.</summary>
+    public double Baseline { get; }
+
+    /// <summary>
+    /// How much the ruby annotations of the line overflow the block-end side of the line box (https://drafts.csswg.org/css-ruby-1/#line-height):
+    /// the next line is placed after them, and the fragmentation does not break before their end.
+    /// </summary>
+    public double BlockEndAnnotationOverflow { get; init; }
+
+    /// <summary>
+    /// The style of the root inline box of the line (https://drafts.csswg.org/css-inline-3/#root-inline-box): the style of the
+    /// block container, or its <c>::first-line</c> style on its first formatted line. Null for a line box that was not created by
+    /// the inline layout.
+    /// </summary>
+    public ComputedStyle? Style { get; internal set; }
+
+    /// <summary>Whether the bidi paragraph of the line is right-to-left (https://drafts.csswg.org/css-writing-modes-4/#text-direction): <c>direction</c>, or the content with <c>unicode-bidi: plaintext</c>.</summary>
+    public bool IsRightToLeft { get; internal set; }
+
+    /// <summary>
+    /// The rectangle of the line box (in its coordinates, extended to infinity in the block axis and on the sides where nothing
+    /// hangs) outside of which the white space of the end of the line hangs (https://drafts.csswg.org/css-text-4/#hanging), or
+    /// null when none hangs: "An overflowing hanging glyph should typically be considered ink overflow so as to avoid
+    /// creating unnecessary scrollbars".
+    /// </summary>
+    public PhysicalRect? NonHangingRect { get; internal set; }
+
+    /// <summary>
+    /// The ellipsis placed on the line by the layout (<c>block-ellipsis</c>, https://drafts.csswg.org/css-overflow-4/#block-ellipsis),
+    /// or null. The ellipsis of <c>text-overflow</c> is not stored: it depends on the scroll position, it is computed when the
+    /// line is painted (<see cref="LineTruncator.GetTextOverflow"/>).
+    /// </summary>
+    public LineEllipsis? BlockEllipsis { get; internal set; }
+
+    /// <summary>
+    /// Whether the content of the line does not fit with its <see cref="BlockEllipsis"/> (<c>-webkit-line-clamp</c>, see
+    /// <see cref="LineClamp"/>): the ellipsis is not placed by the layout, the line is truncated by it when it is painted, as by
+    /// <c>text-overflow</c> (<see cref="LineTruncator.GetTruncation"/>).
+    /// </summary>
+    public bool IsTruncatedByBlockEllipsis { get; internal set; }
+
+    /// <summary>
+    /// The text run of the preserved segment break that ends the line (https://drafts.csswg.org/css-text-3/#white-space-phase-2),
+    /// which has no fragment (the forced line break of a <c>br</c> element is a text fragment), or null. Used by the caret navigation.
+    /// </summary>
+    public TextRun? ForcedBreakRun { get; private set; }
+
+    /// <summary>The range of the segment break of <see cref="ForcedBreakRun"/> in its text node.</summary>
+    public (int Start, int End) ForcedBreakRange { get; private set; }
+
+    internal void SetForcedBreak(TextRun run, int start, int end)
+    {
+        ForcedBreakRun = run;
+        ForcedBreakRange = (start, end);
+    }
+}
+
+/// <summary>
+/// A fragment of the text of a <see cref="TextRun"/> on a line: the characters of the text node from <see cref="Start"/> to
+/// <see cref="End"/> (offsets in the text node, as the ranges, the selection and the caret positions use), and the glyphs
+/// that render them.
+/// </summary>
+internal sealed class TextFragment : Fragment
+{
+    public TextFragment(TextRun run, int start, int end, PhysicalSize size, double baseline, ShapedText? shapedText, int glyphStart, int glyphCount)
+        : base(run, size, children: null)
+    {
+        Start = start;
+        End = end;
+        Baseline = baseline;
+        ShapedText = shapedText;
+        GlyphStart = glyphStart;
+        GlyphCount = glyphCount;
+    }
+
+    /// <summary>The text run of the fragment.</summary>
+    public TextRun Run => (TextRun)Box!;
+
+    /// <summary>
+    /// The style of the text on its line: the style of its text run, or, on the first formatted line of a block container with a
+    /// <c>::first-line</c> style, the style of the run inheriting from it (https://drafts.csswg.org/css-pseudo-4/#first-line-inheritance).
+    /// </summary>
+    public ComputedStyle Style => LineStyle ?? Run.Style;
+
+    /// <summary>The style of the text on the first formatted line when it differs from the style of its run (see <see cref="Style"/>), or null.</summary>
+    internal ComputedStyle? LineStyle { get; init; }
+
+    /// <summary>The offset of the first character of the fragment in the text node (in <see cref="TextRun.Data"/>), in UTF-16 code units.</summary>
+    public int Start { get; }
+
+    /// <summary>The offset after the last character of the fragment in the text node.</summary>
+    public int End { get; }
+
+    /// <summary>The position of the alphabetic baseline: its distance from the block-start edge of the fragment.</summary>
+    public double Baseline { get; }
+
+    /// <summary>
+    /// The shaped text that contains the glyphs of the fragment (the text after the white space processing and the text
+    /// transformation), or null when the fragment has no glyph. The spacing of the line (the tab stops, the justification, the
+    /// spacing trimmed at the edges of the line) is applied to its glyphs: it is then a shaped text of the fragment only.
+    /// </summary>
+    public ShapedText? ShapedText { get; }
+
+    /// <summary>The index of the first glyph of the fragment in <see cref="ShapedText"/>.</summary>
+    public int GlyphStart { get; }
+
+    /// <summary>The number of glyphs of the fragment.</summary>
+    public int GlyphCount { get; }
+
+    /// <summary>The glyphs of the fragment, in logical order.</summary>
+    public ReadOnlySpan<ShapedGlyph> Glyphs => ShapedText is null ? default : ShapedText.Glyphs.Slice(GlyphStart, GlyphCount);
+
+    /// <summary>
+    /// The offsets in the text node of the characters of <see cref="ShapedText"/> covered by the fragment (from the cluster of its
+    /// first glyph), when they are not consecutive from <see cref="Start"/>: collapsed white space inside the fragment, or a text
+    /// transformation that changes the length of the text. Null when the character at index <c>i</c> of the fragment is the
+    /// character <c>Start + i</c> of the text node.
+    /// </summary>
+    public int[]? DomOffsets { get; init; }
+
+    /// <summary>
+    /// Whether the fragment is a part of the ellipsis of a line (<see cref="LineEllipsis"/>): it is not in the fragment tree (it
+    /// is attached to its line box), it has no DOM text, and the emphasis marks are not painted on it.
+    /// </summary>
+    public bool IsEllipsis { get; init; }
+
+    /// <summary>
+    /// Whether the fragment is the hyphen displayed at the end of a line broken after a soft hyphen
+    /// (https://drafts.csswg.org/css-text-4/#hyphenation): its glyphs are the ones of <c>hyphenate-character</c>, and its
+    /// <see cref="Start"/> and <see cref="End"/> are the offset after the soft hyphen.
+    /// </summary>
+    public bool IsHyphen { get; init; }
+
+    /// <summary>
+    /// The writing direction of the text of the fragment: the writing mode of its text run, and the direction of its bidi level
+    /// (the direction of its glyphs).
+    /// </summary>
+    public WritingDirection WritingDirection => new(Run.Style.Layout.WritingMode, ShapedText is { IsRightToLeft: true } ? Direction.Rtl : Direction.Ltr);
+
+    /// <summary>
+    /// Returns the distance along the inline axis from the inline-start edge of the fragment (in the direction of its glyphs) to
+    /// the caret position before a character of the text node (https://drafts.csswg.org/cssom-view/#dom-range-getclientrects:
+    /// "the horizontal dimension by the text advance width"), clamped to the fragment. An offset inside a cluster (e.g. between
+    /// the two halves of a surrogate pair) is moved to the start of the cluster, or to its end when <paramref name="roundUp"/>
+    /// is set (the end of a range).
+    /// </summary>
+    public double GetInlineOffset(int domOffset, bool roundUp = false)
+    {
+        var inlineSize = WritingDirection.IsHorizontal ? Size.Width : Size.Height;
+        if (domOffset <= Start)
+            return 0;
+
+        if (domOffset >= End || ShapedText is not { } shaped || GlyphCount == 0)
+            return domOffset >= End ? inlineSize : 0;
+
+        var (shapedStart, shapedEnd) = GetShapedRange(shaped);
+        int index;
+        if (DomOffsets is { } map)
+        {
+            // The number of characters before the offset (the collapsed white space maps to the preceding space)
+            var count = 0;
+            while (count < map.Length && map[count] < domOffset)
+            {
+                count++;
+            }
+
+            index = shapedStart + count;
+        }
+        else
+        {
+            index = shapedStart + (domOffset - Start);
+        }
+
+        index = Math.Clamp(index, shapedStart, shapedEnd);
+        while (roundUp && index < shapedEnd && !shaped.IsCaretPosition(index))
+        {
+            index++;
+        }
+
+        var offset = shaped.GetOffset(index) - shaped.GetOffset(shapedStart);
+        return Math.Clamp(offset, 0, inlineSize);
+    }
+
+    /// <summary>
+    /// Returns the offset in the text node of the caret position closest to a distance along the inline axis from the
+    /// inline-start edge of the fragment (see <see cref="GetInlineOffset"/>), at a boundary of the clusters of the shaped text.
+    /// </summary>
+    public int GetDomOffsetAt(double inlineOffset)
+    {
+        if (ShapedText is not { } shaped || GlyphCount == 0)
+        {
+            var inlineSize = WritingDirection.IsHorizontal ? Size.Width : Size.Height;
+            return inlineOffset < inlineSize / 2 ? Start : End;
+        }
+
+        var (shapedStart, shapedEnd) = GetShapedRange(shaped);
+        var index = Math.Clamp(shaped.GetIndexAtOffset(shaped.GetOffset(shapedStart) + inlineOffset), shapedStart, shapedEnd);
+        if (index == shapedEnd)
+            return End;
+
+        var domOffset = DomOffsets is { } map ? map[index - shapedStart] : Start + (index - shapedStart);
+        return Math.Clamp(domOffset, Start, End);
+    }
+
+    /// <summary>
+    /// Returns the rectangle of the characters from <paramref name="start"/> to <paramref name="end"/> of the text node (offsets,
+    /// clamped to the fragment) in the coordinates of the fragment: the advance of the characters along the inline axis, the
+    /// size of the fragment (the ascent and descent of the font) along the block axis.
+    /// </summary>
+    public PhysicalRect GetRangeRect(int start, int end)
+    {
+        var a = GetInlineOffset(start);
+        var b = GetInlineOffset(end, roundUp: end > start);
+        var low = Math.Min(a, b);
+        var high = Math.Max(a, b);
+        var writingDirection = WritingDirection;
+        return writingDirection.InlineStart switch
+        {
+            PhysicalSide.Left => new PhysicalRect(low, 0, high - low, Size.Height),
+            PhysicalSide.Right => new PhysicalRect(Size.Width - high, 0, high - low, Size.Height),
+            PhysicalSide.Top => new PhysicalRect(0, low, Size.Width, high - low),
+            _ => new PhysicalRect(0, Size.Height - high, Size.Width, high - low),
+        };
+    }
+
+    /// <summary>The range of the characters of the fragment in its shaped text: from the cluster of its first glyph to the cluster of the glyph after its last one.</summary>
+    internal (int Start, int End) GetShapedRange(ShapedText shaped)
+    {
+        var glyphs = shaped.Glyphs;
+        var start = glyphs[GlyphStart].Cluster;
+        var end = GlyphStart + GlyphCount < glyphs.Length ? glyphs[GlyphStart + GlyphCount].Cluster : shaped.Length;
+        return (start, Math.Max(start, end));
+    }
+}

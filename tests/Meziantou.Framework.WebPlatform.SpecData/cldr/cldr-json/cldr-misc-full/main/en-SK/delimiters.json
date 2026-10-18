@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-SK": {
+      "identity": {
+        "language": "en",
+        "territory": "SK"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

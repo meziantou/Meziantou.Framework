@@ -1,0 +1,822 @@
+{
+  "trusted-types/DOMParser-parseFromString-regression.html": {
+    "total": 1
+  },
+  "trusted-types/DOMParser-parseFromString.html": {
+    "total": 2
+  },
+  "trusted-types/DedicatedWorker-block-eval-function-constructor.html": {
+    "total": 6
+  },
+  "trusted-types/DedicatedWorker-constructor-from-DedicatedWorker.html": {
+    "total": 3
+  },
+  "trusted-types/DedicatedWorker-constructor-from-SharedWorker.html": {
+    "total": 3
+  },
+  "trusted-types/DedicatedWorker-constructor.https.html": {
+    "total": 3
+  },
+  "trusted-types/DedicatedWorker-eval.html": {
+    "total": 8
+  },
+  "trusted-types/DedicatedWorker-importScripts.html": {
+    "total": 8
+  },
+  "trusted-types/DedicatedWorker-setTimeout-setInterval.html": {
+    "total": 6
+  },
+  "trusted-types/Document-execCommand.html": {
+    "total": 2
+  },
+  "trusted-types/Document-parseHTMLUnsafe-respects-current-globals-CSP.html": {
+    "total": 2
+  },
+  "trusted-types/Document-write-appending-line-feed.html": {
+    "total": 6
+  },
+  "trusted-types/Document-write-exception-order.xhtml": {
+    "total": 3
+  },
+  "trusted-types/Document-write.html": {
+    "total": 8
+  },
+  "trusted-types/Element-insertAdjacentHTML.html": {
+    "total": 1
+  },
+  "trusted-types/Element-outerHTML.html": {
+    "total": 1
+  },
+  "trusted-types/Element-setAttribute-respects-Elements-node-documents-globals-CSP-after-adoption-from-TT-realm.html": {
+    "total": 4
+  },
+  "trusted-types/Element-setAttribute-respects-Elements-node-documents-globals-CSP-after-adoption-from-non-TT-realm.html": {
+    "total": 4
+  },
+  "trusted-types/Element-setAttribute-setAttributeNS-sinks.tentative.html": {
+    "total": 7
+  },
+  "trusted-types/Element-setAttribute.html": {
+    "total": 5
+  },
+  "trusted-types/Element-setAttributeNS.html": {
+    "total": 4
+  },
+  "trusted-types/Element-toggleAttribute.html": {
+    "total": 2
+  },
+  "trusted-types/GlobalEventHandlers-onclick.html": {
+    "total": 3
+  },
+  "trusted-types/HTMLElement-generic.html": {
+    "total": 72
+  },
+  "trusted-types/HTMLScriptElement-in-xhtml-document.tentative.https.xhtml": {
+    "total": 1
+  },
+  "trusted-types/HTMLScriptElement-internal-slot.html": {
+    "total": 9,
+    "failures": {
+      "Test TT application when manipulating <script> elements during loading.": "FAIL"
+    }
+  },
+  "trusted-types/Node-multiple-arguments-tt-enforced.html": {
+    "total": 90
+  },
+  "trusted-types/Node-multiple-arguments.html": {
+    "total": 90
+  },
+  "trusted-types/Range-createContextualFragment.html": {
+    "total": 1
+  },
+  "trusted-types/SVGScriptElement-internal-slot.html": {
+    "total": 1,
+    "failures": {
+      "Test TT application when manipulating <script> elements during loading.": "FAIL"
+    }
+  },
+  "trusted-types/ServiceWorker-block-eval-function-constructor.https.html": {
+    "total": 6
+  },
+  "trusted-types/ServiceWorker-eval.https.html": {
+    "total": 8
+  },
+  "trusted-types/ServiceWorker-importScripts.https.html": {
+    "total": 8
+  },
+  "trusted-types/ServiceWorkerContainer-register-from-DedicatedWorker.https.html": {
+    "total": 4
+  },
+  "trusted-types/ServiceWorkerContainer-register-from-ServiceWorker.https.html": {
+    "total": 4
+  },
+  "trusted-types/ServiceWorkerContainer-register-from-SharedWorker.https.html": {
+    "total": 4
+  },
+  "trusted-types/ServiceWorkerContainer-register.https.html": {
+    "total": 3
+  },
+  "trusted-types/SharedWorker-block-eval-function-constructor.html": {
+    "total": 6
+  },
+  "trusted-types/SharedWorker-constructor.https.html": {
+    "total": 3
+  },
+  "trusted-types/SharedWorker-eval.html": {
+    "total": 8
+  },
+  "trusted-types/SharedWorker-importScripts.html": {
+    "total": 8
+  },
+  "trusted-types/SharedWorker-setTimeout-setInterval.html": {
+    "total": 6
+  },
+  "trusted-types/TrustedType-AttributeNodes.html": {
+    "total": 33
+  },
+  "trusted-types/TrustedTypePolicy-CSP-no-name.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicy-CSP-wildcard.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicy-createXXX.html": {
+    "total": 29
+  },
+  "trusted-types/TrustedTypePolicyFactory-constants.html": {
+    "total": 6
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-createXYZTests.html": {
+    "total": 28
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-case.html": {
+    "total": 2
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-case2.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-noNamesGiven.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none-name.html": {
+    "total": 2
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none.html": {
+    "total": 2
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-skip.html": {
+    "total": 3
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none.html": {
+    "total": 2
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-wildcard.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests.html": {
+    "total": 4
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-non-tt-policy-name.html": {
+    "total": 5
+  },
+  "trusted-types/TrustedTypePolicyFactory-createPolicy-unenforced.html": {
+    "total": 1
+  },
+  "trusted-types/TrustedTypePolicyFactory-defaultPolicy.html": {
+    "total": 3
+  },
+  "trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html": {
+    "total": 93,
+    "failures": {
+      "getAttributeType(\"dummy\", \"onbegin\", \"dummyNs\", attrNs)": "FAIL",
+      "getAttributeType(\"dummy\", \"onend\", \"dummyNs\", attrNs)": "FAIL",
+      "getAttributeType(\"dummy\", \"onrepeat\", \"dummyNs\", attrNs)": "FAIL"
+    }
+  },
+  "trusted-types/TrustedTypePolicyFactory-getAttributeType-namespace.html": {
+    "total": 21
+  },
+  "trusted-types/TrustedTypePolicyFactory-getAttributeType-svg.html": {
+    "total": 4
+  },
+  "trusted-types/TrustedTypePolicyFactory-getAttributeType.html": {
+    "total": 23
+  },
+  "trusted-types/TrustedTypePolicyFactory-getPropertyType.tentative.html": {
+    "total": 28
+  },
+  "trusted-types/TrustedTypePolicyFactory-isXXX.html": {
+    "total": 4
+  },
+  "trusted-types/TrustedTypePolicyFactory-metadata.tentative.html": {
+    "total": 64
+  },
+  "trusted-types/Window-TrustedTypes.html": {
+    "total": 2
+  },
+  "trusted-types/Window-block-eval-function-constructor.html": {
+    "total": 6
+  },
+  "trusted-types/Window-setTimeout-setInterval.html": {
+    "total": 6
+  },
+  "trusted-types/block-Document-execCommand.html": {
+    "total": 6
+  },
+  "trusted-types/block-string-assignment-to-DOMParser-parseFromString.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-DedicatedWorker-setTimeout-setInterval.html": {
+    "total": 9
+  },
+  "trusted-types/block-string-assignment-to-Document-parseHTMLUnsafe.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-Document-write.html": {
+    "total": 20
+  },
+  "trusted-types/block-string-assignment-to-Element-insertAdjacentHTML.html": {
+    "total": 7
+  },
+  "trusted-types/block-string-assignment-to-Element-outerHTML.html": {
+    "total": 7
+  },
+  "trusted-types/block-string-assignment-to-Element-setAttribute.html": {
+    "total": 14
+  },
+  "trusted-types/block-string-assignment-to-Element-setAttributeNS.html": {
+    "total": 11
+  },
+  "trusted-types/block-string-assignment-to-Element-setHTMLUnsafe.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-HTMLElement-generic.html": {
+    "total": 9
+  },
+  "trusted-types/block-string-assignment-to-HTMLIFrameElement-srcdoc.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-Range-createContextualFragment.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-ShadowRoot-innerHTML.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-ShadowRoot-setHTMLUnsafe.html": {
+    "total": 5
+  },
+  "trusted-types/block-string-assignment-to-SharedWorker-setTimeout-setInterval.html": {
+    "total": 9
+  },
+  "trusted-types/block-string-assignment-to-Window-setTimeout-setInterval.html": {
+    "total": 9
+  },
+  "trusted-types/block-string-assignment-to-attribute-via-attribute-node.html": {
+    "total": 7
+  },
+  "trusted-types/block-string-assignment-to-text-and-url-sinks.html": {
+    "total": 11
+  },
+  "trusted-types/block-text-node-insertion-into-script-element.html": {
+    "total": 10
+  },
+  "trusted-types/block-text-node-insertion-into-svg-script-element.html": {
+    "total": 9,
+    "failures": {
+      "Test that default policy applies with module script. svg:script": "FAIL"
+    }
+  },
+  "trusted-types/cjk-string-assignment-to-paragraph.html": {
+    "reftest": "PASS"
+  },
+  "trusted-types/csp-block-eval.html": {
+    "total": 2
+  },
+  "trusted-types/default-policy-callback-arguments.html": {
+    "total": 5
+  },
+  "trusted-types/default-policy-report-only.html": {
+    "total": 19
+  },
+  "trusted-types/default-policy.html": {
+    "total": 19
+  },
+  "trusted-types/empty-default-policy-report-only.html": {
+    "total": 4
+  },
+  "trusted-types/empty-default-policy.html": {
+    "total": 4
+  },
+  "trusted-types/eval-csp-no-tt.html": {
+    "total": 7
+  },
+  "trusted-types/eval-csp-tt-default-policy-mutate.html": {
+    "total": 6
+  },
+  "trusted-types/eval-csp-tt-default-policy.html": {
+    "total": 24
+  },
+  "trusted-types/eval-csp-tt-no-default-policy.html": {
+    "total": 13
+  },
+  "trusted-types/eval-function-constructor-untrusted-arguments-and-applying-default-policy.html": {
+    "total": 12
+  },
+  "trusted-types/eval-function-constructor-untrusted-arguments-and-default-policy-throwing.html": {
+    "total": 2
+  },
+  "trusted-types/eval-function-constructor.html": {
+    "total": 65
+  },
+  "trusted-types/eval-no-csp-no-tt-default-policy.html": {
+    "total": 7
+  },
+  "trusted-types/eval-no-csp-no-tt.html": {
+    "total": 10
+  },
+  "trusted-types/eval-with-non-trusted-script-object.html": {
+    "total": 1
+  },
+  "trusted-types/eval-with-permissive-csp.html": {
+    "total": 9
+  },
+  "trusted-types/get-trusted-types-compliant-attribute-value.html": {
+    "total": 5
+  },
+  "trusted-types/idlharness.window.js": {
+    "total": 100
+  },
+  "trusted-types/inheriting-csp-for-local-schemes.html": {
+    "total": 10
+  },
+  "trusted-types/legacy-trusted-script-urls.html": {
+    "total": 4
+  },
+  "trusted-types/legacy-trusted-scripts.html": {
+    "total": 1
+  },
+  "trusted-types/modify-attributes-in-callback.html": {
+    "total": 9
+  },
+  "trusted-types/navigate-to-javascript-url-001.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-002.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-003.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-004.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-005.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-006.sub.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-008.html": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-009.html?frame": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-009.html?iframe": {
+    "total": 1
+  },
+  "trusted-types/navigate-to-javascript-url-010.html": {
+    "total": 3
+  },
+  "trusted-types/navigate-to-javascript-url-csp-headers.html": {
+    "total": 14
+  },
+  "trusted-types/no-require-trusted-types-for-report-only.html": {
+    "total": 9
+  },
+  "trusted-types/no-require-trusted-types-for.html": {
+    "total": 9
+  },
+  "trusted-types/policy-without-return-value.sub.html": {
+    "total": 4
+  },
+  "trusted-types/require-trusted-types-for-TypeError-belongs-to-the-global-object-realm.html": {
+    "total": 2
+  },
+  "trusted-types/require-trusted-types-for-report-only.html": {
+    "total": 4
+  },
+  "trusted-types/require-trusted-types-for.html": {
+    "total": 4
+  },
+  "trusted-types/script-enforcement-001-outerHTML.xhtml": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-001.html": {
+    "total": 35
+  },
+  "trusted-types/script-enforcement-002-outerHTML.xhtml": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-002.html": {
+    "total": 33
+  },
+  "trusted-types/script-enforcement-003.html": {
+    "total": 33
+  },
+  "trusted-types/script-enforcement-004.html": {
+    "total": 31
+  },
+  "trusted-types/script-enforcement-005.html": {
+    "total": 4
+  },
+  "trusted-types/script-enforcement-006.html": {
+    "total": 4
+  },
+  "trusted-types/script-enforcement-007.html": {
+    "total": 4,
+    "failures": {
+      "Untrusted SVGScriptElement of importmap type uses the source text returned by the default policy.": "FAIL",
+      "Untrusted SVGScriptElement of module type uses the source text returned by the default policy.": "FAIL",
+      "Untrusted SVGScriptElement of two importmap type use the source text returned by the default policy.": "FAIL"
+    }
+  },
+  "trusted-types/script-enforcement-008.https.html": {
+    "total": 5
+  },
+  "trusted-types/script-enforcement-009.https.html": {
+    "total": 5,
+    "failures": {
+      "Untrusted SVGScriptElement of 2 importmap types use the source text returned by the default policy for inline CSP check.": "FAIL",
+      "Untrusted SVGScriptElement of importmap type uses the source text returned by the default policy for inline CSP check.": "FAIL",
+      "Untrusted SVGScriptElement of module type uses the source text returned by the default policy for inline CSP check.": "FAIL"
+    }
+  },
+  "trusted-types/script-enforcement-010.html": {
+    "total": 2
+  },
+  "trusted-types/script-enforcement-011.html": {
+    "total": 2,
+    "failures": {
+      "Changing script's type from module to classic in the default policy works.": "FAIL"
+    }
+  },
+  "trusted-types/script-enforcement-012.html": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-013.html": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-014.html": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-015.html": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-016.html": {
+    "total": 1
+  },
+  "trusted-types/script-enforcement-017.html": {
+    "total": 1
+  },
+  "trusted-types/set-attributes-mutations-in-callback.tentative.html": {
+    "total": 248
+  },
+  "trusted-types/set-attributes-no-require-trusted-types.html": {
+    "total": 202
+  },
+  "trusted-types/set-attributes-require-trusted-types-default-policy.html": {
+    "total": 264
+  },
+  "trusted-types/set-attributes-require-trusted-types-no-default-policy-error-cases.html": {
+    "total": 8
+  },
+  "trusted-types/set-attributes-require-trusted-types-no-default-policy.html": {
+    "total": 264
+  },
+  "trusted-types/set-event-handlers-content-attributes.tentative.html": {
+    "total": 527,
+    "failures": {
+      "DIV.setAttribute(\"onbegin\", \"unsafe_handler()\") calls default policy": "FAIL",
+      "DIV.setAttribute(\"onwaitingforkey\", \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttribute(onbegin, \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttribute(onend, \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttribute(onrepeat, \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttributeNS(onbegin, \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttributeNS(onend, \"unsafe_handler()\") calls default policy": "FAIL",
+      "animation.setAttributeNS(onrepeat, \"unsafe_handler()\") calls default policy": "FAIL"
+    }
+  },
+  "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-001.html": {
+    "total": 15,
+    "failures": {
+      "directive \"require-trusted-types-for 'invalid'%0A%20'script'\" (required-ascii-whitespace)": "FAIL",
+      "directive \"require-trusted-types-for 'invalid'%0D%20'script'\" (required-ascii-whitespace)": "FAIL"
+    }
+  },
+  "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html": {
+    "total": 2
+  },
+  "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-003.html": {
+    "total": 1
+  },
+  "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html": {
+    "total": 16
+  },
+  "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-005.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-createHTMLDocument.html": {
+    "total": 13
+  },
+  "trusted-types/trusted-types-duplicate-names-list-report-only.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-duplicate-names-list.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-duplicate-names-without-enforcement.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-duplicate-names.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-eval-reporting-no-unsafe-eval.html": {
+    "total": 3
+  },
+  "trusted-types/trusted-types-eval-reporting-report-only.html": {
+    "total": 3
+  },
+  "trusted-types/trusted-types-from-literal.tentative.html": {
+    "total": 45,
+    "failures": {
+      "TrustedHTML.fromLiteral is supported": "FAIL",
+      "TrustedHTML.fromLiteral: A very important emoji works.": "FAIL",
+      "TrustedHTML.fromLiteral: Basic string literal works.": "FAIL",
+      "TrustedHTML.fromLiteral: Bound method works.": "FAIL",
+      "TrustedHTML.fromLiteral: Empty string literal works.": "FAIL",
+      "TrustedHTML.fromLiteral: Multi-line string literal works.": "FAIL",
+      "TrustedHTML.fromLiteral: Normalization of value works.": "FAIL",
+      "TrustedScript.fromLiteral is supported": "FAIL",
+      "TrustedScript.fromLiteral: A very important emoji works.": "FAIL",
+      "TrustedScript.fromLiteral: Basic string literal works.": "FAIL",
+      "TrustedScript.fromLiteral: Bound method works.": "FAIL",
+      "TrustedScript.fromLiteral: Empty string literal works.": "FAIL",
+      "TrustedScript.fromLiteral: Multi-line string literal works.": "FAIL",
+      "TrustedScript.fromLiteral: No normalization of value occurs.": "FAIL",
+      "TrustedScriptURL.fromLiteral is supported": "FAIL",
+      "TrustedScriptURL.fromLiteral: A very important emoji works.": "FAIL",
+      "TrustedScriptURL.fromLiteral: Basic string literal works.": "FAIL",
+      "TrustedScriptURL.fromLiteral: Bound method works.": "FAIL",
+      "TrustedScriptURL.fromLiteral: Empty string literal works.": "FAIL",
+      "TrustedScriptURL.fromLiteral: Multi-line string literal works.": "FAIL",
+      "TrustedScriptURL.fromLiteral: No normalization of value occurs.": "FAIL"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?01-05": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a frame via anchor with javascript:-urls in enforcing mode.": "NOTRUN",
+      "Navigate a window via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
+      "Navigate a window via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?06-10": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a frame via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
+      "Navigate a frame via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
+      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
+      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?11-15": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a window via anchor with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT",
+      "Navigate a window via area with javascript:-urls in enforcing mode.": "NOTRUN",
+      "Navigate a window via area with javascript:-urls in report-only mode.": "NOTRUN",
+      "Navigate a window via area with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?16-20": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a frame via area with javascript:-urls in report-only mode.": "TIMEOUT",
+      "Navigate a frame via area with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?21-25": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
+      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "NOTRUN",
+      "Navigate a window via area with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "TIMEOUT",
+      "Navigate a window via form-submission with javascript:-urls in enforcing mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?26-30": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a frame via form-submission with javascript:-urls in enforcing mode.": "NOTRUN",
+      "Navigate a frame via form-submission with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN",
+      "Navigate a window via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
+      "Navigate a window via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?31-35": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Navigate a frame via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
+      "Navigate a frame via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
+      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
+      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
+      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
+    }
+  },
+  "trusted-types/trusted-types-navigation.html?36-last": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT"
+    }
+  },
+  "trusted-types/trusted-types-report-only.html": {
+    "total": 5
+  },
+  "trusted-types/trusted-types-reporting-check-report-DedicatedWorker-create-policy.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-check-report-DedicatedWorker-sink-mismatch.html": {
+    "total": 5
+  },
+  "trusted-types/trusted-types-reporting-check-report-Window-create-policy.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-check-report-Window-sink-mismatch.html": {
+    "total": 5
+  },
+  "trusted-types/trusted-types-reporting-clipping-of-sample.html": {
+    "total": 12
+  },
+  "trusted-types/trusted-types-reporting-clipping-of-sample.tentative.html": {
+    "total": 8
+  },
+  "trusted-types/trusted-types-reporting-for-DOMParser-parseFromString.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-DedicatedWorker-constructor.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-ServiceWorkerContainer-register.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-eval.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-function-constructor.html": {
+    "total": 12
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-importScripts.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-DedicatedWorker-setTimeout-setInterval.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-for-Document-execCommand.html": {
+    "total": 3
+  },
+  "trusted-types/trusted-types-reporting-for-Document-parseHTMLUnsafe.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Document-write.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-for-Element-innerHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Element-insertAdjacentHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Element-outerHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Element-setAttribute.html": {
+    "total": 10
+  },
+  "trusted-types/trusted-types-reporting-for-Element-setHTMLUnsafe.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-HTMLIFrameElement-srcdoc.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-HTMLScriptElement-children-change.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-HTMLScriptElement-innerHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-HTMLScriptElement.html": {
+    "total": 8
+  },
+  "trusted-types/trusted-types-reporting-for-Range-createContextualFragment.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SVGScriptElement-children-change.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SVGScriptElement-innerHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-ServiceWorker-ServiceWorkerContainer-register.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-ServiceWorker-eval.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-ServiceWorker-function-constructor.https.html": {
+    "total": 12
+  },
+  "trusted-types/trusted-types-reporting-for-ServiceWorker-importScripts.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-ServiceWorker-setTimeout-setInterval.https.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-for-ShadowRoot-innerHTML.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-ShadowRoot-setHTMLUnsafe.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-DedicatedWorker-constructor.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-ServiceWorkerContainer-register.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-eval.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-function-constructor.html": {
+    "total": 12
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-importScripts.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-SharedWorker-setTimeout-setInterval.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting-for-Window-DedicatedWorker-constructor.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Window-ServiceWorkerContainer-register.https.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Window-SharedWorker-constructor.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Window-eval.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-reporting-for-Window-function-constructor.html": {
+    "total": 12
+  },
+  "trusted-types/trusted-types-reporting-for-Window-setTimeout-setInterval.html": {
+    "total": 4
+  },
+  "trusted-types/trusted-types-reporting.html": {
+    "total": 8
+  },
+  "trusted-types/trusted-types-sandbox-allow-scripts.html": {
+    "total": 2
+  },
+  "trusted-types/trusted-types-sandbox-no-allow-scripts.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-secondary-document.html": {
+    "total": 97
+  },
+  "trusted-types/trusted-types-source-file-path.html": {
+    "total": 3
+  },
+  "trusted-types/trusted-types-svg-script-set-href.html": {
+    "total": 18
+  },
+  "trusted-types/trusted-types-tojson.html": {
+    "total": 1
+  },
+  "trusted-types/trusted-types-wildcard-with-trailing-characters.html": {
+    "total": 1
+  },
+  "trusted-types/tt-block-eval.html": {
+    "total": 1
+  }
+}

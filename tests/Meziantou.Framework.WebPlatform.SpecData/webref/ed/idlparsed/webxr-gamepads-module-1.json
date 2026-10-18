@@ -1,0 +1,62 @@
+{
+  "spec": {
+    "title": "WebXR Gamepads Module - Level 1",
+    "url": "https://immersive-web.github.io/webxr-gamepads-module/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "XRInputSource": [
+        {
+          "fragment": "partial interface XRInputSource {\n  [SameObject] readonly attribute Gamepad? gamepad;\n};",
+          "type": "interface",
+          "name": "XRInputSource",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "gamepad",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "Gamepad"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/webxr-gamepads-module/#dom-xrinputsource-gamepad"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "XRInputSource": [
+        "Gamepad"
+      ]
+    },
+    "externalDependencies": [
+      "XRInputSource",
+      "Gamepad"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

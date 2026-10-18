@@ -1,0 +1,15 @@
+{
+  "main": {
+    "shn": {
+      "identity": {
+        "language": "shn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "se-FI": {
+      "identity": {
+        "language": "se",
+        "territory": "FI"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

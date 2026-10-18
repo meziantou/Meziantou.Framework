@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nus": {
+      "identity": {
+        "language": "nus"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

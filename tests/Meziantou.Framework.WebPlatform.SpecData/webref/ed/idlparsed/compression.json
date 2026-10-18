@@ -1,0 +1,175 @@
+{
+  "spec": {
+    "title": "Compression Standard",
+    "url": "https://compression.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "*": [
+          "CompressionStream",
+          "DecompressionStream"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "CompressionFormat": {
+        "fragment": "enum CompressionFormat {\n  \"brotli\",\n  \"deflate\",\n  \"deflate-raw\",\n  \"gzip\",\n};",
+        "type": "enum",
+        "name": "CompressionFormat",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "brotli",
+            "href": "https://compression.spec.whatwg.org/#dom-compressionformat-brotli"
+          },
+          {
+            "type": "enum-value",
+            "value": "deflate",
+            "href": "https://compression.spec.whatwg.org/#dom-compressionformat-deflate"
+          },
+          {
+            "type": "enum-value",
+            "value": "deflate-raw",
+            "href": "https://compression.spec.whatwg.org/#dom-compressionformat-deflate-raw"
+          },
+          {
+            "type": "enum-value",
+            "value": "gzip",
+            "href": "https://compression.spec.whatwg.org/#dom-compressionformat-gzip"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://compression.spec.whatwg.org/#enumdef-compressionformat"
+      },
+      "CompressionStream": {
+        "fragment": "[Exposed=*]\ninterface CompressionStream {\n  constructor(CompressionFormat format);\n};",
+        "type": "interface",
+        "name": "CompressionStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CompressionFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://compression.spec.whatwg.org/#dom-compressionstream-compressionstream"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://compression.spec.whatwg.org/#compressionstream"
+      },
+      "DecompressionStream": {
+        "fragment": "[Exposed=*]\ninterface DecompressionStream {\n  constructor(CompressionFormat format);\n};",
+        "type": "interface",
+        "name": "DecompressionStream",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "format",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CompressionFormat"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://compression.spec.whatwg.org/#dom-decompressionstream-decompressionstream"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "*",
+              "value": null
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://compression.spec.whatwg.org/#decompressionstream"
+      }
+    },
+    "idlExtendedNames": {
+      "CompressionStream": [
+        {
+          "fragment": "CompressionStream includes GenericTransformStream;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "CompressionStream",
+          "includes": "GenericTransformStream"
+        }
+      ],
+      "DecompressionStream": [
+        {
+          "fragment": "DecompressionStream includes GenericTransformStream;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "DecompressionStream",
+          "includes": "GenericTransformStream"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "*": [
+        "CompressionStream",
+        "DecompressionStream"
+      ]
+    },
+    "dependencies": {
+      "CompressionStream": [
+        "CompressionFormat",
+        "GenericTransformStream"
+      ],
+      "DecompressionStream": [
+        "CompressionFormat",
+        "GenericTransformStream"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

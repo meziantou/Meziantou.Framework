@@ -1,0 +1,221 @@
+{
+  "spec": {
+    "title": "Web App Launch Handler API",
+    "url": "https://wicg.github.io/web-app-launch/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "LaunchParams",
+          "LaunchQueue"
+        ]
+      }
+    },
+    "idlNames": {
+      "LaunchParams": {
+        "fragment": "[Exposed=Window] interface LaunchParams {\n  readonly attribute DOMString? targetURL;\n  readonly attribute FrozenArray<FileSystemHandle> files;\n};",
+        "type": "interface",
+        "name": "LaunchParams",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "targetURL",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/web-app-launch/#dom-launchparams-targeturl"
+          },
+          {
+            "type": "attribute",
+            "name": "files",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FileSystemHandle"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/web-app-launch/#dom-launchparams-files"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/web-app-launch/#dom-launchparams"
+      },
+      "LaunchConsumer": {
+        "fragment": "callback LaunchConsumer = any (LaunchParams params);",
+        "type": "callback",
+        "name": "LaunchConsumer",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "any"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "params",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "LaunchParams"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/web-app-launch/#dom-launchconsumer"
+      },
+      "LaunchQueue": {
+        "fragment": "[Exposed=Window] interface LaunchQueue {\n  undefined setConsumer(LaunchConsumer consumer);\n};",
+        "type": "interface",
+        "name": "LaunchQueue",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "setConsumer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "consumer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "LaunchConsumer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/web-app-launch/#dom-launchqueue-setconsumer"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/web-app-launch/#dom-launchqueue"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  readonly attribute LaunchQueue launchQueue;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "launchQueue",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "LaunchQueue"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/web-app-launch/#dom-window-launchqueue"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "LaunchParams",
+        "LaunchQueue"
+      ]
+    },
+    "dependencies": {
+      "LaunchParams": [
+        "FileSystemHandle"
+      ],
+      "Window": [
+        "LaunchQueue"
+      ],
+      "LaunchQueue": [
+        "LaunchConsumer"
+      ]
+    },
+    "externalDependencies": [
+      "FileSystemHandle",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

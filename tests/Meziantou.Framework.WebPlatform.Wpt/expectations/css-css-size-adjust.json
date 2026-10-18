@@ -1,0 +1,20 @@
+{
+  "css/css-size-adjust/animations/text-size-adjust-interpolation.html": {
+    "total": 196
+  },
+  "css/css-size-adjust/inheritance.html": {
+    "total": 2
+  },
+  "css/css-size-adjust/parsing/text-size-adjust-computed.html": {
+    "total": 6,
+    "failures": {
+      "Property text-size-adjust value 'none'": "FAIL"
+    }
+  },
+  "css/css-size-adjust/parsing/text-size-adjust-invalid.html": {
+    "total": 4
+  },
+  "css/css-size-adjust/parsing/text-size-adjust-valid.html": {
+    "total": 7
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL OES_texture_float_linear Khronos Ratified Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/OES_texture_float_linear/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OES_texture_float_linear"
+        ],
+        "Worker": [
+          "OES_texture_float_linear"
+        ]
+      }
+    },
+    "idlNames": {
+      "OES_texture_float_linear": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface OES_texture_float_linear { };",
+        "type": "interface",
+        "name": "OES_texture_float_linear",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OES_texture_float_linear"
+      ],
+      "Worker": [
+        "OES_texture_float_linear"
+      ]
+    },
+    "dependencies": {
+      "OES_texture_float_linear": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

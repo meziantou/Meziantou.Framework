@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-HN": {
+      "identity": {
+        "language": "es",
+        "territory": "HN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

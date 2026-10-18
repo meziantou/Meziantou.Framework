@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ken": {
+      "identity": {
+        "language": "ken"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

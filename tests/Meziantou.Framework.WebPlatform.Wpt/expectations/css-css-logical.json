@@ -1,0 +1,293 @@
+{
+  "css/css-logical/animation-001.html": {
+    "total": 24,
+    "failures": {
+      "Logical longhands win over physical shorthands": "FAIL"
+    }
+  },
+  "css/css-logical/animation-002.html": {
+    "total": 15,
+    "failures": {
+      "Declaration order is respected on each keyframe individually": "FAIL",
+      "Logical properties are able to override physical properties in @keyframes declaration blocks": "FAIL",
+      "Physical properties and logical properties can be mixed": "FAIL",
+      "The number of interpolating properties can be decreased when the writing-mode is changed": "FAIL"
+    }
+  },
+  "css/css-logical/animation-003.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Logical properties are represented as physical properties in keyframes": "FAIL"
+    }
+  },
+  "css/css-logical/animation-004.html": {
+    "total": 16
+  },
+  "css/css-logical/animations/caption-side-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-logical/animations/float-interpolation.html": {
+    "total": 42
+  },
+  "css/css-logical/animations/logical-shorthand-relative-prioritization-by-number-of-components.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Logical shorthands follow the usual prioritization based on number of component longhands": "FAIL"
+    }
+  },
+  "css/css-logical/animations/margin-block-interpolation.html": {
+    "total": 24
+  },
+  "css/css-logical/animations/margin-inline-interpolation.html": {
+    "total": 24
+  },
+  "css/css-logical/animations/padding-block-interpolation.html": {
+    "total": 24
+  },
+  "css/css-logical/animations/padding-inline-interpolation.html": {
+    "total": 24
+  },
+  "css/css-logical/cascading-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/getComputedStyle-listing.html": {
+    "total": 30
+  },
+  "css/css-logical/inheritance.html": {
+    "total": 68
+  },
+  "css/css-logical/logical-box-border-color.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-border-radius.html": {
+    "total": 41
+  },
+  "css/css-logical/logical-box-border-shorthands.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-border-style.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-border-width.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-inset.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-margin.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-padding.html": {
+    "total": 44
+  },
+  "css/css-logical/logical-box-size.html": {
+    "total": 93
+  },
+  "css/css-logical/logical-values-float-clear-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/logical-values-float-clear-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/logical-values-float-clear-3.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/logical-values-float-clear-4.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/logical-values-float-clear-reftest.html": {
+    "reftest": "PASS"
+  },
+  "css/css-logical/logical-values-float-clear.html": {
+    "total": 4
+  },
+  "css/css-logical/logical-values-resize.html": {
+    "total": 2
+  },
+  "css/css-logical/logicalprops-block-size-vlr.html": {
+    "total": 8
+  },
+  "css/css-logical/logicalprops-block-size.html": {
+    "total": 8
+  },
+  "css/css-logical/logicalprops-inline-size-vlr.html": {
+    "total": 8
+  },
+  "css/css-logical/logicalprops-inline-size.html": {
+    "total": 8
+  },
+  "css/css-logical/logicalprops-quirklength.html": {
+    "total": 10
+  },
+  "css/css-logical/logicalprops-with-deferred-writing-mode.html": {
+    "total": 6
+  },
+  "css/css-logical/logicalprops-with-variables-revert.html": {
+    "total": 6
+  },
+  "css/css-logical/logicalprops-with-variables.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/block-size-computed.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/block-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/block-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/border-block-color-computed.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/border-block-color-invalid.html": {
+    "total": 15
+  },
+  "css/css-logical/parsing/border-block-color-valid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/border-block-style-computed.html": {
+    "total": 13
+  },
+  "css/css-logical/parsing/border-block-style-invalid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/border-block-style-valid.html": {
+    "total": 13
+  },
+  "css/css-logical/parsing/border-block-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/border-block-width-computed.html": {
+    "total": 11
+  },
+  "css/css-logical/parsing/border-block-width-invalid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/border-block-width-valid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/border-inline-color-computed.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/border-inline-color-invalid.html": {
+    "total": 15
+  },
+  "css/css-logical/parsing/border-inline-color-valid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/border-inline-style-computed.html": {
+    "total": 13
+  },
+  "css/css-logical/parsing/border-inline-style-invalid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/border-inline-style-valid.html": {
+    "total": 13
+  },
+  "css/css-logical/parsing/border-inline-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/border-inline-width-computed.html": {
+    "total": 11
+  },
+  "css/css-logical/parsing/border-inline-width-invalid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/border-inline-width-valid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/inline-size-computed.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/inline-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/inline-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/inset-block-inline-computed.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/inset-block-inline-invalid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/inset-block-inline-shorthand.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/inset-block-inline-valid.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/inset-computed.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/inset-invalid.html": {
+    "total": 3
+  },
+  "css/css-logical/parsing/inset-shorthand.html": {
+    "total": 20
+  },
+  "css/css-logical/parsing/inset-valid.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/margin-block-inline-computed.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/margin-block-inline-invalid.html": {
+    "total": 7
+  },
+  "css/css-logical/parsing/margin-block-inline-shorthand.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/margin-block-inline-valid.html": {
+    "total": 14
+  },
+  "css/css-logical/parsing/max-block-size-computed.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/max-block-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/max-block-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/max-inline-size-computed.html": {
+    "total": 8
+  },
+  "css/css-logical/parsing/max-inline-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/max-inline-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/min-block-size-computed.html": {
+    "total": 9
+  },
+  "css/css-logical/parsing/min-block-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/min-block-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/min-inline-size-computed.html": {
+    "total": 9
+  },
+  "css/css-logical/parsing/min-inline-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-logical/parsing/min-inline-size-valid.html": {
+    "total": 6
+  },
+  "css/css-logical/parsing/padding-block-inline-computed.html": {
+    "total": 16
+  },
+  "css/css-logical/parsing/padding-block-inline-invalid.html": {
+    "total": 17
+  },
+  "css/css-logical/parsing/padding-block-inline-shorthand.html": {
+    "total": 12
+  },
+  "css/css-logical/parsing/padding-block-inline-valid.html": {
+    "total": 9
+  }
+}

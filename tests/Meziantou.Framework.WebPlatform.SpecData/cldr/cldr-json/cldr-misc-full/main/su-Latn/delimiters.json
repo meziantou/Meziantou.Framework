@@ -1,0 +1,16 @@
+{
+  "main": {
+    "su-Latn": {
+      "identity": {
+        "language": "su",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

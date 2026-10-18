@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ast": {
+      "identity": {
+        "language": "ast"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

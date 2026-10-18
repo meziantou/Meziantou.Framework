@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ne-IN": {
+      "identity": {
+        "language": "ne",
+        "territory": "IN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

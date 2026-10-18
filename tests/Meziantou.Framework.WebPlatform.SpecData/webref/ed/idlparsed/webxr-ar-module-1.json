@@ -1,0 +1,155 @@
+{
+  "spec": {
+    "title": "WebXR Augmented Reality Module - Level 1",
+    "url": "https://immersive-web.github.io/webxr-ar-module/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "XREnvironmentBlendMode": {
+        "fragment": "enum XREnvironmentBlendMode {\n  \"opaque\",\n  \"alpha-blend\",\n  \"additive\"\n};",
+        "type": "enum",
+        "name": "XREnvironmentBlendMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "opaque",
+            "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrenvironmentblendmode-opaque"
+          },
+          {
+            "type": "enum-value",
+            "value": "alpha-blend",
+            "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrenvironmentblendmode-alpha-blend"
+          },
+          {
+            "type": "enum-value",
+            "value": "additive",
+            "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrenvironmentblendmode-additive"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/webxr-ar-module/#enumdef-xrenvironmentblendmode"
+      },
+      "XRInteractionMode": {
+        "fragment": "enum XRInteractionMode {\n    \"screen-space\",\n    \"world-space\",\n};",
+        "type": "enum",
+        "name": "XRInteractionMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "screen-space",
+            "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrinteractionmode-screen-space"
+          },
+          {
+            "type": "enum-value",
+            "value": "world-space",
+            "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrinteractionmode-world-space"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/webxr-ar-module/#enumdef-xrinteractionmode"
+      }
+    },
+    "idlExtendedNames": {
+      "XRSession": [
+        {
+          "fragment": "partial interface XRSession {\n  // Attributes\n  readonly attribute XREnvironmentBlendMode environmentBlendMode;\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "environmentBlendMode",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XREnvironmentBlendMode"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrsession-environmentblendmode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface XRSession {\n  // Attributes\n  readonly attribute XRInteractionMode interactionMode;\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "interactionMode",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "XRInteractionMode"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrsession-interactionmode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "XRView": [
+        {
+          "fragment": "partial interface XRView {\n  readonly attribute boolean isFirstPersonObserver;\n};",
+          "type": "interface",
+          "name": "XRView",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "isFirstPersonObserver",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/webxr-ar-module/#dom-xrview-isfirstpersonobserver"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "XRSession": [
+        "XREnvironmentBlendMode",
+        "XRInteractionMode"
+      ],
+      "XRView": []
+    },
+    "externalDependencies": [
+      "XRSession",
+      "XRView"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

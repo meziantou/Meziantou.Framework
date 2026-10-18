@@ -1,0 +1,15 @@
+{
+  "main": {
+    "tig": {
+      "identity": {
+        "language": "tig"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

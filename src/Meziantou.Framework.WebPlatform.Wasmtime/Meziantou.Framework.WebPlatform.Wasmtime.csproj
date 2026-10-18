@@ -1,0 +1,38 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.Wasmtime</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The package is a binding of the C API of Wasmtime: [LibraryImport] declarations, pointers and explicit layout
+         structures. The [LibraryImport] generator of .NET 10 emits code that the updated memory safety rules reject
+         (CS9377), so the project keeps the previous rules, as the projects that reference CsWin32 do. -->
+    <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Runs the WebAssembly modules of the scripts of Meziantou.Framework.WebPlatform with Wasmtime (a WebAssemblyRuntime for the WebAssembly JavaScript API).</Description>
+    <PackageTags>html;dom;javascript;webassembly;wasm;wasmtime</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The package provides the native library of Wasmtime for each platform: the C API is called directly, as the .NET
+         API of the package does not expose the host memories, the tags, the exceptions and the GC references (only the
+         native assets are imported) -->
+    <PackageReference Include="Wasmtime" Version="48.0.2" IncludeAssets="native" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+  </ItemGroup>
+
+  <!-- The package uses the internal hosting primitives of the core: it depends on the exact version of the core package -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,20 @@
+{
+  "x-frame-options/deny.html": {
+    "total": 10
+  },
+  "x-frame-options/get-decode-split.html": {
+    "total": 8
+  },
+  "x-frame-options/invalid.html": {
+    "total": 18
+  },
+  "x-frame-options/multiple.html": {
+    "total": 110
+  },
+  "x-frame-options/redirect.html": {
+    "total": 1
+  },
+  "x-frame-options/sameorigin.sub.html": {
+    "total": 10
+  }
+}

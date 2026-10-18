@@ -1,0 +1,15 @@
+{
+  "main": {
+    "fur": {
+      "identity": {
+        "language": "fur"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

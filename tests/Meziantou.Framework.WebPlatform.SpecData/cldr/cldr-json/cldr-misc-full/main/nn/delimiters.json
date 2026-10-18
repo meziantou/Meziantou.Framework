@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nn": {
+      "identity": {
+        "language": "nn"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

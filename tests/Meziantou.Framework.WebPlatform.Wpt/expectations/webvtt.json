@@ -1,0 +1,971 @@
+{
+  "webvtt/api/VTTCue/align.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTCue/constructor-exceptions.html": {
+    "total": 3
+  },
+  "webvtt/api/VTTCue/constructor.html": {
+    "total": 5
+  },
+  "webvtt/api/VTTCue/getCueAsHTML.html": {
+    "total": 14
+  },
+  "webvtt/api/VTTCue/line.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTCue/lineAlign.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTCue/position.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTCue/positionAlign.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTCue/region.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTCue/size.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTCue/snapToLines.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTCue/text.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTCue/vertical.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTRegion/constructor.html": {
+    "total": 2
+  },
+  "webvtt/api/VTTRegion/id.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/lines.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/non-visible-cue-with-region.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/regionAnchorX.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/regionAnchorY.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/scroll.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/viewportAnchorX.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/viewportAnchorY.html": {
+    "total": 1
+  },
+  "webvtt/api/VTTRegion/width.html": {
+    "total": 1
+  },
+  "webvtt/api/cue-pseudo-parsing.html": {
+    "total": 8
+  },
+  "webvtt/api/historical.html": {
+    "total": 6
+  },
+  "webvtt/api/idlharness.window.js": {
+    "total": 56
+  },
+  "webvtt/parsing/cue-text-parsing/tests/entities-trusted-types.html": {
+    "total": 1
+  },
+  "webvtt/parsing/cue-text-parsing/tests/entities.html": {
+    "total": 25
+  },
+  "webvtt/parsing/cue-text-parsing/tests/tags.html": {
+    "total": 28
+  },
+  "webvtt/parsing/cue-text-parsing/tests/text.html": {
+    "total": 5
+  },
+  "webvtt/parsing/cue-text-parsing/tests/timestamps.html": {
+    "total": 10
+  },
+  "webvtt/parsing/cue-text-parsing/tests/tree-building.html": {
+    "total": 10
+  },
+  "webvtt/parsing/file-parsing/signature-invalid.html": {
+    "total": 11
+  },
+  "webvtt/parsing/file-parsing/tests/arrows.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/comment-in-cue-text.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/header-garbage.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/header-regions.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/header-space.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/header-tab.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/header-timings.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/ids.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/newlines.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/nulls.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-edge-case.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-id.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-lines.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-old.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-regionanchor.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-scroll.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/regions-viewportanchor.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-align.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-line.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-multiple.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-position.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-region.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-size.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/settings-vertical.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-bom.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-no-newline.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-space-no-newline.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-space.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-tab-no-newline.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-tab.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/signature-timings.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/stylesheets.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-60.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-eof.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-garbage.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-negative.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-omitted-hours.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-too-long.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/timings-too-short.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/whitespace-chars.html": {
+    "total": 1
+  },
+  "webvtt/rendering/cues-with-video/processing-model/2_cues_overlapping_completely_move_up.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/2_cues_overlapping_partially_move_down.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/2_cues_overlapping_partially_move_up.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/2_tracks.html": {
+    "reftest": "TIMEOUT"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/3_tracks.html": {
+    "reftest": "TIMEOUT"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_position_50.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_position_gt_50.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_position_gt_50_size_gt_maximum_size.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_position_lt_50.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_position_lt_50_size_gt_maximum_size.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_center_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_end.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_end_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_start.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/align_start_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/audio_has_no_subtitles.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/basic.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/bidi_ruby.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/start_alignment.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u002E_LF_u05D0.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u002E_u2028_u05D0.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u002E_u2029_u05D0.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u0041_first.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u05D0_first.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u0628_first.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/u06E9_no_strong_dir.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/vertical_lr.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/bidi/vertical_rl.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/cue_too_long.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/decode_escaped_entities.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/disable_controls_reposition.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_cue_align_position_line_size.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_cue_align_position_line_size_while_paused.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_cue_line.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_cue_text.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_cue_text_while_paused.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/dom_override_remove_cue_while_paused.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_cascade_priority.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_cascade_priority_layer.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_imports_blocked.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_invalid_format.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_media_queries.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_media_queries_resized.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_multiple_tracks.html": {
+    "reftest": "TIMEOUT"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_selectors.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/embedded_style_urls.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/9_cues_overlapping_completely.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/9_cues_overlapping_completely_all_cues_have_same_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/media_404_omit_subtitles.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/media_height_19.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/non-standard-pseudo-elements.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/single_quote.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/size_90.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/evil/size_99.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_-2_wrapped_cue_grow_upwards.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_0_is_top.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_1_wrapped_cue_grow_downwards.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_50_percent.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_integer_and_percent_mixed_overlap.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_integer_and_percent_mixed_overlap_move_up.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_percent_and_integer_mixed_overlap.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/line_percent_and_integer_mixed_overlap_move_up.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/navigate_cue_position.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/one_line_cue_plus_wrapped_cue.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/portrait.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/basic.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/regionanchor_x_50_percent.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/regionanchor_y_50_percent.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/scroll_up.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/single_line_top_left.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/viewportanchor_x_50_percent.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/viewportanchor_y_50_percent.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/regions/width_50_percent.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/repaint.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue-region/font_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue-region_function/font_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/background_shorthand_css_relative_url.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/color_hex.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/color_hsla.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/color_rgba.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/cue_selector_single_colon.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/font_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/font_shorthand.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/fontsize_smaller_than_container.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/inherit_values_from_media_element.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/outline_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/outline_shorthand.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-decoration_overline.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-decoration_overline_underline_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-decoration_underline.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/vertical_ruby-position.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/vertical_text-combine-upright.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_normal_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_nowrap_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_pre-line_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_pre.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/background_box.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/background_shorthand_css_relative_url.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_animation_with_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_font_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_font_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_outline_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_outline_shorthand.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_timestamp_future.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_timestamp_past.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_transition_with_timestamp.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_normal_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_nowrap.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_pre-line_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_with_class.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_with_class_object_specific_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_animation_with_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_font_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_font_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_outline_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_outline_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_timestamp_future.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_timestamp_past.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_transition_with_timestamp.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_vertical_text-combine-upright.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_white-space_normal_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_white-space_nowrap.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_white-space_pre-line_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_with_class.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/class_object/class_with_class_object_specific_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/color_hex.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/color_hsla.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/color_rgba.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/cue_func_selector_single_colon.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/font_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/font_shorthand.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/id_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/inherit_values_from_media_element.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_animation_with_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_font_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_font_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_outline_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_outline_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_timestamp_future.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_timestamp_past.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_transition_with_timestamp.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_white-space_normal_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_white-space_nowrap.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_white-space_pre-line_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_with_class.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/italic_object/italic_with_class_object_specific_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/lang_object/lang_attribute.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/lang_object/lang_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/not_allowed_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/not_root_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/outline_properties.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/outline_shorthand.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/root_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/root_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/text-decoration_overline.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/text-decoration_overline_underline_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/text-decoration_underline.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/type_selector_root.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_animation_with_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_font_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_font_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_outline_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_outline_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_timestamp_future.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_timestamp_past.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_transition_with_timestamp.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_white-space_normal_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_white-space_nowrap.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_white-space_pre-line_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_with_class.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/underline_object/underline_with_class_object_specific_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_animation_with_timestamp.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_background_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_background_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_color.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_font_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_font_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_namespace.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_outline_properties.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_outline_shorthand.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_text-decoration_line-through.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_text-shadow.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_timestamp_future.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_timestamp_past.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_transition_with_timestamp.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_voice_attribute.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_white-space_normal_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_white-space_nowrap.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_white-space_pre-line_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_with_class.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/voice_object/voice_with_class_object_specific_selector.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_normal_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_nowrap_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_pre-line_wrapped.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_pre-wrap_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_pre.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/white-space_pre_wrapped.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/bold_object_default_font-style.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/inherit_as_default_value_inherits_values_from_media_element.html": {
+    "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/italic_object_default_font-style.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/underline_object_default_font-style.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/size_50.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/snap-to-line.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/too_many_cues.html": {
+    "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/too_many_cues_wrapped.html": {
+    "reftest": "PASS"
+  }
+}

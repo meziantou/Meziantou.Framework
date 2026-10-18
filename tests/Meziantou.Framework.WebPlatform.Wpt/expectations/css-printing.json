@@ -1,0 +1,95 @@
+{
+  "css/printing/animated-image-print-image-orientation-none.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/animated-image-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/animations-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/animations-shadow-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/background-image-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/conic-gradient-skia-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/destination-backslash-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/emoji-print.html": {
+    "reftest": "FAIL"
+  },
+  "css/printing/existing-transition-in-media-print.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/printing/fixed-pos-object-pdf-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/fragmented-inline-block-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/fragmented-inline-block-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/huge-font-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/input-file-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/input-password-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/mask-image-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/negative-overflow-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/no-resize-event-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/number-input-link-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/page-overflow-crash-print.html": {
+    "reftest": "FAIL"
+  },
+  "css/printing/paused-animations-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/pseudo-animations-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/select-combobox-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/table-container-query-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/table-in-flex-overflow-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/table-overflow-quirks-frameset-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/text-shadow-blur-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/transition-in-media-print.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/zero-size-001-print.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/zero-size-002-print.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/zero-size-003-print.tentative.html": {
+    "reftest": "PASS"
+  }
+}

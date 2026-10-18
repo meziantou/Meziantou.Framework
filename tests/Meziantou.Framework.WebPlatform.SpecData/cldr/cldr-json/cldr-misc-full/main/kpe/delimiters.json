@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kpe": {
+      "identity": {
+        "language": "kpe"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

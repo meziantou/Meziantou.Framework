@@ -1,0 +1,474 @@
+{
+  "storage/buckets/bucket-quota-indexeddb.tentative.https.any.js": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "IDB respects bucket quota": "FAIL"
+    }
+  },
+  "storage/buckets/bucket-quota-indexeddb.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "IDB respects bucket quota": "FAIL"
+    }
+  },
+  "storage/buckets/bucket-storage-policy.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "The open promise should reject with a TypeError when quota is requested outside the range of 1 to Number.MAX_SAFE_INTEGER.": "FAIL"
+    }
+  },
+  "storage/buckets/bucket-storage-policy.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The open promise should reject with a TypeError when quota is requested outside the range of 1 to Number.MAX_SAFE_INTEGER.": "FAIL"
+    }
+  },
+  "storage/buckets/bucket-storage-policy.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The open promise should reject with a TypeError when quota is requested outside the range of 1 to Number.MAX_SAFE_INTEGER.": "FAIL"
+    }
+  },
+  "storage/buckets/bucket_names.tentative.https.any.js": {
+    "total": 29,
+    "failures": {
+      "delete() allows bucket names ending with `-`": "FAIL",
+      "delete() allows bucket names ending with `_`": "FAIL",
+      "delete() allows bucket names with `-` in the middle": "FAIL",
+      "delete() allows bucket names with `_` in the middle": "FAIL",
+      "delete() allows bucket names with allowed characters": "FAIL",
+      "delete() throws an error if bucket names are an empty string": "FAIL",
+      "delete() throws an error if bucket names are not all lower case": "FAIL",
+      "delete() throws an error if bucket names are not in ASCII": "FAIL",
+      "delete() throws an error if bucket names exceed 64 chars": "FAIL",
+      "delete() throws an error if bucket names have a space": "FAIL",
+      "delete() throws an error if bucket names have no characters": "FAIL",
+      "delete() throws an error if bucket names include an invalid special character": "FAIL",
+      "delete() throws an error if bucket names start with `-`": "FAIL",
+      "delete() throws an error if bucket names start with `_`": "FAIL",
+      "open() allows bucket names ending with `-`": "FAIL",
+      "open() allows bucket names ending with `_`": "FAIL",
+      "open() allows bucket names with `-` in the middle": "FAIL",
+      "open() allows bucket names with `_` in the middle": "FAIL",
+      "open() allows bucket names with allowed characters": "FAIL",
+      "open() does not store duplicate bucket names": "FAIL",
+      "open() throws an error if bucket names are an empty string": "FAIL",
+      "open() throws an error if bucket names are not all lower case": "FAIL",
+      "open() throws an error if bucket names are not in ASCII": "FAIL",
+      "open() throws an error if bucket names exceed 64 chars": "FAIL",
+      "open() throws an error if bucket names have a space": "FAIL",
+      "open() throws an error if bucket names have no characters": "FAIL",
+      "open() throws an error if bucket names include an invalid special character": "FAIL",
+      "open() throws an error if bucket names start with `-`": "FAIL",
+      "open() throws an error if bucket names start with `_`": "FAIL"
+    }
+  },
+  "storage/buckets/bucket_names.tentative.https.any.js#dedicatedworker": {
+    "total": 29,
+    "failures": {
+      "delete() allows bucket names ending with `-`": "FAIL",
+      "delete() allows bucket names ending with `_`": "FAIL",
+      "delete() allows bucket names with `-` in the middle": "FAIL",
+      "delete() allows bucket names with `_` in the middle": "FAIL",
+      "delete() allows bucket names with allowed characters": "FAIL",
+      "delete() throws an error if bucket names are an empty string": "FAIL",
+      "delete() throws an error if bucket names are not all lower case": "FAIL",
+      "delete() throws an error if bucket names are not in ASCII": "FAIL",
+      "delete() throws an error if bucket names exceed 64 chars": "FAIL",
+      "delete() throws an error if bucket names have a space": "FAIL",
+      "delete() throws an error if bucket names have no characters": "FAIL",
+      "delete() throws an error if bucket names include an invalid special character": "FAIL",
+      "delete() throws an error if bucket names start with `-`": "FAIL",
+      "delete() throws an error if bucket names start with `_`": "FAIL",
+      "open() allows bucket names ending with `-`": "FAIL",
+      "open() allows bucket names ending with `_`": "FAIL",
+      "open() allows bucket names with `-` in the middle": "FAIL",
+      "open() allows bucket names with `_` in the middle": "FAIL",
+      "open() allows bucket names with allowed characters": "FAIL",
+      "open() does not store duplicate bucket names": "FAIL",
+      "open() throws an error if bucket names are an empty string": "FAIL",
+      "open() throws an error if bucket names are not all lower case": "FAIL",
+      "open() throws an error if bucket names are not in ASCII": "FAIL",
+      "open() throws an error if bucket names exceed 64 chars": "FAIL",
+      "open() throws an error if bucket names have a space": "FAIL",
+      "open() throws an error if bucket names have no characters": "FAIL",
+      "open() throws an error if bucket names include an invalid special character": "FAIL",
+      "open() throws an error if bucket names start with `-`": "FAIL",
+      "open() throws an error if bucket names start with `_`": "FAIL"
+    }
+  },
+  "storage/buckets/bucket_names.tentative.https.any.js#sharedworker": {
+    "total": 29,
+    "failures": {
+      "delete() allows bucket names ending with `-`": "FAIL",
+      "delete() allows bucket names ending with `_`": "FAIL",
+      "delete() allows bucket names with `-` in the middle": "FAIL",
+      "delete() allows bucket names with `_` in the middle": "FAIL",
+      "delete() allows bucket names with allowed characters": "FAIL",
+      "delete() throws an error if bucket names are an empty string": "FAIL",
+      "delete() throws an error if bucket names are not all lower case": "FAIL",
+      "delete() throws an error if bucket names are not in ASCII": "FAIL",
+      "delete() throws an error if bucket names exceed 64 chars": "FAIL",
+      "delete() throws an error if bucket names have a space": "FAIL",
+      "delete() throws an error if bucket names have no characters": "FAIL",
+      "delete() throws an error if bucket names include an invalid special character": "FAIL",
+      "delete() throws an error if bucket names start with `-`": "FAIL",
+      "delete() throws an error if bucket names start with `_`": "FAIL",
+      "open() allows bucket names ending with `-`": "FAIL",
+      "open() allows bucket names ending with `_`": "FAIL",
+      "open() allows bucket names with `-` in the middle": "FAIL",
+      "open() allows bucket names with `_` in the middle": "FAIL",
+      "open() allows bucket names with allowed characters": "FAIL",
+      "open() does not store duplicate bucket names": "FAIL",
+      "open() throws an error if bucket names are an empty string": "FAIL",
+      "open() throws an error if bucket names are not all lower case": "FAIL",
+      "open() throws an error if bucket names are not in ASCII": "FAIL",
+      "open() throws an error if bucket names exceed 64 chars": "FAIL",
+      "open() throws an error if bucket names have a space": "FAIL",
+      "open() throws an error if bucket names have no characters": "FAIL",
+      "open() throws an error if bucket names include an invalid special character": "FAIL",
+      "open() throws an error if bucket names start with `-`": "FAIL",
+      "open() throws an error if bucket names start with `_`": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_basic.tentative.https.any.js": {
+    "total": 3,
+    "failures": {
+      "delete() does nothing if bucket name does not exist": "FAIL",
+      "delete() removes stored bucket name": "FAIL",
+      "keys() lists all stored bucket names alphabetically": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_basic.tentative.https.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "delete() does nothing if bucket name does not exist": "FAIL",
+      "delete() removes stored bucket name": "FAIL",
+      "keys() lists all stored bucket names alphabetically": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_basic.tentative.https.any.js#sharedworker": {
+    "total": 3,
+    "failures": {
+      "delete() does nothing if bucket name does not exist": "FAIL",
+      "delete() removes stored bucket name": "FAIL",
+      "keys() lists all stored bucket names alphabetically": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_storage_policy.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "Bucket quota is properly set as long as it is within the storage quota": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_storage_policy.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Bucket quota is properly set as long as it is within the storage quota": "FAIL"
+    }
+  },
+  "storage/buckets/buckets_storage_policy.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "Bucket quota is properly set as long as it is within the storage quota": "FAIL"
+    }
+  },
+  "storage/buckets/detached-iframe.https.html": {
+    "total": 3,
+    "failures": {
+      "Verify delete() on detached iframe returns an error": "FAIL",
+      "Verify keys() on detached iframe returns an error": "FAIL",
+      "Verify open() on detached iframe returns an error": "FAIL"
+    }
+  },
+  "storage/buckets/idlharness-worker.https.any.js": {
+    "total": 50,
+    "failures": {
+      "Navigator interface: attribute storageBuckets": "FAIL",
+      "Navigator interface: navigator must inherit property \"storageBuckets\" with the proper type": "FAIL",
+      "StorageBucket interface object length": "FAIL",
+      "StorageBucket interface object name": "FAIL",
+      "StorageBucket interface: attribute caches": "FAIL",
+      "StorageBucket interface: attribute indexedDB": "FAIL",
+      "StorageBucket interface: attribute name": "FAIL",
+      "StorageBucket interface: existence and properties of interface object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucket interface: operation estimate()": "FAIL",
+      "StorageBucket interface: operation expires()": "FAIL",
+      "StorageBucket interface: operation getDirectory()": "FAIL",
+      "StorageBucket interface: operation persist()": "FAIL",
+      "StorageBucket interface: operation persisted()": "FAIL",
+      "StorageBucket interface: operation setExpires(DOMHighResTimeStamp)": "FAIL",
+      "StorageBucketManager interface object length": "FAIL",
+      "StorageBucketManager interface object name": "FAIL",
+      "StorageBucketManager interface: calling delete(DOMString) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: calling open(DOMString, optional StorageBucketOptions) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"delete(DOMString)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"keys()\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"open(DOMString, optional StorageBucketOptions)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: operation delete(DOMString)": "FAIL",
+      "StorageBucketManager interface: operation keys()": "FAIL",
+      "StorageBucketManager interface: operation open(DOMString, optional StorageBucketOptions)": "FAIL",
+      "StorageBucketManager must be primary interface of navigator.storageBuckets": "FAIL",
+      "Stringification of navigator.storageBuckets": "FAIL"
+    }
+  },
+  "storage/buckets/idlharness-worker.https.any.js#dedicatedworker": {
+    "total": 50,
+    "failures": {
+      "StorageBucket interface object length": "FAIL",
+      "StorageBucket interface object name": "FAIL",
+      "StorageBucket interface: attribute caches": "FAIL",
+      "StorageBucket interface: attribute indexedDB": "FAIL",
+      "StorageBucket interface: attribute name": "FAIL",
+      "StorageBucket interface: existence and properties of interface object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucket interface: member persist": "FAIL",
+      "StorageBucket interface: operation estimate()": "FAIL",
+      "StorageBucket interface: operation expires()": "FAIL",
+      "StorageBucket interface: operation getDirectory()": "FAIL",
+      "StorageBucket interface: operation persisted()": "FAIL",
+      "StorageBucket interface: operation setExpires(DOMHighResTimeStamp)": "FAIL",
+      "StorageBucketManager interface object length": "FAIL",
+      "StorageBucketManager interface object name": "FAIL",
+      "StorageBucketManager interface: calling delete(DOMString) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: calling open(DOMString, optional StorageBucketOptions) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"delete(DOMString)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"keys()\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"open(DOMString, optional StorageBucketOptions)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: operation delete(DOMString)": "FAIL",
+      "StorageBucketManager interface: operation keys()": "FAIL",
+      "StorageBucketManager interface: operation open(DOMString, optional StorageBucketOptions)": "FAIL",
+      "StorageBucketManager must be primary interface of navigator.storageBuckets": "FAIL",
+      "Stringification of navigator.storageBuckets": "FAIL",
+      "WorkerNavigator interface: attribute storageBuckets": "FAIL",
+      "WorkerNavigator interface: navigator must inherit property \"storageBuckets\" with the proper type": "FAIL"
+    }
+  },
+  "storage/buckets/idlharness-worker.https.any.js#sharedworker": {
+    "total": 50,
+    "failures": {
+      "StorageBucket interface object length": "FAIL",
+      "StorageBucket interface object name": "FAIL",
+      "StorageBucket interface: attribute caches": "FAIL",
+      "StorageBucket interface: attribute indexedDB": "FAIL",
+      "StorageBucket interface: attribute name": "FAIL",
+      "StorageBucket interface: existence and properties of interface object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucket interface: member persist": "FAIL",
+      "StorageBucket interface: operation estimate()": "FAIL",
+      "StorageBucket interface: operation expires()": "FAIL",
+      "StorageBucket interface: operation getDirectory()": "FAIL",
+      "StorageBucket interface: operation persisted()": "FAIL",
+      "StorageBucket interface: operation setExpires(DOMHighResTimeStamp)": "FAIL",
+      "StorageBucketManager interface object length": "FAIL",
+      "StorageBucketManager interface object name": "FAIL",
+      "StorageBucketManager interface: calling delete(DOMString) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: calling open(DOMString, optional StorageBucketOptions) on navigator.storageBuckets with too few arguments must throw TypeError": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "StorageBucketManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"delete(DOMString)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"keys()\" with the proper type": "FAIL",
+      "StorageBucketManager interface: navigator.storageBuckets must inherit property \"open(DOMString, optional StorageBucketOptions)\" with the proper type": "FAIL",
+      "StorageBucketManager interface: operation delete(DOMString)": "FAIL",
+      "StorageBucketManager interface: operation keys()": "FAIL",
+      "StorageBucketManager interface: operation open(DOMString, optional StorageBucketOptions)": "FAIL",
+      "StorageBucketManager must be primary interface of navigator.storageBuckets": "FAIL",
+      "Stringification of navigator.storageBuckets": "FAIL",
+      "WorkerNavigator interface: attribute storageBuckets": "FAIL",
+      "WorkerNavigator interface: navigator must inherit property \"storageBuckets\" with the proper type": "FAIL"
+    }
+  },
+  "storage/buckets/opaque-origin.https.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "StorageBucketManager methods must reject in a sandboxed iframe.": "FAIL",
+      "StorageBucketManager methods must reject in a sandboxed opened window.": "FAIL"
+    }
+  },
+  "storage/buckets/storage_bucket_object.tentative.https.any.js": {
+    "total": 9,
+    "failures": {
+      "Bucket durability defaults to relaxed": "FAIL",
+      "durability() should retrieve bucket durability specified during creation": "FAIL",
+      "estimate() should retrieve quota usage": "FAIL",
+      "expires() should be defaulted to null": "FAIL",
+      "expires() should retrieve expires date": "FAIL",
+      "persisted() should default to false": "FAIL",
+      "setExpires() should set bucket expires date": "FAIL",
+      "setExpires() should update expires date": "FAIL",
+      "two handles can refer to the same bucket, and a bucket name can be reused after deletion": "FAIL"
+    }
+  },
+  "storage/buckets/storage_bucket_object.tentative.https.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "Bucket durability defaults to relaxed": "FAIL",
+      "durability() should retrieve bucket durability specified during creation": "FAIL",
+      "estimate() should retrieve quota usage": "FAIL",
+      "expires() should be defaulted to null": "FAIL",
+      "expires() should retrieve expires date": "FAIL",
+      "persisted() should default to false": "FAIL",
+      "setExpires() should set bucket expires date": "FAIL",
+      "setExpires() should update expires date": "FAIL",
+      "two handles can refer to the same bucket, and a bucket name can be reused after deletion": "FAIL"
+    }
+  },
+  "storage/buckets/storage_bucket_object.tentative.https.any.js#sharedworker": {
+    "total": 9,
+    "failures": {
+      "Bucket durability defaults to relaxed": "FAIL",
+      "durability() should retrieve bucket durability specified during creation": "FAIL",
+      "estimate() should retrieve quota usage": "FAIL",
+      "expires() should be defaulted to null": "FAIL",
+      "expires() should retrieve expires date": "FAIL",
+      "persisted() should default to false": "FAIL",
+      "setExpires() should set bucket expires date": "FAIL",
+      "setExpires() should update expires date": "FAIL",
+      "two handles can refer to the same bucket, and a bucket name can be reused after deletion": "FAIL"
+    }
+  },
+  "storage/estimate-indexeddb.https.any.js": {
+    "total": 1
+  },
+  "storage/estimate-indexeddb.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "storage/estimate-parallel.https.any.js": {
+    "total": 1
+  },
+  "storage/estimate-parallel.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "storage/estimate-usage-details-caches.https.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "estimate() shows usage increase after large value is stored": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details-caches.https.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "estimate() shows usage increase after large value is stored": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details-indexeddb.https.tentative.any.js": {
+    "total": 2,
+    "failures": {
+      "estimate() resolves to dictionary with usageDetails member": "FAIL",
+      "estimate() usage details reflects increase in indexedDB after large value is stored": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details-indexeddb.https.tentative.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "estimate() resolves to dictionary with usageDetails member": "FAIL",
+      "estimate() usage details reflects increase in indexedDB after large value is stored": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details-service-workers.https.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "estimate() shows usage increase after large value is stored": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details.https.tentative.any.js": {
+    "total": 1,
+    "failures": {
+      "estimate() resolves to dictionary with members, including usageDetails": "FAIL"
+    }
+  },
+  "storage/estimate-usage-details.https.tentative.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "estimate() resolves to dictionary with members, including usageDetails": "FAIL"
+    }
+  },
+  "storage/idlharness.https.any.js": {
+    "total": 33
+  },
+  "storage/idlharness.https.any.js#dedicatedworker": {
+    "total": 33
+  },
+  "storage/opaque-origin.https.window.js": {
+    "total": 6
+  },
+  "storage/partitioned-estimate-usage-details-caches.tentative.https.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Partitioned estimate() usage details for caches test.": "TIMEOUT"
+    }
+  },
+  "storage/partitioned-estimate-usage-details-indexeddb.tentative.https.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Partitioned estimate() usage details for indexeddb test.": "TIMEOUT"
+    }
+  },
+  "storage/partitioned-estimate-usage-details-service-workers.tentative.https.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Partitioned estimate() usage details for service workers test.": "TIMEOUT"
+    }
+  },
+  "storage/permission-query.https.any.js": {
+    "total": 1,
+    "failures": {
+      "The \"persistent-storage\" permission is recognized": "FAIL"
+    }
+  },
+  "storage/permission-query.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The \"persistent-storage\" permission is recognized": "FAIL"
+    }
+  },
+  "storage/persisted.https.any.js": {
+    "total": 2
+  },
+  "storage/persisted.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "storage/storagemanager-estimate.https.any.js": {
+    "total": 2
+  },
+  "storage/storagemanager-estimate.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "storage/storagemanager-persist-persisted-match.https.window.js": {
+    "total": 1
+  },
+  "storage/storagemanager-persist.https.window.js": {
+    "total": 1
+  },
+  "storage/storagemanager-persist.https.worker.js": {
+    "total": 1
+  },
+  "storage/storagemanager-persisted.https.any.js": {
+    "total": 1
+  },
+  "storage/storagemanager-persisted.https.any.js#dedicatedworker": {
+    "total": 1
+  }
+}

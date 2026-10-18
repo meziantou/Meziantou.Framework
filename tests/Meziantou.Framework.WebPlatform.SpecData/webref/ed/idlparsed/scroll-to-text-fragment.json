@@ -1,0 +1,91 @@
+{
+  "spec": {
+    "title": "URL Fragment Text Directives",
+    "url": "https://wicg.github.io/scroll-to-text-fragment/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "FragmentDirective"
+        ]
+      }
+    },
+    "idlNames": {
+      "FragmentDirective": {
+        "fragment": "[Exposed=Window]\ninterface FragmentDirective {\n};",
+        "type": "interface",
+        "name": "FragmentDirective",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/scroll-to-text-fragment/#fragmentdirective"
+      }
+    },
+    "idlExtendedNames": {
+      "Document": [
+        {
+          "fragment": "partial interface Document {\n    [SameObject] readonly attribute FragmentDirective fragmentDirective;\n};",
+          "type": "interface",
+          "name": "Document",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "fragmentDirective",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FragmentDirective"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/scroll-to-text-fragment/#dom-document-fragmentdirective"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "FragmentDirective"
+      ]
+    },
+    "dependencies": {
+      "FragmentDirective": [],
+      "Document": [
+        "FragmentDirective"
+      ]
+    },
+    "externalDependencies": [
+      "Document"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

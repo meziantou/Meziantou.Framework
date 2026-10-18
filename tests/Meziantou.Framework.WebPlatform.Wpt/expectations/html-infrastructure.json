@@ -1,0 +1,501 @@
+{
+  "html/infrastructure/common-dom-interfaces/collections/domstringlist.html": {
+    "total": 4
+  },
+  "html/infrastructure/common-dom-interfaces/collections/historical.html": {
+    "total": 3
+  },
+  "html/infrastructure/common-dom-interfaces/collections/htmlallcollection.html": {
+    "total": 41
+  },
+  "html/infrastructure/common-dom-interfaces/collections/htmlformcontrolscollection.html": {
+    "total": 16
+  },
+  "html/infrastructure/common-dom-interfaces/collections/htmloptionscollection.html": {
+    "total": 24
+  },
+  "html/infrastructure/common-dom-interfaces/collections/radionodelist.html": {
+    "total": 5
+  },
+  "html/infrastructure/conformance-requirements/extensibility/foreign.html": {
+    "total": 1
+  },
+  "html/infrastructure/fetching-resources/crossorigin-enumerated-ascii-case-insensitive.html": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/cross-origin-transfer-resizable-arraybuffer.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js": {
+    "total": 152,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js#dedicatedworker": {
+    "total": 137,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js#sharedworker": {
+    "total": 137,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/blob-data.https.html": {
+    "harness": "ERROR",
+    "total": 18,
+    "failures": {
+      "data frame: postMessaging to a dedicated blob sub-worker allows them to see each others' modifications": "TIMEOUT",
+      "data frame: self.crossOriginIsolated": "FAIL",
+      "data worker: postMessaging to a dedicated blob sub-worker allows them to see each others' modifications": "TIMEOUT"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success-and-failure.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/identity-not-preserved.https.html": {
+    "total": 3
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/nested-sharedworker-success.https.html": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/nested-worker-success.https.html": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/no-coop-coep.https.any.js": {
+    "total": 5
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/no-coop-coep.https.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/no-coop-coep.https.any.js#sharedworker": {
+    "total": 4
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/no-transferring.https.html": {
+    "total": 3
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-history.https.html": {
+    "total": 4
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-idb.any.js": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-idb.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js": {
+    "total": 2,
+    "failures": {
+      "SharedArrayBuffer cloning via the Notifications API's data member: basic case": "FAIL",
+      "SharedArrayBuffer cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "SharedArrayBuffer cloning via the Notifications API's data member: basic case": "FAIL",
+      "SharedArrayBuffer cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-domain-failure.https.sub.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-failure.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html": {
+    "total": 4
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-messagechannel-success.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-serviceworker-failure.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-sharedworker-failure.https.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-simple-success.https.html": {
+    "total": 16
+  },
+  "html/infrastructure/safe-passing-of-structured-data/structured-cloning-error-extra.html": {
+    "total": 2
+  },
+  "html/infrastructure/safe-passing-of-structured-data/structured-cloning-error-stack-optional.sub.window.js": {
+    "total": 20
+  },
+  "html/infrastructure/safe-passing-of-structured-data/structured-cloning-error-stack.window.js": {
+    "total": 10
+  },
+  "html/infrastructure/safe-passing-of-structured-data/structuredclone_0.html": {
+    "total": 43
+  },
+  "html/infrastructure/safe-passing-of-structured-data/transfer-audiodata.html": {
+    "total": 1,
+    "failures": {
+      "AudioData can be transferred through a MessageChannel": "FAIL"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/transfer-errors.window.js": {
+    "total": 17
+  },
+  "html/infrastructure/safe-passing-of-structured-data/transfer-mediasourcehandle.html": {
+    "total": 1
+  },
+  "html/infrastructure/safe-passing-of-structured-data/transfer-videoframe.html": {
+    "total": 1,
+    "failures": {
+      "VideoFrame can be transferred through a MessageChannel": "FAIL"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js": {
+    "total": 152,
+    "failures": {
+      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
+    }
+  },
+  "html/infrastructure/terminology/plugins/text-plain.html": {
+    "total": 1
+  },
+  "html/infrastructure/urls/base-url/base-url-detached-document-blank.https.window.js": {
+    "total": 1
+  },
+  "html/infrastructure/urls/base-url/base-url-detached-document-srcdoc.https.window.js": {
+    "total": 1
+  },
+  "html/infrastructure/urls/base-url/base-url-javascript-nav.https.window.js": {
+    "total": 1
+  },
+  "html/infrastructure/urls/base-url/document-base-uri-synthetic-document.html": {
+    "total": 2
+  },
+  "html/infrastructure/urls/base-url/document-base-url-changes-about-srcdoc-2.https.html": {
+    "total": 2
+  },
+  "html/infrastructure/urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js": {
+    "total": 2,
+    "failures": {
+      "non-sandboxed srcdoc - parent changes baseURI": "FAIL",
+      "sandboxed srcdoc - parent changes baseURI": "FAIL"
+    }
+  },
+  "html/infrastructure/urls/base-url/document-base-url-initiated-grand-parent.https.window.js": {
+    "total": 3
+  },
+  "html/infrastructure/urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "window.open() gets base url from initiator not opener.": "TIMEOUT"
+    }
+  },
+  "html/infrastructure/urls/base-url/document-base-url-window-open-about-blank.https.window.js": {
+    "total": 1
+  },
+  "html/infrastructure/urls/base-url/initial-about-blank-baseURI.window.js": {
+    "total": 6
+  },
+  "html/infrastructure/urls/base-url/matches-about-blank-base-url.window.js": {
+    "total": 1
+  },
+  "html/infrastructure/urls/dynamic-changes-to-base-urls/dynamic-urls.sub.html": {
+    "total": 19
+  },
+  "html/infrastructure/urls/dynamic-changes-to-base-urls/historical.sub.xhtml": {
+    "total": 20
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/attributes.sub.html?encoding=utf8": {
+    "total": 26
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/attributes.sub.html?encoding=windows-1252": {
+    "total": 26
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/attributes.sub.html?encoding=x-cp1251": {
+    "total": 26
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/location.sub.html?encoding=utf8": {
+    "total": 5
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/location.sub.html?encoding=windows-1252": {
+    "total": 5
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/location.sub.html?encoding=x-cp1251": {
+    "total": 5
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/lone-surrogates.sub.html?encoding=utf8": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/lone-surrogates.sub.html?encoding=windows-1252": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/navigation.sub.html?encoding=utf8": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/navigation.sub.html?encoding=windows-1252": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/navigation.sub.html?encoding=x-cp1251": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=base-href": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=css": {
+    "total": 21
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=eventsource": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=history": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=hyperlink-search": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=loading": {
+    "total": 11
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=nested-browsing": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=scheme": {
+    "total": 31
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=submit": {
+    "total": 3
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=svg": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=url": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=websocket": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=window-open": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=workers": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=xhr": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16be.html?include=xml": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=base-href": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=css": {
+    "total": 21
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=eventsource": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=history": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=hyperlink-search": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=loading": {
+    "total": 11
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=nested-browsing": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=scheme": {
+    "total": 31
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=submit": {
+    "total": 3
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=svg": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=url": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=websocket": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=window-open": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=workers": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=xhr": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-16le.html?include=xml": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=base-href": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=css": {
+    "total": 21
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=eventsource": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=history": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=hyperlink-search": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=loading": {
+    "total": 11
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=nested-browsing": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=scheme": {
+    "total": 31
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=submit": {
+    "total": 3
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=svg": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=url": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=websocket": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=window-open": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=workers": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=xhr": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/utf-8.html?include=xml": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=base-href": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=css": {
+    "total": 21
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=eventsource": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=history": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=hyperlink-search": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=loading": {
+    "total": 11
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=nested-browsing": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=scheme": {
+    "total": 31
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=submit": {
+    "total": 3
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=svg": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=url": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=websocket": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=window-open": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=workers": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=xhr": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1251.html?include=xml": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=base-href": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=css": {
+    "total": 21
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=eventsource": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=history": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=hyperlink-search": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=loading": {
+    "total": 11
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=nested-browsing": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=scheme": {
+    "total": 31
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=submit": {
+    "total": 3
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=svg": {
+    "total": 4
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=url": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=websocket": {
+    "total": 2
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=window-open": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=workers": {
+    "total": 6
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=xhr": {
+    "total": 1
+  },
+  "html/infrastructure/urls/resolving-urls/query-encoding/windows-1252.html?include=xml": {
+    "total": 1
+  },
+  "html/infrastructure/urls/terminology-0/document-base-url-about-srcdoc.https.window.js": {
+    "total": 2
+  },
+  "html/infrastructure/urls/terminology-0/document-base-url-changes-about-srcdoc.https.window.js": {
+    "total": 2
+  },
+  "html/infrastructure/urls/terminology-0/document-base-url.html": {
+    "total": 6
+  },
+  "html/infrastructure/urls/terminology-0/multiple-base.sub.html": {
+    "total": 1
+  },
+  "html/infrastructure/urls/terminology-0/nontraditional-about-srcdoc.html": {
+    "total": 3
+  }
+}

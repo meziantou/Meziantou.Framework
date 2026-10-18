@@ -301,3 +301,8 @@ artifacts/
 /eng/delta.proj
 /eng/packages.delta.proj
 /affected-test-projects.json
+
+# The external test suites of Meziantou.Framework.WebPlatform, fetched by eng/webplatform/fetch-tests.sh
+/tests/Meziantou.Framework.WebPlatform.External/
+# The marker of an update of the WPT expectations that is running or was interrupted (see src/Meziantou.Framework.WebPlatform/docs/web-platform-tests.md)
+/tests/Meziantou.Framework.WebPlatform.Wpt/expectations/.incomplete-update-*

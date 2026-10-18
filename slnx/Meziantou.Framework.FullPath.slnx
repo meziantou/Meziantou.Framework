@@ -13,6 +13,7 @@
     <Project Path="../fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Unicode.Fuzz/Meziantou.Framework.Unicode.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -44,6 +45,7 @@
     <Project Path="../src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
@@ -59,5 +61,8 @@
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
   </Folder>
 </Solution>

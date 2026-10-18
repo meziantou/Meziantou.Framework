@@ -1,0 +1,15 @@
+{
+  "main": {
+    "yue": {
+      "identity": {
+        "language": "yue"
+      },
+      "delimiters": {
+        "quotationStart": "「",
+        "quotationEnd": "」",
+        "alternateQuotationStart": "『",
+        "alternateQuotationEnd": "』"
+      }
+    }
+  }
+}

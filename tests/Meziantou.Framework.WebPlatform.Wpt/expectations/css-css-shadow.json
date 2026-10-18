@@ -1,0 +1,634 @@
+{
+  "css/css-shadow/css-scoping-shadow-assigned-node-with-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-assigned-node-with-rules.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-dynamic-remove-style-detached.html": {
+    "total": 1
+  },
+  "css/css-shadow/css-scoping-shadow-host-functional-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-host-namespace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-host-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-host-with-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-invisible-slot.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-nested-slot-display-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-root-hides-children.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slot-display-override.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slot-fallback.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slot-style.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slot.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slotted-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-slotted-rule.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-with-outside-rules.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-with-rules-no-style-leak.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/css-scoping-shadow-with-rules.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/font-face-001.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-002.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-003.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-004.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-005.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-006.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-007.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-008.html": {
+    "total": 1
+  },
+  "css/css-shadow/font-face-009.html": {
+    "total": 1
+  },
+  "css/css-shadow/has-slotted-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-changing-001.html": {
+    "total": 5
+  },
+  "css/css-shadow/has-slotted-changing-002.html": {
+    "total": 3
+  },
+  "css/css-shadow/has-slotted-flattened-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-flattened-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-flattened-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-flattened-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-001.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-004.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-006.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-007.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-changing-001.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Changing content targetting :has-slotted(...) and :has-slotted through a single shadow root": "FAIL"
+    }
+  },
+  "css/css-shadow/has-slotted-functional-changing-002.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Changing content targetting :has-slotted(...) through a single shadow root": "FAIL"
+    }
+  },
+  "css/css-shadow/has-slotted-functional-changing-003.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Changing content targetting :has-slotted(...) and :has-slotted through multiple shadow roots": "FAIL"
+    }
+  },
+  "css/css-shadow/has-slotted-functional-changing-004.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Changing content targetting :has-slotted(...) through a single shadow root": "FAIL"
+    }
+  },
+  "css/css-shadow/has-slotted-functional-flattened-001.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-flattened-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-flattened-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-flattened-004.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-functional-flattened-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/has-slotted-functional-flattened-006.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/has-slotted-manual-assignment.html": {
+    "total": 4
+  },
+  "css/css-shadow/has-slotted-query-selector.html": {
+    "total": 8
+  },
+  "css/css-shadow/host-context-parsing.html": {
+    "total": 7
+  },
+  "css/css-shadow/host-context-specificity-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-context-specificity-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-context-specificity-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-defined.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-descendant-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-descendant-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-descendant-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-descendant-invalidation.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-dom-001.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-functional-descendant-invalidation.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-has-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-internal-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-internal-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-internal-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-has-internal-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-in-document-descendant.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-in-host-context-selector.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-in-host-selector.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-is-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-is-featureless.html": {
+    "total": 1
+  },
+  "css/css-shadow/host-multiple-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-multiple-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-multiple-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-multiple-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-multiple-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-nested-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-not-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-parsing.html": {
+    "total": 7
+  },
+  "css/css-shadow/host-slotted-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-specificity-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-specificity-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-specificity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/host-with-default-namespace-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/hover-invalidates-slotted-descendant.html": {
+    "total": 1
+  },
+  "css/css-shadow/idlharness.html": {
+    "total": 12
+  },
+  "css/css-shadow/keyframes-001.html": {
+    "total": 1
+  },
+  "css/css-shadow/keyframes-002.html": {
+    "total": 1
+  },
+  "css/css-shadow/keyframes-003.html": {
+    "total": 1
+  },
+  "css/css-shadow/keyframes-004.html": {
+    "total": 1
+  },
+  "css/css-shadow/keyframes-005.html": {
+    "total": 1
+  },
+  "css/css-shadow/keyframes-006.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/all-hosts.html": {
+    "total": 2
+  },
+  "css/css-shadow/part/animation-part.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/both-part-and-exportparts.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/chaining-invalid-selector.html": {
+    "total": 2
+  },
+  "css/css-shadow/part/complex-matching.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/complex-non-matching.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/different-host.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/double-forward.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/exportparts-different-scope.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/exportparts-layered.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/exportparts-multiple.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/grouping-with-checked.html": {
+    "total": 4
+  },
+  "css/css-shadow/part/grouping-with-disabled.html": {
+    "total": 4
+  },
+  "css/css-shadow/part/host-part-001.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/host-part-002.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/host-part-003.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/host-part-nesting.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/host-stylesheet.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/inner-host.html": {
+    "total": 2
+  },
+  "css/css-shadow/part/interaction-with-nested-pseudo-class.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/interaction-with-placeholder.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/interaction-with-pseudo-elements.html": {
+    "total": 6
+  },
+  "css/css-shadow/part/invalidation-change-exportparts-forward.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-change-part-name-forward.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-change-part-name-idl-domtokenlist.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-change-part-name-idl-setter.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-change-part-name.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-complex-selector-forward.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-complex-selector.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/invalidation-part-pseudo.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/multiple-parts.html": {
+    "total": 3
+  },
+  "css/css-shadow/part/multiple-scopes.html": {
+    "total": 10
+  },
+  "css/css-shadow/part/part-after-combinator-invalidation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/part-mutation-pseudo.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/part-name-idl.html": {
+    "total": 4
+  },
+  "css/css-shadow/part/part-nested-pseudo.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/part/precedence-part-vs-part.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/pseudo-classes-after-part.html": {
+    "total": 67
+  },
+  "css/css-shadow/part/pseudo-elements-after-part.html": {
+    "total": 44
+  },
+  "css/css-shadow/part/serialization.html": {
+    "total": 3
+  },
+  "css/css-shadow/part/simple-forward-shorthand.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple-forward.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple-important-important.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple-important-inline.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple-important.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple-inline.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/simple.html": {
+    "total": 1
+  },
+  "css/css-shadow/part/style-sharing.html": {
+    "total": 1
+  },
+  "css/css-shadow/reslot-text-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/same-rules-bug-2044746.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/scope-pseudo-in-shadow.html": {
+    "total": 1
+  },
+  "css/css-shadow/scoped-reference-animation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/scoped-reference-animation-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-shadow/shadow-assign-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-at-import.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-cascade-order-001.html": {
+    "total": 64
+  },
+  "css/css-shadow/shadow-directionality-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-directionality-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-disabled-sheet-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-fallback-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-fallback-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-fallback-dynamic-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-fallback-dynamic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-fallback-dynamic-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-host-removal-invalidation.html": {
+    "total": 1
+  },
+  "css/css-shadow/shadow-host-style-sharing.html": {
+    "total": 6
+  },
+  "css/css-shadow/shadow-host-with-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-link-rel-stylesheet-no-style-leak.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-link-rel-stylesheet.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-multiple-links.html": {
+    "total": 1
+  },
+  "css/css-shadow/shadow-reassign-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-reassign-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-reassign-dynamic-003.html": {
+    "total": 2
+  },
+  "css/css-shadow/shadow-reassign-dynamic-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-reassign-dynamic-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-root-insert-into-document.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/shadow-shared-style-cache-001.html": {
+    "total": 1
+  },
+  "css/css-shadow/slot-non-html-display-value.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-details-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-file-selector-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-has-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-has-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-has-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-has-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-invalidation.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-link.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-matches.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-nested.html": {
+    "total": 2
+  },
+  "css/css-shadow/slotted-parsing.html": {
+    "total": 39,
+    "failures": {
+      "\"::slotted(*)::scroll-button(up)\" should be a valid selector": "FAIL",
+      "\"::slotted(*)::scroll-marker\" should be a valid selector": "FAIL",
+      "\"::slotted(*)::scroll-marker-group\" should be a valid selector": "FAIL"
+    }
+  },
+  "css/css-shadow/slotted-placeholder.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-slot.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-specificity-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-specificity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-text-with-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/slotted-user-agent-part-invalidation.html": {
+    "total": 1
+  },
+  "css/css-shadow/slotted-with-pseudo-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/stylesheet-title-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/stylesheet-title-002.html": {
+    "total": 1
+  },
+  "css/css-shadow/svg-id-ref-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shadow/whitespace-crash-001.html": {
+    "reftest": "PASS"
+  }
+}

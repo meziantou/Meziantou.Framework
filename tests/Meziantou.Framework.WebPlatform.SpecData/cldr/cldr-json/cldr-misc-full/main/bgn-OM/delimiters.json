@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bgn-OM": {
+      "identity": {
+        "language": "bgn",
+        "territory": "OM"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

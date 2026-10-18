@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ha": {
+      "identity": {
+        "language": "ha"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

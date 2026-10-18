@@ -1,0 +1,111 @@
+{
+  "spec": {
+    "title": "Local Network Access",
+    "url": "https://wicg.github.io/local-network-access/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "IPAddressSpace": {
+        "fragment": "enum IPAddressSpace { \"public\", \"local\", \"loopback\" };",
+        "type": "enum",
+        "name": "IPAddressSpace",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "public",
+            "href": "https://wicg.github.io/local-network-access/#dom-ipaddressspace-public"
+          },
+          {
+            "type": "enum-value",
+            "value": "local",
+            "href": "https://wicg.github.io/local-network-access/#dom-ipaddressspace-local"
+          },
+          {
+            "type": "enum-value",
+            "value": "loopback",
+            "href": "https://wicg.github.io/local-network-access/#dom-ipaddressspace-loopback"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/local-network-access/#enumdef-ipaddressspace"
+      }
+    },
+    "idlExtendedNames": {
+      "RequestInit": [
+        {
+          "fragment": "partial dictionary RequestInit {\n  IPAddressSpace targetAddressSpace;\n};",
+          "type": "dictionary",
+          "name": "RequestInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "targetAddressSpace",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "IPAddressSpace"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://wicg.github.io/local-network-access/#dom-requestinit-targetaddressspace"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Request": [
+        {
+          "fragment": "partial interface Request {\n  readonly attribute IPAddressSpace targetAddressSpace;\n};",
+          "type": "interface",
+          "name": "Request",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "targetAddressSpace",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "IPAddressSpace"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://wicg.github.io/local-network-access/#dom-request-targetaddressspace"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "RequestInit": [
+        "IPAddressSpace"
+      ],
+      "Request": [
+        "IPAddressSpace"
+      ]
+    },
+    "externalDependencies": [
+      "RequestInit",
+      "Request"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

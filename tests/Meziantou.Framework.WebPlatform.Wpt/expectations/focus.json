@@ -1,0 +1,142 @@
+{
+  "focus/activeelement-after-calling-window-focus.sub.html": {
+    "total": 5
+  },
+  "focus/activeelement-after-focusing-different-site-iframe-contentwindow.html": {
+    "total": 3
+  },
+  "focus/activeelement-after-focusing-different-site-iframe-then-immediately-focusing-back.html": {
+    "total": 1
+  },
+  "focus/activeelement-after-focusing-different-site-iframe.html": {
+    "total": 2
+  },
+  "focus/activeelement-after-focusing-same-site-iframe-contentwindow.html": {
+    "total": 2
+  },
+  "focus/activeelement-after-focusing-same-site-iframe.html": {
+    "total": 2
+  },
+  "focus/activeelement-after-immediately-focusing-different-site-iframe-contentwindow.html": {
+    "total": 1
+  },
+  "focus/activeelement-after-immediately-focusing-different-site-iframe.html": {
+    "total": 1
+  },
+  "focus/activeelement-after-immediately-focusing-same-site-iframe-contentwindow.html": {
+    "total": 1
+  },
+  "focus/activeelement-after-immediately-focusing-same-site-iframe.html": {
+    "total": 1
+  },
+  "focus/activeelement-after-nested-loses-focus.html": {
+    "total": 1
+  },
+  "focus/ancestor-activeelement-after-child-lose-focus.html": {
+    "total": 1
+  },
+  "focus/anchor-remove-href.html": {
+    "total": 1
+  },
+  "focus/cross-origin-ancestor-activeelement-after-child-lose-focus.sub.html": {
+    "harness": "ERROR",
+    "total": 1
+  },
+  "focus/focus-already-focused-iframe-deep-different-site.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "focus/focus-already-focused-iframe-deep-same-site.html": {
+    "total": 1
+  },
+  "focus/focus-already-focused-iframe-different-site.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "focus/focus-already-focused-iframe-same-site.html": {
+    "total": 1
+  },
+  "focus/focus-centers-element.html": {
+    "total": 1
+  },
+  "focus/focus-contenteditable-element-in-iframe-scroll-into-view.html": {
+    "total": 1
+  },
+  "focus/focus-double-sync-calls.html": {
+    "total": 1
+  },
+  "focus/focus-event-after-focusing-iframes.html": {
+    "total": 2
+  },
+  "focus/focus-event-after-iframe-gets-focus.html": {
+    "total": 3,
+    "failures": {
+      "Check focus event after different site iframe gets focus": "FAIL",
+      "Check focus event after innermost different site iframe gets focus": "FAIL"
+    }
+  },
+  "focus/focus-event-after-switching-iframes.sub.html": {
+    "total": 4
+  },
+  "focus/focus-large-element-in-overflow-hidden-container.html": {
+    "reftest": "FAIL"
+  },
+  "focus/focus-restoration-in-different-site-iframes-window.html": {
+    "total": 1,
+    "failures": {
+      "Check result": "FAIL"
+    }
+  },
+  "focus/focus-restoration-in-different-site-iframes.html": {
+    "total": 1,
+    "failures": {
+      "Check result": "FAIL"
+    }
+  },
+  "focus/focus-restoration-in-same-site-iframes-window.html": {
+    "total": 1
+  },
+  "focus/focus-sync-when-blur.html": {
+    "total": 1
+  },
+  "focus/focus-visible-element-in-overflow-hidden-container.html": {
+    "reftest": "PASS"
+  },
+  "focus/hasfocus-different-site.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "focus/hasfocus-same-site.html": {
+    "total": 1
+  },
+  "focus/iframe-activeelement-after-focusing-out-iframes.html": {
+    "total": 2,
+    "failures": {
+      "Check iframe activeElement after focusing out different site iframe": "FAIL"
+    }
+  },
+  "focus/iframe-contentwindow-focus-with-different-site-intermediate-frame.html": {
+    "total": 1
+  },
+  "focus/iframe-contentwindow-focus-with-same-as-top-intermediate-frame.html": {
+    "total": 1
+  },
+  "focus/iframe-focus-with-different-site-intermediate-frame.html": {
+    "total": 1
+  },
+  "focus/iframe-focus-with-same-as-top-intermediate-frame.html": {
+    "total": 1
+  },
+  "focus/iframe-focuses-parent-different-site.html": {
+    "total": 1
+  },
+  "focus/iframe-focuses-parent-same-site.html": {
+    "total": 1
+  },
+  "focus/nested-focus-within-iframe-focus-event.html": {
+    "total": 1
+  },
+  "focus/scroll-matches-focus.html": {
+    "total": 1
+  }
+}

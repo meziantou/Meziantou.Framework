@@ -1,0 +1,15 @@
+{
+  "main": {
+    "syr": {
+      "identity": {
+        "language": "syr"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

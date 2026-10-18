@@ -1,0 +1,17 @@
+{
+  "main": {
+    "ms-Arab-BN": {
+      "identity": {
+        "language": "ms",
+        "script": "Arab",
+        "territory": "BN"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

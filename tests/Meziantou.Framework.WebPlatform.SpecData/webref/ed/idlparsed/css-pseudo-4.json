@@ -1,0 +1,222 @@
+{
+  "spec": {
+    "title": "CSS Pseudo-Elements Module Level 4",
+    "url": "https://drafts.csswg.org/css-pseudo-4/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "CSSPseudoElement"
+        ]
+      }
+    },
+    "idlNames": {
+      "CSSPseudoElement": {
+        "fragment": "[Exposed=Window]\ninterface CSSPseudoElement {\n    readonly attribute CSSOMString type;\n    readonly attribute Element element;\n    readonly attribute (Element or CSSPseudoElement) parent;\n    readonly attribute CSSOMString selectorText;\n    CSSPseudoElement? pseudo(CSSOMString type);\n};",
+        "type": "interface",
+        "name": "CSSPseudoElement",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-type"
+          },
+          {
+            "type": "attribute",
+            "name": "element",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-element"
+          },
+          {
+            "type": "attribute",
+            "name": "parent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSPseudoElement"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-parent"
+          },
+          {
+            "type": "attribute",
+            "name": "selectorText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-selectortext"
+          },
+          {
+            "type": "operation",
+            "name": "pseudo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSPseudoElement"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-pseudo"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-pseudo-4/#csspseudoelement"
+      }
+    },
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  CSSPseudoElement? pseudo(CSSOMString type);\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "pseudo",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": true,
+                "union": false,
+                "idlType": "CSSPseudoElement"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "type",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-pseudo-4/#dom-element-pseudo"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "CSSPseudoElement"
+      ]
+    },
+    "dependencies": {
+      "CSSPseudoElement": [
+        "CSSOMString",
+        "Element",
+        "CSSPseudoElement"
+      ],
+      "Element": [
+        "CSSPseudoElement",
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSOMString",
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

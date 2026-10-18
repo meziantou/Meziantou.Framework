@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-NG": {
+      "identity": {
+        "language": "en",
+        "territory": "NG"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

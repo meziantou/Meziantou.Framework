@@ -1,0 +1,1360 @@
+{
+  "xhr/XMLHttpRequest-withCredentials.any.js": {
+    "total": 5
+  },
+  "xhr/XMLHttpRequest-withCredentials.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "xhr/abort-after-receive.any.js": {
+    "total": 1
+  },
+  "xhr/abort-after-receive.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-after-send.any.js": {
+    "total": 1
+  },
+  "xhr/abort-after-send.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-after-stop.window.js": {
+    "total": 1
+  },
+  "xhr/abort-after-timeout.any.js": {
+    "total": 1
+  },
+  "xhr/abort-after-timeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-during-done.window.js": {
+    "total": 3
+  },
+  "xhr/abort-during-headers-received.window.js": {
+    "total": 1
+  },
+  "xhr/abort-during-loading.window.js": {
+    "total": 1
+  },
+  "xhr/abort-during-navigation.window.js": {
+    "total": 1
+  },
+  "xhr/abort-during-open.any.js": {
+    "total": 1
+  },
+  "xhr/abort-during-open.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-during-readystatechange.any.js": {
+    "total": 1
+  },
+  "xhr/abort-during-readystatechange.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-during-unsent.any.js": {
+    "total": 1
+  },
+  "xhr/abort-during-unsent.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-during-upload.any.js": {
+    "total": 1
+  },
+  "xhr/abort-during-upload.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-event-abort.any.js": {
+    "total": 1
+  },
+  "xhr/abort-event-abort.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-event-listeners.any.js": {
+    "total": 1
+  },
+  "xhr/abort-event-listeners.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-event-loadend.any.js": {
+    "total": 1
+  },
+  "xhr/abort-event-loadend.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-event-order.htm": {
+    "total": 1
+  },
+  "xhr/abort-progress-events.any.js": {
+    "total": 2
+  },
+  "xhr/abort-progress-events.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/abort-upload-event-abort.any.js": {
+    "total": 1
+  },
+  "xhr/abort-upload-event-abort.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-upload-event-loadend.any.js": {
+    "total": 1
+  },
+  "xhr/abort-upload-event-loadend.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/abort-with-error.any.js": {
+    "total": 1
+  },
+  "xhr/abort-with-error.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-and-redirects-async-same-origin.any.js": {
+    "total": 6
+  },
+  "xhr/access-control-and-redirects-async-same-origin.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "xhr/access-control-and-redirects-async.any.js": {
+    "total": 7
+  },
+  "xhr/access-control-and-redirects-async.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "xhr/access-control-and-redirects.any.js": {
+    "total": 6
+  },
+  "xhr/access-control-and-redirects.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "xhr/access-control-basic-allow-access-control-origin-header-data-url.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-access-control-origin-header.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-access-control-origin-header.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-async.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-async.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-non-cors-safelisted-method-async.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-non-cors-safelisted-method-async.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-non-cors-safelisted-method.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-non-cors-safelisted-method.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-invalidation-by-header.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-invalidation-by-header.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-invalidation-by-method.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-invalidation-by-method.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-timeout.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache-timeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-preflight-cache.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-star.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow-star.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-basic-allow.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-basic-cors-safelisted-request-headers.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-cors-safelisted-response-headers.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-denied.htm": {
+    "total": 2
+  },
+  "xhr/access-control-basic-get-fail-non-simple.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-non-cors-safelisted-content-type.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-post-success-no-content-type.htm": {
+    "total": 1
+  },
+  "xhr/access-control-basic-post-with-non-cors-safelisted-content-type.htm": {
+    "total": 2
+  },
+  "xhr/access-control-basic-preflight-denied.htm": {
+    "total": 1
+  },
+  "xhr/access-control-expose-headers-on-redirect.html": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-async-header-denied.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-async-method-denied.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-async-not-supported.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-credential-async.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-credential-sync.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-headers-async.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-headers-sync.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-allow-headers-returns-star.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-allow-headers-returns-star.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-header-lowercase.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-header-returns-origin.any.js": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-header-returns-origin.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-header-sorted.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-headers-origin.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-invalid-status-301.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-invalid-status-400.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-invalid-status-501.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-request-must-not-contain-cookie.htm": {
+    "total": 1,
+    "failures": {
+      "Preflight request must not contain any cookie header": "FAIL"
+    }
+  },
+  "xhr/access-control-preflight-sync-header-denied.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-sync-method-denied.htm": {
+    "total": 1
+  },
+  "xhr/access-control-preflight-sync-not-supported.htm": {
+    "total": 1
+  },
+  "xhr/access-control-recursive-failed-request.htm": {
+    "total": 1
+  },
+  "xhr/access-control-response-with-body-sync.htm": {
+    "total": 1
+  },
+  "xhr/access-control-response-with-body.htm": {
+    "total": 1
+  },
+  "xhr/access-control-response-with-exposed-headers.htm": {
+    "total": 1
+  },
+  "xhr/access-control-sandboxed-iframe-allow-origin-null.htm": {
+    "total": 1
+  },
+  "xhr/access-control-sandboxed-iframe-allow.htm": {
+    "total": 1
+  },
+  "xhr/access-control-sandboxed-iframe-denied-without-wildcard.htm": {
+    "total": 2
+  },
+  "xhr/access-control-sandboxed-iframe-denied.htm": {
+    "total": 2
+  },
+  "xhr/allow-lists-starting-with-comma.htm": {
+    "total": 1
+  },
+  "xhr/anonymous-mode-unsupported.htm": {
+    "total": 1
+  },
+  "xhr/blob-range.any.js": {
+    "total": 27
+  },
+  "xhr/blob-range.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "xhr/close-worker-with-xhr-in-progress.html": {
+    "total": 1
+  },
+  "xhr/content-type-unmodified.any.js": {
+    "total": 1
+  },
+  "xhr/content-type-unmodified.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/cookies.http.html": {
+    "total": 1,
+    "failures": {
+      "Basic non-cross-site cookie handling in XHR": "FAIL"
+    }
+  },
+  "xhr/cors-expose-star.sub.any.js": {
+    "total": 3
+  },
+  "xhr/cors-expose-star.sub.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "xhr/cors-upload.any.js": {
+    "total": 2
+  },
+  "xhr/cors-upload.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/data-uri.htm": {
+    "total": 10
+  },
+  "xhr/event-abort.any.js": {
+    "total": 1
+  },
+  "xhr/event-abort.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-error-order.sub.html": {
+    "total": 1
+  },
+  "xhr/event-error.sub.any.js": {
+    "total": 2
+  },
+  "xhr/event-error.sub.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/event-load.any.js": {
+    "total": 1
+  },
+  "xhr/event-load.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-loadend.any.js": {
+    "total": 1
+  },
+  "xhr/event-loadend.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-loadstart-upload.any.js": {
+    "total": 1
+  },
+  "xhr/event-loadstart-upload.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-loadstart.any.js": {
+    "total": 1
+  },
+  "xhr/event-loadstart.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-progress.any.js": {
+    "total": 1
+  },
+  "xhr/event-progress.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-readystate-sync-open.any.js": {
+    "total": 2
+  },
+  "xhr/event-readystate-sync-open.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/event-readystatechange-loaded.any.js": {
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: the LOADING state change may be emitted multiple times": "FAIL"
+    }
+  },
+  "xhr/event-readystatechange-loaded.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: the LOADING state change may be emitted multiple times": "FAIL"
+    }
+  },
+  "xhr/event-timeout-order.any.js": {
+    "total": 1
+  },
+  "xhr/event-timeout-order.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-timeout.any.js": {
+    "total": 1
+  },
+  "xhr/event-timeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/event-upload-progress-crossorigin.any.js": {
+    "total": 4
+  },
+  "xhr/event-upload-progress-crossorigin.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "xhr/event-upload-progress.any.js": {
+    "total": 4
+  },
+  "xhr/event-upload-progress.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "xhr/firing-events-http-content-length.html": {
+    "total": 1
+  },
+  "xhr/firing-events-http-no-content-length.html": {
+    "total": 1
+  },
+  "xhr/formdata.html": {
+    "total": 9
+  },
+  "xhr/formdata/append-formelement.html": {
+    "total": 8
+  },
+  "xhr/formdata/append.any.js": {
+    "total": 7
+  },
+  "xhr/formdata/append.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "xhr/formdata/constructor-formelement.html": {
+    "total": 1
+  },
+  "xhr/formdata/constructor-submitter-coordinate.html": {
+    "total": 1
+  },
+  "xhr/formdata/constructor-submitter.html": {
+    "total": 9
+  },
+  "xhr/formdata/constructor.any.js": {
+    "total": 1
+  },
+  "xhr/formdata/constructor.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/formdata/delete-formelement.html": {
+    "total": 4
+  },
+  "xhr/formdata/delete.any.js": {
+    "total": 3
+  },
+  "xhr/formdata/delete.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "xhr/formdata/foreach.any.js": {
+    "total": 4
+  },
+  "xhr/formdata/foreach.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "xhr/formdata/get-formelement.html": {
+    "total": 6
+  },
+  "xhr/formdata/get.any.js": {
+    "total": 6
+  },
+  "xhr/formdata/get.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "xhr/formdata/has-formelement.html": {
+    "total": 3
+  },
+  "xhr/formdata/has.any.js": {
+    "total": 3
+  },
+  "xhr/formdata/has.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "xhr/formdata/iteration.any.js": {
+    "total": 3
+  },
+  "xhr/formdata/iteration.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "xhr/formdata/set-blob.any.js": {
+    "total": 6
+  },
+  "xhr/formdata/set-blob.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "xhr/formdata/set-formelement.html": {
+    "total": 8
+  },
+  "xhr/formdata/set.any.js": {
+    "total": 7
+  },
+  "xhr/formdata/set.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "xhr/formdata/submitter-coordinate-value.html": {
+    "total": 1
+  },
+  "xhr/getallresponseheaders-after-reuse.html": {
+    "total": 1
+  },
+  "xhr/getallresponseheaders-cookies.htm": {
+    "total": 1
+  },
+  "xhr/getallresponseheaders-status.htm": {
+    "total": 1
+  },
+  "xhr/getallresponseheaders.htm": {
+    "total": 7
+  },
+  "xhr/getresponseheader-case-insensitive.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader-chunked-trailer.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader-cookies-and-more.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader-error-state.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader-server-date.htm": {
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: getResponseHeader() server and date": "FAIL"
+    }
+  },
+  "xhr/getresponseheader-special-characters.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader-unsent-opened-state.htm": {
+    "total": 1
+  },
+  "xhr/getresponseheader.any.js": {
+    "total": 6
+  },
+  "xhr/getresponseheader.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "xhr/header-user-agent-async.htm": {
+    "total": 1
+  },
+  "xhr/header-user-agent-sync.htm": {
+    "total": 1
+  },
+  "xhr/headers-normalize-response.htm": {
+    "total": 15
+  },
+  "xhr/historical.html": {
+    "total": 3
+  },
+  "xhr/idlharness.any.js": {
+    "total": 196
+  },
+  "xhr/idlharness.any.js#dedicatedworker": {
+    "total": 160
+  },
+  "xhr/idlharness.any.js#sharedworker": {
+    "total": 160
+  },
+  "xhr/json.any.js": {
+    "total": 2
+  },
+  "xhr/json.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/loadstart-and-state.html": {
+    "total": 2
+  },
+  "xhr/open-after-abort.htm": {
+    "total": 1
+  },
+  "xhr/open-after-setrequestheader.htm": {
+    "total": 1
+  },
+  "xhr/open-after-stop.window.js": {
+    "total": 1
+  },
+  "xhr/open-during-abort-event.htm": {
+    "total": 1
+  },
+  "xhr/open-during-abort-processing.htm": {
+    "total": 1
+  },
+  "xhr/open-during-abort.htm": {
+    "total": 1
+  },
+  "xhr/open-method-bogus.htm": {
+    "total": 8
+  },
+  "xhr/open-method-case-insensitive.htm": {
+    "total": 6
+  },
+  "xhr/open-method-case-sensitive.htm": {
+    "total": 9
+  },
+  "xhr/open-method-insecure.htm": {
+    "total": 9
+  },
+  "xhr/open-method-responsetype-set-sync.htm": {
+    "total": 5
+  },
+  "xhr/open-open-send.htm": {
+    "total": 1
+  },
+  "xhr/open-open-sync-send.htm": {
+    "total": 1
+  },
+  "xhr/open-parameters-toString.htm": {
+    "total": 1
+  },
+  "xhr/open-referer.htm": {
+    "total": 1
+  },
+  "xhr/open-send-during-abort.htm": {
+    "total": 1
+  },
+  "xhr/open-send-open.htm": {
+    "total": 1
+  },
+  "xhr/open-sync-open-send.htm": {
+    "total": 1
+  },
+  "xhr/open-url-about-blank-window.htm": {
+    "total": 1
+  },
+  "xhr/open-url-base-inserted-after-open.htm": {
+    "total": 1
+  },
+  "xhr/open-url-base-inserted.htm": {
+    "total": 1
+  },
+  "xhr/open-url-base.htm": {
+    "total": 1
+  },
+  "xhr/open-url-encoding.htm": {
+    "total": 2
+  },
+  "xhr/open-url-fragment.htm": {
+    "total": 4
+  },
+  "xhr/open-url-javascript-window-2.htm": {
+    "total": 1
+  },
+  "xhr/open-url-javascript-window.htm": {
+    "total": 1
+  },
+  "xhr/open-url-multi-window-2.htm": {
+    "total": 1
+  },
+  "xhr/open-url-multi-window-3.htm": {
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: open() resolving URLs (multi-Window; 3; evil)": "FAIL"
+    }
+  },
+  "xhr/open-url-multi-window-4.htm": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: open() resolving URLs (multi-Window; 4; evil)": "TIMEOUT"
+    }
+  },
+  "xhr/open-url-multi-window-5.htm": {
+    "total": 1
+  },
+  "xhr/open-url-multi-window-6.htm": {
+    "total": 1,
+    "failures": {
+      "XMLHttpRequest: open() in document that is not fully active (but may be active) should throw": "FAIL"
+    }
+  },
+  "xhr/open-url-multi-window.htm": {
+    "total": 1
+  },
+  "xhr/open-url-redirected-sharedworker-origin.htm": {
+    "total": 3
+  },
+  "xhr/open-url-redirected-worker-origin.htm": {
+    "total": 3
+  },
+  "xhr/open-url-worker-origin.htm": {
+    "total": 3
+  },
+  "xhr/open-url-worker-simple.htm": {
+    "total": 1
+  },
+  "xhr/open-user-password-non-same-origin.htm": {
+    "total": 1
+  },
+  "xhr/over-1-meg.any.js": {
+    "total": 1
+  },
+  "xhr/over-1-meg.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/overridemimetype-blob.html": {
+    "total": 77,
+    "failures": {
+      "2) MIME types need to be parsed and serialized: TEXT/HTML;CHARSET=GBK": "FAIL",
+      "26) MIME types need to be parsed and serialized: text/html;charset= \"\u007F;charset=GBK": "FAIL",
+      "27) MIME types need to be parsed and serialized: text/html;charset=\"\u007F;charset=foo\";charset=GBK": "FAIL",
+      "37) MIME types need to be parsed and serialized: text/html;charset=\";charset=GBK": "FAIL",
+      "44) MIME types need to be parsed and serialized: !#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz;!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz": "FAIL",
+      "45) MIME types need to be parsed and serialized: x/x;x=\"\t !\\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0080\u0081\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008D\u008E\u008F\u0090\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009D\u009E\u009F\u00A0¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ\"": "FAIL",
+      "53) MIME types need to be parsed and serialized: text/html;test=ÿ;charset=gbk": "FAIL"
+    }
+  },
+  "xhr/overridemimetype-done-state.any.js": {
+    "total": 1
+  },
+  "xhr/overridemimetype-done-state.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/overridemimetype-edge-cases.window.js": {
+    "total": 4
+  },
+  "xhr/overridemimetype-headers-received-state-force-shiftjis.htm": {
+    "total": 1
+  },
+  "xhr/overridemimetype-invalid-mime-type.htm": {
+    "total": 3
+  },
+  "xhr/overridemimetype-loading-state.htm": {
+    "total": 1
+  },
+  "xhr/overridemimetype-open-state-force-utf-8.htm": {
+    "total": 1
+  },
+  "xhr/overridemimetype-open-state-force-xml.htm": {
+    "total": 1
+  },
+  "xhr/overridemimetype-unsent-state-force-shiftjis.any.js": {
+    "total": 1
+  },
+  "xhr/overridemimetype-unsent-state-force-shiftjis.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/preserve-ua-header-on-redirect.htm": {
+    "total": 2
+  },
+  "xhr/progress-events-response-data-gzip.htm": {
+    "total": 1
+  },
+  "xhr/progressevent-constructor.html": {
+    "total": 10
+  },
+  "xhr/progressevent-interface.html": {
+    "total": 7
+  },
+  "xhr/request-content-length.any.js": {
+    "total": 2
+  },
+  "xhr/request-content-length.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/response-body-errors.any.js": {
+    "total": 2
+  },
+  "xhr/response-body-errors.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "xhr/response-data-arraybuffer.htm": {
+    "total": 1
+  },
+  "xhr/response-data-blob.htm": {
+    "total": 1
+  },
+  "xhr/response-data-deflate.htm": {
+    "total": 1
+  },
+  "xhr/response-data-gzip.htm": {
+    "total": 1
+  },
+  "xhr/response-data-progress.htm": {
+    "total": 2,
+    "failures": {
+      "XMLHttpRequest: progress events grow response body size, known content-length": "FAIL",
+      "XMLHttpRequest: progress events grow response body size, unknown content-length": "FAIL"
+    }
+  },
+  "xhr/response-invalid-responsetype.htm": {
+    "total": 5
+  },
+  "xhr/response-invalid-utf8.html": {
+    "total": 1
+  },
+  "xhr/response-json-bom.html": {
+    "total": 1
+  },
+  "xhr/response-json-during-loading.html": {
+    "total": 1
+  },
+  "xhr/response-json.htm": {
+    "total": 4
+  },
+  "xhr/response-method.htm": {
+    "total": 3
+  },
+  "xhr/responseText-status.html": {
+    "total": 1
+  },
+  "xhr/responseType-document-in-worker.html": {
+    "total": 1
+  },
+  "xhr/responseXML-unavailable-in-worker.html": {
+    "total": 1
+  },
+  "xhr/responseXML-xml-scripting-support-disabled.html": {
+    "total": 5
+  },
+  "xhr/responsedocument-decoding.htm": {
+    "total": 6
+  },
+  "xhr/responsetext-decoding.htm": {
+    "total": 37
+  },
+  "xhr/responsetype.any.js": {
+    "total": 50
+  },
+  "xhr/responsetype.any.js#dedicatedworker": {
+    "total": 50
+  },
+  "xhr/responseurl-after-abort.any.js": {
+    "total": 5
+  },
+  "xhr/responseurl-after-abort.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "xhr/responseurl.html": {
+    "total": 2
+  },
+  "xhr/responsexml-basic.htm": {
+    "total": 2
+  },
+  "xhr/responsexml-document-properties.htm": {
+    "total": 24
+  },
+  "xhr/responsexml-get-twice.htm": {
+    "total": 4
+  },
+  "xhr/responsexml-invalid-type.html": {
+    "total": 1
+  },
+  "xhr/responsexml-media-type.htm": {
+    "total": 15
+  },
+  "xhr/responsexml-non-document-types.htm": {
+    "total": 5
+  },
+  "xhr/responsexml-non-well-formed.htm": {
+    "total": 7
+  },
+  "xhr/security-consideration.sub.html": {
+    "total": 1
+  },
+  "xhr/send-accept-language.htm": {
+    "total": 2
+  },
+  "xhr/send-accept.htm": {
+    "total": 1
+  },
+  "xhr/send-after-setting-document-domain.htm": {
+    "total": 3
+  },
+  "xhr/send-authentication-basic-cors-not-enabled.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic-cors.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic-repeat-no-args.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic-setrequestheader-and-arguments.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic-setrequestheader-existing-session.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic-setrequestheader.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-basic.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-competing-names-passwords.htm": {
+    "total": 13
+  },
+  "xhr/send-authentication-cors-basic-setrequestheader.htm": {
+    "total": 1
+  },
+  "xhr/send-authentication-cors-setrequestheader-no-cred.htm": {
+    "total": 2,
+    "failures": {
+      "CORS request with setRequestHeader auth to URL NOT accepting Authorization header": "FAIL"
+    }
+  },
+  "xhr/send-blob-with-no-mime-type.html": {
+    "total": 8
+  },
+  "xhr/send-conditional-cors.htm": {
+    "total": 2
+  },
+  "xhr/send-conditional.htm": {
+    "total": 2
+  },
+  "xhr/send-content-type-charset.htm": {
+    "total": 19
+  },
+  "xhr/send-content-type-string.htm": {
+    "total": 3
+  },
+  "xhr/send-data-arraybuffer.any.js": {
+    "total": 1
+  },
+  "xhr/send-data-arraybuffer.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/send-data-arraybufferview.any.js": {
+    "total": 1
+  },
+  "xhr/send-data-arraybufferview.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/send-data-blob.htm": {
+    "total": 1
+  },
+  "xhr/send-data-es-object.any.js": {
+    "total": 11
+  },
+  "xhr/send-data-es-object.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "xhr/send-data-formdata.any.js": {
+    "total": 1
+  },
+  "xhr/send-data-formdata.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/send-data-isolation.html": {
+    "total": 3
+  },
+  "xhr/send-data-sharedarraybuffer.any.js": {
+    "total": 14
+  },
+  "xhr/send-data-sharedarraybuffer.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "xhr/send-data-string-invalid-unicode.any.js": {
+    "total": 9
+  },
+  "xhr/send-data-string-invalid-unicode.any.js#dedicatedworker": {
+    "total": 9
+  },
+  "xhr/send-data-unexpected-tostring.htm": {
+    "total": 3
+  },
+  "xhr/send-document-lone-surrogate.html": {
+    "total": 1
+  },
+  "xhr/send-entity-body-basic.htm": {
+    "total": 6
+  },
+  "xhr/send-entity-body-document-bogus.htm": {
+    "total": 4
+  },
+  "xhr/send-entity-body-document.htm": {
+    "total": 7
+  },
+  "xhr/send-entity-body-empty.htm": {
+    "total": 3
+  },
+  "xhr/send-entity-body-get-head-async.htm": {
+    "total": 2
+  },
+  "xhr/send-entity-body-get-head.htm": {
+    "total": 2
+  },
+  "xhr/send-entity-body-none.htm": {
+    "total": 6
+  },
+  "xhr/send-network-error-async-events.sub.htm": {
+    "total": 1
+  },
+  "xhr/send-network-error-sync-events.sub.htm": {
+    "total": 2
+  },
+  "xhr/send-no-response-event-loadend.htm": {
+    "total": 1
+  },
+  "xhr/send-no-response-event-loadstart.htm": {
+    "total": 1
+  },
+  "xhr/send-no-response-event-order.htm": {
+    "total": 1
+  },
+  "xhr/send-non-same-origin.htm": {
+    "total": 7
+  },
+  "xhr/send-receive-utf16.htm": {
+    "total": 3
+  },
+  "xhr/send-redirect-bogus-sync.sub.htm": {
+    "total": 5
+  },
+  "xhr/send-redirect-bogus.sub.htm": {
+    "total": 4
+  },
+  "xhr/send-redirect-infinite-sync.htm": {
+    "total": 1
+  },
+  "xhr/send-redirect-infinite.htm": {
+    "total": 1
+  },
+  "xhr/send-redirect-no-location.htm": {
+    "total": 4
+  },
+  "xhr/send-redirect-post-upload.htm": {
+    "total": 5
+  },
+  "xhr/send-redirect-to-cors.htm": {
+    "total": 23
+  },
+  "xhr/send-redirect-to-non-cors.htm": {
+    "total": 4
+  },
+  "xhr/send-redirect.htm": {
+    "total": 34
+  },
+  "xhr/send-response-event-order.htm": {
+    "total": 1
+  },
+  "xhr/send-response-upload-event-loadend.htm": {
+    "total": 1
+  },
+  "xhr/send-response-upload-event-loadstart.htm": {
+    "total": 1
+  },
+  "xhr/send-response-upload-event-progress.htm": {
+    "total": 1
+  },
+  "xhr/send-send.any.js": {
+    "total": 1
+  },
+  "xhr/send-send.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/send-sync-blocks-async.htm": {
+    "total": 1
+  },
+  "xhr/send-sync-no-response-event-load.htm": {
+    "total": 1
+  },
+  "xhr/send-sync-no-response-event-loadend.htm": {
+    "total": 1
+  },
+  "xhr/send-sync-no-response-event-order.htm": {
+    "total": 1
+  },
+  "xhr/send-sync-response-event-order.htm": {
+    "total": 1
+  },
+  "xhr/send-sync-timeout.htm": {
+    "total": 1
+  },
+  "xhr/send-timeout-events.htm": {
+    "total": 1
+  },
+  "xhr/send-usp.any.js": {
+    "total": 135
+  },
+  "xhr/send-usp.any.js#dedicatedworker": {
+    "total": 135
+  },
+  "xhr/setrequestheader-after-send.htm": {
+    "total": 1
+  },
+  "xhr/setrequestheader-allow-empty-value.htm": {
+    "total": 3
+  },
+  "xhr/setrequestheader-allow-whitespace-in-value.htm": {
+    "total": 4
+  },
+  "xhr/setrequestheader-before-open.htm": {
+    "total": 1
+  },
+  "xhr/setrequestheader-bogus-name.htm": {
+    "total": 71
+  },
+  "xhr/setrequestheader-bogus-value.htm": {
+    "total": 5
+  },
+  "xhr/setrequestheader-case-insensitive.htm": {
+    "total": 2
+  },
+  "xhr/setrequestheader-combining.window.js": {
+    "total": 1
+  },
+  "xhr/setrequestheader-content-type.htm": {
+    "total": 34
+  },
+  "xhr/setrequestheader-header-allowed.htm": {
+    "total": 10
+  },
+  "xhr/setrequestheader-header-forbidden.htm": {
+    "total": 2
+  },
+  "xhr/setrequestheader-open-setrequestheader.htm": {
+    "total": 1
+  },
+  "xhr/status-async.htm": {
+    "total": 27
+  },
+  "xhr/status-basic.htm": {
+    "total": 27
+  },
+  "xhr/status-error.htm": {
+    "total": 21
+  },
+  "xhr/status.h2.window.js": {
+    "total": 7,
+    "failures": {
+      "statusText over H2 for status 200 should be the empty string": "FAIL",
+      "statusText over H2 for status 210 should be the empty string": "FAIL",
+      "statusText over H2 for status 400 should be the empty string": "FAIL",
+      "statusText over H2 for status 404 should be the empty string": "FAIL",
+      "statusText over H2 for status 410 should be the empty string": "FAIL",
+      "statusText over H2 for status 500 should be the empty string": "FAIL",
+      "statusText over H2 for status 502 should be the empty string": "FAIL"
+    }
+  },
+  "xhr/sync-no-progress.any.js": {
+    "total": 1
+  },
+  "xhr/sync-no-progress.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/sync-no-timeout.any.js": {
+    "total": 1
+  },
+  "xhr/sync-no-timeout.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "xhr/sync-no-timeout.any.js#sharedworker": {
+    "total": 1
+  },
+  "xhr/sync-xhr-and-window-onload.html": {
+    "total": 1
+  },
+  "xhr/sync-xhr-supported-by-permissions-policy.tentative.html": {
+    "total": 1
+  },
+  "xhr/template-element.html": {
+    "total": 3
+  },
+  "xhr/thrown-error-in-events.html": {
+    "total": 2
+  },
+  "xhr/timeout-cors-async.htm": {
+    "total": 1
+  },
+  "xhr/timeout-multiple-fetches.html": {
+    "total": 2
+  },
+  "xhr/timeout-sync.htm": {
+    "total": 2
+  },
+  "xhr/xhr-authorization-redirect.any.js": {
+    "total": 3
+  },
+  "xhr/xhr-authorization-redirect.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "xhr/xhr-authorization-redirect.any.js#sharedworker": {
+    "total": 3
+  },
+  "xhr/xhr-timeout-longtask.any.js": {
+    "total": 1,
+    "failures": {
+      "Long tasks should not trigger load timeout": "FAIL"
+    }
+  },
+  "xhr/xhr-timeout-longtask.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Long tasks should not trigger load timeout": "FAIL"
+    }
+  },
+  "xhr/xmlhttprequest-basic.htm": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-eventtarget.htm": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-network-error-sync.htm": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-network-error.htm": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-sync-block-defer-scripts.html": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-sync-block-scripts.html": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-sync-default-permissions-policy.tentative.sub.html": {
+    "total": 5
+  },
+  "xhr/xmlhttprequest-sync-not-hang-scriptloader.html": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-aborted.html?aborted immediately after send()": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-aborted.html?call abort() after TIME_NORMAL_LOAD": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-aborted.html?only open()ed, not aborted": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-abortedonmain.html?abort() from a 0ms timeout": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-abortedonmain.html?aborted after TIME_DELAY": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overrides.html?timeout disabled after initially set": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overrides.html?timeout enabled after initially disabled": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overrides.html?timeout overrides load after a delay": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overridesexpires.html?timeout set to expired value before load fires": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overridesexpires.html?timeout set to expiring value after load fires": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-overridesexpires.html?timeout set to non-expiring value after timeout fires": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-reused.html": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-simple.html?load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-simple.html?no time out scheduled, load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-simple.html?timeout hit before load": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-synconmain.html?timeout after open": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-synconmain.html?timeout before open": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-twice.html?load fires normally with no timeout set, twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-twice.html?load fires normally with same timeout set twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-twice.html?timeout fires normally with same timeout set twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-aborted.html?aborted immediately after send()": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-aborted.html?call abort() after TIME_NORMAL_LOAD": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-aborted.html?only open()ed, not aborted": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-overrides.html?timeout disabled after initially set": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-overrides.html?timeout enabled after initially disabled": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-overrides.html?timeout overrides load after a delay": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-overridesexpires.html?timeout set to expired value before load fires": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-overridesexpires.html?timeout set to expiring value after load fires": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-overridesexpires.html?timeout set to non-expiring value after timeout fires": {
+    "total": 3
+  },
+  "xhr/xmlhttprequest-timeout-worker-simple.html?load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-simple.html?no time out scheduled, load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-simple.html?timeout hit before load": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-synconworker.html?load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-synconworker.html?no time out scheduled, load fires normally": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-synconworker.html?timeout hit before load": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-twice.html?load fires normally with no timeout set, twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-twice.html?load fires normally with same timeout set twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-timeout-worker-twice.html?timeout fires normally with same timeout set twice": {
+    "total": 1
+  },
+  "xhr/xmlhttprequest-unsent.htm": {
+    "total": 1
+  }
+}

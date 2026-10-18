@@ -1,0 +1,1518 @@
+{
+  "spec": {
+    "title": "File API",
+    "url": "https://w3c.github.io/FileAPI/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Blob",
+          "File",
+          "FileReader"
+        ],
+        "Worker": [
+          "Blob",
+          "File",
+          "FileReader"
+        ],
+        "DedicatedWorker": [
+          "FileReaderSync"
+        ],
+        "SharedWorker": [
+          "FileReaderSync"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "FileList",
+          "URL"
+        ],
+        "Worker": [
+          "FileList"
+        ],
+        "DedicatedWorker": [
+          "URL"
+        ],
+        "SharedWorker": [
+          "URL"
+        ]
+      }
+    },
+    "idlNames": {
+      "Blob": {
+        "fragment": "[Exposed=(Window,Worker), Serializable]\ninterface Blob {\n  constructor(optional sequence<BlobPart> blobParts,\n              optional BlobPropertyBag options = {});\n\n  readonly attribute unsigned long long size;\n  readonly attribute DOMString type;\n\n  // slice Blob into byte-ranged chunks\n  Blob slice(optional [Clamp] long long start,\n            optional [Clamp] long long end,\n            optional DOMString contentType);\n\n  // read from the Blob.\n  [NewObject] ReadableStream stream();\n  [NewObject] Promise<USVString> text();\n  [NewObject] Promise<ArrayBuffer> arrayBuffer();\n  [NewObject] ReadableStream textStream();\n  [NewObject] Promise<Uint8Array> bytes();\n};",
+        "type": "interface",
+        "name": "Blob",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blobParts",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BlobPart"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BlobPropertyBag"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-blob"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dfn-size"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dfn-type"
+          },
+          {
+            "type": "operation",
+            "name": "slice",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "start",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "Clamp",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "end",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "Clamp",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "long long"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "contentType",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-slice"
+          },
+          {
+            "type": "operation",
+            "name": "stream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-stream"
+          },
+          {
+            "type": "operation",
+            "name": "text",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-text"
+          },
+          {
+            "type": "operation",
+            "name": "arrayBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-arraybuffer"
+          },
+          {
+            "type": "operation",
+            "name": "textStream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-textstream"
+          },
+          {
+            "type": "operation",
+            "name": "bytes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Uint8Array"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dom-blob-bytes"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-Blob"
+      },
+      "EndingType": {
+        "fragment": "enum EndingType { \"transparent\", \"native\" };",
+        "type": "enum",
+        "name": "EndingType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "transparent",
+            "href": "https://w3c.github.io/FileAPI/#dom-endingtype-transparent"
+          },
+          {
+            "type": "enum-value",
+            "value": "native",
+            "href": "https://w3c.github.io/FileAPI/#dom-endingtype-native"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/FileAPI/#enumdef-endingtype"
+      },
+      "BlobPropertyBag": {
+        "fragment": "dictionary BlobPropertyBag {\n  DOMString type = \"\";\n  EndingType endings = \"transparent\";\n};",
+        "type": "dictionary",
+        "name": "BlobPropertyBag",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-BPtype"
+          },
+          {
+            "type": "field",
+            "name": "endings",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EndingType"
+            },
+            "default": {
+              "type": "string",
+              "value": "transparent"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/FileAPI/#dom-blobpropertybag-endings"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-BlobPropertyBag"
+      },
+      "BlobPart": {
+        "fragment": "typedef (BufferSource or Blob or USVString) BlobPart;",
+        "type": "typedef",
+        "name": "BlobPart",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://w3c.github.io/FileAPI/#typedefdef-blobpart"
+      },
+      "File": {
+        "fragment": "[Exposed=(Window,Worker), Serializable]\ninterface File : Blob {\n  constructor(sequence<BlobPart> fileBits,\n              USVString fileName,\n              optional FilePropertyBag options = {});\n  readonly attribute DOMString name;\n  readonly attribute long long lastModified;\n};",
+        "type": "interface",
+        "name": "File",
+        "inheritance": "Blob",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "fileBits",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "BlobPart"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "fileName",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FilePropertyBag"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/FileAPI/#dom-file-file"
+          },
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dfn-name"
+          },
+          {
+            "type": "attribute",
+            "name": "lastModified",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dfn-lastModified"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-file"
+      },
+      "FilePropertyBag": {
+        "fragment": "dictionary FilePropertyBag : BlobPropertyBag {\n  long long lastModified;\n};",
+        "type": "dictionary",
+        "name": "FilePropertyBag",
+        "inheritance": "BlobPropertyBag",
+        "members": [
+          {
+            "type": "field",
+            "name": "lastModified",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-FPdate"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-FilePropertyBag"
+      },
+      "FileList": {
+        "fragment": "[Exposed=(Window,Worker), Serializable]\ninterface FileList {\n  getter File? item(unsigned long index);\n  readonly attribute unsigned long length;\n};",
+        "type": "interface",
+        "name": "FileList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "File"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dfn-length"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Serializable",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-filelist"
+      },
+      "FileReader": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FileReader: EventTarget {\n  constructor();\n  // async read methods\n  undefined readAsArrayBuffer(Blob blob);\n  undefined readAsBinaryString(Blob blob);\n  undefined readAsText(Blob blob, optional DOMString encoding);\n  undefined readAsDataURL(Blob blob);\n\n  undefined abort();\n\n  // states\n  const unsigned short EMPTY = 0;\n  const unsigned short LOADING = 1;\n  const unsigned short DONE = 2;\n\n  readonly attribute unsigned short readyState;\n\n  // File or Blob data\n  readonly attribute (DOMString or ArrayBuffer)? result;\n\n  readonly attribute DOMException? error;\n\n  // event handler content attributes\n  attribute EventHandler onloadstart;\n  attribute EventHandler onprogress;\n  attribute EventHandler onload;\n  attribute EventHandler onabort;\n  attribute EventHandler onerror;\n  attribute EventHandler onloadend;\n};",
+        "type": "interface",
+        "name": "FileReader",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/FileAPI/#filereaderConstrctr"
+          },
+          {
+            "type": "operation",
+            "name": "readAsArrayBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsArrayBuffer"
+          },
+          {
+            "type": "operation",
+            "name": "readAsBinaryString",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsBinaryString"
+          },
+          {
+            "type": "operation",
+            "name": "readAsText",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "encoding",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsText"
+          },
+          {
+            "type": "operation",
+            "name": "readAsDataURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsDataURL"
+          },
+          {
+            "type": "operation",
+            "name": "abort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-abort"
+          },
+          {
+            "type": "const",
+            "name": "EMPTY",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-empty"
+          },
+          {
+            "type": "const",
+            "name": "LOADING",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-loading"
+          },
+          {
+            "type": "const",
+            "name": "DONE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-done"
+          },
+          {
+            "type": "attribute",
+            "name": "readyState",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-readystate"
+          },
+          {
+            "type": "attribute",
+            "name": "result",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-result"
+          },
+          {
+            "type": "attribute",
+            "name": "error",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMException"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/FileAPI/#dom-filereader-error"
+          },
+          {
+            "type": "attribute",
+            "name": "onloadstart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onloadstart"
+          },
+          {
+            "type": "attribute",
+            "name": "onprogress",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onprogress"
+          },
+          {
+            "type": "attribute",
+            "name": "onload",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onload"
+          },
+          {
+            "type": "attribute",
+            "name": "onabort",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onabort"
+          },
+          {
+            "type": "attribute",
+            "name": "onerror",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onerror"
+          },
+          {
+            "type": "attribute",
+            "name": "onloadend",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/FileAPI/#dfn-onloadend"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-filereader"
+      },
+      "FileReaderSync": {
+        "fragment": "[Exposed=(DedicatedWorker,SharedWorker)]\ninterface FileReaderSync {\n  constructor();\n  // Synchronously return strings\n\n  ArrayBuffer readAsArrayBuffer(Blob blob);\n  DOMString readAsBinaryString(Blob blob);\n  DOMString readAsText(Blob blob, optional DOMString encoding);\n  DOMString readAsDataURL(Blob blob);\n};",
+        "type": "interface",
+        "name": "FileReaderSync",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/FileAPI/#dom-filereadersync-filereadersync"
+          },
+          {
+            "type": "operation",
+            "name": "readAsArrayBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ArrayBuffer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsArrayBufferSync"
+          },
+          {
+            "type": "operation",
+            "name": "readAsBinaryString",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsBinaryStringSync"
+          },
+          {
+            "type": "operation",
+            "name": "readAsText",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "encoding",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsTextSync"
+          },
+          {
+            "type": "operation",
+            "name": "readAsDataURL",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "blob",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/FileAPI/#dfn-readAsDataURLSync"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/FileAPI/#dfn-FileReaderSync"
+      }
+    },
+    "idlExtendedNames": {
+      "URL": [
+        {
+          "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker)]\npartial interface URL {\n  static DOMString createObjectURL((Blob or MediaSource) obj);\n  static undefined revokeObjectURL(DOMString url);\n};",
+          "type": "interface",
+          "name": "URL",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "createObjectURL",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "DOMString"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "obj",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "Blob"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "MediaSource"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/FileAPI/#dfn-createObjectURL"
+            },
+            {
+              "type": "operation",
+              "name": "revokeObjectURL",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "url",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "static",
+              "href": "https://w3c.github.io/FileAPI/#dfn-revokeObjectURL"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "DedicatedWorker"
+                  },
+                  {
+                    "value": "SharedWorker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Blob",
+        "File",
+        "FileList",
+        "FileReader",
+        "URL"
+      ],
+      "Worker": [
+        "Blob",
+        "File",
+        "FileList",
+        "FileReader"
+      ],
+      "DedicatedWorker": [
+        "FileReaderSync",
+        "URL"
+      ],
+      "SharedWorker": [
+        "FileReaderSync",
+        "URL"
+      ]
+    },
+    "dependencies": {
+      "Blob": [
+        "BlobPart",
+        "BlobPropertyBag",
+        "Blob",
+        "ReadableStream",
+        "ArrayBuffer",
+        "Uint8Array"
+      ],
+      "BlobPropertyBag": [
+        "EndingType"
+      ],
+      "File": [
+        "Blob",
+        "BlobPart",
+        "FilePropertyBag"
+      ],
+      "FilePropertyBag": [
+        "BlobPropertyBag"
+      ],
+      "FileList": [
+        "File"
+      ],
+      "FileReader": [
+        "EventTarget",
+        "Blob",
+        "ArrayBuffer",
+        "DOMException",
+        "EventHandler"
+      ],
+      "FileReaderSync": [
+        "ArrayBuffer",
+        "Blob"
+      ],
+      "URL": [
+        "Blob",
+        "MediaSource"
+      ]
+    },
+    "externalDependencies": [
+      "ReadableStream",
+      "ArrayBuffer",
+      "Uint8Array",
+      "BufferSource",
+      "EventTarget",
+      "DOMException",
+      "EventHandler",
+      "URL",
+      "MediaSource"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

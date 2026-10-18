@@ -18,6 +18,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.TdsServer.Fuzz", TdsServer.Fuzz.TdsServerFuzzTargets.All),
         ("Meziantou.Framework.Toml.Fuzz", Toml.Fuzz.TomlFuzzTargets.All),
         ("Meziantou.Framework.Unicode.Fuzz", UnicodeFuzz.UnicodeFuzzTargets.All),
+        ("Meziantou.Framework.WebPlatform.Fuzz", WebPlatform.Fuzz.WebPlatformFuzzTargets.All),
         ("Meziantou.Framework.Yaml.Fuzz", Yaml.Fuzz.YamlFuzzTargets.All),
     ];
 

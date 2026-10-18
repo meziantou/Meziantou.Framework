@@ -1,0 +1,15 @@
+{
+  "main": {
+    "apc": {
+      "identity": {
+        "language": "apc"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

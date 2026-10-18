@@ -1,0 +1,15 @@
+{
+  "main": {
+    "pi": {
+      "identity": {
+        "language": "pi"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "spec": {
+    "title": "MathML Core",
+    "url": "https://w3c.github.io/mathml-core/"
+  },
+  "elements": [
+    {
+      "name": "math",
+      "href": "https://w3c.github.io/mathml-core/#dfn-math",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mtext",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mtext",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mi",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mi",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mn",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mn",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mo",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mo",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mspace",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mspace",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "ms",
+      "href": "https://w3c.github.io/mathml-core/#dfn-ms",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mrow",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mrow",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mfrac",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mfrac",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "msqrt",
+      "href": "https://w3c.github.io/mathml-core/#dfn-msqrt",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mroot",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mroot",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mstyle",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mstyle",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "merror",
+      "href": "https://w3c.github.io/mathml-core/#dfn-merror",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mpadded",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mpadded",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mphantom",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mphantom",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "msub",
+      "href": "https://w3c.github.io/mathml-core/#dfn-msub",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "msup",
+      "href": "https://w3c.github.io/mathml-core/#dfn-msup",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "msubsup",
+      "href": "https://w3c.github.io/mathml-core/#dfn-msubsup",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "munder",
+      "href": "https://w3c.github.io/mathml-core/#dfn-munder",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mover",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mover",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "munderover",
+      "href": "https://w3c.github.io/mathml-core/#dfn-munderover",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mmultiscripts",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mmultiscripts",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mprescripts",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mprescripts",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mtable",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mtable",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mtr",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mtr",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "mtd",
+      "href": "https://w3c.github.io/mathml-core/#dfn-mtd",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "a",
+      "href": "https://w3c.github.io/mathml-core/#dfn-a",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "maction",
+      "href": "https://w3c.github.io/mathml-core/#dfn-maction",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "semantics",
+      "href": "https://w3c.github.io/mathml-core/#dfn-semantics",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "annotation",
+      "href": "https://w3c.github.io/mathml-core/#dfn-annotation",
+      "interface": "MathMLElement"
+    },
+    {
+      "name": "annotation-xml",
+      "href": "https://w3c.github.io/mathml-core/#dfn-annotation-xml",
+      "interface": "MathMLElement"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mhn": {
+      "identity": {
+        "language": "mhn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

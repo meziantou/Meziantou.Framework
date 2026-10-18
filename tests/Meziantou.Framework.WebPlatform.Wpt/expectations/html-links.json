@@ -1,0 +1,20 @@
+{
+  "html/links/icon/no-error-event.sub.html": {
+    "total": 1
+  },
+  "html/links/icon/no-load-event.html": {
+    "total": 1
+  },
+  "html/links/manifest/link-relationship/link-rel-manifest.html": {
+    "total": 1
+  },
+  "html/links/stylesheet/quirk-origin-check-positive.html": {
+    "total": 1
+  },
+  "html/links/stylesheet/quirk-origin-check-recursive-import.html": {
+    "total": 1
+  },
+  "html/links/stylesheet/quirk-origin-check.html": {
+    "total": 1
+  }
+}

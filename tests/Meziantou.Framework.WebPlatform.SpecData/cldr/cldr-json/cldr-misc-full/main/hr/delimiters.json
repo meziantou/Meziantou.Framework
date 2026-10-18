@@ -1,0 +1,15 @@
+{
+  "main": {
+    "hr": {
+      "identity": {
+        "language": "hr"
+      },
+      "delimiters": {
+        "quotationStart": "„",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "‚",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

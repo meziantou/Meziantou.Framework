@@ -1,0 +1,8 @@
+{
+  "html/select/options-length-too-large.html": {
+    "total": 5
+  },
+  "html/select/select-capitalize-sizing.html": {
+    "reftest": "PASS"
+  }
+}

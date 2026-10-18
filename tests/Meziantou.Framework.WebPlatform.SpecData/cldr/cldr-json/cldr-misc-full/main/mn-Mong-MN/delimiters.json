@@ -1,0 +1,17 @@
+{
+  "main": {
+    "mn-Mong-MN": {
+      "identity": {
+        "language": "mn",
+        "script": "Mong",
+        "territory": "MN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

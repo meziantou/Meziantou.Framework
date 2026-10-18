@@ -1,0 +1,16 @@
+{
+  "main": {
+    "es-PY": {
+      "identity": {
+        "language": "es",
+        "territory": "PY"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

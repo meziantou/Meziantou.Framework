@@ -1,0 +1,15 @@
+{
+  "main": {
+    "yi": {
+      "identity": {
+        "language": "yi"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "tn-BW": {
+      "identity": {
+        "language": "tn",
+        "territory": "BW"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

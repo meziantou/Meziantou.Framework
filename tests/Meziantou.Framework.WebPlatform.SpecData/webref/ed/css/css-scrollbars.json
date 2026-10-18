@@ -1,0 +1,82 @@
+{
+  "spec": {
+    "title": "CSS Scrollbars Styling Module Level 1",
+    "url": "https://drafts.csswg.org/css-scrollbars-1/"
+  },
+  "properties": [
+    {
+      "name": "scrollbar-color",
+      "href": "https://drafts.csswg.org/css-scrollbars-1/#propdef-scrollbar-color",
+      "value": "auto | <color>{2}",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword or two computed colors",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The user agent determines the colors of the scrollbar. It should follow platform conventions, but may adjust the colors in accordance with color-scheme or other contextual information to better suit the page.",
+          "href": "https://drafts.csswg.org/css-scrollbars-1/#valdef-scrollbar-color-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<color>",
+          "prose": "The user agent should use the specified colors to adjust the rendering of the element’s scollbars, if any, applying the first color to the thumb of the scrollbar, and the second color to the track of the scrollbar.",
+          "href": "https://drafts.csswg.org/css-scrollbars-1/#valdef-scrollbar-color-color",
+          "type": "value",
+          "value": "<color>"
+        }
+      ],
+      "styleDeclaration": [
+        "scrollbar-color",
+        "scrollbarColor"
+      ]
+    },
+    {
+      "name": "scrollbar-width",
+      "href": "https://drafts.csswg.org/css-scrollbars-1/#propdef-scrollbar-width",
+      "value": "auto | thin | none",
+      "initial": "auto",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Implementations must use the default scrollbar width.",
+          "href": "https://drafts.csswg.org/css-scrollbars-1/#valdef-scrollbar-width-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "thin",
+          "prose": "Implementations should use thinner scrollbars than auto. This may mean a thin variant of scrollbar provided by the platform, or a custom scrollbar thinner than the default platform scrollbar. The scrollbar must nonetheless remain wide enough to be usable. (Implementers may wish to consult WCAG 2.1 SC 2.5.5 Target Size. [WCAG21]) User agents may disregard this value and treat it as auto, for instance when the user has indicated discomfort for thin scrollbars through some UA or OS setting. (User agents are encouraged to provide such a setting.)",
+          "href": "https://drafts.csswg.org/css-scrollbars-1/#valdef-scrollbar-width-thin",
+          "type": "value",
+          "value": "thin"
+        },
+        {
+          "name": "none",
+          "prose": "Implementations must not display any scrollbar, however the element’s scrollability by other means is not affected. Using this value can prevent mouse-only users from being able to scroll. Authors should ensure that mouse-only users can still reach hidden content, even if they have no scrollwheel. Authors that use none should provide an alternative/equivalent visual hint that scrolling is possible and there is more content.",
+          "href": "https://drafts.csswg.org/css-scrollbars-1/#valdef-scrollbar-width-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "scrollbar-width",
+        "scrollbarWidth"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

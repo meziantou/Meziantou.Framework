@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-PW": {
+      "identity": {
+        "language": "en",
+        "territory": "PW"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

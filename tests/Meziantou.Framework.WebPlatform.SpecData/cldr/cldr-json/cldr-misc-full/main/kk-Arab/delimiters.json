@@ -1,0 +1,16 @@
+{
+  "main": {
+    "kk-Arab": {
+      "identity": {
+        "language": "kk",
+        "script": "Arab"
+      },
+      "delimiters": {
+        "quotationStart": "»",
+        "quotationEnd": "«",
+        "alternateQuotationStart": "›",
+        "alternateQuotationEnd": "‹"
+      }
+    }
+  }
+}

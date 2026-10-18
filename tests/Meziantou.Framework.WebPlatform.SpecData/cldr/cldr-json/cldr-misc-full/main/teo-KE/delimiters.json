@@ -1,0 +1,16 @@
+{
+  "main": {
+    "teo-KE": {
+      "identity": {
+        "language": "teo",
+        "territory": "KE"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

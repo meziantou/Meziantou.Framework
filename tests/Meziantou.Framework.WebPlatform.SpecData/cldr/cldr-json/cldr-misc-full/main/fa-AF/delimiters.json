@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fa-AF": {
+      "identity": {
+        "language": "fa",
+        "territory": "AF"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‹",
+        "alternateQuotationEnd": "›"
+      }
+    }
+  }
+}

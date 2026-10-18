@@ -1,0 +1,3 @@
+semantics > :not(:first-child) {
+  display: none;
+}

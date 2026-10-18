@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-TC": {
+      "identity": {
+        "language": "en",
+        "territory": "TC"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

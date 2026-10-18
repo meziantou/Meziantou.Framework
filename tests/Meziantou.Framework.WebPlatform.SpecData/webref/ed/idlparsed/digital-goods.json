@@ -1,0 +1,568 @@
+{
+  "spec": {
+    "title": "Digital Goods API",
+    "url": "https://wicg.github.io/digital-goods/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "DigitalGoodsService"
+        ]
+      }
+    },
+    "idlNames": {
+      "DigitalGoodsService": {
+        "fragment": "[Exposed=Window, SecureContext] interface DigitalGoodsService {\n\n  Promise<sequence<ItemDetails>> getDetails(sequence<DOMString> itemIds);\n\n  Promise<sequence<PurchaseDetails>> listPurchases();\n\n  Promise<sequence<PurchaseDetails>> listPurchaseHistory();\n\n  Promise<undefined> consume(DOMString purchaseToken);\n};",
+        "type": "interface",
+        "name": "DigitalGoodsService",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "getDetails",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ItemDetails"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "itemIds",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/digital-goods/#dom-digitalgoodsservice-getdetails"
+          },
+          {
+            "type": "operation",
+            "name": "listPurchases",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "PurchaseDetails"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/digital-goods/#dom-digitalgoodsservice-listpurchases"
+          },
+          {
+            "type": "operation",
+            "name": "listPurchaseHistory",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "PurchaseDetails"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/digital-goods/#dom-digitalgoodsservice-listpurchasehistory"
+          },
+          {
+            "type": "operation",
+            "name": "consume",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "purchaseToken",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/digital-goods/#dom-digitalgoodsservice-consume"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/digital-goods/#digitalgoodsservice"
+      },
+      "ItemDetails": {
+        "fragment": "dictionary ItemDetails {\n  required DOMString itemId;\n  required DOMString title;\n  required PaymentCurrencyAmount price;\n  ItemType type;\n  DOMString description;\n  sequence<DOMString> iconURLs;\n  DOMString subscriptionPeriod;\n  DOMString freeTrialPeriod;\n  PaymentCurrencyAmount introductoryPrice;\n  DOMString introductoryPricePeriod;\n  [EnforceRange] unsigned long long introductoryPriceCycles;\n};",
+        "type": "dictionary",
+        "name": "ItemDetails",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "itemId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-itemid"
+          },
+          {
+            "type": "field",
+            "name": "title",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-title"
+          },
+          {
+            "type": "field",
+            "name": "price",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PaymentCurrencyAmount"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-price"
+          },
+          {
+            "type": "field",
+            "name": "type",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ItemType"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-type"
+          },
+          {
+            "type": "field",
+            "name": "description",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-description"
+          },
+          {
+            "type": "field",
+            "name": "iconURLs",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-iconurls"
+          },
+          {
+            "type": "field",
+            "name": "subscriptionPeriod",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-subscriptionperiod"
+          },
+          {
+            "type": "field",
+            "name": "freeTrialPeriod",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-freetrialperiod"
+          },
+          {
+            "type": "field",
+            "name": "introductoryPrice",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PaymentCurrencyAmount"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-introductoryprice"
+          },
+          {
+            "type": "field",
+            "name": "introductoryPricePeriod",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-introductorypriceperiod"
+          },
+          {
+            "type": "field",
+            "name": "introductoryPriceCycles",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/digital-goods/#dom-itemdetails-introductorypricecycles"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/digital-goods/#dictdef-itemdetails"
+      },
+      "ItemType": {
+        "fragment": "enum ItemType {\n  \"product\",\n  \"subscription\",\n};",
+        "type": "enum",
+        "name": "ItemType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "product",
+            "href": "https://wicg.github.io/digital-goods/#dom-itemtype-product"
+          },
+          {
+            "type": "enum-value",
+            "value": "subscription",
+            "href": "https://wicg.github.io/digital-goods/#dom-itemtype-subscription"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/digital-goods/#enumdef-itemtype"
+      },
+      "PurchaseDetails": {
+        "fragment": "dictionary PurchaseDetails {\n  required DOMString itemId;\n  required DOMString purchaseToken;\n};",
+        "type": "dictionary",
+        "name": "PurchaseDetails",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "itemId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/digital-goods/#dom-purchasedetails-itemid"
+          },
+          {
+            "type": "field",
+            "name": "purchaseToken",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/digital-goods/#dom-purchasedetails-purchasetoken"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/digital-goods/#dictdef-purchasedetails"
+      }
+    },
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  [SecureContext] Promise<DigitalGoodsService> getDigitalGoodsService(\n      DOMString serviceProvider);\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getDigitalGoodsService",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DigitalGoodsService"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "serviceProvider",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://wicg.github.io/digital-goods/#dom-window-getdigitalgoodsservice"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "DigitalGoodsService"
+      ]
+    },
+    "dependencies": {
+      "Window": [
+        "DigitalGoodsService"
+      ],
+      "DigitalGoodsService": [
+        "ItemDetails",
+        "PurchaseDetails"
+      ],
+      "ItemDetails": [
+        "PaymentCurrencyAmount",
+        "ItemType"
+      ],
+      "PurchaseDetails": []
+    },
+    "externalDependencies": [
+      "Window",
+      "PaymentCurrencyAmount"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

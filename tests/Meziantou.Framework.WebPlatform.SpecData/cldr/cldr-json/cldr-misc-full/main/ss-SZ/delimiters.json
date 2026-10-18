@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ss-SZ": {
+      "identity": {
+        "language": "ss",
+        "territory": "SZ"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

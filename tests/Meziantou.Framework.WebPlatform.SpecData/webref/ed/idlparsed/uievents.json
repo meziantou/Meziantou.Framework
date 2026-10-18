@@ -1,0 +1,2074 @@
+{
+  "spec": {
+    "title": "UI Events",
+    "url": "https://w3c.github.io/uievents/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "UIEvent",
+          "FocusEvent",
+          "InputEvent",
+          "KeyboardEvent",
+          "CompositionEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "TextEvent"
+        ]
+      }
+    },
+    "idlNames": {
+      "UIEvent": {
+        "fragment": "[Exposed=Window]\ninterface UIEvent : Event {\n  constructor(DOMString type, optional UIEventInit eventInitDict = {});\n  readonly attribute Window? view;\n  readonly attribute long detail;\n};",
+        "type": "interface",
+        "name": "UIEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "UIEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/uievents/#dom-uievent-uievent"
+          },
+          {
+            "type": "attribute",
+            "name": "view",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Window"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-uievent-view"
+          },
+          {
+            "type": "attribute",
+            "name": "detail",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-uievent-detail"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#uievent"
+      },
+      "UIEventInit": {
+        "fragment": "dictionary UIEventInit : EventInit {\n  Window? view = null;\n  long detail = 0;\n};",
+        "type": "dictionary",
+        "name": "UIEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "view",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Window"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-uieventinit-view"
+          },
+          {
+            "type": "field",
+            "name": "detail",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-uieventinit-detail"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-uieventinit"
+      },
+      "FocusEvent": {
+        "fragment": "[Exposed=Window]\ninterface FocusEvent : UIEvent {\n  constructor(DOMString type, optional FocusEventInit eventInitDict = {});\n  readonly attribute EventTarget? relatedTarget;\n};",
+        "type": "interface",
+        "name": "FocusEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FocusEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/uievents/#dom-focusevent-focusevent"
+          },
+          {
+            "type": "attribute",
+            "name": "relatedTarget",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-focusevent-relatedtarget"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#focusevent"
+      },
+      "FocusEventInit": {
+        "fragment": "dictionary FocusEventInit : UIEventInit {\n  EventTarget? relatedTarget = null;\n};",
+        "type": "dictionary",
+        "name": "FocusEventInit",
+        "inheritance": "UIEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "relatedTarget",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "EventTarget"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-focuseventinit-relatedtarget"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-focuseventinit"
+      },
+      "InputEvent": {
+        "fragment": "[Exposed=Window]\ninterface InputEvent : UIEvent {\n  constructor(DOMString type, optional InputEventInit eventInitDict = {});\n  readonly attribute USVString? data;\n  readonly attribute boolean isComposing;\n  readonly attribute DOMString inputType;\n};",
+        "type": "interface",
+        "name": "InputEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "InputEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/uievents/#dom-inputevent-inputevent"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-inputevent-data"
+          },
+          {
+            "type": "attribute",
+            "name": "isComposing",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-inputevent-iscomposing"
+          },
+          {
+            "type": "attribute",
+            "name": "inputType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-inputevent-inputtype"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#inputevent"
+      },
+      "InputEventInit": {
+        "fragment": "dictionary InputEventInit : UIEventInit {\n  DOMString? data = null;\n  boolean isComposing = false;\n  DOMString inputType = \"\";\n};",
+        "type": "dictionary",
+        "name": "InputEventInit",
+        "inheritance": "UIEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-inputeventinit-data"
+          },
+          {
+            "type": "field",
+            "name": "isComposing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-inputeventinit-iscomposing"
+          },
+          {
+            "type": "field",
+            "name": "inputType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-inputeventinit-inputtype"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-inputeventinit"
+      },
+      "KeyboardEvent": {
+        "fragment": "[Exposed=Window]\ninterface KeyboardEvent : UIEvent {\n  constructor(DOMString type, optional KeyboardEventInit eventInitDict = {});\n  // KeyLocationCode\n  const unsigned long DOM_KEY_LOCATION_STANDARD = 0x00;\n  const unsigned long DOM_KEY_LOCATION_LEFT = 0x01;\n  const unsigned long DOM_KEY_LOCATION_RIGHT = 0x02;\n  const unsigned long DOM_KEY_LOCATION_NUMPAD = 0x03;\n\n  readonly attribute DOMString key;\n  readonly attribute DOMString code;\n  readonly attribute unsigned long location;\n\n  readonly attribute boolean ctrlKey;\n  readonly attribute boolean shiftKey;\n  readonly attribute boolean altKey;\n  readonly attribute boolean metaKey;\n\n  readonly attribute boolean repeat;\n  readonly attribute boolean isComposing;\n\n  boolean getModifierState(DOMString keyArg);\n};",
+        "type": "interface",
+        "name": "KeyboardEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "KeyboardEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-keyboardevent"
+          },
+          {
+            "type": "const",
+            "name": "DOM_KEY_LOCATION_STANDARD",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x00"
+            },
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-dom_key_location_standard"
+          },
+          {
+            "type": "const",
+            "name": "DOM_KEY_LOCATION_LEFT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x01"
+            },
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-dom_key_location_left"
+          },
+          {
+            "type": "const",
+            "name": "DOM_KEY_LOCATION_RIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x02"
+            },
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-dom_key_location_right"
+          },
+          {
+            "type": "const",
+            "name": "DOM_KEY_LOCATION_NUMPAD",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x03"
+            },
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-dom_key_location_numpad"
+          },
+          {
+            "type": "attribute",
+            "name": "key",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-key"
+          },
+          {
+            "type": "attribute",
+            "name": "code",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-code"
+          },
+          {
+            "type": "attribute",
+            "name": "location",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-location"
+          },
+          {
+            "type": "attribute",
+            "name": "ctrlKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-ctrlkey"
+          },
+          {
+            "type": "attribute",
+            "name": "shiftKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-shiftkey"
+          },
+          {
+            "type": "attribute",
+            "name": "altKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-altkey"
+          },
+          {
+            "type": "attribute",
+            "name": "metaKey",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-metakey"
+          },
+          {
+            "type": "attribute",
+            "name": "repeat",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-repeat"
+          },
+          {
+            "type": "attribute",
+            "name": "isComposing",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-iscomposing"
+          },
+          {
+            "type": "operation",
+            "name": "getModifierState",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "keyArg",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/uievents/#dom-keyboardevent-getmodifierstate"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#keyboardevent"
+      },
+      "KeyboardEventInit": {
+        "fragment": "dictionary KeyboardEventInit : EventModifierInit {\n  DOMString key = \"\";\n  DOMString code = \"\";\n  unsigned long location = 0;\n  boolean repeat = false;\n  boolean isComposing = false;\n};",
+        "type": "dictionary",
+        "name": "KeyboardEventInit",
+        "inheritance": "EventModifierInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "key",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-key"
+          },
+          {
+            "type": "field",
+            "name": "code",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-code"
+          },
+          {
+            "type": "field",
+            "name": "location",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-location"
+          },
+          {
+            "type": "field",
+            "name": "repeat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-repeat"
+          },
+          {
+            "type": "field",
+            "name": "isComposing",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-iscomposing"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-keyboardeventinit"
+      },
+      "EventModifierInit": {
+        "fragment": "dictionary EventModifierInit : UIEventInit {\n  boolean ctrlKey = false;\n  boolean shiftKey = false;\n  boolean altKey = false;\n  boolean metaKey = false;\n\n  boolean modifierAltGraph = false;\n  boolean modifierCapsLock = false;\n  boolean modifierFn = false;\n  boolean modifierFnLock = false;\n  boolean modifierHyper = false;\n  boolean modifierNumLock = false;\n  boolean modifierScrollLock = false;\n  boolean modifierSuper = false;\n  boolean modifierSymbol = false;\n  boolean modifierSymbolLock = false;\n};",
+        "type": "dictionary",
+        "name": "EventModifierInit",
+        "inheritance": "UIEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "ctrlKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-ctrlkey"
+          },
+          {
+            "type": "field",
+            "name": "shiftKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-shiftkey"
+          },
+          {
+            "type": "field",
+            "name": "altKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-altkey"
+          },
+          {
+            "type": "field",
+            "name": "metaKey",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-metakey"
+          },
+          {
+            "type": "field",
+            "name": "modifierAltGraph",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifieraltgraph"
+          },
+          {
+            "type": "field",
+            "name": "modifierCapsLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifiercapslock"
+          },
+          {
+            "type": "field",
+            "name": "modifierFn",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifierfn"
+          },
+          {
+            "type": "field",
+            "name": "modifierFnLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifierfnlock"
+          },
+          {
+            "type": "field",
+            "name": "modifierHyper",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifierhyper"
+          },
+          {
+            "type": "field",
+            "name": "modifierNumLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifiernumlock"
+          },
+          {
+            "type": "field",
+            "name": "modifierScrollLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifierscrolllock"
+          },
+          {
+            "type": "field",
+            "name": "modifierSuper",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifiersuper"
+          },
+          {
+            "type": "field",
+            "name": "modifierSymbol",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifiersymbol"
+          },
+          {
+            "type": "field",
+            "name": "modifierSymbolLock",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-eventmodifierinit-modifiersymbollock"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-eventmodifierinit"
+      },
+      "CompositionEvent": {
+        "fragment": "[Exposed=Window]\ninterface CompositionEvent : UIEvent {\n  constructor(DOMString type, optional CompositionEventInit eventInitDict = {});\n  readonly attribute USVString data;\n};",
+        "type": "interface",
+        "name": "CompositionEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CompositionEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/uievents/#dom-compositionevent-compositionevent"
+          },
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-compositionevent-data"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#compositionevent"
+      },
+      "CompositionEventInit": {
+        "fragment": "dictionary CompositionEventInit : UIEventInit {\n  DOMString data = \"\";\n};",
+        "type": "dictionary",
+        "name": "CompositionEventInit",
+        "inheritance": "UIEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "data",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://w3c.github.io/uievents/#dom-compositioneventinit-data"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#dictdef-compositioneventinit"
+      },
+      "TextEvent": {
+        "fragment": "[Exposed=Window]\ninterface TextEvent : UIEvent {\n    readonly attribute DOMString data;\n    undefined initTextEvent(DOMString type,\n        optional boolean bubbles = false,\n        optional boolean cancelable = false,\n        optional Window? view = null,\n        optional DOMString data = \"undefined\");\n};",
+        "type": "interface",
+        "name": "TextEvent",
+        "inheritance": "UIEvent",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "data",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/uievents/#dom-textevent-data"
+          },
+          {
+            "type": "operation",
+            "name": "initTextEvent",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "bubbles",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "cancelable",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                },
+                "default": {
+                  "type": "boolean",
+                  "value": false
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "view",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "Window"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "undefined"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/uievents/#dom-textevent-inittextevent"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/uievents/#textevent"
+      }
+    },
+    "idlExtendedNames": {
+      "UIEvent": [
+        {
+          "fragment": "partial interface UIEvent {\n  // Deprecated in this specification\n  undefined initUIEvent(DOMString typeArg,\n    optional boolean bubblesArg = false,\n    optional boolean cancelableArg = false,\n    optional Window? viewArg = null,\n    optional long detailArg = 0);\n};",
+          "type": "interface",
+          "name": "UIEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "initUIEvent",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "typeArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "bubblesArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "cancelableArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "viewArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "Window"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "detailArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/uievents/#dom-uievent-inituievent"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface UIEvent {\n  // The following support legacy user agents\n  readonly attribute unsigned long which;\n};",
+          "type": "interface",
+          "name": "UIEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "which",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/uievents/#dom-uievent-which"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "KeyboardEvent": [
+        {
+          "fragment": "partial interface KeyboardEvent {\n  // Originally introduced (and deprecated) in this specification\n  undefined initKeyboardEvent(DOMString typeArg,\n    optional boolean bubblesArg = false,\n    optional boolean cancelableArg = false,\n    optional Window? viewArg = null,\n    optional DOMString keyArg = \"\",\n    optional unsigned long locationArg = 0,\n    optional boolean ctrlKey = false,\n    optional boolean altKey = false,\n    optional boolean shiftKey = false,\n    optional boolean metaKey = false);\n};",
+          "type": "interface",
+          "name": "KeyboardEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "initKeyboardEvent",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "typeArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "bubblesArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "cancelableArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "viewArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "Window"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "keyArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": {
+                    "type": "string",
+                    "value": ""
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "locationArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "ctrlKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "altKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "shiftKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "metaKey",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/uievents/#dom-keyboardevent-initkeyboardevent"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        },
+        {
+          "fragment": "partial interface KeyboardEvent {\n  // The following support legacy user agents\n  readonly attribute unsigned long charCode;\n  readonly attribute unsigned long keyCode;\n};",
+          "type": "interface",
+          "name": "KeyboardEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "charCode",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/uievents/#dom-keyboardevent-charcode"
+            },
+            {
+              "type": "attribute",
+              "name": "keyCode",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/uievents/#dom-keyboardevent-keycode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "CompositionEvent": [
+        {
+          "fragment": "partial interface CompositionEvent {\n  // Originally introduced (and deprecated) in this specification\n  undefined initCompositionEvent(DOMString typeArg,\n    optional boolean bubblesArg = false,\n    optional boolean cancelableArg = false,\n    optional WindowProxy? viewArg = null,\n    optional DOMString dataArg = \"\");\n};",
+          "type": "interface",
+          "name": "CompositionEvent",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "initCompositionEvent",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "typeArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "bubblesArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "cancelableArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean",
+                    "value": false
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "viewArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "WindowProxy"
+                  },
+                  "default": {
+                    "type": "null"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "dataArg",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": {
+                    "type": "string",
+                    "value": ""
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/uievents/#dom-compositionevent-initcompositionevent"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "UIEventInit": [
+        {
+          "fragment": "partial dictionary UIEventInit {\n  unsigned long which = 0;\n};",
+          "type": "dictionary",
+          "name": "UIEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "which",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "default": {
+                "type": "number",
+                "value": "0"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/uievents/#dom-uieventinit-which"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "KeyboardEventInit": [
+        {
+          "fragment": "partial dictionary KeyboardEventInit {\n  // The following support legacy user agents\n  unsigned long charCode = 0;\n  unsigned long keyCode = 0;\n};",
+          "type": "dictionary",
+          "name": "KeyboardEventInit",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "charCode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "default": {
+                "type": "number",
+                "value": "0"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-charcode"
+            },
+            {
+              "type": "field",
+              "name": "keyCode",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "default": {
+                "type": "number",
+                "value": "0"
+              },
+              "required": false,
+              "href": "https://w3c.github.io/uievents/#dom-keyboardeventinit-keycode"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "UIEvent",
+        "FocusEvent",
+        "InputEvent",
+        "KeyboardEvent",
+        "CompositionEvent",
+        "TextEvent"
+      ]
+    },
+    "dependencies": {
+      "UIEvent": [
+        "Event",
+        "UIEventInit",
+        "Window"
+      ],
+      "UIEventInit": [
+        "EventInit",
+        "Window"
+      ],
+      "FocusEvent": [
+        "UIEvent",
+        "FocusEventInit",
+        "EventTarget"
+      ],
+      "FocusEventInit": [
+        "UIEventInit",
+        "EventTarget"
+      ],
+      "InputEvent": [
+        "UIEvent",
+        "InputEventInit"
+      ],
+      "InputEventInit": [
+        "UIEventInit"
+      ],
+      "KeyboardEvent": [
+        "UIEvent",
+        "KeyboardEventInit",
+        "Window"
+      ],
+      "KeyboardEventInit": [
+        "EventModifierInit"
+      ],
+      "EventModifierInit": [
+        "UIEventInit"
+      ],
+      "CompositionEvent": [
+        "UIEvent",
+        "CompositionEventInit",
+        "WindowProxy"
+      ],
+      "CompositionEventInit": [
+        "UIEventInit"
+      ],
+      "TextEvent": [
+        "UIEvent",
+        "Window"
+      ]
+    },
+    "externalDependencies": [
+      "Event",
+      "Window",
+      "EventInit",
+      "EventTarget",
+      "WindowProxy"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

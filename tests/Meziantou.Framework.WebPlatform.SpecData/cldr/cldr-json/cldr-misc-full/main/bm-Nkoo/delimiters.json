@@ -1,0 +1,16 @@
+{
+  "main": {
+    "bm-Nkoo": {
+      "identity": {
+        "language": "bm",
+        "script": "Nkoo"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

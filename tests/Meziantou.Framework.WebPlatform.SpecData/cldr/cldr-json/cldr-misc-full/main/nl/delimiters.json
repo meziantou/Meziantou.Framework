@@ -1,0 +1,15 @@
+{
+  "main": {
+    "nl": {
+      "identity": {
+        "language": "nl"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

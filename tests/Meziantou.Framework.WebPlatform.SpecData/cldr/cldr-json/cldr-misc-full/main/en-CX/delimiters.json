@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-CX": {
+      "identity": {
+        "language": "en",
+        "territory": "CX"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

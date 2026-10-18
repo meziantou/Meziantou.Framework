@@ -1,0 +1,484 @@
+{
+  "spec": {
+    "title": "CSS Box Alignment Module Level 3",
+    "url": "https://drafts.csswg.org/css-align-3/"
+  },
+  "properties": [
+    {
+      "name": "align-content",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-align-content",
+      "value": "normal | <baseline-position> | <content-distribution> | <overflow-position>? <content-position>",
+      "initial": "normal",
+      "appliesTo": "block containers, multicol containers, flex containers, and grid containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "Aligns the contents of the box as a whole (as the alignment subject) within the box itself (as the alignment container): along the inline/row/main axis of the box (for justify-content) or the block/column/cross axis of the box (for align-content). Values other than normal are defined in § 4 Alignment Keywords, above.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-normal",
+          "type": "value",
+          "value": "normal"
+        }
+      ],
+      "styleDeclaration": [
+        "align-content",
+        "alignContent"
+      ]
+    },
+    {
+      "name": "justify-content",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-justify-content",
+      "value": "normal | <content-distribution> | <overflow-position>? [ <content-position> | left | right ]",
+      "initial": "normal",
+      "appliesTo": "multicol containers, flex containers, and grid containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "left",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-left or physical left edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-right or physical right edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "normal",
+          "prose": "Aligns the contents of the box as a whole (as the alignment subject) within the box itself (as the alignment container): along the inline/row/main axis of the box (for justify-content) or the block/column/cross axis of the box (for align-content). Values other than normal are defined in § 4 Alignment Keywords, above.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-normal",
+          "type": "value",
+          "value": "normal"
+        }
+      ],
+      "styleDeclaration": [
+        "justify-content",
+        "justifyContent"
+      ]
+    },
+    {
+      "name": "place-content",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-place-content",
+      "value": "<'align-content'> <'justify-content'>?",
+      "initial": "normal",
+      "appliesTo": "see individual properties",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "place-content",
+        "placeContent"
+      ],
+      "longhands": [
+        "align-content",
+        "justify-content"
+      ]
+    },
+    {
+      "name": "justify-self",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-justify-self",
+      "value": "auto | <overflow-position>? [ normal | <self-position> | left | right ] | stretch | <baseline-position>",
+      "initial": "auto",
+      "appliesTo": "block-level boxes, absolutely-positioned boxes, and grid items",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "left",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-left or physical left edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-right or physical right edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "auto",
+          "prose": "Behaves as normal if the box has no parent, or when determining the actual position of an absolutely positioned box. It behaves as the computed justify-items value of the parent box (minus any legacy keywords) otherwise (including when determining the static position of an absolutely positioned box).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "normal",
+          "prose": "Represents the “default” alignment for the layout mode. Its behavior depends on the layout mode, as described below.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "stretch",
+          "prose": "When the box’s computed width/height (as appropriate to the axis) is auto and neither of its margins (in the appropriate axis) are auto, sets the box’s used size to the length necessary to make its outer size as close to filling the alignment container as possible while still respecting the constraints imposed by min-height/min-width/max-height/max-width. Unless otherwise specified, this value falls back to flex-start generally, and to self-start or self-end if the box has also specified first baseline or last baseline baseline content-alignment (respectively) in the same axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-stretch",
+          "type": "value",
+          "value": "stretch"
+        }
+      ],
+      "styleDeclaration": [
+        "justify-self",
+        "justifySelf"
+      ]
+    },
+    {
+      "name": "align-self",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-align-self",
+      "value": "auto | <overflow-position>? [ normal | <self-position> ]| stretch | <baseline-position>",
+      "initial": "auto",
+      "appliesTo": "flex items, grid items, and absolutely-positioned boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Behaves as normal if the box has no parent, or when determining the actual position of an absolutely positioned box. It behaves as the computed align-items value of the parent box (minus any legacy keywords) otherwise (including when determining the static position of an absolutely positioned box).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-self-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "normal",
+          "prose": "Represents the “default” alignment for the layout mode, as defined below.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-self-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "stretch",
+          "prose": "As defined for justify-self in § 6.1 Inline-Axis (or Main-Axis) Self-Alignment: the justify-self property.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-self-stretch",
+          "type": "value",
+          "value": "stretch"
+        }
+      ],
+      "styleDeclaration": [
+        "align-self",
+        "alignSelf"
+      ]
+    },
+    {
+      "name": "place-self",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-place-self",
+      "value": "<'align-self'> <'justify-self'>?",
+      "initial": "auto",
+      "appliesTo": "see individual properties",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "place-self",
+        "placeSelf"
+      ],
+      "longhands": [
+        "align-self",
+        "justify-self"
+      ]
+    },
+    {
+      "name": "justify-items",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-justify-items",
+      "value": "normal | stretch | <baseline-position> | <overflow-position>? [ <self-position> | left | right ] | legacy | legacy && [ left | right | center ]",
+      "initial": "legacy",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s), except for legacy (see prose)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "left",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-left or physical left edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s line-right or physical right edge, whichever is in the appropriate axis. If the property’s axis is not parallel with either left↔right axis, this value behaves as start. Currently, the only case where the property’s axis is not parallel with either left↔right axis is in a column flexbox.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-content-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "legacy",
+          "prose": "This keyword causes the value to effectively inherit into descendants. If the legacy keyword appears on its own (without an accompanying left, right, or center keyword): if the inherited value of justify-items includes the legacy keyword, this value computes to the inherited value; otherwise it computes to normal. When justify-self:auto references the value of justify-items, only the alignment keyword, not the legacy keyword, is referenced by it. It exists to implement the legacy alignment behavior of HTML’s <center> element and align attribute.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-items-legacy",
+          "type": "value",
+          "value": "legacy"
+        }
+      ],
+      "styleDeclaration": [
+        "justify-items",
+        "justifyItems"
+      ]
+    },
+    {
+      "name": "align-items",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-align-items",
+      "value": "normal | stretch | <baseline-position> | <overflow-position>? <self-position>",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "align-items",
+        "alignItems"
+      ]
+    },
+    {
+      "name": "place-items",
+      "href": "https://drafts.csswg.org/css-align-3/#propdef-place-items",
+      "value": "<'align-items'> <'justify-items'>?",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "place-items",
+        "placeItems"
+      ],
+      "longhands": [
+        "align-items",
+        "justify-items"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<self-position>",
+      "href": "https://drafts.csswg.org/css-align-3/#typedef-self-position",
+      "type": "type",
+      "value": "center | start | end | self-start | self-end | flex-start | flex-end",
+      "values": [
+        {
+          "name": "center",
+          "prose": "Centers the alignment subject within its alignment container.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "start",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s start edge in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s end edge in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "self-start",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the alignment subject’s start side in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-self-start",
+          "type": "value",
+          "value": "self-start"
+        },
+        {
+          "name": "self-end",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the alignment subject’s end side in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-self-end",
+          "type": "value",
+          "value": "self-end"
+        },
+        {
+          "name": "flex-start",
+          "prose": "Only used in flex layout. [CSS-FLEXBOX-1] Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-start or cross-start side, as appropriate. When used outside of a flex formatting context, this value behaves as start. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as start when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as start when used in the content-distribution properties.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-start",
+          "type": "value",
+          "value": "flex-start"
+        },
+        {
+          "name": "flex-end",
+          "prose": "Only used in flex layout. Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-end or cross-end side, as appropriate. When used outside of a flex formatting context, this value behaves as end. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as end when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as end when used in the content-distribution properties.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-end",
+          "type": "value",
+          "value": "flex-end"
+        }
+      ]
+    },
+    {
+      "name": "<content-position>",
+      "href": "https://drafts.csswg.org/css-align-3/#typedef-content-position",
+      "type": "type",
+      "value": "center | start | end | flex-start | flex-end",
+      "values": [
+        {
+          "name": "center",
+          "prose": "Centers the alignment subject within its alignment container.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "start",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s start edge in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Aligns the alignment subject to be flush with the alignment container’s end edge in the appropriate axis.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-end",
+          "type": "value",
+          "value": "end"
+        },
+        {
+          "name": "flex-start",
+          "prose": "Only used in flex layout. [CSS-FLEXBOX-1] Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-start or cross-start side, as appropriate. When used outside of a flex formatting context, this value behaves as start. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as start when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as start when used in the content-distribution properties.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-start",
+          "type": "value",
+          "value": "flex-start"
+        },
+        {
+          "name": "flex-end",
+          "prose": "Only used in flex layout. Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-end or cross-end side, as appropriate. When used outside of a flex formatting context, this value behaves as end. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as end when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as end when used in the content-distribution properties.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-end",
+          "type": "value",
+          "value": "flex-end"
+        }
+      ]
+    },
+    {
+      "name": "<baseline-position>",
+      "href": "https://drafts.csswg.org/css-align-3/#typedef-baseline-position",
+      "type": "type",
+      "value": "[ first | last ]? && baseline",
+      "values": [
+        {
+          "name": "baseline",
+          "prose": "Computes to first baseline, defined below.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-baseline",
+          "type": "value",
+          "value": "baseline"
+        },
+        {
+          "name": "first baseline",
+          "prose": "Specifies participation in first-baseline alignment: aligns the alignment baseline of the box’s first baseline set with the corresponding baseline of its baseline-sharing group. See § 9.3 Aligning Boxes by Baseline for more details. The fallback alignment for first baseline is safe self-start (for self-alignment) or safe start (for content-distribution).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-first-baseline",
+          "type": "value",
+          "value": "first baseline"
+        },
+        {
+          "name": "first",
+          "prose": "Specifies participation in first-baseline alignment: aligns the alignment baseline of the box’s first baseline set with the corresponding baseline of its baseline-sharing group. See § 9.3 Aligning Boxes by Baseline for more details. The fallback alignment for first baseline is safe self-start (for self-alignment) or safe start (for content-distribution).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-first-baseline",
+          "type": "value",
+          "value": "first"
+        },
+        {
+          "name": "last baseline",
+          "prose": "Specifies participation in last-baseline alignment: aligns the alignment baseline of the box’s last baseline set with the corresponding baseline of its baseline-sharing group.̣ See § 9.3 Aligning Boxes by Baseline for more details. The fallback alignment for last baseline is safe self-end (for self-alignment) or safe end (for content-distribution).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-last-baseline",
+          "type": "value",
+          "value": "last baseline"
+        },
+        {
+          "name": "last",
+          "prose": "Specifies participation in last-baseline alignment: aligns the alignment baseline of the box’s last baseline set with the corresponding baseline of its baseline-sharing group.̣ See § 9.3 Aligning Boxes by Baseline for more details. The fallback alignment for last baseline is safe self-end (for self-alignment) or safe end (for content-distribution).",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-last-baseline",
+          "type": "value",
+          "value": "last"
+        }
+      ]
+    },
+    {
+      "name": "<content-distribution>",
+      "href": "https://drafts.csswg.org/css-align-3/#typedef-content-distribution",
+      "type": "type",
+      "value": "space-between | space-around | space-evenly | stretch",
+      "values": [
+        {
+          "name": "space-between",
+          "prose": "The alignment subjects are evenly distributed in the alignment container. The first alignment subject is placed flush with the start edge of the alignment container, the last alignment subject is placed flush with the end edge of the alignment container, and the remaining alignment subjects are distributed so that the spacing between any two adjacent alignment subjects is the same. The default fallback alignment for this value is safe flex-start. (For layout modes other than flex layout, flex-start is identical to start.)",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-space-between",
+          "type": "value",
+          "value": "space-between"
+        },
+        {
+          "name": "space-around",
+          "prose": "The alignment subjects are evenly distributed in the alignment container, with a half-size space on either end. The alignment subjects are distributed so that the spacing between any two adjacent alignment subjects is the same, and the spacing before the first and after the last alignment subject is half the size of the other spacing. The default fallback alignment for this value is safe center.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-space-around",
+          "type": "value",
+          "value": "space-around"
+        },
+        {
+          "name": "space-evenly",
+          "prose": "The alignment subjects are evenly distributed in the alignment container, with a full-size space on either end. The alignment subjects are distributed so that the spacing between any two adjacent alignment subjects, before the first alignment subject, and after the last alignment subject is the same. The default fallback alignment for this value is safe center.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-space-evenly",
+          "type": "value",
+          "value": "space-evenly"
+        },
+        {
+          "name": "stretch",
+          "prose": "If the combined size of the alignment subjects is less than the size of the alignment container, any auto-sized alignment subjects have their size increased equally (not proportionally), while still respecting the constraints imposed by max-height/max-width (or equivalent functionality), so that the combined size exactly fills the alignment container. The default fallback alignment for this value is flex-start. (For layout modes other than flex layout, flex-start is identical to start.)",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-stretch",
+          "type": "value",
+          "value": "stretch"
+        }
+      ]
+    },
+    {
+      "name": "<overflow-position>",
+      "href": "https://drafts.csswg.org/css-align-3/#typedef-overflow-position",
+      "type": "type",
+      "value": "unsafe | safe",
+      "values": [
+        {
+          "name": "safe",
+          "prose": "If the size of the alignment subject overflows the alignment container, the alignment subject is instead aligned as if the alignment mode were flex-start. However for absolutely positioned boxes, see § 4.4.1.2 Self-Alignment for Absolutely Positioned Boxes.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-overflow-position-safe",
+          "type": "value",
+          "value": "safe"
+        },
+        {
+          "name": "unsafe",
+          "prose": "Regardless of the relative sizes of the alignment subject and alignment container, the given alignment value is honored.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-overflow-position-unsafe",
+          "type": "value",
+          "value": "unsafe"
+        }
+      ]
+    }
+  ]
+}

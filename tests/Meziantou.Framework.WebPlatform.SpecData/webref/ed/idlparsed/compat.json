@@ -1,0 +1,103 @@
+{
+  "spec": {
+    "title": "Compatibility Standard",
+    "url": "https://compat.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {},
+    "idlExtendedNames": {
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n    readonly attribute short orientation;\n    attribute EventHandler onorientationchange;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "orientation",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "short"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://compat.spec.whatwg.org/#dom-window-orientation"
+            },
+            {
+              "type": "attribute",
+              "name": "onorientationchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://compat.spec.whatwg.org/#dom-window-onorientationchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "HTMLBodyElement": [
+        {
+          "fragment": "partial interface HTMLBodyElement {\n    attribute EventHandler onorientationchange;\n};",
+          "type": "interface",
+          "name": "HTMLBodyElement",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "onorientationchange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://compat.spec.whatwg.org/#dom-htmlbodyelement-onorientationchange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "Window": [
+        "EventHandler"
+      ],
+      "HTMLBodyElement": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "Window",
+      "EventHandler",
+      "HTMLBodyElement"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

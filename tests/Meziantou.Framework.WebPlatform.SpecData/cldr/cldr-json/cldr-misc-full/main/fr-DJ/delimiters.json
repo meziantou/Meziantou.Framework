@@ -1,0 +1,16 @@
+{
+  "main": {
+    "fr-DJ": {
+      "identity": {
+        "language": "fr",
+        "territory": "DJ"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "«",
+        "alternateQuotationEnd": "»"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kaj": {
+      "identity": {
+        "language": "kaj"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

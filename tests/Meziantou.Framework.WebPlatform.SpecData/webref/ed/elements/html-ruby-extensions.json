@@ -1,0 +1,28 @@
+{
+  "spec": {
+    "title": "HTML Ruby Markup Extensions",
+    "url": "https://w3c.github.io/html-ruby/"
+  },
+  "elements": [
+    {
+      "name": "ruby",
+      "href": "https://w3c.github.io/html-ruby/#elementdef-ruby"
+    },
+    {
+      "name": "rb",
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rb"
+    },
+    {
+      "name": "rt",
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rt"
+    },
+    {
+      "name": "rtc",
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rtc"
+    },
+    {
+      "name": "rp",
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rp"
+    }
+  ]
+}

@@ -1,0 +1,743 @@
+{
+  "css/css-display/accessibility/display-contents-role-and-label.html": {
+    "total": 112
+  },
+  "css/css-display/animations/display-interpolation-none.html": {
+    "total": 25
+  },
+  "css/css-display/animations/display-interpolation.html": {
+    "total": 42
+  },
+  "css/css-display/display-change-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-change-object-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-alignment-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-alignment-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-before-after-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-before-after-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-before-after-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-block-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-blockify-dynamic.html": {
+    "total": 3
+  },
+  "css/css-display/display-contents-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-computed-style.html": {
+    "total": 5
+  },
+  "css/css-display/display-contents-details-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-details.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-before-after-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-before-after-first-letter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-fieldset-legend-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-001-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-001-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-002-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-002-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-003-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-flex-003-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-generated-content-fieldset-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-inline-flex-001-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-inline-flex-001-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-list-001-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-list-001-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-multicol-001-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-multicol-001-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-pseudo-insertion-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-table-001-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-table-001-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-table-002-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-dynamic-table-002-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-fieldset-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-fieldset-nested-legend.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-fieldset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-first-letter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-first-letter-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-first-line-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-first-line-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-flex-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-flex-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-flex-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-float-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-focusable-001.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-inline-flex-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-list-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-multicol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-oof-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-oof-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-parsing-001.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-pseudo-click-target.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-root-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-shadow-dom-1.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-shadow-host-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-sharing-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-slot-attach-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-state-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-suppression-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-svg-anchor-child.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-svg-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-svg-switch-child.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-table-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-table-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-table-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-td-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-text-inherit-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-text-inherit.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-text-only-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-tr-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-unusual-html-elements-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-whitespace-inside-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-first-letter-001.html": {
+    "total": 1
+  },
+  "css/css-display/display-first-line-001.html": {
+    "total": 1
+  },
+  "css/css-display/display-first-line-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-flow-root-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-flow-root-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-flow-root-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-flow-root-list-item-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-initial.html": {
+    "total": 6
+  },
+  "css/css-display/display-inline-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-list-item-height-after-dom-change.html": {
+    "total": 1
+  },
+  "css/css-display/display-math-on-non-mathml-elements.html": {
+    "total": 10
+  },
+  "css/css-display/display-math-on-pseudo-elements-001.html": {
+    "total": 6
+  },
+  "css/css-display/display-math-on-pseudo-elements-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-none-inline-img.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-with-float-dynamic.html": {
+    "total": 1
+  },
+  "css/css-display/display-with-float.html": {
+    "total": 1
+  },
+  "css/css-display/empty-text-baseline-001.html": {
+    "total": 3
+  },
+  "css/css-display/empty-text-baseline-002.html": {
+    "total": 2
+  },
+  "css/css-display/focus/display-contents-focus.html": {
+    "total": 5
+  },
+  "css/css-display/inheritance.html": {
+    "total": 2
+  },
+  "css/css-display/order-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/parsing/display-computed.html": {
+    "total": 112
+  },
+  "css/css-display/parsing/display-invalid.html": {
+    "total": 55
+  },
+  "css/css-display/parsing/display-valid.html": {
+    "total": 108
+  },
+  "css/css-display/parsing/tentative/display-computed.html": {
+    "total": 10
+  },
+  "css/css-display/parsing/tentative/display-valid.html": {
+    "total": 6
+  },
+  "css/css-display/reading-flow/tentative/reading-flow-computed.html": {
+    "total": 7
+  },
+  "css/css-display/reading-flow/tentative/reading-flow-invalid.html": {
+    "total": 7
+  },
+  "css/css-display/reading-flow/tentative/reading-flow-valid.html": {
+    "total": 7
+  },
+  "css/css-display/reading-flow/tentative/reading-order-computed.html": {
+    "total": 4
+  },
+  "css/css-display/reading-flow/tentative/reading-order-invalid.html": {
+    "total": 9
+  },
+  "css/css-display/reading-flow/tentative/reading-order-valid.html": {
+    "total": 4
+  },
+  "css/css-display/run-in/counter-increment-applies-to-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/counter-reset-applies-to-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/font-style-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/font-variant-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/font-weight-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/height-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/letter-spacing-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/list-style-applies-to-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/list-style-type-applies-to-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/max-height-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/max-width-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/min-height-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/min-width-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/quotes-applies-to-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-abspos-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-abspos-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-abspos-between-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-006.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-007.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-008.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-009.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-010.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-011.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-012.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-013.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-basic-014.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-015.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-016.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-017.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-basic-018.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-block-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-block-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-block-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-breaking-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-breaking-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-clear-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-clear-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-abspos-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-block-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-block-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-block-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-block-004.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-block-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-block-inside-inline-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-block-inside-inline-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-block-inside-inline-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-float-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-004.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-inline-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-007.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-block-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-inline-table-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-relpos-block-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-relpos-block-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-relpos-block-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-run-in-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-run-in-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-run-in-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-table-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-table-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-caption-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-table-cell-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-column-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-column-group-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-inside-inline-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-table-inside-inline-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-contains-table-inside-inline-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-row-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-contains-table-row-group-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-display-none-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-display-none-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-display-none-between-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-fixedpos-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-fixedpos-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-fixedpos-between-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-float-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-float-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-float-between-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inherit-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-inline-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-inline-block-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-block-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-block-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-inline-table-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-table-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-inline-table-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-listitem-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-listitem-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-listitem-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-relpos-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-relpos-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-relpos-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-replaced-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-restyle-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-restyle-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-restyle-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-run-in-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-run-in-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-run-in-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-run-in-between-004.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-run-in-between-005.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-run-in-between-006.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-run-in-between-007.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-run-in-between-008.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-table-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-cell-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-cell-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-cell-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-row-between-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-row-between-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-table-row-between-003.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-text-between-001.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-text-between-002.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-text-between-003.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/run-in/run-in-text-between-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/run-in-text-between-005.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/text-decoration-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/text-transform-applies-to-004.xht": {
+    "reftest": "PASS"
+  },
+  "css/css-display/run-in/width-applies-to-011.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-display/select-4-option-optgroup-display-none.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/textarea-display.html": {
+    "total": 1
+  }
+}

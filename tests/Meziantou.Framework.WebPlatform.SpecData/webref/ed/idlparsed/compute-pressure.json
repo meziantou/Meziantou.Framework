@@ -1,0 +1,540 @@
+{
+  "spec": {
+    "title": "Compute Pressure Level 1",
+    "url": "https://w3c.github.io/compute-pressure/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "DedicatedWorker": [
+          "PressureObserver"
+        ],
+        "SharedWorker": [
+          "PressureObserver"
+        ],
+        "Window": [
+          "PressureObserver"
+        ]
+      },
+      "functions": {
+        "DedicatedWorker": [
+          "PressureRecord"
+        ],
+        "SharedWorker": [
+          "PressureRecord"
+        ],
+        "Window": [
+          "PressureRecord"
+        ]
+      }
+    },
+    "idlNames": {
+      "PressureSource": {
+        "fragment": "enum PressureSource { \"cpu\" };",
+        "type": "enum",
+        "name": "PressureSource",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "cpu",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressuresource-cpu"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressuresource"
+      },
+      "PressureState": {
+        "fragment": "enum PressureState { \"nominal\", \"fair\", \"serious\", \"critical\" };",
+        "type": "enum",
+        "name": "PressureState",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "nominal",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurestate-nominal"
+          },
+          {
+            "type": "enum-value",
+            "value": "fair",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurestate-fair"
+          },
+          {
+            "type": "enum-value",
+            "value": "serious",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurestate-serious"
+          },
+          {
+            "type": "enum-value",
+            "value": "critical",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurestate-critical"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressurestate"
+      },
+      "PressureUpdateCallback": {
+        "fragment": "callback PressureUpdateCallback = undefined (\n  sequence<PressureRecord> changes,\n  PressureObserver observer\n);",
+        "type": "callback",
+        "name": "PressureUpdateCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "changes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureRecord"
+                }
+              ]
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "observer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PressureObserver"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressureupdatecallback"
+      },
+      "PressureObserver": {
+        "fragment": "[Exposed=(DedicatedWorker,SharedWorker,Window), SecureContext]\ninterface PressureObserver {\n  constructor(PressureUpdateCallback callback);\n\n  Promise<undefined> observe(PressureSource source, optional PressureObserverOptions options = {});\n  undefined unobserve(PressureSource source);\n  undefined disconnect();\n  sequence<PressureRecord> takeRecords();\n\n  [SameObject] static readonly attribute FrozenArray<PressureSource> knownSources;\n};",
+        "type": "interface",
+        "name": "PressureObserver",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "callback",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureUpdateCallback"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-constructor"
+          },
+          {
+            "type": "operation",
+            "name": "observe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "source",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureObserverOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-observe"
+          },
+          {
+            "type": "operation",
+            "name": "unobserve",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "source",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureSource"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-unobserve"
+          },
+          {
+            "type": "operation",
+            "name": "disconnect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-disconnect"
+          },
+          {
+            "type": "operation",
+            "name": "takeRecords",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureRecord"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-takerecords"
+          },
+          {
+            "type": "attribute",
+            "name": "knownSources",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "PressureSource"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "readonly": true,
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver-knownsources"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserver"
+      },
+      "PressureRecord": {
+        "fragment": "[Exposed=(DedicatedWorker,SharedWorker,Window), SecureContext]\ninterface PressureRecord {\n  readonly attribute PressureSource source;\n  readonly attribute PressureState state;\n  readonly attribute DOMHighResTimeStamp time;\n  [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PressureRecord",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "source",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PressureSource"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurerecord-source"
+          },
+          {
+            "type": "attribute",
+            "name": "state",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "PressureState"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurerecord-state"
+          },
+          {
+            "type": "attribute",
+            "name": "time",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurerecord-time"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressurerecord-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressurerecord"
+      },
+      "PressureObserverOptions": {
+        "fragment": "dictionary PressureObserverOptions {\n  [EnforceRange] unsigned long sampleInterval = 0;\n};",
+        "type": "dictionary",
+        "name": "PressureObserverOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "sampleInterval",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserveroptions-sampleinterval"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/compute-pressure/#dom-pressureobserveroptions"
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "DedicatedWorker": [
+        "PressureObserver",
+        "PressureRecord"
+      ],
+      "SharedWorker": [
+        "PressureObserver",
+        "PressureRecord"
+      ],
+      "Window": [
+        "PressureObserver",
+        "PressureRecord"
+      ]
+    },
+    "dependencies": {
+      "PressureObserver": [
+        "PressureUpdateCallback",
+        "PressureSource",
+        "PressureObserverOptions",
+        "PressureRecord"
+      ],
+      "PressureRecord": [
+        "PressureSource",
+        "PressureState",
+        "DOMHighResTimeStamp"
+      ],
+      "PressureObserverOptions": []
+    },
+    "externalDependencies": [
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

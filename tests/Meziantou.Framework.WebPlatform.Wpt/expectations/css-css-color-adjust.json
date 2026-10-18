@@ -1,0 +1,107 @@
+{
+  "css/css-color-adjust/animation/color-scheme-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-color-adjust/animation/forced-color-adjust-no-interpolation.html": {
+    "total": 42
+  },
+  "css/css-color-adjust/inheritance.html": {
+    "total": 8
+  },
+  "css/css-color-adjust/parsing/color-scheme-computed.html": {
+    "total": 13
+  },
+  "css/css-color-adjust/parsing/color-scheme-invalid.html": {
+    "total": 16
+  },
+  "css/css-color-adjust/parsing/color-scheme-valid.html": {
+    "total": 22
+  },
+  "css/css-color-adjust/parsing/print-color-adjust.html": {
+    "total": 4
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-change-checkbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-color-initial-affected-by-color-scheme-property.html": {
+    "total": 2
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-color-initial-affected-by-meta-color-scheme-dynamic.html": {
+    "total": 2
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-about-blank.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-alpha.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-dynamic-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-opaque-cross-origin-001.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-opaque-cross-origin-002.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-opaque-cross-origin-003.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-opaque.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background-mismatch-used-preferred.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-dynamic.html": {
+    "total": 3
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-change-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-change-same-origin.html": {
+    "total": 1
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-nested.sub.html": {
+    "total": 12
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-page-dark-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-page-dark.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-page-light-cross-origin.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred-page-light.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-iframe-preferred.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-root-background.html": {
+    "total": 1
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-rule-cache.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-system-colors.html": {
+    "total": 1
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-table-border-currentcolor-responsive.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-visited-link-initial.html": {
+    "reftest": "PASS"
+  }
+}

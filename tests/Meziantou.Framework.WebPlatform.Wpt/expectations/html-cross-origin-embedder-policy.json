@@ -1,0 +1,461 @@
+{
+  "html/cross-origin-embedder-policy/about-blank-popup.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/blob.https.html": {
+    "total": 9
+  },
+  "html/cross-origin-embedder-policy/block-local-documents-inheriting-none.https.html": {
+    "total": 1,
+    "failures": {
+      "Prevent local scheme documents from loading within a COEP: require-corp iframe if they inherit COEP: none": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/cache-storage-reporting-dedicated-worker.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "COEP support on DedicatedWorker.": "FAIL",
+      "COEP-Report-Only support on DedicatedWorker.": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/cache-storage-reporting-document.https.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "COEP support on document.": "TIMEOUT",
+      "COEP-Report-Only support on document.": "NOTRUN"
+    }
+  },
+  "html/cross-origin-embedder-policy/cache-storage-reporting-service-worker.https.html": {
+    "total": 2,
+    "failures": {
+      "COEP support on ServiceWorker.": "FAIL",
+      "COEP-Report-Only support on ServiceWorker.": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/cache-storage-reporting-shared-worker.https.html": {
+    "total": 2,
+    "failures": {
+      "COEP support on SharedWorker.": "FAIL",
+      "COEP-Report-Only support on SharedWorker.": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/coep-frame-javascript.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/coep-on-response-from-service-worker.https.html": {
+    "total": 13,
+    "failures": {
+      "making a cross-origin request for no CORP": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js?dedicated_worker": {
+    "total": 14
+  },
+  "html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js?document": {
+    "total": 14
+  },
+  "html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js?service_worker": {
+    "total": 14
+  },
+  "html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js?shared_worker": {
+    "total": 14
+  },
+  "html/cross-origin-embedder-policy/credentialless/cache.window.js": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/cross-origin-isolated.window.js": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/credentialless/dedicated-worker.https.window.js": {
+    "total": 7
+  },
+  "html/cross-origin-embedder-policy/credentialless/fetch.https.window.js": {
+    "total": 13
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-credentialless.https.window.js?1-4": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-credentialless.https.window.js?5-9": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-credentialless.https.window.js?9-last": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-none.https.window.js?1-4": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-none.https.window.js?5-last": {
+    "total": 2
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-redirect.https.window.js?1-4": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-redirect.https.window.js?5-last": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-require-corp.https.window.js?1-4": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-require-corp.https.window.js?5-9": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe-coep-require-corp.https.window.js?9-last": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/credentialless/iframe.window.js": {
+    "total": 3
+  },
+  "html/cross-origin-embedder-policy/credentialless/image.https.window.js": {
+    "total": 7
+  },
+  "html/cross-origin-embedder-policy/credentialless/link.https.window.js": {
+    "total": 7
+  },
+  "html/cross-origin-embedder-policy/credentialless/redirect.window.js": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/credentialless/reporting-navigation.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 13,
+    "failures": {
+      "parent: |header(cross-origin-embedder-policy,credentialless), target: (none), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-embedder-policy,credentialless), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-embedder-policy-report-only,credentialless)|header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: (none), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: |header(cross-origin-embedder-policy,credentialless), ": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: |header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT"
+    }
+  },
+  "html/cross-origin-embedder-policy/credentialless/reporting-subresource-corp.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "reporting-subresource-corp": "TIMEOUT"
+    }
+  },
+  "html/cross-origin-embedder-policy/credentialless/script.https.window.js": {
+    "total": 7
+  },
+  "html/cross-origin-embedder-policy/credentialless/service-worker-coep-credentialless-proxy.https.window.js": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/service-worker-coep-none-proxy.https.window.js": {
+    "total": 1,
+    "failures": {
+      "COEP:unsafe-none ServiceWorker": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/credentialless/service-worker.https.window.js": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=cross_origin&worker_coep=credentialless&window_coep=credentialless": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=cross_origin&worker_coep=credentialless&window_coep=none": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=cross_origin&worker_coep=none&window_coep=credentialless": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=cross_origin&worker_coep=none&window_coep=none": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=same_origin&worker_coep=credentialless&window_coep=credentialless": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=same_origin&worker_coep=credentialless&window_coep=none": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=same_origin&worker_coep=none&window_coep=credentialless": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js?request_origin=same_origin&worker_coep=none&window_coep=none": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/credentialless/video.https.window.js": {
+    "total": 6
+  },
+  "html/cross-origin-embedder-policy/credentialless/websocket.https.window.js": {
+    "total": 3
+  },
+  "html/cross-origin-embedder-policy/cross-origin-isolated-permission-iframe.https.window.js": {
+    "total": 8
+  },
+  "html/cross-origin-embedder-policy/cross-origin-isolated-permission-worker.https.window.js": {
+    "total": 15
+  },
+  "html/cross-origin-embedder-policy/data.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/dedicated-worker-cache-storage.https.html": {
+    "total": 8
+  },
+  "html/cross-origin-embedder-policy/dedicated-worker.https.html": {
+    "total": 14,
+    "failures": {
+      "COEP: worker inherits COEP for filesystem URL.": "FAIL",
+      "COEP: worker inherits COEP from filesystem URL creator, not owner.": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/header-parsing.https.html": {
+    "total": 25
+  },
+  "html/cross-origin-embedder-policy/iframe-history-none-require-corp.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/javascript.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/meta-http-equiv.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/multi-globals/workers-coep-report.https.html": {
+    "total": 1,
+    "failures": {
+      "Multiple globals for Worker constructor: COEP reports": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/no-secure-context.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/non-initial-about-blank.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/none-load-from-cache-storage.https.html": {
+    "total": 29
+  },
+  "html/cross-origin-embedder-policy/none-sw-from-none.https.html": {
+    "total": 13
+  },
+  "html/cross-origin-embedder-policy/none-sw-from-require-corp.https.html": {
+    "total": 13,
+    "failures": {
+      "making a cross-origin request for no CORP": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/none.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "reflection-credentialless": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-credentialless": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-credentialless": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.js#sharedworker-module": {
+    "total": 1,
+    "failures": {
+      "reflection-credentialless": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "reflection-require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.js#sharedworker-module": {
+    "total": 1,
+    "failures": {
+      "reflection-require-corp": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-unsafe-none.tentative.https.any.js": {
+    "total": 1,
+    "failures": {
+      "reflection-unsafe-none": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-unsafe-none.tentative.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-unsafe-none": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-unsafe-none.tentative.https.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "reflection-unsafe-none": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reflection-unsafe-none.tentative.https.any.js#sharedworker-module": {
+    "total": 1,
+    "failures": {
+      "reflection-unsafe-none": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/report-only-require-corp.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/reporting-navigation.https.html": {
+    "harness": "TIMEOUT",
+    "total": 30,
+    "failures": {
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: (none), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: (none), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy-report-only,require-corp)|header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy-report-only,require-corp)|header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin)|header(x-frame-options,deny), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin)|header(x-frame-options,deny), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: (none), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: (none), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT"
+    }
+  },
+  "html/cross-origin-embedder-policy/reporting-subresource-corp.https.html": {
+    "harness": "TIMEOUT",
+    "total": 26,
+    "failures": {
+      "[between service worker and page] blocked by CORP: same-origin": "NOTRUN",
+      "[between service worker and page] blocked due to COEP": "NOTRUN",
+      "[between service worker and page] blocked due to COEP (with fragment)": "NOTRUN",
+      "[between service worker and page] blocked during redirect": "NOTRUN",
+      "[between service worker and page] same-origin": "NOTRUN",
+      "[dedicated worker] blocked by CORP: same-origin": "NOTRUN",
+      "[dedicated worker] blocked due to COEP": "NOTRUN",
+      "[dedicated worker] blocked due to COEP (with fragment)": "NOTRUN",
+      "[dedicated worker] blocked during redirect": "NOTRUN",
+      "[dedicated worker] same-origin": "NOTRUN",
+      "[document] blocked due to COEP": "TIMEOUT",
+      "[document] blocked due to COEP (with fragment)": "NOTRUN",
+      "[document] blocked during redirect": "NOTRUN",
+      "[service worker] blocked by CORP: same-origin": "NOTRUN",
+      "[service worker] blocked due to COEP": "NOTRUN",
+      "[service worker] blocked due to COEP (with fragment)": "NOTRUN",
+      "[service worker] blocked during redirect": "NOTRUN",
+      "[service worker] same-origin": "NOTRUN",
+      "[shared worker] blocked by CORP: same-origin": "NOTRUN",
+      "[shared worker] blocked due to COEP": "NOTRUN",
+      "[shared worker] blocked due to COEP (with fragment)": "NOTRUN",
+      "[shared worker] blocked during redirect": "NOTRUN",
+      "[shared worker] same-origin": "NOTRUN",
+      "destination: script": "NOTRUN"
+    }
+  },
+  "html/cross-origin-embedder-policy/reporting-to-document-reporting-endpoint.https.window.js": {
+    "total": 3
+  },
+  "html/cross-origin-embedder-policy/reporting-to-endpoint.https.html": {
+    "total": 5,
+    "failures": {
+      "COEP violation on nested frame navigation": "FAIL",
+      "Shared worker fetch": "FAIL",
+      "Two COEP headers, split inside report-to value": "FAIL",
+      "navigation CORP": "FAIL",
+      "subresource CORP": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/reporting-to-frame-owner.https.html": {
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "Reporting to coep-report-only frame with coep-none worker": "TIMEOUT",
+      "Reporting to coep-report-only frame with coep-report-only worker": "NOTRUN",
+      "Reporting to coep-report-only frame with coep-require-corp worker": "NOTRUN",
+      "Reporting to coep-require-corp frame with coep-none worker": "NOTRUN",
+      "Reporting to coep-require-corp frame with coep-report-only worker": "NOTRUN",
+      "Reporting to coep-require-corp frame with coep-require-corp worker": "NOTRUN"
+    }
+  },
+  "html/cross-origin-embedder-policy/reporting-to-worker-owner.https.html": {
+    "harness": "ERROR",
+    "total": 9,
+    "failures": {
+      "Reporting to coep-report-only worker with coep-none worker": "TIMEOUT",
+      "Reporting to coep-report-only worker with coep-report-only worker": "NOTRUN",
+      "Reporting to coep-report-only worker with coep-require-corp worker": "NOTRUN",
+      "Reporting to coep-require-corp worker with coep-none worker": "NOTRUN",
+      "Reporting to coep-require-corp worker with coep-report-only worker": "NOTRUN",
+      "Reporting to coep-require-corp worker with coep-require-corp worker": "NOTRUN"
+    }
+  },
+  "html/cross-origin-embedder-policy/require-corp-about-blank.https.html": {
+    "total": 3
+  },
+  "html/cross-origin-embedder-policy/require-corp-about-srcdoc.https.html": {
+    "total": 3
+  },
+  "html/cross-origin-embedder-policy/require-corp-cached-images.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/require-corp-load-from-cache-storage.https.html": {
+    "total": 29
+  },
+  "html/cross-origin-embedder-policy/require-corp-revalidated-images.https.html": {
+    "total": 5
+  },
+  "html/cross-origin-embedder-policy/require-corp-sw-from-none.https.html": {
+    "total": 13
+  },
+  "html/cross-origin-embedder-policy/require-corp-sw-from-require-corp.https.html": {
+    "total": 13
+  },
+  "html/cross-origin-embedder-policy/require-corp-sw.https.html": {
+    "total": 6
+  },
+  "html/cross-origin-embedder-policy/require-corp-worker-script-revalidation.html": {
+    "total": 1,
+    "failures": {
+      "COEP: require-corp with revalidated worker script": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/require-corp.https.html": {
+    "total": 16
+  },
+  "html/cross-origin-embedder-policy/sandbox.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/service-worker-cache-storage.https.html": {
+    "total": 4
+  },
+  "html/cross-origin-embedder-policy/shared-workers.https.html": {
+    "total": 11,
+    "failures": {
+      "\"require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL",
+      "\"require-corp\" (derived from owner set due to use of local scheme - data URL)": "FAIL",
+      "\"require-corp\" (derived from owner set due to use of local scheme - filesystem URL)": "FAIL",
+      "default policy (derived from owner set due to use of local scheme - filesystem URL)": "FAIL",
+      "require-corp (derived from filesystem URL creator)": "FAIL"
+    }
+  },
+  "html/cross-origin-embedder-policy/srcdoc.https.html": {
+    "total": 1
+  },
+  "html/cross-origin-embedder-policy/worker-inheritance.sub.https.html": {
+    "total": 9
+  }
+}

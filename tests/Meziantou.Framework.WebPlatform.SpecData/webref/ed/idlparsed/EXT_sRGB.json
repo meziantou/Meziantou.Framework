@@ -1,0 +1,137 @@
+{
+  "spec": {
+    "title": "WebGL EXT_sRGB Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_sRGB/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_sRGB"
+        ],
+        "Worker": [
+          "EXT_sRGB"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_sRGB": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_sRGB {\n  const GLenum SRGB_EXT                                     = 0x8C40;\n  const GLenum SRGB_ALPHA_EXT                               = 0x8C42;\n  const GLenum SRGB8_ALPHA8_EXT                             = 0x8C43;\n  const GLenum FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT    = 0x8210;\n};",
+        "type": "interface",
+        "name": "EXT_sRGB",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "SRGB_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8C40"
+            }
+          },
+          {
+            "type": "const",
+            "name": "SRGB_ALPHA_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8C42"
+            }
+          },
+          {
+            "type": "const",
+            "name": "SRGB8_ALPHA8_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8C43"
+            }
+          },
+          {
+            "type": "const",
+            "name": "FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8210"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_sRGB"
+      ],
+      "Worker": [
+        "EXT_sRGB"
+      ]
+    },
+    "dependencies": {
+      "EXT_sRGB": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

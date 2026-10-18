@@ -1,0 +1,237 @@
+{
+  "event-timing/TapToStopFling.html": {
+    "total": 1,
+    "failures": {
+      "Event Timing: test that the second pointerdown event that happens during fling does not have interaction id.": "FAIL"
+    }
+  },
+  "event-timing/auxclick.html": {
+    "total": 1
+  },
+  "event-timing/buffered-and-duration-threshold.html": {
+    "total": 1
+  },
+  "event-timing/buffered-flag.html": {
+    "total": 1
+  },
+  "event-timing/click-timing.html": {
+    "total": 1
+  },
+  "event-timing/click.html": {
+    "total": 1
+  },
+  "event-timing/contextmenu.html": {
+    "total": 1
+  },
+  "event-timing/crossiframe.html": {
+    "total": 1
+  },
+  "event-timing/dblclick.html": {
+    "total": 1
+  },
+  "event-timing/disconnect-target.html": {
+    "total": 1
+  },
+  "event-timing/duration-with-target-low.html": {
+    "total": 1
+  },
+  "event-timing/event-click-counts.html": {
+    "total": 1
+  },
+  "event-timing/event-click-visibilitychange.html": {
+    "total": 1,
+    "failures": {
+      "Event handlers which change visibility should not measure next paint.": "FAIL"
+    }
+  },
+  "event-timing/event-counts-zero.html": {
+    "total": 1
+  },
+  "event-timing/event-retarget.html": {
+    "total": 1
+  },
+  "event-timing/first-input-interactionid-click.html": {
+    "total": 1
+  },
+  "event-timing/first-input-interactionid-key.html": {
+    "total": 1
+  },
+  "event-timing/first-input-interactionid-tap.html": {
+    "total": 1
+  },
+  "event-timing/first-input-shadow-dom.html": {
+    "total": 1
+  },
+  "event-timing/gap-keydown-keyup.html": {
+    "total": 1
+  },
+  "event-timing/gap-pointerdown-pointerup.html": {
+    "total": 1
+  },
+  "event-timing/idlharness.any.js": {
+    "total": 32
+  },
+  "event-timing/idlharness.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "event-timing/idlharness.any.js#sharedworker": {
+    "total": 14
+  },
+  "event-timing/idlharness.window.js": {
+    "total": 34
+  },
+  "event-timing/interaction-count-click.html": {
+    "total": 1
+  },
+  "event-timing/interaction-count-press-key.html": {
+    "total": 1
+  },
+  "event-timing/interaction-count-tap.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-aux-pointerdown-and-pointerdown.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-aux-pointerdown.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-auxclick.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-click.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-keyboard-event-simulated-click-button-space.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-keyboard-event-simulated-click-checkbox-space.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-keyboard-event-simulated-click-link-enter.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-keypress.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-label-click.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-orphan-pointerup.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-press-key-as-input.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-press-key-no-effect.html": {
+    "total": 1
+  },
+  "event-timing/interactionid-tap.html": {
+    "total": 1
+  },
+  "event-timing/keydown-without-paint.tentative.html": {
+    "total": 1
+  },
+  "event-timing/keydown.html": {
+    "total": 1
+  },
+  "event-timing/keyup.html": {
+    "total": 1
+  },
+  "event-timing/large-duration-threshold.html": {
+    "total": 1
+  },
+  "event-timing/medium-duration-threshold.html": {
+    "total": 1
+  },
+  "event-timing/min-duration-threshold.html": {
+    "total": 1
+  },
+  "event-timing/modal-dialog-interrupt-paint.html": {
+    "total": 1,
+    "failures": {
+      "Event Timing: showing modal dialogs is an alternative end point.": "FAIL"
+    }
+  },
+  "event-timing/mousedown.html": {
+    "total": 1
+  },
+  "event-timing/mouseenter.html": {
+    "total": 1
+  },
+  "event-timing/mouseleave.html": {
+    "total": 1
+  },
+  "event-timing/mouseout.html": {
+    "total": 1
+  },
+  "event-timing/mouseover.html": {
+    "total": 1
+  },
+  "event-timing/mouseup.html": {
+    "total": 1
+  },
+  "event-timing/only-observe-firstInput.html": {
+    "total": 1
+  },
+  "event-timing/orphan-keydown.html": {
+    "total": 1
+  },
+  "event-timing/pointerdown-pointerup-no-overlap.html": {
+    "total": 1
+  },
+  "event-timing/pointerdown.html": {
+    "total": 1
+  },
+  "event-timing/pointerenter.html": {
+    "total": 1
+  },
+  "event-timing/pointerleave.html": {
+    "total": 1
+  },
+  "event-timing/pointerout.html": {
+    "total": 1
+  },
+  "event-timing/pointerover.html": {
+    "total": 1
+  },
+  "event-timing/pointerup.html": {
+    "total": 1
+  },
+  "event-timing/programmatic-click-not-observed.html": {
+    "total": 1
+  },
+  "event-timing/retrievability.html": {
+    "total": 1
+  },
+  "event-timing/retrieve-firstInput.html": {
+    "total": 1
+  },
+  "event-timing/selection-autoscroll.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Event Timing: test that the events received in PerformanceObserver during an active text selection autoscroll does not have interaction id.": "TIMEOUT"
+    }
+  },
+  "event-timing/shadow-dom-null-target.html": {
+    "total": 1
+  },
+  "event-timing/supported-types-consistent-with-self.html": {
+    "total": 1
+  },
+  "event-timing/supported-types.window.js": {
+    "total": 1
+  },
+  "event-timing/target-selector.tentative.html": {
+    "total": 5,
+    "failures": {
+      "Test with image target with src only": "FAIL"
+    }
+  },
+  "event-timing/timingconditions.html": {
+    "total": 1
+  },
+  "event-timing/toJSON.html": {
+    "total": 1
+  }
+}

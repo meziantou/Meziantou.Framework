@@ -1,0 +1,614 @@
+{
+  "spec": {
+    "title": "CSS Counter Styles Module Level 3",
+    "url": "https://drafts.csswg.org/css-counter-styles-3/"
+  },
+  "properties": [],
+  "atrules": [
+    {
+      "name": "@counter-style",
+      "prose": "The @counter-style rule allows authors to define a custom counter style. The components of a counter style are specified by descriptors in the @counter-style rule. The algorithm is specified implicitly by a combination of the system, symbols, and additive-symbols properties.",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#at-ruledef-counter-style",
+      "descriptors": [
+        {
+          "name": "system",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-system",
+          "for": "@counter-style",
+          "value": "cyclic | numeric | alphabetic | symbolic | additive | [fixed <integer>?] | [ extends <counter-style-name> ]",
+          "initial": "symbolic",
+          "values": [
+            {
+              "name": "cyclic",
+              "prose": "The cyclic counter system cycles repeatedly through its provided symbols, looping back to the beginning when it reaches the end of the list. It can be used for simple bullets (just provide a single counter symbol), or for cycling through multiple symbols. The first counter symbol is used as the representation of the value 1, the second counter symbol (if it exists) is used as the representation of the value 2, etc.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-cyclic",
+              "type": "value",
+              "value": "cyclic"
+            },
+            {
+              "name": "fixed",
+              "prose": "The fixed counter system runs through its list of counter symbols once, then falls back. It is useful for representing counter styles that only have a finite number of representations. For example, Unicode defines several limited-length runs of special characters meant for lists, such as circled digits.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-fixed",
+              "type": "value",
+              "value": "fixed"
+            },
+            {
+              "name": "symbolic",
+              "prose": "The symbolic counter system cycles repeatedly through its provided symbols, doubling, tripling, etc. the symbols on each successive pass through the list. For example, if the original symbols were \"*\" and \"†\", then on the second pass they would instead be \"**\" and \"††\", while on the third they would be \"***\"and \"†††\", etc. It can be used for footnote-style markers, and is also sometimes used for alphabetic-style lists for a slightly different presentation than what the alphabetic system presents.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-system-symbolic",
+              "type": "value",
+              "value": "symbolic"
+            },
+            {
+              "name": "alphabetic",
+              "prose": "The alphabetic counter system interprets the list of counter symbols as digits to an alphabetic numbering system, similar to the default lower-alpha counter style, which wraps from \"a\", \"b\", \"c\", to \"aa\", \"ab\", \"ac\". Alphabetic numbering systems do not contain a digit representing 0; so the first value when a new digit is added is composed solely of the first digit. Alphabetic numbering systems are commonly used for lists, and also appear in many spreadsheet programs to number columns. The first counter symbol in the list is interpreted as the digit 1, the second as the digit 2, and so on.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-alphabetic",
+              "type": "value",
+              "value": "alphabetic"
+            },
+            {
+              "name": "numeric",
+              "prose": "The numeric counter system interprets the list of counter symbols as digits to a \"place-value\" numbering system, similar to the default decimal counter style. The first counter symbol in the list is interpreted as the digit 0, the second as the digit 1, and so on.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-numeric",
+              "type": "value",
+              "value": "numeric"
+            },
+            {
+              "name": "additive",
+              "prose": "The additive counter system is used to represent \"sign-value\" numbering systems, which, rather than reusing digits in different positions to change their value, define additional digits with much larger values, so that the value of the number can be obtained by adding all the digits together. This is used in Roman numerals and other numbering systems around the world.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-additive",
+              "type": "value",
+              "value": "additive"
+            },
+            {
+              "name": "extends",
+              "prose": "The extends system allows an author to use the algorithm of another counter style, but alter other aspects, such as the negative sign or the suffix. If a counter style uses the extends system, any unspecified descriptors must be taken from the extended counter style specified, rather than taking their initial values.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-system-extends",
+              "type": "value",
+              "value": "extends"
+            }
+          ]
+        },
+        {
+          "name": "negative",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-negative",
+          "for": "@counter-style",
+          "value": "<symbol> <symbol>?",
+          "initial": "\"-\""
+        },
+        {
+          "name": "prefix",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-prefix",
+          "for": "@counter-style",
+          "value": "<symbol>",
+          "initial": "\"\""
+        },
+        {
+          "name": "suffix",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-suffix",
+          "for": "@counter-style",
+          "value": "<symbol>",
+          "initial": "\". \""
+        },
+        {
+          "name": "range",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-range",
+          "for": "@counter-style",
+          "value": "[ [ <integer> | infinite ]{2} ]# | auto",
+          "initial": "auto",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "The range depends on the counter system: For cyclic, numeric, and fixed systems, the range is negative infinity to positive infinity. For alphabetic and symbolic systems, the range is 1 to positive infinity. For additive systems, the range is 0 to positive infinity. For extends systems, the range is whatever auto would produce for the extended system; if extending a complex predefined style (§ 7 Complex Predefined Counter Styles), the range is the style’s defined range.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-range-auto",
+              "type": "value",
+              "value": "auto"
+            }
+          ]
+        },
+        {
+          "name": "pad",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-pad",
+          "for": "@counter-style",
+          "value": "<integer [0,∞]> && <symbol>",
+          "initial": "0 \"\""
+        },
+        {
+          "name": "fallback",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-fallback",
+          "for": "@counter-style",
+          "value": "<counter-style-name>",
+          "initial": "decimal"
+        },
+        {
+          "name": "symbols",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-symbols",
+          "for": "@counter-style",
+          "value": "<symbol>+",
+          "initial": "n/a"
+        },
+        {
+          "name": "additive-symbols",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-additive-symbols",
+          "for": "@counter-style",
+          "value": "[ <integer [0,∞]> && <symbol> ]#",
+          "initial": "n/a"
+        },
+        {
+          "name": "speak-as",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#descdef-counter-style-speak-as",
+          "for": "@counter-style",
+          "value": "auto | bullets | numbers | words | spell-out | <counter-style-name>",
+          "initial": "auto",
+          "values": [
+            {
+              "name": "auto",
+              "prose": "If the counter style’s system is alphabetic, this value has the same effect as spell-out. If the system is cyclic, this value has the same effect as bullets. If the system is extends, this value has the same effect as auto would have for the extended style. Otherwise, this value has the same effect as numbers.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-auto",
+              "type": "value",
+              "value": "auto"
+            },
+            {
+              "name": "bullets",
+              "prose": "The UA speaks a UA-defined phrase or audio cue that represents an unordered list item being read out.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-bullets",
+              "type": "value",
+              "value": "bullets"
+            },
+            {
+              "name": "numbers",
+              "prose": "The counter’s numeric value is spoken as a number in the content language.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-numbers",
+              "type": "value",
+              "value": "numbers"
+            },
+            {
+              "name": "words",
+              "prose": "Generate a counter representation for the value as normal, then speak it as normal text in the content language. If the counter representation contains images, instead handle the value as for numbers.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-words",
+              "type": "value",
+              "value": "words"
+            },
+            {
+              "name": "spell-out",
+              "prose": "Generate a counter representation for the value as normal, then spell it out letter-by-letter in the content language. If the UA does not know how to pronounce the symbols (or the counter representation contains images), it must instead handle the value as for numbers. For example, lower-greek in English would be read out as \"alpha\", \"beta\", \"gamma\", etc. Conversely, upper-latin in French would be read out as (in phonetic notation) /a/, /be/, /se/, etc.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-spell-out",
+              "type": "value",
+              "value": "spell-out"
+            },
+            {
+              "name": "<counter-style-name>",
+              "prose": "The counter’s value is instead spoken out in the specified style (similar to the behavior of the fallback descriptor when generating representations for a counter value). If the specified style does not exist, this value is treated as auto. If a loop is detected when following speak-as references, this value is treated as auto for the counter styles participating in the loop.",
+              "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-speak-as-counter-style-name",
+              "type": "value",
+              "value": "<counter-style-name>"
+            }
+          ]
+        }
+      ],
+      "value": "@counter-style <counter-style-name> { <declaration-list> }"
+    }
+  ],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<counter-style-name>",
+      "prose": "<counter-style-name> is a <custom-ident> that is not an ASCII case-insensitive match for none. When used here, to define a counter style, it also cannot be any of the non-overridable counter-style names (in other uses that merely reference a counter style, such as the extend system, these are allowed). The <counter-style-name> is a tree-scoped name.",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name",
+      "type": "type",
+      "values": [
+        {
+          "name": "decimal",
+          "prose": "Western decimal numbers (e.g., 1, 2, 3, ..., 98, 99, 100).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#decimal",
+          "type": "value",
+          "value": "decimal"
+        },
+        {
+          "name": "decimal-leading-zero",
+          "prose": "Decimal numbers padded by initial zeros (e.g., 01, 02, 03, ..., 98, 99, 100).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#decimal-leading-zero",
+          "type": "value",
+          "value": "decimal-leading-zero"
+        },
+        {
+          "name": "arabic-indic",
+          "prose": "Arabic-indic numbering (e.g., ١‎, ٢‎, ٣‎, ٤‎, ..., ٩٨‎, ٩٩‎, ١٠٠‎).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-arabic-indic",
+          "type": "value",
+          "value": "arabic-indic"
+        },
+        {
+          "name": "armenian",
+          "prose": "Traditional uppercase Armenian numbering (e.g., Ա, Բ, Գ, ..., ՂԸ, ՂԹ, Ճ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#armenian",
+          "type": "value",
+          "value": "armenian"
+        },
+        {
+          "name": "upper-armenian",
+          "prose": "Traditional uppercase Armenian numbering (e.g., Ա, Բ, Գ, ..., ՂԸ, ՂԹ, Ճ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-upper-armenian",
+          "type": "value",
+          "value": "upper-armenian"
+        },
+        {
+          "name": "lower-armenian",
+          "prose": "Lowercase Armenian numbering (e.g., ա, բ, գ, ..., ղը, ղթ, ճ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-lower-armenian",
+          "type": "value",
+          "value": "lower-armenian"
+        },
+        {
+          "name": "bengali",
+          "prose": "Bengali numbering (e.g., ১, ২, ৩, ..., ৯৮, ৯৯, ১০০).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-bengali",
+          "type": "value",
+          "value": "bengali"
+        },
+        {
+          "name": "cambodian",
+          "prose": "Cambodian/Khmer numbering (e.g., ១, ២, ៣, ..., ៩៨, ៩៩, ១០០).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-cambodian",
+          "type": "value",
+          "value": "cambodian"
+        },
+        {
+          "name": "khmer",
+          "prose": "Cambodian/Khmer numbering (e.g., ១, ២, ៣, ..., ៩៨, ៩៩, ១០០).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-khmer",
+          "type": "value",
+          "value": "khmer"
+        },
+        {
+          "name": "cjk-decimal",
+          "prose": "Han decimal numbers (e.g., 一, 二, 三, ..., 九八, 九九, 一〇〇).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#cjk-decimal",
+          "type": "value",
+          "value": "cjk-decimal"
+        },
+        {
+          "name": "devanagari",
+          "prose": "devanagari numbering (e.g., १, २, ३, ..., ९८, ९९, १००).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-devanagari",
+          "type": "value",
+          "value": "devanagari"
+        },
+        {
+          "name": "georgian",
+          "prose": "Traditional Georgian numbering (e.g., ა, ბ, გ, ..., ჟჱ, ჟთ, რ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#georgian",
+          "type": "value",
+          "value": "georgian"
+        },
+        {
+          "name": "gujarati",
+          "prose": "Gujarati numbering (e.g., ૧, ૨, ૩, ..., ૯૮, ૯૯, ૧૦૦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-gujarati",
+          "type": "value",
+          "value": "gujarati"
+        },
+        {
+          "name": "gurmukhi",
+          "prose": "Gurmukhi numbering (e.g., ੧, ੨, ੩, ..., ੯੮, ੯੯, ੧੦੦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-gurmukhi",
+          "type": "value",
+          "value": "gurmukhi"
+        },
+        {
+          "name": "hebrew",
+          "prose": "Traditional Hebrew numbering (e.g., א‎, ב‎, ג‎, ..., צח‎, צט‎, ק‎).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#hebrew",
+          "type": "value",
+          "value": "hebrew"
+        },
+        {
+          "name": "kannada",
+          "prose": "Kannada numbering (e.g., ೧, ೨, ೩, ..., ೯೮, ೯೯, ೧೦೦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-kannada",
+          "type": "value",
+          "value": "kannada"
+        },
+        {
+          "name": "lao",
+          "prose": "Laotian numbering (e.g., ໑, ໒, ໓, ..., ໙໘, ໙໙, ໑໐໐).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-lao",
+          "type": "value",
+          "value": "lao"
+        },
+        {
+          "name": "malayalam",
+          "prose": "Malayalam numbering (e.g., ൧, ൨, ൩, ..., ൯൮, ൯൯, ൧൦൦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-malayalam",
+          "type": "value",
+          "value": "malayalam"
+        },
+        {
+          "name": "mongolian",
+          "prose": "Mongolian numbering (e.g., ᠑, ᠒, ᠓, ..., ᠙᠘, ᠙᠙, ᠑᠐᠐).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-mongolian",
+          "type": "value",
+          "value": "mongolian"
+        },
+        {
+          "name": "myanmar",
+          "prose": "Myanmar (Burmese) numbering (e.g., ၁, ၂, ၃, ..., ၉၈, ၉၉, ၁၀၀).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-myanmar",
+          "type": "value",
+          "value": "myanmar"
+        },
+        {
+          "name": "oriya",
+          "prose": "Oriya (Odia) numbering (e.g., ୧, ୨, ୩, ..., ୯୮, ୯୯, ୧୦୦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-oriya",
+          "type": "value",
+          "value": "oriya"
+        },
+        {
+          "name": "persian",
+          "prose": "Persian numbering (e.g., ۱, ۲, ۳, ۴, ..., ۹۸, ۹۹, ۱۰۰).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-persian",
+          "type": "value",
+          "value": "persian"
+        },
+        {
+          "name": "lower-roman",
+          "prose": "Lowercase ASCII Roman numerals (e.g., i, ii, iii, ..., xcviii, xcix, c).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#lower-roman",
+          "type": "value",
+          "value": "lower-roman"
+        },
+        {
+          "name": "upper-roman",
+          "prose": "Uppercase ASCII Roman numerals (e.g., I, II, III, ..., XCVIII, XCIX, C).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#upper-roman",
+          "type": "value",
+          "value": "upper-roman"
+        },
+        {
+          "name": "tamil",
+          "prose": "Tamil numbering (e.g., ௧, ௨, ௩, ..., ௯௮, ௯௯, ௧௦௦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-tamil",
+          "type": "value",
+          "value": "tamil"
+        },
+        {
+          "name": "telugu",
+          "prose": "Telugu numbering (e.g., ౧, ౨, ౩, ..., ౯౮, ౯౯, ౧౦౦).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-telugu",
+          "type": "value",
+          "value": "telugu"
+        },
+        {
+          "name": "thai",
+          "prose": "Thai (Siamese) numbering (e.g., ๑, ๒, ๓, ..., ๙๘, ๙๙, ๑๐๐).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-thai",
+          "type": "value",
+          "value": "thai"
+        },
+        {
+          "name": "tibetan",
+          "prose": "Tibetan numbering (e.g., ༡, ༢, ༣, ..., ༩༨, ༩༩, ༡༠༠).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-tibetan",
+          "type": "value",
+          "value": "tibetan"
+        },
+        {
+          "name": "lower-alpha",
+          "prose": "Lowercase ASCII letters (e.g., a, b, c, ..., z, aa, ab).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#lower-alpha",
+          "type": "value",
+          "value": "lower-alpha"
+        },
+        {
+          "name": "lower-latin",
+          "prose": "Lowercase ASCII letters (e.g., a, b, c, ..., z, aa, ab).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#lower-latin",
+          "type": "value",
+          "value": "lower-latin"
+        },
+        {
+          "name": "upper-alpha",
+          "prose": "Uppercase ASCII letters (e.g., A, B, C, ..., Z, AA, AB).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#upper-alpha",
+          "type": "value",
+          "value": "upper-alpha"
+        },
+        {
+          "name": "upper-latin",
+          "prose": "Uppercase ASCII letters (e.g., A, B, C, ..., Z, AA, AB).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#upper-latin",
+          "type": "value",
+          "value": "upper-latin"
+        },
+        {
+          "name": "lower-greek",
+          "prose": "Lowercase classical Greek (e.g., α, β, γ, ..., ω, αα, αβ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#lower-greek",
+          "type": "value",
+          "value": "lower-greek"
+        },
+        {
+          "name": "hiragana",
+          "prose": "Dictionary-order hiragana lettering (e.g., あ, い, う, ..., ん, ああ, あい).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#hiragana",
+          "type": "value",
+          "value": "hiragana"
+        },
+        {
+          "name": "hiragana-iroha",
+          "prose": "Iroha-order hiragana lettering (e.g., い, ろ, は, ..., す, いい, いろ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#hiragana-iroha",
+          "type": "value",
+          "value": "hiragana-iroha"
+        },
+        {
+          "name": "katakana",
+          "prose": "Dictionary-order katakana lettering (e.g., ア, イ, ウ, ..., ン, アア, アイ).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#katakana",
+          "type": "value",
+          "value": "katakana"
+        },
+        {
+          "name": "katakana-iroha",
+          "prose": "Iroha-order katakana lettering (e.g., イ, ロ, ハ, ..., ス, イイ, イロ)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#katakana-iroha",
+          "type": "value",
+          "value": "katakana-iroha"
+        },
+        {
+          "name": "disc",
+          "prose": "A filled circle, similar to • U+2022 BULLET.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#disc",
+          "type": "value",
+          "value": "disc"
+        },
+        {
+          "name": "circle",
+          "prose": "A hollow circle, similar to ◦ U+25E6 WHITE BULLET.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#circle",
+          "type": "value",
+          "value": "circle"
+        },
+        {
+          "name": "square",
+          "prose": "A filled square, similar to ▪ U+25AA BLACK SMALL SQUARE.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#square",
+          "type": "value",
+          "value": "square"
+        },
+        {
+          "name": "disclosure-open",
+          "prose": "Symbols appropriate for indicating an open or closed disclosure widget, such as the HTML details element.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#disclosure-open",
+          "type": "value",
+          "value": "disclosure-open"
+        },
+        {
+          "name": "disclosure-closed",
+          "prose": "Symbols appropriate for indicating an open or closed disclosure widget, such as the HTML details element.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#disclosure-closed",
+          "type": "value",
+          "value": "disclosure-closed"
+        },
+        {
+          "name": "cjk-earthly-branch",
+          "prose": "Han \"Earthly Branch\" ordinals (e.g., 子, 丑, 寅, ..., 亥).",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-cjk-earthly-branch",
+          "type": "value",
+          "value": "cjk-earthly-branch"
+        },
+        {
+          "name": "cjk-heavenly-stem",
+          "prose": "Han \"Heavenly Stem\" ordinals (e.g., 甲, 乙, 丙, ..., 癸)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-cjk-heavenly-stem",
+          "type": "value",
+          "value": "cjk-heavenly-stem"
+        },
+        {
+          "name": "japanese-informal",
+          "prose": "Informal Japanese Kanji numbering (e.g., 千百十一)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#japanese-informal",
+          "type": "value",
+          "value": "japanese-informal"
+        },
+        {
+          "name": "japanese-formal",
+          "prose": "Formal Japanese Kanji numbering (e.g. 壱阡壱百壱拾壱)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#japanese-formal",
+          "type": "value",
+          "value": "japanese-formal"
+        },
+        {
+          "name": "korean-hangul-formal",
+          "prose": "Korean Hangul numbering (e.g., 일천일백일십일)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hangul-formal",
+          "type": "value",
+          "value": "korean-hangul-formal"
+        },
+        {
+          "name": "korean-hanja-informal",
+          "prose": "Informal Korean Hanja numbering (e.g., 千百十一)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hanja-informal",
+          "type": "value",
+          "value": "korean-hanja-informal"
+        },
+        {
+          "name": "korean-hanja-formal",
+          "prose": "Formal Korean Han (Hanja) numbering (e.g., 壹仟壹百壹拾壹)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hanja-formal",
+          "type": "value",
+          "value": "korean-hanja-formal"
+        },
+        {
+          "name": "ethiopic-numeric",
+          "prose": "The ethiopic-numeric counter style is defined for all positive non-zero numbers. The following algorithm converts decimal digits to ethiopic numbers:",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-ethiopic-numeric",
+          "type": "value",
+          "value": "ethiopic-numeric"
+        }
+      ],
+      "value": "<custom-ident>"
+    },
+    {
+      "name": "<symbol>",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-symbol",
+      "type": "type",
+      "value": "<string> | <image> | <custom-ident>"
+    },
+    {
+      "name": "symbols()",
+      "value": "symbols( <symbols-type>? [ <string> | <image> ]+ )",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#funcdef-symbols",
+      "type": "function"
+    },
+    {
+      "name": "<symbols-type>",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-symbols-type",
+      "type": "type",
+      "value": "cyclic | numeric | alphabetic | symbolic | fixed"
+    },
+    {
+      "name": "<counter-style>",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style",
+      "type": "type",
+      "value": "<counter-style-name> | <symbols()>",
+      "values": [
+        {
+          "name": "simp-chinese-informal",
+          "prose": "Simplified Chinese informal numbering (e.g., 一千一百一十一)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#simp-chinese-informal",
+          "type": "value",
+          "value": "simp-chinese-informal"
+        },
+        {
+          "name": "simp-chinese-formal",
+          "prose": "Simplified Chinese formal numbering (e.g. 壹仟壹佰壹拾壹)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#simp-chinese-formal",
+          "type": "value",
+          "value": "simp-chinese-formal"
+        },
+        {
+          "name": "trad-chinese-informal",
+          "prose": "Traditional Chinese informal numbering (e.g., 一千一百一十一)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#trad-chinese-informal",
+          "type": "value",
+          "value": "trad-chinese-informal"
+        },
+        {
+          "name": "trad-chinese-formal",
+          "prose": "Traditional Chinese formal numbering (e.g., 壹仟壹佰壹拾壹)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#trad-chinese-formal",
+          "type": "value",
+          "value": "trad-chinese-formal"
+        },
+        {
+          "name": "cjk-ideographic",
+          "prose": "This counter style is identical to trad-chinese-informal. (It exists for legacy reasons.)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#cjk-ideographic",
+          "type": "value",
+          "value": "cjk-ideographic"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,760 @@
+{
+  "spec": {
+    "title": "CSS Box Sizing Module Level 4",
+    "url": "https://drafts.csswg.org/css-sizing-4/"
+  },
+  "properties": [
+    {
+      "name": "size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-size",
+      "value": "<'width'> <'height'>?",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "size"
+      ],
+      "longhands": [
+        "width",
+        "height"
+      ]
+    },
+    {
+      "name": "min-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-min-size",
+      "value": "<'min-width'> <'min-height'>?",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "min-size",
+        "minSize"
+      ],
+      "longhands": [
+        "min-width",
+        "min-height"
+      ]
+    },
+    {
+      "name": "max-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-max-size",
+      "value": "<'max-width'> <'max-height'>?",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "max-size",
+        "maxSize"
+      ],
+      "longhands": [
+        "max-width",
+        "max-height"
+      ]
+    },
+    {
+      "name": "aspect-ratio",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-aspect-ratio",
+      "value": "auto || <ratio>",
+      "initial": "auto",
+      "appliesTo": "all elements except inline boxes and internal ruby or table boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword or a pair of numbers",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Replaced elements with a natural aspect ratio use that aspect ratio; otherwise the box has no preferred aspect ratio. Size calculations involving the aspect ratio work with the content box dimensions always.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-aspect-ratio-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<ratio>",
+          "prose": "The box’s preferred aspect ratio is the specified ratio of width / height. Size calculations involving the aspect ratio work with the dimensions of the box specified by box-sizing. If the <ratio> is degenerate, the property instead behaves as auto.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-aspect-ratio-ratio",
+          "type": "value",
+          "value": "<ratio>"
+        },
+        {
+          "name": "auto && <ratio>",
+          "prose": "If both auto and a <ratio> are specified together, the preferred aspect ratio is the specified ratio of width / height unless it is a replaced element with a natural aspect ratio, in which case that aspect ratio is used instead. In all cases, size calculations involving the aspect ratio work with the content box dimensions always. If the <ratio> is degenerate, the property instead behaves as auto.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-aspect-ratio-auto--ratio",
+          "type": "value",
+          "value": "auto && <ratio>"
+        }
+      ],
+      "styleDeclaration": [
+        "aspect-ratio",
+        "aspectRatio"
+      ]
+    },
+    {
+      "name": "contain-intrinsic-width",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-width",
+      "value": "auto? [ none | <length [0,∞]> ]",
+      "initial": "none",
+      "appliesTo": "elements with size containment",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified, with <length> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "contain-intrinsic-size",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length>",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified and the element has a last remembered size and is currently skipping its contents, its explicit intrinsic inner size in the corresponding axis is the last remembered size in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "contain-intrinsic-width",
+        "containIntrinsicWidth"
+      ]
+    },
+    {
+      "name": "contain-intrinsic-height",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-height",
+      "value": "auto? [ none | <length [0,∞]> ]",
+      "initial": "none",
+      "appliesTo": "elements with size containment",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified, with <length> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "contain-intrinsic-size",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length>",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified and the element has a last remembered size and is currently skipping its contents, its explicit intrinsic inner size in the corresponding axis is the last remembered size in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "contain-intrinsic-height",
+        "containIntrinsicHeight"
+      ]
+    },
+    {
+      "name": "contain-intrinsic-block-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-block-size",
+      "value": "auto? [ none | <length [0,∞]> ]",
+      "initial": "none",
+      "appliesTo": "elements with size containment",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified, with <length> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "contain-intrinsic-size",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length>",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified and the element has a last remembered size and is currently skipping its contents, its explicit intrinsic inner size in the corresponding axis is the last remembered size in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "contain-intrinsic-block-size",
+        "containIntrinsicBlockSize"
+      ]
+    },
+    {
+      "name": "contain-intrinsic-inline-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-inline-size",
+      "value": "auto? [ none | <length [0,∞]> ]",
+      "initial": "none",
+      "appliesTo": "elements with size containment",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified, with <length> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "logicalPropertyGroup": "contain-intrinsic-size",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length>",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified and the element has a last remembered size and is currently skipping its contents, its explicit intrinsic inner size in the corresponding axis is the last remembered size in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "contain-intrinsic-inline-size",
+        "containIntrinsicInlineSize"
+      ]
+    },
+    {
+      "name": "contain-intrinsic-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-contain-intrinsic-size",
+      "value": "[ auto? [ none | <length [0,∞]> ] ]{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length>",
+          "prose": "If no other contain-intrinsic-size value (such as auto) is providing an explicit intrinsic inner size, the corresponding axis either doesn’t have an explicit intrinsic inner size (if none is specified) or has an explicit intrinsic inner size of the specified <length>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-length",
+          "type": "value",
+          "value": "<length>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified and the element has a last remembered size and is currently skipping its contents, its explicit intrinsic inner size in the corresponding axis is the last remembered size in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-contain-intrinsic-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "contain-intrinsic-size",
+        "containIntrinsicSize"
+      ],
+      "longhands": [
+        "contain-intrinsic-width",
+        "contain-intrinsic-height"
+      ]
+    },
+    {
+      "name": "frame-sizing",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-frame-sizing",
+      "value": "auto | content-width | content-height | content-block-size | content-inline-size",
+      "initial": "auto",
+      "appliesTo": "replaced elements (but see below for details)",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The element’s internal layout intrinsic size, if any, is ignored.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-frame-sizing-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "content-width",
+          "prose": "If the element has an internal layout intrinsic size, its intrinsic size takes the corresponding dimension (either width or height) from the internal layout intrinsic size. (The other dimension is determined normally.) Logical directions resolve based on the writing mode of the element. (Not the embedded document.)",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-frame-sizing-content-width",
+          "type": "value",
+          "value": "content-width"
+        },
+        {
+          "name": "content-height",
+          "prose": "If the element has an internal layout intrinsic size, its intrinsic size takes the corresponding dimension (either width or height) from the internal layout intrinsic size. (The other dimension is determined normally.) Logical directions resolve based on the writing mode of the element. (Not the embedded document.)",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-frame-sizing-content-height",
+          "type": "value",
+          "value": "content-height"
+        },
+        {
+          "name": "content-block-size",
+          "prose": "If the element has an internal layout intrinsic size, its intrinsic size takes the corresponding dimension (either width or height) from the internal layout intrinsic size. (The other dimension is determined normally.) Logical directions resolve based on the writing mode of the element. (Not the embedded document.)",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-frame-sizing-content-block-size",
+          "type": "value",
+          "value": "content-block-size"
+        },
+        {
+          "name": "content-inline-size",
+          "prose": "If the element has an internal layout intrinsic size, its intrinsic size takes the corresponding dimension (either width or height) from the internal layout intrinsic size. (The other dimension is determined normally.) Logical directions resolve based on the writing mode of the element. (Not the embedded document.)",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-frame-sizing-content-inline-size",
+          "type": "value",
+          "value": "content-inline-size"
+        }
+      ],
+      "styleDeclaration": [
+        "frame-sizing",
+        "frameSizing"
+      ]
+    },
+    {
+      "name": "min-intrinsic-sizing",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-min-intrinsic-sizing",
+      "value": "legacy | zero-if-scroll || zero-if-extrinsic",
+      "initial": "legacy",
+      "appliesTo": "all elements except inline boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "legacy",
+          "prose": "The box’s min-content contribution is handled as normal.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-min-intrinsic-sizing-legacy",
+          "type": "value",
+          "value": "legacy"
+        },
+        {
+          "name": "zero-if-scroll",
+          "prose": "The box’s min-content contribution is “compressed” if it is a scroll container in that axis.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-min-intrinsic-sizing-zero-if-scroll",
+          "type": "value",
+          "value": "zero-if-scroll"
+        },
+        {
+          "name": "zero-if-extrinsic",
+          "prose": "The box’s min-content contribution is “compressed” if has an extrinsic preferred or maximum size.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-min-intrinsic-sizing-zero-if-extrinsic",
+          "type": "value",
+          "value": "zero-if-extrinsic"
+        }
+      ],
+      "styleDeclaration": [
+        "min-intrinsic-sizing",
+        "minIntrinsicSizing"
+      ]
+    },
+    {
+      "name": "column-width",
+      "href": "https://drafts.csswg.org/css-sizing-4/#column-sizing",
+      "value": "auto | <box-size>",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "stretch",
+          "prose": "Specifies the optimal column width as the stretch-fit inline size of the multi-column container.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-column-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Specifies the optimal column width as the min-content inline size of the multi-column container’s contents.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-column-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Specifies the optimal column width as the max-content inline size of the multi-column container’s contents.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-column-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Specifies the optimal column width as min(max-content inline size, max(min-content inline size, stretch-fit inline size)).",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-column-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        },
+        {
+          "name": "fit-content()",
+          "value": "fit-content()",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-column-width-fit-content-length-percentage",
+          "type": "value"
+        }
+      ],
+      "styleDeclaration": [
+        "column-width",
+        "columnWidth"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<box-size>",
+      "href": "https://drafts.csswg.org/css-sizing-4/#typedef-box-size",
+      "type": "type",
+      "value": "<length-percentage [0,∞]> | stretch | contain | min-content | max-content | fit-content | fit-content(<length-percentage [0,∞]>) | <calc-size()>"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "min-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "min-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "min-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "min-block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "max-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "max-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "max-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "fit-content()",
+      "value": "fit-content(<length-percentage [0,∞]>)",
+      "pureSyntax": false,
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content",
+      "type": "function",
+      "for": "max-block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "min-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "min-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "min-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "min-block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "max-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "max-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "max-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "If the box has a preferred aspect ratio, applies contain-fit sizing, attempting to fit into the box’s constraints while maintaining its preferred aspect ratio insofar as possible. See § 6.1 Contain-fit Sizing: stretching while maintaining an aspect ratio. If the box has no preferred aspect ratio, applies stretch-fit sizing.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-width-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "max-block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "min-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "min-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "min-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "min-block-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "max-width"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "max-height"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "max-inline-size"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "calc-size()",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
+      "type": "function",
+      "for": "max-block-size"
+    }
+  ]
+}

@@ -1,0 +1,2831 @@
+{
+  "spec": {
+    "title": "CSS Object Model (CSSOM) Module Level 1",
+    "url": "https://drafts.csswg.org/cssom-1/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "CSSStyleSheet"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "MediaList",
+          "StyleSheet",
+          "StyleSheetList",
+          "CSSRuleList",
+          "CSSRule",
+          "CSSStyleRule",
+          "CSSImportRule",
+          "CSSGroupingRule",
+          "CSSPageDescriptors",
+          "CSSPageRule",
+          "CSSMarginRule",
+          "CSSNamespaceRule",
+          "CSSStyleDeclaration",
+          "CSSStyleProperties"
+        ]
+      }
+    },
+    "idlNames": {
+      "MediaList": {
+        "fragment": "[Exposed=Window]\ninterface MediaList {\n  stringifier attribute [LegacyNullToEmptyString] CSSOMString mediaText;\n  readonly attribute unsigned long length;\n  getter CSSOMString? item(unsigned long index);\n  undefined appendMedium(CSSOMString medium);\n  undefined deleteMedium(CSSOMString medium);\n};",
+        "type": "interface",
+        "name": "MediaList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "mediaText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "stringifier",
+            "readonly": false
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-medialist-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "operation",
+            "name": "appendMedium",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "medium",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-medialist-appendmedium"
+          },
+          {
+            "type": "operation",
+            "name": "deleteMedium",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "medium",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-medialist-deletemedium"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#medialist"
+      },
+      "StyleSheet": {
+        "fragment": "[Exposed=Window]\ninterface StyleSheet {\n  readonly attribute CSSOMString type;\n  readonly attribute USVString? href;\n  readonly attribute (Element or ProcessingInstruction)? ownerNode;\n  readonly attribute CSSStyleSheet? parentStyleSheet;\n  readonly attribute DOMString? title;\n  [SameObject, PutForwards=mediaText] readonly attribute MediaList media;\n  attribute boolean disabled;\n};",
+        "type": "interface",
+        "name": "StyleSheet",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-type"
+          },
+          {
+            "type": "attribute",
+            "name": "href",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-href"
+          },
+          {
+            "type": "attribute",
+            "name": "ownerNode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Element"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ProcessingInstruction"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-ownernode"
+          },
+          {
+            "type": "attribute",
+            "name": "parentStyleSheet",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSStyleSheet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-parentstylesheet"
+          },
+          {
+            "type": "attribute",
+            "name": "title",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-title"
+          },
+          {
+            "type": "attribute",
+            "name": "media",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "mediaText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-media"
+          },
+          {
+            "type": "attribute",
+            "name": "disabled",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheet-disabled"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#stylesheet"
+      },
+      "CSSStyleSheet": {
+        "fragment": "[Exposed=Window]\ninterface CSSStyleSheet : StyleSheet {\n  constructor(optional CSSStyleSheetInit options = {});\n\n  readonly attribute CSSRule? ownerRule;\n  [SameObject] readonly attribute CSSRuleList cssRules;\n  unsigned long insertRule(CSSOMString rule, optional unsigned long index = 0);\n  undefined deleteRule(unsigned long index);\n\n  Promise<CSSStyleSheet> replace(USVString text);\n  undefined replaceSync(USVString text);\n};",
+        "type": "interface",
+        "name": "CSSStyleSheet",
+        "inheritance": "StyleSheet",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSStyleSheetInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-cssstylesheet"
+          },
+          {
+            "type": "attribute",
+            "name": "ownerRule",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSRule"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-ownerrule"
+          },
+          {
+            "type": "attribute",
+            "name": "cssRules",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSRuleList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-cssrules"
+          },
+          {
+            "type": "operation",
+            "name": "insertRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rule",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-insertrule"
+          },
+          {
+            "type": "operation",
+            "name": "deleteRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-deleterule"
+          },
+          {
+            "type": "operation",
+            "name": "replace",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSStyleSheet"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-replace"
+          },
+          {
+            "type": "operation",
+            "name": "replaceSync",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "text",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-replacesync"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssstylesheet"
+      },
+      "CSSStyleSheetInit": {
+        "fragment": "dictionary CSSStyleSheetInit {\n  DOMString? baseURL = null;\n  (MediaList or DOMString) media = \"\";\n  boolean disabled = false;\n};",
+        "type": "dictionary",
+        "name": "CSSStyleSheetInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "baseURL",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheetinit-baseurl"
+          },
+          {
+            "type": "field",
+            "name": "media",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MediaList"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheetinit-media"
+          },
+          {
+            "type": "field",
+            "name": "disabled",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheetinit-disabled"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#dictdef-cssstylesheetinit"
+      },
+      "StyleSheetList": {
+        "fragment": "[Exposed=Window]\ninterface StyleSheetList {\n  getter CSSStyleSheet? item(unsigned long index);\n  readonly attribute unsigned long length;\n};",
+        "type": "interface",
+        "name": "StyleSheetList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSStyleSheet"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-stylesheetlist-length"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#stylesheetlist"
+      },
+      "LinkStyle": {
+        "fragment": "interface mixin LinkStyle {\n  readonly attribute CSSStyleSheet? sheet;\n};",
+        "type": "interface mixin",
+        "name": "LinkStyle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "sheet",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSStyleSheet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-linkstyle-sheet"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#linkstyle"
+      },
+      "CSSRuleList": {
+        "fragment": "[Exposed=Window]\ninterface CSSRuleList {\n  getter CSSRule? item(unsigned long index);\n  readonly attribute unsigned long length;\n};",
+        "type": "interface",
+        "name": "CSSRuleList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSRule"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrulelist-length"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssrulelist"
+      },
+      "CSSRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSRule {\n  attribute CSSOMString cssText;\n  readonly attribute CSSRule? parentRule;\n  readonly attribute CSSStyleSheet? parentStyleSheet;\n\n  // the following attribute and constants are historical\n  readonly attribute unsigned short type;\n  const unsigned short STYLE_RULE = 1;\n  const unsigned short CHARSET_RULE = 2;\n  const unsigned short IMPORT_RULE = 3;\n  const unsigned short MEDIA_RULE = 4;\n  const unsigned short FONT_FACE_RULE = 5;\n  const unsigned short PAGE_RULE = 6;\n  const unsigned short MARGIN_RULE = 9;\n  const unsigned short NAMESPACE_RULE = 10;\n};",
+        "type": "interface",
+        "name": "CSSRule",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "cssText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-csstext"
+          },
+          {
+            "type": "attribute",
+            "name": "parentRule",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSRule"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-parentrule"
+          },
+          {
+            "type": "attribute",
+            "name": "parentStyleSheet",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSStyleSheet"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-parentstylesheet"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-type"
+          },
+          {
+            "type": "const",
+            "name": "STYLE_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-style_rule"
+          },
+          {
+            "type": "const",
+            "name": "CHARSET_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-charset_rule"
+          },
+          {
+            "type": "const",
+            "name": "IMPORT_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "3"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-import_rule"
+          },
+          {
+            "type": "const",
+            "name": "MEDIA_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "4"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-media_rule"
+          },
+          {
+            "type": "const",
+            "name": "FONT_FACE_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "5"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-font_face_rule"
+          },
+          {
+            "type": "const",
+            "name": "PAGE_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "6"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-page_rule"
+          },
+          {
+            "type": "const",
+            "name": "MARGIN_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "9"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-margin_rule"
+          },
+          {
+            "type": "const",
+            "name": "NAMESPACE_RULE",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "10"
+            },
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssrule-namespace_rule"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssrule"
+      },
+      "CSSStyleRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSStyleRule : CSSGroupingRule {\n  attribute CSSOMString selectorText;\n  [SameObject, PutForwards=cssText] readonly attribute CSSStyleProperties style;\n};",
+        "type": "interface",
+        "name": "CSSStyleRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "selectorText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylerule-selectortext"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleProperties"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylerule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssstylerule"
+      },
+      "CSSImportRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSImportRule : CSSRule {\n  readonly attribute USVString href;\n  [SameObject, PutForwards=mediaText] readonly attribute MediaList media;\n  [SameObject] readonly attribute CSSStyleSheet? styleSheet;\n  readonly attribute CSSOMString? layerName;\n  readonly attribute CSSOMString? supportsText;\n};",
+        "type": "interface",
+        "name": "CSSImportRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "href",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssimportrule-href"
+          },
+          {
+            "type": "attribute",
+            "name": "media",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "MediaList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "mediaText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssimportrule-media"
+          },
+          {
+            "type": "attribute",
+            "name": "styleSheet",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSStyleSheet"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssimportrule-stylesheet"
+          },
+          {
+            "type": "attribute",
+            "name": "layerName",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssimportrule-layername"
+          },
+          {
+            "type": "attribute",
+            "name": "supportsText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssimportrule-supportstext"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssimportrule"
+      },
+      "CSSGroupingRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSGroupingRule : CSSRule {\n  [SameObject] readonly attribute CSSRuleList cssRules;\n  unsigned long insertRule(CSSOMString rule, optional unsigned long index = 0);\n  undefined deleteRule(unsigned long index);\n};",
+        "type": "interface",
+        "name": "CSSGroupingRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "cssRules",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSRuleList"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssgroupingrule-cssrules"
+          },
+          {
+            "type": "operation",
+            "name": "insertRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "rule",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "0"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssgroupingrule-insertrule"
+          },
+          {
+            "type": "operation",
+            "name": "deleteRule",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssgroupingrule-deleterule"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssgroupingrule"
+      },
+      "CSSPageDescriptors": {
+        "fragment": "[Exposed=Window]\ninterface CSSPageDescriptors : CSSStyleDeclaration {\n  attribute [LegacyNullToEmptyString] CSSOMString margin;\n  attribute [LegacyNullToEmptyString] CSSOMString marginTop;\n  attribute [LegacyNullToEmptyString] CSSOMString marginRight;\n  attribute [LegacyNullToEmptyString] CSSOMString marginBottom;\n  attribute [LegacyNullToEmptyString] CSSOMString marginLeft;\n  attribute [LegacyNullToEmptyString] CSSOMString margin-top;\n  attribute [LegacyNullToEmptyString] CSSOMString margin-right;\n  attribute [LegacyNullToEmptyString] CSSOMString margin-bottom;\n  attribute [LegacyNullToEmptyString] CSSOMString margin-left;\n  attribute [LegacyNullToEmptyString] CSSOMString size;\n  attribute [LegacyNullToEmptyString] CSSOMString pageOrientation;\n  attribute [LegacyNullToEmptyString] CSSOMString page-orientation;\n  attribute [LegacyNullToEmptyString] CSSOMString marks;\n  attribute [LegacyNullToEmptyString] CSSOMString bleed;\n};",
+        "type": "interface",
+        "name": "CSSPageDescriptors",
+        "inheritance": "CSSStyleDeclaration",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "margin",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margin"
+          },
+          {
+            "type": "attribute",
+            "name": "marginTop",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margintop"
+          },
+          {
+            "type": "attribute",
+            "name": "marginRight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-marginright"
+          },
+          {
+            "type": "attribute",
+            "name": "marginBottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-marginbottom"
+          },
+          {
+            "type": "attribute",
+            "name": "marginLeft",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-marginleft"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-top",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margin-top"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-right",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margin-right"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-bottom",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margin-bottom"
+          },
+          {
+            "type": "attribute",
+            "name": "margin-left",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-margin-left"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-size"
+          },
+          {
+            "type": "attribute",
+            "name": "pageOrientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-pageorientation"
+          },
+          {
+            "type": "attribute",
+            "name": "page-orientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-page-orientation"
+          },
+          {
+            "type": "attribute",
+            "name": "marks",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-marks"
+          },
+          {
+            "type": "attribute",
+            "name": "bleed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagedescriptors-bleed"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#csspagedescriptors"
+      },
+      "CSSPageRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSPageRule : CSSGroupingRule {\n           attribute CSSOMString selectorText;\n  [SameObject, PutForwards=cssText] readonly attribute CSSPageDescriptors style;\n};",
+        "type": "interface",
+        "name": "CSSPageRule",
+        "inheritance": "CSSGroupingRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "selectorText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagerule-selectortext"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSPageDescriptors"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-csspagerule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#csspagerule"
+      },
+      "CSSMarginRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSMarginRule : CSSRule {\n  readonly attribute CSSOMString name;\n  [SameObject, PutForwards=cssText] readonly attribute CSSStyleDeclaration style;\n};",
+        "type": "interface",
+        "name": "CSSMarginRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "name",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssmarginrule-name"
+          },
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleDeclaration"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssmarginrule-style"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssmarginrule"
+      },
+      "CSSNamespaceRule": {
+        "fragment": "[Exposed=Window]\ninterface CSSNamespaceRule : CSSRule {\n  readonly attribute CSSOMString namespaceURI;\n  readonly attribute CSSOMString prefix;\n};",
+        "type": "interface",
+        "name": "CSSNamespaceRule",
+        "inheritance": "CSSRule",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "namespaceURI",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssnamespacerule-namespaceuri"
+          },
+          {
+            "type": "attribute",
+            "name": "prefix",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssnamespacerule-prefix"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssnamespacerule"
+      },
+      "CSSStyleDeclaration": {
+        "fragment": "[Exposed=Window]\ninterface CSSStyleDeclaration {\n  [CEReactions] attribute CSSOMString cssText;\n  readonly attribute unsigned long length;\n  getter CSSOMString item(unsigned long index);\n  CSSOMString getPropertyValue(CSSOMString property);\n  CSSOMString getPropertyPriority(CSSOMString property);\n  [CEReactions] undefined setProperty(CSSOMString property, [LegacyNullToEmptyString] CSSOMString value, optional [LegacyNullToEmptyString] CSSOMString priority = \"\");\n  [CEReactions] CSSOMString removeProperty(CSSOMString property);\n  readonly attribute CSSRule? parentRule;\n};",
+        "type": "interface",
+        "name": "CSSStyleDeclaration",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "cssText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-csstext"
+          },
+          {
+            "type": "attribute",
+            "name": "length",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-length"
+          },
+          {
+            "type": "operation",
+            "name": "item",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "index",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned long"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "getter"
+          },
+          {
+            "type": "operation",
+            "name": "getPropertyValue",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "property",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-getpropertyvalue"
+          },
+          {
+            "type": "operation",
+            "name": "getPropertyPriority",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "property",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-getpropertypriority"
+          },
+          {
+            "type": "operation",
+            "name": "setProperty",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "property",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [
+                  {
+                    "type": "extended-attribute",
+                    "name": "LegacyNullToEmptyString",
+                    "rhs": null,
+                    "arguments": []
+                  }
+                ],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "priority",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "LegacyNullToEmptyString",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": {
+                  "type": "string",
+                  "value": ""
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-setproperty"
+          },
+          {
+            "type": "operation",
+            "name": "removeProperty",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "property",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-removeproperty"
+          },
+          {
+            "type": "attribute",
+            "name": "parentRule",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "CSSRule"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyledeclaration-parentrule"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssstyledeclaration"
+      },
+      "CSSStyleProperties": {
+        "fragment": "[Exposed=Window]\ninterface CSSStyleProperties : CSSStyleDeclaration {\n  [CEReactions] attribute [LegacyNullToEmptyString] CSSOMString cssFloat;\n};",
+        "type": "interface",
+        "name": "CSSStyleProperties",
+        "inheritance": "CSSStyleDeclaration",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "cssFloat",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "LegacyNullToEmptyString",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-cssstyleproperties-cssfloat"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#cssstyleproperties"
+      },
+      "ElementCSSInlineStyle": {
+        "fragment": "interface mixin ElementCSSInlineStyle {\n  [SameObject, PutForwards=cssText] readonly attribute CSSStyleProperties style;\n};",
+        "type": "interface mixin",
+        "name": "ElementCSSInlineStyle",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "style",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSStyleProperties"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "PutForwards",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "cssText"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/cssom-1/#dom-elementcssinlinestyle-style"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#elementcssinlinestyle"
+      },
+      "CSS": {
+        "fragment": "[Exposed=Window]\nnamespace CSS {\n  CSSOMString escape(CSSOMString ident);\n};",
+        "type": "namespace",
+        "name": "CSS",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "escape",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "ident",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CSSOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://drafts.csswg.org/cssom-1/#dom-css-escape"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-1/#namespacedef-css"
+      }
+    },
+    "idlExtendedNames": {
+      "CSSStyleSheet": [
+        {
+          "fragment": "partial interface CSSStyleSheet {\n  [SameObject] readonly attribute CSSRuleList rules;\n  long addRule(optional DOMString selector = \"undefined\", optional DOMString style = \"undefined\", optional unsigned long index);\n  undefined removeRule(optional unsigned long index = 0);\n};",
+          "type": "interface",
+          "name": "CSSStyleSheet",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "rules",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSRuleList"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-rules"
+            },
+            {
+              "type": "operation",
+              "name": "addRule",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "long"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "selector",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": {
+                    "type": "string",
+                    "value": "undefined"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "style",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": {
+                    "type": "string",
+                    "value": "undefined"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "index",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-addrule"
+            },
+            {
+              "type": "operation",
+              "name": "removeRule",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "index",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": {
+                    "type": "number",
+                    "value": "0"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://drafts.csswg.org/cssom-1/#dom-cssstylesheet-removerule"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "DocumentOrShadowRoot": [
+        {
+          "fragment": "partial interface mixin DocumentOrShadowRoot {\n  [SameObject] readonly attribute StyleSheetList styleSheets;\n  attribute ObservableArray<CSSStyleSheet> adoptedStyleSheets;\n};",
+          "type": "interface mixin",
+          "name": "DocumentOrShadowRoot",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "styleSheets",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "StyleSheetList"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://drafts.csswg.org/cssom-1/#dom-documentorshadowroot-stylesheets"
+            },
+            {
+              "type": "attribute",
+              "name": "adoptedStyleSheets",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "ObservableArray",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSStyleSheet"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://drafts.csswg.org/cssom-1/#dom-documentorshadowroot-adoptedstylesheets"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "ProcessingInstruction": [
+        {
+          "fragment": "ProcessingInstruction includes LinkStyle;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "ProcessingInstruction",
+          "includes": "LinkStyle"
+        }
+      ],
+      "HTMLElement": [
+        {
+          "fragment": "HTMLElement includes ElementCSSInlineStyle;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "HTMLElement",
+          "includes": "ElementCSSInlineStyle"
+        }
+      ],
+      "SVGElement": [
+        {
+          "fragment": "SVGElement includes ElementCSSInlineStyle;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "SVGElement",
+          "includes": "ElementCSSInlineStyle"
+        }
+      ],
+      "MathMLElement": [
+        {
+          "fragment": "MathMLElement includes ElementCSSInlineStyle;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "MathMLElement",
+          "includes": "ElementCSSInlineStyle"
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  [NewObject] CSSStyleProperties getComputedStyle(Element elt, optional CSSOMString? pseudoElt);\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "getComputedStyle",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CSSStyleProperties"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "elt",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Element"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "pseudoElt",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "CSSOMString"
+                  },
+                  "default": null,
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://drafts.csswg.org/cssom-1/#dom-window-getcomputedstyle"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "MediaList",
+        "StyleSheet",
+        "CSSStyleSheet",
+        "StyleSheetList",
+        "CSSRuleList",
+        "CSSRule",
+        "CSSStyleRule",
+        "CSSImportRule",
+        "CSSGroupingRule",
+        "CSSPageDescriptors",
+        "CSSPageRule",
+        "CSSMarginRule",
+        "CSSNamespaceRule",
+        "CSSStyleDeclaration",
+        "CSSStyleProperties",
+        "CSS"
+      ]
+    },
+    "dependencies": {
+      "MediaList": [
+        "CSSOMString"
+      ],
+      "StyleSheet": [
+        "CSSOMString",
+        "Element",
+        "ProcessingInstruction",
+        "CSSStyleSheet",
+        "MediaList"
+      ],
+      "CSSStyleSheet": [
+        "StyleSheet",
+        "CSSStyleSheetInit",
+        "CSSRule",
+        "CSSRuleList",
+        "CSSOMString",
+        "CSSStyleSheet"
+      ],
+      "CSSStyleSheetInit": [
+        "MediaList"
+      ],
+      "StyleSheetList": [
+        "CSSStyleSheet"
+      ],
+      "DocumentOrShadowRoot": [
+        "StyleSheetList",
+        "CSSStyleSheet"
+      ],
+      "LinkStyle": [
+        "CSSStyleSheet"
+      ],
+      "ProcessingInstruction": [
+        "LinkStyle"
+      ],
+      "CSSRuleList": [
+        "CSSRule"
+      ],
+      "CSSRule": [
+        "CSSOMString",
+        "CSSRule",
+        "CSSStyleSheet"
+      ],
+      "CSSStyleRule": [
+        "CSSGroupingRule",
+        "CSSOMString",
+        "CSSStyleProperties"
+      ],
+      "CSSImportRule": [
+        "CSSRule",
+        "MediaList",
+        "CSSStyleSheet",
+        "CSSOMString"
+      ],
+      "CSSGroupingRule": [
+        "CSSRule",
+        "CSSRuleList",
+        "CSSOMString"
+      ],
+      "CSSPageDescriptors": [
+        "CSSStyleDeclaration",
+        "CSSOMString"
+      ],
+      "CSSPageRule": [
+        "CSSGroupingRule",
+        "CSSOMString",
+        "CSSPageDescriptors"
+      ],
+      "CSSMarginRule": [
+        "CSSRule",
+        "CSSOMString",
+        "CSSStyleDeclaration"
+      ],
+      "CSSNamespaceRule": [
+        "CSSRule",
+        "CSSOMString"
+      ],
+      "CSSStyleDeclaration": [
+        "CSSOMString",
+        "CSSRule"
+      ],
+      "CSSStyleProperties": [
+        "CSSStyleDeclaration",
+        "CSSOMString"
+      ],
+      "ElementCSSInlineStyle": [
+        "CSSStyleProperties"
+      ],
+      "HTMLElement": [
+        "ElementCSSInlineStyle"
+      ],
+      "SVGElement": [
+        "ElementCSSInlineStyle"
+      ],
+      "MathMLElement": [
+        "ElementCSSInlineStyle"
+      ],
+      "Window": [
+        "CSSStyleProperties",
+        "Element",
+        "CSSOMString"
+      ],
+      "CSS": [
+        "CSSOMString"
+      ]
+    },
+    "externalDependencies": [
+      "CSSOMString",
+      "Element",
+      "ProcessingInstruction",
+      "DocumentOrShadowRoot",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "mn-Mong": {
+      "identity": {
+        "language": "mn",
+        "script": "Mong"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

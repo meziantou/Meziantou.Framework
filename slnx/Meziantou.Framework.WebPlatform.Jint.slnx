@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.Jint/Meziantou.Framework.WebPlatform.Jint.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.WebPlatform.AotTests/Meziantou.Framework.WebPlatform.AotTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/Meziantou.Framework.WebPlatform.Imaging.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.WebPlatform.Tests/Meziantou.Framework.WebPlatform.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
+  </Folder>
+</Solution>

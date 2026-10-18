@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ko-CN": {
+      "identity": {
+        "language": "ko",
+        "territory": "CN"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

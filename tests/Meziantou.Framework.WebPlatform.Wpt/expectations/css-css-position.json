@@ -1,0 +1,1110 @@
+{
+  "css/css-position/absolute-pos-box-inside-fixed-pos-box-with-changing-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/animations/bottom-composition.html": {
+    "total": 50
+  },
+  "css/css-position/animations/bottom-interpolation.html": {
+    "total": 144
+  },
+  "css/css-position/animations/left-composition.html": {
+    "total": 60
+  },
+  "css/css-position/animations/left-interpolation.html": {
+    "total": 144
+  },
+  "css/css-position/animations/position-interpolation.html": {
+    "total": 97
+  },
+  "css/css-position/animations/right-composition.html": {
+    "total": 50
+  },
+  "css/css-position/animations/right-interpolation.html": {
+    "total": 144
+  },
+  "css/css-position/animations/top-composition.html": {
+    "total": 50
+  },
+  "css/css-position/animations/top-interpolation.html": {
+    "total": 144
+  },
+  "css/css-position/backdrop-inherit-computed.html": {
+    "total": 4
+  },
+  "css/css-position/backdrop-inherit-rendered.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/backdrop-tree-abiding-slotted.html": {
+    "total": 1,
+    "failures": {
+      "::backdrop is tree-abiding and should be allowed after ::slotted()": "FAIL"
+    }
+  },
+  "css/css-position/backdrop-ua-style.html": {
+    "total": 1
+  },
+  "css/css-position/block-axis-constraint-changes-for-out-of-flow-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/box-insets-top-right-bottom-left.html": {
+    "total": 8
+  },
+  "css/css-position/change-insets-inside-strict-containment-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/containing-block-change-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/containing-block-change-scrollframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/fixed-z-index-blend.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/hypothetical-box-scroll-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/hypothetical-box-scroll-viewport.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/hypothetical-dynamic-change-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/hypothetical-dynamic-change-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/hypothetical-dynamic-change-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/inheritance.html": {
+    "total": 12
+  },
+  "css/css-position/invalidate-opacity-negative-z-index.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vlr-ltr-ltr-in-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vlr-ltr-rtl-in-multicol.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vlr-rtl-ltr-in-multicol.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vlr-rtl-rtl-in-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vrl-ltr-ltr-in-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vrl-ltr-rtl-in-multicol.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vrl-rtl-ltr-in-multicol.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/static-position/vrl-rtl-rtl-in-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/vlr-ltr-ltr-in-multicols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/vlr-ltr-rtl-in-multicols.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/multicol/vlr-rtl-ltr-in-multicols.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/multicol/vlr-rtl-rtl-in-multicols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/vrl-ltr-ltr-in-multicols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/multicol/vrl-ltr-rtl-in-multicols.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/multicol/vrl-rtl-ltr-in-multicols.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/multicol/vrl-rtl-rtl-in-multicols.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/nested-inline-abspos-child-with-siblings.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/nested-inline-abspos-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/overlay/animation/overlay-interpolation.html": {
+    "total": 88
+  },
+  "css/css-position/overlay/author-overlay-top-layer-removal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/overlay/overlay-button-appearance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/overlay/overlay-computed.html": {
+    "total": 6
+  },
+  "css/css-position/overlay/overlay-invalid.html": {
+    "total": 6
+  },
+  "css/css-position/overlay/overlay-transition-backdrop-entry.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/overlay/overlay-transition-backdrop.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/overlay/overlay-transition-dialog.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/overlay/overlay-transition-finished.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/overlay/overlay-transition-in-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/overlay/overlay-transition-out-rendering.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/overlay/overlay-transition-property.html": {
+    "total": 4
+  },
+  "css/css-position/overlay/overlay-transition.html": {
+    "total": 2
+  },
+  "css/css-position/overlay/overlay-user-agent-rules.html": {
+    "total": 4
+  },
+  "css/css-position/overlay/overlay-valid.html": {
+    "total": 6
+  },
+  "css/css-position/parsing/bottom-computed.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/bottom-invalid.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/bottom-valid.html": {
+    "total": 4
+  },
+  "css/css-position/parsing/inset-computed.html": {
+    "total": 20
+  },
+  "css/css-position/parsing/inset-invalid.html": {
+    "total": 22
+  },
+  "css/css-position/parsing/inset-valid.html": {
+    "total": 50
+  },
+  "css/css-position/parsing/left-computed.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/left-invalid.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/left-valid.html": {
+    "total": 4
+  },
+  "css/css-position/parsing/position-computed.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/position-invalid.html": {
+    "total": 2
+  },
+  "css/css-position/parsing/position-valid.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/right-computed.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/right-invalid.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/right-valid.html": {
+    "total": 4
+  },
+  "css/css-position/parsing/top-computed.html": {
+    "total": 5
+  },
+  "css/css-position/parsing/top-invalid.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/top-valid.html": {
+    "total": 4
+  },
+  "css/css-position/parsing/z-index-computed.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/z-index-invalid.html": {
+    "total": 4
+  },
+  "css/css-position/parsing/z-index-positioned-computed.html": {
+    "total": 3
+  },
+  "css/css-position/parsing/z-index-valid.html": {
+    "total": 4
+  },
+  "css/css-position/position-absolute-abspos-table-dynamic.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-center-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-center-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-center-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-center-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-center-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-center-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-chrome-bug-001.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-chrome-bug-002.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-container-dynamic-002.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-container-dynamic.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-001.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-002.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-003.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-004.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-005.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-006.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-007.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-008.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-009.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-010.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-011.html": {
+    "total": 2
+  },
+  "css/css-position/position-absolute-crash-chrome-012.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-crash-chrome-013.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-dynamic-auto-overflow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-containing-block.html": {
+    "total": 8
+  },
+  "css/css-position/position-absolute-dynamic-formatting-context.html": {
+    "total": 12
+  },
+  "css/css-position/position-absolute-dynamic-list-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-margin-auto-001.html": {
+    "total": 2
+  },
+  "css/css-position/position-absolute-dynamic-overflow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-overflow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-relayout-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-floats-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-floats-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-floats-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-floats-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-margin-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position-table-cell.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-dynamic-static-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-fieldset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-fit-content-auto-margin.html": {
+    "total": 45
+  },
+  "css/css-position/position-absolute-fit-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-iframe-print-001.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-iframe-print-002.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-001.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-in-inline-002.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-in-inline-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-007a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-007b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-008a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-008b.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-margin-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-large-negative-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-margin-auto-001.html": {
+    "total": 1
+  },
+  "css/css-position/position-absolute-multicol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-padding-percentage.html": {
+    "total": 2
+  },
+  "css/css-position/position-absolute-percentage-height.html": {
+    "total": 2,
+    "failures": {
+      "#target height matches containing block height, and target parent width matches #target width": "FAIL",
+      "#target height matches containing block height, and target parent width matches #target width after resize": "FAIL"
+    }
+  },
+  "css/css-position/position-absolute-replaced-intrinsic-size.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-replaced-minmax.html": {
+    "total": 43
+  },
+  "css/css-position/position-absolute-replaced-no-intrinsic-size.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-replaced-with-display-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-root-element-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-root-element-grid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-scrollable-overflow-001.html": {
+    "total": 14
+  },
+  "css/css-position/position-absolute-scrollable-overflow-zero.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-semi-replaced-stretch-button.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-semi-replaced-stretch-input.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-semi-replaced-stretch-other.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-table-001.html": {
+    "total": 6
+  },
+  "css/css-position/position-absolute-under-non-containing-stacking-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-with-negative-sized-imcb.html": {
+    "total": 30
+  },
+  "css/css-position/position-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-at-bottom-right-on-viewport.html": {
+    "total": 1
+  },
+  "css/css-position/position-fixed-dynamic-transformed-sibling.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-overflow-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-root-element-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-root-element-grid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-scroll-nested-fixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-scroll-overlap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-fixed-video-controls-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-015.html": {
+    "total": 20
+  },
+  "css/css-position/position-relative-016.html": {
+    "total": 18
+  },
+  "css/css-position/position-relative-aspect-ratio-001.html": {
+    "total": 4
+  },
+  "css/css-position/position-relative-aspect-ratio-002.html": {
+    "total": 3
+  },
+  "css/css-position/position-relative-table-caption.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tbody-left-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tbody-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tbody-top-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tbody-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-td-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-td-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tfoot-left-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tfoot-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tfoot-top-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tfoot-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-thead-left-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-thead-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-thead-top-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-thead-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tr-left-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tr-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tr-top-absolute-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-relative-table-tr-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-static-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/position-sticky-dynamic-ancestor-001.html": {
+    "total": 1
+  },
+  "css/css-position/replaced-object-backdrop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/htb-ltr-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/htb-ltr-rtl.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/htb-rtl-ltr.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/htb-rtl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-013.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/inline-level-absolute-in-block-level-context-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-htb-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-htb-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-slr-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-slr-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-srl-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-srl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-vlr-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-vlr-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-vrl-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/top-layer-box-uses-icb-vrl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vlr-ltr-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vlr-ltr-rtl.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vlr-rtl-ltr.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vlr-rtl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vrl-ltr-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vrl-ltr-rtl.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vrl-rtl-ltr.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/static-position/vrl-rtl-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky-dialog.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-block-in-sticky-inline.html": {
+    "total": 1,
+    "failures": {
+      "a sticky block in an inline does not duplicate its sticky inline ancestor's offset": "FAIL"
+    }
+  },
+  "css/css-position/sticky/position-sticky-bottom-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-bottom.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-change-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-child-multicolumn.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-column-reverse-flex.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-contained-by-display-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-escape-scroller-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-escape-scroller-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-escape-scroller-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-escape-scroller-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-fixed-ancestor-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-fixed-ancestor-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-fixed-ancestor-iframe.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-fixed-ancestor.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-flex-item-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-flex-item-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-flex-item-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-flex-item-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-flexbox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-fractional-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-get-bounding-client-rect.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-grid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-horizontal-rtl-overconstrained.html": {
+    "total": 4
+  },
+  "css/css-position/sticky/position-sticky-hyperlink.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-in-fixed-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-inflow-position.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-inline-block-in-sticky-inline.html": {
+    "total": 2
+  },
+  "css/css-position/sticky/position-sticky-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-input-box-gets-focused-after-scroll.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-large-top-2.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-large-top.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-left-and-right-overconstrained.html": {
+    "total": 4
+  },
+  "css/css-position/sticky/position-sticky-left.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-margins-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-margins-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-margins.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-nested-bottom.html": {
+    "total": 5
+  },
+  "css/css-position/sticky/position-sticky-nested-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-nested-left.html": {
+    "total": 5
+  },
+  "css/css-position/sticky/position-sticky-nested-right.html": {
+    "total": 5
+  },
+  "css/css-position/sticky/position-sticky-nested-table.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-nested-thead-th.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-nested-top.html": {
+    "total": 5
+  },
+  "css/css-position/sticky/position-sticky-offset-overflow.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-offset-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-offset-top-left.html": {
+    "total": 2
+  },
+  "css/css-position/sticky/position-sticky-on-minimum-scale.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-overflow-clip-container.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-overflow-hidden.html": {
+    "total": 2
+  },
+  "css/css-position/sticky/position-sticky-overflow-padding.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-padding-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-padding-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-parsing.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-rendering.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-right-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-right-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-right.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-root-scroller.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-scroll-reposition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-scroll-with-clip-and-abspos.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-scrollIntoView.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-scrolled-remove-sibling-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-scrolled-remove-sibling.html": {
+    "total": 2
+  },
+  "css/css-position/sticky/position-sticky-single-axis-basic.html": {
+    "total": 2,
+    "failures": {
+      "Constraints apply independently across nested single-axis scrollers": "FAIL"
+    }
+  },
+  "css/css-position/sticky/position-sticky-single-axis-dynamic.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-single-axis-nested.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-single-axis-used-values.html": {
+    "total": 1
+  },
+  "css/css-position/sticky/position-sticky-stacking-context-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-stacking-context.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-parts.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-pixel-rounding.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-position/sticky/position-sticky-table-td-bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-td-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-td-right.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-td-subpixel-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-td-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-tfoot-bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-th-bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-th-left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-th-right.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-th-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-thead-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-tr-bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-table-tr-top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-and-bottom-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/position-sticky-top-and-bottom-overconstrained.html": {
+    "total": 4
+  },
+  "css/css-position/sticky/position-sticky-top-and-bottom.html": {
+    "total": 2
+  },
+  "css/css-position/sticky/position-sticky-top.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-transforms-translate.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-transforms.html": {
+    "total": 3
+  },
+  "css/css-position/sticky/position-sticky-writing-modes.html": {
+    "reftest": "PASS"
+  },
+  "css/css-position/sticky/sticky-after-input.html": {
+    "total": 1
+  },
+  "css/css-position/z-index-blend-will-change-overlapping-layers.html": {
+    "reftest": "PASS"
+  }
+}

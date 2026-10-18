@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kw": {
+      "identity": {
+        "language": "kw"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

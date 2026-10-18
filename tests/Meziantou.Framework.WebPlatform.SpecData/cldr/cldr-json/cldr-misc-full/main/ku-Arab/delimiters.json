@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ku-Arab": {
+      "identity": {
+        "language": "ku",
+        "script": "Arab"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

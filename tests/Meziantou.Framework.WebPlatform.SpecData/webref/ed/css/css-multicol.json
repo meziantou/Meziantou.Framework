@@ -1,0 +1,226 @@
+{
+  "spec": {
+    "title": "CSS Multi-column Layout Module Level 2",
+    "url": "https://drafts.csswg.org/css-multicol-2/"
+  },
+  "properties": [
+    {
+      "name": "column-height",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-column-height",
+      "value": "auto | <length [0,∞]>",
+      "initial": "auto",
+      "appliesTo": "block containers except table wrapper boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword auto or an absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "means that the column height will be determined by the amount of content and other properties.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-height-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<length [0,∞]>",
+          "prose": "describes the desired column height. Negative values are not allowed.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-height-length-0",
+          "type": "value",
+          "value": "<length [0,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "column-height",
+        "columnHeight"
+      ]
+    },
+    {
+      "name": "column-count",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-column-count",
+      "value": "auto | <integer [1,∞]>",
+      "initial": "auto",
+      "appliesTo": "block containers except table wrapper boxes",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "means that the number of columns will be determined by other properties (e.g., column-width, if it has a non-auto value).",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-count-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<integer [1,∞]>",
+          "prose": "describes the optimal number of columns into which the content of the element will be flowed. Values must be greater than 0. If both column-width and column-count have non-auto values, the integer value describes the maximum number of columns.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-count-integer-1",
+          "type": "value",
+          "value": "<integer [1,∞]>"
+        }
+      ],
+      "styleDeclaration": [
+        "column-count",
+        "columnCount"
+      ]
+    },
+    {
+      "name": "column-wrap",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-column-wrap",
+      "value": "auto | nowrap | wrap",
+      "initial": "auto",
+      "appliesTo": "multicol containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "If column-height is not 'column-height/auto' behaves as the value 'column-wrap/wrap' otherwise acts as 'column-wrap/nowrap'.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-wrap-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "nowrap",
+          "prose": "Overflow columns are created in the inline direction.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-wrap-nowrap",
+          "type": "value",
+          "value": "nowrap"
+        },
+        {
+          "name": "wrap",
+          "prose": "Overflow columns create a new multicol row in the block direction.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-wrap-wrap",
+          "type": "value",
+          "value": "wrap"
+        }
+      ],
+      "styleDeclaration": [
+        "column-wrap",
+        "columnWrap"
+      ]
+    },
+    {
+      "name": "columns",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-columns",
+      "value": "[ <'column-width'> || <'column-count'> ] [ / <'column-height'> ]?",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "columns"
+      ],
+      "longhands": [
+        "column-width",
+        "column-count",
+        "column-height"
+      ]
+    },
+    {
+      "name": "column-span",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-column-span",
+      "value": "none | <integer [1,∞]> | all | auto",
+      "initial": "none",
+      "appliesTo": "in-flow block-level elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element does not span multiple columns.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-span-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "The element forces a column break and is taken out of flow to span across all columns of the current multicol row in the same block formatting context. Content in the normal flow that appears before the element is automatically balanced across all columns in the immediately preceding multi-column line before the element appears, and any subsequent content flows into a new multi-column line after the element. The element establishes an independent formatting context.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-span-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "<integer [1,∞]>",
+          "prose": "The element spans the specified number of columns. Values must be greater than 0. If the specified integer value is equal to, or larger than the number of columns in the multicol element, the number of columns spanned will be the same as if column-span: all had been specified. This definition is insufficient. Does column-span: 1 count as column-span: none, or does it create a spanner (which is a BFC)? Which columns does it span? How does that affect height calculations, and interact with column-fill",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-span-integer-1",
+          "type": "value",
+          "value": "<integer [1,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "The number of columns spanned by the element depends on its min-content outer size in the inline direction of the multi-column container. If it is smaller than the used value of column-width, this is the same as if column-span: none had been specified. Otherwise, the number of columns spanned is the smallest positive integer n for which n × column-width + (n - 1) × column-gap is larger than the min-content outer size. If this would be larger than the number of columns, the number of columns spanned will be the same as if column-span: all had been specified. If column-span: 1 does not do the same as column-span: none, should this behave as column-span: 1 or as column-span: none when the element is small enough?",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-span-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "column-span",
+        "columnSpan"
+      ]
+    },
+    {
+      "name": "column-fill",
+      "href": "https://drafts.csswg.org/css-multicol-2/#propdef-column-fill",
+      "value": "auto | balance | balance-all",
+      "initial": "balance",
+      "appliesTo": "multicol containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "balance",
+          "prose": "Balance content equally between columns, as far as possible. In fragmented contexts, only the last fragment is balanced.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-fill-balance",
+          "type": "value",
+          "value": "balance"
+        },
+        {
+          "name": "balance-all",
+          "prose": "Balance content equally between columns, as far as possible. In fragmented contexts, all fragments are balanced.",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-fill-balance-all",
+          "type": "value",
+          "value": "balance-all"
+        },
+        {
+          "name": "auto",
+          "prose": "fill columns sequentially",
+          "href": "https://drafts.csswg.org/css-multicol-2/#valdef-column-fill-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "column-fill",
+        "columnFill"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": "::column",
+      "prose": "The ::column pseudo-element represents the individual columns in a multi-column container. It only exists on multi-column containers.",
+      "href": "https://drafts.csswg.org/css-multicol-2/#selectordef-column",
+      "value": "::column"
+    }
+  ],
+  "values": []
+}

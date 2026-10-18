@@ -1,0 +1,15 @@
+{
+  "main": {
+    "khq": {
+      "identity": {
+        "language": "khq"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

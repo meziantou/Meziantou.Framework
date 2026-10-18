@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sq": {
+      "identity": {
+        "language": "sq"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "css/fetching/fetch-resources.sub.html": {
+    "total": 4,
+    "failures": {
+      "Shape images should fetched with cors": "FAIL",
+      "WebFonts should be fetched with cors": "FAIL"
+    }
+  }
+}

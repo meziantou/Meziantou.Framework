@@ -1,0 +1,288 @@
+{
+  "media-source/SourceBuffer-abort-readyState.html": {
+    "total": 2,
+    "failures": {
+      "SourceBuffer#abort() (video/mp4) : If the readyState attribute of the parent media source is not in the \"open\" state then throw an INVALID_STATE_ERR exception and abort these steps.": "FAIL"
+    }
+  },
+  "media-source/SourceBuffer-abort-removed.html": {
+    "total": 2,
+    "failures": {
+      "SourceBuffer#abort (video/mp4) : if this object has been removed from the sourceBuffers attribute of the parent media source, then throw an INVALID_STATE_ERR exception and abort these steps.": "FAIL"
+    }
+  },
+  "media-source/SourceBuffer-abort-updating.html": {
+    "total": 2,
+    "failures": {
+      "SourceBuffer#abort() (video/mp4) : Check the algorithm when the updating attribute is true.": "FAIL"
+    }
+  },
+  "media-source/SourceBuffer-abort.html": {
+    "total": 2,
+    "failures": {
+      "SourceBuffer#abort() (video/mp4): Check the values of appendWindowStart and appendWindowEnd.": "FAIL"
+    }
+  },
+  "media-source/SourceBuffer-appendWindowEnd-rounding.html": {
+    "total": 3
+  },
+  "media-source/SourceBuffer-short-frame-endOfStream.html": {
+    "total": 2
+  },
+  "media-source/URL-createObjectURL-null.html": {
+    "total": 1
+  },
+  "media-source/URL-createObjectURL-revoke.html": {
+    "total": 3
+  },
+  "media-source/URL-createObjectURL.html": {
+    "total": 1
+  },
+  "media-source/dedicated-worker/mediasource-worker-detach-element.html": {
+    "total": 15
+  },
+  "media-source/dedicated-worker/mediasource-worker-duration.html": {
+    "total": 1
+  },
+  "media-source/dedicated-worker/mediasource-worker-handle-transfer.html": {
+    "total": 9
+  },
+  "media-source/dedicated-worker/mediasource-worker-handle.html": {
+    "total": 9
+  },
+  "media-source/dedicated-worker/mediasource-worker-objecturl.html": {
+    "total": 5
+  },
+  "media-source/dedicated-worker/mediasource-worker-play-terminate-worker.html": {
+    "total": 30
+  },
+  "media-source/dedicated-worker/mediasource-worker-play.html": {
+    "total": 1
+  },
+  "media-source/idlharness.any.js": {
+    "total": 148
+  },
+  "media-source/idlharness.any.js#dedicatedworker": {
+    "total": 95
+  },
+  "media-source/invalid-third-block.html": {
+    "total": 1
+  },
+  "media-source/last-frame-dimensions.html": {
+    "total": 2
+  },
+  "media-source/mediasource-activesourcebuffers.html": {
+    "total": 8
+  },
+  "media-source/mediasource-addsourcebuffer-mode.html": {
+    "total": 2
+  },
+  "media-source/mediasource-addsourcebuffer.html": {
+    "total": 10
+  },
+  "media-source/mediasource-append-buffer.html": {
+    "total": 24,
+    "failures": {
+      "Test appendBuffer events order.": "FAIL"
+    }
+  },
+  "media-source/mediasource-appendbuffer-quota-exceeded.html": {
+    "total": 1
+  },
+  "media-source/mediasource-appendbuffer-sharedarraybuffer.window.js": {
+    "total": 2
+  },
+  "media-source/mediasource-appendwindow.html": {
+    "total": 7
+  },
+  "media-source/mediasource-attach-stops-delaying-load-event.html": {
+    "total": 1
+  },
+  "media-source/mediasource-avtracks.html": {
+    "total": 4
+  },
+  "media-source/mediasource-buffered-seek.html": {
+    "total": 1
+  },
+  "media-source/mediasource-buffered.html": {
+    "total": 8
+  },
+  "media-source/mediasource-changetype-play-implicit.html": {
+    "total": 16
+  },
+  "media-source/mediasource-changetype-play-negative.html": {
+    "total": 49
+  },
+  "media-source/mediasource-changetype-play-without-codecs-parameter.html": {
+    "total": 19
+  },
+  "media-source/mediasource-changetype-play.html": {
+    "total": 19
+  },
+  "media-source/mediasource-changetype.html": {
+    "total": 8
+  },
+  "media-source/mediasource-closed.html": {
+    "total": 10
+  },
+  "media-source/mediasource-config-change-mp4-a-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-av-audio-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-av-framesize.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-av-video-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-v-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-v-framerate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-mp4-v-framesize.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-a-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-av-audio-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-av-framesize.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-av-video-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-v-bitrate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-v-framerate.html": {
+    "total": 1
+  },
+  "media-source/mediasource-config-change-webm-v-framesize.html": {
+    "total": 1
+  },
+  "media-source/mediasource-correct-frames-after-reappend.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Test the expected frames are played at the expected times, even in presence of reappends": "TIMEOUT"
+    }
+  },
+  "media-source/mediasource-correct-frames.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "Test the expected frames are played at the expected times": "TIMEOUT"
+    }
+  },
+  "media-source/mediasource-detach.html": {
+    "total": 2
+  },
+  "media-source/mediasource-duration-boundaryconditions.html": {
+    "total": 13
+  },
+  "media-source/mediasource-duration.html": {
+    "total": 9
+  },
+  "media-source/mediasource-endofstream-invaliderror.html": {
+    "total": 6
+  },
+  "media-source/mediasource-endofstream.html": {
+    "total": 3
+  },
+  "media-source/mediasource-errors.html": {
+    "total": 7
+  },
+  "media-source/mediasource-getvideoplaybackquality.html": {
+    "total": 1
+  },
+  "media-source/mediasource-h264-play-starved.html": {
+    "total": 1
+  },
+  "media-source/mediasource-iamf-playback.html": {
+    "total": 1
+  },
+  "media-source/mediasource-invalid-codec.html": {
+    "total": 2
+  },
+  "media-source/mediasource-is-type-supported.html": {
+    "total": 55
+  },
+  "media-source/mediasource-liveseekable.html": {
+    "total": 10
+  },
+  "media-source/mediasource-multiple-attach.html": {
+    "total": 3
+  },
+  "media-source/mediasource-play-then-seek-back.html": {
+    "total": 1
+  },
+  "media-source/mediasource-play.html": {
+    "total": 1
+  },
+  "media-source/mediasource-preload.html": {
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "error occurs with bogus blob URL (corrupted MediaSource object URL) and element preload=none": "TIMEOUT",
+      "error occurs with bogus blob URL (revoked MediaSource object URL) and element preload=none": "TIMEOUT"
+    }
+  },
+  "media-source/mediasource-redundant-seek.html": {
+    "total": 1
+  },
+  "media-source/mediasource-remove.html": {
+    "total": 17
+  },
+  "media-source/mediasource-removesourcebuffer.html": {
+    "total": 7
+  },
+  "media-source/mediasource-replay.html": {
+    "total": 1
+  },
+  "media-source/mediasource-seek-beyond-duration.html": {
+    "total": 2
+  },
+  "media-source/mediasource-seek-during-pending-seek.html": {
+    "total": 2
+  },
+  "media-source/mediasource-seekable.html": {
+    "total": 3
+  },
+  "media-source/mediasource-sequencemode-append-buffer.html": {
+    "total": 3
+  },
+  "media-source/mediasource-sourcebuffer-mode-timestamps.html": {
+    "total": 2
+  },
+  "media-source/mediasource-sourcebuffer-mode.html": {
+    "total": 6
+  },
+  "media-source/mediasource-sourcebufferlist.html": {
+    "total": 5
+  },
+  "media-source/mediasource-timestamp-offset.html": {
+    "total": 15
+  },
+  "media-source/mse-for-webcodecs/tentative/mediasource-encrypted-webcodecs-appendencodedchunks-play.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "media-source/mse-for-webcodecs/tentative/mediasource-webcodecs-addsourcebuffer.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "media-source/mse-for-webcodecs/tentative/mediasource-webcodecs-appendencodedchunks-play.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "media-source/waiting-for-audio.html": {
+    "total": 1
+  }
+}

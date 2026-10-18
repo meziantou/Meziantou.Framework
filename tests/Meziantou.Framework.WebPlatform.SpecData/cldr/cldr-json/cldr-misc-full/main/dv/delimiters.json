@@ -1,0 +1,15 @@
+{
+  "main": {
+    "dv": {
+      "identity": {
+        "language": "dv"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

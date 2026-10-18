@@ -1,0 +1,586 @@
+{
+  "spec": {
+    "title": "User-Agent Client Hints",
+    "url": "https://wicg.github.io/ua-client-hints/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "NavigatorUAData"
+        ],
+        "Worker": [
+          "NavigatorUAData"
+        ]
+      }
+    },
+    "idlNames": {
+      "NavigatorUABrandVersion": {
+        "fragment": "dictionary NavigatorUABrandVersion {\n  DOMString brand;\n  DOMString version;\n};",
+        "type": "dictionary",
+        "name": "NavigatorUABrandVersion",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "brand",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-brand"
+          },
+          {
+            "type": "field",
+            "name": "version",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-version"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/ua-client-hints/#dictdef-navigatoruabrandversion"
+      },
+      "UADataValues": {
+        "fragment": "dictionary UADataValues {\n  DOMString architecture;\n  DOMString bitness;\n  sequence<NavigatorUABrandVersion> brands;\n  sequence<DOMString> formFactors;\n  sequence<NavigatorUABrandVersion> fullVersionList;\n  DOMString model;\n  boolean mobile;\n  DOMString platform;\n  DOMString platformVersion;\n  DOMString uaFullVersion; // deprecated in favor of fullVersionList\n  boolean wow64;\n};",
+        "type": "dictionary",
+        "name": "UADataValues",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "architecture",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-architecture"
+          },
+          {
+            "type": "field",
+            "name": "bitness",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-bitness"
+          },
+          {
+            "type": "field",
+            "name": "brands",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigatorUABrandVersion"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-brands"
+          },
+          {
+            "type": "field",
+            "name": "formFactors",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-formfactors"
+          },
+          {
+            "type": "field",
+            "name": "fullVersionList",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigatorUABrandVersion"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-fullversionlist"
+          },
+          {
+            "type": "field",
+            "name": "model",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-model"
+          },
+          {
+            "type": "field",
+            "name": "mobile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-mobile"
+          },
+          {
+            "type": "field",
+            "name": "platform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platform"
+          },
+          {
+            "type": "field",
+            "name": "platformVersion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platformversion"
+          },
+          {
+            "type": "field",
+            "name": "uaFullVersion",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-uafullversion"
+          },
+          {
+            "type": "field",
+            "name": "wow64",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-wow64"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/ua-client-hints/#dictdef-uadatavalues"
+      },
+      "UALowEntropyJSON": {
+        "fragment": "dictionary UALowEntropyJSON {\n  sequence<NavigatorUABrandVersion> brands;\n  boolean mobile;\n  DOMString platform;\n};",
+        "type": "dictionary",
+        "name": "UALowEntropyJSON",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "brands",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigatorUABrandVersion"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-brands"
+          },
+          {
+            "type": "field",
+            "name": "mobile",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-mobile"
+          },
+          {
+            "type": "field",
+            "name": "platform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-platform"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/ua-client-hints/#dictdef-ualowentropyjson"
+      },
+      "NavigatorUAData": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface NavigatorUAData {\n  readonly attribute FrozenArray<NavigatorUABrandVersion> brands;\n  readonly attribute boolean mobile;\n  readonly attribute DOMString platform;\n  Promise<UADataValues> getHighEntropyValues(sequence<DOMString> hints);\n  UALowEntropyJSON toJSON();\n};",
+        "type": "interface",
+        "name": "NavigatorUAData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "brands",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "NavigatorUABrandVersion"
+                }
+              ]
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands"
+          },
+          {
+            "type": "attribute",
+            "name": "mobile",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-mobile"
+          },
+          {
+            "type": "attribute",
+            "name": "platform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-platform"
+          },
+          {
+            "type": "operation",
+            "name": "getHighEntropyValues",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "UADataValues"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "hints",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "DOMString"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-gethighentropyvalues"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "UALowEntropyJSON"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/ua-client-hints/#navigatoruadata"
+      },
+      "NavigatorUA": {
+        "fragment": "interface mixin NavigatorUA {\n  [SecureContext] readonly attribute NavigatorUAData userAgentData;\n};",
+        "type": "interface mixin",
+        "name": "NavigatorUA",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "userAgentData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "NavigatorUAData"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SecureContext",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/ua-client-hints/#dom-navigatorua-useragentdata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/ua-client-hints/#navigatorua"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "Navigator includes NavigatorUA;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Navigator",
+          "includes": "NavigatorUA"
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "WorkerNavigator includes NavigatorUA;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "WorkerNavigator",
+          "includes": "NavigatorUA"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NavigatorUAData"
+      ],
+      "Worker": [
+        "NavigatorUAData"
+      ]
+    },
+    "dependencies": {
+      "NavigatorUABrandVersion": [],
+      "UADataValues": [
+        "NavigatorUABrandVersion"
+      ],
+      "UALowEntropyJSON": [
+        "NavigatorUABrandVersion"
+      ],
+      "NavigatorUAData": [
+        "NavigatorUABrandVersion",
+        "UADataValues",
+        "UALowEntropyJSON"
+      ],
+      "NavigatorUA": [
+        "NavigatorUAData"
+      ],
+      "Navigator": [
+        "NavigatorUA"
+      ],
+      "WorkerNavigator": [
+        "NavigatorUA"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

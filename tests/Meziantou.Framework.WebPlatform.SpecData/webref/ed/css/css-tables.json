@@ -1,0 +1,107 @@
+{
+  "spec": {
+    "title": "CSS Table Module Level 3",
+    "url": "https://drafts.csswg.org/css-tables-3/"
+  },
+  "properties": [
+    {
+      "name": "table-layout",
+      "href": "https://drafts.csswg.org/css-tables-3/#propdef-table-layout",
+      "value": "auto | fixed",
+      "initial": "auto",
+      "appliesTo": "table grid boxes",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "table-layout",
+        "tableLayout"
+      ]
+    },
+    {
+      "name": "border-collapse",
+      "href": "https://drafts.csswg.org/css-tables-3/#propdef-border-collapse",
+      "value": "separate | collapse",
+      "initial": "separate",
+      "appliesTo": "table grid boxes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "border-collapse",
+        "borderCollapse"
+      ]
+    },
+    {
+      "name": "border-spacing",
+      "href": "https://drafts.csswg.org/css-tables-3/#propdef-border-spacing",
+      "value": "<length [0,∞]>{1,2}",
+      "initial": "0px 0px",
+      "appliesTo": "table grid boxes when border-collapse is separate",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "two absolute lengths",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "border-spacing",
+        "borderSpacing"
+      ]
+    },
+    {
+      "name": "caption-side",
+      "href": "https://drafts.csswg.org/css-tables-3/#propdef-caption-side",
+      "value": "top | bottom",
+      "initial": "top",
+      "appliesTo": "table-caption boxes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "top",
+          "prose": "Positions the caption box above the table grid box.",
+          "href": "https://drafts.csswg.org/css-tables-3/#valdef-caption-side-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "bottom",
+          "prose": "Positions the caption box below the table grid box.",
+          "href": "https://drafts.csswg.org/css-tables-3/#valdef-caption-side-bottom",
+          "type": "value",
+          "value": "bottom"
+        }
+      ],
+      "styleDeclaration": [
+        "caption-side",
+        "captionSide"
+      ]
+    },
+    {
+      "name": "empty-cells",
+      "href": "https://drafts.csswg.org/css-tables-3/#propdef-empty-cells",
+      "value": "show | hide",
+      "initial": "show",
+      "appliesTo": "table-cell boxes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "empty-cells",
+        "emptyCells"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

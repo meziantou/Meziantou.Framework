@@ -1,0 +1,738 @@
+{
+  "resource-timing/304-response-recorded.html": {
+    "total": 1
+  },
+  "resource-timing/SO-XO-SO-redirect-chain-tao.https.html": {
+    "total": 4
+  },
+  "resource-timing/TAO-match.html": {
+    "total": 60
+  },
+  "resource-timing/TAO-port-mismatch-means-crossorigin.html": {
+    "total": 2
+  },
+  "resource-timing/body-size-cross-origin.https.html": {
+    "total": 6
+  },
+  "resource-timing/buffer-full-add-after-full-event.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-add-entries-during-callback-that-drop.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-add-entries-during-callback.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-add-then-clear.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-decrease-buffer-during-callback.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-eventually.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-increase-buffer-during-callback.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-inspect-buffer-during-callback.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-set-to-current-buffer.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-store-and-clear-during-callback.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-then-decreased.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-then-increased.html": {
+    "total": 1
+  },
+  "resource-timing/buffer-full-when-populate-entries.html": {
+    "total": 1
+  },
+  "resource-timing/buffered-flag.any.js": {
+    "total": 1
+  },
+  "resource-timing/buffered-flag.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "resource-timing/cached-image-gets-single-entry.html": {
+    "total": 1
+  },
+  "resource-timing/clear-resource-timings.html": {
+    "total": 1
+  },
+  "resource-timing/connection-reuse.html": {
+    "total": 6
+  },
+  "resource-timing/connection-reuse.https.html": {
+    "total": 2
+  },
+  "resource-timing/content-encoding.https.html": {
+    "total": 29
+  },
+  "resource-timing/content-type-minimization.html": {
+    "total": 77
+  },
+  "resource-timing/content-type.html": {
+    "total": 21
+  },
+  "resource-timing/cors-preflight.any.js": {
+    "total": 1
+  },
+  "resource-timing/cors-preflight.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "resource-timing/cross-origin-iframe.html": {
+    "total": 2
+  },
+  "resource-timing/cross-origin-redirects.html": {
+    "total": 11
+  },
+  "resource-timing/cross-origin-start-end-time-with-redirects.html": {
+    "total": 1
+  },
+  "resource-timing/cross-origin-status-codes.html": {
+    "total": 1
+  },
+  "resource-timing/decoded-body-size-compressed.https.html": {
+    "total": 8,
+    "failures": {
+      "decodedBodySize for dictionary-compressed brotli (dcb) resource": "FAIL",
+      "decodedBodySize for dictionary-compressed zstd (dcz) resource": "FAIL"
+    }
+  },
+  "resource-timing/delivery-type.tentative.any.js": {
+    "total": 3,
+    "failures": {
+      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
+      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
+    }
+  },
+  "resource-timing/delivery-type.tentative.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
+      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
+    }
+  },
+  "resource-timing/delivery-type.tentative.any.js#sharedworker": {
+    "total": 3,
+    "failures": {
+      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
+      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
+    }
+  },
+  "resource-timing/document-domain-no-impact-opener.html": {
+    "total": 1
+  },
+  "resource-timing/encoded-body-size-cached.https.html": {
+    "total": 2,
+    "failures": {
+      "encodedBodySize and transferSize for dictionary-compressed (dcb) resource served from cache": "FAIL",
+      "encodedBodySize and transferSize for dictionary-compressed (dcz) resource served from cache": "FAIL"
+    }
+  },
+  "resource-timing/entries-for-network-errors.sub.https.html": {
+    "total": 9
+  },
+  "resource-timing/entry-attributes.html": {
+    "total": 3
+  },
+  "resource-timing/event-source-timing.html": {
+    "total": 1
+  },
+  "resource-timing/fetch-cross-origin-redirect.https.html": {
+    "total": 2
+  },
+  "resource-timing/font-timestamps.html": {
+    "total": 2
+  },
+  "resource-timing/idlharness.any.js": {
+    "total": 79
+  },
+  "resource-timing/idlharness.any.js#dedicatedworker": {
+    "total": 79
+  },
+  "resource-timing/iframe-failed-commit.html": {
+    "total": 12,
+    "failures": {
+      "Same-origin empty iframe with a 200 status gets reported": "FAIL",
+      "Same-origin iframe that doesn't comply with CSP attribute gets reported": "FAIL"
+    }
+  },
+  "resource-timing/iframe-non-html.html": {
+    "total": 4
+  },
+  "resource-timing/iframe-redirect-without-location.html": {
+    "total": 1
+  },
+  "resource-timing/iframe-sequence-of-events.html": {
+    "total": 19
+  },
+  "resource-timing/iframe-with-download.html": {
+    "total": 1,
+    "failures": {
+      "Iframes should not report resource timing for non-handled mime-types (downloads)": "FAIL"
+    }
+  },
+  "resource-timing/image-sequence-of-events.html": {
+    "total": 3
+  },
+  "resource-timing/initiator-type-for-script.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/audio.html": {
+    "total": 4
+  },
+  "resource-timing/initiator-type/dynamic-insertion.html": {
+    "total": 6
+  },
+  "resource-timing/initiator-type/embed.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/frameset.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/iframe.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/img-srcset.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/img.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/input.html": {
+    "total": 1
+  },
+  "resource-timing/initiator-type/link.html": {
+    "total": 8,
+    "failures": {
+      "The initiator type for <link manifest> must be 'link'": "FAIL"
+    }
+  },
+  "resource-timing/initiator-type/misc.html": {
+    "total": 6,
+    "failures": {
+      "The initiator type for <body background> must be 'body'": "FAIL"
+    }
+  },
+  "resource-timing/initiator-type/picture.html": {
+    "total": 4
+  },
+  "resource-timing/initiator-type/script.html": {
+    "total": 3
+  },
+  "resource-timing/initiator-type/style.html": {
+    "total": 4
+  },
+  "resource-timing/initiator-type/svg.html": {
+    "total": 2,
+    "failures": {
+      "The initiator type for <use> in an <svg> must be 'other'": "FAIL"
+    }
+  },
+  "resource-timing/initiator-type/video.html": {
+    "total": 5
+  },
+  "resource-timing/initiator-type/workers.html": {
+    "total": 2
+  },
+  "resource-timing/input-sequence-of-events.html": {
+    "total": 1
+  },
+  "resource-timing/interim-response-times.h2.html": {
+    "total": 12,
+    "failures": {
+      "Fetch from cross-origin-with-TAO with early hints, with 100 response": "FAIL",
+      "Fetch from cross-origin-with-TAO with early hints, without 100 response": "FAIL",
+      "Fetch from cross-origin-with-TAO without early hints, with 100 response": "FAIL",
+      "Fetch from same-origin with early hints, with 100 response": "FAIL",
+      "Fetch from same-origin with early hints, without 100 response": "FAIL",
+      "Fetch from same-origin without early hints, with 100 response": "FAIL"
+    }
+  },
+  "resource-timing/interim-response-times.html": {
+    "total": 12,
+    "failures": {
+      "Fetch from cross-origin-with-TAO with early hints, with 100 response": "FAIL",
+      "Fetch from cross-origin-with-TAO with early hints, without 100 response": "FAIL",
+      "Fetch from cross-origin-with-TAO without early hints, with 100 response": "FAIL",
+      "Fetch from same-origin with early hints, with 100 response": "FAIL",
+      "Fetch from same-origin with early hints, without 100 response": "FAIL",
+      "Fetch from same-origin without early hints, with 100 response": "FAIL"
+    }
+  },
+  "resource-timing/internal-resources-not-counted.html": {
+    "total": 1
+  },
+  "resource-timing/link-sequence-of-events.html": {
+    "total": 1
+  },
+  "resource-timing/load-from-mem-cache-transfer-size.html": {
+    "total": 1,
+    "failures": {
+      "The transferSize of resource timing entries should be 0 when resource     is loaded from memory cache.": "FAIL"
+    }
+  },
+  "resource-timing/nested-context-navigations-embed.html": {
+    "total": 9
+  },
+  "resource-timing/nested-context-navigations-iframe.html": {
+    "total": 9
+  },
+  "resource-timing/nested-context-navigations-object.html": {
+    "total": 9
+  },
+  "resource-timing/nested-nav-fallback-timing.html": {
+    "total": 2
+  },
+  "resource-timing/nextHopProtocol-is-tao-protected.https.html": {
+    "total": 16
+  },
+  "resource-timing/no-entries-for-cross-origin-css-fetched-memory-cache.sub.html": {
+    "total": 1
+  },
+  "resource-timing/no-entries-for-cross-origin-css-fetched.sub.html": {
+    "total": 1,
+    "failures": {
+      "Make sure that resources fetched by cross origin CSS are not in the timeline.": "FAIL"
+    }
+  },
+  "resource-timing/object-not-found-adds-entry.html": {
+    "total": 3
+  },
+  "resource-timing/object-not-found-after-TAO-cross-origin-redirect.html": {
+    "total": 7
+  },
+  "resource-timing/object-not-found-after-cross-origin-redirect.html": {
+    "total": 1
+  },
+  "resource-timing/opaque-origin.html": {
+    "total": 2
+  },
+  "resource-timing/ping-rt-entries.html": {
+    "total": 1
+  },
+  "resource-timing/queue-entry-regardless-buffer-size.html": {
+    "total": 1
+  },
+  "resource-timing/redirects.html": {
+    "total": 6
+  },
+  "resource-timing/render-blocking-status-link.html": {
+    "total": 1,
+    "failures": {
+      "Validate render blocking status of link resources in PerformanceResourceTiming": "FAIL"
+    }
+  },
+  "resource-timing/render-blocking-status-script.html": {
+    "total": 1,
+    "failures": {
+      "Validate render blocking status of script resources in PerformanceResourceTiming": "FAIL"
+    }
+  },
+  "resource-timing/resource-ignore-data-url.html": {
+    "total": 1
+  },
+  "resource-timing/resource-reload-TAO.html": {
+    "total": 1
+  },
+  "resource-timing/resource-timing-failed-fetch-web-bundle.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "resource-timing/resource-timing-failed-fetch.html": {
+    "total": 1
+  },
+  "resource-timing/resource-timing-level1.sub.html": {
+    "total": 21,
+    "failures": {
+      "'iframe 250ms delay in headers does not affect responseStart'": "FAIL",
+      "'iframe: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
+      "'link 250ms delay in headers does not affect responseStart'": "FAIL",
+      "'link: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
+      "'script 250ms delay in headers does not affect responseStart'": "FAIL",
+      "'script: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL",
+      "'xmlhttprequest 250ms delay in headers does not affect responseStart'": "FAIL",
+      "'xmlhttprequest: 250ms delay before 'responseStart', another 250ms delay before 'responseEnd'.": "FAIL"
+    }
+  },
+  "resource-timing/resource_connection_reuse_mixed_content.html": {
+    "total": 8
+  },
+  "resource-timing/resource_connection_reuse_mixed_content_redirect.html": {
+    "total": 8
+  },
+  "resource-timing/resource_dedicated_worker.html": {
+    "total": 1
+  },
+  "resource-timing/resource_nested_dedicated_worker.worker.js": {
+    "total": 1
+  },
+  "resource-timing/resource_reparenting.html": {
+    "total": 1
+  },
+  "resource-timing/resource_subframe_self_navigation.html": {
+    "total": 4
+  },
+  "resource-timing/resource_timing.worker.js": {
+    "total": 1
+  },
+  "resource-timing/resource_timing_content_length.html": {
+    "total": 4
+  },
+  "resource-timing/response-status-code.cors.html": {
+    "total": 30
+  },
+  "resource-timing/response-status-code.cross-origin-redirect.html": {
+    "total": 30
+  },
+  "resource-timing/response-status-code.no-cors.html": {
+    "total": 160
+  },
+  "resource-timing/response-status-code.same-origin-redirect.html": {
+    "total": 30
+  },
+  "resource-timing/response-status-code.same-origin.html": {
+    "total": 100
+  },
+  "resource-timing/same-origin-from-cross-origin-redirect.html": {
+    "total": 1
+  },
+  "resource-timing/script-rt-entries.html": {
+    "total": 2
+  },
+  "resource-timing/secure-iframe-in-insecure-context.html": {
+    "total": 2
+  },
+  "resource-timing/shared-worker-rt-entry.html": {
+    "total": 1
+  },
+  "resource-timing/sizes-cache.any.js": {
+    "total": 1,
+    "failures": {
+      "PerformanceResourceTiming sizes caching test": "FAIL"
+    }
+  },
+  "resource-timing/sizes-cache.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "PerformanceResourceTiming sizes caching test": "FAIL"
+    }
+  },
+  "resource-timing/sizes-cache.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "PerformanceResourceTiming sizes caching test": "FAIL"
+    }
+  },
+  "resource-timing/sizes-redirect-img.html": {
+    "total": 5
+  },
+  "resource-timing/sizes-redirect.any.js": {
+    "total": 1
+  },
+  "resource-timing/sizes-redirect.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "resource-timing/sizes-redirect.any.js#sharedworker": {
+    "total": 1
+  },
+  "resource-timing/status-codes-create-entry.html": {
+    "total": 1
+  },
+  "resource-timing/supported_resource_type.any.js": {
+    "total": 2
+  },
+  "resource-timing/supported_resource_type.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "resource-timing/tentative/initiator-url/dedicated-worker-script.html": {
+    "total": 6,
+    "failures": {
+      "The initiator Url for a classic worker's script started from a separate script must be 'http://web-platform.test:8000/resource-timing/resources/initiator-url-dedicated-worker-start.js'": "FAIL",
+      "The initiator Url for a classic worker's script started from the document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/dedicated-worker-script.html'": "FAIL",
+      "The initiator Url for a classic worker's script started through setTimeout with an external callback must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/dedicated-worker-script.html'": "FAIL",
+      "The initiator Url for a module worker's script started from a separate script must be 'http://web-platform.test:8000/resource-timing/resources/initiator-url-dedicated-worker-start.js'": "FAIL",
+      "The initiator Url for a module worker's script started from the document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/dedicated-worker-script.html'": "FAIL",
+      "The initiator Url for a module worker's script started through setTimeout with an external callback must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/dedicated-worker-script.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/direct.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_direct_worker initiatorUrl from worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/direct.any.worker.js'": "FAIL",
+      "The initiator Url for resource-timing/resources/loading-resource-lib.js?direct_any initiatorUrl from worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/direct.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/direct.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_direct_worker initiatorUrl from worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/direct.any.worker.js'": "FAIL",
+      "The initiator Url for resource-timing/resources/loading-resource-lib.js?direct_any initiatorUrl from worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/direct.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/event-handler-overwritten.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/red.png?initiator_url_eventhandler initiatorUrl from event handlers must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/event-handler-overwritten.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/event-handler.html": {
+    "total": 2,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_eventhandler initiatorUrl from event handlers must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/event-handler.html'": "FAIL",
+      "The initiator Url for /images/red.png?initiator_url_eventhandler initiatorUrl from event handlers must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/event-handler.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/external-script-in-posted-task.html": {
+    "total": 4,
+    "failures": {
+      "The initiator Url for blue.png?no_cache initiatorUrl by scheduler.postTask() from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources-in-posted-task.js'": "FAIL",
+      "The initiator Url for empty.js?no_cache initiatorUrl by scheduler.postTask() from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources-in-posted-task.js'": "FAIL",
+      "The initiator Url for empty_style.css?no_cache initiatorUrl by scheduler.postTask() from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources-in-posted-task.js'": "FAIL",
+      "The initiator Url for green.html?no_cache initiatorUrl by scheduler.postTask() from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources-in-posted-task.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/external-script.html": {
+    "total": 4,
+    "failures": {
+      "The initiator Url for blue.png?no_cache initiatorUrl from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources.js'": "FAIL",
+      "The initiator Url for empty.js?no_cache initiatorUrl from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources.js'": "FAIL",
+      "The initiator Url for empty_style.css?no_cache initiatorUrl from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources.js'": "FAIL",
+      "The initiator Url for green.html?no_cache initiatorUrl from external scripts must be 'http://web-platform.test:8000/resource-timing/resources/loading-resources.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/iframe-post-message.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_iframe_postmessage initiatorUrl from iframe postMessage() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/iframe-post-message.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/inline-document-write.html": {
+    "total": 3,
+    "failures": {
+      "The initiator Url for blue.png?inline-script-doc-write initiatorUrl from document-initiated must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-document-write.html'": "FAIL",
+      "The initiator Url for empty.js?doc-write initiatorUrl from document-initiated must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-document-write.html'": "FAIL",
+      "The initiator Url for empty_style.css?inline-script-doc-write initiatorUrl from document-initiated must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-document-write.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/inline-script.html": {
+    "total": 3,
+    "failures": {
+      "The initiator Url for blank_page_green.html?no_cache_inline_script initiatorUrl from inline-script must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-script.html'": "FAIL",
+      "The initiator Url for blue.png?no_cache_inline_script initiatorUrl from inline-script must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-script.html'": "FAIL",
+      "The initiator Url for empty_style.css?no_cache_inline_script initiatorUrl from inline-script must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/inline-script.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/module-script-from-document.html": {
+    "total": 5,
+    "failures": {
+      "The initiator Url for module-script-imported.js?label=document-add-script initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/module-script-from-document.html'": "FAIL",
+      "The initiator Url for module-script-imported.js?label=document-dynamic initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/module-script-from-document.html'": "FAIL",
+      "The initiator Url for module-script-imported.js?label=document-set-timeout initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/module-script-from-document.html'": "FAIL",
+      "The initiator Url for module-script-imported.js?label=document-src initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/module-script-from-document.html'": "FAIL",
+      "The initiator Url for module-script-imported.js?label=document-static initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/module-script-from-document.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/module-script-from-dynamic-importer.html": {
+    "total": 3,
+    "failures": {
+      "The initiator Url for dynamic-module-importer-add-script initiatorUrl from module-script-importer-module-dynamic.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-dynamic.js'": "FAIL",
+      "The initiator Url for dynamic-module-importer-dynamic initiatorUrl from module-script-importer-module-dynamic.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-dynamic.js'": "FAIL",
+      "The initiator Url for dynamic-module-importer-static initiatorUrl from module-script-importer-module-dynamic.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-dynamic.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/module-script-from-static-importer.html": {
+    "total": 4,
+    "failures": {
+      "The initiator Url for classic-importer-dynamic initiatorUrl from module-script-importer-classic.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-classic.js'": "FAIL",
+      "The initiator Url for static-module-importer-add-script initiatorUrl from module-script-importer-module-static.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-static.js'": "FAIL",
+      "The initiator Url for static-module-importer-dynamic initiatorUrl from module-script-importer-module-static.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-static.js'": "FAIL",
+      "The initiator Url for static-module-importer-static initiatorUrl from module-script-importer-module-static.js must be 'http://web-platform.test:8000/resource-timing/resources/module-script-importer-module-static.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/module-script-from-worker.html": {
+    "total": 2,
+    "failures": {
+      "The initiator Url for a script imported from a worker must be the worker script": "FAIL",
+      "The initiator Url for worker-importer-static initiatorUrl from worker must be 'http://web-platform.test:8000/resource-timing/resources/module-script-worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/post-message-shared-worker.html": {
+    "total": 1,
+    "failures": {
+      "check initiatorUrl for resources fetched in message handler in worker thread": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/post-message-worker.html": {
+    "total": 1,
+    "failures": {
+      "check initiatorUrl for resources fetched in message handler in worker thread": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/post-task.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_posttask_worker initiatorUrl from postTask() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/post-task.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/post-task.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_posttask_worker initiatorUrl from postTask() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/post-task.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/post-task.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_posttask initiatorUrl from postTask() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/post-task.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/promise.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_promise_worker initiatorUrl from promise in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/promise.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/promise.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_promise_worker initiatorUrl from promise in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/promise.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/promise.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_promise initiatorUrl from fullfilled promise must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/promise.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/queue-microtask.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_queuemicrotask_worker initiatorUrl from queueMicrotask() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/queue-microtask.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/queue-microtask.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_queuemicrotask_worker initiatorUrl from queueMicrotask() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/queue-microtask.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/queue-microtask.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_queuemicrotask initiatorUrl from queueMicrotask() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/queue-microtask.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/request-animation-frame.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_requestanimationframe initiatorUrl from requestAnimationFrame() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/request-animation-frame.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/request-idle-callback.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "resource-timing/tentative/initiator-url/set-interval.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_setinterval_worker initiatorUrl from setInterval() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-interval.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/set-interval.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_setinterval_worker initiatorUrl from setInterval() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-interval.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/set-interval.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_setinterval initiatorUrl from setInterval() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-interval.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/set-timeout.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_settimeout_worker initiatorUrl from setTimeout() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-timeout.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/set-timeout.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_settimeout_worker initiatorUrl from setTimeout() in worker thread must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-timeout.any.worker.js'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/set-timeout.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_settimeout initiatorUrl from setTimeout() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/set-timeout.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/static-resource.html": {
+    "total": 10,
+    "failures": {
+      "The initiator Url for Ahem.ttf?initiator-html initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for blue.png?inline-style initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for blue.png?using-Img-tag initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for display_paragraph.js initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for empty.js?async initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for empty.js?blocking initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for empty.js?deferred initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for empty.js?module initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for empty_style.css?link initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL",
+      "The initiator Url for green.html initiatorUrl from static-resource must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/static-resource.html'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/stylesheet-dynamic.html": {
+    "total": 4,
+    "failures": {
+      "The initiator Url for Ahem.ttf?label=dynamic-initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-dynamic-initiator.css'": "FAIL",
+      "The initiator Url for blue.png?label=dynamic-initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-dynamic-initiator.css'": "FAIL",
+      "The initiator Url for nested-dynamic-initiator.css initiatorUrl from document must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/stylesheet-dynamic.html'": "FAIL",
+      "The initiator Url for resource_timing_test0.css?label=dynamic-initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-dynamic-initiator.css'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/stylesheet-static.html": {
+    "total": 3,
+    "failures": {
+      "The initiator Url for Ahem.ttf?label=initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-initiator.css'": "FAIL",
+      "The initiator Url for blue.png?label=initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-initiator.css'": "FAIL",
+      "The initiator Url for resource_timing_test0.css?label=initiator initiatorUrl from style sheet must be 'http://web-platform.test:8000/resource-timing/resources/nested-initiator.css'": "FAIL"
+    }
+  },
+  "resource-timing/tentative/initiator-url/xml-http-request.html": {
+    "total": 1,
+    "failures": {
+      "The initiator Url for /images/blue.png?initiator_url_xmlhttprequest initiatorUrl from XMLHttpRequest() must be 'http://web-platform.test:8000/resource-timing/tentative/initiator-url/xml-http-request.html'": "FAIL"
+    }
+  },
+  "resource-timing/test_resource_timing.html": {
+    "total": 28
+  },
+  "resource-timing/test_resource_timing.https.html": {
+    "total": 28
+  },
+  "resource-timing/tojson.html": {
+    "total": 1
+  },
+  "resource-timing/workerStart-tao-protected.https.html": {
+    "total": 3,
+    "failures": {
+      "A resource from a cross-origin service worker must not expose workerStart when there is a TAO failure": "FAIL"
+    }
+  },
+  "resource-timing/worklet-rt-entries.https.html": {
+    "total": 1
+  },
+  "resource-timing/xhr-resource-timing.html": {
+    "total": 2
+  }
+}

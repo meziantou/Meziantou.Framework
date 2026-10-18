@@ -1,0 +1,567 @@
+{
+  "css/css-box/animation/margin-bottom-composition.html": {
+    "total": 50
+  },
+  "css/css-box/animation/margin-interpolation.html": {
+    "total": 144
+  },
+  "css/css-box/animation/margin-left-composition.html": {
+    "total": 50
+  },
+  "css/css-box/animation/margin-right-composition.html": {
+    "total": 50
+  },
+  "css/css-box/animation/margin-top-composition.html": {
+    "total": 50
+  },
+  "css/css-box/animation/padding-bottom-composition.html": {
+    "total": 40
+  },
+  "css/css-box/animation/padding-interpolation.html": {
+    "total": 144
+  },
+  "css/css-box/animation/padding-left-composition.html": {
+    "total": 40
+  },
+  "css/css-box/animation/padding-right-composition.html": {
+    "total": 40
+  },
+  "css/css-box/animation/padding-top-composition.html": {
+    "total": 40
+  },
+  "css/css-box/box-chrome-crash-001.html": {
+    "total": 1
+  },
+  "css/css-box/inheritance.html": {
+    "total": 24
+  },
+  "css/css-box/margin-trim/block-container-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-collapsed-margins.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-last-child-with-border.html": {
+    "total": 2
+  },
+  "css/css-box/margin-trim/block-container-block-end-nested-last-child-with-border.html": {
+    "total": 3
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-and-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-block-start-margin-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-block-start-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-nested-at-bottom.html": {
+    "total": 7
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-nested-margin-trim.html": {
+    "total": 1
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-offsets-nested-multiple-times.html": {
+    "total": 1
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-offsets-nested-once.html": {
+    "total": 3
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-offsets-vert-lr.html": {
+    "total": 3
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-children-offsets.html": {
+    "total": 3
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-item-has-larger-block-end.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-self-collapsing-item-has-larger-block-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-end-start-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-collapsed-margins.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-self-collapsing-item-has-larger-block-end.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-start-self-collapsing-item-larger-block-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-non-adjoining-item.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-replaced-block-end.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-replaced-block-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-replaced-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-style-change-triggers-layout-block-end.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-style-change-triggers-layout-block-start.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-style-change-triggers-layout-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-block-end.html": {
+    "total": 2,
+    "failures": {
+      "flexbox > item 2": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-block-start.html": {
+    "total": 2,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-inline-end.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-inline-start.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-multi-line-block-end.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-multi-line-block-start.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-multi-line-block.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-multi-line-inline-end.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-multi-line-inline-start.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-column-style-change-triggers-layout-block-start.html": {
+    "total": 2
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-block-end.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-block-start.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-block.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-inline-end.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-inline-start.html": {
+    "total": 3,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-multi-line-block-end.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-multi-line-block-start.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-multi-line-block.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-multi-line-inline-end.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/flexbox-row-multi-line-inline-start.html": {
+    "total": 4,
+    "failures": {
+      "flexbox > item 1": "FAIL",
+      "flexbox > item 2": "FAIL",
+      "flexbox > item 3": "FAIL",
+      "flexbox > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-block-end-column-auto-flow.html": {
+    "total": 5,
+    "failures": {
+      "grid > item 4": "FAIL",
+      "grid > item 5": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-block-end-item-spans-multiple-rows.html": {
+    "total": 2,
+    "failures": {
+      "grid > item 1": "FAIL",
+      "grid > item 2": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-block-end.html": {
+    "total": 4,
+    "failures": {
+      "grid > item 4": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-block-start.html": {
+    "total": 4,
+    "failures": {
+      "grid > item 1": "FAIL",
+      "grid > item 2": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-inline-end-columns-added-to-end.html": {
+    "total": 2
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-inline-end-items-in-last-column-trimmed.html": {
+    "total": 4,
+    "failures": {
+      "grid > item 2": "FAIL",
+      "grid > item 3": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-inline-start-item-negative-span.html": {
+    "total": 2,
+    "failures": {
+      "grid > item 1": "FAIL",
+      "grid > item 2": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/computed-margin-values/grid-inline-start.html": {
+    "total": 5,
+    "failures": {
+      "grid > item 1": "FAIL",
+      "grid > item 3": "FAIL",
+      "grid > item 4": "FAIL",
+      "grid > item 5": "FAIL"
+    }
+  },
+  "css/css-box/margin-trim/flex-block-end-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-block-start-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-block-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-block-multiline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-grow.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-inline-multiline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-orthogonal-item.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-shrink.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-style-change-triggers-layout-block-end.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-style-change-triggers-layout-block-start.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-column-style-change-triggers-layout-block.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-inline-end-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-inline-start-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-inline-trimmed-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-block-multiline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-grow.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-inline-multiline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-orthogonal-item.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-shrink.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-style-change-triggers-layout-inline-end.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-style-change-triggers-layout-inline-start.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-row-style-change-triggers-layout-inline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/flex-trim-all-margins.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-block-end.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-block-start.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-block.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-inline-end.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-inline-start.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-inline.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/grid-trim-ignores-collapsed-tracks.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-box/margin-trim/margin-trim-computed-value.html": {
+    "total": 9
+  },
+  "css/css-box/margin-trim/multicol-spanner-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/multicol-spanner-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/negative-margin.html": {
+    "total": 8
+  },
+  "css/css-box/parsing/clear-computed.html": {
+    "total": 6
+  },
+  "css/css-box/parsing/clear-invalid.html": {
+    "total": 2
+  },
+  "css/css-box/parsing/clear-valid.html": {
+    "total": 6
+  },
+  "css/css-box/parsing/float-computed.html": {
+    "total": 5
+  },
+  "css/css-box/parsing/float-invalid.html": {
+    "total": 3
+  },
+  "css/css-box/parsing/float-valid.html": {
+    "total": 5
+  },
+  "css/css-box/parsing/height-invalid.html": {
+    "total": 10
+  },
+  "css/css-box/parsing/height-valid.html": {
+    "total": 7
+  },
+  "css/css-box/parsing/margin-computed.html": {
+    "total": 8
+  },
+  "css/css-box/parsing/margin-invalid.html": {
+    "total": 7
+  },
+  "css/css-box/parsing/margin-shorthand.html": {
+    "total": 20
+  },
+  "css/css-box/parsing/margin-trim-computed.html": {
+    "total": 6
+  },
+  "css/css-box/parsing/margin-trim.html": {
+    "total": 21
+  },
+  "css/css-box/parsing/margin-valid.html": {
+    "total": 15
+  },
+  "css/css-box/parsing/max-height-invalid.html": {
+    "total": 12
+  },
+  "css/css-box/parsing/max-height-valid.html": {
+    "total": 7
+  },
+  "css/css-box/parsing/max-width-invalid.html": {
+    "total": 12
+  },
+  "css/css-box/parsing/max-width-valid.html": {
+    "total": 7
+  },
+  "css/css-box/parsing/overflow-invalid.html": {
+    "total": 6
+  },
+  "css/css-box/parsing/overflow-valid.html": {
+    "total": 8
+  },
+  "css/css-box/parsing/padding-computed.html": {
+    "total": 13
+  },
+  "css/css-box/parsing/padding-invalid.html": {
+    "total": 10
+  },
+  "css/css-box/parsing/padding-shorthand.html": {
+    "total": 20
+  },
+  "css/css-box/parsing/padding-valid.html": {
+    "total": 11
+  },
+  "css/css-box/parsing/visibility-computed.html": {
+    "total": 3
+  },
+  "css/css-box/parsing/visibility-invalid.html": {
+    "total": 2
+  },
+  "css/css-box/parsing/visibility-valid.html": {
+    "total": 3
+  },
+  "css/css-box/parsing/width-invalid.html": {
+    "total": 13
+  },
+  "css/css-box/parsing/width-valid.html": {
+    "total": 7
+  }
+}

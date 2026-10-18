@@ -1,0 +1,32 @@
+{
+  "svg-aam/name/comp_host_language_label.html": {
+    "total": 18
+  },
+  "svg-aam/name/comp_label.html": {
+    "total": 4
+  },
+  "svg-aam/name/comp_labelledby.html": {
+    "total": 9
+  },
+  "svg-aam/role/role-img.tentative.html": {
+    "total": 7,
+    "failures": {
+      "Label: el-image (label from image>title element)": "FAIL",
+      "el-image (generic, explicitly empty image>title element)": "FAIL"
+    }
+  },
+  "svg-aam/role/roles-generic.html": {
+    "total": 9
+  },
+  "svg-aam/role/roles.html": {
+    "total": 4
+  },
+  "svg-aam/role/roles.tentative.html": {
+    "total": 3,
+    "failures": {
+      "svg": "FAIL",
+      "svg-symbol": "FAIL",
+      "svg-text": "FAIL"
+    }
+  }
+}

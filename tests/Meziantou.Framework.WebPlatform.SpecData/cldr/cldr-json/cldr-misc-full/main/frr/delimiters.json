@@ -1,0 +1,15 @@
+{
+  "main": {
+    "frr": {
+      "identity": {
+        "language": "frr"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

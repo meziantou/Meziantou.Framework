@@ -1,0 +1,1557 @@
+{
+  "spec": {
+    "title": "Cookie Store API Standard",
+    "url": "https://cookiestore.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "CookieChangeEvent"
+        ],
+        "ServiceWorker": [
+          "ExtendableCookieChangeEvent"
+        ]
+      },
+      "functions": {
+        "ServiceWorker": [
+          "CookieStore",
+          "CookieStoreManager",
+          "ServiceWorkerRegistration"
+        ],
+        "Window": [
+          "CookieStore",
+          "CookieStoreManager",
+          "ServiceWorkerRegistration"
+        ]
+      }
+    },
+    "idlNames": {
+      "CookieStore": {
+        "fragment": "[Exposed=(ServiceWorker,Window),\n SecureContext]\ninterface CookieStore : EventTarget {\n  Promise<CookieListItem?> get(USVString name);\n  Promise<CookieListItem?> get(optional CookieStoreGetOptions options = {});\n\n  Promise<CookieList> getAll(USVString name);\n  Promise<CookieList> getAll(optional CookieStoreGetOptions options = {});\n\n  Promise<undefined> set(USVString name, USVString value);\n  Promise<undefined> set(CookieInit options);\n\n  Promise<undefined> delete(USVString name);\n  Promise<undefined> delete(CookieStoreDeleteOptions options);\n\n  [Exposed=Window]\n  attribute EventHandler onchange;\n};",
+        "type": "interface",
+        "name": "CookieStore",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-get"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieStoreGetOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-get-options"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieList"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieList"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieStoreGetOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall-options"
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-set"
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-set-options"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieStoreDeleteOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete-options"
+          },
+          {
+            "type": "attribute",
+            "name": "onchange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#cookiestore"
+      },
+      "CookieStoreGetOptions": {
+        "fragment": "dictionary CookieStoreGetOptions {\n  USVString name;\n  USVString url;\n};",
+        "type": "dictionary",
+        "name": "CookieStoreGetOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-name"
+          },
+          {
+            "type": "field",
+            "name": "url",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-url"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-cookiestoregetoptions"
+      },
+      "CookieSameSite": {
+        "fragment": "enum CookieSameSite {\n  \"strict\",\n  \"lax\",\n  \"none\"\n};",
+        "type": "enum",
+        "name": "CookieSameSite",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "strict",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-strict"
+          },
+          {
+            "type": "enum-value",
+            "value": "lax",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-lax"
+          },
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-none"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://cookiestore.spec.whatwg.org/#enumdef-cookiesamesite"
+      },
+      "CookieInit": {
+        "fragment": "dictionary CookieInit {\n  required USVString name;\n  required USVString value;\n  DOMHighResTimeStamp? expires = null;\n  USVString? domain = null;\n  USVString path = \"/\";\n  CookieSameSite sameSite = \"strict\";\n  boolean partitioned = false;\n  long long? maxAge = null;\n};",
+        "type": "dictionary",
+        "name": "CookieInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-name"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-value"
+          },
+          {
+            "type": "field",
+            "name": "expires",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-expires"
+          },
+          {
+            "type": "field",
+            "name": "domain",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-domain"
+          },
+          {
+            "type": "field",
+            "name": "path",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": "/"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-path"
+          },
+          {
+            "type": "field",
+            "name": "sameSite",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieSameSite"
+            },
+            "default": {
+              "type": "string",
+              "value": "strict"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-samesite"
+          },
+          {
+            "type": "field",
+            "name": "partitioned",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-partitioned"
+          },
+          {
+            "type": "field",
+            "name": "maxAge",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "long long"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookieinit-maxage"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-cookieinit"
+      },
+      "CookieStoreDeleteOptions": {
+        "fragment": "dictionary CookieStoreDeleteOptions {\n  required USVString name;\n  USVString? domain = null;\n  USVString path = \"/\";\n  boolean partitioned = false;\n};",
+        "type": "dictionary",
+        "name": "CookieStoreDeleteOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-name"
+          },
+          {
+            "type": "field",
+            "name": "domain",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "null"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-domain"
+          },
+          {
+            "type": "field",
+            "name": "path",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": {
+              "type": "string",
+              "value": "/"
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-path"
+          },
+          {
+            "type": "field",
+            "name": "partitioned",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-partitioned"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-cookiestoredeleteoptions"
+      },
+      "CookieListItem": {
+        "fragment": "dictionary CookieListItem {\n  USVString name;\n  USVString value;\n};",
+        "type": "dictionary",
+        "name": "CookieListItem",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookielistitem-name"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookielistitem-value"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-cookielistitem"
+      },
+      "CookieList": {
+        "fragment": "typedef sequence<CookieListItem> CookieList;",
+        "type": "typedef",
+        "name": "CookieList",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "sequence",
+          "nullable": false,
+          "union": false,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieListItem"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://cookiestore.spec.whatwg.org/#typedefdef-cookielist"
+      },
+      "CookieStoreManager": {
+        "fragment": "[Exposed=(ServiceWorker,Window),\n SecureContext]\ninterface CookieStoreManager {\n  Promise<undefined> subscribe(sequence<CookieStoreGetOptions> subscriptions);\n  Promise<sequence<CookieStoreGetOptions>> getSubscriptions();\n  Promise<undefined> unsubscribe(sequence<CookieStoreGetOptions> subscriptions);\n};",
+        "type": "interface",
+        "name": "CookieStoreManager",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "subscribe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "subscriptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CookieStoreGetOptions"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoremanager-subscribe"
+          },
+          {
+            "type": "operation",
+            "name": "getSubscriptions",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CookieStoreGetOptions"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoremanager-getsubscriptions"
+          },
+          {
+            "type": "operation",
+            "name": "unsubscribe",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "subscriptions",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "argument-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "CookieStoreGetOptions"
+                    }
+                  ]
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiestoremanager-unsubscribe"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "ServiceWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#cookiestoremanager"
+      },
+      "CookieChangeEvent": {
+        "fragment": "[Exposed=Window,\n SecureContext]\ninterface CookieChangeEvent : Event {\n  constructor(DOMString type, optional CookieChangeEventInit eventInitDict = {});\n  [SameObject] readonly attribute FrozenArray<CookieListItem> changed;\n  [SameObject] readonly attribute FrozenArray<CookieListItem> deleted;\n};",
+        "type": "interface",
+        "name": "CookieChangeEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-cookiechangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "changed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-changed"
+          },
+          {
+            "type": "attribute",
+            "name": "deleted",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-deleted"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#cookiechangeevent"
+      },
+      "CookieChangeEventInit": {
+        "fragment": "dictionary CookieChangeEventInit : EventInit {\n  CookieList changed;\n  CookieList deleted;\n};",
+        "type": "dictionary",
+        "name": "CookieChangeEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "changed",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieList"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-changed"
+          },
+          {
+            "type": "field",
+            "name": "deleted",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieList"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-deleted"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-cookiechangeeventinit"
+      },
+      "ExtendableCookieChangeEvent": {
+        "fragment": "[Exposed=ServiceWorker]\ninterface ExtendableCookieChangeEvent : ExtendableEvent {\n  constructor(DOMString type, optional ExtendableCookieChangeEventInit eventInitDict = {});\n  [SameObject] readonly attribute FrozenArray<CookieListItem> changed;\n  [SameObject] readonly attribute FrozenArray<CookieListItem> deleted;\n};",
+        "type": "interface",
+        "name": "ExtendableCookieChangeEvent",
+        "inheritance": "ExtendableEvent",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ExtendableCookieChangeEventInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://cookiestore.spec.whatwg.org/#dom-extendablecookiechangeevent-extendablecookiechangeevent"
+          },
+          {
+            "type": "attribute",
+            "name": "changed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-extendablecookiechangeevent-changed"
+          },
+          {
+            "type": "attribute",
+            "name": "deleted",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "FrozenArray",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "CookieListItem"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-extendablecookiechangeevent-deleted"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "ServiceWorker"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#extendablecookiechangeevent"
+      },
+      "ExtendableCookieChangeEventInit": {
+        "fragment": "dictionary ExtendableCookieChangeEventInit : ExtendableEventInit {\n  CookieList changed;\n  CookieList deleted;\n};",
+        "type": "dictionary",
+        "name": "ExtendableCookieChangeEventInit",
+        "inheritance": "ExtendableEventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "changed",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieList"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-extendablecookiechangeeventinit-changed"
+          },
+          {
+            "type": "field",
+            "name": "deleted",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CookieList"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://cookiestore.spec.whatwg.org/#dom-extendablecookiechangeeventinit-deleted"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://cookiestore.spec.whatwg.org/#dictdef-extendablecookiechangeeventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "ServiceWorkerRegistration": [
+        {
+          "fragment": "[Exposed=(ServiceWorker,Window)]\npartial interface ServiceWorkerRegistration {\n  [SameObject] readonly attribute CookieStoreManager cookies;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerRegistration",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "cookies",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CookieStoreManager"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://cookiestore.spec.whatwg.org/#dom-serviceworkerregistration-cookies"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "ServiceWorker"
+                  },
+                  {
+                    "value": "Window"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "[SecureContext]\npartial interface Window {\n  [SameObject] readonly attribute CookieStore cookieStore;\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "cookieStore",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CookieStore"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://cookiestore.spec.whatwg.org/#dom-window-cookiestore"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "ServiceWorkerGlobalScope": [
+        {
+          "fragment": "partial interface ServiceWorkerGlobalScope {\n  [SameObject] readonly attribute CookieStore cookieStore;\n\n  attribute EventHandler oncookiechange;\n};",
+          "type": "interface",
+          "name": "ServiceWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "cookieStore",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "CookieStore"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-cookiestore"
+            },
+            {
+              "type": "attribute",
+              "name": "oncookiechange",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://cookiestore.spec.whatwg.org/#dom-serviceworkerglobalscope-oncookiechange"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "ServiceWorker": [
+        "CookieStore",
+        "CookieStoreManager",
+        "ServiceWorkerRegistration",
+        "ExtendableCookieChangeEvent"
+      ],
+      "Window": [
+        "CookieStore",
+        "CookieStoreManager",
+        "ServiceWorkerRegistration",
+        "CookieChangeEvent"
+      ]
+    },
+    "dependencies": {
+      "CookieStore": [
+        "EventTarget",
+        "CookieListItem",
+        "CookieStoreGetOptions",
+        "CookieList",
+        "CookieInit",
+        "CookieStoreDeleteOptions",
+        "EventHandler"
+      ],
+      "CookieStoreGetOptions": [],
+      "CookieInit": [
+        "DOMHighResTimeStamp",
+        "CookieSameSite"
+      ],
+      "CookieStoreDeleteOptions": [],
+      "CookieListItem": [],
+      "CookieStoreManager": [
+        "CookieStoreGetOptions"
+      ],
+      "ServiceWorkerRegistration": [
+        "CookieStoreManager"
+      ],
+      "CookieChangeEvent": [
+        "Event",
+        "CookieChangeEventInit",
+        "CookieListItem"
+      ],
+      "CookieChangeEventInit": [
+        "EventInit",
+        "CookieList"
+      ],
+      "ExtendableCookieChangeEvent": [
+        "ExtendableEvent",
+        "ExtendableCookieChangeEventInit",
+        "CookieListItem"
+      ],
+      "ExtendableCookieChangeEventInit": [
+        "ExtendableEventInit",
+        "CookieList"
+      ],
+      "Window": [
+        "CookieStore"
+      ],
+      "ServiceWorkerGlobalScope": [
+        "CookieStore",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "EventTarget",
+      "EventHandler",
+      "DOMHighResTimeStamp",
+      "ServiceWorkerRegistration",
+      "Event",
+      "EventInit",
+      "ExtendableEvent",
+      "ExtendableEventInit",
+      "Window",
+      "ServiceWorkerGlobalScope"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

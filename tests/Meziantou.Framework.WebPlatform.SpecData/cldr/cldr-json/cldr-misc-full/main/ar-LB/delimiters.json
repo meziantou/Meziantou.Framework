@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ar-LB": {
+      "identity": {
+        "language": "ar",
+        "territory": "LB"
+      },
+      "delimiters": {
+        "quotationStart": "”",
+        "quotationEnd": "“",
+        "alternateQuotationStart": "’",
+        "alternateQuotationEnd": "‘"
+      }
+    }
+  }
+}

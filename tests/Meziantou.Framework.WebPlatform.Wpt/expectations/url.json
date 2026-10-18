@@ -1,0 +1,233 @@
+{
+  "url/IdnaTestV2-removed.any.js": {
+    "total": 21
+  },
+  "url/IdnaTestV2.any.js": {
+    "total": 2676
+  },
+  "url/a-element-origin-xhtml.xhtml": {
+    "total": 415
+  },
+  "url/a-element-origin.html": {
+    "total": 415
+  },
+  "url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)": {
+    "total": 738
+  },
+  "url/a-element-xhtml.xhtml?include=file": {
+    "total": 137
+  },
+  "url/a-element-xhtml.xhtml?include=javascript": {
+    "total": 13
+  },
+  "url/a-element-xhtml.xhtml?include=mailto": {
+    "total": 14
+  },
+  "url/a-element.html?exclude=(file|javascript|mailto)": {
+    "total": 739
+  },
+  "url/a-element.html?include=file": {
+    "total": 138
+  },
+  "url/a-element.html?include=javascript": {
+    "total": 14
+  },
+  "url/a-element.html?include=mailto": {
+    "total": 15
+  },
+  "url/data-uri-fragment.html": {
+    "total": 1
+  },
+  "url/failure.html": {
+    "total": 1175
+  },
+  "url/historical.any.js": {
+    "total": 8
+  },
+  "url/historical.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "url/idlharness.any.js": {
+    "total": 77
+  },
+  "url/idlharness.any.js#dedicatedworker": {
+    "total": 77
+  },
+  "url/javascript-urls.window.js": {
+    "total": 6
+  },
+  "url/percent-encoding.window.js": {
+    "total": 17
+  },
+  "url/toascii.window.js": {
+    "total": 784
+  },
+  "url/url-constructor.any.js#dedicatedworker?exclude=(file|javascript|mailto)": {
+    "total": 740
+  },
+  "url/url-constructor.any.js#dedicatedworker?include=file": {
+    "total": 137
+  },
+  "url/url-constructor.any.js#dedicatedworker?include=javascript": {
+    "total": 13
+  },
+  "url/url-constructor.any.js#dedicatedworker?include=mailto": {
+    "total": 14
+  },
+  "url/url-constructor.any.js?exclude=(file|javascript|mailto)": {
+    "total": 740
+  },
+  "url/url-constructor.any.js?include=file": {
+    "total": 137
+  },
+  "url/url-constructor.any.js?include=javascript": {
+    "total": 13
+  },
+  "url/url-constructor.any.js?include=mailto": {
+    "total": 14
+  },
+  "url/url-origin.any.js": {
+    "total": 416
+  },
+  "url/url-origin.any.js#dedicatedworker": {
+    "total": 416
+  },
+  "url/url-searchparams.any.js": {
+    "total": 4
+  },
+  "url/url-searchparams.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "url/url-setters-a-area.window.js?exclude=(file|javascript|mailto)": {
+    "total": 491
+  },
+  "url/url-setters-a-area.window.js?include=file": {
+    "total": 43
+  },
+  "url/url-setters-a-area.window.js?include=javascript": {
+    "total": 13
+  },
+  "url/url-setters-a-area.window.js?include=mailto": {
+    "total": 13
+  },
+  "url/url-setters-stripping.any.js": {
+    "total": 260
+  },
+  "url/url-setters-stripping.any.js#dedicatedworker": {
+    "total": 260
+  },
+  "url/url-setters.any.js#dedicatedworker?exclude=(file|javascript|mailto)": {
+    "total": 246
+  },
+  "url/url-setters.any.js#dedicatedworker?include=file": {
+    "total": 22
+  },
+  "url/url-setters.any.js#dedicatedworker?include=javascript": {
+    "total": 7
+  },
+  "url/url-setters.any.js#dedicatedworker?include=mailto": {
+    "total": 7
+  },
+  "url/url-setters.any.js?exclude=(file|javascript|mailto)": {
+    "total": 246
+  },
+  "url/url-setters.any.js?include=file": {
+    "total": 22
+  },
+  "url/url-setters.any.js?include=javascript": {
+    "total": 7
+  },
+  "url/url-setters.any.js?include=mailto": {
+    "total": 7
+  },
+  "url/url-statics-canparse.any.js": {
+    "total": 8
+  },
+  "url/url-statics-canparse.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "url/url-statics-parse.any.js": {
+    "total": 8
+  },
+  "url/url-statics-parse.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "url/url-tojson.any.js": {
+    "total": 1
+  },
+  "url/url-tojson.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "url/urlencoded-parser.any.js": {
+    "total": 105
+  },
+  "url/urlencoded-parser.any.js#dedicatedworker": {
+    "total": 105
+  },
+  "url/urlsearchparams-append.any.js": {
+    "total": 4
+  },
+  "url/urlsearchparams-append.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "url/urlsearchparams-constructor.any.js": {
+    "total": 27
+  },
+  "url/urlsearchparams-constructor.any.js#dedicatedworker": {
+    "total": 27
+  },
+  "url/urlsearchparams-delete.any.js": {
+    "total": 8
+  },
+  "url/urlsearchparams-delete.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "url/urlsearchparams-foreach.any.js": {
+    "total": 6
+  },
+  "url/urlsearchparams-foreach.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "url/urlsearchparams-get.any.js": {
+    "total": 2
+  },
+  "url/urlsearchparams-get.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "url/urlsearchparams-getall.any.js": {
+    "total": 2
+  },
+  "url/urlsearchparams-getall.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "url/urlsearchparams-has.any.js": {
+    "total": 4
+  },
+  "url/urlsearchparams-has.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "url/urlsearchparams-set.any.js": {
+    "total": 2
+  },
+  "url/urlsearchparams-set.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "url/urlsearchparams-size.any.js": {
+    "total": 4
+  },
+  "url/urlsearchparams-size.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "url/urlsearchparams-sort.any.js": {
+    "total": 17
+  },
+  "url/urlsearchparams-sort.any.js#dedicatedworker": {
+    "total": 17
+  },
+  "url/urlsearchparams-stringifier.any.js": {
+    "total": 14
+  },
+  "url/urlsearchparams-stringifier.any.js#dedicatedworker": {
+    "total": 14
+  }
+}

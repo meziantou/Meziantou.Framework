@@ -1,0 +1,177 @@
+{
+  "html-aam/accname-computation-by-element/a.html": {
+    "total": 6
+  },
+  "html-aam/accname-computation-by-element/area.html": {
+    "total": 7,
+    "failures": {
+      "area expecting name from title": "FAIL",
+      "area expecting name to be empty": "FAIL"
+    }
+  },
+  "html-aam/accname-computation-by-element/button.html": {
+    "total": 9
+  },
+  "html-aam/accname-computation-by-element/fieldset.html": {
+    "total": 6
+  },
+  "html-aam/accname-computation-by-element/figure.html": {
+    "total": 5
+  },
+  "html-aam/accname-computation-by-element/iframe.html": {
+    "total": 5
+  },
+  "html-aam/accname-computation-by-element/img.html": {
+    "total": 8,
+    "failures": {
+      "img expecting name from ancestor figure figcaption": "FAIL"
+    }
+  },
+  "html-aam/accname-computation-by-element/input-button-submit-reset.html": {
+    "total": 23
+  },
+  "html-aam/accname-computation-by-element/input-image.html": {
+    "total": 9
+  },
+  "html-aam/accname-computation-by-element/inputs-with-placeholders.html": {
+    "total": 80
+  },
+  "html-aam/accname-computation-by-element/other-form-elements.html": {
+    "total": 83
+  },
+  "html-aam/accname-computation-by-element/output.html": {
+    "total": 7
+  },
+  "html-aam/accname-computation-by-element/phrasing-elements.html": {
+    "total": 135
+  },
+  "html-aam/accname-computation-by-element/section-and-grouping-elements.html": {
+    "total": 100
+  },
+  "html-aam/accname-computation-by-element/summary.html": {
+    "total": 5
+  },
+  "html-aam/accname-computation-by-element/table.html": {
+    "total": 6
+  },
+  "html-aam/accname-computation-by-element/tr-td-th.tentative.html": {
+    "total": 30,
+    "failures": {
+      "td expecting name from title": "FAIL",
+      "td expecting name to be empty": "FAIL",
+      "th expecting name from title": "FAIL",
+      "th expecting name to be empty": "FAIL",
+      "tr expecting name from title": "FAIL",
+      "tr expecting name to be empty": "FAIL"
+    }
+  },
+  "html-aam/area-role.html": {
+    "total": 2
+  },
+  "html-aam/aside-in-prefixed-article.html": {
+    "total": 1
+  },
+  "html-aam/dir-role.tentative.html": {
+    "total": 1
+  },
+  "html-aam/figure-name-no-figcaption.tentative.html": {
+    "total": 9,
+    "failures": {
+      "figure with figcaption - no name": "FAIL",
+      "figure with figcaption and img without alt": "FAIL",
+      "figure with figcaption and title": "FAIL",
+      "img without alt within a figure with figcaption": "FAIL"
+    }
+  },
+  "html-aam/heading/invalid-nesting.html": {
+    "total": 16
+  },
+  "html-aam/hidden-names.html": {
+    "total": 5
+  },
+  "html-aam/img-src-srcset-roles.tentative.html": {
+    "total": 49,
+    "failures": {
+      "el-img-empty-alt-aria-labelledby-empty": "FAIL",
+      "el-img-empty-alt-aria-labelledby-whitespace": "FAIL",
+      "el-img-empty-src-and-no-name": "FAIL",
+      "el-img-empty-src-and-srcset-and-no-name": "FAIL",
+      "el-img-empty-srcset-and-no-name": "FAIL",
+      "el-img-empty-title-no-src-or-srcset": "FAIL",
+      "el-img-no-src-srcset-and-no-name": "FAIL",
+      "el-img-whitespace-alt-aria-label-empty": "FAIL",
+      "el-img-whitespace-alt-aria-label-whitespace": "FAIL",
+      "el-img-whitespace-alt-aria-labelledby-empty": "FAIL",
+      "el-img-whitespace-alt-aria-labelledby-non-existing": "FAIL",
+      "el-img-whitespace-alt-aria-labelledby-whitespace": "FAIL",
+      "el-img-whitespace-alt-no-src-or-srcset": "FAIL",
+      "el-img-whitespace-alt-no-src-srcset-title-empty": "FAIL",
+      "el-img-whitespace-alt-no-src-srcset-title-whitespace": "FAIL",
+      "el-img-whitespace-alt-srcset-invalid-value": "FAIL",
+      "el-img-whitespace-alt-title": "FAIL",
+      "el-img-whitespace-alt-title-empty": "FAIL",
+      "el-img-whitespace-alt-title-whitespace": "FAIL"
+    }
+  },
+  "html-aam/names.html": {
+    "total": 128
+  },
+  "html-aam/optgroup-role.tentative.html": {
+    "total": 1
+  },
+  "html-aam/roles-contextual.html": {
+    "total": 38
+  },
+  "html-aam/roles-contextual.tentative.html": {
+    "total": 4
+  },
+  "html-aam/roles-dynamic-switch.tentative.window.js": {
+    "total": 6,
+    "failures": {
+      "Connected <input type=checkbox switch>": "FAIL",
+      "Connected <input type=checkbox switch>: adding switch attribute": "FAIL",
+      "Connected <input type=checkbox switch>: adding type attribute": "FAIL",
+      "Connected <input type=checkbox switch>: removing switch attribute": "FAIL",
+      "Connected <input type=checkbox switch>: removing type attribute": "FAIL",
+      "Disconnected <input type=checkbox switch>": "FAIL"
+    }
+  },
+  "html-aam/roles-generic.html": {
+    "total": 12
+  },
+  "html-aam/roles-generic.tentative.html": {
+    "total": 5,
+    "failures": {
+      "el-li-orphaned-in-dom-but-owned-by-list-element": "FAIL",
+      "el-li-within-explicit-role-list-parent": "FAIL",
+      "el-li-within-generic-within-list-parent": "FAIL"
+    }
+  },
+  "html-aam/roles-minimum.tentative.html": {
+    "total": 14,
+    "failures": {
+      "el-cite-draggable-attr": "FAIL",
+      "el-div-autofocus-attr": "FAIL",
+      "el-div-autofocus-attr-role-generic": "FAIL",
+      "el-div-autofocus-attr-role-none": "FAIL",
+      "el-div-draggable-attr": "FAIL",
+      "el-div-draggable-attr-invalid-role": "FAIL",
+      "el-div-draggable-attr-role-generic": "FAIL",
+      "el-div-draggable-attr-role-none": "FAIL",
+      "el-div-popover-attr": "FAIL",
+      "el-section-draggable-attr": "FAIL"
+    }
+  },
+  "html-aam/roles.html": {
+    "total": 60
+  },
+  "html-aam/roles.tentative.html": {
+    "total": 4,
+    "failures": {
+      "el-input-checkbox-switch": "FAIL"
+    }
+  },
+  "html-aam/table-roles.html": {
+    "total": 7
+  }
+}

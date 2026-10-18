@@ -1,0 +1,149 @@
+{
+  "spec": {
+    "title": "CSS Easing Functions Module Level 2",
+    "url": "https://drafts.csswg.org/css-easing-2/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<easing-function>",
+      "href": "https://drafts.csswg.org/css-easing-2/#typedef-easing-function",
+      "type": "type",
+      "value": "<linear-easing-function> | <cubic-bezier-easing-function> | <step-easing-function>"
+    },
+    {
+      "name": "<linear-easing-function>",
+      "href": "https://drafts.csswg.org/css-easing-2/#typedef-linear-easing-function",
+      "type": "type",
+      "value": "linear | <linear()>"
+    },
+    {
+      "name": "linear()",
+      "value": "linear( [ <number> && <percentage>{0,2} ]# )",
+      "href": "https://drafts.csswg.org/css-easing-2/#funcdef-linear",
+      "type": "function"
+    },
+    {
+      "name": "<cubic-bezier-easing-function>",
+      "href": "https://drafts.csswg.org/css-easing-2/#typedef-cubic-bezier-easing-function",
+      "type": "type",
+      "value": "ease | ease-in | ease-out | ease-in-out | <cubic-bezier()>",
+      "values": [
+        {
+          "name": "ease-in",
+          "prose": "A function that starts slowly and smoothly, then quickly approaches the endpoint with an almost linear curve. Equivalent to cubic-bezier(0.42, 0, 1, 1).",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-cubic-bezier-easing-function-ease-in",
+          "type": "value",
+          "value": "ease-in"
+        },
+        {
+          "name": "ease-out",
+          "prose": "A function that starts quickly with an almost linear curve, then slowly and smoothly approaches the endpoint. Equivalent to cubic-bezier(0, 0, 0.58, 1).",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-cubic-bezier-easing-function-ease-out",
+          "type": "value",
+          "value": "ease-out"
+        },
+        {
+          "name": "ease-in-out",
+          "prose": "A function that starts and ends slowly and smoothly, quickly traversing the middle part. Equivalent to cubic-bezier(0.42, 0, 0.58, 1).",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-cubic-bezier-easing-function-ease-in-out",
+          "type": "value",
+          "value": "ease-in-out"
+        },
+        {
+          "name": "ease",
+          "prose": "Similar to ease-in-out, but with a quicker start and a slower finish. Equivalent to cubic-bezier(0.25, 0.1, 0.25, 1).",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-cubic-bezier-easing-function-ease",
+          "type": "value",
+          "value": "ease"
+        }
+      ]
+    },
+    {
+      "name": "cubic-bezier()",
+      "value": "cubic-bezier( [ <number [0,1]>, <number> ]#{2} )",
+      "href": "https://drafts.csswg.org/css-easing-2/#funcdef-cubic-bezier",
+      "type": "function"
+    },
+    {
+      "name": "<step-easing-function>",
+      "href": "https://drafts.csswg.org/css-easing-2/#typedef-step-easing-function",
+      "type": "type",
+      "value": "step-start | step-end | <steps()>"
+    },
+    {
+      "name": "steps()",
+      "value": "steps( <integer>, <step-position>?)",
+      "href": "https://drafts.csswg.org/css-easing-2/#funcdef-steps",
+      "type": "function",
+      "values": [
+        {
+          "name": "step-start",
+          "prose": "Jumps from the starting to the ending value at the start of the easing interval. Computes to steps(1, start)",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-easing-function-step-start",
+          "type": "value",
+          "value": "step-start"
+        },
+        {
+          "name": "step-end",
+          "prose": "Jumps from the starting to the ending value at the end of the easing interval. Computes to steps(1, end) Example step easing function keyword values.",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-easing-function-step-end",
+          "type": "value",
+          "value": "step-end"
+        }
+      ]
+    },
+    {
+      "name": "<step-position>",
+      "href": "https://drafts.csswg.org/css-easing-2/#typedef-step-position",
+      "type": "type",
+      "value": "jump-start | jump-end | jump-none | jump-both | start | end",
+      "values": [
+        {
+          "name": "jump-start",
+          "prose": "The first interval has an output progress value of 1/steps, and subsequent intervals rise by 1/steps. (It \"jumps at the start\", with no step returning 0.)",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-jump-start",
+          "type": "value",
+          "value": "jump-start"
+        },
+        {
+          "name": "jump-end",
+          "prose": "The first interval has an output progress value of 0, and subsequent intervals rise by 1/steps. (It \"jumps at the end\", with no step returning 1.)",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-jump-end",
+          "type": "value",
+          "value": "jump-end"
+        },
+        {
+          "name": "jump-none",
+          "prose": "The first interval has an output progress value of 0, and subsequent intervals rise by 1/(steps-1). (It \"never jumps\", with steps returning both 0 and 1.)",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-jump-none",
+          "type": "value",
+          "value": "jump-none"
+        },
+        {
+          "name": "jump-both",
+          "prose": "The first interval has an output progress value of 1/(steps+1), and subsequent intervals rise by 1/(steps+1). (It \"jumps at both ends\", with no steps returning 0 or 1.)",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-jump-both",
+          "type": "value",
+          "value": "jump-both"
+        },
+        {
+          "name": "start",
+          "prose": "Behaves as jump-start.",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-start",
+          "type": "value",
+          "value": "start"
+        },
+        {
+          "name": "end",
+          "prose": "Behaves as jump-end.",
+          "href": "https://drafts.csswg.org/css-easing-2/#valdef-step-position-end",
+          "type": "value",
+          "value": "end"
+        }
+      ]
+    }
+  ]
+}

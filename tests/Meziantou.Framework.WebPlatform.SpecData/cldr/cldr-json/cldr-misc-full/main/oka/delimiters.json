@@ -1,0 +1,15 @@
+{
+  "main": {
+    "oka": {
+      "identity": {
+        "language": "oka"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

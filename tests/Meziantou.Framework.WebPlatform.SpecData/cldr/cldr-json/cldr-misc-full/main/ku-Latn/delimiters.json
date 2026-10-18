@@ -1,0 +1,16 @@
+{
+  "main": {
+    "ku-Latn": {
+      "identity": {
+        "language": "ku",
+        "script": "Latn"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

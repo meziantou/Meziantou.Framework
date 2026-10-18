@@ -1,0 +1,375 @@
+{
+  "css/mediaqueries/aspect-ratio-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-005.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-006.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/aspect-ratio-serialization.html": {
+    "total": 1
+  },
+  "css/mediaqueries/at-custom-media-basic.html": {
+    "reftest": "FAIL"
+  },
+  "css/mediaqueries/at-custom-media-cssom.html": {
+    "total": 10
+  },
+  "css/mediaqueries/at-custom-media-parsing.html": {
+    "total": 14
+  },
+  "css/mediaqueries/device-aspect-ratio-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/device-aspect-ratio-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/device-aspect-ratio-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/device-aspect-ratio-006.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/display-mode.html": {
+    "total": 17
+  },
+  "css/mediaqueries/display-mode.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Should be known: '(display-mode: unframed)'": "FAIL",
+      "Should be known: '(display-mode: window-controls-overlay)'": "FAIL"
+    }
+  },
+  "css/mediaqueries/display-state.tentative.html": {
+    "total": 16
+  },
+  "css/mediaqueries/dynamic-range.html": {
+    "total": 23
+  },
+  "css/mediaqueries/forced-colors.html": {
+    "total": 16
+  },
+  "css/mediaqueries/inverted-colors.html": {
+    "total": 15
+  },
+  "css/mediaqueries/match-media-parsing.html": {
+    "total": 34
+  },
+  "css/mediaqueries/media-query-matches-in-iframe.html": {
+    "total": 22
+  },
+  "css/mediaqueries/min-width-001.xht": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/min-width-tables-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-005.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-006.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-007.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-008.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-resolution.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-005.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-calc-sign-function-006.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-case-insensitive-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-deprecated-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-dynamic-empty-children.html": {
+    "total": 1
+  },
+  "css/mediaqueries/mq-escaped-serialization.html": {
+    "total": 1
+  },
+  "css/mediaqueries/mq-gamut-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-gamut-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-gamut-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-gamut-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-gamut-005.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-005.html": {
+    "total": 1
+  },
+  "css/mediaqueries/mq-invalid-media-type-006.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-layer-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-invalid-media-type-layer-002.html": {
+    "total": 1
+  },
+  "css/mediaqueries/mq-negative-range-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-negative-range-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-non-matching-lazy-load.tentative.html": {
+    "total": 1
+  },
+  "css/mediaqueries/mq-range-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/mq-unknown-feature-custom-property.html": {
+    "total": 1
+  },
+  "css/mediaqueries/navigation-controls.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Check that none evaluates to false in the boolean context": "FAIL",
+      "Should be known: '(navigation-controls)'": "FAIL",
+      "Should be known: '(navigation-controls: back-button)'": "FAIL",
+      "Should be known: '(navigation-controls: none)'": "FAIL"
+    }
+  },
+  "css/mediaqueries/negation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/negation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/nested-media-queries.html": {
+    "total": 1
+  },
+  "css/mediaqueries/overflow-media-features.html": {
+    "total": 28
+  },
+  "css/mediaqueries/preferences-colorScheme.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 13,
+    "failures": {
+      "navigator.preferences.colorScheme fires change event when clearing override": "NOTRUN",
+      "navigator.preferences.colorScheme fires change event when clearing override (without value change)": "NOTRUN",
+      "navigator.preferences.colorScheme fires change event when requesting override": "FAIL",
+      "navigator.preferences.colorScheme fires change event when requesting override (without value change)": "NOTRUN",
+      "navigator.preferences.colorScheme supported": "FAIL",
+      "navigator.preferences.colorScheme.override returns override value": "NOTRUN",
+      "navigator.preferences.colorScheme.override supported": "FAIL",
+      "navigator.preferences.colorScheme.requestOverride('') works like clearOverride()": "NOTRUN",
+      "navigator.preferences.colorScheme.requestOverride() updates (prefers-color-scheme)": "NOTRUN",
+      "navigator.preferences.colorScheme.requestOverride() with invalid value throws": "NOTRUN",
+      "navigator.preferences.colorScheme.requestOverride(null) works like clearOverride()": "NOTRUN",
+      "navigator.preferences.colorScheme.validValues supported": "FAIL",
+      "navigator.preferences.colorScheme.value supported": "FAIL"
+    }
+  },
+  "css/mediaqueries/preferences-contrast.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 14,
+    "failures": {
+      "navigator.preferences.contrast fires change event when clearing override": "NOTRUN",
+      "navigator.preferences.contrast fires change event when clearing override (without value change)": "NOTRUN",
+      "navigator.preferences.contrast fires change event when requesting override": "FAIL",
+      "navigator.preferences.contrast fires change event when requesting override (without value change)": "NOTRUN",
+      "navigator.preferences.contrast supported": "FAIL",
+      "navigator.preferences.contrast.clearOverride() works": "NOTRUN",
+      "navigator.preferences.contrast.override supported": "FAIL",
+      "navigator.preferences.contrast.requestOverride('') works like clearOverride()": "NOTRUN",
+      "navigator.preferences.contrast.requestOverride('custom') throws": "NOTRUN",
+      "navigator.preferences.contrast.requestOverride() updates (prefers-contrast)": "NOTRUN",
+      "navigator.preferences.contrast.requestOverride() with invalid value throws": "NOTRUN",
+      "navigator.preferences.contrast.requestOverride(null) works like clearOverride()": "NOTRUN",
+      "navigator.preferences.contrast.validValues supported": "FAIL",
+      "navigator.preferences.contrast.value supported": "FAIL"
+    }
+  },
+  "css/mediaqueries/preferences-reducedData.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 13,
+    "failures": {
+      "navigator.preferences.reducedData fires change event when clearing override": "NOTRUN",
+      "navigator.preferences.reducedData fires change event when clearing override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedData fires change event when requesting override": "FAIL",
+      "navigator.preferences.reducedData fires change event when requesting override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedData supported": "FAIL",
+      "navigator.preferences.reducedData.clearOverride() supported": "NOTRUN",
+      "navigator.preferences.reducedData.override supported": "FAIL",
+      "navigator.preferences.reducedData.requestOverride('') works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedData.requestOverride() updates (prefers-reduced-data)": "NOTRUN",
+      "navigator.preferences.reducedData.requestOverride() with invalid value throws": "NOTRUN",
+      "navigator.preferences.reducedData.requestOverride(null) works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedData.validValues supported": "FAIL",
+      "navigator.preferences.reducedData.value supported": "FAIL"
+    }
+  },
+  "css/mediaqueries/preferences-reducedMotion.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 13,
+    "failures": {
+      "navigator.preferences.reducedMotion fires change event when clearing override": "NOTRUN",
+      "navigator.preferences.reducedMotion fires change event when clearing override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedMotion fires change event when requesting override": "FAIL",
+      "navigator.preferences.reducedMotion fires change event when requesting override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedMotion supported": "FAIL",
+      "navigator.preferences.reducedMotion.clearOverride() supported": "NOTRUN",
+      "navigator.preferences.reducedMotion.override supported": "FAIL",
+      "navigator.preferences.reducedMotion.requestOverride('') works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedMotion.requestOverride() updates (prefers-reduced-motion)": "NOTRUN",
+      "navigator.preferences.reducedMotion.requestOverride() with invalid value throws": "NOTRUN",
+      "navigator.preferences.reducedMotion.requestOverride(null) works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedMotion.validValues supported": "FAIL",
+      "navigator.preferences.reducedMotion.value supported": "FAIL"
+    }
+  },
+  "css/mediaqueries/preferences-reducedTransparency.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 13,
+    "failures": {
+      "navigator.preferences.reducedTransparency fires change event when clearing override": "NOTRUN",
+      "navigator.preferences.reducedTransparency fires change event when clearing override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedTransparency fires change event when requesting override": "FAIL",
+      "navigator.preferences.reducedTransparency fires change event when requesting override (without value change)": "NOTRUN",
+      "navigator.preferences.reducedTransparency supported": "FAIL",
+      "navigator.preferences.reducedTransparency.clearOverride() supported": "NOTRUN",
+      "navigator.preferences.reducedTransparency.override supported": "FAIL",
+      "navigator.preferences.reducedTransparency.requestOverride('') works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedTransparency.requestOverride() updates (prefers-reduced-transparency)": "NOTRUN",
+      "navigator.preferences.reducedTransparency.requestOverride() with invalid value throws": "NOTRUN",
+      "navigator.preferences.reducedTransparency.requestOverride(null) works like clearOverride()": "NOTRUN",
+      "navigator.preferences.reducedTransparency.validValues supported": "FAIL",
+      "navigator.preferences.reducedTransparency.value supported": "FAIL"
+    }
+  },
+  "css/mediaqueries/prefers-color-scheme-svg-as-image.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/prefers-color-scheme-svg-image-normal-with-meta-dark.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/prefers-color-scheme-svg-image-normal-with-meta-light.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/prefers-color-scheme-svg-image-normal.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/prefers-color-scheme-svg-image.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/prefers-color-scheme.html": {
+    "total": 18
+  },
+  "css/mediaqueries/prefers-contrast.html": {
+    "total": 26
+  },
+  "css/mediaqueries/prefers-reduced-data.html": {
+    "total": 17
+  },
+  "css/mediaqueries/prefers-reduced-motion.html": {
+    "total": 16
+  },
+  "css/mediaqueries/prefers-reduced-transparency.html": {
+    "total": 17
+  },
+  "css/mediaqueries/relative-units-001.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/relative-units-002.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/relative-units-003.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/relative-units-004.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/relative-units-005.html": {
+    "total": 3
+  },
+  "css/mediaqueries/resizable.tentative.html": {
+    "total": 16
+  },
+  "css/mediaqueries/scripting-print-noscript.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/scripting-print-script.html": {
+    "reftest": "PASS"
+  },
+  "css/mediaqueries/scripting.html": {
+    "total": 12
+  },
+  "css/mediaqueries/style-media-attribute-change-in-iframe.html": {
+    "total": 1
+  },
+  "css/mediaqueries/test_media_queries.html": {
+    "total": 1349
+  },
+  "css/mediaqueries/update-media-feature.html": {
+    "total": 14
+  },
+  "css/mediaqueries/viewport-script-dynamic.html": {
+    "reftest": "FAIL"
+  }
+}

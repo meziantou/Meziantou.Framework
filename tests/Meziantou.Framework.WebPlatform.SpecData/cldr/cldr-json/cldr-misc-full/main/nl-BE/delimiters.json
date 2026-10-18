@@ -1,0 +1,16 @@
+{
+  "main": {
+    "nl-BE": {
+      "identity": {
+        "language": "nl",
+        "territory": "BE"
+      },
+      "delimiters": {
+        "quotationStart": "‘",
+        "quotationEnd": "’",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

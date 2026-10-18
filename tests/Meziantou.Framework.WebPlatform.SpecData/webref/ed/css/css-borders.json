@@ -1,0 +1,2790 @@
+{
+  "spec": {
+    "title": "CSS Borders and Box Decorations Module Level 4",
+    "url": "https://drafts.csswg.org/css-borders-4/"
+  },
+  "properties": [
+    {
+      "name": "border-top-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-top-color",
+        "borderTopColor"
+      ]
+    },
+    {
+      "name": "border-right-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-right-color",
+        "borderRightColor"
+      ]
+    },
+    {
+      "name": "border-bottom-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-bottom-color",
+        "borderBottomColor"
+      ]
+    },
+    {
+      "name": "border-left-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-left-color",
+        "borderLeftColor"
+      ]
+    },
+    {
+      "name": "border-block-start-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-block-start-color",
+        "borderBlockStartColor"
+      ]
+    },
+    {
+      "name": "border-block-end-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-block-end-color",
+        "borderBlockEndColor"
+      ]
+    },
+    {
+      "name": "border-inline-start-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-inline-start-color",
+        "borderInlineStartColor"
+      ]
+    },
+    {
+      "name": "border-inline-end-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end-color",
+      "value": "<color> | <image-1D>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the computed color and/or a one-dimensional image function",
+      "canonicalOrder": "per grammar",
+      "animationType": "see prose",
+      "logicalPropertyGroup": "border-color",
+      "styleDeclaration": [
+        "border-inline-end-color",
+        "borderInlineEndColor"
+      ]
+    },
+    {
+      "name": "border-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-color",
+      "value": "[ <color> | <image-1D> ]{1,4}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-color",
+        "borderColor"
+      ],
+      "longhands": [
+        "border-top-color",
+        "border-right-color",
+        "border-bottom-color",
+        "border-left-color"
+      ]
+    },
+    {
+      "name": "border-block-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-color",
+      "value": "<'border-top-color'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-color",
+        "borderBlockColor"
+      ],
+      "longhands": [
+        "border-block-start-color",
+        "border-block-end-color"
+      ]
+    },
+    {
+      "name": "border-inline-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-color",
+      "value": "<'border-top-color'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-color",
+        "borderInlineColor"
+      ],
+      "longhands": [
+        "border-inline-start-color",
+        "border-inline-end-color"
+      ]
+    },
+    {
+      "name": "border-top-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-top-style",
+        "borderTopStyle"
+      ]
+    },
+    {
+      "name": "border-right-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-right-style",
+        "borderRightStyle"
+      ]
+    },
+    {
+      "name": "border-bottom-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-bottom-style",
+        "borderBottomStyle"
+      ]
+    },
+    {
+      "name": "border-left-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-left-style",
+        "borderLeftStyle"
+      ]
+    },
+    {
+      "name": "border-block-start-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-block-start-style",
+        "borderBlockStartStyle"
+      ]
+    },
+    {
+      "name": "border-block-end-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-block-end-style",
+        "borderBlockEndStyle"
+      ]
+    },
+    {
+      "name": "border-inline-start-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-inline-start-style",
+        "borderInlineStartStyle"
+      ]
+    },
+    {
+      "name": "border-inline-end-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end-style",
+      "value": "<line-style>",
+      "initial": "none",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "logicalPropertyGroup": "border-style",
+      "styleDeclaration": [
+        "border-inline-end-style",
+        "borderInlineEndStyle"
+      ]
+    },
+    {
+      "name": "border-block-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-style",
+      "value": "<'border-top-style'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-style",
+        "borderBlockStyle"
+      ],
+      "longhands": [
+        "border-block-start-style",
+        "border-block-end-style"
+      ]
+    },
+    {
+      "name": "border-inline-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-style",
+      "value": "<'border-top-style'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-style",
+        "borderInlineStyle"
+      ],
+      "longhands": [
+        "border-inline-start-style",
+        "border-inline-end-style"
+      ]
+    },
+    {
+      "name": "border-style",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-style",
+      "value": "<'border-top-style'>{1,4}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No border. Color and width are ignored (i.e., the border has width 0). Note this means that the initial value of border-image-width will also resolve to zero.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "hidden",
+          "prose": "Same as none, but has different behavior in the border conflict resolution rules for border-collapsed tables [CSS2].",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "dotted",
+          "prose": "A series of round dots.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-dotted",
+          "type": "value",
+          "value": "dotted"
+        },
+        {
+          "name": "dashed",
+          "prose": "A series of square-ended dashes.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-dashed",
+          "type": "value",
+          "value": "dashed"
+        },
+        {
+          "name": "solid",
+          "prose": "A single line segment.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-solid",
+          "type": "value",
+          "value": "solid"
+        },
+        {
+          "name": "double",
+          "prose": "Two parallel solid lines with some space between them. (The thickness of the lines is not specified, but the sum of the lines and the space must equal border-width.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-double",
+          "type": "value",
+          "value": "double"
+        },
+        {
+          "name": "groove",
+          "prose": "Looks as if it were carved in the canvas. (This is typically achieved by creating a “shadow” from two colors that are slightly lighter and darker than the specified border-color.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-groove",
+          "type": "value",
+          "value": "groove"
+        },
+        {
+          "name": "ridge",
+          "prose": "Looks as if it were coming out of the canvas.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-ridge",
+          "type": "value",
+          "value": "ridge"
+        },
+        {
+          "name": "inset",
+          "prose": "Looks as if the content on the inside of the border is sunken into the canvas. Treated as ridge in the collapsing border model. [CSS2]",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-inset",
+          "type": "value",
+          "value": "inset"
+        },
+        {
+          "name": "outset",
+          "prose": "Looks as if the content on the inside of the border is raised out of the canvas. Treated as groove in the collapsing border model. [CSS2]",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-outset",
+          "type": "value",
+          "value": "outset"
+        }
+      ],
+      "styleDeclaration": [
+        "border-style",
+        "borderStyle"
+      ],
+      "longhands": [
+        "border-top-style",
+        "border-right-style",
+        "border-bottom-style",
+        "border-left-style"
+      ]
+    },
+    {
+      "name": "border-top-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-top-width",
+        "borderTopWidth"
+      ]
+    },
+    {
+      "name": "border-right-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-right-width",
+        "borderRightWidth"
+      ]
+    },
+    {
+      "name": "border-bottom-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-bottom-width",
+        "borderBottomWidth"
+      ]
+    },
+    {
+      "name": "border-left-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-left-width",
+        "borderLeftWidth"
+      ]
+    },
+    {
+      "name": "border-block-start-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-block-start-width",
+        "borderBlockStartWidth"
+      ]
+    },
+    {
+      "name": "border-block-end-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-block-end-width",
+        "borderBlockEndWidth"
+      ]
+    },
+    {
+      "name": "border-inline-start-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-inline-start-width",
+        "borderInlineStartWidth"
+      ]
+    },
+    {
+      "name": "border-inline-end-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end-width",
+      "value": "<line-width>",
+      "initial": "medium",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "absolute length, snapped as a border width",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-width",
+      "styleDeclaration": [
+        "border-inline-end-width",
+        "borderInlineEndWidth"
+      ]
+    },
+    {
+      "name": "border-block-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-width",
+      "value": "<'border-top-width'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-width",
+        "borderBlockWidth"
+      ],
+      "longhands": [
+        "border-block-start-width",
+        "border-block-end-width"
+      ]
+    },
+    {
+      "name": "border-inline-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-width",
+      "value": "<'border-top-width'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-width",
+        "borderInlineWidth"
+      ],
+      "longhands": [
+        "border-inline-start-width",
+        "border-inline-end-width"
+      ]
+    },
+    {
+      "name": "border-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-width",
+      "value": "<'border-top-width'>{1,4}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "thin",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-thin",
+          "type": "value",
+          "value": "thin"
+        },
+        {
+          "name": "medium",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "thick",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-thick",
+          "type": "value",
+          "value": "thick"
+        },
+        {
+          "name": "hairline",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-hairline",
+          "type": "value",
+          "value": "hairline"
+        }
+      ],
+      "styleDeclaration": [
+        "border-width",
+        "borderWidth"
+      ],
+      "longhands": [
+        "border-top-width",
+        "border-right-width",
+        "border-bottom-width",
+        "border-left-width"
+      ]
+    },
+    {
+      "name": "border-top",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-top",
+        "borderTop"
+      ],
+      "longhands": [
+        "border-top-width",
+        "border-top-style",
+        "border-top-color"
+      ]
+    },
+    {
+      "name": "border-right",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-right",
+        "borderRight"
+      ],
+      "longhands": [
+        "border-right-width",
+        "border-right-style",
+        "border-right-color"
+      ]
+    },
+    {
+      "name": "border-bottom",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-bottom",
+        "borderBottom"
+      ],
+      "longhands": [
+        "border-bottom-width",
+        "border-bottom-style",
+        "border-bottom-color"
+      ]
+    },
+    {
+      "name": "border-left",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-left",
+        "borderLeft"
+      ],
+      "longhands": [
+        "border-left-width",
+        "border-left-style",
+        "border-left-color"
+      ]
+    },
+    {
+      "name": "border-block-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-start",
+        "borderBlockStart"
+      ],
+      "longhands": [
+        "border-block-start-width",
+        "border-block-start-style",
+        "border-block-start-color"
+      ]
+    },
+    {
+      "name": "border-block-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-end",
+        "borderBlockEnd"
+      ],
+      "longhands": [
+        "border-block-end-width",
+        "border-block-end-style",
+        "border-block-end-color"
+      ]
+    },
+    {
+      "name": "border-inline-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-start",
+        "borderInlineStart"
+      ],
+      "longhands": [
+        "border-inline-start-width",
+        "border-inline-start-style",
+        "border-inline-start-color"
+      ]
+    },
+    {
+      "name": "border-inline-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "See individual properties",
+      "appliesTo": "all elements except ruby base containers and ruby annotation containers",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-end",
+        "borderInlineEnd"
+      ],
+      "longhands": [
+        "border-inline-end-width",
+        "border-inline-end-style",
+        "border-inline-end-color"
+      ]
+    },
+    {
+      "name": "border-block",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block",
+      "value": "<'border-block-start'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block",
+        "borderBlock"
+      ],
+      "longhands": [
+        "border-block-start",
+        "border-block-end"
+      ]
+    },
+    {
+      "name": "border-inline",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline",
+      "value": "<'border-block-start'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline",
+        "borderInline"
+      ],
+      "longhands": [
+        "border-inline-start",
+        "border-inline-end"
+      ]
+    },
+    {
+      "name": "border",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border",
+      "value": "<line-width> || <line-style> || <color>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border"
+      ],
+      "longhands": [
+        "border-width",
+        "border-style",
+        "border-color"
+      ],
+      "resetLonghands": [
+        "border-image"
+      ]
+    },
+    {
+      "name": "border-top-left-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-left-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-top-left-radius",
+        "borderTopLeftRadius"
+      ]
+    },
+    {
+      "name": "border-top-right-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-right-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-top-right-radius",
+        "borderTopRightRadius"
+      ]
+    },
+    {
+      "name": "border-bottom-right-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-right-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-bottom-right-radius",
+        "borderBottomRightRadius"
+      ]
+    },
+    {
+      "name": "border-bottom-left-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-left-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-bottom-left-radius",
+        "borderBottomLeftRadius"
+      ]
+    },
+    {
+      "name": "border-start-start-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-start-start-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-start-start-radius",
+        "borderStartStartRadius"
+      ]
+    },
+    {
+      "name": "border-start-end-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-start-end-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-start-end-radius",
+        "borderStartEndRadius"
+      ]
+    },
+    {
+      "name": "border-end-start-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-end-start-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-end-start-radius",
+        "borderEndStartRadius"
+      ]
+    },
+    {
+      "name": "border-end-end-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-end-end-radius",
+      "value": "<border-radius>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "pair of computed <length-percentage> values",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-radius",
+      "styleDeclaration": [
+        "border-end-end-radius",
+        "borderEndEndRadius"
+      ]
+    },
+    {
+      "name": "border-top-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-top-radius",
+        "borderTopRadius"
+      ],
+      "longhands": [
+        "border-top-left-radius",
+        "border-top-right-radius"
+      ]
+    },
+    {
+      "name": "border-right-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-right-radius",
+        "borderRightRadius"
+      ],
+      "longhands": [
+        "border-top-right-radius",
+        "border-bottom-right-radius"
+      ]
+    },
+    {
+      "name": "border-bottom-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-bottom-radius",
+        "borderBottomRadius"
+      ],
+      "longhands": [
+        "border-bottom-left-radius",
+        "border-bottom-right-radius"
+      ]
+    },
+    {
+      "name": "border-left-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-left-radius",
+        "borderLeftRadius"
+      ],
+      "longhands": [
+        "border-top-left-radius",
+        "border-bottom-left-radius"
+      ]
+    },
+    {
+      "name": "border-block-start-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-start-radius",
+        "borderBlockStartRadius"
+      ],
+      "longhands": [
+        "border-start-start-radius",
+        "border-start-end-radius"
+      ]
+    },
+    {
+      "name": "border-block-end-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-end-radius",
+        "borderBlockEndRadius"
+      ],
+      "longhands": [
+        "border-end-start-radius",
+        "border-end-end-radius"
+      ]
+    },
+    {
+      "name": "border-inline-start-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-start-radius",
+        "borderInlineStartRadius"
+      ],
+      "longhands": [
+        "border-start-start-radius",
+        "border-end-start-radius"
+      ]
+    },
+    {
+      "name": "border-inline-end-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end-radius",
+      "value": "<length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]?",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-end-radius",
+        "borderInlineEndRadius"
+      ],
+      "longhands": [
+        "border-start-end-radius",
+        "border-end-end-radius"
+      ]
+    },
+    {
+      "name": "border-radius",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-radius",
+      "value": "<length-percentage [0,∞]>{1,4} [ / <length-percentage [0,∞]>{1,4} ]?",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-radius",
+        "borderRadius"
+      ],
+      "longhands": [
+        "border-top-left-radius",
+        "border-top-right-radius",
+        "border-bottom-right-radius",
+        "border-bottom-left-radius"
+      ]
+    },
+    {
+      "name": "corner-top-left-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-top-left-shape",
+        "cornerTopLeftShape"
+      ]
+    },
+    {
+      "name": "corner-top-right-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-right-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-top-right-shape",
+        "cornerTopRightShape"
+      ]
+    },
+    {
+      "name": "corner-bottom-right-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-right-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-bottom-right-shape",
+        "cornerBottomRightShape"
+      ]
+    },
+    {
+      "name": "corner-bottom-left-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-left-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-bottom-left-shape",
+        "cornerBottomLeftShape"
+      ]
+    },
+    {
+      "name": "corner-start-start-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-start-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-start-start-shape",
+        "cornerStartStartShape"
+      ]
+    },
+    {
+      "name": "corner-start-end-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-end-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-start-end-shape",
+        "cornerStartEndShape"
+      ]
+    },
+    {
+      "name": "corner-end-start-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-start-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-end-start-shape",
+        "cornerEndStartShape"
+      ]
+    },
+    {
+      "name": "corner-end-end-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-end-shape",
+      "value": "<corner-shape-value>",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the corresponding superellipse() value",
+      "canonicalOrder": "per grammar",
+      "animationType": "see superellipse interpolation",
+      "logicalPropertyGroup": "corner-shape",
+      "styleDeclaration": [
+        "corner-end-end-shape",
+        "cornerEndEndShape"
+      ]
+    },
+    {
+      "name": "corner-top-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-top-shape",
+        "cornerTopShape"
+      ],
+      "longhands": [
+        "corner-top-left-shape",
+        "corner-top-right-shape"
+      ]
+    },
+    {
+      "name": "corner-right-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-right-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-right-shape",
+        "cornerRightShape"
+      ],
+      "longhands": [
+        "corner-top-right-shape",
+        "corner-bottom-right-shape"
+      ]
+    },
+    {
+      "name": "corner-bottom-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-bottom-shape",
+        "cornerBottomShape"
+      ],
+      "longhands": [
+        "corner-bottom-left-shape",
+        "corner-bottom-right-shape"
+      ]
+    },
+    {
+      "name": "corner-left-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-left-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-left-shape",
+        "cornerLeftShape"
+      ],
+      "longhands": [
+        "corner-top-left-shape",
+        "corner-bottom-left-shape"
+      ]
+    },
+    {
+      "name": "corner-block-start-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-start-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-block-start-shape",
+        "cornerBlockStartShape"
+      ],
+      "longhands": [
+        "corner-start-start-shape",
+        "corner-start-end-shape"
+      ]
+    },
+    {
+      "name": "corner-block-end-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-end-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-block-end-shape",
+        "cornerBlockEndShape"
+      ],
+      "longhands": [
+        "corner-end-start-shape",
+        "corner-end-end-shape"
+      ]
+    },
+    {
+      "name": "corner-inline-start-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-start-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-inline-start-shape",
+        "cornerInlineStartShape"
+      ],
+      "longhands": [
+        "corner-start-start-shape",
+        "corner-end-start-shape"
+      ]
+    },
+    {
+      "name": "corner-inline-end-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-end-shape",
+      "value": "<'corner-top-left-shape'>{1,2}",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-inline-end-shape",
+        "cornerInlineEndShape"
+      ],
+      "longhands": [
+        "corner-start-end-shape",
+        "corner-end-end-shape"
+      ]
+    },
+    {
+      "name": "corner-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-shape",
+      "value": "<'corner-top-left-shape'>{1,4}",
+      "initial": "round",
+      "appliesTo": "all elements where border-radius can apply",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "values": [
+        {
+          "name": "round",
+          "prose": "The corner shape is a quarter of a convex ellipse. Equivalent to superellipse(1).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "squircle",
+          "prose": "The corner shape is a quarter of a \"squircle\", a convex curve between round and square. Equivalent to superellipse(2).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-squircle",
+          "type": "value",
+          "value": "squircle"
+        },
+        {
+          "name": "square",
+          "prose": "The corner shape is a convex 90deg angle. Equivalent to superellipse(infinity).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-square",
+          "type": "value",
+          "value": "square"
+        },
+        {
+          "name": "bevel",
+          "prose": "The corner shape is a straight diagonal line, neither convex nor concave. Equivalent to superellipse(0).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-bevel",
+          "type": "value",
+          "value": "bevel"
+        },
+        {
+          "name": "scoop",
+          "prose": "The corner shape is a concave quarter-ellipse. Equivalent to superellipse(-1).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-scoop",
+          "type": "value",
+          "value": "scoop"
+        },
+        {
+          "name": "notch",
+          "prose": "The corner shape is a concave 90deg angle. Equivalent to superellipse(-infinity).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-notch",
+          "type": "value",
+          "value": "notch"
+        },
+        {
+          "name": "superellipse()",
+          "value": "superellipse()",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-superellipse-k",
+          "type": "value"
+        }
+      ],
+      "styleDeclaration": [
+        "corner-shape",
+        "cornerShape"
+      ],
+      "longhands": [
+        "corner-top-left-shape",
+        "corner-top-right-shape",
+        "corner-bottom-right-shape",
+        "corner-bottom-left-shape"
+      ]
+    },
+    {
+      "name": "corner-top-left",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-top-left",
+        "cornerTopLeft"
+      ],
+      "longhands": [
+        "border-top-left-radius",
+        "corner-top-left-shape"
+      ]
+    },
+    {
+      "name": "corner-top-right",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-right",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-top-right",
+        "cornerTopRight"
+      ],
+      "longhands": [
+        "border-top-right-radius",
+        "corner-top-right-shape"
+      ]
+    },
+    {
+      "name": "corner-bottom-left",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-left",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-bottom-left",
+        "cornerBottomLeft"
+      ],
+      "longhands": [
+        "border-bottom-left-radius",
+        "corner-bottom-left-shape"
+      ]
+    },
+    {
+      "name": "corner-bottom-right",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-right",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-bottom-right",
+        "cornerBottomRight"
+      ],
+      "longhands": [
+        "border-bottom-right-radius",
+        "corner-bottom-right-shape"
+      ]
+    },
+    {
+      "name": "corner-start-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-start",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-start-start",
+        "cornerStartStart"
+      ],
+      "longhands": [
+        "border-start-start-radius",
+        "corner-start-start-shape"
+      ]
+    },
+    {
+      "name": "corner-start-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-end",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-start-end",
+        "cornerStartEnd"
+      ],
+      "longhands": [
+        "border-start-end-radius",
+        "corner-start-end-shape"
+      ]
+    },
+    {
+      "name": "corner-end-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-start",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-end-start",
+        "cornerEndStart"
+      ],
+      "longhands": [
+        "border-end-start-radius",
+        "corner-end-start-shape"
+      ]
+    },
+    {
+      "name": "corner-end-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-end",
+      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner-end-end",
+        "cornerEndEnd"
+      ],
+      "longhands": [
+        "border-end-end-radius",
+        "corner-end-end-shape"
+      ]
+    },
+    {
+      "name": "corner-top",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-top",
+        "cornerTop"
+      ],
+      "longhands": [
+        "border-top-radius",
+        "corner-top-shape"
+      ]
+    },
+    {
+      "name": "corner-right",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-right",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-right",
+        "cornerRight"
+      ],
+      "longhands": [
+        "border-right-radius",
+        "corner-right-shape"
+      ]
+    },
+    {
+      "name": "corner-bottom",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-bottom",
+        "cornerBottom"
+      ],
+      "longhands": [
+        "border-bottom-radius",
+        "corner-bottom-shape"
+      ]
+    },
+    {
+      "name": "corner-left",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-left",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-left",
+        "cornerLeft"
+      ],
+      "longhands": [
+        "border-left-radius",
+        "corner-left-shape"
+      ]
+    },
+    {
+      "name": "corner-block-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-start",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-block-start",
+        "cornerBlockStart"
+      ],
+      "longhands": [
+        "border-block-start-radius",
+        "corner-block-start-shape"
+      ]
+    },
+    {
+      "name": "corner-block-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-end",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-block-end",
+        "cornerBlockEnd"
+      ],
+      "longhands": [
+        "border-block-end-radius",
+        "corner-block-end-shape"
+      ]
+    },
+    {
+      "name": "corner-inline-start",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-start",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-inline-start",
+        "cornerInlineStart"
+      ],
+      "longhands": [
+        "border-inline-start-radius",
+        "corner-inline-start-shape"
+      ]
+    },
+    {
+      "name": "corner-inline-end",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-end",
+      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "corner-inline-end",
+        "cornerInlineEnd"
+      ],
+      "longhands": [
+        "border-inline-end-radius",
+        "corner-inline-end-shape"
+      ]
+    },
+    {
+      "name": "corner",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner",
+      "value": "<'border-radius'> || <'corner-shape'>",
+      "initial": "0",
+      "appliesTo": "all elements (but see prose)",
+      "inherited": "no",
+      "percentages": "Refer to corresponding dimension of the border box.",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "corner"
+      ],
+      "longhands": [
+        "border-radius",
+        "corner-shape"
+      ]
+    },
+    {
+      "name": "border-image-source",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image-source",
+      "value": "none | <image>",
+      "initial": "none",
+      "appliesTo": "All elements, except internal table elements when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "the keyword none or the computed <image>",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "border-image-source",
+        "borderImageSource"
+      ]
+    },
+    {
+      "name": "border-image-slice",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image-slice",
+      "value": "[<number [0,∞]> | <percentage [0,∞]>]{1,4} && fill?",
+      "initial": "100%",
+      "appliesTo": "All elements, except internal table elements when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "refer to size of the border image",
+      "computedValue": "four values, each either a number or percentage; plus a fill keyword if specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<percentage [0,∞]>",
+          "prose": "Percentages are relative to the size of the image: the width of the image for the horizontal offsets, the height for vertical offsets.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-slice-percentage-0",
+          "type": "value",
+          "value": "<percentage [0,∞]>"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "Numbers represent pixels in the image (if the image is a raster image) or vector coordinates (if the image is a vector image).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-slice-number-0",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        },
+        {
+          "name": "fill",
+          "prose": "The fill keyword, if present, causes the middle part of the border-image to be preserved. (By default it is discarded, i.e., treated as empty.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#border-image-slice-fill",
+          "type": "value",
+          "value": "fill"
+        }
+      ],
+      "styleDeclaration": [
+        "border-image-slice",
+        "borderImageSlice"
+      ]
+    },
+    {
+      "name": "border-image-width",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image-width",
+      "value": "[ <length-percentage [0,∞]> | <number [0,∞]> | auto ]{1,4}",
+      "initial": "1",
+      "appliesTo": "All elements, except internal table elements when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "Relative to width/height of the border image area",
+      "computedValue": "four values, each either a number, the keyword auto, or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Percentages refer to the size of the border image area: the width of the area for horizontal offsets, the height for vertical offsets.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "<number [0,∞]>",
+          "prose": "Numbers represent multiples of the corresponding computed border-width.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-width-number-0",
+          "type": "value",
+          "value": "<number [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "If auto is specified then the used border-image-width is the natural width or height (whichever is applicable) of the corresponding image slice (see border-image-slice). If the image does not have the required natural dimension then the corresponding computed border-width is used instead.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-width-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "border-image-width",
+        "borderImageWidth"
+      ]
+    },
+    {
+      "name": "border-image-outset",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image-outset",
+      "value": "[ <length [0,∞]> | <number [0,∞]> ]{1,4}",
+      "initial": "0",
+      "appliesTo": "All elements, except internal table elements when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "four values, each a number or absolute length",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "border-image-outset",
+        "borderImageOutset"
+      ]
+    },
+    {
+      "name": "border-image-repeat",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image-repeat",
+      "value": "[ stretch | repeat | round | space ]{1,2}",
+      "initial": "stretch",
+      "appliesTo": "All elements, except internal table elements when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "two keywords, one per axis",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "stretch",
+          "prose": "The image is stretched to fill its corresponding region.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-repeat-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "repeat",
+          "prose": "The image is tiled (repeated) to fill its corresponding region.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-repeat-repeat",
+          "type": "value",
+          "value": "repeat"
+        },
+        {
+          "name": "round",
+          "prose": "The image is tiled (repeated) to fill its corresponding region. If it does not fill the area with a whole number of tiles, the image is rescaled so that it does.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-repeat-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "space",
+          "prose": "The image is tiled (repeated) to fill its corresponding region. If it does not fill the region with a whole number of tiles, the extra space is distributed around the tiles.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-image-repeat-space",
+          "type": "value",
+          "value": "space"
+        }
+      ],
+      "styleDeclaration": [
+        "border-image-repeat",
+        "borderImageRepeat"
+      ]
+    },
+    {
+      "name": "border-image",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-image",
+      "value": "<'border-image-source'> || <'border-image-slice'> [ / <'border-image-width'> | / <'border-image-width'>? / <'border-image-outset'> ]? || <'border-image-repeat'>",
+      "initial": "See individual properties",
+      "appliesTo": "See individual properties",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "See individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "See individual properties",
+      "styleDeclaration": [
+        "border-image",
+        "borderImage"
+      ],
+      "longhands": [
+        "border-image-source",
+        "border-image-slice",
+        "border-image-width",
+        "border-image-outset",
+        "border-image-repeat"
+      ]
+    },
+    {
+      "name": "border-limit",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-limit",
+      "value": "all | [ sides | corners ] <length-percentage [0,∞]>? | [ top | right | bottom | left ] <length-percentage [0,∞]>",
+      "initial": "all",
+      "appliesTo": "all elements, except table element when border-collapse is collapse",
+      "inherited": "no",
+      "percentages": "relative to border-box",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "all",
+          "prose": "The entire border is drawn.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "sides",
+          "prose": "The sides are drawn up to but not including the corners (as defined by the border radii). A length or percentage is measured from the center of each side: 50% draws the middle 50% of the border; by default the entire side is drawn.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-sides",
+          "type": "value",
+          "value": "sides"
+        },
+        {
+          "name": "corners",
+          "prose": "The corners are drawn plus the specified distance into the sides if specified. A length is measured from the closest edge of the corner area. A percentage is measured from the absolute corner of the border box.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-corners",
+          "type": "value",
+          "value": "corners"
+        },
+        {
+          "name": "left",
+          "prose": "For the left and right (vertical) sides, draws the entire side and corner. For the top and bottom (horizontal) sides, draws the left/right portion, as specified. Distances are measured as for corners.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "For the left and right (vertical) sides, draws the entire side and corner. For the top and bottom (horizontal) sides, draws the left/right portion, as specified. Distances are measured as for corners.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "top",
+          "prose": "For the top and bottom (horizontal) sides, draws the entire side and corner. For the left and right (vertical) sides, draws the top/bottom portion, as specified. Distances are measured as for corners.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-top",
+          "type": "value",
+          "value": "top"
+        },
+        {
+          "name": "bottom",
+          "prose": "For the top and bottom (horizontal) sides, draws the entire side and corner. For the left and right (vertical) sides, draws the top/bottom portion, as specified. Distances are measured as for corners.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-border-limit-bottom",
+          "type": "value",
+          "value": "bottom"
+        }
+      ],
+      "styleDeclaration": [
+        "border-limit",
+        "borderLimit"
+      ]
+    },
+    {
+      "name": "border-top-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-top-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-top-clip",
+        "borderTopClip"
+      ]
+    },
+    {
+      "name": "border-right-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-right-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-right-clip",
+        "borderRightClip"
+      ]
+    },
+    {
+      "name": "border-bottom-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-bottom-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-bottom-clip",
+        "borderBottomClip"
+      ]
+    },
+    {
+      "name": "border-left-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-left-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-left-clip",
+        "borderLeftClip"
+      ]
+    },
+    {
+      "name": "border-block-start-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-start-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-block-start-clip",
+        "borderBlockStartClip"
+      ]
+    },
+    {
+      "name": "border-block-end-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-end-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-block-end-clip",
+        "borderBlockEndClip"
+      ]
+    },
+    {
+      "name": "border-inline-start-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-start-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-inline-start-clip",
+        "borderInlineStartClip"
+      ]
+    },
+    {
+      "name": "border-inline-end-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-end-clip",
+      "value": "none | [ <length-percentage [0,∞]> | <flex> ]+",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "refer to length of border-edge side",
+      "computedValue": "none, or a list consisting of absolute lengths, or percentages as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "logicalPropertyGroup": "border-clip",
+      "styleDeclaration": [
+        "border-inline-end-clip",
+        "borderInlineEndClip"
+      ]
+    },
+    {
+      "name": "border-block-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-block-clip",
+      "value": "<'border-top-clip'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-block-clip",
+        "borderBlockClip"
+      ],
+      "longhands": [
+        "border-block-start-clip",
+        "border-block-end-clip"
+      ]
+    },
+    {
+      "name": "border-inline-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-inline-clip",
+      "value": "<'border-top-clip'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-inline-clip",
+        "borderInlineClip"
+      ],
+      "longhands": [
+        "border-inline-start-clip",
+        "border-inline-end-clip"
+      ]
+    },
+    {
+      "name": "border-clip",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-clip",
+      "value": "<'border-top-clip'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "border-clip",
+        "borderClip"
+      ],
+      "longhands": [
+        "border-top-clip",
+        "border-right-clip",
+        "border-bottom-clip",
+        "border-left-clip"
+      ]
+    },
+    {
+      "name": "box-shadow-color",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow-color",
+      "value": "<color>#",
+      "initial": "currentcolor",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "box-shadow-color",
+        "boxShadowColor"
+      ]
+    },
+    {
+      "name": "box-shadow-offset",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow-offset",
+      "value": "[ none | <length>{1,2} ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item either none or a pair of offsets (horizontal and vertical) from the element‘s box",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, treating none as 0 0 when interpolated with non-none values.",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The shadow will not be rendered. The values of other box shadow properties corresponding to this shadow have no effect.",
+          "href": "https://drafts.csswg.org/css-borders-4/#shadow-offset-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "1st <length>",
+          "prose": "Specifies the horizontal offset of the shadow. A positive value draws a shadow that is offset to the right of the box, a negative length to the left. If only one <length> value is specified, it sets both the horizontal and vertical offsets to that value.",
+          "href": "https://drafts.csswg.org/css-borders-4/#shadow-offset-x",
+          "type": "value",
+          "value": "1st <length>"
+        },
+        {
+          "name": "horizontal offset",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-offset-horizontal-offset",
+          "type": "value",
+          "value": "horizontal offset"
+        },
+        {
+          "name": "2nd <length>",
+          "prose": "Specifies the vertical offset of the shadow. A positive value offsets the shadow down, a negative one up.",
+          "href": "https://drafts.csswg.org/css-borders-4/#shadow-offset-y",
+          "type": "value",
+          "value": "2nd <length>"
+        },
+        {
+          "name": "vertical offset",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-offset-vertical-offset",
+          "type": "value",
+          "value": "vertical offset"
+        }
+      ],
+      "styleDeclaration": [
+        "box-shadow-offset",
+        "boxShadowOffset"
+      ]
+    },
+    {
+      "name": "box-shadow-blur",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow-blur",
+      "value": "<length [0,∞]>#",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a <length>",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "box-shadow-blur",
+        "boxShadowBlur"
+      ]
+    },
+    {
+      "name": "box-shadow-spread",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow-spread",
+      "value": "<length>#",
+      "initial": "0",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item a <length>",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "box-shadow-spread",
+        "boxShadowSpread"
+      ]
+    },
+    {
+      "name": "box-shadow-position",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow-position",
+      "value": "[ outset | inset ]#",
+      "initial": "outset",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "list, each item one of the keywords",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "values": [
+        {
+          "name": "outset",
+          "prose": "Causes the drop shadow to be an outer box-shadow. That means, one that shadows the box onto the canvas, as if it were lifted above the canvas.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-position-outset",
+          "type": "value",
+          "value": "outset"
+        },
+        {
+          "name": "outer box-shadow",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-position-outer-box-shadow",
+          "type": "value",
+          "value": "outer box-shadow"
+        },
+        {
+          "name": "inset",
+          "prose": "Causes the drop shadow to be an inner box-shadow. That means, one that shadows the canvas onto the box, as if the box were cut out of the canvas and shifted behind it.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-position-inset",
+          "type": "value",
+          "value": "inset"
+        },
+        {
+          "name": "inner box-shadow",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-box-shadow-position-inner-box-shadow",
+          "type": "value",
+          "value": "inner box-shadow"
+        }
+      ],
+      "styleDeclaration": [
+        "box-shadow-position",
+        "boxShadowPosition"
+      ]
+    },
+    {
+      "name": "box-shadow",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-box-shadow",
+      "value": "<spread-shadow>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "animationType": "see individual properties",
+      "styleDeclaration": [
+        "box-shadow",
+        "boxShadow"
+      ],
+      "longhands": [
+        "box-shadow-color",
+        "box-shadow-offset",
+        "box-shadow-blur",
+        "box-shadow-spread",
+        "box-shadow-position"
+      ]
+    },
+    {
+      "name": "border-shape",
+      "href": "https://drafts.csswg.org/css-borders-4/#propdef-border-shape",
+      "value": "none | [ <basic-shape> <geometry-box>?]{1,2}",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "see prose",
+      "computedValue": "list, each item a computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "styleDeclaration": [
+        "border-shape",
+        "borderShape"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<line-style>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-line-style",
+      "type": "type",
+      "value": "none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No border. Color and width are ignored (i.e., the border has width 0). Note this means that the initial value of border-image-width will also resolve to zero.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "hidden",
+          "prose": "Same as none, but has different behavior in the border conflict resolution rules for border-collapsed tables [CSS2].",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-hidden",
+          "type": "value",
+          "value": "hidden"
+        },
+        {
+          "name": "dotted",
+          "prose": "A series of round dots.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-dotted",
+          "type": "value",
+          "value": "dotted"
+        },
+        {
+          "name": "dashed",
+          "prose": "A series of square-ended dashes.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-dashed",
+          "type": "value",
+          "value": "dashed"
+        },
+        {
+          "name": "solid",
+          "prose": "A single line segment.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-solid",
+          "type": "value",
+          "value": "solid"
+        },
+        {
+          "name": "double",
+          "prose": "Two parallel solid lines with some space between them. (The thickness of the lines is not specified, but the sum of the lines and the space must equal border-width.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-double",
+          "type": "value",
+          "value": "double"
+        },
+        {
+          "name": "groove",
+          "prose": "Looks as if it were carved in the canvas. (This is typically achieved by creating a “shadow” from two colors that are slightly lighter and darker than the specified border-color.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-groove",
+          "type": "value",
+          "value": "groove"
+        },
+        {
+          "name": "ridge",
+          "prose": "Looks as if it were coming out of the canvas.",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-ridge",
+          "type": "value",
+          "value": "ridge"
+        },
+        {
+          "name": "inset",
+          "prose": "Looks as if the content on the inside of the border is sunken into the canvas. Treated as ridge in the collapsing border model. [CSS2]",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-inset",
+          "type": "value",
+          "value": "inset"
+        },
+        {
+          "name": "outset",
+          "prose": "Looks as if the content on the inside of the border is raised out of the canvas. Treated as groove in the collapsing border model. [CSS2]",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-style-outset",
+          "type": "value",
+          "value": "outset"
+        }
+      ]
+    },
+    {
+      "name": "<line-width>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-line-width",
+      "type": "type",
+      "value": "<length [0,∞]> | hairline | thin | medium | thick",
+      "values": [
+        {
+          "name": "thin",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-thin",
+          "type": "value",
+          "value": "thin"
+        },
+        {
+          "name": "medium",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-medium",
+          "type": "value",
+          "value": "medium"
+        },
+        {
+          "name": "thick",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-thick",
+          "type": "value",
+          "value": "thick"
+        },
+        {
+          "name": "hairline",
+          "prose": "Negative values are invalid. The thin, medium, and thick keywords are equivalent to 1px, 3px, and 5px, respectively. The hairline keyword is a UA-defined length, less than or equal to 1px and equal to an integer number of device pixels at the default page zoom, which represents a \"just visible\" line. (While it can be as large as 1px, on many devices it will be approximately 0.3px to 0.5px.)",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-line-width-hairline",
+          "type": "value",
+          "value": "hairline"
+        }
+      ]
+    },
+    {
+      "name": "<border-radius>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-border-radius",
+      "type": "type",
+      "value": "<slash-separated-border-radius-syntax> | <legacy-border-radius-syntax>"
+    },
+    {
+      "name": "<slash-separated-border-radius-syntax>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-slash-separated-border-radius-syntax",
+      "type": "type",
+      "value": "<length-percentage [0,∞]> [ / <length-percentage [0,∞]> ]?"
+    },
+    {
+      "name": "<legacy-border-radius-syntax>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-legacy-border-radius-syntax",
+      "type": "type",
+      "value": "<length-percentage [0,∞]>{1,2}"
+    },
+    {
+      "name": "<corner-shape-value>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-corner-shape-value",
+      "type": "type",
+      "value": "round | scoop | bevel | notch | square | squircle | <superellipse()>",
+      "values": [
+        {
+          "name": "round",
+          "prose": "The corner shape is a quarter of a convex ellipse. Equivalent to superellipse(1).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "squircle",
+          "prose": "The corner shape is a quarter of a \"squircle\", a convex curve between round and square. Equivalent to superellipse(2).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-squircle",
+          "type": "value",
+          "value": "squircle"
+        },
+        {
+          "name": "square",
+          "prose": "The corner shape is a convex 90deg angle. Equivalent to superellipse(infinity).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-square",
+          "type": "value",
+          "value": "square"
+        },
+        {
+          "name": "bevel",
+          "prose": "The corner shape is a straight diagonal line, neither convex nor concave. Equivalent to superellipse(0).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-bevel",
+          "type": "value",
+          "value": "bevel"
+        },
+        {
+          "name": "scoop",
+          "prose": "The corner shape is a concave quarter-ellipse. Equivalent to superellipse(-1).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-scoop",
+          "type": "value",
+          "value": "scoop"
+        },
+        {
+          "name": "notch",
+          "prose": "The corner shape is a concave 90deg angle. Equivalent to superellipse(-infinity).",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-notch",
+          "type": "value",
+          "value": "notch"
+        },
+        {
+          "name": "superellipse()",
+          "value": "superellipse()",
+          "href": "https://drafts.csswg.org/css-borders-4/#valdef-corner-shape-value-superellipse-k",
+          "type": "value"
+        }
+      ]
+    },
+    {
+      "name": "superellipse()",
+      "value": "superellipse(<number> | infinity | -infinity)",
+      "href": "https://drafts.csswg.org/css-borders-4/#funcdef-superellipse",
+      "type": "function"
+    },
+    {
+      "name": "<spread-shadow>",
+      "href": "https://drafts.csswg.org/css-borders-4/#typedef-spread-shadow",
+      "type": "type",
+      "value": "<'box-shadow-color'>? && [ [ none | <length>{2} ] [ <'box-shadow-blur'> <'box-shadow-spread'>? ]? ] && <'box-shadow-position'>?"
+    }
+  ]
+}

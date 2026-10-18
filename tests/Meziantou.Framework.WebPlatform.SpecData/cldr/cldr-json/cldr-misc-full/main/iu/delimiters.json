@@ -1,0 +1,15 @@
+{
+  "main": {
+    "iu": {
+      "identity": {
+        "language": "iu"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

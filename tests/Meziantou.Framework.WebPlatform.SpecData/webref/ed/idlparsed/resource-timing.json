@@ -1,0 +1,644 @@
+{
+  "spec": {
+    "title": "Resource Timing",
+    "url": "https://w3c.github.io/resource-timing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "PerformanceResourceTiming"
+        ],
+        "Worker": [
+          "PerformanceResourceTiming"
+        ]
+      }
+    },
+    "idlNames": {
+      "PerformanceResourceTiming": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface PerformanceResourceTiming : PerformanceEntry {\n    readonly attribute DOMString initiatorType;\n    readonly attribute DOMString deliveryType;\n    readonly attribute ByteString nextHopProtocol;\n    readonly attribute DOMHighResTimeStamp workerStart;\n    readonly attribute DOMHighResTimeStamp redirectStart;\n    readonly attribute DOMHighResTimeStamp redirectEnd;\n    readonly attribute DOMHighResTimeStamp fetchStart;\n    readonly attribute DOMHighResTimeStamp domainLookupStart;\n    readonly attribute DOMHighResTimeStamp domainLookupEnd;\n    readonly attribute DOMHighResTimeStamp connectStart;\n    readonly attribute DOMHighResTimeStamp connectEnd;\n    readonly attribute DOMHighResTimeStamp secureConnectionStart;\n    readonly attribute DOMHighResTimeStamp requestStart;\n    readonly attribute DOMHighResTimeStamp finalResponseHeadersStart;\n    readonly attribute DOMHighResTimeStamp firstInterimResponseStart;\n    readonly attribute DOMHighResTimeStamp responseStart;\n    readonly attribute DOMHighResTimeStamp responseEnd;\n    readonly attribute DOMHighResTimeStamp workerRouterEvaluationStart;\n    readonly attribute DOMHighResTimeStamp workerCacheLookupStart;\n    readonly attribute DOMString workerMatchedRouterSource;\n    readonly attribute DOMString workerFinalRouterSource;\n    readonly attribute unsigned long long  transferSize;\n    readonly attribute unsigned long long  encodedBodySize;\n    readonly attribute unsigned long long  decodedBodySize;\n    readonly attribute unsigned short responseStatus;\n    readonly attribute RenderBlockingStatusType renderBlockingStatus;\n    readonly attribute DOMString contentType;\n    readonly attribute DOMString contentEncoding;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "PerformanceResourceTiming",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "initiatorType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-initiatortype"
+          },
+          {
+            "type": "attribute",
+            "name": "deliveryType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype"
+          },
+          {
+            "type": "attribute",
+            "name": "nextHopProtocol",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-nexthopprotocol"
+          },
+          {
+            "type": "attribute",
+            "name": "workerStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerstart"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-redirectstart"
+          },
+          {
+            "type": "attribute",
+            "name": "redirectEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-redirectend"
+          },
+          {
+            "type": "attribute",
+            "name": "fetchStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-fetchstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domainLookupStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-domainlookupstart"
+          },
+          {
+            "type": "attribute",
+            "name": "domainLookupEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-domainlookupend"
+          },
+          {
+            "type": "attribute",
+            "name": "connectStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-connectstart"
+          },
+          {
+            "type": "attribute",
+            "name": "connectEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-connectend"
+          },
+          {
+            "type": "attribute",
+            "name": "secureConnectionStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-secureconnectionstart"
+          },
+          {
+            "type": "attribute",
+            "name": "requestStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-requeststart"
+          },
+          {
+            "type": "attribute",
+            "name": "finalResponseHeadersStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-finalresponseheadersstart"
+          },
+          {
+            "type": "attribute",
+            "name": "firstInterimResponseStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-firstinterimresponsestart"
+          },
+          {
+            "type": "attribute",
+            "name": "responseStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-responsestart"
+          },
+          {
+            "type": "attribute",
+            "name": "responseEnd",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-responseend"
+          },
+          {
+            "type": "attribute",
+            "name": "workerRouterEvaluationStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerrouterevaluationstart"
+          },
+          {
+            "type": "attribute",
+            "name": "workerCacheLookupStart",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workercachelookupstart"
+          },
+          {
+            "type": "attribute",
+            "name": "workerMatchedRouterSource",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workermatchedroutersource"
+          },
+          {
+            "type": "attribute",
+            "name": "workerFinalRouterSource",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource"
+          },
+          {
+            "type": "attribute",
+            "name": "transferSize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-transfersize"
+          },
+          {
+            "type": "attribute",
+            "name": "encodedBodySize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-encodedbodysize"
+          },
+          {
+            "type": "attribute",
+            "name": "decodedBodySize",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-decodedbodysize"
+          },
+          {
+            "type": "attribute",
+            "name": "responseStatus",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-responsestatus"
+          },
+          {
+            "type": "attribute",
+            "name": "renderBlockingStatus",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RenderBlockingStatusType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-renderblockingstatus"
+          },
+          {
+            "type": "attribute",
+            "name": "contentType",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-contenttype"
+          },
+          {
+            "type": "attribute",
+            "name": "contentEncoding",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-contentencoding"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/resource-timing/#performanceresourcetiming"
+      },
+      "RenderBlockingStatusType": {
+        "fragment": "enum RenderBlockingStatusType {\n    \"blocking\",\n    \"non-blocking\"\n};",
+        "type": "enum",
+        "name": "RenderBlockingStatusType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "blocking",
+            "href": "https://w3c.github.io/resource-timing/#dom-renderblockingstatustype-blocking"
+          },
+          {
+            "type": "enum-value",
+            "value": "non-blocking",
+            "href": "https://w3c.github.io/resource-timing/#dom-renderblockingstatustype-non-blocking"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/resource-timing/#enumdef-renderblockingstatustype"
+      }
+    },
+    "idlExtendedNames": {
+      "Performance": [
+        {
+          "fragment": "partial interface Performance {\n      undefined clearResourceTimings ();\n      undefined setResourceTimingBufferSize (unsigned long maxSize);\n      attribute EventHandler onresourcetimingbufferfull;\n    };",
+          "type": "interface",
+          "name": "Performance",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "clearResourceTimings",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/resource-timing/#dom-performance-clearresourcetimings"
+            },
+            {
+              "type": "operation",
+              "name": "setResourceTimingBufferSize",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "maxSize",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "unsigned long"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/resource-timing/#dom-performance-setresourcetimingbuffersize"
+            },
+            {
+              "type": "attribute",
+              "name": "onresourcetimingbufferfull",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/resource-timing/#dom-performance-onresourcetimingbufferfull"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "PerformanceResourceTiming"
+      ],
+      "Worker": [
+        "PerformanceResourceTiming"
+      ]
+    },
+    "dependencies": {
+      "PerformanceResourceTiming": [
+        "PerformanceEntry",
+        "DOMHighResTimeStamp",
+        "RenderBlockingStatusType"
+      ],
+      "Performance": [
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "DOMHighResTimeStamp",
+      "Performance",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "quirks/blocks-ignore-line-height.html": {
+    "total": 4
+  },
+  "quirks/body-fills-html-quirk-float.html": {
+    "reftest": "PASS"
+  },
+  "quirks/body-fills-html-quirk-inline.html": {
+    "reftest": "PASS"
+  },
+  "quirks/body-fills-html-quirk-positioned.html": {
+    "reftest": "PASS"
+  },
+  "quirks/body-fills-html-quirk-vertical.html": {
+    "reftest": "PASS"
+  },
+  "quirks/body-fills-html-quirk.html": {
+    "reftest": "PASS"
+  },
+  "quirks/class-names-across-iframes.html": {
+    "reftest": "PASS"
+  },
+  "quirks/classname-query-after-sibling-adoption.html": {
+    "total": 1
+  },
+  "quirks/dd-dl-firefox-001.html": {
+    "reftest": "PASS"
+  },
+  "quirks/hashless-hex-color/limited-quirks.html": {
+    "total": 684
+  },
+  "quirks/hashless-hex-color/no-quirks.html": {
+    "total": 684
+  },
+  "quirks/hashless-hex-color/quirks.html": {
+    "total": 692
+  },
+  "quirks/historical/list-item-bullet-size.html": {
+    "reftest": "PASS"
+  },
+  "quirks/historical/vertical-align-in-quirks.html": {
+    "reftest": "PASS"
+  },
+  "quirks/html-fills-viewport-quirk-vertical.html": {
+    "reftest": "PASS"
+  },
+  "quirks/html-fills-viewport-quirk.html": {
+    "reftest": "PASS"
+  },
+  "quirks/line-height-calculation.html": {
+    "total": 23,
+    "failures": {
+      "The line height calculation quirk, #test img { padding:1px }<div id=test><img src=\"{png}\"></div><img id=ref src=\"{png}\" height=3><div id=s_ref>x</div>": "FAIL",
+      "The line height calculation quirk, <div id=test><img src=\"{png}\" border=1></div><img id=ref src=\"{png}\" height=3><div id=s_ref>x</div>": "FAIL"
+    }
+  },
+  "quirks/line-height-in-list-item.html": {
+    "reftest": "PASS"
+  },
+  "quirks/line-height-limited-quirks-mode.html": {
+    "reftest": "PASS"
+  },
+  "quirks/line-height-preserved-segment-break.html": {
+    "reftest": "FAIL"
+  },
+  "quirks/line-height-quirks-mode.html": {
+    "reftest": "PASS"
+  },
+  "quirks/line-height-trailing-collapsable-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "quirks/percentage-height-calculation.html": {
+    "total": 53,
+    "failures": {
+      "The percentage height calculation quirk, <HTML xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><div id=\"test\"/></body></HTML>": "FAIL",
+      "The percentage height calculation quirk, <div xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><div id=\"test\"/></body></div>": "FAIL",
+      "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body/><div id=\"test\"/></html>": "FAIL",
+      "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><body><div id=\"test\"/></body></body></html>": "FAIL",
+      "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><span><body><div id=\"test\"/></body></span></html>": "FAIL",
+      "The percentage height calculation quirk, <html><head xmlns=\"{html}\"><style>#test { height:100% }</style></head><body xmlns=\"{html}\"><div id=\"test\"/></body></html>": "FAIL",
+      "The percentage height calculation quirk, <img id=test src=\"{png}\" height=100% border=10>": "FAIL",
+      "The percentage height calculation quirk, <img id=test src=\"{png}\" height=100%>": "FAIL"
+    }
+  },
+  "quirks/percentage-height-quirk-excludes-flex-grid-001.html": {
+    "reftest": "PASS"
+  },
+  "quirks/percentage-height-quirk-excludes-flex-grid-002.html": {
+    "reftest": "PASS"
+  },
+  "quirks/percentage-height-quirk-excludes-flex-grid-003.html": {
+    "reftest": "PASS"
+  },
+  "quirks/reference/percentage-height-quirk-excludes-flex-grid-002-ref.html": {
+    "reftest": "PASS"
+  },
+  "quirks/supports.html": {
+    "total": 6
+  },
+  "quirks/table-cell-nowrap-minimum-width-calculation.html": {
+    "total": 1
+  },
+  "quirks/table-cell-width-calculation-abspos.html": {
+    "reftest": "PASS"
+  },
+  "quirks/table-cell-width-calculation-applies-to.html": {
+    "total": 1
+  },
+  "quirks/table-cell-width-calculation.html": {
+    "total": 15,
+    "failures": {
+      "The table cell width calculation quirk, the quirk shouldn't apply for <embed>": "FAIL",
+      "The table cell width calculation quirk, the quirk shouldn't apply for <object>": "FAIL",
+      "The table cell width calculation quirk, the quirk shouldn't apply for <video poster>": "FAIL"
+    }
+  },
+  "quirks/tables-inherit-color-from-body-quirk-001.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-002.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-003.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-004.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-005.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-006.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-007.html": {
+    "reftest": "PASS"
+  },
+  "quirks/tables-inherit-color-from-body-quirk-first-body-removed.html": {
+    "total": 1
+  },
+  "quirks/text-decoration-doesnt-propagate-into-tables/quirks.html": {
+    "reftest": "PASS"
+  },
+  "quirks/text-decoration-doesnt-propagate-into-tables/standards.html": {
+    "reftest": "PASS"
+  },
+  "quirks/unitless-length/excluded-properties-001.html": {
+    "total": 55
+  },
+  "quirks/unitless-length/excluded-properties-002.html": {
+    "total": 11,
+    "failures": {
+      "Property column-span does not support quirky length": "FAIL"
+    }
+  },
+  "quirks/unitless-length/excluded-properties-003.html": {
+    "total": 1
+  },
+  "quirks/unitless-length/limited-quirks.html": {
+    "total": 1581
+  },
+  "quirks/unitless-length/no-quirks.html": {
+    "total": 1581
+  },
+  "quirks/unitless-length/quirks.html": {
+    "total": 1590
+  }
+}

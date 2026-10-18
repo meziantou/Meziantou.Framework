@@ -1,0 +1,140 @@
+{
+  "spec": {
+    "title": "EPUB 3.3",
+    "url": "https://w3c.github.io/epub-specs/epub33/core/"
+  },
+  "elements": [
+    {
+      "name": "container",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-container"
+    },
+    {
+      "name": "rootfiles",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-rootfiles"
+    },
+    {
+      "name": "rootfile",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-rootfile"
+    },
+    {
+      "name": "links",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-links"
+    },
+    {
+      "name": "encryption",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-encryption"
+    },
+    {
+      "name": "EncryptedKey",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-encryptedkey"
+    },
+    {
+      "name": "EncryptedData",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-encrypteddata"
+    },
+    {
+      "name": "Compression",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-compression"
+    },
+    {
+      "name": "signatures",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-signatures"
+    },
+    {
+      "name": "package",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-package"
+    },
+    {
+      "name": "metadata",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-metadata"
+    },
+    {
+      "name": "dc:identifier",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-identifier"
+    },
+    {
+      "name": "dc:title",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-title"
+    },
+    {
+      "name": "dc:language",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-language"
+    },
+    {
+      "name": "dc:contributor",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-contributor"
+    },
+    {
+      "name": "dc:creator",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-creator"
+    },
+    {
+      "name": "dc:date",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-date"
+    },
+    {
+      "name": "dc:subject",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-subject"
+    },
+    {
+      "name": "dc:type",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-dc-type"
+    },
+    {
+      "name": "meta",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-meta"
+    },
+    {
+      "name": "link",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-link"
+    },
+    {
+      "name": "manifest",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-manifest"
+    },
+    {
+      "name": "item",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-item"
+    },
+    {
+      "name": "spine",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-spine"
+    },
+    {
+      "name": "itemref",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-itemref"
+    },
+    {
+      "name": "collection",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-collection"
+    },
+    {
+      "name": "smil",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-smil"
+    },
+    {
+      "name": "head",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-head"
+    },
+    {
+      "name": "body",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-body"
+    },
+    {
+      "name": "seq",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-seq"
+    },
+    {
+      "name": "par",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-par"
+    },
+    {
+      "name": "text",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-text"
+    },
+    {
+      "name": "audio",
+      "href": "https://w3c.github.io/epub-specs/epub33/core/#dfn-audio"
+    }
+  ]
+}

@@ -1,0 +1,2010 @@
+{
+  "speculation-rules/activation-header/prefetch-activation-beacon.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Test that prefetch activation beacon is sent upon activation.": "FAIL"
+    }
+  },
+  "speculation-rules/activation-header/prerender-activation-beacon.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "Test that prefetch activation beacon is sent upon direct prerender activation.": "FAIL",
+      "Test that prefetch activation beacon is sent upon prefetch-to-prerender upgraded activation.": "FAIL"
+    }
+  },
+  "speculation-rules/external-speculation-rules-errors.html": {
+    "total": 3
+  },
+  "speculation-rules/header-only-top-level.html": {
+    "total": 1
+  },
+  "speculation-rules/inline-speculation-rules-errors.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "A script with invalid JSON should fire error events on the element and window": "TIMEOUT"
+    }
+  },
+  "speculation-rules/invalid-rules.https.html?prefetch": {
+    "total": 1
+  },
+  "speculation-rules/invalid-rules.https.html?prerender": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/anonymous/anonymous-client.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/anonymous/cross-origin-cookies-anonymous-client-ip-duplicate.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/client-hints/basic.https.sub.html": {
+    "total": 9
+  },
+  "speculation-rules/prefetch/client-hints/redirect.https.sub.html": {
+    "total": 5
+  },
+  "speculation-rules/prefetch/cross-origin-cookies.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/different-initiators-2.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/different-initiators.sub.https.html?cross-site-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/different-initiators.sub.https.html?cross-site-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/different-initiators.sub.https.html?same-site": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules-details-element.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=and": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=baseURLChangedByBaseElement": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=baseURLChangedBySameDocumentNavigation": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=defaultPredicate": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=hrefMatches": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=immediateMutation": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=invalidPredicate": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=linkHrefChanged": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=linkInShadowTree": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=linkToSelfFragment": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=newRuleSetAdded": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=not": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=or": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=selectorMatches": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=selectorMatchesDisplayLocked": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=selectorMatchesDisplayNone": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=selectorMatchesScopingRoot": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=unslottedLink": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/duplicate-urls.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/fragment.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/implicit-source.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/initiators-a-element.sub.https.html?cross-site": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/initiators-a-element.sub.https.html?same-site": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/initiators-iframe-location-href.sub.https.html?cross-site": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/initiators-iframe-location-href.sub.https.html?same-site": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/initiators-window-open.sub.https.html?cross-site": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/initiators-window-open.sub.https.html?same-site": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/inline-speculation-rules-after-stylesheet.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/list-rule-eagerness-conservative-pointerdown-preventdefault.tentative.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/list-rule-eagerness-conservative-pointerdown.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/list-rule-eagerness-eager-hover.tentative.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/list-rule-eagerness-moderate-hover.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/multiple-url.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/mutate-rules.https.html": {
+    "total": 3
+  },
+  "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=false&bypass_cache=false": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=false&bypass_cache=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=true&bypass_cache=false": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=true&bypass_cache=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=afterResponse": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=noPrefetch": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=waitingForRedirect": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=waitingForResponse": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-sizes.https.html?bypass_cache=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-sizes.https.html?default": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-sizes.https.html?prefetch=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/navigation-timing-sizes.https.html?prefetch=true&bypass_cache=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-http-cache-interference.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-prefetch-for-post.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?17-17": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?28-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?17-17": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?28-28": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?29-29": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?30-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=BaseCase": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=CSPExemption": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=EmptyRuleSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=FailCORS": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=FailToParseRuleSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=FailToParseSpeculationRulesHeader": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=FollowRedirect": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=InnerListInSpeculationRulesHeader": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=InvalidMimeType": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=InvalidUrlForSpeculationRulesSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=RelativeUrlForCandidate": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=RelativeUrlForSpeculationRulesSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=StatusCode199": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=StatusCode404": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=UseNonUTF8EncodingForSpeculationRulesSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=http&to_protocol=http": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=http&to_protocol=https": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=https&to_protocol=http": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=https&to_protocol=https": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-status.https.html?status=200&should_prefetch=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-status.https.html?status=250&should_prefetch=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-status.https.html?status=299&should_prefetch=true": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-status.https.html?status=400&should_prefetch=false": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-status.https.html?status=500&should_prefetch=false": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-traverse-reload.sub.html": {
+    "total": 3,
+    "failures": {
+      "History's Document is used for traversal navigations": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?cross-site": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?same-site": {
+    "total": 1,
+    "failures": {
+      "Test that prefetches use/store responses to/from the HTTP cache.": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=cross-site-initial": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=cross-site-redirect": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=same-origin": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-to-prefetch-url.https.html?origin=cross-site-initial": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-to-prefetch-url.https.html?origin=cross-site-redirect": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-to-prefetch-url.https.html?origin=same-origin": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-url.https.html?origin=cross-site-initial": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-url.https.html?origin=cross-site-redirect": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/redirect-url.https.html?origin=same-origin": {
+    "total": 2
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-from-rules.https.html?8-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-not-accepted.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-not-accepted.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy-not-accepted.https.html?3-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/referrer-policy.https.html?4-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/same-origin-cookies.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/same-origin-cookies.https.html?2-last": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/sec-fetch-headers.https.html": {
+    "total": 4
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changed": {
+    "total": 1,
+    "failures": {
+      "Cookie-Indices should prevent a prefetch from being used if the cookie has changed.": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changedWithRedirect": {
+    "total": 1,
+    "failures": {
+      "Cookie-Indices should prevent a prefetch from succeeding if the cookie changed, with a redirect": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changedWithRedirect2": {
+    "total": 1,
+    "failures": {
+      "If the redirect needs to be rerequested but goes to the same place and that one doesn't vary, we actually can use the prefetched final response.": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changedWithRedirect3": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "If the redirect needs to be rerequested and goes elsewhere, we cannot can use the prefetched final response.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=unchanged": {
+    "total": 1,
+    "failures": {
+      "Cookie-Indices should not prevent a prefetch from succeeding if the cookie has not changed.": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=unchangedWithRedirect": {
+    "total": 1,
+    "failures": {
+      "Cookie-Indices should not prevent a prefetch from succeeding with unchanged cookies, even with redirect": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler-to-fallback": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler-to-fallback&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-controller": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-controller&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-fetch-handler&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-referrer": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-referrer&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-url": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-url&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-navigation-preload": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-to-fallback": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-to-fallback&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-controller": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-controller&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-fetch-handler&clientId": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-modify-url": {
+    "total": 1,
+    "failures": {
+      "Prefetch with ServiceWorker (race-fetch-handler-modify-url)": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-to-fallback": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler-synthetic": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler-to-fallback": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=no-fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler": {
+    "total": 1,
+    "failures": {
+      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-synthetic": {
+    "total": 1,
+    "failures": {
+      "Prefetch with ServiceWorker (fetch-handler-synthetic)": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-to-fallback": {
+    "total": 1,
+    "failures": {
+      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=no-fetch-handler": {
+    "total": 1,
+    "failures": {
+      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler-to-fallback": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=no-fetch-handler": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/user-pass.https.html?cross-origin=false": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "test www-authenticate basic does not forward credentials to cross-origin pages.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prefetch/user-pass.https.html?cross-origin=true": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "test www-authenticate basic does not forward credentials to cross-origin pages.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender-until-script/prerender-until-script.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "when prerender-until-script action prerenders a page, the script on that page should always be executed after activation.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/about-blank-iframes.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/accept-client-hint-cache.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/activation-by-form-submission.https.html?rule=prerender_until_script&target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prerender activation by form submission": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/activation-by-form-submission.https.html?rule=prerender_until_script&target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prerender activation by form submission": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/activation-by-form-submission.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prerender activation by form submission": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/activation-by-form-submission.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prerender activation by form submission": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/activation-start.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/blob_object_url.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cache-storage.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cancel-prerendering-after-clear-site-data-cache-different-origins.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cancel-prerendering-after-clear-site-data-cache-same-origin.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prerender/clients-matchall.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cookies.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/credentialed-prerender-not-opt-in.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/credentialed-prerender-opt-in.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-iframe-prerender-nesting.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "cross-origin nested iframes should follow parent SLM header rules.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/cross-origin-iframe-prerender-nesting.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "cross-origin nested iframes should follow parent SLM header rules.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/cross-origin-iframe-prerender.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-iframe-prerender.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-iframe.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-iframe.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-isolated.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/cross-origin-isolated.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-form-action.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prerender initial navigation with form_submission is blocked by CSP form-action 'none'": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/csp-script-src-elem-inline-speculation-rules.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-elem-inline-speculation-rules.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-inline-speculation-rules.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-inline-speculation-rules.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-self.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-self.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-strict-dynamic.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-strict-dynamic.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-unsafe-inline.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/csp-script-src-unsafe-inline.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/fetch-blob.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/fetch-blob.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/fetch-intercepted-by-service-worker.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/headers.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prerender/iframe-added-post-activation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/indexeddb.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/local-storage.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/local-storage.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/main-frame-navigation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/media-autoplay.https.html": {
+    "total": 1,
+    "failures": {
+      "media autoplay should defer playback": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/navigation-api-intercept-during-activation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/navigation-api-location-replace.https.html": {
+    "total": 1,
+    "failures": {
+      "navigation.entries() and navigation.activation should be updated on activation and handle replacing correctly": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/navigation-api-multiple-entries.https.html": {
+    "total": 1,
+    "failures": {
+      "navigation.entries() and navigation.activation should be updated on activation - multiple entries": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/navigation-api-redirect.https.html": {
+    "total": 1,
+    "failures": {
+      "NavigationPrecommitHandler.redirect() converting a navigation to push during prerender": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/navigation-api.https.html": {
+    "total": 1,
+    "failures": {
+      "navigation.entries() and navigation.activation should be updated on activation": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/navigation-intercepted-by-service-worker.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/navigator-plugins.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?17-17": {
+    "total": 1,
+    "failures": {
+      "Use in-flight prefetch as the URLs do not vary on any query parameters. Allow extension via parameters.": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?28-last": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint-target-blank.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?17-17": {
+    "total": 1,
+    "failures": {
+      "Use in-flight prefetch as the URLs do not vary on any query parameters. Allow extension via parameters.": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?28-last": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-hint.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?17-17": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?28-28": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?29-29": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?30-last": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search-target-blank.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?10-10": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?11-11": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?12-12": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?13-13": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?14-14": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?15-15": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?16-16": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?17-17": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?18-18": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?19-19": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?2-2": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?20-20": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?21-21": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?22-22": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?23-23": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?24-24": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?25-25": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?26-26": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?27-27": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?28-28": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?29-29": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?3-3": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?30-last": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?4-4": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?5-5": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?6-6": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?7-7": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?8-8": {
+    "total": 1
+  },
+  "speculation-rules/prerender/no-vary-search.https.html?9-9": {
+    "total": 1
+  },
+  "speculation-rules/prerender/prefetch.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/prerender-while-prerender.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/protocol-handler-register.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "prerendering page registerProtocolHandler call defers registration until activation.": "NOTRUN"
+    }
+  },
+  "speculation-rules/prerender/protocol-handler-unregister.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "prerendering page unregisterProtocolHandler call defers registration until activation.": "NOTRUN"
+    }
+  },
+  "speculation-rules/prerender/protocol-handler-validation.https.html": {
+    "total": 4
+  },
+  "speculation-rules/prerender/referrer-policy-from-rules.https.html?1-1": {
+    "total": 1
+  },
+  "speculation-rules/prerender/referrer-policy-from-rules.https.html?2-last": {
+    "total": 1
+  },
+  "speculation-rules/prerender/referrer-policy-mismatch.https.html": {
+    "total": 3
+  },
+  "speculation-rules/prerender/referrer-policy-no-referrer.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/referrer-policy-origin.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/referrer-policy-strict-origin.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/referrer.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/register-service-worker.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/remove-script-element.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=204": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=205": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=402": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=404": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=500": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-non-successful.https.html?code=503": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-successful.https.html?code=200": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-successful.https.html?code=201": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-successful.https.html?code=202": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-successful.https.html?code=203": {
+    "total": 1
+  },
+  "speculation-rules/prerender/response-code-successful.https.html?code=232": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the setSinkId of Audio API with the invalid sinkId should be\n    deferred until the prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the setSinkId of Audio API with the invalid sinkId should be\n    deferred until the prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-audio-setSinkId.https.tentative.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the setSinkId of Audio API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-audio-setSinkId.https.tentative.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the setSinkId of Audio API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-background-fetch.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-background-fetch.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-background-sync.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-background-sync.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-battery-status.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Battery Status API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-battery-status.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Battery Status API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-bluetooth.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Bluetooth API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-broadcast-channel.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-dedicated-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "The access to the Dedicated Worker API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-encrypted-media-unsupported-config.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Encrypted Media API should be deferred with the\n    unsupported configurations until the prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-encrypted-media.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Encrypted Media API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-focus.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-idle-detection.https.html": {
+    "total": 1,
+    "failures": {
+      "prerendering pages should not be able to invoke the Idle Detection API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-local-file-system-access.https.html": {
+    "total": 1,
+    "failures": {
+      "prerendering pages should not be able to access the local file system via the File System Access API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-auto-play-attribute.https.html?target_hint=_blank": {
+    "total": 2,
+    "failures": {
+      "autoplay of the audio media should be deferred until the prerendered page is activated": "FAIL",
+      "autoplay of the video media should be deferred until the prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-auto-play-attribute.https.html?target_hint=_self": {
+    "total": 2,
+    "failures": {
+      "autoplay of the audio media should be deferred until the prerendered page is activated": "FAIL",
+      "autoplay of the video media should be deferred until the prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-camera.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the camera of the user media should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-camera.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the camera of the user media should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-capabilities-decoding-info.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the MediaCapabilities decodingInfo API should be granted\n    during prerendering": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-capabilities-decoding-info.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the MediaCapabilities decodingInfo API should be granted\n    during prerendering": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-capabilities-encoding-info.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the MediaCapabilities encodingInfo API should be granted\n    during prerendering": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-capabilities-encoding-info.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the MediaCapabilities encodingInfo API should be granted\n    during prerendering": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-device-info.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Media Device Info should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-device-info.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Media Device Info should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-microphone.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Microphone of the user media should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-microphone.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Microphone of the user media should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-play.https.html?target_hint=_blank": {
+    "total": 2,
+    "failures": {
+      "play of the audio media should be deferred until the prerendered page is activated": "FAIL",
+      "play of the video media should be deferred until the prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-media-play.https.html?target_hint=_self": {
+    "total": 2,
+    "failures": {
+      "play of the audio media should be deferred until the prerendered page is activated": "FAIL",
+      "play of the video media should be deferred until the prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-message-boxes.https.html": {
+    "total": 3
+  },
+  "speculation-rules/prerender/restriction-midi-sysex.https.html": {
+    "total": 1,
+    "failures": {
+      "the access to the Midi API should be deferred until the prerendered page is\n  activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-midi.https.html": {
+    "total": 1,
+    "failures": {
+      "the access to the Midi API should be deferred until the prerendered page is\n  activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-notification.https.html": {
+    "total": 2,
+    "failures": {
+      "Displaying Notification should be deferred until the prerendered page is\n activated": "FAIL",
+      "it is allowed to access the notification API in the prerenderingchange\n    event": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-presentation-request.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "prerendering page cannot start presentation": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-prompt-by-before-unload.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-push.https.html": {
+    "total": 1,
+    "failures": {
+      "The access to the Push API should be deferred until the prerendered page is\n    activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-request-picture-in-picture.https.html": {
+    "total": 1,
+    "failures": {
+      "prerendering page cannot invokeHTMLVideoElement.requestPictureInPicture": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-screen-capture.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "prerendering pages should not be able to invoke the Screen Capture API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-screen-capture.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "prerendering pages should not be able to invoke the Screen Capture API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-screen-orientation-lock.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the Screen Orienation Lock API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_blank": {
+    "total": 1,
+    "failures": {
+      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_self": {
+    "total": 1,
+    "failures": {
+      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-service-worker-postmessage.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-service-worker-unregister.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-service-worker-update.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-speech-synthesis.https.html": {
+    "total": 4,
+    "failures": {
+      "speechSynthesis.cancel() should be deferred until the prerendered page is activated": "FAIL",
+      "speechSynthesis.pause() should be deferred until the prerendered page is activated": "FAIL",
+      "speechSynthesis.resume() should be deferred until the prerendered page is activated": "FAIL",
+      "speechSynthesis.speak(utterance) should be deferred until the prerendered page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-storage-persist.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/restriction-wake-lock.https.html": {
+    "total": 1,
+    "failures": {
+      "the access to the Wake Lock API should be deferred until the prerendered\n    page is activated": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-hid.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Web HID API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-locks.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prerender/restriction-web-nfc.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the Web NFC API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-serial.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Web Serial API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-share.https.html": {
+    "total": 1,
+    "failures": {
+      "prerendering pages should not be able to invoke the Web Share API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-usb.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "the access to the Web USB API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-xr-immersive-vr-session.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the WebXR immersive-vr session API should be deferred until\n    the prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-xr-immersive-vr-session.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the WebXR immersive-vr session API should be deferred until\n    the prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-xr-inline-session.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the WebXR inline session API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-web-xr-inline-session.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "The access to the WebXR inline session API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender/restriction-window-move.https.html": {
+    "total": 2,
+    "failures": {
+      "a prerendering page cannot move its window by executing moveBy.": "FAIL",
+      "a prerendering page cannot move its window by executing moveTo.": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restriction-window-open.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prerender/restriction-window-resize.https.html": {
+    "total": 2,
+    "failures": {
+      "a prerendering page cannot resize its window by executing resizeBy.": "FAIL",
+      "a prerendering page cannot resize its window by executing resizeTo.": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/restrictions.https.html": {
+    "total": 4,
+    "failures": {
+      "Geolocation API should be deferred": "FAIL",
+      "prerendering pages should not be able to access the FullScreen API": "FAIL",
+      "prerendering pages should not be able to access the clipboard via the Async Clipboard API": "FAIL",
+      "prerendering pages should not be able to access the pointer-lock API": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/sandbox-iframe.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/scroll-into-view-cross-origin-iframe.https.html?target_hint=_blank": {
+    "total": 3,
+    "failures": {
+      "Focusing an element in a cross-origin iframe should scroll the parent during prerendering": "FAIL",
+      "Focusing an element in a cross-site iframe should scroll the parent during prerendering": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/scroll-into-view-cross-origin-iframe.https.html?target_hint=_self": {
+    "total": 3,
+    "failures": {
+      "Focusing an element in a cross-origin iframe should scroll the parent during prerendering": "FAIL",
+      "Focusing an element in a cross-site iframe should scroll the parent during prerendering": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/send-beacon.https.html?target_hint=_blank": {
+    "total": 1
+  },
+  "speculation-rules/prerender/send-beacon.https.html?target_hint=_self": {
+    "total": 1
+  },
+  "speculation-rules/prerender/service-workers.https.html": {
+    "total": 5
+  },
+  "speculation-rules/prerender/session-history-activation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/session-history-location.https.html": {
+    "total": 3
+  },
+  "speculation-rules/prerender/session-history-navigation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/session-history-pushstate.https.html": {
+    "total": 2
+  },
+  "speculation-rules/prerender/session-history-subframe-navigation.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/session-history-subframe-reload.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/session-storage.tentative.https.html": {
+    "total": 4
+  },
+  "speculation-rules/prerender/state-and-event.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/visibility-state.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/windowclient-navigate-to-cross-origin-url-on-iframe.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/windowclient-navigate-to-same-origin-url-on-iframe.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/windowclient-navigate.https.html": {
+    "total": 1,
+    "failures": {
+      "WindowClient.navigate() for a prerendered main page should throw aTypeError": "FAIL"
+    }
+  },
+  "speculation-rules/prerender/workers-in-cross-origin-iframe.https.html": {
+    "total": 1
+  },
+  "speculation-rules/prerender/workers.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Dedicated workers should be loaded in suspended state until activated": "FAIL",
+      "Existing shared workers should be accessible before activation": "FAIL",
+      "Shared workers should be loaded in suspended state until activated": "FAIL"
+    }
+  },
+  "speculation-rules/script-supports.https.html": {
+    "total": 2
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-early-hints-preconnect.tentative.h2.window.js": {
+    "total": 1
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-early-hints-preload.tentative.h2.window.js": {
+    "total": 1
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-multiple-early-hints-preconnect.tentative.h2.window.js": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-navigation-destination-url.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-navigations-eagerness.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-navigations-pointerdown.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-navigations.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-preconnect-response-header.tentative.html": {
+    "total": 1,
+    "failures": {
+      "performance.getSpeculations(): preconnects from final-response Link headers": "FAIL"
+    }
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-preconnect.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Preconnect dedups identical (origin, crossorigin)": "FAIL",
+      "Preconnect reports origin only": "FAIL",
+      "Preconnect: crossorigin=anonymous": "FAIL",
+      "Preconnect: crossorigin=use-credentials": "FAIL",
+      "Preconnect: distinct crossorigin values are distinct entries": "FAIL",
+      "Preconnect: no crossorigin": "FAIL",
+      "Preconnect: none and use-credentials are distinct entries": "FAIL",
+      "performance.getSpeculations() preconnect interface": "FAIL"
+    }
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-preredirect-urls.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-unused-preload.tentative.html": {
+    "total": 10,
+    "failures": {
+      "Unused preload: as=fetch, crossorigin=anonymous": "FAIL",
+      "Unused preload: as=fetch, crossorigin=use-credentials": "FAIL",
+      "Unused preload: as=fetch, no crossorigin": "FAIL",
+      "Unused preload: as=script, crossorigin=anonymous": "FAIL",
+      "Unused preload: as=script, crossorigin=use-credentials": "FAIL",
+      "Unused preload: as=script, no crossorigin": "FAIL",
+      "Unused preload: as=style, crossorigin=anonymous": "FAIL",
+      "Unused preload: as=style, crossorigin=use-credentials": "FAIL",
+      "Unused preload: as=style, no crossorigin": "FAIL",
+      "performance.getSpeculations() basic interface": "FAIL"
+    }
+  },
+  "speculation-rules/speculation-measurement/performance-speculations-used-preload.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Used preload: as=fetch, crossorigin=anonymous": "FAIL",
+      "Used preload: as=fetch, crossorigin=use-credentials": "FAIL",
+      "Used preload: as=script, crossorigin=anonymous": "FAIL",
+      "Used preload: as=script, crossorigin=use-credentials": "FAIL",
+      "Used preload: as=script, no crossorigin": "FAIL",
+      "Used preload: as=style, crossorigin=anonymous": "FAIL",
+      "Used preload: as=style, crossorigin=use-credentials": "FAIL",
+      "Used preload: as=style, no crossorigin": "FAIL"
+    }
+  },
+  "speculation-rules/speculation-tags/cross-site-prefetch.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/cross-site-to-same-site-redirection-prefetch.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/deduped-and-sorted-tags.https.html?type=prefetch": {
+    "total": 5
+  },
+  "speculation-rules/speculation-tags/deduped-and-sorted-tags.https.html?type=prerender": {
+    "total": 5
+  },
+  "speculation-rules/speculation-tags/invalid-tags.https.html?tag-level=rule&type=prefetch": {
+    "total": 10
+  },
+  "speculation-rules/speculation-tags/invalid-tags.https.html?tag-level=rule&type=prerender": {
+    "total": 10
+  },
+  "speculation-rules/speculation-tags/invalid-tags.https.html?tag-level=ruleset&type=prefetch": {
+    "total": 10
+  },
+  "speculation-rules/speculation-tags/invalid-tags.https.html?tag-level=ruleset&type=prerender": {
+    "total": 10
+  },
+  "speculation-rules/speculation-tags/no-tags.https.html": {
+    "total": 2
+  },
+  "speculation-rules/speculation-tags/prefetch-eagerness-pointer-down.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/prefetch-eagerness-pointer-hover.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/prerender-target-hint.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/same-site-to-cross-site-redirection-prefetch.https.html": {
+    "total": 1
+  },
+  "speculation-rules/speculation-tags/valid-tags.https.html?tag-level=rule&type=prefetch": {
+    "total": 8
+  },
+  "speculation-rules/speculation-tags/valid-tags.https.html?tag-level=rule&type=prerender": {
+    "total": 8
+  },
+  "speculation-rules/speculation-tags/valid-tags.https.html?tag-level=ruleset&type=prefetch": {
+    "total": 8
+  },
+  "speculation-rules/speculation-tags/valid-tags.https.html?tag-level=ruleset&type=prerender": {
+    "total": 8
+  }
+}

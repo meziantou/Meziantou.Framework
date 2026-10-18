@@ -1,0 +1,142 @@
+{
+  "css/css-font-loading/empty-family-load.html": {
+    "total": 1
+  },
+  "css/css-font-loading/font-face-reject.html": {
+    "total": 1
+  },
+  "css/css-font-loading/font-face-width-descriptor-aliasing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-css-connected-descriptors.html": {
+    "total": 12
+  },
+  "css/css-font-loading/fontface-descriptor-updates-2.html": {
+    "total": 3
+  },
+  "css/css-font-loading/fontface-descriptor-updates.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-font-variation-settings-persisted-js-api.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-fonts-loading.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-from-arraybuffer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-invalid-arraybuffer.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-invalid-family.tentative.html": {
+    "total": 9
+  },
+  "css/css-font-loading/fontface-load-in-modal-dialog.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-loadingevent.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontface-override-descriptor-getter-setter.sub.html": {
+    "total": 24
+  },
+  "css/css-font-loading/fontface-override-descriptors.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontface-size-adjust-descriptor.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-font-loading/fontface-width.html": {
+    "total": 5
+  },
+  "css/css-font-loading/fontfaceset-clear-css-connected-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontfaceset-clear-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-delete-css-connected-2.html": {
+    "reftest": "PASS"
+  },
+  "css/css-font-loading/fontfaceset-delete-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-has.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-load-css-connected.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfaceset-load-css-wide-keywords.html": {
+    "total": 24
+  },
+  "css/css-font-loading/fontfaceset-load-var.html": {
+    "total": 4
+  },
+  "css/css-font-loading/fontfaceset-update-after-stylesheet-change.html": {
+    "total": 1
+  },
+  "css/css-font-loading/fontfacesetloadevent-constructor.html": {
+    "total": 2
+  },
+  "css/css-font-loading/historical.html": {
+    "total": 1
+  },
+  "css/css-font-loading/idlharness.https.html": {
+    "total": 143,
+    "failures": {
+      "FontFace interface: attribute features": "FAIL",
+      "FontFace interface: attribute palettes": "FAIL",
+      "FontFace interface: attribute variations": "FAIL",
+      "FontFace interface: fontFace must inherit property \"features\" with the proper type": "FAIL",
+      "FontFace interface: fontFace must inherit property \"palettes\" with the proper type": "FAIL",
+      "FontFace interface: fontFace must inherit property \"variations\" with the proper type": "FAIL",
+      "FontFaceFeatures interface object length": "FAIL",
+      "FontFaceFeatures interface object name": "FAIL",
+      "FontFaceFeatures interface: existence and properties of interface object": "FAIL",
+      "FontFaceFeatures interface: existence and properties of interface prototype object": "FAIL",
+      "FontFaceFeatures interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FontFaceFeatures interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FontFacePalette interface object length": "FAIL",
+      "FontFacePalette interface object name": "FAIL",
+      "FontFacePalette interface: attribute length": "FAIL",
+      "FontFacePalette interface: attribute usableWithDarkBackground": "FAIL",
+      "FontFacePalette interface: attribute usableWithLightBackground": "FAIL",
+      "FontFacePalette interface: existence and properties of interface object": "FAIL",
+      "FontFacePalette interface: existence and properties of interface prototype object": "FAIL",
+      "FontFacePalette interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FontFacePalette interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FontFacePalette interface: iterable<DOMString>": "FAIL",
+      "FontFacePalettes interface object length": "FAIL",
+      "FontFacePalettes interface object name": "FAIL",
+      "FontFacePalettes interface: attribute length": "FAIL",
+      "FontFacePalettes interface: existence and properties of interface object": "FAIL",
+      "FontFacePalettes interface: existence and properties of interface prototype object": "FAIL",
+      "FontFacePalettes interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FontFacePalettes interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FontFacePalettes interface: iterable<FontFacePalette>": "FAIL",
+      "FontFaceVariationAxis interface object length": "FAIL",
+      "FontFaceVariationAxis interface object name": "FAIL",
+      "FontFaceVariationAxis interface: attribute axisTag": "FAIL",
+      "FontFaceVariationAxis interface: attribute defaultValue": "FAIL",
+      "FontFaceVariationAxis interface: attribute maximumValue": "FAIL",
+      "FontFaceVariationAxis interface: attribute minimumValue": "FAIL",
+      "FontFaceVariationAxis interface: attribute name": "FAIL",
+      "FontFaceVariationAxis interface: existence and properties of interface object": "FAIL",
+      "FontFaceVariationAxis interface: existence and properties of interface prototype object": "FAIL",
+      "FontFaceVariationAxis interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FontFaceVariationAxis interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FontFaceVariations interface object length": "FAIL",
+      "FontFaceVariations interface object name": "FAIL",
+      "FontFaceVariations interface: existence and properties of interface object": "FAIL",
+      "FontFaceVariations interface: existence and properties of interface prototype object": "FAIL",
+      "FontFaceVariations interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FontFaceVariations interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FontFaceVariations interface: setlike<FontFaceVariationAxis>": "FAIL"
+    }
+  },
+  "css/css-font-loading/nonexistent-file-url.html": {
+    "total": 1
+  }
+}

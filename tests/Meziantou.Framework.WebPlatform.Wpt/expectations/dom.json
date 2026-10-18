@@ -1,0 +1,3314 @@
+{
+  "dom/abort/AbortSignal.any.js": {
+    "total": 2
+  },
+  "dom/abort/AbortSignal.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "dom/abort/abort-signal-any.any.js": {
+    "total": 14
+  },
+  "dom/abort/abort-signal-any.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "dom/abort/abort-signal-timeout.html": {
+    "total": 1
+  },
+  "dom/abort/event.any.js": {
+    "total": 16
+  },
+  "dom/abort/event.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "dom/abort/reason-constructor.html": {
+    "total": 1
+  },
+  "dom/abort/timeout.any.js": {
+    "total": 3
+  },
+  "dom/abort/timeout.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "dom/attributes-are-nodes.html": {
+    "total": 4
+  },
+  "dom/collections/HTMLCollection-as-prototype.html": {
+    "total": 2
+  },
+  "dom/collections/HTMLCollection-delete.html": {
+    "total": 4
+  },
+  "dom/collections/HTMLCollection-empty-name.html": {
+    "total": 7
+  },
+  "dom/collections/HTMLCollection-iterator.html": {
+    "total": 6
+  },
+  "dom/collections/HTMLCollection-live-item-removal.html": {
+    "total": 2
+  },
+  "dom/collections/HTMLCollection-live-mutations.window.js": {
+    "total": 5
+  },
+  "dom/collections/HTMLCollection-own-props.html": {
+    "total": 8
+  },
+  "dom/collections/HTMLCollection-supported-property-indices.html": {
+    "total": 7
+  },
+  "dom/collections/HTMLCollection-supported-property-names.html": {
+    "total": 6
+  },
+  "dom/collections/domstringmap-supported-property-names.html": {
+    "total": 5
+  },
+  "dom/collections/namednodemap-supported-property-names.html": {
+    "total": 3
+  },
+  "dom/eventPathRemoved.html": {
+    "total": 1
+  },
+  "dom/events/AddEventListenerOptions-once.any.js": {
+    "total": 4
+  },
+  "dom/events/AddEventListenerOptions-once.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "dom/events/AddEventListenerOptions-passive.any.js": {
+    "total": 5
+  },
+  "dom/events/AddEventListenerOptions-passive.any.js#dedicatedworker": {
+    "total": 5
+  },
+  "dom/events/AddEventListenerOptions-signal.any.js": {
+    "total": 11
+  },
+  "dom/events/AddEventListenerOptions-signal.any.js#dedicatedworker": {
+    "total": 11
+  },
+  "dom/events/Body-FrameSet-Event-Handlers.html": {
+    "total": 48
+  },
+  "dom/events/CustomEvent.html": {
+    "total": 3
+  },
+  "dom/events/Event-cancelBubble.html": {
+    "total": 8
+  },
+  "dom/events/Event-constants.html": {
+    "total": 4
+  },
+  "dom/events/Event-constructors.any.js": {
+    "total": 14
+  },
+  "dom/events/Event-constructors.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "dom/events/Event-defaultPrevented-after-dispatch.html": {
+    "total": 2
+  },
+  "dom/events/Event-defaultPrevented.html": {
+    "total": 8
+  },
+  "dom/events/Event-dispatch-bubble-canceled.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-bubbles-false.html": {
+    "total": 5
+  },
+  "dom/events/Event-dispatch-bubbles-true.html": {
+    "total": 5
+  },
+  "dom/events/Event-dispatch-click.html": {
+    "total": 33
+  },
+  "dom/events/Event-dispatch-click.tentative.html": {
+    "total": 6
+  },
+  "dom/events/Event-dispatch-detached-click.html": {
+    "total": 2
+  },
+  "dom/events/Event-dispatch-detached-input-and-change.html": {
+    "total": 12
+  },
+  "dom/events/Event-dispatch-handlers-changed.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-listener-order.window.js": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-multiple-cancelBubble.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-multiple-stopPropagation.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-omitted-capture.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-on-disabled-elements.html": {
+    "total": 9
+  },
+  "dom/events/Event-dispatch-order-at-target.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-order.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-other-document.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-propagation-stopped.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-redispatch.html": {
+    "total": 4
+  },
+  "dom/events/Event-dispatch-reenter.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-single-activation-behavior.html": {
+    "total": 132
+  },
+  "dom/events/Event-dispatch-target-moved.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-target-removed.html": {
+    "total": 1
+  },
+  "dom/events/Event-dispatch-throwing-multiple-globals.html": {
+    "total": 2
+  },
+  "dom/events/Event-dispatch-throwing.html": {
+    "total": 2
+  },
+  "dom/events/Event-init-while-dispatching.html": {
+    "total": 5
+  },
+  "dom/events/Event-initEvent.html": {
+    "total": 12
+  },
+  "dom/events/Event-isTrusted.any.js": {
+    "total": 1
+  },
+  "dom/events/Event-isTrusted.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "dom/events/Event-propagation.html": {
+    "total": 7
+  },
+  "dom/events/Event-returnValue.html": {
+    "total": 7
+  },
+  "dom/events/Event-stopImmediatePropagation.html": {
+    "total": 1
+  },
+  "dom/events/Event-stopPropagation-cancel-bubbling.html": {
+    "total": 1
+  },
+  "dom/events/Event-subclasses-constructors.html": {
+    "total": 49
+  },
+  "dom/events/Event-timestamp-cross-realm-getter.html": {
+    "total": 1
+  },
+  "dom/events/Event-timestamp-high-resolution.html": {
+    "total": 4
+  },
+  "dom/events/Event-timestamp-high-resolution.https.html": {
+    "total": 1,
+    "failures": {
+      "Constructed GamepadEvent timestamp should be high resolution and have the same time origin as performance.now()": "FAIL"
+    }
+  },
+  "dom/events/Event-timestamp-safe-resolution.html": {
+    "total": 1
+  },
+  "dom/events/Event-type-empty.html": {
+    "total": 2
+  },
+  "dom/events/Event-type.html": {
+    "total": 3
+  },
+  "dom/events/EventListener-addEventListener.sub.window.js": {
+    "total": 1
+  },
+  "dom/events/EventListener-handleEvent-cross-realm.html": {
+    "total": 5,
+    "failures": {
+      "EventListener is cross-realm callable revoked Proxy": "FAIL",
+      "EventListener is cross-realm non-callable revoked Proxy": "FAIL",
+      "EventListener is cross-realm plain object with non-callable 'handleEvent' property": "FAIL",
+      "EventListener is cross-realm plain object with revoked Proxy as 'handleEvent' property": "FAIL",
+      "EventListener is cross-realm plain object without 'handleEvent' property": "FAIL"
+    }
+  },
+  "dom/events/EventListener-handleEvent.html": {
+    "total": 6
+  },
+  "dom/events/EventListener-incumbent-global-1.sub.html": {
+    "total": 1,
+    "failures": {
+      "Check the incumbent global EventListeners  are called with": "FAIL"
+    }
+  },
+  "dom/events/EventListener-incumbent-global-2.sub.html": {
+    "total": 1,
+    "failures": {
+      "Check the incumbent global EventListeners  are called with": "FAIL"
+    }
+  },
+  "dom/events/EventListener-invoke-legacy.html": {
+    "total": 6
+  },
+  "dom/events/EventListenerOptions-capture.html": {
+    "total": 4
+  },
+  "dom/events/EventTarget-add-listener-platform-object.html": {
+    "total": 1
+  },
+  "dom/events/EventTarget-add-remove-listener.any.js": {
+    "total": 1
+  },
+  "dom/events/EventTarget-add-remove-listener.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "dom/events/EventTarget-addEventListener.any.js": {
+    "total": 1
+  },
+  "dom/events/EventTarget-addEventListener.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "dom/events/EventTarget-constructible.any.js": {
+    "total": 3
+  },
+  "dom/events/EventTarget-constructible.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "dom/events/EventTarget-dispatchEvent-returnvalue.html": {
+    "total": 2
+  },
+  "dom/events/EventTarget-dispatchEvent.html": {
+    "total": 25,
+    "failures": {
+      "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceMotionEvent).": "FAIL",
+      "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceOrientationEvent).": "FAIL"
+    }
+  },
+  "dom/events/EventTarget-removeEventListener.any.js": {
+    "total": 1
+  },
+  "dom/events/EventTarget-removeEventListener.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "dom/events/EventTarget-this-of-listener.html": {
+    "total": 6
+  },
+  "dom/events/EventTarget-window-constructor.html": {
+    "total": 1
+  },
+  "dom/events/KeyEvent-initKeyEvent.html": {
+    "total": 3
+  },
+  "dom/events/click-on-absolute-pseudo.html": {
+    "total": 1
+  },
+  "dom/events/element-click.html": {
+    "total": 3
+  },
+  "dom/events/event-disabled-dynamic.html": {
+    "total": 1
+  },
+  "dom/events/event-global-event-targets.html": {
+    "total": 5
+  },
+  "dom/events/event-global-extra.window.js": {
+    "total": 6
+  },
+  "dom/events/event-global-is-still-set-when-coercing-beforeunload-result.html": {
+    "total": 1
+  },
+  "dom/events/event-global-is-still-set-when-reporting-exception-onerror.html": {
+    "total": 1
+  },
+  "dom/events/event-global-replaceable.html": {
+    "total": 2
+  },
+  "dom/events/event-global-set-before-handleEvent-lookup.window.js": {
+    "total": 1
+  },
+  "dom/events/event-global.html": {
+    "total": 8
+  },
+  "dom/events/event-global.worker.js": {
+    "total": 1
+  },
+  "dom/events/event-handler-attribute-replace-preserves-passive.html": {
+    "total": 2
+  },
+  "dom/events/event-listener-not-fully-active-adopted-node.html": {
+    "total": 5
+  },
+  "dom/events/event-listener-not-fully-active-callback.html": {
+    "total": 4
+  },
+  "dom/events/event-listener-not-fully-active-navigated.html": {
+    "total": 3
+  },
+  "dom/events/event-listener-not-fully-active-target.html": {
+    "total": 16
+  },
+  "dom/events/event-src-element-nullable.html": {
+    "total": 1
+  },
+  "dom/events/focus-event-document-move.html": {
+    "total": 1
+  },
+  "dom/events/handler-count.html?document": {
+    "total": 2
+  },
+  "dom/events/handler-count.html?element": {
+    "total": 2
+  },
+  "dom/events/handler-count.html?window": {
+    "total": 2
+  },
+  "dom/events/label-default-action.html": {
+    "total": 1
+  },
+  "dom/events/legacy-pre-activation-behavior.window.js": {
+    "total": 1
+  },
+  "dom/events/mouse-event-retarget.html": {
+    "total": 1
+  },
+  "dom/events/no-focus-events-at-clicking-editable-content-in-link.html": {
+    "total": 2
+  },
+  "dom/events/non-cancelable-when-passive/generic-events-stay-cancelable.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-mousewheel-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-mousewheel-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-mousewheel-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-mousewheel-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-mousewheel-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-wheel-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-wheel-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-wheel-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-wheel-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/non-passive-wheel-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-mousewheel-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-mousewheel-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-mousewheel-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-mousewheel-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-mousewheel-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-wheel-event-listener-on-body.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-wheel-event-listener-on-div.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-wheel-event-listener-on-document.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-wheel-event-listener-on-root.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/passive-wheel-event-listener-on-window.html": {
+    "total": 1
+  },
+  "dom/events/non-cancelable-when-passive/synthetic-events-cancelable.html": {
+    "total": 12
+  },
+  "dom/events/passive-by-default-non-node.html": {
+    "total": 2
+  },
+  "dom/events/passive-by-default.html": {
+    "total": 100
+  },
+  "dom/events/pointer-event-document-move.html": {
+    "total": 1
+  },
+  "dom/events/preventDefault-during-activation-behavior.html": {
+    "total": 1
+  },
+  "dom/events/relatedTarget.window.js": {
+    "total": 6,
+    "failures": {
+      "Reset targets before activation behavior": "FAIL",
+      "Reset targets on early return": "FAIL",
+      "Retarget a shadow-tree relatedTarget": "FAIL"
+    }
+  },
+  "dom/events/remove-all-listeners.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/iframe-chains.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/input-text-scroll-event-when-using-arrow-keys.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/save-iframe-scroll-offset-when-display-none.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/scroll-cross-origin-iframes.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scroll-event-fired-to-element.html": {
+    "total": 4
+  },
+  "dom/events/scrolling/scroll-event-fired-to-iframe.html": {
+    "total": 4
+  },
+  "dom/events/scrolling/scroll-event-not-fired-on-ancestor-style-change.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scroll-events-fired-once-per-frame-across-display-none.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/scrollIntoView-in-onscroll-to-sticky.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-after-instant-scroll-in-microtask.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-after-layout-clamping.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-after-sequence-of-scrolls.tentative.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/scrollend-event-fired-after-snap.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-mandatory-snap-point-after-load.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=root-scrollBy-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=root-scrollBy-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=root-scrollTo-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=root-scrollTo-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=subframe-scrollBy-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=subframe-scrollBy-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=subframe-scrollTo-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=subframe-scrollTo-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=root-scrollLeft-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=root-scrollLeft-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=root-scrollTop-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=root-scrollTop-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=subframe-scrollLeft-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=subframe-scrollLeft-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=subframe-scrollTop-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change.html?include=subframe-scrollTop-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=nested-scrollIntoView": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=root-inline-end-block-end-behavior-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=root-inline-start-block-start-behavior-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=subframe-inline-end-block-end-behavior-auto": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=subframe-inline-start-block-start-behavior-smooth": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-to-document.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/scrollend-event-fired-to-element-with-overscroll-behavior.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fired-to-window.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fires-for-repeat-key-ending-after-scroll-container-end-is-reached.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/scrollend-event-fires-on-visual-viewport.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "dom/events/scrolling/scrollend-event-fires-to-iframe-window.html": {
+    "total": 6
+  },
+  "dom/events/scrolling/scrollend-event-for-user-scroll.html": {
+    "total": 5
+  },
+  "dom/events/scrolling/scrollend-event-handler-content-attributes.html": {
+    "total": 4
+  },
+  "dom/events/scrolling/scrollend-event-not-fired-after-removing-scroller.tentative.html": {
+    "total": 3
+  },
+  "dom/events/scrolling/scrollend-event-not-fired-on-no-scroll.html": {
+    "total": 4
+  },
+  "dom/events/scrolling/scrollend-fires-to-text-input.html": {
+    "total": 5
+  },
+  "dom/events/scrolling/scrollend-with-snap-on-fractional-offset.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/visibility-hidden-scrolls.html": {
+    "total": 2
+  },
+  "dom/events/scrolling/wheel-event-composed.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-no-scroll-after-prevent-default.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-basic.html?include=scroll-over-scrollable-child": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-basic.html?include=target-basic": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-basic.html?include=transaction-not-bound-to-scroll-frame": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-multiple-action-chains.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-display-change.html?include=contents": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-display-change.html?include=none": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-elements.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-move.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-removal.html": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-resize.html?include=passive-false": {
+    "total": 1
+  },
+  "dom/events/scrolling/wheel-event-transactions-target-resize.html?include=passive-true": {
+    "total": 1
+  },
+  "dom/events/shadow-relatedTarget.html": {
+    "total": 2
+  },
+  "dom/events/webkit-animation-end-event.html": {
+    "total": 13
+  },
+  "dom/events/webkit-animation-iteration-event.html": {
+    "total": 13
+  },
+  "dom/events/webkit-animation-start-event.html": {
+    "total": 13
+  },
+  "dom/events/webkit-transition-end-event.html": {
+    "total": 13
+  },
+  "dom/events/window-composed-path.html": {
+    "total": 1
+  },
+  "dom/events/window-event-restored-after-throwing-onerror.html": {
+    "total": 1
+  },
+  "dom/historical-mutation-events.html": {
+    "total": 10
+  },
+  "dom/historical.html": {
+    "total": 80
+  },
+  "dom/idlharness.any.js#dedicatedworker": {
+    "total": 219
+  },
+  "dom/idlharness.any.js#sharedworker": {
+    "total": 219
+  },
+  "dom/idlharness.window.js?exclude=Node": {
+    "total": 1366,
+    "failures": {
+      "NodeFilter interface: constant SHOW_ALL on interface object": "FAIL",
+      "Stringification of new XSLTProcessor()": "FAIL",
+      "XSLTProcessor interface object length": "FAIL",
+      "XSLTProcessor interface object name": "FAIL",
+      "XSLTProcessor interface: calling getParameter(DOMString, DOMString) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: calling importStylesheet(Node) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: calling removeParameter(DOMString, DOMString) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: calling setParameter(DOMString, DOMString, any) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: calling transformToDocument(Node) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: calling transformToFragment(Node, Document) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
+      "XSLTProcessor interface: existence and properties of interface object": "FAIL",
+      "XSLTProcessor interface: existence and properties of interface prototype object": "FAIL",
+      "XSLTProcessor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XSLTProcessor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"clearParameters()\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"getParameter(DOMString, DOMString)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"importStylesheet(Node)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"removeParameter(DOMString, DOMString)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"reset()\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"setParameter(DOMString, DOMString, any)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"transformToDocument(Node)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"transformToFragment(Node, Document)\" with the proper type": "FAIL",
+      "XSLTProcessor interface: operation clearParameters()": "FAIL",
+      "XSLTProcessor interface: operation getParameter(DOMString, DOMString)": "FAIL",
+      "XSLTProcessor interface: operation importStylesheet(Node)": "FAIL",
+      "XSLTProcessor interface: operation removeParameter(DOMString, DOMString)": "FAIL",
+      "XSLTProcessor interface: operation reset()": "FAIL",
+      "XSLTProcessor interface: operation setParameter(DOMString, DOMString, any)": "FAIL",
+      "XSLTProcessor interface: operation transformToDocument(Node)": "FAIL",
+      "XSLTProcessor interface: operation transformToFragment(Node, Document)": "FAIL",
+      "XSLTProcessor must be primary interface of new XSLTProcessor()": "FAIL"
+    }
+  },
+  "dom/idlharness.window.js?include=Node": {
+    "total": 613
+  },
+  "dom/interface-objects.html": {
+    "total": 23
+  },
+  "dom/lists/DOMTokenList-Iterable.html": {
+    "total": 6
+  },
+  "dom/lists/DOMTokenList-coverage-for-attributes.html": {
+    "total": 175,
+    "failures": {
+      "a.relList in http://www.w3.org/1998/Math/MathML namespace should be DOMTokenList.": "FAIL"
+    }
+  },
+  "dom/lists/DOMTokenList-iteration.html": {
+    "total": 6
+  },
+  "dom/lists/DOMTokenList-stringifier.html": {
+    "total": 1
+  },
+  "dom/lists/DOMTokenList-value.html": {
+    "total": 1
+  },
+  "dom/nodes/Attr-prefix-xhtml.xhtml": {
+    "total": 2
+  },
+  "dom/nodes/Attr-prefix.html": {
+    "total": 6
+  },
+  "dom/nodes/CharacterData-appendChild.html": {
+    "total": 9
+  },
+  "dom/nodes/CharacterData-appendData.html": {
+    "total": 14
+  },
+  "dom/nodes/CharacterData-data.html": {
+    "total": 16
+  },
+  "dom/nodes/CharacterData-deleteData.html": {
+    "total": 18
+  },
+  "dom/nodes/CharacterData-insertData.html": {
+    "total": 18
+  },
+  "dom/nodes/CharacterData-remove.html": {
+    "total": 12
+  },
+  "dom/nodes/CharacterData-replaceData.html": {
+    "total": 34
+  },
+  "dom/nodes/CharacterData-substringData.html": {
+    "total": 28
+  },
+  "dom/nodes/CharacterData-surrogates.html": {
+    "total": 8
+  },
+  "dom/nodes/ChildNode-after.html": {
+    "total": 45
+  },
+  "dom/nodes/ChildNode-before.html": {
+    "total": 45
+  },
+  "dom/nodes/ChildNode-replaceWith.html": {
+    "total": 33
+  },
+  "dom/nodes/Comment-constructor.html": {
+    "total": 16
+  },
+  "dom/nodes/Comment-in-doctype.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/DOMImplementation-createDocument-no-browsing-context.html": {
+    "total": 5
+  },
+  "dom/nodes/DOMImplementation-createDocument.html": {
+    "total": 434
+  },
+  "dom/nodes/DOMImplementation-createDocumentType.html": {
+    "total": 82
+  },
+  "dom/nodes/DOMImplementation-createHTMLDocument-with-saved-implementation.html": {
+    "total": 1
+  },
+  "dom/nodes/DOMImplementation-createHTMLDocument.html": {
+    "total": 13
+  },
+  "dom/nodes/DOMImplementation-hasFeature.html": {
+    "total": 137
+  },
+  "dom/nodes/Document-URL.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js": {
+    "total": 7
+  },
+  "dom/nodes/Document-adoptNode.html": {
+    "total": 7
+  },
+  "dom/nodes/Document-characterSet-normalization-1.html": {
+    "total": 315
+  },
+  "dom/nodes/Document-characterSet-normalization-2.html": {
+    "total": 339
+  },
+  "dom/nodes/Document-constructor-svg.svg": {
+    "total": 4
+  },
+  "dom/nodes/Document-constructor-xml.xml": {
+    "total": 4
+  },
+  "dom/nodes/Document-constructor.html": {
+    "total": 5
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_bmp.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_css.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_datauri_02.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_gif.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_html.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_javascripturi.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_jpg.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_01.html": {
+    "total": 1,
+    "failures": {
+      "Custom document.contentType === 'text/xml' when explicitly set to this value": "FAIL"
+    }
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html": {
+    "total": 1,
+    "failures": {
+      "Custom document.contentType === 'text/html' when explicitly set to this value and an attempt is made to override this value in an HTML meta header": "FAIL"
+    }
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_png.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_txt.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/contenttype_xml.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/createDocument.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/createHTMLDocument.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-contentType/contentType/xhr_responseType_document.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-createAttribute.html": {
+    "total": 36
+  },
+  "dom/nodes/Document-createCDATASection-xhtml.xhtml": {
+    "total": 7
+  },
+  "dom/nodes/Document-createCDATASection.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-createComment.html": {
+    "total": 6
+  },
+  "dom/nodes/Document-createElement-namespace.html": {
+    "total": 51
+  },
+  "dom/nodes/Document-createElement.html": {
+    "total": 147
+  },
+  "dom/nodes/Document-createElementNS.html": {
+    "total": 596
+  },
+  "dom/nodes/Document-createEvent-touchevent.window.js": {
+    "total": 3
+  },
+  "dom/nodes/Document-createEvent.https.html": {
+    "total": 279,
+    "failures": {
+      "DEVICEMOTIONEVENT should be an alias for DeviceMotionEvent.": "FAIL",
+      "DEVICEORIENTATIONEVENT should be an alias for DeviceOrientationEvent.": "FAIL",
+      "DeviceMotionEvent should be an alias for DeviceMotionEvent.": "FAIL",
+      "DeviceOrientationEvent should be an alias for DeviceOrientationEvent.": "FAIL",
+      "TOUCHEVENT should be an alias for TouchEvent.": "PRECONDITION_FAILED",
+      "TouchEvent should be an alias for TouchEvent.": "PRECONDITION_FAILED",
+      "createEvent('DEVICEMOTIONEVENT') should be initialized correctly.": "FAIL",
+      "createEvent('DEVICEORIENTATIONEVENT') should be initialized correctly.": "FAIL",
+      "createEvent('DeviceMotionEvent') should be initialized correctly.": "FAIL",
+      "createEvent('DeviceOrientationEvent') should be initialized correctly.": "FAIL",
+      "createEvent('TOUCHEVENT') should be initialized correctly.": "PRECONDITION_FAILED",
+      "createEvent('TouchEvent') should be initialized correctly.": "PRECONDITION_FAILED",
+      "createEvent('devicemotionevent') should be initialized correctly.": "FAIL",
+      "createEvent('deviceorientationevent') should be initialized correctly.": "FAIL",
+      "createEvent('touchevent') should be initialized correctly.": "PRECONDITION_FAILED",
+      "devicemotionevent should be an alias for DeviceMotionEvent.": "FAIL",
+      "deviceorientationevent should be an alias for DeviceOrientationEvent.": "FAIL",
+      "touchevent should be an alias for TouchEvent.": "PRECONDITION_FAILED"
+    }
+  },
+  "dom/nodes/Document-createProcessingInstruction-xhtml.xhtml": {
+    "total": 12
+  },
+  "dom/nodes/Document-createProcessingInstruction.html": {
+    "total": 12
+  },
+  "dom/nodes/Document-createTextNode.html": {
+    "total": 6
+  },
+  "dom/nodes/Document-createTreeWalker.html": {
+    "total": 5
+  },
+  "dom/nodes/Document-doctype.html": {
+    "total": 2
+  },
+  "dom/nodes/Document-getElementById.html": {
+    "total": 18
+  },
+  "dom/nodes/Document-getElementsByClassName.html": {
+    "total": 1
+  },
+  "dom/nodes/Document-getElementsByTagName-xhtml.xhtml": {
+    "total": 10
+  },
+  "dom/nodes/Document-getElementsByTagName.html": {
+    "total": 18
+  },
+  "dom/nodes/Document-getElementsByTagNameNS.html": {
+    "total": 14
+  },
+  "dom/nodes/Document-implementation.html": {
+    "total": 2
+  },
+  "dom/nodes/Document-importNode.html": {
+    "total": 5
+  },
+  "dom/nodes/DocumentFragment-constructor.html": {
+    "total": 2
+  },
+  "dom/nodes/DocumentFragment-getElementById.html": {
+    "total": 5
+  },
+  "dom/nodes/DocumentFragment-querySelectorAll-after-modification.html": {
+    "total": 1
+  },
+  "dom/nodes/DocumentType-literal-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/DocumentType-literal.html": {
+    "total": 1
+  },
+  "dom/nodes/DocumentType-remove.html": {
+    "total": 4
+  },
+  "dom/nodes/Element-childElement-null-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElement-null-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElement-null.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-add-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-add-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-add.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-remove-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-remove-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-dynamic-remove.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-nochild-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-nochild-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-nochild.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-childElementCount.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-children.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-classlist.html": {
+    "total": 1420
+  },
+  "dom/nodes/Element-closest-null-selectors.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-closest.html": {
+    "total": 29
+  },
+  "dom/nodes/Element-firstElementChild-entity-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-entity.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-namespace-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-namespace-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-namespace.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-firstElementChild.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-getElementsByClassName.html": {
+    "total": 3
+  },
+  "dom/nodes/Element-getElementsByTagName-change-document-HTMLNess.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-getElementsByTagName.html": {
+    "total": 19
+  },
+  "dom/nodes/Element-getElementsByTagNameNS.html": {
+    "total": 16
+  },
+  "dom/nodes/Element-hasAttribute.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-hasAttributes.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-insertAdjacentElement.html": {
+    "total": 6
+  },
+  "dom/nodes/Element-insertAdjacentText.html": {
+    "total": 6
+  },
+  "dom/nodes/Element-lastElementChild-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-lastElementChild-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-lastElementChild.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-matches-active-pseudo-class.html": {
+    "total": 4
+  },
+  "dom/nodes/Element-matches-complex-nth-last-of-type.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-matches-disabled-pseudo-class.html": {
+    "total": 11
+  },
+  "dom/nodes/Element-matches-namespaced-elements.html": {
+    "total": 6
+  },
+  "dom/nodes/Element-matches.html": {
+    "total": 669
+  },
+  "dom/nodes/Element-nextElementSibling-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-nextElementSibling-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-nextElementSibling.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-previousElementSibling-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-previousElementSibling-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-previousElementSibling.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-querySelectorAll-context-element.html": {
+    "total": 3
+  },
+  "dom/nodes/Element-remove.html": {
+    "total": 4
+  },
+  "dom/nodes/Element-removeAttribute.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-removeAttributeNS.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-setAttribute-crbug-1138487.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-setAttribute.html": {
+    "total": 2
+  },
+  "dom/nodes/Element-setAttributeNodeNS.html": {
+    "total": 3
+  },
+  "dom/nodes/Element-siblingElement-null-svg.svg": {
+    "total": 1
+  },
+  "dom/nodes/Element-siblingElement-null-xhtml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Element-siblingElement-null.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-tagName-adopt.html": {
+    "total": 1
+  },
+  "dom/nodes/Element-tagName.html": {
+    "total": 6
+  },
+  "dom/nodes/Element-webkitMatchesSelector.html": {
+    "total": 669
+  },
+  "dom/nodes/MutationObserver-attributes.html": {
+    "total": 42
+  },
+  "dom/nodes/MutationObserver-callback-arguments.html": {
+    "total": 1
+  },
+  "dom/nodes/MutationObserver-callback-tricky.html": {
+    "total": 2
+  },
+  "dom/nodes/MutationObserver-characterData.html": {
+    "total": 23,
+    "failures": {
+      "characterData ProcessingInstruction: data mutations": "FAIL"
+    }
+  },
+  "dom/nodes/MutationObserver-childList.html": {
+    "total": 40
+  },
+  "dom/nodes/MutationObserver-cross-realm-callback-report-exception.html": {
+    "total": 1
+  },
+  "dom/nodes/MutationObserver-disconnect.html": {
+    "total": 2
+  },
+  "dom/nodes/MutationObserver-document.html": {
+    "total": 4
+  },
+  "dom/nodes/MutationObserver-inner-outer.html": {
+    "total": 3
+  },
+  "dom/nodes/MutationObserver-overlapping-registrations.html": {
+    "total": 3
+  },
+  "dom/nodes/MutationObserver-sanity.html": {
+    "total": 16
+  },
+  "dom/nodes/MutationObserver-takeRecords.html": {
+    "total": 3
+  },
+  "dom/nodes/MutationObserver-textContent.html": {
+    "total": 4
+  },
+  "dom/nodes/MutationObserver-xml-parser.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Node-appendChild-cereactions-vs-script.window.js": {
+    "total": 1
+  },
+  "dom/nodes/Node-appendChild.html": {
+    "total": 11
+  },
+  "dom/nodes/Node-baseURI.html": {
+    "total": 9
+  },
+  "dom/nodes/Node-childNodes-cache-2.html": {
+    "total": 1
+  },
+  "dom/nodes/Node-childNodes-cache.html": {
+    "total": 1
+  },
+  "dom/nodes/Node-childNodes.html": {
+    "total": 6
+  },
+  "dom/nodes/Node-cloneNode-XMLDocument.html": {
+    "total": 1
+  },
+  "dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.js": {
+    "total": 1
+  },
+  "dom/nodes/Node-cloneNode-document-with-doctype.html": {
+    "total": 3
+  },
+  "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html": {
+    "total": 1
+  },
+  "dom/nodes/Node-cloneNode-parser-created-names.html": {
+    "total": 2
+  },
+  "dom/nodes/Node-cloneNode-svg.html": {
+    "total": 4
+  },
+  "dom/nodes/Node-cloneNode.html": {
+    "total": 135
+  },
+  "dom/nodes/Node-compareDocumentPosition.html": {
+    "total": 1444
+  },
+  "dom/nodes/Node-constants.html": {
+    "total": 8
+  },
+  "dom/nodes/Node-contains-xml.xml": {
+    "total": 8
+  },
+  "dom/nodes/Node-contains.html": {
+    "total": 1482
+  },
+  "dom/nodes/Node-insertBefore.html": {
+    "total": 40
+  },
+  "dom/nodes/Node-isConnected-shadow-dom.html": {
+    "total": 2
+  },
+  "dom/nodes/Node-isConnected.html": {
+    "total": 2
+  },
+  "dom/nodes/Node-isEqualNode-xhtml.xhtml": {
+    "total": 14
+  },
+  "dom/nodes/Node-isEqualNode.html": {
+    "total": 9
+  },
+  "dom/nodes/Node-isSameNode.html": {
+    "total": 9
+  },
+  "dom/nodes/Node-lookupNamespaceURI.html": {
+    "total": 75
+  },
+  "dom/nodes/Node-lookupPrefix.xhtml": {
+    "total": 11
+  },
+  "dom/nodes/Node-mutation-adoptNode.html": {
+    "total": 2
+  },
+  "dom/nodes/Node-nodeName-xhtml.xhtml": {
+    "total": 7
+  },
+  "dom/nodes/Node-nodeName.html": {
+    "total": 6
+  },
+  "dom/nodes/Node-nodeValue.html": {
+    "total": 7
+  },
+  "dom/nodes/Node-normalize-2.html": {
+    "total": 2
+  },
+  "dom/nodes/Node-normalize.html": {
+    "total": 4
+  },
+  "dom/nodes/Node-parentElement.html": {
+    "total": 12
+  },
+  "dom/nodes/Node-parentNode.html": {
+    "total": 5
+  },
+  "dom/nodes/Node-properties.html": {
+    "total": 726
+  },
+  "dom/nodes/Node-removeChild.html": {
+    "total": 28
+  },
+  "dom/nodes/Node-replaceChild.html": {
+    "total": 29
+  },
+  "dom/nodes/Node-textContent.html": {
+    "total": 81
+  },
+  "dom/nodes/NodeList-Iterable.html": {
+    "total": 8
+  },
+  "dom/nodes/NodeList-live-mutations.window.js": {
+    "total": 4
+  },
+  "dom/nodes/NonDocumentTypeChildNode-sibling-element.html": {
+    "total": 6
+  },
+  "dom/nodes/ParentNode-append.html": {
+    "total": 25
+  },
+  "dom/nodes/ParentNode-children.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-prepend.html": {
+    "total": 22
+  },
+  "dom/nodes/ParentNode-properties.html": {
+    "total": 12
+  },
+  "dom/nodes/ParentNode-querySelector-All-comma-selector.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-All-multiple-not.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-All-scope.html": {
+    "total": 8
+  },
+  "dom/nodes/ParentNode-querySelector-All-xht.xht": {
+    "total": 1975
+  },
+  "dom/nodes/ParentNode-querySelector-All.html": {
+    "total": 1975
+  },
+  "dom/nodes/ParentNode-querySelector-argument-stringification.html": {
+    "total": 3
+  },
+  "dom/nodes/ParentNode-querySelector-attribute-change.html": {
+    "total": 7
+  },
+  "dom/nodes/ParentNode-querySelector-basic-has.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-case-insensitive.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-class-change.html": {
+    "total": 6
+  },
+  "dom/nodes/ParentNode-querySelector-dupe-id.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-empty-attribute-value.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-escapes.html": {
+    "total": 68,
+    "failures": {
+      "\"\u00A0\" should match with \"#\u00A0\"": "FAIL",
+      "\"\u2003\" should match with \"#\u2003\"": "FAIL"
+    }
+  },
+  "dom/nodes/ParentNode-querySelector-host-pseudo-class.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-hyphen-prefix.html": {
+    "total": 4
+  },
+  "dom/nodes/ParentNode-querySelector-innerHTML.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-invalid-comment-like.html": {
+    "total": 3
+  },
+  "dom/nodes/ParentNode-querySelector-is-nested-pseudo-class.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-is-not.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-last-child-combinator.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-matches.html": {
+    "total": 4
+  },
+  "dom/nodes/ParentNode-querySelector-multiple-attributes-xml.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-namespace-tagname-attribute.html": {
+    "total": 8
+  },
+  "dom/nodes/ParentNode-querySelector-nested-nth-child.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-nested.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-nth-of-type-complex.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-orphan-scope.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelector-parent-context.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-scope-in-not.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-scope-numeric-id.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-scope.html": {
+    "total": 4
+  },
+  "dom/nodes/ParentNode-querySelector-shadowroot-nth-child.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-svg-not-root.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-tag-case.html": {
+    "total": 6
+  },
+  "dom/nodes/ParentNode-querySelector-underscore-local-name.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelector-xml-capitalization.window.js": {
+    "total": 3
+  },
+  "dom/nodes/ParentNode-querySelectorAll-case-insensitive-attribute-flag.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelectorAll-namespace.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectorAll-nested-not-has.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectorAll-not-descendant.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectorAll-removed-elements.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectorAll-scope-change.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectorAll-scope-colon-id-class.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelectorAll-svg-append.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-querySelectorAll-svg-class.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectors-exclusive.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectors-namespaces.html": {
+    "total": 1
+  },
+  "dom/nodes/ParentNode-querySelectors-space-and-dash-attribute-value.html": {
+    "total": 2
+  },
+  "dom/nodes/ParentNode-replaceChildren.html": {
+    "total": 31
+  },
+  "dom/nodes/ProcessingInstruction-escapes-1.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ProcessingInstruction-in-doctype.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ProcessingInstruction-literal-1.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/ProcessingInstruction-literal-2.xhtml": {
+    "total": 1
+  },
+  "dom/nodes/Text-constructor.html": {
+    "total": 16
+  },
+  "dom/nodes/Text-splitText.html": {
+    "total": 6
+  },
+  "dom/nodes/Text-wholeText.html": {
+    "total": 1
+  },
+  "dom/nodes/adoption.window.js": {
+    "total": 6
+  },
+  "dom/nodes/append-on-Document.html": {
+    "total": 5
+  },
+  "dom/nodes/attach-shadow-realm-after-adoption.html": {
+    "total": 5
+  },
+  "dom/nodes/attributes-namednodemap-cross-document.window.js": {
+    "total": 2
+  },
+  "dom/nodes/attributes-namednodemap.html": {
+    "total": 8
+  },
+  "dom/nodes/attributes.html": {
+    "total": 67
+  },
+  "dom/nodes/case.html": {
+    "total": 285
+  },
+  "dom/nodes/create-element-realm-after-adoption.html": {
+    "total": 5
+  },
+  "dom/nodes/getElementById-namespaced-id.html": {
+    "total": 4
+  },
+  "dom/nodes/getElementsByClassName-01.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-02.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-03.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-04.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-05.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-06.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-07.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-08.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-09.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-10.xml": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-11.xml": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-12.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-13.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-14.htm": {
+    "total": 2
+  },
+  "dom/nodes/getElementsByClassName-15.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-16.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-17.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-18.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-19.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-20.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-21.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-22.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-23.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-24.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-25.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-26.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-27.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-28.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-29.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-30.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-31.htm": {
+    "total": 1
+  },
+  "dom/nodes/getElementsByClassName-32.html": {
+    "total": 4
+  },
+  "dom/nodes/getElementsByClassName-empty-set.html": {
+    "total": 3
+  },
+  "dom/nodes/getElementsByClassName-whitespace-class-names.html": {
+    "total": 26
+  },
+  "dom/nodes/insert-adjacent.html": {
+    "total": 14
+  },
+  "dom/nodes/insertion-removing-steps/Node-append-form-and-script-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-append-meta-referrer-and-script-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-button-from-div.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-custom-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-default-style-meta-from-fragment.html": {
+    "total": 1,
+    "failures": {
+      "Inserting <meta> that uses alternate stylesheets, applies the style during DOM post-insertion steps": "FAIL"
+    }
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-div-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-iframe.html": {
+    "total": 4
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-source-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-and-style.html": {
+    "total": 5,
+    "failures": {
+      "Earlier-inserted <script> (via a DocumentFragment) synchronously observes a later-inserted <link rel=stylesheet>'s CSSStyleSheet creation": "FAIL",
+      "Earlier-inserted <script> (via a append()) synchronously observes a later-inserted <link rel=stylesheet>'s CSSStyleSheet creation": "FAIL",
+      "Earlier-inserted <script> (via a div) synchronously observes a later-inserted <link rel=stylesheet>'s CSSStyleSheet creation": "FAIL"
+    }
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-in-script.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-script-with-mutation-observer-takeRecords.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-text-and-script-in-style.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-text-in-script.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-three-scripts-from-fragment.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/Node-appendChild-three-scripts.html": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/blur-event.window.js": {
+    "total": 2
+  },
+  "dom/nodes/insertion-removing-steps/change-event.window.js": {
+    "total": 2
+  },
+  "dom/nodes/insertion-removing-steps/frame-post-connection-steps.html": {
+    "total": 4
+  },
+  "dom/nodes/insertion-removing-steps/insertion-removing-steps-iframe.window.js": {
+    "total": 4
+  },
+  "dom/nodes/insertion-removing-steps/insertion-removing-steps-script.window.js": {
+    "total": 1
+  },
+  "dom/nodes/insertion-removing-steps/later-script-removed-by-earlier-script.html": {
+    "total": 2
+  },
+  "dom/nodes/insertion-removing-steps/script-does-not-run-on-child-removal.window.js": {
+    "total": 1
+  },
+  "dom/nodes/live-collections-batched-mutations.window.js": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/Node-moveBefore.html": {
+    "total": 32
+  },
+  "dom/nodes/moveBefore/child-style-preserve.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-animation-left.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-animation-transform.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-transition-left-pseudo.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-transition-left.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-transition-transform-pseudo.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/continue-css-transition-transform.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/css-animation-commit-styles.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/css-transition-cross-document.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/css-transition-cross-shadow.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/css-transition-to-disconnected-document.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/css-transition-trigger.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/custom-element-move-reactions.html": {
+    "total": 7
+  },
+  "dom/nodes/moveBefore/fieldset-child-blur-event.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/fieldset-child-date-input-blur-event.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/fire-focusin-focusout.html": {
+    "total": 5
+  },
+  "dom/nodes/moveBefore/focus-preserve-render.html": {
+    "reftest": "PASS"
+  },
+  "dom/nodes/moveBefore/focus-preserve.html": {
+    "total": 5
+  },
+  "dom/nodes/moveBefore/focus-within.html": {
+    "total": 5
+  },
+  "dom/nodes/moveBefore/fullscreen-preserve.html": {
+    "total": 1,
+    "failures": {
+      "Document#fullscreenElement": "FAIL"
+    }
+  },
+  "dom/nodes/moveBefore/hover-style-update.html": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/iframe-document-preserve.window.js": {
+    "total": 7
+  },
+  "dom/nodes/moveBefore/listed-form-element-reset.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/live-range-updates.html": {
+    "total": 3
+  },
+  "dom/nodes/moveBefore/modal-dialog.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-as-flex-item.html": {
+    "reftest": "PASS"
+  },
+  "dom/nodes/moveBefore/moveBefore-dir.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-disconnected-id-map.html": {
+    "total": 4
+  },
+  "dom/nodes/moveBefore/moveBefore-from-light-to-shadow.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-id-map.html": {
+    "total": 4
+  },
+  "dom/nodes/moveBefore/moveBefore-lang.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-name-map.html": {
+    "total": 3
+  },
+  "dom/nodes/moveBefore/moveBefore-nodeiterator.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-option-recalc-style.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-selector-matching.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-shadow-boundary-id-change.html": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/moveBefore-shadow-host-id-map.html": {
+    "total": 4
+  },
+  "dom/nodes/moveBefore/moveBefore-shadow-inside.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-shadow-root.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-size-query.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/mutation-observer.html": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/nonce.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/object-crash-regression.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/pointer-events.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/popover-preserve.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/preserve-render-blocking-script.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/preserve-render-blocking-style.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/relevant-mutations.html": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/role-updates-after-move.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/script-move-before.html": {
+    "total": 2
+  },
+  "dom/nodes/moveBefore/select-option-optgroup.html": {
+    "total": 2,
+    "failures": {
+      "Option selectedness is updated on option and optgroup DOM moves": "FAIL"
+    }
+  },
+  "dom/nodes/moveBefore/selection-preserve.html": {
+    "total": 6,
+    "failures": {
+      "moveBefore anchor node moved up to expand selection and absorb nodes": "FAIL",
+      "moveBefore focus node moved up to shrink selection and exclude nodes; focus node gets reset": "FAIL",
+      "moveBefore resets selection that enters a subtree, when the whole selection is moved": "FAIL",
+      "moveBefore selection is not preserved, especially when underlying range gets inverted": "FAIL",
+      "moveBefore should not reset selection with preceding text": "FAIL"
+    }
+  },
+  "dom/nodes/moveBefore/slotchange-events.html": {
+    "total": 4
+  },
+  "dom/nodes/moveBefore/style-applies.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/stylesheet-cascade-order.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/stylesheet-no-refetch.html": {
+    "total": 1
+  },
+  "dom/nodes/moveBefore/throws-exception.html": {
+    "total": 1
+  },
+  "dom/nodes/name-validation.html": {
+    "total": 5
+  },
+  "dom/nodes/namespaced-attribute-mutations.html": {
+    "total": 24
+  },
+  "dom/nodes/node-creation-realm.html": {
+    "total": 13
+  },
+  "dom/nodes/node-realm-adoption-after-frame-removal.html": {
+    "total": 3
+  },
+  "dom/nodes/node-realm-mixed-across-adoption.html": {
+    "total": 4
+  },
+  "dom/nodes/node-realm-preserved-across-adoption.html": {
+    "total": 5
+  },
+  "dom/nodes/node-realm-preserved-across-frameless-adoption.html": {
+    "total": 4
+  },
+  "dom/nodes/post-connection-steps-shadow-tree.html": {
+    "total": 1
+  },
+  "dom/nodes/prepend-on-Document.html": {
+    "total": 5
+  },
+  "dom/nodes/processing-instruction-attributes.html": {
+    "total": 140,
+    "failures": {
+      "Processing instruction attribute mutation from xml-parser": "FAIL",
+      "Processing instruction attribute parsing allows _ in attribute names from xml-parser": "FAIL",
+      "Processing instruction attributes with xml-stylesheet from xml-parser": "FAIL",
+      "Processing instruction toggleAttribute from xml-parser": "FAIL",
+      "check attribute value: \"'\"\"'\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"=\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"aa\"aa\"\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"axx\"\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"axx>\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"some<>\" (source: \"xml-parser\")": "FAIL"
+    }
+  },
+  "dom/nodes/query-target-in-load-event.html": {
+    "total": 1
+  },
+  "dom/nodes/querySelector-empty-id.html": {
+    "total": 1
+  },
+  "dom/nodes/querySelector-id-nth-child.html": {
+    "total": 2
+  },
+  "dom/nodes/querySelector-mixed-case.html": {
+    "total": 1
+  },
+  "dom/nodes/remove-and-adopt-thcrash.html": {
+    "total": 1
+  },
+  "dom/nodes/remove-from-shadow-host-and-adopt-into-iframe.html": {
+    "reftest": "PASS"
+  },
+  "dom/nodes/remove-next-sibling-during-replace-with.html": {
+    "total": 1
+  },
+  "dom/nodes/remove-unscopable.html": {
+    "total": 6
+  },
+  "dom/nodes/rootNode.html": {
+    "total": 5
+  },
+  "dom/nodes/svg-template-querySelector.html": {
+    "total": 3
+  },
+  "dom/observable/tentative/idlharness.html": {
+    "total": 36,
+    "failures": {
+      "Observable interface object length": "FAIL",
+      "Observable interface object name": "FAIL",
+      "Observable interface: calling subscribe(optional ObserverUnion, optional SubscribeOptions) on new Observable(() => {}) with too few arguments must throw TypeError": "FAIL",
+      "Observable interface: existence and properties of interface object": "FAIL",
+      "Observable interface: existence and properties of interface prototype object": "FAIL",
+      "Observable interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "Observable interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Observable interface: new Observable(() => {}) must inherit property \"subscribe(optional ObserverUnion, optional SubscribeOptions)\" with the proper type": "FAIL",
+      "Observable interface: operation subscribe(optional ObserverUnion, optional SubscribeOptions)": "FAIL",
+      "Observable must be primary interface of new Observable(() => {})": "FAIL",
+      "Stringification of (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })()": "FAIL",
+      "Stringification of new Observable(() => {})": "FAIL",
+      "Subscriber interface object length": "FAIL",
+      "Subscriber interface object name": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"active\" with the proper type": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"addTeardown(VoidFunction)\" with the proper type": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"complete()\" with the proper type": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"error(any)\" with the proper type": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"next(any)\" with the proper type": "FAIL",
+      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"signal\" with the proper type": "FAIL",
+      "Subscriber interface: attribute active": "FAIL",
+      "Subscriber interface: attribute signal": "FAIL",
+      "Subscriber interface: calling addTeardown(VoidFunction) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
+      "Subscriber interface: calling error(any) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
+      "Subscriber interface: calling next(any) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
+      "Subscriber interface: existence and properties of interface object": "FAIL",
+      "Subscriber interface: existence and properties of interface prototype object": "FAIL",
+      "Subscriber interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "Subscriber interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Subscriber interface: operation addTeardown(VoidFunction)": "FAIL",
+      "Subscriber interface: operation complete()": "FAIL",
+      "Subscriber interface: operation error(any)": "FAIL",
+      "Subscriber interface: operation next(any)": "FAIL",
+      "Subscriber must be primary interface of (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })()": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-catch.any.js": {
+    "total": 9,
+    "failures": {
+      "catch(): Abort order between outer AbortSignal and inner CatchHandler subscriber's AbortSignal": "FAIL",
+      "catch(): CatchHandler can return a Promise": "FAIL",
+      "catch(): CatchHandler can return an empty iterable": "FAIL",
+      "catch(): CatchHandler emits an error if the value returned is not convertible to an Observable": "FAIL",
+      "catch(): CatchHandler returns an Observable that throws immediately on subscription": "FAIL",
+      "catch(): Errors thrown in the catch() callback are sent to the consumer's error handler": "FAIL",
+      "catch(): Handle errors from source and flatten to a new Observable": "FAIL",
+      "catch(): Returns an Observable that is a pass-through for next()/complete()": "FAIL",
+      "catch(): should handle returning an async iterable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-catch.any.js#dedicatedworker": {
+    "total": 9,
+    "failures": {
+      "catch(): Abort order between outer AbortSignal and inner CatchHandler subscriber's AbortSignal": "FAIL",
+      "catch(): CatchHandler can return a Promise": "FAIL",
+      "catch(): CatchHandler can return an empty iterable": "FAIL",
+      "catch(): CatchHandler emits an error if the value returned is not convertible to an Observable": "FAIL",
+      "catch(): CatchHandler returns an Observable that throws immediately on subscription": "FAIL",
+      "catch(): Errors thrown in the catch() callback are sent to the consumer's error handler": "FAIL",
+      "catch(): Handle errors from source and flatten to a new Observable": "FAIL",
+      "catch(): Returns an Observable that is a pass-through for next()/complete()": "FAIL",
+      "catch(): should handle returning an async iterable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-constructor.any.js": {
+    "total": 44,
+    "failures": {
+      "Aborting a subscription should stop emitting values": "FAIL",
+      "Calling subscribe should never throw an error synchronously, initializer throws error": "FAIL",
+      "Calling subscribe should never throw an error synchronously, subscriber pushes error": "FAIL",
+      "Completing or nexting a subscriber after an error does nothing": "FAIL",
+      "Errors pushed by initializer function after subscriber is closed by error are reported": "FAIL",
+      "Errors pushed to the subscriber that are not handled by the subscription are reported to the global": "FAIL",
+      "Errors thrown by initializer function after subscriber is closed by completion are reported": "FAIL",
+      "Errors thrown by initializer function after subscriber is closed by error are reported": "FAIL",
+      "Errors thrown in the initializer that are not handled by the subscription are reported to the global": "FAIL",
+      "Multiple subscriptions share the same producer and teardown runs only after last subscription abort": "FAIL",
+      "New subscription after complete creates new producer": "FAIL",
+      "Observable constructor": "FAIL",
+      "Observable constructor calls initializer on subscribe": "FAIL",
+      "Observable error path called synchronously": "FAIL",
+      "Observable should error if initializer throws": "FAIL",
+      "Producer-initiated unsubscription in a downstream Observable fires abort events before each teardown, in downstream->upstream order": "FAIL",
+      "Subscribe with just a function as the next handler": "FAIL",
+      "Subscriber active is readonly": "FAIL",
+      "Subscriber complete() will set active to false, and abort signal": "FAIL",
+      "Subscriber interface is not constructible": "FAIL",
+      "Subscriber iterates over a snapshot of its internal observers": "FAIL",
+      "Subscriber must have receiver": "FAIL",
+      "Subscriber next & error must recieve argument": "FAIL",
+      "Subscriber signal is readonly": "FAIL",
+      "Subscriber#complete() cannot re-entrantly invoke itself": "FAIL",
+      "Subscriber#error() cannot re-entrantly invoke itself": "FAIL",
+      "Subscriber#error() value is stored as Subscriber's AbortSignal's reason": "FAIL",
+      "Subscriber#signal is not the same AbortSignal as the one passed into `subscribe()`": "FAIL",
+      "Subscription does not emit values after completion": "FAIL",
+      "Subscription does not emit values after error": "FAIL",
+      "Subscription is inactive after complete()": "FAIL",
+      "Subscription is inactive after error()": "FAIL",
+      "Subscription is inactive when aborted signal is passed in": "FAIL",
+      "Subscription reports errors that are pushed after subscriber is closed by completion": "FAIL",
+      "Teardown runs after last unsubscribe regardless of unsubscription order": "FAIL",
+      "Teardown should be called when subscription is aborted": "FAIL",
+      "Teardowns are called in downstream->upstream order on consumer-initiated unsubscription with pre-aborted Signal": "FAIL",
+      "Teardowns are called in upstream->downstream order on consumer-initiated unsubscription": "FAIL",
+      "Teardowns should be called synchronously during addTeardown() if the subscription is inactive": "FAIL",
+      "Teardowns should be called when subscription is closed by completion": "FAIL",
+      "Teardowns should be called when subscription is closed by subscriber pushing an error": "FAIL",
+      "Teardowns should be called when subscription is closed by subscriber throwing error": "FAIL",
+      "Unsubscription lifecycle": "FAIL",
+      "subscribe() can be called with no arguments": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-constructor.any.js#dedicatedworker": {
+    "total": 44,
+    "failures": {
+      "Aborting a subscription should stop emitting values": "FAIL",
+      "Calling subscribe should never throw an error synchronously, initializer throws error": "FAIL",
+      "Calling subscribe should never throw an error synchronously, subscriber pushes error": "FAIL",
+      "Completing or nexting a subscriber after an error does nothing": "FAIL",
+      "Errors pushed by initializer function after subscriber is closed by error are reported": "FAIL",
+      "Errors pushed to the subscriber that are not handled by the subscription are reported to the global": "FAIL",
+      "Errors thrown by initializer function after subscriber is closed by completion are reported": "FAIL",
+      "Errors thrown by initializer function after subscriber is closed by error are reported": "FAIL",
+      "Errors thrown in the initializer that are not handled by the subscription are reported to the global": "FAIL",
+      "Multiple subscriptions share the same producer and teardown runs only after last subscription abort": "FAIL",
+      "New subscription after complete creates new producer": "FAIL",
+      "Observable constructor": "FAIL",
+      "Observable constructor calls initializer on subscribe": "FAIL",
+      "Observable error path called synchronously": "FAIL",
+      "Observable should error if initializer throws": "FAIL",
+      "Producer-initiated unsubscription in a downstream Observable fires abort events before each teardown, in downstream->upstream order": "FAIL",
+      "Subscribe with just a function as the next handler": "FAIL",
+      "Subscriber active is readonly": "FAIL",
+      "Subscriber complete() will set active to false, and abort signal": "FAIL",
+      "Subscriber interface is not constructible": "FAIL",
+      "Subscriber iterates over a snapshot of its internal observers": "FAIL",
+      "Subscriber must have receiver": "FAIL",
+      "Subscriber next & error must recieve argument": "FAIL",
+      "Subscriber signal is readonly": "FAIL",
+      "Subscriber#complete() cannot re-entrantly invoke itself": "FAIL",
+      "Subscriber#error() cannot re-entrantly invoke itself": "FAIL",
+      "Subscriber#error() value is stored as Subscriber's AbortSignal's reason": "FAIL",
+      "Subscriber#signal is not the same AbortSignal as the one passed into `subscribe()`": "FAIL",
+      "Subscription does not emit values after completion": "FAIL",
+      "Subscription does not emit values after error": "FAIL",
+      "Subscription is inactive after complete()": "FAIL",
+      "Subscription is inactive after error()": "FAIL",
+      "Subscription is inactive when aborted signal is passed in": "FAIL",
+      "Subscription reports errors that are pushed after subscriber is closed by completion": "FAIL",
+      "Teardown runs after last unsubscribe regardless of unsubscription order": "FAIL",
+      "Teardown should be called when subscription is aborted": "FAIL",
+      "Teardowns are called in downstream->upstream order on consumer-initiated unsubscription with pre-aborted Signal": "FAIL",
+      "Teardowns are called in upstream->downstream order on consumer-initiated unsubscription": "FAIL",
+      "Teardowns should be called synchronously during addTeardown() if the subscription is inactive": "FAIL",
+      "Teardowns should be called when subscription is closed by completion": "FAIL",
+      "Teardowns should be called when subscription is closed by subscriber pushing an error": "FAIL",
+      "Teardowns should be called when subscription is closed by subscriber throwing error": "FAIL",
+      "Unsubscription lifecycle": "FAIL",
+      "subscribe() can be called with no arguments": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-constructor.window.js": {
+    "total": 4,
+    "failures": {
+      "Cannot subscribe to an Observable in a detached document": "FAIL",
+      "No observer handlers can be invoked in detached document": "FAIL",
+      "Observable from EventTarget does not get notified for events in detached documents": "FAIL",
+      "Subscriber.error() does not \"report the exception\" even when an `error()` handler is not present, when it is invoked in a detached document": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-drop.any.js": {
+    "total": 7,
+    "failures": {
+      "drop(): A drop amount of 0 simply mirrors the source Observable": "FAIL",
+      "drop(): Observable passes through completions from source observable even before drop count is met": "FAIL",
+      "drop(): Observable passes through errors from source Observable": "FAIL",
+      "drop(): Observable passes through errors from source observable even before drop count is met": "FAIL",
+      "drop(): Observable should skip the first n values from the source observable, then pass through the rest of the values and completion": "FAIL",
+      "drop(): Passing negative value wraps to maximum value ": "FAIL",
+      "drop(): Unsubscribing from the Observable returned by drop() also unsubscribes from the source Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-drop.any.js#dedicatedworker": {
+    "total": 7,
+    "failures": {
+      "drop(): A drop amount of 0 simply mirrors the source Observable": "FAIL",
+      "drop(): Observable passes through completions from source observable even before drop count is met": "FAIL",
+      "drop(): Observable passes through errors from source Observable": "FAIL",
+      "drop(): Observable passes through errors from source observable even before drop count is met": "FAIL",
+      "drop(): Observable should skip the first n values from the source observable, then pass through the rest of the values and completion": "FAIL",
+      "drop(): Passing negative value wraps to maximum value ": "FAIL",
+      "drop(): Unsubscribing from the Observable returned by drop() also unsubscribes from the source Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-event-target.any.js": {
+    "total": 3,
+    "failures": {
+      "Aborting the subscription should stop the emission of events": "FAIL",
+      "EventTarget Observables can multicast subscriptions for event handling": "FAIL",
+      "EventTarget.when() returns an Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-event-target.any.js#dedicatedworker": {
+    "total": 3,
+    "failures": {
+      "Aborting the subscription should stop the emission of events": "FAIL",
+      "EventTarget Observables can multicast subscriptions for event handling": "FAIL",
+      "EventTarget.when() returns an Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-event-target.window.js": {
+    "total": 2,
+    "failures": {
+      "EventTarget Observables can be 'passive'": "FAIL",
+      "EventTarget Observables can listen for events in the capturing or bubbling phase": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-every.any.js": {
+    "total": 10,
+    "failures": {
+      "every(): Abort the subscription to the source if the predicate does not pass": "FAIL",
+      "every(): Index is passed into the predicate": "FAIL",
+      "every(): Lifecycle checks when all values pass the predicate": "FAIL",
+      "every(): Lifecycle checks when any value fails the predicate": "FAIL",
+      "every(): Promise resolves to false if any value fails the predicate": "FAIL",
+      "every(): Promise resolves to true if all values pass the predicate": "FAIL",
+      "every(): Rejects with a DOMException if the source Observable is aborted": "FAIL",
+      "every(): Rejects with any error emitted from the source observable": "FAIL",
+      "every(): Rejects with any error thrown from the predicate": "FAIL",
+      "every(): Resolves with true if the observable completes without emitting a value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-every.any.js#dedicatedworker": {
+    "total": 10,
+    "failures": {
+      "every(): Abort the subscription to the source if the predicate does not pass": "FAIL",
+      "every(): Index is passed into the predicate": "FAIL",
+      "every(): Lifecycle checks when all values pass the predicate": "FAIL",
+      "every(): Lifecycle checks when any value fails the predicate": "FAIL",
+      "every(): Promise resolves to false if any value fails the predicate": "FAIL",
+      "every(): Promise resolves to true if all values pass the predicate": "FAIL",
+      "every(): Rejects with a DOMException if the source Observable is aborted": "FAIL",
+      "every(): Rejects with any error emitted from the source observable": "FAIL",
+      "every(): Rejects with any error thrown from the predicate": "FAIL",
+      "every(): Resolves with true if the observable completes without emitting a value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-filter.any.js": {
+    "total": 6,
+    "failures": {
+      "filter(): Errors thrown in filter predicate are emitted to Observer error() handler": "FAIL",
+      "filter(): Index is passed correctly to predicate": "FAIL",
+      "filter(): Passes complete() through from source Observable": "FAIL",
+      "filter(): Passes error() through from source Observable": "FAIL",
+      "filter(): Returned Observable filters out results based on predicate": "FAIL",
+      "filter(): Upon source completion, source Observable teardown sequence happens after downstream filter complete() is called": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-filter.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "filter(): Errors thrown in filter predicate are emitted to Observer error() handler": "FAIL",
+      "filter(): Index is passed correctly to predicate": "FAIL",
+      "filter(): Passes complete() through from source Observable": "FAIL",
+      "filter(): Passes error() through from source Observable": "FAIL",
+      "filter(): Returned Observable filters out results based on predicate": "FAIL",
+      "filter(): Upon source completion, source Observable teardown sequence happens after downstream filter complete() is called": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-finally.any.js": {
+    "total": 10,
+    "failures": {
+      "finally(): Callback handler fires BEFORE the source observable completes": "FAIL",
+      "finally(): Callback handler fires BEFORE the source observable errors": "FAIL",
+      "finally(): Callback is run before next inner subscription in flatMap()": "FAIL",
+      "finally(): Callback is run before next inner subscription in switchMap()": "FAIL",
+      "finally(): Callback is run if consumer aborts the subscription": "FAIL",
+      "finally(): Errors thrown in the finally handler (during Subscriber#complete()) are reported to the global immediately": "FAIL",
+      "finally(): Errors thrown in the finally handler (during Subscriber#error()) are reported to the global immediately": "FAIL",
+      "finally(): Handlers run in composition order": "FAIL",
+      "finally(): Mirrors all values and completions from source": "FAIL",
+      "finally(): Mirrors all values and errors from the source": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-finally.any.js#dedicatedworker": {
+    "total": 10,
+    "failures": {
+      "finally(): Callback handler fires BEFORE the source observable completes": "FAIL",
+      "finally(): Callback handler fires BEFORE the source observable errors": "FAIL",
+      "finally(): Callback is run before next inner subscription in flatMap()": "FAIL",
+      "finally(): Callback is run before next inner subscription in switchMap()": "FAIL",
+      "finally(): Callback is run if consumer aborts the subscription": "FAIL",
+      "finally(): Errors thrown in the finally handler (during Subscriber#complete()) are reported to the global immediately": "FAIL",
+      "finally(): Errors thrown in the finally handler (during Subscriber#error()) are reported to the global immediately": "FAIL",
+      "finally(): Handlers run in composition order": "FAIL",
+      "finally(): Mirrors all values and completions from source": "FAIL",
+      "finally(): Mirrors all values and errors from the source": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-find.any.js": {
+    "total": 6,
+    "failures": {
+      "find(): Passes the index of the value to the predicate": "FAIL",
+      "find(): Promise rejects with any error thrown from the predicate": "FAIL",
+      "find(): Promise rejects with the error emitted from the source Observable": "FAIL",
+      "find(): Promise resolves with the first value that passes the predicate": "FAIL",
+      "find(): Promise resolves with undefined if no value passes the predicate": "FAIL",
+      "find(): Rejects with AbortError when the signal is aborted": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-find.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "find(): Passes the index of the value to the predicate": "FAIL",
+      "find(): Promise rejects with any error thrown from the predicate": "FAIL",
+      "find(): Promise rejects with the error emitted from the source Observable": "FAIL",
+      "find(): Promise resolves with the first value that passes the predicate": "FAIL",
+      "find(): Promise resolves with undefined if no value passes the predicate": "FAIL",
+      "find(): Rejects with AbortError when the signal is aborted": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-first.any.js": {
+    "total": 5,
+    "failures": {
+      "first(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
+      "first(): Lifecycle": "FAIL",
+      "first(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
+      "first(): Promise rejects with the error emitted from the source Observable": "FAIL",
+      "first(): Promise resolves with the first value from the source Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-first.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "first(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
+      "first(): Lifecycle": "FAIL",
+      "first(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
+      "first(): Promise rejects with the error emitted from the source Observable": "FAIL",
+      "first(): Promise resolves with the first value from the source Observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-flatMap.any.js": {
+    "total": 7,
+    "failures": {
+      "flatMap(): Flattens simple source Observable properly": "FAIL",
+      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable emits an error": "FAIL",
+      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable throws an error": "FAIL",
+      "flatMap(): Returned Observable passes through source Observable errors": "FAIL",
+      "flatMap(): result Observable does not complete after source Observable completes while there are still queued inner Observables to process Observables all complete": "FAIL",
+      "flatMap(): result Observable does not complete until source and inner Observables all complete": "FAIL",
+      "flatMap(): source and inner active Observables are both unsubscribed from once the outer subscription signal is aborted": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-flatMap.any.js#dedicatedworker": {
+    "total": 7,
+    "failures": {
+      "flatMap(): Flattens simple source Observable properly": "FAIL",
+      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable emits an error": "FAIL",
+      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable throws an error": "FAIL",
+      "flatMap(): Returned Observable passes through source Observable errors": "FAIL",
+      "flatMap(): result Observable does not complete after source Observable completes while there are still queued inner Observables to process Observables all complete": "FAIL",
+      "flatMap(): result Observable does not complete until source and inner Observables all complete": "FAIL",
+      "flatMap(): source and inner active Observables are both unsubscribed from once the outer subscription signal is aborted": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-forEach.any.js": {
+    "total": 6,
+    "failures": {
+      "Errors pushed by Observable reject the returned promise": "FAIL",
+      "Errors thrown by Observable reject the returned promise": "FAIL",
+      "Errors thrown in the visitor callback reject the promise and unsubscribe from the source": "FAIL",
+      "forEach visitor callback rejection microtask ordering": "FAIL",
+      "forEach() promise resolves with undefined": "FAIL",
+      "forEach(): Visitor callback called synchronously for each value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-forEach.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "Errors pushed by Observable reject the returned promise": "FAIL",
+      "Errors thrown by Observable reject the returned promise": "FAIL",
+      "Errors thrown in the visitor callback reject the promise and unsubscribe from the source": "FAIL",
+      "forEach visitor callback rejection microtask ordering": "FAIL",
+      "forEach() promise resolves with undefined": "FAIL",
+      "forEach(): Visitor callback called synchronously for each value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-forEach.window.js": {
+    "total": 2,
+    "failures": {
+      "forEach()'s internal observer's next steps do not crash in a detached document": "FAIL",
+      "forEach()'s internal observer's next steps do not crash when visitor callback detaches the document": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-from.any.js": {
+    "total": 48,
+    "failures": {
+      "Invalid async iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
+      "Invalid iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
+      "No error is reported when aborting a subscription to a sync iterator that has no `return()` implementation": "FAIL",
+      "from(): Abort after complete does NOT call IteratorRecord#return()": "FAIL",
+      "from(): Aborting an async iterable subscription stops subsequent next() calls, but old next() Promise reactions are web-observable": "FAIL",
+      "from(): Aborting async iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
+      "from(): Aborting sync iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
+      "from(): Async generator finally block run when Observable errors": "FAIL",
+      "from(): Async generator finally block run when subscription is aborted": "FAIL",
+      "from(): Async generator finally block runs when Observable completes": "FAIL",
+      "from(): Async iterable protocol null, converts as iterator": "FAIL",
+      "from(): Async iterable: `Iterator#return()` must return an Object, or a Promise rejects asynchronously": "FAIL",
+      "from(): Async iterable: error thrown from IteratorRecord#return() is wrapped in rejected Promise": "FAIL",
+      "from(): Asynchronous generator conversion: can only be used once": "FAIL",
+      "from(): Asynchronous iterable conversion": "FAIL",
+      "from(): Asynchronous iterable conversion, with synchronous iterable fallback": "FAIL",
+      "from(): Asynchronous iterable multiple in-flight subscriptions": "FAIL",
+      "from(): Converts Promise to Observable": "FAIL",
+      "from(): Converts rejected Promise to Observable. No `unhandledrejection` event when error is handled by subscription": "FAIL",
+      "from(): Errors thrown in Symbol.asyncIterator() are propagated synchronously": "FAIL",
+      "from(): Errors thrown in async iterator's next() GETTER are propagated in a microtask": "FAIL",
+      "from(): Errors thrown in async iterator's next() are propagated in a microtask": "FAIL",
+      "from(): Failed conversions": "FAIL",
+      "from(): Generator finally block run when Observable completes": "FAIL",
+      "from(): Generator finally block run when Observable errors": "FAIL",
+      "from(): Generator finally block runs when subscription is aborted": "FAIL",
+      "from(): Given an array": "FAIL",
+      "from(): Given an observable, it returns that exact observable": "FAIL",
+      "from(): Iterable converts to Observable": "FAIL",
+      "from(): Observable that implements @@iterator protocol gets converted as an Observable, not iterator": "FAIL",
+      "from(): Observable.from() is a function": "FAIL",
+      "from(): Promise that implements @@iterator protocol gets converted as an iterable, not Promise": "FAIL",
+      "from(): Promise whose [Symbol.iterator] returns null converts as Promise": "FAIL",
+      "from(): Promise-wrapping semantics of IteratorResult interface": "FAIL",
+      "from(): Rejections not handled by subscription are reported to the global, and still not sent as an unhandledrejection event": "FAIL",
+      "from(): Rethrows the error when Converting an object whose @@iterator method *getter* throws an error": "FAIL",
+      "from(): Subscribing to an iterable Observable with an aborted signal does not call next()": "FAIL",
+      "from(): Sync iterable multiple in-flight subscriptions": "FAIL",
+      "from(): Sync iterable: `Iterator#return()` must return an Object, or an error is thrown": "FAIL",
+      "from(): Sync iterable: error thrown from IteratorRecord#return() can be synchronously caught": "FAIL",
+      "from(): When iterable conversion aborts the subscription, next() is never called": "FAIL",
+      "from(): [Symbol.iterator] is not cached": "FAIL",
+      "from(): [Symbol.iterator] next() throws error": "FAIL",
+      "from(): [Symbol.iterator] not callable": "FAIL",
+      "from(): [Symbol.iterator] not callable AFTER SUBSCRIBE throws": "FAIL",
+      "from(): [Symbol.iterator] returns null AFTER SUBSCRIBE throws": "FAIL",
+      "from(): [Symbol.iterator] side-effects (many observables)": "FAIL",
+      "from(): [Symbol.iterator] side-effects (one observable)": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-from.any.js#dedicatedworker": {
+    "total": 48,
+    "failures": {
+      "Invalid async iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
+      "Invalid iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
+      "No error is reported when aborting a subscription to a sync iterator that has no `return()` implementation": "FAIL",
+      "from(): Abort after complete does NOT call IteratorRecord#return()": "FAIL",
+      "from(): Aborting an async iterable subscription stops subsequent next() calls, but old next() Promise reactions are web-observable": "FAIL",
+      "from(): Aborting async iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
+      "from(): Aborting sync iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
+      "from(): Async generator finally block run when Observable errors": "FAIL",
+      "from(): Async generator finally block run when subscription is aborted": "FAIL",
+      "from(): Async generator finally block runs when Observable completes": "FAIL",
+      "from(): Async iterable protocol null, converts as iterator": "FAIL",
+      "from(): Async iterable: `Iterator#return()` must return an Object, or a Promise rejects asynchronously": "FAIL",
+      "from(): Async iterable: error thrown from IteratorRecord#return() is wrapped in rejected Promise": "FAIL",
+      "from(): Asynchronous generator conversion: can only be used once": "FAIL",
+      "from(): Asynchronous iterable conversion": "FAIL",
+      "from(): Asynchronous iterable conversion, with synchronous iterable fallback": "FAIL",
+      "from(): Asynchronous iterable multiple in-flight subscriptions": "FAIL",
+      "from(): Converts Promise to Observable": "FAIL",
+      "from(): Converts rejected Promise to Observable. No `unhandledrejection` event when error is handled by subscription": "FAIL",
+      "from(): Errors thrown in Symbol.asyncIterator() are propagated synchronously": "FAIL",
+      "from(): Errors thrown in async iterator's next() GETTER are propagated in a microtask": "FAIL",
+      "from(): Errors thrown in async iterator's next() are propagated in a microtask": "FAIL",
+      "from(): Failed conversions": "FAIL",
+      "from(): Generator finally block run when Observable completes": "FAIL",
+      "from(): Generator finally block run when Observable errors": "FAIL",
+      "from(): Generator finally block runs when subscription is aborted": "FAIL",
+      "from(): Given an array": "FAIL",
+      "from(): Given an observable, it returns that exact observable": "FAIL",
+      "from(): Iterable converts to Observable": "FAIL",
+      "from(): Observable that implements @@iterator protocol gets converted as an Observable, not iterator": "FAIL",
+      "from(): Observable.from() is a function": "FAIL",
+      "from(): Promise that implements @@iterator protocol gets converted as an iterable, not Promise": "FAIL",
+      "from(): Promise whose [Symbol.iterator] returns null converts as Promise": "FAIL",
+      "from(): Promise-wrapping semantics of IteratorResult interface": "FAIL",
+      "from(): Rejections not handled by subscription are reported to the global, and still not sent as an unhandledrejection event": "FAIL",
+      "from(): Rethrows the error when Converting an object whose @@iterator method *getter* throws an error": "FAIL",
+      "from(): Subscribing to an iterable Observable with an aborted signal does not call next()": "FAIL",
+      "from(): Sync iterable multiple in-flight subscriptions": "FAIL",
+      "from(): Sync iterable: `Iterator#return()` must return an Object, or an error is thrown": "FAIL",
+      "from(): Sync iterable: error thrown from IteratorRecord#return() can be synchronously caught": "FAIL",
+      "from(): When iterable conversion aborts the subscription, next() is never called": "FAIL",
+      "from(): [Symbol.iterator] is not cached": "FAIL",
+      "from(): [Symbol.iterator] next() throws error": "FAIL",
+      "from(): [Symbol.iterator] not callable": "FAIL",
+      "from(): [Symbol.iterator] not callable AFTER SUBSCRIBE throws": "FAIL",
+      "from(): [Symbol.iterator] returns null AFTER SUBSCRIBE throws": "FAIL",
+      "from(): [Symbol.iterator] side-effects (many observables)": "FAIL",
+      "from(): [Symbol.iterator] side-effects (one observable)": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-inspect.any.js": {
+    "total": 13,
+    "failures": {
+      "inspect(): Error handler does not stop error from being reported to the global, when subscriber does not pass error handler": "FAIL",
+      "inspect(): Errors thrown from inspect()'s abort() handler are caught and reported to the global, because the subscription is already closed by the time the handler runs": "FAIL",
+      "inspect(): Errors thrown in subscribe() Inspector handler subscribe handler are caught and sent to error callback": "FAIL",
+      "inspect(): Inspector abort() handler is not called if the source completes before the result is unsubscribed from": "FAIL",
+      "inspect(): ObserverCallback passed in": "FAIL",
+      "inspect(): Provides a pre-subscription subscribe callback": "FAIL",
+      "inspect(): Provides a way to tap into the moment a source observable is unsubscribed from": "FAIL",
+      "inspect(): Provides a way to tap into the values and completions of the source observable using an observer": "FAIL",
+      "inspect(): Provides a way to tap into the values and errors of the source observable using an observer. Errors are passed through": "FAIL",
+      "inspect(): Throwing an error in the next handler function in do should be caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer complete handler is caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer error handler in inspect() is caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer next handler is caught and sent to the error callback of the result observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-inspect.any.js#dedicatedworker": {
+    "total": 13,
+    "failures": {
+      "inspect(): Error handler does not stop error from being reported to the global, when subscriber does not pass error handler": "FAIL",
+      "inspect(): Errors thrown from inspect()'s abort() handler are caught and reported to the global, because the subscription is already closed by the time the handler runs": "FAIL",
+      "inspect(): Errors thrown in subscribe() Inspector handler subscribe handler are caught and sent to error callback": "FAIL",
+      "inspect(): Inspector abort() handler is not called if the source completes before the result is unsubscribed from": "FAIL",
+      "inspect(): ObserverCallback passed in": "FAIL",
+      "inspect(): Provides a pre-subscription subscribe callback": "FAIL",
+      "inspect(): Provides a way to tap into the moment a source observable is unsubscribed from": "FAIL",
+      "inspect(): Provides a way to tap into the values and completions of the source observable using an observer": "FAIL",
+      "inspect(): Provides a way to tap into the values and errors of the source observable using an observer. Errors are passed through": "FAIL",
+      "inspect(): Throwing an error in the next handler function in do should be caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer complete handler is caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer error handler in inspect() is caught and sent to the error callback of the result observable": "FAIL",
+      "inspect(): Throwing an error in the observer next handler is caught and sent to the error callback of the result observable": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-last.any.js": {
+    "total": 5,
+    "failures": {
+      "last(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
+      "last(): Lifecycle": "FAIL",
+      "last(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
+      "last(): Promise rejects with emitted error": "FAIL",
+      "last(): Promise resolves to last value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-last.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "last(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
+      "last(): Lifecycle": "FAIL",
+      "last(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
+      "last(): Promise rejects with emitted error": "FAIL",
+      "last(): Promise resolves to last value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-map.any.js": {
+    "total": 6,
+    "failures": {
+      "map(): Map observable unsubscription causes source Observable unsubscription. Mapper Observer's complete()/error() are not called": "FAIL",
+      "map(): Mapper errors are emitted to Observer error() handler": "FAIL",
+      "map(): Maps values correctly": "FAIL",
+      "map(): Passes complete() through from source Observable": "FAIL",
+      "map(): Passes error() through from source Observable": "FAIL",
+      "map(): Upon source completion, source Observable teardown sequence happens before downstream mapper complete() is called": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-map.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "map(): Map observable unsubscription causes source Observable unsubscription. Mapper Observer's complete()/error() are not called": "FAIL",
+      "map(): Mapper errors are emitted to Observer error() handler": "FAIL",
+      "map(): Maps values correctly": "FAIL",
+      "map(): Passes complete() through from source Observable": "FAIL",
+      "map(): Passes error() through from source Observable": "FAIL",
+      "map(): Upon source completion, source Observable teardown sequence happens before downstream mapper complete() is called": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-map.window.js": {
+    "total": 1,
+    "failures": {
+      "map()'s internal observer's next steps do not crash in a detached document": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-reduce.any.js": {
+    "total": 8,
+    "failures": {
+      "reduce(): Errors thrown in reducer reject the promise and abort the source": "FAIL",
+      "reduce(): Reduces the values for different objects": "FAIL",
+      "reduce(): Reduces the values of the Observable, starting with the initial seed value": "FAIL",
+      "reduce(): Reject with an AbortError if the subscription is aborted before the source completes": "FAIL",
+      "reduce(): Rejects if the source observable emits an error": "FAIL",
+      "reduce(): Seeds with the first value of the source, if no initial value is provided": "FAIL",
+      "reduce(): When source is empty, AND no seed value is provided, the promise rejects with a TypeError": "FAIL",
+      "reduce(): When source is empty, promise resolves with initial value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-reduce.any.js#dedicatedworker": {
+    "total": 8,
+    "failures": {
+      "reduce(): Errors thrown in reducer reject the promise and abort the source": "FAIL",
+      "reduce(): Reduces the values for different objects": "FAIL",
+      "reduce(): Reduces the values of the Observable, starting with the initial seed value": "FAIL",
+      "reduce(): Reject with an AbortError if the subscription is aborted before the source completes": "FAIL",
+      "reduce(): Rejects if the source observable emits an error": "FAIL",
+      "reduce(): Seeds with the first value of the source, if no initial value is provided": "FAIL",
+      "reduce(): When source is empty, AND no seed value is provided, the promise rejects with a TypeError": "FAIL",
+      "reduce(): When source is empty, promise resolves with initial value": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-some.any.js": {
+    "total": 7,
+    "failures": {
+      "observable-some": "FAIL",
+      "observable-some 1": "FAIL",
+      "some(): The return promise rejects with a DOMException if the signal is aborted": "FAIL",
+      "some(): The returned promise rejects with an error if the predicate errors": "FAIL",
+      "some(): The returned promise rejects with an error if the source observable errors": "FAIL",
+      "some(): The returned promise resolves as false if the source observable completes without emitting a value": "FAIL",
+      "some(): subscriber is inactive after the first value that passes the predicate, because the source was unsubscribed from": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-some.any.js#dedicatedworker": {
+    "total": 7,
+    "failures": {
+      "observable-some": "FAIL",
+      "observable-some 1": "FAIL",
+      "some(): The return promise rejects with a DOMException if the signal is aborted": "FAIL",
+      "some(): The returned promise rejects with an error if the predicate errors": "FAIL",
+      "some(): The returned promise rejects with an error if the source observable errors": "FAIL",
+      "some(): The returned promise resolves as false if the source observable completes without emitting a value": "FAIL",
+      "some(): subscriber is inactive after the first value that passes the predicate, because the source was unsubscribed from": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-switchMap.any.js": {
+    "total": 6,
+    "failures": {
+      "switchMap(): result does not complete when the source observable completes, if the inner observable is still active": "FAIL",
+      "switchMap(): result emits an error if Mapper callback throws an error": "FAIL",
+      "switchMap(): result emits an error if the inner observable emits an error": "FAIL",
+      "switchMap(): result emits an error if the source observable emits an error": "FAIL",
+      "switchMap(): result subscribes to one inner observable at a time, unsubscribing from the previous active one when a new one replaces it": "FAIL",
+      "switchMap(): should unsubscribe in the correct order when user aborts the subscription": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-switchMap.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "switchMap(): result does not complete when the source observable completes, if the inner observable is still active": "FAIL",
+      "switchMap(): result emits an error if Mapper callback throws an error": "FAIL",
+      "switchMap(): result emits an error if the inner observable emits an error": "FAIL",
+      "switchMap(): result emits an error if the source observable emits an error": "FAIL",
+      "switchMap(): result subscribes to one inner observable at a time, unsubscribing from the previous active one when a new one replaces it": "FAIL",
+      "switchMap(): should unsubscribe in the correct order when user aborts the subscription": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-take.any.js": {
+    "total": 6,
+    "failures": {
+      "take(): Forwards complete()s that happen before the take count is met, and unsubscribes from source Observable": "FAIL",
+      "take(): Negative count is treated as maximum value": "FAIL",
+      "take(): No crash when take(1) unsubscribes from its source when next() is called, and the Subscriber iterates over the rest of the Observables": "FAIL",
+      "take(): Should forward errors from the source observable": "FAIL",
+      "take(): Takes the first N values from the source observable, then completes": "FAIL",
+      "take(): take(0) should not subscribe to the source observable, and should return an observable that immediately completes": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-take.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "take(): Forwards complete()s that happen before the take count is met, and unsubscribes from source Observable": "FAIL",
+      "take(): Negative count is treated as maximum value": "FAIL",
+      "take(): No crash when take(1) unsubscribes from its source when next() is called, and the Subscriber iterates over the rest of the Observables": "FAIL",
+      "take(): Should forward errors from the source observable": "FAIL",
+      "take(): Takes the first N values from the source observable, then completes": "FAIL",
+      "take(): take(0) should not subscribe to the source observable, and should return an observable that immediately completes": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-takeUntil.any.js": {
+    "total": 12,
+    "failures": {
+      "takeUntil subscribes to notifier": "FAIL",
+      "takeUntil subscribes to source Observable and mirrors it uninterrupted": "FAIL",
+      "takeUntil() mirrors the source Observable until its first next() value": "FAIL",
+      "takeUntil()'s AbortSignal unsubscribes from notifier & source observable": "FAIL",
+      "takeUntil: notifier calls `Subscriber#error()` twice; second goes to global error handler": "FAIL",
+      "takeUntil: notifier error() unsubscribes from notifier": "FAIL",
+      "takeUntil: notifier next() unsubscribes from notifier": "FAIL",
+      "takeUntil: notifier next() unsubscribes from notifier & source observable": "FAIL",
+      "takeUntil: notifier throw Error unsubscribes from notifier": "FAIL",
+      "takeUntil: source is uninterrupted when notifier completes, even synchronously": "FAIL",
+      "takeUntil: source never subscribed to when notifier synchronously emits a value": "FAIL",
+      "takeUntil: source never subscribed to when notifier synchronously emits error": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-takeUntil.any.js#dedicatedworker": {
+    "total": 12,
+    "failures": {
+      "takeUntil subscribes to notifier": "FAIL",
+      "takeUntil subscribes to source Observable and mirrors it uninterrupted": "FAIL",
+      "takeUntil() mirrors the source Observable until its first next() value": "FAIL",
+      "takeUntil()'s AbortSignal unsubscribes from notifier & source observable": "FAIL",
+      "takeUntil: notifier calls `Subscriber#error()` twice; second goes to global error handler": "FAIL",
+      "takeUntil: notifier error() unsubscribes from notifier": "FAIL",
+      "takeUntil: notifier next() unsubscribes from notifier": "FAIL",
+      "takeUntil: notifier next() unsubscribes from notifier & source observable": "FAIL",
+      "takeUntil: notifier throw Error unsubscribes from notifier": "FAIL",
+      "takeUntil: source is uninterrupted when notifier completes, even synchronously": "FAIL",
+      "takeUntil: source never subscribed to when notifier synchronously emits a value": "FAIL",
+      "takeUntil: source never subscribed to when notifier synchronously emits error": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-takeUntil.window.js": {
+    "total": 2,
+    "failures": {
+      "takeUntil(): Source and notifier internal observers do not crash in a detached document": "FAIL",
+      "takeUntil(): notifier Observable detaches document before source Observable would be subscribed to": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-toArray.any.js": {
+    "total": 6,
+    "failures": {
+      "Operator Promise abort ordering": "FAIL",
+      "toArray(): Aborting the passed-in signal rejects the returned promise": "FAIL",
+      "toArray(): Subscribing with an aborted signal returns an immediately rejected promise": "FAIL",
+      "toArray(): basic next/complete": "FAIL",
+      "toArray(): complete() resolves promise; subsequent error()s report the exceptions": "FAIL",
+      "toArray(): first error() rejects promise; subsequent error()s report the exceptions": "FAIL"
+    }
+  },
+  "dom/observable/tentative/observable-toArray.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "Operator Promise abort ordering": "FAIL",
+      "toArray(): Aborting the passed-in signal rejects the returned promise": "FAIL",
+      "toArray(): Subscribing with an aborted signal returns an immediately rejected promise": "FAIL",
+      "toArray(): basic next/complete": "FAIL",
+      "toArray(): complete() resolves promise; subsequent error()s report the exceptions": "FAIL",
+      "toArray(): first error() rejects promise; subsequent error()s report the exceptions": "FAIL"
+    }
+  },
+  "dom/ranges/Range-adopt-test.html": {
+    "total": 4
+  },
+  "dom/ranges/Range-attribute-nodes.html": {
+    "total": 26
+  },
+  "dom/ranges/Range-attributes.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-cloneContents-around-shadow.html": {
+    "total": 25
+  },
+  "dom/ranges/Range-cloneContents-around-shadow.tentative.html": {
+    "total": 5,
+    "failures": {
+      "Range.cloneContents() when \"<p>abc[def</p><div><shadow-root><span>Inner]Text</span></shadow-root><span>UnassignedText</span></div>\"": "FAIL"
+    }
+  },
+  "dom/ranges/Range-cloneContents-in-ShadowRoot.html": {
+    "total": 4
+  },
+  "dom/ranges/Range-cloneContents.html": {
+    "total": 187
+  },
+  "dom/ranges/Range-cloneRange.html": {
+    "total": 62
+  },
+  "dom/ranges/Range-collapse.html": {
+    "total": 186
+  },
+  "dom/ranges/Range-commonAncestorContainer-2.html": {
+    "total": 6
+  },
+  "dom/ranges/Range-commonAncestorContainer.html": {
+    "total": 63
+  },
+  "dom/ranges/Range-compareBoundaryPoints.html": {
+    "total": 9313
+  },
+  "dom/ranges/Range-comparePoint-2.html": {
+    "total": 3
+  },
+  "dom/ranges/Range-comparePoint.html": {
+    "total": 5580
+  },
+  "dom/ranges/Range-constructor.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-deleteContents-around-shadow.html": {
+    "total": 27
+  },
+  "dom/ranges/Range-deleteContents-around-shadow.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Range.deleteContents() when \"<p>abc[def</p><div><shadow-root><span>Inner]Text</span></shadow-root><span>UnassignedText</span></div>\"": "FAIL"
+    }
+  },
+  "dom/ranges/Range-deleteContents-in-ShadowRoot.html": {
+    "total": 4
+  },
+  "dom/ranges/Range-deleteContents.html": {
+    "total": 125
+  },
+  "dom/ranges/Range-detach.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-extractContents-around-shadow.html": {
+    "total": 44
+  },
+  "dom/ranges/Range-extractContents-around-shadow.tentative.html": {
+    "total": 10,
+    "failures": {
+      "Range.extractContents() when \"<p>abc[def</p><div><shadow-root><span>Inner]Text</span></shadow-root><span>UnassignedText</span></div>\"": "FAIL"
+    }
+  },
+  "dom/ranges/Range-extractContents-dynamic-end.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-extractContents-in-ShadowRoot.html": {
+    "total": 4
+  },
+  "dom/ranges/Range-extractContents.html": {
+    "total": 187
+  },
+  "dom/ranges/Range-in-shadow-after-the-shadow-removed.html?mode=closed": {
+    "total": 2
+  },
+  "dom/ranges/Range-in-shadow-after-the-shadow-removed.html?mode=open": {
+    "total": 2
+  },
+  "dom/ranges/Range-insertNode.html": {
+    "total": 1840
+  },
+  "dom/ranges/Range-intersectsNode-2.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-intersectsNode-binding.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-intersectsNode-shadow.html": {
+    "total": 1
+  },
+  "dom/ranges/Range-intersectsNode.html": {
+    "total": 2356
+  },
+  "dom/ranges/Range-isPointInRange.html": {
+    "total": 5733
+  },
+  "dom/ranges/Range-mutations-appendChild.html": {
+    "total": 70
+  },
+  "dom/ranges/Range-mutations-appendData.html": {
+    "total": 384
+  },
+  "dom/ranges/Range-mutations-dataChange.html": {
+    "total": 2808
+  },
+  "dom/ranges/Range-mutations-deleteData.html": {
+    "total": 564
+  },
+  "dom/ranges/Range-mutations-insertBefore.html": {
+    "total": 76
+  },
+  "dom/ranges/Range-mutations-insertData.html": {
+    "total": 382
+  },
+  "dom/ranges/Range-mutations-normalize.html": {
+    "total": 4
+  },
+  "dom/ranges/Range-mutations-removeChild.html": {
+    "total": 20
+  },
+  "dom/ranges/Range-mutations-replaceChild.html": {
+    "total": 60
+  },
+  "dom/ranges/Range-mutations-replaceData.html": {
+    "total": 1146
+  },
+  "dom/ranges/Range-mutations-splitText.html": {
+    "total": 116
+  },
+  "dom/ranges/Range-selectNode.html": {
+    "total": 292
+  },
+  "dom/ranges/Range-set.html": {
+    "total": 10920
+  },
+  "dom/ranges/Range-stringifier.html": {
+    "total": 5
+  },
+  "dom/ranges/Range-surroundContents.html": {
+    "total": 1840
+  },
+  "dom/ranges/StaticRange-constructor.html": {
+    "total": 17
+  },
+  "dom/ranges/tentative/OpaqueRange-auto-disconnect.html": {
+    "total": 17,
+    "failures": {
+      "All OpaqueRanges disconnected on element removal (input)": "FAIL",
+      "All OpaqueRanges disconnected on element removal (textarea)": "FAIL",
+      "Element accepts new OpaqueRanges after re-insertion (input)": "FAIL",
+      "Element accepts new OpaqueRanges after re-insertion (textarea)": "FAIL",
+      "Input accepts new OpaqueRanges after type changes back to text.": "FAIL",
+      "No error when element removed after manual disconnect (input)": "FAIL",
+      "No error when element removed after manual disconnect (textarea)": "FAIL",
+      "OpaqueRange disconnected on ancestor removal (input)": "FAIL",
+      "OpaqueRange disconnected on ancestor removal (textarea)": "FAIL",
+      "OpaqueRange disconnected on element removal (input)": "FAIL",
+      "OpaqueRange disconnected on element removal (textarea)": "FAIL",
+      "OpaqueRange disconnected on implicit removal via innerHTML (input)": "FAIL",
+      "OpaqueRange disconnected on implicit removal via innerHTML (textarea)": "FAIL",
+      "OpaqueRange disconnected on input type change to \"color\".": "FAIL",
+      "OpaqueRange disconnected on input type change to \"search\".": "FAIL",
+      "OpaqueRange disconnected when element adopted into another document (input)": "FAIL",
+      "OpaqueRange disconnected when element adopted into another document (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-basic.html": {
+    "total": 3,
+    "failures": {
+      "OpaqueRange handles createValueRange correctly.": "FAIL",
+      "OpaqueRange handles empty value correctly.": "FAIL",
+      "Tests createValueRange returns OpaqueRange that extends AbstractRange.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-disconnect.html": {
+    "total": 5,
+    "failures": {
+      "Element accepts new ranges after a prior range is disconnected.": "FAIL",
+      "disconnect() is idempotent.": "FAIL",
+      "disconnect() only affects the target range.": "FAIL",
+      "disconnect() resets range state and geometry.": "FAIL",
+      "disconnect() stops live offset updates.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-display-none.html": {
+    "total": 18,
+    "failures": {
+      "Collapsed range insertion during display:none (input)": "FAIL",
+      "Collapsed range insertion during display:none (textarea)": "FAIL",
+      "Geometry empty during display:none, restored after (input)": "FAIL",
+      "Geometry empty during display:none, restored after (textarea)": "FAIL",
+      "OpaqueRange offsets survive repeated display:none cycles (input)": "FAIL",
+      "OpaqueRange offsets survive repeated display:none cycles (textarea)": "FAIL",
+      "createValueRange works on display:none element (input)": "FAIL",
+      "createValueRange works on display:none element (textarea)": "FAIL",
+      "disconnect() works during display:none (input)": "FAIL",
+      "disconnect() works during display:none (textarea)": "FAIL",
+      "element.value replacement updates range during display:none (input)": "FAIL",
+      "element.value replacement updates range during display:none (textarea)": "FAIL",
+      "setRangeText insert before range works during display:none (input)": "FAIL",
+      "setRangeText insert before range works during display:none (textarea)": "FAIL",
+      "setRangeText overlapping delete works during display:none (input)": "FAIL",
+      "setRangeText overlapping delete works during display:none (textarea)": "FAIL",
+      "setRangeText updates range during display:none (input)": "FAIL",
+      "setRangeText updates range during display:none (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-geometry-basic.html": {
+    "total": 14,
+    "failures": {
+      "Backwards offsets collapse (input)": "FAIL",
+      "Backwards offsets collapse (textarea)": "FAIL",
+      "Collapsed caret at start/middle/end (input)": "FAIL",
+      "Collapsed caret at start/middle/end (textarea)": "FAIL",
+      "Collapsed caret geometry (input)": "FAIL",
+      "Collapsed caret geometry (textarea)": "FAIL",
+      "Full selection bounding box inside element (input)": "FAIL",
+      "Full selection bounding box inside element (textarea)": "FAIL",
+      "Geometry empty after control removal (input)": "FAIL",
+      "Geometry empty after control removal (textarea)": "FAIL",
+      "Simple selection geometry (input)": "FAIL",
+      "Simple selection geometry (textarea)": "FAIL",
+      "display:none empty geometry (input)": "FAIL",
+      "display:none empty geometry (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-geometry-complexity-and-visibility.html": {
+    "total": 6,
+    "failures": {
+      "Bidirectional mixed text full selection geometry (input)": "FAIL",
+      "Bidirectional mixed text full selection geometry (textarea)": "FAIL",
+      "Surrogate pair width normalization invariants (input)": "FAIL",
+      "Surrogate pair width normalization invariants (textarea)": "FAIL",
+      "visibility:hidden caret geometry (input)": "FAIL",
+      "visibility:hidden caret geometry (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-geometry-multiline.html": {
+    "total": 13,
+    "failures": {
+      "Collapsed caret across newline parity in textarea": "FAIL",
+      "Cross-line range produces multiple client rects": "FAIL",
+      "Full multiline selection containing a blank line has non-zero geometry": "FAIL",
+      "OpaqueRange after leading newline in textarea": "FAIL",
+      "OpaqueRange at exact newline boundary resolves to correct line": "FAIL",
+      "OpaqueRange on first line of multiline textarea": "FAIL",
+      "OpaqueRange on second line of textarea": "FAIL",
+      "OpaqueRange on text after consecutive newlines": "FAIL",
+      "OpaqueRange on third line of textarea": "FAIL",
+      "OpaqueRange spanning newline in textarea": "FAIL",
+      "Partial hard-newline selection in textarea": "FAIL",
+      "Soft-wrapped long single line in textarea": "FAIL",
+      "Trailing newline range has non-zero geometry": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-geometry-mutations.html": {
+    "total": 12,
+    "failures": {
+      "Deletion collapses geometry (input)": "FAIL",
+      "Deletion collapses geometry (textarea)": "FAIL",
+      "Deletion collapses selection (input explicit)": "FAIL",
+      "Input live insertion/deletion adjustments": "FAIL",
+      "Insert newline via setRangeText expands geometry vertically": "FAIL",
+      "Insertion inside expands width (input)": "FAIL",
+      "Insertion inside expands width (textarea)": "FAIL",
+      "Shrink/grow end offset clamping (input)": "FAIL",
+      "Shrink/grow end offset clamping (textarea)": "FAIL",
+      "Tail deletion clamps end offset (input)": "FAIL",
+      "Tail deletion clamps end offset (textarea)": "FAIL",
+      "Textarea interior deletion & insertion adjustments": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-highlight.html": {
+    "total": 8,
+    "failures": {
+      "Disconnected OpaqueRange remains in Highlight but is collapsed (input)": "FAIL",
+      "Disconnected OpaqueRange remains in Highlight but is collapsed (textarea)": "FAIL",
+      "OpaqueRange can be added to and deleted from a Highlight (input)": "FAIL",
+      "OpaqueRange can be added to and deleted from a Highlight (textarea)": "FAIL",
+      "OpaqueRange in Highlight is collapsed after element removal (input)": "FAIL",
+      "OpaqueRange in Highlight is collapsed after element removal (textarea)": "FAIL",
+      "OpaqueRange mixed with DOM Range in same Highlight (input)": "FAIL",
+      "OpaqueRange mixed with DOM Range in same Highlight (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-highlightsFromPoint.html": {
+    "total": 11,
+    "failures": {
+      "OpaqueRange and DOM Range in same shadow root behave consistently": "FAIL",
+      "highlightsFromPoint for textarea inside an author shadow root": "FAIL",
+      "highlightsFromPoint returns OpaqueRange highlight (input)": "FAIL",
+      "highlightsFromPoint returns OpaqueRange highlight (textarea)": "FAIL",
+      "highlightsFromPoint returns empty for disconnected OpaqueRange (input)": "FAIL",
+      "highlightsFromPoint returns empty for disconnected OpaqueRange (textarea)": "FAIL",
+      "highlightsFromPoint returns empty outside control (input)": "FAIL",
+      "highlightsFromPoint returns empty outside control (textarea)": "FAIL",
+      "highlightsFromPoint with mixed OpaqueRange and DOM Range in one Highlight": "FAIL",
+      "highlightsFromPoint with multiple and overlapping OpaqueRanges (input)": "FAIL",
+      "highlightsFromPoint with multiple and overlapping OpaqueRanges (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-interactive-basic.html": {
+    "total": 16,
+    "failures": {
+      "Deletion: backspace at control start is no-op (input).": "FAIL",
+      "Deletion: backspace at control start is no-op (textarea).": "FAIL",
+      "Deletion: backspace before range shifts both left (input).": "FAIL",
+      "Deletion: backspace before range shifts both left (textarea).": "FAIL",
+      "Deletion: forward delete at end boundary no effect on range (input).": "FAIL",
+      "Deletion: forward delete at end boundary no effect on range (textarea).": "FAIL",
+      "Deletion: forward delete inside range contracts end by 1 (input).": "FAIL",
+      "Deletion: forward delete inside range contracts end by 1 (textarea).": "FAIL",
+      "Equal-length replacement: single char inside range (input).": "FAIL",
+      "Equal-length replacement: single char inside range (textarea).": "FAIL",
+      "Insertion: at end boundary leaves offsets unchanged (multi-char) (input).": "FAIL",
+      "Insertion: at end boundary leaves offsets unchanged (multi-char) (textarea).": "FAIL",
+      "Insertion: at start boundary keeps start; end extends (multi-char) (input).": "FAIL",
+      "Insertion: at start boundary keeps start; end extends (multi-char) (textarea).": "FAIL",
+      "Insertion: inside range extends end by length (input).": "FAIL",
+      "Insertion: inside range extends end by length (textarea).": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-interactive-overlap-and-selection.html": {
+    "total": 10,
+    "failures": {
+      "Boundary forward delete shifts range left (input).": "FAIL",
+      "Boundary forward delete shifts range left (textarea).": "FAIL",
+      "Overlap: partial overlap at end (delete selection) (input).": "FAIL",
+      "Overlap: partial overlap at end (delete selection) (textarea).": "FAIL",
+      "Overlap: partial overlap at start (delete selection) (input).": "FAIL",
+      "Overlap: partial overlap at start (delete selection) (textarea).": "FAIL",
+      "Selection deletion: delete selection exactly equal to range (collapse) (input).": "FAIL",
+      "Selection deletion: delete selection exactly equal to range (collapse) (textarea).": "FAIL",
+      "Selection deletion: delete subset inside range (contract end) (input).": "FAIL",
+      "Selection deletion: delete subset inside range (contract end) (textarea).": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-offset.html": {
+    "total": 11,
+    "failures": {
+      "createValueRange boundary positions in input.": "FAIL",
+      "createValueRange boundary positions in textarea.": "FAIL",
+      "createValueRange ignores malformed input child nodes.": "FAIL",
+      "createValueRange on textarea with whitespace in light DOM.": "FAIL",
+      "createValueRange with Unicode characters in input.": "FAIL",
+      "createValueRange with Unicode characters in textarea.": "FAIL",
+      "createValueRange with empty control in input.": "FAIL",
+      "createValueRange with empty control in textarea.": "FAIL",
+      "createValueRange with single character in input.": "FAIL",
+      "createValueRange with single character in textarea.": "FAIL",
+      "createValueRange works correctly with weirdly formed light DOM structure.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-programmatic-updates.html": {
+    "total": 28,
+    "failures": {
+      "After-range grow leaves range unchanged (input)": "FAIL",
+      "After-range grow leaves range unchanged (textarea)": "FAIL",
+      "Before-range shrink shifts left (input)": "FAIL",
+      "Before-range shrink shifts left (textarea)": "FAIL",
+      "Chained interior edits cumulatively adjust range (input)": "FAIL",
+      "Chained interior edits cumulatively adjust range (textarea)": "FAIL",
+      "Full replace (equal length) collapses to 0 (input)": "FAIL",
+      "Full replace (equal length) collapses to 0 (textarea)": "FAIL",
+      "Full replace collapses to start (shorter & longer) (input)": "FAIL",
+      "Full replace collapses to start (shorter & longer) (textarea)": "FAIL",
+      "Full replace from whole-old range collapses to 0 (input)": "FAIL",
+      "Full replace from whole-old range collapses to 0 (textarea)": "FAIL",
+      "Insert at range.end leaves range unchanged (input)": "FAIL",
+      "Insert at range.end leaves range unchanged (textarea)": "FAIL",
+      "Insert at range.start extends end (input)": "FAIL",
+      "Insert at range.start extends end (textarea)": "FAIL",
+      "Insertion before range shifts both endpoints (input)": "FAIL",
+      "Insertion before range shifts both endpoints (textarea)": "FAIL",
+      "Interior deletion shrinks end (input)": "FAIL",
+      "Interior deletion shrinks end (textarea)": "FAIL",
+      "No-op leaves range unchanged (input)": "FAIL",
+      "No-op leaves range unchanged (textarea)": "FAIL",
+      "Partial replacement adjusts end (input)": "FAIL",
+      "Partial replacement adjusts end (textarea)": "FAIL",
+      "Superset replacement collapses to change start (input)": "FAIL",
+      "Superset replacement collapses to change start (textarea)": "FAIL",
+      "Surrogate pair expansion grows end (input)": "FAIL",
+      "Surrogate pair expansion grows end (textarea)": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-range-updates.html": {
+    "total": 4,
+    "failures": {
+      "OpaqueRange collapses on full .value= replacement.": "FAIL",
+      "createValueRange creates independent ranges on same element.": "FAIL",
+      "createValueRange works on different form controls.": "FAIL",
+      "createValueRange works with disconnected form controls.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-supported-elements.html": {
+    "total": 6,
+    "failures": {
+      "createValueRange should work on input[type=password].": "FAIL",
+      "createValueRange should work on input[type=search].": "FAIL",
+      "createValueRange should work on input[type=tel].": "FAIL",
+      "createValueRange should work on input[type=text].": "FAIL",
+      "createValueRange should work on input[type=url].": "FAIL",
+      "createValueRange should work on textarea.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-unsupported-elements.html": {
+    "total": 1,
+    "failures": {
+      "createValueRange throws NotSupportedError for unsupported input types.": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-update-event-order.html": {
+    "total": 4,
+    "failures": {
+      "Canceled beforeinput leaves OpaqueRange unchanged (input).": "FAIL",
+      "Canceled beforeinput leaves OpaqueRange unchanged (textarea).": "FAIL",
+      "Event order: OpaqueRange updates between beforeinput and input (input).": "FAIL",
+      "Event order: OpaqueRange updates between beforeinput and input (textarea).": "FAIL"
+    }
+  },
+  "dom/ranges/tentative/OpaqueRange-validation.html": {
+    "total": 2,
+    "failures": {
+      "createValueRange handles all range types correctly: forward, backwards, and out-of-bounds.": "FAIL",
+      "createValueRange throws IndexSizeError for out-of-bounds offsets.": "FAIL"
+    }
+  },
+  "dom/slot-recalc.html": {
+    "reftest": "PASS"
+  },
+  "dom/traversal/NodeFilter-constants.html": {
+    "total": 2
+  },
+  "dom/traversal/NodeIterator-removal-during-filtering.html": {
+    "total": 4
+  },
+  "dom/traversal/NodeIterator-removal.html": {
+    "total": 25
+  },
+  "dom/traversal/NodeIterator.html": {
+    "total": 766
+  },
+  "dom/traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html": {
+    "total": 1
+  },
+  "dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html": {
+    "total": 5,
+    "failures": {
+      "NodeFilter is cross-realm callable revoked Proxy": "FAIL",
+      "NodeFilter is cross-realm non-callable revoked Proxy": "FAIL",
+      "NodeFilter is cross-realm plain object with non-callable 'acceptNode' property": "FAIL",
+      "NodeFilter is cross-realm plain object with revoked Proxy as 'acceptNode' property": "FAIL",
+      "NodeFilter is cross-realm plain object without 'acceptNode' property": "FAIL"
+    }
+  },
+  "dom/traversal/TreeWalker-acceptNode-filter.html": {
+    "total": 12
+  },
+  "dom/traversal/TreeWalker-basic.html": {
+    "total": 6
+  },
+  "dom/traversal/TreeWalker-currentNode.html": {
+    "total": 4
+  },
+  "dom/traversal/TreeWalker-nextNode-detached-currentNode.window.js": {
+    "total": 3
+  },
+  "dom/traversal/TreeWalker-previousNodeLastChildReject.html": {
+    "total": 1
+  },
+  "dom/traversal/TreeWalker-previousSiblingLastChildSkip.html": {
+    "total": 1
+  },
+  "dom/traversal/TreeWalker-realm.html": {
+    "total": 2
+  },
+  "dom/traversal/TreeWalker-traversal-reject.html": {
+    "total": 6
+  },
+  "dom/traversal/TreeWalker-traversal-skip-most.html": {
+    "total": 2
+  },
+  "dom/traversal/TreeWalker-traversal-skip.html": {
+    "total": 6
+  },
+  "dom/traversal/TreeWalker-walking-outside-a-tree.html": {
+    "total": 1
+  },
+  "dom/traversal/TreeWalker.html": {
+    "total": 761
+  },
+  "dom/window-extends-event-target.html": {
+    "total": 3
+  },
+  "dom/xpath-result-single-node-value-nullable.html": {
+    "total": 1
+  }
+}

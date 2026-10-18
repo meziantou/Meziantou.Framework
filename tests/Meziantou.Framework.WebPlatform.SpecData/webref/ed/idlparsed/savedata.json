@@ -1,0 +1,69 @@
+{
+  "spec": {
+    "title": "Save Data API",
+    "url": "https://wicg.github.io/savedata/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {}
+    },
+    "idlNames": {
+      "NetworkInformationSaveData": {
+        "fragment": "interface mixin NetworkInformationSaveData {\n  [SameObject] readonly attribute boolean saveData;\n};",
+        "type": "interface mixin",
+        "name": "NetworkInformationSaveData",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "saveData",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/savedata/#dom-networkinformationsavedata-savedata"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/savedata/#dom-networkinformationsavedata"
+      }
+    },
+    "idlExtendedNames": {
+      "NetworkInformation": [
+        {
+          "fragment": "NetworkInformation includes NetworkInformationSaveData;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "NetworkInformation",
+          "includes": "NetworkInformationSaveData"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {},
+    "dependencies": {
+      "NetworkInformationSaveData": [],
+      "NetworkInformation": [
+        "NetworkInformationSaveData"
+      ]
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

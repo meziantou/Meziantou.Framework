@@ -1,0 +1,2441 @@
+{
+  "spec": {
+    "title": "Fetch Standard",
+    "url": "https://fetch.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "Headers",
+          "Request",
+          "Response"
+        ],
+        "Worker": [
+          "Headers",
+          "Request",
+          "Response"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "FetchLaterResult"
+        ]
+      }
+    },
+    "idlNames": {
+      "HeadersInit": {
+        "fragment": "typedef (sequence<sequence<ByteString>> or record<ByteString, ByteString>) HeadersInit;",
+        "type": "typedef",
+        "name": "HeadersInit",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "typedef-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "ByteString"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "record",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                {
+                  "type": "typedef-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                }
+              ]
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#typedefdef-headersinit"
+      },
+      "Headers": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Headers {\n  constructor(optional HeadersInit init);\n\n  undefined append(ByteString name, ByteString value);\n  undefined delete(ByteString name);\n  ByteString? get(ByteString name);\n  sequence<ByteString> getSetCookie();\n  boolean has(ByteString name);\n  undefined set(ByteString name, ByteString value);\n  iterable<ByteString, ByteString>;\n};",
+        "type": "interface",
+        "name": "Headers",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HeadersInit"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://fetch.spec.whatwg.org/#dom-headers"
+          },
+          {
+            "type": "operation",
+            "name": "append",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-append"
+          },
+          {
+            "type": "operation",
+            "name": "delete",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-delete"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-get"
+          },
+          {
+            "type": "operation",
+            "name": "getSetCookie",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-getsetcookie"
+          },
+          {
+            "type": "operation",
+            "name": "has",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-has"
+          },
+          {
+            "type": "operation",
+            "name": "set",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "value",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ByteString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-headers-set"
+          },
+          {
+            "type": "iterable",
+            "idlType": [
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ByteString"
+              },
+              {
+                "type": null,
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ByteString"
+              }
+            ],
+            "arguments": [],
+            "extAttrs": [],
+            "readonly": false,
+            "async": false
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#headers"
+      },
+      "XMLHttpRequestBodyInit": {
+        "fragment": "typedef (Blob or BufferSource or FormData or URLSearchParams or USVString) XMLHttpRequestBodyInit;",
+        "type": "typedef",
+        "name": "XMLHttpRequestBodyInit",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Blob"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BufferSource"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FormData"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "URLSearchParams"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#typedefdef-xmlhttprequestbodyinit"
+      },
+      "BodyInit": {
+        "fragment": "typedef (ReadableStream or XMLHttpRequestBodyInit) BodyInit;",
+        "type": "typedef",
+        "name": "BodyInit",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XMLHttpRequestBodyInit"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#bodyinit"
+      },
+      "Body": {
+        "fragment": "interface mixin Body {\n  readonly attribute ReadableStream? body;\n  readonly attribute boolean bodyUsed;\n  [NewObject] Promise<ArrayBuffer> arrayBuffer();\n  [NewObject] Promise<Blob> blob();\n  [NewObject] Promise<Uint8Array> bytes();\n  [NewObject] Promise<FormData> formData();\n  [NewObject] Promise<any> json();\n  [NewObject] Promise<USVString> text();\n  [NewObject] ReadableStream textStream();\n};",
+        "type": "interface mixin",
+        "name": "Body",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "body",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-body-body"
+          },
+          {
+            "type": "attribute",
+            "name": "bodyUsed",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-body-bodyused"
+          },
+          {
+            "type": "operation",
+            "name": "arrayBuffer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ArrayBuffer"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-arraybuffer"
+          },
+          {
+            "type": "operation",
+            "name": "blob",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Blob"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-blob"
+          },
+          {
+            "type": "operation",
+            "name": "bytes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "Uint8Array"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-bytes"
+          },
+          {
+            "type": "operation",
+            "name": "formData",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "FormData"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-formdata"
+          },
+          {
+            "type": "operation",
+            "name": "json",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-json"
+          },
+          {
+            "type": "operation",
+            "name": "text",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-text"
+          },
+          {
+            "type": "operation",
+            "name": "textStream",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-body-textstream"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#body"
+      },
+      "RequestInfo": {
+        "fragment": "typedef (Request or USVString) RequestInfo;",
+        "type": "typedef",
+        "name": "RequestInfo",
+        "idlType": {
+          "type": "typedef-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": true,
+          "idlType": [
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Request"
+            },
+            {
+              "type": "typedef-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            }
+          ]
+        },
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestinfo"
+      },
+      "Request": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Request {\n  constructor(RequestInfo input, optional RequestInit init = {});\n\n  readonly attribute ByteString method;\n  readonly attribute USVString url;\n  [SameObject] readonly attribute Headers headers;\n\n  readonly attribute RequestDestination destination;\n  readonly attribute USVString referrer;\n  readonly attribute ReferrerPolicy referrerPolicy;\n  readonly attribute RequestMode mode;\n  readonly attribute RequestCredentials credentials;\n  readonly attribute RequestCache cache;\n  readonly attribute RequestRedirect redirect;\n  readonly attribute DOMString integrity;\n  readonly attribute boolean keepalive;\n  readonly attribute boolean isReloadNavigation;\n  readonly attribute boolean isHistoryNavigation;\n  readonly attribute AbortSignal signal;\n  readonly attribute RequestDuplex duplex;\n\n  [NewObject] Request clone();\n};",
+        "type": "interface",
+        "name": "Request",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "input",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInfo"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RequestInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://fetch.spec.whatwg.org/#dom-request"
+          },
+          {
+            "type": "attribute",
+            "name": "method",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-method"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-url"
+          },
+          {
+            "type": "attribute",
+            "name": "headers",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Headers"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-headers"
+          },
+          {
+            "type": "attribute",
+            "name": "destination",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestDestination"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-destination"
+          },
+          {
+            "type": "attribute",
+            "name": "referrer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-referrer"
+          },
+          {
+            "type": "attribute",
+            "name": "referrerPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReferrerPolicy"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-referrerpolicy"
+          },
+          {
+            "type": "attribute",
+            "name": "mode",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestMode"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-mode"
+          },
+          {
+            "type": "attribute",
+            "name": "credentials",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestCredentials"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-credentials"
+          },
+          {
+            "type": "attribute",
+            "name": "cache",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestCache"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-cache"
+          },
+          {
+            "type": "attribute",
+            "name": "redirect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestRedirect"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-redirect"
+          },
+          {
+            "type": "attribute",
+            "name": "integrity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-integrity"
+          },
+          {
+            "type": "attribute",
+            "name": "keepalive",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-keepalive"
+          },
+          {
+            "type": "attribute",
+            "name": "isReloadNavigation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-isreloadnavigation"
+          },
+          {
+            "type": "attribute",
+            "name": "isHistoryNavigation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-ishistorynavigation"
+          },
+          {
+            "type": "attribute",
+            "name": "signal",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-signal"
+          },
+          {
+            "type": "attribute",
+            "name": "duplex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestDuplex"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-request-duplex"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Request"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-request-clone"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#request"
+      },
+      "RequestInit": {
+        "fragment": "dictionary RequestInit {\n  ByteString method;\n  HeadersInit headers;\n  BodyInit? body;\n  USVString referrer;\n  ReferrerPolicy referrerPolicy;\n  RequestMode mode;\n  RequestCredentials credentials;\n  RequestCache cache;\n  RequestRedirect redirect;\n  DOMString integrity;\n  boolean keepalive;\n  AbortSignal? signal;\n  RequestDuplex duplex;\n  RequestPriority priority;\n  any window; // can only be set to null\n};",
+        "type": "dictionary",
+        "name": "RequestInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "method",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-method"
+          },
+          {
+            "type": "field",
+            "name": "headers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HeadersInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-headers"
+          },
+          {
+            "type": "field",
+            "name": "body",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "BodyInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-body"
+          },
+          {
+            "type": "field",
+            "name": "referrer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-referrer"
+          },
+          {
+            "type": "field",
+            "name": "referrerPolicy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ReferrerPolicy"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-referrerpolicy"
+          },
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestMode"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-mode"
+          },
+          {
+            "type": "field",
+            "name": "credentials",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestCredentials"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-credentials"
+          },
+          {
+            "type": "field",
+            "name": "cache",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestCache"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-cache"
+          },
+          {
+            "type": "field",
+            "name": "redirect",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestRedirect"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-redirect"
+          },
+          {
+            "type": "field",
+            "name": "integrity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-integrity"
+          },
+          {
+            "type": "field",
+            "name": "keepalive",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-keepalive"
+          },
+          {
+            "type": "field",
+            "name": "signal",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "AbortSignal"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-signal"
+          },
+          {
+            "type": "field",
+            "name": "duplex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestDuplex"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-duplex"
+          },
+          {
+            "type": "field",
+            "name": "priority",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RequestPriority"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-priority"
+          },
+          {
+            "type": "field",
+            "name": "window",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-requestinit-window"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#requestinit"
+      },
+      "RequestDestination": {
+        "fragment": "enum RequestDestination { \"\", \"audio\", \"audioworklet\", \"document\", \"embed\", \"font\", \"frame\", \"iframe\", \"image\", \"json\", \"manifest\", \"object\", \"paintworklet\", \"report\", \"script\", \"sharedworker\", \"style\", \"text\", \"track\", \"video\", \"worker\", \"xslt\" };",
+        "type": "enum",
+        "name": "RequestDestination",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination"
+          },
+          {
+            "type": "enum-value",
+            "value": "audio",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-audio"
+          },
+          {
+            "type": "enum-value",
+            "value": "audioworklet",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-audioworklet"
+          },
+          {
+            "type": "enum-value",
+            "value": "document",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-document"
+          },
+          {
+            "type": "enum-value",
+            "value": "embed",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-embed"
+          },
+          {
+            "type": "enum-value",
+            "value": "font",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-font"
+          },
+          {
+            "type": "enum-value",
+            "value": "frame",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-frame"
+          },
+          {
+            "type": "enum-value",
+            "value": "iframe",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-iframe"
+          },
+          {
+            "type": "enum-value",
+            "value": "image",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-image"
+          },
+          {
+            "type": "enum-value",
+            "value": "json",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-json"
+          },
+          {
+            "type": "enum-value",
+            "value": "manifest",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-manifest"
+          },
+          {
+            "type": "enum-value",
+            "value": "object",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-object"
+          },
+          {
+            "type": "enum-value",
+            "value": "paintworklet",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-paintworklet"
+          },
+          {
+            "type": "enum-value",
+            "value": "report",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-report"
+          },
+          {
+            "type": "enum-value",
+            "value": "script",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-script"
+          },
+          {
+            "type": "enum-value",
+            "value": "sharedworker",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-sharedworker"
+          },
+          {
+            "type": "enum-value",
+            "value": "style",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-style"
+          },
+          {
+            "type": "enum-value",
+            "value": "text",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "track",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-track"
+          },
+          {
+            "type": "enum-value",
+            "value": "video",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-video"
+          },
+          {
+            "type": "enum-value",
+            "value": "worker",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-worker"
+          },
+          {
+            "type": "enum-value",
+            "value": "xslt",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestdestination-xslt"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestdestination"
+      },
+      "RequestMode": {
+        "fragment": "enum RequestMode { \"navigate\", \"same-origin\", \"no-cors\", \"cors\" };",
+        "type": "enum",
+        "name": "RequestMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "navigate",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestmode-navigate"
+          },
+          {
+            "type": "enum-value",
+            "value": "same-origin",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestmode-same-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "no-cors",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestmode-no-cors"
+          },
+          {
+            "type": "enum-value",
+            "value": "cors",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestmode-cors"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestmode"
+      },
+      "RequestCredentials": {
+        "fragment": "enum RequestCredentials { \"omit\", \"same-origin\", \"include\" };",
+        "type": "enum",
+        "name": "RequestCredentials",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "omit",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcredentials-omit"
+          },
+          {
+            "type": "enum-value",
+            "value": "same-origin",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcredentials-same-origin"
+          },
+          {
+            "type": "enum-value",
+            "value": "include",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcredentials-include"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestcredentials"
+      },
+      "RequestCache": {
+        "fragment": "enum RequestCache { \"default\", \"no-store\", \"reload\", \"no-cache\", \"force-cache\", \"only-if-cached\" };",
+        "type": "enum",
+        "name": "RequestCache",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "no-store",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-no-store"
+          },
+          {
+            "type": "enum-value",
+            "value": "reload",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-reload"
+          },
+          {
+            "type": "enum-value",
+            "value": "no-cache",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-no-cache"
+          },
+          {
+            "type": "enum-value",
+            "value": "force-cache",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-force-cache"
+          },
+          {
+            "type": "enum-value",
+            "value": "only-if-cached",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestcache-only-if-cached"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestcache"
+      },
+      "RequestRedirect": {
+        "fragment": "enum RequestRedirect { \"follow\", \"error\", \"manual\" };",
+        "type": "enum",
+        "name": "RequestRedirect",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "follow",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestredirect-follow"
+          },
+          {
+            "type": "enum-value",
+            "value": "error",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestredirect-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "manual",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestredirect-manual"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#requestredirect"
+      },
+      "RequestDuplex": {
+        "fragment": "enum RequestDuplex { \"half\" };",
+        "type": "enum",
+        "name": "RequestDuplex",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "half",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestduplex-half"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#enumdef-requestduplex"
+      },
+      "RequestPriority": {
+        "fragment": "enum RequestPriority { \"high\", \"low\", \"auto\" };",
+        "type": "enum",
+        "name": "RequestPriority",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "high",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestpriority-high"
+          },
+          {
+            "type": "enum-value",
+            "value": "low",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestpriority-low"
+          },
+          {
+            "type": "enum-value",
+            "value": "auto",
+            "href": "https://fetch.spec.whatwg.org/#dom-requestpriority-auto"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#enumdef-requestpriority"
+      },
+      "Response": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Response {\n  constructor(optional BodyInit? body = null, optional ResponseInit init = {});\n\n  [NewObject] static Response error();\n  [NewObject] static Response redirect(USVString url, optional unsigned short status = 302);\n  [NewObject] static Response json(any data, optional ResponseInit init = {});\n\n  readonly attribute ResponseType type;\n\n  readonly attribute USVString url;\n  readonly attribute boolean redirected;\n  readonly attribute unsigned short status;\n  readonly attribute boolean ok;\n  readonly attribute ByteString statusText;\n  [SameObject] readonly attribute Headers headers;\n\n  [NewObject] Response clone();\n};",
+        "type": "interface",
+        "name": "Response",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "body",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": true,
+                  "union": false,
+                  "idlType": "BodyInit"
+                },
+                "default": {
+                  "type": "null"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResponseInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://fetch.spec.whatwg.org/#dom-response"
+          },
+          {
+            "type": "operation",
+            "name": "error",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Response"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://fetch.spec.whatwg.org/#dom-response-error"
+          },
+          {
+            "type": "operation",
+            "name": "redirect",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Response"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "url",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "status",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "unsigned short"
+                },
+                "default": {
+                  "type": "number",
+                  "value": "302"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://fetch.spec.whatwg.org/#dom-response-redirect"
+          },
+          {
+            "type": "operation",
+            "name": "json",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Response"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "data",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "ResponseInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "static",
+            "href": "https://fetch.spec.whatwg.org/#dom-response-json"
+          },
+          {
+            "type": "attribute",
+            "name": "type",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ResponseType"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-type"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-url"
+          },
+          {
+            "type": "attribute",
+            "name": "redirected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-redirected"
+          },
+          {
+            "type": "attribute",
+            "name": "status",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-status"
+          },
+          {
+            "type": "attribute",
+            "name": "ok",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-ok"
+          },
+          {
+            "type": "attribute",
+            "name": "statusText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-statustext"
+          },
+          {
+            "type": "attribute",
+            "name": "headers",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Headers"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-response-headers"
+          },
+          {
+            "type": "operation",
+            "name": "clone",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Response"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "NewObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://fetch.spec.whatwg.org/#dom-response-clone"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#response"
+      },
+      "ResponseInit": {
+        "fragment": "dictionary ResponseInit {\n  unsigned short status = 200;\n  ByteString statusText = \"\";\n  HeadersInit headers;\n};",
+        "type": "dictionary",
+        "name": "ResponseInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "status",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": {
+              "type": "number",
+              "value": "200"
+            },
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-responseinit-status"
+          },
+          {
+            "type": "field",
+            "name": "statusText",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ByteString"
+            },
+            "default": {
+              "type": "string",
+              "value": ""
+            },
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-responseinit-statustext"
+          },
+          {
+            "type": "field",
+            "name": "headers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HeadersInit"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-responseinit-headers"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#responseinit"
+      },
+      "ResponseType": {
+        "fragment": "enum ResponseType { \"basic\", \"cors\", \"default\", \"error\", \"opaque\", \"opaqueredirect\" };",
+        "type": "enum",
+        "name": "ResponseType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "basic",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-basic"
+          },
+          {
+            "type": "enum-value",
+            "value": "cors",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-cors"
+          },
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "error",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-error"
+          },
+          {
+            "type": "enum-value",
+            "value": "opaque",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-opaque"
+          },
+          {
+            "type": "enum-value",
+            "value": "opaqueredirect",
+            "href": "https://fetch.spec.whatwg.org/#dom-responsetype-opaqueredirect"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://fetch.spec.whatwg.org/#responsetype"
+      },
+      "DeferredRequestInit": {
+        "fragment": "dictionary DeferredRequestInit : RequestInit {\n  DOMHighResTimeStamp activateAfter;\n};",
+        "type": "dictionary",
+        "name": "DeferredRequestInit",
+        "inheritance": "RequestInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "activateAfter",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://fetch.spec.whatwg.org/#dom-deferredrequestinit-activateafter"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#dictdef-deferredrequestinit"
+      },
+      "FetchLaterResult": {
+        "fragment": "[Exposed=Window]\ninterface FetchLaterResult {\n  readonly attribute boolean activated;\n};",
+        "type": "interface",
+        "name": "FetchLaterResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "activated",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://fetch.spec.whatwg.org/#dom-fetchlaterresult-activated"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://fetch.spec.whatwg.org/#fetchlaterresult"
+      }
+    },
+    "idlExtendedNames": {
+      "Request": [
+        {
+          "fragment": "Request includes Body;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Request",
+          "includes": "Body"
+        }
+      ],
+      "Response": [
+        {
+          "fragment": "Response includes Body;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "Response",
+          "includes": "Body"
+        }
+      ],
+      "WindowOrWorkerGlobalScope": [
+        {
+          "fragment": "partial interface mixin WindowOrWorkerGlobalScope {\n  [NewObject] Promise<Response> fetch(RequestInfo input, optional RequestInit init = {});\n};",
+          "type": "interface mixin",
+          "name": "WindowOrWorkerGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "fetch",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "Response"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "input",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RequestInfo"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "init",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RequestInit"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://fetch.spec.whatwg.org/#dom-global-fetch"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "Window": [
+        {
+          "fragment": "partial interface Window {\n  [NewObject, SecureContext] FetchLaterResult fetchLater(RequestInfo input, optional DeferredRequestInit init = {});\n};",
+          "type": "interface",
+          "name": "Window",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "fetchLater",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "FetchLaterResult"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "input",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RequestInfo"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "init",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DeferredRequestInit"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://fetch.spec.whatwg.org/#dom-window-fetchlater"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Headers",
+        "Request",
+        "Response",
+        "FetchLaterResult"
+      ],
+      "Worker": [
+        "Headers",
+        "Request",
+        "Response"
+      ]
+    },
+    "dependencies": {
+      "Headers": [
+        "HeadersInit"
+      ],
+      "Body": [
+        "ReadableStream",
+        "ArrayBuffer",
+        "Blob",
+        "Uint8Array",
+        "FormData"
+      ],
+      "Request": [
+        "RequestInfo",
+        "RequestInit",
+        "Headers",
+        "RequestDestination",
+        "ReferrerPolicy",
+        "RequestMode",
+        "RequestCredentials",
+        "RequestCache",
+        "RequestRedirect",
+        "AbortSignal",
+        "RequestDuplex",
+        "Request",
+        "Body"
+      ],
+      "RequestInit": [
+        "HeadersInit",
+        "BodyInit",
+        "ReferrerPolicy",
+        "RequestMode",
+        "RequestCredentials",
+        "RequestCache",
+        "RequestRedirect",
+        "AbortSignal",
+        "RequestDuplex",
+        "RequestPriority"
+      ],
+      "Response": [
+        "BodyInit",
+        "ResponseInit",
+        "Response",
+        "ResponseType",
+        "Headers",
+        "Body"
+      ],
+      "ResponseInit": [
+        "HeadersInit"
+      ],
+      "WindowOrWorkerGlobalScope": [
+        "Response",
+        "RequestInfo",
+        "RequestInit"
+      ],
+      "DeferredRequestInit": [
+        "RequestInit",
+        "DOMHighResTimeStamp"
+      ],
+      "FetchLaterResult": [],
+      "Window": [
+        "FetchLaterResult",
+        "RequestInfo",
+        "DeferredRequestInit"
+      ]
+    },
+    "externalDependencies": [
+      "Blob",
+      "BufferSource",
+      "FormData",
+      "URLSearchParams",
+      "ReadableStream",
+      "ArrayBuffer",
+      "Uint8Array",
+      "ReferrerPolicy",
+      "AbortSignal",
+      "WindowOrWorkerGlobalScope",
+      "DOMHighResTimeStamp",
+      "Window"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

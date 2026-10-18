@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ann": {
+      "identity": {
+        "language": "ann"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

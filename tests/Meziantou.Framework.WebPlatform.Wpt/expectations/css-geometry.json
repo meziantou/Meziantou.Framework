@@ -1,0 +1,95 @@
+{
+  "css/geometry/DOMMatrix-001.html": {
+    "total": 138
+  },
+  "css/geometry/DOMMatrix-002.html": {
+    "total": 13
+  },
+  "css/geometry/DOMMatrix-003.html": {
+    "total": 24
+  },
+  "css/geometry/DOMMatrix-a-f-alias.html": {
+    "total": 36
+  },
+  "css/geometry/DOMMatrix-attributes.html": {
+    "total": 22
+  },
+  "css/geometry/DOMMatrix-css-string.worker.js": {
+    "total": 11
+  },
+  "css/geometry/DOMMatrix-invert-invertible.html": {
+    "total": 6
+  },
+  "css/geometry/DOMMatrix-invert-non-invertible.html": {
+    "total": 2
+  },
+  "css/geometry/DOMMatrix-invert-preserves-2d.html": {
+    "total": 2
+  },
+  "css/geometry/DOMMatrix-invertSelf.html": {
+    "total": 4
+  },
+  "css/geometry/DOMMatrix-newobject.html": {
+    "total": 30
+  },
+  "css/geometry/DOMMatrix-stringifier.html": {
+    "total": 78
+  },
+  "css/geometry/DOMMatrix2DInit-validate-fixup.html": {
+    "total": 112
+  },
+  "css/geometry/DOMMatrixInit-validate-fixup.html": {
+    "total": 91
+  },
+  "css/geometry/DOMPoint-001.html": {
+    "total": 16
+  },
+  "css/geometry/DOMPoint-002.html": {
+    "total": 40
+  },
+  "css/geometry/DOMPoint-matrixTransform-translation-w.html": {
+    "total": 4
+  },
+  "css/geometry/DOMQuad-001.html": {
+    "total": 33
+  },
+  "css/geometry/DOMQuad-002.html": {
+    "total": 17
+  },
+  "css/geometry/DOMQuad-nan.html": {
+    "total": 8
+  },
+  "css/geometry/DOMRect-001.html": {
+    "total": 30
+  },
+  "css/geometry/DOMRect-002.html": {
+    "total": 32
+  },
+  "css/geometry/DOMRect-nan.html": {
+    "total": 8
+  },
+  "css/geometry/DOMRectList.html": {
+    "total": 5
+  },
+  "css/geometry/WebKitCSSMatrix.html": {
+    "total": 3
+  },
+  "css/geometry/WebKitCSSMatrix.worker.js": {
+    "total": 1
+  },
+  "css/geometry/historical.html": {
+    "total": 39
+  },
+  "css/geometry/idlharness.any.js": {
+    "total": 372
+  },
+  "css/geometry/idlharness.any.js#dedicatedworker": {
+    "total": 360
+  },
+  "css/geometry/spec-examples.html": {
+    "total": 7
+  },
+  "css/geometry/structured-serialization.html": {
+    "total": 31
+  }
+}

@@ -1,0 +1,10 @@
+// GENERATED CONTENT - DO NOT EDIT
+// Content was automatically extracted by Reffy into webref
+// (https://github.com/w3c/webref)
+// Source: YAML-LD 1.0 (https://w3c.github.io/yaml-ld/)
+
+enum YamlLdErrorCode {
+  "invalid-encoding",
+  "mapping-key-error",
+  "profile-error"
+};

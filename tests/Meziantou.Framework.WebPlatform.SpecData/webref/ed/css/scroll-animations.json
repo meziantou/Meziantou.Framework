@@ -1,0 +1,540 @@
+{
+  "spec": {
+    "title": "Scroll-driven Animations Module Level 1",
+    "url": "https://drafts.csswg.org/scroll-animations-1/"
+  },
+  "properties": [
+    {
+      "name": "scroll-timeline-name",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-scroll-timeline-name",
+      "value": "[ none | <dashed-ident> ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item either a CSS identifier or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "scroll-timeline-name",
+        "scrollTimelineName"
+      ]
+    },
+    {
+      "name": "scroll-timeline-axis",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-scroll-timeline-axis",
+      "value": "[ block | inline | x | y ]#",
+      "initial": "block",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "a list of the keywords specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "block",
+          "prose": "Specifies to use the measure of progress along the block axis of the block-axis scroll container. (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "Specifies to use the measure of progress along the inline axis of the inline-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "x",
+          "prose": "Specifies to use the measure of progress along the horizontal axis of the x-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "Specifies to use the measure of progress along the vertical axis of the y-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "nearest",
+          "prose": "Specifies to use the nearest ancestor scroll container with an appropriate scrollable axis (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "root",
+          "prose": "Specifies to use the document viewport as the scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-root",
+          "type": "value",
+          "value": "root"
+        },
+        {
+          "name": "self",
+          "prose": "Specifies to use the element’s own principal box as the scroll container. If the principal box is not a scroll container in the appropriate axis, then the scroll progress timeline is inactive.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-self",
+          "type": "value",
+          "value": "self"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-timeline-axis",
+        "scrollTimelineAxis"
+      ]
+    },
+    {
+      "name": "scroll-timeline",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-scroll-timeline",
+      "value": "[ <'scroll-timeline-name'> <'scroll-timeline-axis'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "not animatable",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "scroll-timeline",
+        "scrollTimeline"
+      ],
+      "longhands": [
+        "scroll-timeline-name",
+        "scroll-timeline-axis"
+      ]
+    },
+    {
+      "name": "view-timeline-name",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-view-timeline-name",
+      "value": "[ none | <dashed-ident> ]#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "list, each item either a CSS identifier or the keyword none",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "styleDeclaration": [
+        "view-timeline-name",
+        "viewTimelineName"
+      ]
+    },
+    {
+      "name": "view-timeline-axis",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-view-timeline-axis",
+      "value": "[ block | inline | x | y ]#",
+      "initial": "block",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "a list of the keywords specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "block",
+          "prose": "Specifies to use the measure of progress along the block axis of the block-axis scroll container. (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "Specifies to use the measure of progress along the inline axis of the inline-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "x",
+          "prose": "Specifies to use the measure of progress along the horizontal axis of the x-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "Specifies to use the measure of progress along the vertical axis of the y-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "nearest",
+          "prose": "Specifies to use the nearest ancestor scroll container with an appropriate scrollable axis (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "root",
+          "prose": "Specifies to use the document viewport as the scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-root",
+          "type": "value",
+          "value": "root"
+        },
+        {
+          "name": "self",
+          "prose": "Specifies to use the element’s own principal box as the scroll container. If the principal box is not a scroll container in the appropriate axis, then the scroll progress timeline is inactive.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-self",
+          "type": "value",
+          "value": "self"
+        }
+      ],
+      "styleDeclaration": [
+        "view-timeline-axis",
+        "viewTimelineAxis"
+      ]
+    },
+    {
+      "name": "view-timeline-inset",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-view-timeline-inset",
+      "value": "[ [ auto | <length-percentage> ]{1,2} ]#",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the corresponding dimension of the relevant scrollport",
+      "computedValue": "a list consisting of two-value pairs representing the start and end insets each as either the keyword auto or a computed <length-percentage> value",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "Indicates to use the value of scroll-padding.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-view-timeline-inset-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "Like scroll-padding, defines an inward offset from the corresponding edge of the scrollport.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-view-timeline-inset-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        }
+      ],
+      "styleDeclaration": [
+        "view-timeline-inset",
+        "viewTimelineInset"
+      ]
+    },
+    {
+      "name": "view-timeline",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-view-timeline",
+      "value": "[ <'view-timeline-name'> [ <'view-timeline-axis'> || <'view-timeline-inset'> ]? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "all elements",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "view-timeline",
+        "viewTimeline"
+      ],
+      "longhands": [
+        "view-timeline-name",
+        "view-timeline-axis"
+      ]
+    },
+    {
+      "name": "animation-range",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-animation-range",
+      "value": "[ <'animation-range-start'> <'animation-range-end'>? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "animation-range",
+        "animationRange"
+      ],
+      "longhands": [
+        "animation-range-start",
+        "animation-range-end"
+      ]
+    },
+    {
+      "name": "animation-range-start",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-animation-range-start",
+      "value": "[ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The start of the animation’s attachment range is the start of its associated timeline; the start of the animation’s active interval is determined as normal.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-start-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "The animation attachment range starts at the specified point on the timeline measuring from the start of the timeline.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-start-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        },
+        {
+          "name": "<timeline-range-name> <length-percentage>?",
+          "prose": "The animation attachment range starts at the specified point on the timeline measuring from the start of the specified named timeline range. If the <length-percentage> is omitted, it defaults to 0%.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-start-timeline-range-name-length-percentage",
+          "type": "value",
+          "value": "<timeline-range-name> <length-percentage>?"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-range-start",
+        "animationRangeStart"
+      ]
+    },
+    {
+      "name": "animation-range-end",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-animation-range-end",
+      "value": "[ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]#",
+      "initial": "normal",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "relative to the specified named timeline range if one was specified, else to the entire timeline",
+      "computedValue": "list, each item either the keyword normal or a timeline range and progress percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The end of the animation’s attachment range is the end of its associated timeline; the end of the animation’s active interval is determined as normal.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-end-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "<length-percentage>",
+          "prose": "The animation attachment range ends at the specified point on the timeline measuring from the start of the timeline.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-end-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>"
+        },
+        {
+          "name": "<timeline-range-name> <length-percentage>?",
+          "prose": "The animation attachment range ends at the specified point on the timeline measuring from the start of the specified named timeline range. If the <length-percentage> is omitted, it defaults to 100%.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-range-end-timeline-range-name-length-percentage",
+          "type": "value",
+          "value": "<timeline-range-name> <length-percentage>?"
+        }
+      ],
+      "styleDeclaration": [
+        "animation-range-end",
+        "animationRangeEnd"
+      ]
+    },
+    {
+      "name": "timeline-scope",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#propdef-timeline-scope",
+      "value": "none | all | <dashed-ident>#",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, the keyword all, or a list of CSS identifiers",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No changes in timeline name scope.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-timeline-scope-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "Specifies that all timeline names defined by this element or its flat tree descendants—​whose scope is not already limited by a descendant using timeline-scope—​to be in scope only for this element’s flat tree descendants; and limits descendants to only match timeline names to elements within this subtree.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-timeline-scope-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "<dashed-ident>",
+          "prose": "Specifies that a matching timeline name defined by this element or its flat tree descendants—​whose scope is not already limited by a descendant using timeline-scope—​to be in scope only for this element’s flat tree descendants; and limits descendants to only match timeline names to elements within this subtree.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-timeline-scope-dashed-ident",
+          "type": "value",
+          "value": "<dashed-ident>"
+        }
+      ],
+      "styleDeclaration": [
+        "timeline-scope",
+        "timelineScope"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "scroll()",
+      "prose": "The scroll() functional notation can be used as a <single-animation-timeline> value in animation-timeline and specifies a scroll progress timeline. Its syntax is",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#funcdef-scroll",
+      "type": "function",
+      "value": "scroll( [ <scroller> || <axis> ]? )",
+      "values": [
+        {
+          "name": "block",
+          "prose": "Specifies to use the measure of progress along the block axis of the block-axis scroll container. (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-block",
+          "type": "value",
+          "value": "block"
+        },
+        {
+          "name": "inline",
+          "prose": "Specifies to use the measure of progress along the inline axis of the inline-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-inline",
+          "type": "value",
+          "value": "inline"
+        },
+        {
+          "name": "x",
+          "prose": "Specifies to use the measure of progress along the horizontal axis of the x-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-x",
+          "type": "value",
+          "value": "x"
+        },
+        {
+          "name": "y",
+          "prose": "Specifies to use the measure of progress along the vertical axis of the y-axis scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-y",
+          "type": "value",
+          "value": "y"
+        },
+        {
+          "name": "nearest",
+          "prose": "Specifies to use the nearest ancestor scroll container with an appropriate scrollable axis (Default.)",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-nearest",
+          "type": "value",
+          "value": "nearest"
+        },
+        {
+          "name": "root",
+          "prose": "Specifies to use the document viewport as the scroll container.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-root",
+          "type": "value",
+          "value": "root"
+        },
+        {
+          "name": "self",
+          "prose": "Specifies to use the element’s own principal box as the scroll container. If the principal box is not a scroll container in the appropriate axis, then the scroll progress timeline is inactive.",
+          "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-self",
+          "type": "value",
+          "value": "self"
+        }
+      ]
+    },
+    {
+      "name": "<axis>",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#typedef-axis",
+      "type": "type",
+      "value": "block | inline | x | y"
+    },
+    {
+      "name": "<scroller>",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#typedef-scroller",
+      "type": "type",
+      "value": "root | nearest | self"
+    },
+    {
+      "name": "view()",
+      "prose": "The view() functional notation can be used as a <single-animation-timeline> value in animation-timeline and specifies a view progress timeline in reference to the nearest ancestor scroll container that’s scrollable in the specified axis. Its syntax is",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#funcdef-view",
+      "type": "function",
+      "value": "view( [ <axis> || <'view-timeline-inset'> ]? )"
+    },
+    {
+      "name": "<timeline-range-name>",
+      "prose": "A named timeline range is a named segment of an animation timeline. The start of the segment is represented as 0% progress through the range; the end of the segment is represented as 100% progress through the range. Multiple named timeline ranges can be associated with a given timeline, and multiple such ranges can overlap. For example, the contain range of a view progress timeline overlaps with its cover range. Named timeline ranges are represented by the <timeline-range-name> value type, which indicates a CSS identifier representing one of the predefined named timeline ranges.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#typedef-timeline-range-name",
+      "type": "type"
+    }
+  ],
+  "warnings": [
+    {
+      "msg": "Missing definition",
+      "name": "<keyframe-selector>",
+      "value": "from | to | <percentage [0,100]> | <timeline-range-name> <percentage>"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "cover",
+      "prose": "Represents the full range of the view progress timeline: 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range. 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-cover",
+      "type": "value",
+      "value": "cover",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "contain",
+      "prose": "Represents the range during which the principal box is either fully contained by, or fully covers, its view progress visibility range within the scrollport. 0% progress represents the earliest position at which either: the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range. the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range. 100% progress represents the latest position at which either: the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range. the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-contain",
+      "type": "value",
+      "value": "contain",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "entry",
+      "prose": "Represents the range during which the principal box is entering the view progress visibility range. 0% is equivalent to 0% of the cover range. 100% is equivalent to 0% of the contain range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-entry",
+      "type": "value",
+      "value": "entry",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "exit",
+      "prose": "Represents the range during which the principal box is exiting the view progress visibility range. 0% is equivalent to 100% of the contain range. 100% is equivalent to 100% of the cover range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-exit",
+      "type": "value",
+      "value": "exit",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "entry-crossing",
+      "prose": "Represents the range during which the principal box crosses the end border edge 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range. 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-entry-crossing",
+      "type": "value",
+      "value": "entry-crossing",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "exit-crossing",
+      "prose": "Represents the range during which the principal box crosses the start border edge 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range. 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-exit-crossing",
+      "type": "value",
+      "value": "exit-crossing",
+      "for": "animation-timeline-range"
+    },
+    {
+      "msg": "Dangling value",
+      "name": "scroll",
+      "prose": "Represents the full range of the scroll container on which the view progress timeline is defined. 0% progress represents the startmost scroll position of the scroll container underlying the view progress timeline. 100% progress represents the endmost scroll position of the scroll container underlying the view progress timeline.",
+      "href": "https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-scroll",
+      "type": "value",
+      "value": "scroll",
+      "for": "animation-timeline-range"
+    }
+  ]
+}

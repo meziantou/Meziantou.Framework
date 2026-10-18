@@ -1,0 +1,13 @@
+{
+  "spec": {
+    "title": "SVG Paths",
+    "url": "https://svgwg.org/specs/paths/"
+  },
+  "elements": [
+    {
+      "name": "path",
+      "href": "https://svgwg.org/specs/paths/#elementdef-path",
+      "interface": "SVGPathElement"
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "spec": {
+    "title": "Largest Contentful Paint",
+    "url": "https://w3c.github.io/largest-contentful-paint/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "LargestContentfulPaint"
+        ]
+      }
+    },
+    "idlNames": {
+      "LargestContentfulPaint": {
+        "fragment": "[Exposed=Window]\ninterface LargestContentfulPaint : PerformanceEntry {\n    readonly attribute DOMHighResTimeStamp loadTime;\n    readonly attribute DOMHighResTimeStamp renderTime;\n    readonly attribute unsigned long size;\n    readonly attribute DOMString id;\n    readonly attribute DOMString url;\n    readonly attribute Element? element;\n    [Default] object toJSON();\n};",
+        "type": "interface",
+        "name": "LargestContentfulPaint",
+        "inheritance": "PerformanceEntry",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "loadTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-loadtime"
+          },
+          {
+            "type": "attribute",
+            "name": "renderTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-rendertime"
+          },
+          {
+            "type": "attribute",
+            "name": "size",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-size"
+          },
+          {
+            "type": "attribute",
+            "name": "id",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-id"
+          },
+          {
+            "type": "attribute",
+            "name": "url",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-url"
+          },
+          {
+            "type": "attribute",
+            "name": "element",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "Element"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-element"
+          },
+          {
+            "type": "operation",
+            "name": "toJSON",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "arguments": [],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Default",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-tojson"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/largest-contentful-paint/#largestcontentfulpaint"
+      }
+    },
+    "idlExtendedNames": {
+      "LargestContentfulPaint": [
+        {
+          "fragment": "LargestContentfulPaint includes PaintTimingMixin;",
+          "type": "includes",
+          "extAttrs": [],
+          "target": "LargestContentfulPaint",
+          "includes": "PaintTimingMixin"
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "LargestContentfulPaint"
+      ]
+    },
+    "dependencies": {
+      "LargestContentfulPaint": [
+        "PerformanceEntry",
+        "DOMHighResTimeStamp",
+        "Element",
+        "PaintTimingMixin"
+      ]
+    },
+    "externalDependencies": [
+      "PerformanceEntry",
+      "DOMHighResTimeStamp",
+      "Element"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

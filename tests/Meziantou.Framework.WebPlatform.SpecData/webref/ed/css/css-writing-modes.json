@@ -1,0 +1,256 @@
+{
+  "spec": {
+    "title": "CSS Writing Modes Module Level 4",
+    "url": "https://drafts.csswg.org/css-writing-modes-4/"
+  },
+  "properties": [
+    {
+      "name": "direction",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-direction",
+      "value": "ltr | rtl",
+      "initial": "ltr",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "n/a",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "ltr",
+          "prose": "This value sets inline base direction (bidi directionality) to line-left-to-line-right.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-direction-ltr",
+          "type": "value",
+          "value": "ltr"
+        },
+        {
+          "name": "rtl",
+          "prose": "This value sets inline base direction (bidi directionality) to line-right-to-line-left.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-direction-rtl",
+          "type": "value",
+          "value": "rtl"
+        }
+      ],
+      "styleDeclaration": [
+        "direction"
+      ]
+    },
+    {
+      "name": "unicode-bidi",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-unicode-bidi",
+      "value": "normal | embed | isolate | bidi-override | isolate-override | plaintext",
+      "initial": "normal",
+      "appliesTo": "all elements, but see prose",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "normal",
+          "prose": "The box does not open an additional level of embedding with respect to the bidirectional algorithm. For inline boxes, implicit reordering works across box boundaries.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-normal",
+          "type": "value",
+          "value": "normal"
+        },
+        {
+          "name": "embed",
+          "prose": "If the box is inline, this value creates a directional embedding by opening an additional level of embedding with respect to the bidirectional algorithm. The direction of this embedding level is given by the direction property. Inside the box, reordering is done implicitly.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-embed",
+          "type": "value",
+          "value": "embed"
+        },
+        {
+          "name": "isolate",
+          "prose": "On an inline box, this bidi-isolates its contents. This is similar to a directional embedding (and increases the embedding level accordingly) except that each sequence of inline-level boxes uninterrupted by any block boundary or forced paragraph break is treated as an isolated sequence: the content within the sequence is ordered as if inside an independent paragraph with the base directionality specified by the box’s direction property. for the purpose of bidi resolution in its containing bidi paragraph, the sequence is treated as if it were a single Object Replacement Character (U+FFFC). In effect, neither is the content inside the box bidi-affected by the content surrounding the box, nor is the content surrounding the box bidi-affected by the content or specified directionality of the box. However, forced paragraph breaks within the box still create a corresponding break in the containing paragraph.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-isolate",
+          "type": "value",
+          "value": "isolate"
+        },
+        {
+          "name": "bidi-override",
+          "prose": "This value puts the box’s immediate inline content in a directional override. For an inline, this means that the box acts like a directional embedding in the bidirectional algorithm, except that reordering within it is strictly in sequence according to the direction property; the implicit part of the bidirectional algorithm is ignored. For a block container, the override is applied to an anonymous inline box that surrounds all of its content.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-bidi-override",
+          "type": "value",
+          "value": "bidi-override"
+        },
+        {
+          "name": "isolate-override",
+          "prose": "This combines the isolation behavior of isolate with the directional override behavior of bidi-override: to surrounding content, it is equivalent to isolate, but within the box content is ordered as if bidi-override were specified. It effectively nests a directional override inside an isolated sequence.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-isolate-override",
+          "type": "value",
+          "value": "isolate-override"
+        },
+        {
+          "name": "plaintext",
+          "prose": "This value behaves as isolate except that for the purposes of the Unicode bidirectional algorithm, the base directionality of each of the box’s bidi paragraphs (if a block container) or isolated sequences (if an inline) is determined by following the heuristic in rules P2 and P3 of the Unicode bidirectional algorithm (rather than by using the direction property of the box).",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-unicode-bidi-plaintext",
+          "type": "value",
+          "value": "plaintext"
+        }
+      ],
+      "styleDeclaration": [
+        "unicode-bidi",
+        "unicodeBidi"
+      ]
+    },
+    {
+      "name": "writing-mode",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-writing-mode",
+      "value": "horizontal-tb | vertical-rl | vertical-lr | sideways-rl | sideways-lr",
+      "initial": "horizontal-tb",
+      "appliesTo": "All elements except table row groups, table column groups, table rows, table columns, ruby base containers, ruby annotation containers",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "n/a",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "horizontal-tb",
+          "prose": "Top-to-bottom block flow direction. Both the writing mode and the typographic mode are horizontal.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-writing-mode-horizontal-tb",
+          "type": "value",
+          "value": "horizontal-tb"
+        },
+        {
+          "name": "vertical-rl",
+          "prose": "Right-to-left block flow direction. Both the writing mode and the typographic mode are vertical.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-writing-mode-vertical-rl",
+          "type": "value",
+          "value": "vertical-rl"
+        },
+        {
+          "name": "vertical-lr",
+          "prose": "Left-to-right block flow direction. Both the writing mode and the typographic mode are vertical.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-writing-mode-vertical-lr",
+          "type": "value",
+          "value": "vertical-lr"
+        },
+        {
+          "name": "sideways-rl",
+          "prose": "Right-to-left block flow direction. The writing mode is vertical, while the typographic mode is horizontal.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-writing-mode-sideways-rl",
+          "type": "value",
+          "value": "sideways-rl"
+        },
+        {
+          "name": "sideways-lr",
+          "prose": "Left-to-right block flow direction. The writing mode is vertical, while the typographic mode is horizontal.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-writing-mode-sideways-lr",
+          "type": "value",
+          "value": "sideways-lr"
+        }
+      ],
+      "styleDeclaration": [
+        "writing-mode",
+        "writingMode"
+      ]
+    },
+    {
+      "name": "text-orientation",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-text-orientation",
+      "value": "mixed | upright | sideways",
+      "initial": "mixed",
+      "appliesTo": "all elements except table row groups, rows, column groups, and columns; and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "n/a",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "mixed",
+          "prose": "Typographic character units from horizontal-only scripts are typeset sideways, i.e. 90° clockwise from their standard orientation in horizontal text. Typographic character units from vertical scripts are typeset with their intrinsic orientation. See Vertical Orientations for further details. This value is typical for layout of dominantly vertical-script text.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-orientation-mixed",
+          "type": "value",
+          "value": "mixed"
+        },
+        {
+          "name": "upright",
+          "prose": "Typographic character units from horizontal-only scripts are typeset upright, i.e. in their standard horizontal orientation. Typographic character units from vertical scripts are typeset with their intrinsic orientation and shaped normally. See Vertical Orientations for further details. This value causes the used value of direction to be ltr, and for the purposes of bidi reordering, causes all characters to be treated as strong LTR.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-orientation-upright",
+          "type": "value",
+          "value": "upright"
+        },
+        {
+          "name": "sideways",
+          "prose": "Causes all text to be typeset sideways, as if in a horizontal layout, but rotated 90° clockwise.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-orientation-sideways",
+          "type": "value",
+          "value": "sideways"
+        },
+        {
+          "name": "sideways-right",
+          "prose": "UAs may accept sideways-right as a value that computes to sideways if needed for backward compatibility reasons.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-orientation-sideways-right",
+          "type": "value",
+          "value": "sideways-right"
+        }
+      ],
+      "styleDeclaration": [
+        "text-orientation",
+        "textOrientation"
+      ]
+    },
+    {
+      "name": "glyph-orientation-vertical",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-glyph-orientation-vertical",
+      "value": "auto | 0deg | 90deg | 0 | 90",
+      "initial": "n/a",
+      "appliesTo": "n/a",
+      "inherited": "n/a",
+      "percentages": "n/a",
+      "computedValue": "n/a",
+      "canonicalOrder": "n/a",
+      "animationType": "n/a",
+      "styleDeclaration": [
+        "glyph-orientation-vertical",
+        "glyphOrientationVertical"
+      ]
+    },
+    {
+      "name": "text-combine-upright",
+      "href": "https://drafts.csswg.org/css-writing-modes-4/#propdef-text-combine-upright",
+      "value": "none | all | [ digits <integer [2,4]>? ]",
+      "initial": "none",
+      "appliesTo": "inline boxes and text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword, plus integer if digits",
+      "canonicalOrder": "n/a",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No special processing.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-combine-upright-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "all",
+          "prose": "Attempt to typeset horizontally all consecutive typographic character units within the box and text run such that they take up the space of a single typographic character unit within the vertical line box.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-combine-upright-all",
+          "type": "value",
+          "value": "all"
+        },
+        {
+          "name": "digits <integer [2,4]>?",
+          "prose": "Attempt to typeset horizontally each maximal sequence of consecutive ASCII digits (U+0030–U+0039) that has as many or fewer digits than the specified integer such that it takes up the space of a single typographic character unit within the vertical line box. If the integer is omitted, it computes to 2. Integers outside the range 2-4 are invalid.",
+          "href": "https://drafts.csswg.org/css-writing-modes-4/#valdef-text-combine-upright-digits-integer-2-4",
+          "type": "value",
+          "value": "digits <integer [2,4]>?"
+        }
+      ],
+      "styleDeclaration": [
+        "text-combine-upright",
+        "textCombineUpright"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": []
+}

@@ -1,0 +1,404 @@
+{
+  "css/css-viewport/animations/zoom-interpolation.html": {
+    "total": 202
+  },
+  "css/css-viewport/computedStyle-zoom.html": {
+    "total": 6
+  },
+  "css/css-viewport/zoom/abspos-static-position.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/animation-range.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/background-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/background-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/basic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/block-step-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-image-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-image-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-spacing-without-border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-spacing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-width-keywords.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/border-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/box-shadow-inset-spread.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/box-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/canvas.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/column-gap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/column-rule-width-keywords.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/column-rule-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/column-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/computed-border-width-keywords.html": {
+    "total": 3
+  },
+  "css/css-viewport/zoom/computed-column-rule-width-keywords.html": {
+    "total": 3
+  },
+  "css/css-viewport/zoom/computed-initial.html": {
+    "total": 252
+  },
+  "css/css-viewport/zoom/computed-outline-width-keywords.html": {
+    "total": 3
+  },
+  "css/css-viewport/zoom/contain-intrinsic-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/contain-intrinsic-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/container-queries-block-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/container-queries-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/container-queries-inline-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/container-queries.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/custom-property.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/all-length-properties.html": {
+    "total": 204
+  },
+  "css/css-viewport/zoom/explicit-inherit/border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/border.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/bottom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/column.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/flex-basis.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/left.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/max-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/max-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/min-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/min-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/outline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/right.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/top.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/webkit-border-radius.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/webkit-flex-basis.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/explicit-inherit/width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/filters-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/filters-drop-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/font-relative-units-with-zoom.html": {
+    "total": 7
+  },
+  "css/css-viewport/zoom/font-relative-units.html": {
+    "total": 6
+  },
+  "css/css-viewport/zoom/font-size-keyword-specified.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/font-size-keyword-system-font.html": {
+    "total": 1
+  },
+  "css/css-viewport/zoom/font-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/grid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/iframe-zoom-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/iframe-zoom.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/image-intrinsic-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/inherited-length.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/inherited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/length-implicit-and-explicit-inheritance.html": {
+    "total": 5
+  },
+  "css/css-viewport/zoom/letter-spacing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/line-height-computed.html": {
+    "total": 6
+  },
+  "css/css-viewport/zoom/line-height.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/list-style-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/mask-border-outset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/mask-border-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/matrix-zoom-anim-computed.html": {
+    "total": 1
+  },
+  "css/css-viewport/zoom/matrix-zoom-anim.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/matrix-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/matrix3d-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/outline-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/outline-width-keywords.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/outline-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/parsing/zoom-computed-with-sign-expression.html": {
+    "total": 11
+  },
+  "css/css-viewport/zoom/parsing/zoom-computed.html": {
+    "total": 13
+  },
+  "css/css-viewport/zoom/parsing/zoom-valid.html": {
+    "total": 16
+  },
+  "css/css-viewport/zoom/perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/relative-units-from-parent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/relative-units.html": {
+    "total": 6
+  },
+  "css/css-viewport/zoom/row-gap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/scroll-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/scroll-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/scroll-top-test-with-zoom.html": {
+    "total": 2
+  },
+  "css/css-viewport/zoom/shape-outside-circle.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/shape-outside-ellipse.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/shape-outside-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/shape-outside-polygon.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/shape-outside-rect.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/shape-outside-xywh.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/stroke.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-computed-style.html": {
+    "total": 88
+  },
+  "css/css-viewport/zoom/svg-font-relative-units.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-foreignObject-font-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-path-simple.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-path.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-stroke-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg-viewBox.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/tab-size.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-decoration-thickness.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-indent-computed.html": {
+    "total": 10
+  },
+  "css/css-viewport/zoom/text-indent-svg.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-indent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-stroke-width.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/text-underline-offset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/transform-matrix-2d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/transform-matrix-3d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/transform-perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/transform-translate.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/translate-matrix-zoom-anim-accumulate.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/translate-matrix-zoom-anim-accumulated-computed.html": {
+    "total": 1
+  },
+  "css/css-viewport/zoom/translate-zoom-anim-calc.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/translate-zoom-anim-computed.html": {
+    "total": 2
+  },
+  "css/css-viewport/zoom/translate-zoom-anim.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/translate.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/vertical-align.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/view-timeline-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/widget.html": {
+    "total": 2
+  },
+  "css/css-viewport/zoom/word-spacing-inherited-computed.html": {
+    "total": 3
+  },
+  "css/css-viewport/zoom/word-spacing.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/zoom-iframe-dynamic.html": {
+    "total": 1
+  },
+  "css/css-viewport/zoom/zoom-precision.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/zoom-pseudo-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/zoom-with-sign-function.html": {
+    "total": 2
+  }
+}

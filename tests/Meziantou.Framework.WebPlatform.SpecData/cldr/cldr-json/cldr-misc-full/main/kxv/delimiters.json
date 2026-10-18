@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kxv": {
+      "identity": {
+        "language": "kxv"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

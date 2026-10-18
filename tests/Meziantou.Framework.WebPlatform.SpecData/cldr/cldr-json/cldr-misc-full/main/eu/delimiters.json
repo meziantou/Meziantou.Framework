@@ -1,0 +1,15 @@
+{
+  "main": {
+    "eu": {
+      "identity": {
+        "language": "eu"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "“",
+        "alternateQuotationEnd": "”"
+      }
+    }
+  }
+}

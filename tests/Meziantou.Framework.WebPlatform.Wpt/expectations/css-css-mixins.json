@@ -1,0 +1,175 @@
+{
+  "css/css-mixins/function-definition-scope.html": {
+    "total": 3
+  },
+  "css/css-mixins/function-parameter-scoping.html": {
+    "total": 4
+  },
+  "css/css-mixins/function-relative-units.html": {
+    "total": 11
+  },
+  "css/css-mixins/functions/at-function-cssom.html": {
+    "total": 37
+  },
+  "css/css-mixins/functions/at-function-parsing.html": {
+    "total": 93
+  },
+  "css/css-mixins/functions/dashed-function-cycles.html": {
+    "total": 30
+  },
+  "css/css-mixins/functions/dashed-function-eval.html": {
+    "total": 89
+  },
+  "css/css-mixins/functions/dashed-function-named-arg.tentative.html": {
+    "total": 15
+  },
+  "css/css-mixins/functions/dashed-function-parsing.html": {
+    "total": 52
+  },
+  "css/css-mixins/functions/dashed-function-standard-property.html": {
+    "total": 4
+  },
+  "css/css-mixins/functions/function-attr.html": {
+    "total": 19
+  },
+  "css/css-mixins/functions/function-conditionals.html": {
+    "total": 22
+  },
+  "css/css-mixins/functions/function-container-dynamic.html": {
+    "total": 1
+  },
+  "css/css-mixins/functions/function-container-self.html": {
+    "total": 1
+  },
+  "css/css-mixins/functions/function-container-style.html": {
+    "total": 2
+  },
+  "css/css-mixins/functions/function-in-media.html": {
+    "total": 1
+  },
+  "css/css-mixins/functions/function-invalidation.html": {
+    "total": 4
+  },
+  "css/css-mixins/functions/function-layer.html": {
+    "total": 7
+  },
+  "css/css-mixins/functions/function-media-dynamic.html": {
+    "total": 1
+  },
+  "css/css-mixins/functions/function-parameter-types.tentative.html": {
+    "total": 8
+  },
+  "css/css-mixins/functions/function-shadow-animations.html": {
+    "total": 3,
+    "failures": {
+      "Can animate standard property in shadow": "FAIL",
+      "Can animate typed custom property in shadow": "FAIL",
+      "Can animate untyped custom property in shadow": "FAIL"
+    }
+  },
+  "css/css-mixins/functions/function-shadow-cache.html": {
+    "total": 1
+  },
+  "css/css-mixins/functions/function-shadow-container.html": {
+    "total": 3
+  },
+  "css/css-mixins/functions/function-shadow.html": {
+    "total": 11
+  },
+  "css/css-mixins/functions/local-attr-substitution.html": {
+    "total": 7
+  },
+  "css/css-mixins/functions/local-if-substitution.html": {
+    "total": 24
+  },
+  "css/css-mixins/functions/local-inherit-substitution.html": {
+    "total": 5
+  },
+  "css/css-mixins/functions/local-var-substitution.html": {
+    "total": 4
+  },
+  "css/css-mixins/mixins/apply-nested-declarations.html": {
+    "total": 2
+  },
+  "css/css-mixins/mixins/apply-top-level.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/apply-within-mixin.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/contents-nested-declarations-fallback.html": {
+    "total": 2
+  },
+  "css/css-mixins/mixins/contents-nested-declarations.html": {
+    "total": 2
+  },
+  "css/css-mixins/mixins/contents-rule.html": {
+    "total": 8
+  },
+  "css/css-mixins/mixins/important.html": {
+    "total": 4
+  },
+  "css/css-mixins/mixins/mixin-basic.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-conditionals.html": {
+    "total": 7
+  },
+  "css/css-mixins/mixins/mixin-cross-stylesheet.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-cssom.tentative.html": {
+    "total": 8
+  },
+  "css/css-mixins/mixins/mixin-cycle.tentative.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-declarations.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-from-import-with-media-queries.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-from-import.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-invalidation.tentative.html": {
+    "total": 3
+  },
+  "css/css-mixins/mixins/mixin-layers.html": {
+    "total": 4
+  },
+  "css/css-mixins/mixins/mixin-locals.html": {
+    "total": 8
+  },
+  "css/css-mixins/mixins/mixin-media-query-invalidation-2.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-media-query-invalidation.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-parameters.html": {
+    "total": 24
+  },
+  "css/css-mixins/mixins/mixin-parsing.html": {
+    "total": 29,
+    "failures": {
+      "@mixin and @keyframes are valid within @navigation": "FAIL"
+    }
+  },
+  "css/css-mixins/mixins/mixin-shadow-dom.html": {
+    "total": 15
+  },
+  "css/css-mixins/mixins/mixin-shared-across-documents.html": {
+    "total": 1
+  },
+  "css/css-mixins/mixins/mixin-shared-sheet-no-mixins-in-scope.html": {
+    "total": 2
+  },
+  "css/css-mixins/private/private-cssom-insert-rule.tentative.html": {
+    "total": 4
+  },
+  "css/css-mixins/private/private-cssom-serialization.tentative.html": {
+    "total": 16
+  }
+}

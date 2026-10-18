@@ -1,0 +1,755 @@
+{
+  "spec": {
+    "title": "CSS Fill and Stroke Module Level 3",
+    "url": "https://drafts.csswg.org/fill-stroke-3/"
+  },
+  "properties": [
+    {
+      "name": "fill-rule",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-rule",
+      "value": "nonzero | evenodd",
+      "initial": "nonzero",
+      "appliesTo": "SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "nonzero",
+          "prose": "This rule determines the “insideness” of a point on the canvas by drawing a ray from that point to infinity in any direction and then examining the places where a segment of the shape crosses the ray. Starting with a count of zero, add one each time a path segment crosses the ray from left to right and subtract one each time a path segment crosses the ray from right to left. After counting the crossings, if the result is zero then the point is outside the path. Otherwise, it is inside. The effect of a nonzero fill rule on paths with self-intersections and enclosed subpaths.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-rule-nonzero",
+          "type": "value",
+          "value": "nonzero"
+        },
+        {
+          "name": "evenodd",
+          "prose": "This rule determines the “insideness” of a point on the canvas by drawing a ray from that point to infinity in any direction and counting the number of path segments from the given shape that the ray crosses. If this number is odd, the point is inside; if even, the point is outside. The effect of an evenodd fill rule on paths with self-intersections and enclosed subpaths.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-rule-evenodd",
+          "type": "value",
+          "value": "evenodd"
+        }
+      ],
+      "styleDeclaration": [
+        "fill-rule",
+        "fillRule"
+      ]
+    },
+    {
+      "name": "fill-break",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-break",
+      "value": "bounding-box | slice | clone",
+      "initial": "bounding-box",
+      "appliesTo": "all elements",
+      "inherited": "yes?",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-break",
+        "fillBreak"
+      ]
+    },
+    {
+      "name": "fill-color",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-color",
+        "fillColor"
+      ]
+    },
+    {
+      "name": "fill-image",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-image",
+      "value": "<paint>#",
+      "initial": "none",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified, with any <image> computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-image",
+        "fillImage"
+      ]
+    },
+    {
+      "name": "fill-origin",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-origin",
+      "value": "match-parent | fill-box | stroke-box | content-box | padding-box | border-box",
+      "initial": "match-parent",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "match-parent",
+          "prose": "Use the same fill positioning area as the parent. If it has no parent, use the initial containing block.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        },
+        {
+          "name": "content-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the fill positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the fill positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the fill positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "For SVG shapes or SVG text, use the object bounding box of the element. For CSS boxes, use the bounding box of the text glyph outlines of the element and all in-flow or floated descendants.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "For SVG shapes or SVG text, use the stroke bounding box of the element. For CSS boxes, use the bounding box of the text glyph stroke outlines of the element and all in-flow or floated descendants.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-fill-origin-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        }
+      ],
+      "styleDeclaration": [
+        "fill-origin",
+        "fillOrigin"
+      ]
+    },
+    {
+      "name": "fill-position",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-position",
+      "value": "<position>#",
+      "initial": "0% 0%",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "A list, each item consisting of: a pair of offsets (horizontal and vertical) from the top left origin each given as a combination of an absolute length and a percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-position",
+        "fillPosition"
+      ]
+    },
+    {
+      "name": "fill-size",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-size",
+      "value": "<bg-size>#",
+      "initial": "auto",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified, but with lengths made absolute and omitted auto keywords filled in",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-size",
+        "fillSize"
+      ]
+    },
+    {
+      "name": "fill-repeat",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-repeat",
+      "value": "<repeat-style>#",
+      "initial": "repeat",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "A list, each item consisting of: two keywords, one per dimension",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-repeat",
+        "fillRepeat"
+      ]
+    },
+    {
+      "name": "fill-opacity",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-fill-opacity",
+      "value": "<'opacity'>",
+      "initial": "1",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified value converted to a <number>, clamped to the range [0,1]",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "fill-opacity",
+        "fillOpacity"
+      ]
+    },
+    {
+      "name": "stroke-width",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-width",
+      "value": "[ <length-percentage> | <line-width> | <number> ]#",
+      "initial": "1px",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "relative to the scaled viewport size",
+      "computedValue": "the absolute length, or percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-width",
+        "strokeWidth"
+      ]
+    },
+    {
+      "name": "stroke-align",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-align",
+      "value": "center | inset | outset",
+      "initial": "center",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "center",
+          "prose": "The stroke for each subpath is centered on the outline.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-align-center",
+          "type": "value",
+          "value": "center"
+        },
+        {
+          "name": "inset",
+          "prose": "The stroke for each subpath lies on the “inside” of the outline (into the fill area). The stroke-linejoin property must be ignored. Why is stroke-linejoin ignored? It’s still needed for interior corners.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-align-inset",
+          "type": "value",
+          "value": "inset"
+        },
+        {
+          "name": "outset",
+          "prose": "The stroke for each subpath lies on the “outside” of the outline (outside the fill area).",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-align-outset",
+          "type": "value",
+          "value": "outset"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-align",
+        "strokeAlign"
+      ]
+    },
+    {
+      "name": "stroke-linecap",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-linecap",
+      "value": "butt | round | square",
+      "initial": "butt",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "butt",
+          "prose": "The stroke for each subpath does not extend beyond its two endpoints. (A zero length subpath will therefore not have any stroke.)",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linecap-butt",
+          "type": "value",
+          "value": "butt"
+        },
+        {
+          "name": "round",
+          "prose": "At each end of each subpath, the stroke is extended by a half circle with a radius equal to half the stroke width. (The stroke for a zero-length subpath is a full circle centered at the subpath’s point.)",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linecap-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "square",
+          "prose": "At the end of each subpath, the stroke is extended by a rectangle with the same width as the stroke width and whose length is half of the stroke width. (The stroke for a zero-length subpath is a square with side length equal to the stroke width, centered at the subpath’s point, and oriented such that two of its sides are parallel to the effective tangent at that subpath’s point. See § 4.6 Computing the Shape of the Stroke for details on how to determine the tangent at a zero-length subpath.) Adding a rectangle to the end of dashes on a curved outline looks bad. It should just extend the dash by stroke-width/2, following the outline.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linecap-square",
+          "type": "value",
+          "value": "square"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-linecap",
+        "strokeLinecap"
+      ]
+    },
+    {
+      "name": "stroke-linejoin",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-linejoin",
+      "value": "[ crop | arcs | miter ] || [ bevel | round | fallback ]",
+      "initial": "miter",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "crop",
+          "prose": "The stroke extends the minimal amount past the corner necessary to form a convex corner. This acts identically to miter, but forces stroke-miterlimit to behave as if it had its minimum value of 1.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-crop",
+          "type": "value",
+          "value": "crop"
+        },
+        {
+          "name": "miter",
+          "prose": "A sharp corner is used to join path segments. The corner is formed by extending the outer edges of the stroke at the tangents of the path segments until they intersect.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-miter",
+          "type": "value",
+          "value": "miter"
+        },
+        {
+          "name": "arcs",
+          "prose": "An arcs corner is used to join path segments. The arcs shape is formed by extending the outer edges of the stroke at the join point with arcs that have the same curvature as the outer edges at the join point.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-arcs",
+          "type": "value",
+          "value": "arcs"
+        },
+        {
+          "name": "bevel",
+          "prose": "The corner is cropped at the stroke-miterlimit by the perpendicular to its diagonal.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-bevel",
+          "type": "value",
+          "value": "bevel"
+        },
+        {
+          "name": "round",
+          "prose": "The corner is cropped as for bevel, and a filled arc tangent to the truncated stroke edges is appended to round the corner.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-round",
+          "type": "value",
+          "value": "round"
+        },
+        {
+          "name": "fallback",
+          "prose": "When the stroke-miterlimit is exceeded, this behaves as if crop bevel were specified. Can we just remove fallback? It’s a stupid value, useful only because we didn’t have the clip-at-miterlimit behavior in SVG1. Question is if people are mostly just *accidentally* getting the bevel behavior right now, and would be okay with their joins extending up to the miterlimit and only getting the excess corners clipped, or if they actually wanted the discontinuous behavior currently specified. The breakpoint is between 29 and 30 degrees.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-linejoin-fallback",
+          "type": "value",
+          "value": "fallback"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-linejoin",
+        "strokeLinejoin"
+      ]
+    },
+    {
+      "name": "stroke-miterlimit",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-miterlimit",
+      "value": "<number>",
+      "initial": "4",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "a number",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "<number>",
+          "prose": "Specifies the limit on the join’s size as a ratio of its diagonal to the stroke-width. Values less than 1 are invalid (and make the declaration invalid). For a miter linejoin, the length of the diagonal is calculated from the angle between the two segments as stroke-width / sin(θ/2). The linejoin is clipped perpendicular to the line bisecting the angle between the two path segments. For an arcs linejoin, the length of the diagonal is calculated along a circular arc that is tangent to the line bisecting the angle between the two segments at the point the two segments intersect and passes through the end point of the join. The linejoin is clipped perpendicular to this arc.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-miterlimit-number",
+          "type": "value",
+          "value": "<number>"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-miterlimit",
+        "strokeMiterlimit"
+      ]
+    },
+    {
+      "name": "stroke-break",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-break",
+      "value": "bounding-box | slice | clone",
+      "initial": "bounding-box",
+      "appliesTo": "all elements",
+      "inherited": "?",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-break",
+        "strokeBreak"
+      ]
+    },
+    {
+      "name": "stroke-dasharray",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-dasharray",
+      "value": "none | [<length-percentage> | <number>]+#",
+      "initial": "none",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "relative to the scaled viewport size",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No dashing: the stroke is drawn continuously.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dasharray-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "<length-percentage>+#",
+          "prose": "Specifies a dashing pattern to use. Each <length-percentage> value represents the length of the next dash or gap (beginning with the first dash and alternating from there) of the stroke. The pattern repeats over the length of the stroke. (If the number of values is odd, the pattern behaves as if it was duplicated to yield an even number of values.) The dashing pattern is reset and begins anew at the start of each subpath. Negative values are invalid. If all values are zero, it is treated as none.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dasharray-length-percentage",
+          "type": "value",
+          "value": "<length-percentage>+#"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-dasharray",
+        "strokeDasharray"
+      ]
+    },
+    {
+      "name": "stroke-dashoffset",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-dashoffset",
+      "value": "<length-percentage> | <number>",
+      "initial": "0",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "relative to the scaled viewport size",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-dashoffset",
+        "strokeDashoffset"
+      ]
+    },
+    {
+      "name": "stroke-dash-corner",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-dash-corner",
+      "value": "none | <length>",
+      "initial": "none",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value, with lengths made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value if <length>, otherwise discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "none",
+          "prose": "This property has no special effect on dashing: the dashes are positioned/sized continuously along the path.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-corner-none",
+          "type": "value",
+          "value": "none"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-dash-corner",
+        "strokeDashCorner"
+      ]
+    },
+    {
+      "name": "stroke-dash-justify",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-dash-justify",
+      "value": "none | [ stretch | compress ] || [ dashes || gaps ]",
+      "initial": "none",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "specified value, with lengths made absolute",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No adjustment of the dash pattern is made: it’s clipped at the end of the subpath with however much progress it made to that point.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-justify-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "stretch",
+          "prose": "Indicates that when the dash pattern does not fit into a subpath a whole number times, the dashes or gaps (or both) will be lengthened so that it does.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-justify-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "compress",
+          "prose": "Indicates that when the dash pattern does not fit into a subpath a whole number times, the dashes or gaps (or both) will be shortened so that it does.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-justify-compress",
+          "type": "value",
+          "value": "compress"
+        },
+        {
+          "name": "dashes",
+          "prose": "Indicates that when a dash pattern is to be stretched or compressed, the length of the dashes will be adjusted.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-justify-dashes",
+          "type": "value",
+          "value": "dashes"
+        },
+        {
+          "name": "gaps",
+          "prose": "Indicates that when a dash pattern is to be stretched or compressed, the length of the gaps will be adjusted.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-dash-justify-gaps",
+          "type": "value",
+          "value": "gaps"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-dash-justify",
+        "strokeDashJustify"
+      ]
+    },
+    {
+      "name": "stroke-color",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-color",
+      "value": "<color>#",
+      "initial": "transparent",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-color",
+        "strokeColor"
+      ]
+    },
+    {
+      "name": "stroke-image",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-image",
+      "value": "<paint>#",
+      "initial": "none",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "as specified, with any <image> computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-image",
+        "strokeImage"
+      ]
+    },
+    {
+      "name": "stroke-origin",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-origin",
+      "value": "match-parent | fill-box | stroke-box | content-box | padding-box | border-box",
+      "initial": "match-parent",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "values": [
+        {
+          "name": "match-parent",
+          "prose": "Use the same stroke positioning area as the parent. If it has no parent, use the initial containing block.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-match-parent",
+          "type": "value",
+          "value": "match-parent"
+        },
+        {
+          "name": "content-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the stroke positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "padding-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the stroke positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-padding-box",
+          "type": "value",
+          "value": "padding-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Use the box’s own content-box/padding-box/border-box as the stroke positioning area. For SVG shapes, content-box and padding-box are treated as fill-box, while border-box is treated as stroke-box.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-border-box",
+          "type": "value",
+          "value": "border-box"
+        },
+        {
+          "name": "fill-box",
+          "prose": "For SVG shapes or SVG text, use the object bounding box of the element. For CSS boxes, use the bounding box of the text glyph outlines of the element and all in-flow or floated descendants.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-fill-box",
+          "type": "value",
+          "value": "fill-box"
+        },
+        {
+          "name": "stroke-box",
+          "prose": "For SVG shapes or SVG text, use the stroke bounding box of the element. For CSS boxes, use the bounding box of the text glyph stroke outlines of the element and all in-flow or floated descendants.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-stroke-origin-stroke-box",
+          "type": "value",
+          "value": "stroke-box"
+        }
+      ],
+      "styleDeclaration": [
+        "stroke-origin",
+        "strokeOrigin"
+      ]
+    },
+    {
+      "name": "stroke-position",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-position",
+      "value": "<position>#",
+      "initial": "0% 0%",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "A list, each item consisting of: a pair of offsets (horizontal and vertical) from the top left origin each given as a combination of an absolute length and a percentage",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-position",
+        "strokePosition"
+      ]
+    },
+    {
+      "name": "stroke-size",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-size",
+      "value": "<bg-size>#",
+      "initial": "auto",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified, but with lengths made absolute and omitted auto keywords filled in",
+      "canonicalOrder": "per grammar",
+      "animationType": "repeatable list",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-size",
+        "strokeSize"
+      ]
+    },
+    {
+      "name": "stroke-repeat",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-repeat",
+      "value": "<repeat-style>#",
+      "initial": "repeat",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "A list, each item consisting of: two keywords, one per dimension",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-repeat",
+        "strokeRepeat"
+      ]
+    },
+    {
+      "name": "stroke-opacity",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-opacity",
+      "value": "<'opacity'>",
+      "initial": "1",
+      "appliesTo": "text and SVG shapes",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified value converted to a <number>, clamped to the range [0,1]",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value",
+      "media": "visual",
+      "styleDeclaration": [
+        "stroke-opacity",
+        "strokeOpacity"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<paint>",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#typedef-paint",
+      "type": "type",
+      "value": "none | <image> | <svg-paint>",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Indicates no paint is applied.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-paint-none",
+          "type": "value",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "name": "<svg-paint>",
+      "href": "https://drafts.csswg.org/fill-stroke-3/#typedef-svg-paint",
+      "type": "type",
+      "value": "child | child( <integer> )",
+      "values": [
+        {
+          "name": "child",
+          "prose": "Refers to the last child paint server element of the element being painted. If there is no such child, behaves as none.",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-svg-paint-child",
+          "type": "value",
+          "value": "child"
+        },
+        {
+          "name": "child()",
+          "value": "child()",
+          "href": "https://drafts.csswg.org/fill-stroke-3/#valdef-svg-paint-child-integer",
+          "type": "value"
+        }
+      ]
+    }
+  ]
+}

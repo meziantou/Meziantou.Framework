@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ckb": {
+      "identity": {
+        "language": "ckb"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "main": {
+    "sw-CD": {
+      "identity": {
+        "language": "sw",
+        "territory": "CD"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

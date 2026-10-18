@@ -1,0 +1,1143 @@
+{
+  "spec": {
+    "title": "Web Serial API",
+    "url": "https://serial.spec.whatwg.org/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "Navigator",
+          "Serial",
+          "SerialPort"
+        ],
+        "DedicatedWorker": [
+          "WorkerNavigator",
+          "Serial",
+          "SerialPort"
+        ]
+      }
+    },
+    "idlNames": {
+      "Serial": {
+        "fragment": "[Exposed=(DedicatedWorker, Window), SecureContext]\ninterface Serial : EventTarget {\n  attribute EventHandler onconnect;\n  attribute EventHandler ondisconnect;\n  Promise<sequence<SerialPort>> getPorts();\n  [Exposed=Window] Promise<SerialPort> requestPort(optional SerialPortRequestOptions options = {});\n};",
+        "type": "interface",
+        "name": "Serial",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serial-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "ondisconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serial-ondisconnect"
+          },
+          {
+            "type": "operation",
+            "name": "getPorts",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "SerialPort"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serial-getports"
+          },
+          {
+            "type": "operation",
+            "name": "requestPort",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialPort"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialPortRequestOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serial-requestport"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serial"
+      },
+      "SerialPortRequestOptions": {
+        "fragment": "dictionary SerialPortRequestOptions {\n  sequence<SerialPortFilter> filters;\n  sequence<BluetoothServiceUUID> allowedBluetoothServiceClassIds;\n};",
+        "type": "dictionary",
+        "name": "SerialPortRequestOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "filters",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialPortFilter"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportrequestoptions-filters"
+          },
+          {
+            "type": "field",
+            "name": "allowedBluetoothServiceClassIds",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "BluetoothServiceUUID"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportrequestoptions-allowedbluetoothserviceclassids"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialportrequestoptions"
+      },
+      "SerialPortFilter": {
+        "fragment": "dictionary SerialPortFilter {\n  unsigned short usbVendorId;\n  unsigned short usbProductId;\n  BluetoothServiceUUID bluetoothServiceClassId;\n};",
+        "type": "dictionary",
+        "name": "SerialPortFilter",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "usbVendorId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportfilter-usbvendorid"
+          },
+          {
+            "type": "field",
+            "name": "usbProductId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportfilter-usbproductid"
+          },
+          {
+            "type": "field",
+            "name": "bluetoothServiceClassId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceUUID"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportfilter-bluetoothserviceclassid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialportfilter"
+      },
+      "SerialPort": {
+        "fragment": "[Exposed=(DedicatedWorker,Window), SecureContext]\ninterface SerialPort : EventTarget {\n  attribute EventHandler onconnect;\n  attribute EventHandler ondisconnect;\n  readonly attribute boolean connected;\n  readonly attribute ReadableStream? readable;\n  readonly attribute WritableStream? writable;\n\n  SerialPortInfo getInfo();\n\n  Promise<undefined> open(SerialOptions options);\n  Promise<undefined> setSignals(optional SerialOutputSignals signals = {});\n  Promise<SerialInputSignals> getSignals();\n  Promise<undefined> close();\n  Promise<undefined> forget();\n};",
+        "type": "interface",
+        "name": "SerialPort",
+        "inheritance": "EventTarget",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "onconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-onconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "ondisconnect",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-ondisconnect"
+          },
+          {
+            "type": "attribute",
+            "name": "connected",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-connected"
+          },
+          {
+            "type": "attribute",
+            "name": "readable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "ReadableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-readable"
+          },
+          {
+            "type": "attribute",
+            "name": "writable",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WritableStream"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-writable"
+          },
+          {
+            "type": "operation",
+            "name": "getInfo",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SerialPortInfo"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-getinfo"
+          },
+          {
+            "type": "operation",
+            "name": "open",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialOptions"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-open"
+          },
+          {
+            "type": "operation",
+            "name": "setSignals",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "signals",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialOutputSignals"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-setsignals"
+          },
+          {
+            "type": "operation",
+            "name": "getSignals",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SerialInputSignals"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-getsignals"
+          },
+          {
+            "type": "operation",
+            "name": "close",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-close"
+          },
+          {
+            "type": "operation",
+            "name": "forget",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://serial.spec.whatwg.org/#dom-serialport-forget"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "Window"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialport"
+      },
+      "SerialPortInfo": {
+        "fragment": "dictionary SerialPortInfo {\n  unsigned short usbVendorId;\n  unsigned short usbProductId;\n  BluetoothServiceUUID bluetoothServiceClassId;\n};",
+        "type": "dictionary",
+        "name": "SerialPortInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "usbVendorId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportinfo-usbvendorid"
+          },
+          {
+            "type": "field",
+            "name": "usbProductId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportinfo-usbproductid"
+          },
+          {
+            "type": "field",
+            "name": "bluetoothServiceClassId",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "BluetoothServiceUUID"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialportinfo-bluetoothserviceclassid"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialportinfo"
+      },
+      "SerialOptions": {
+        "fragment": "dictionary SerialOptions {\n  [EnforceRange] required unsigned long baudRate;\n  [EnforceRange] octet dataBits = 8;\n  [EnforceRange] octet stopBits = 1;\n  ParityType parity = \"none\";\n  [EnforceRange] unsigned long bufferSize = 255;\n  FlowControlType flowControl = \"none\";\n};",
+        "type": "dictionary",
+        "name": "SerialOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "baudRate",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-baudrate"
+          },
+          {
+            "type": "field",
+            "name": "dataBits",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": {
+              "type": "number",
+              "value": "8"
+            },
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-databits"
+          },
+          {
+            "type": "field",
+            "name": "stopBits",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "octet"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-stopbits"
+          },
+          {
+            "type": "field",
+            "name": "parity",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "ParityType"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-parity"
+          },
+          {
+            "type": "field",
+            "name": "bufferSize",
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "EnforceRange",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "255"
+            },
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-buffersize"
+          },
+          {
+            "type": "field",
+            "name": "flowControl",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "FlowControlType"
+            },
+            "default": {
+              "type": "string",
+              "value": "none"
+            },
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoptions-flowcontrol"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialoptions"
+      },
+      "ParityType": {
+        "fragment": "enum ParityType {\n  \"none\",\n  \"even\",\n  \"odd\"\n};",
+        "type": "enum",
+        "name": "ParityType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://serial.spec.whatwg.org/#dom-paritytype-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "even",
+            "href": "https://serial.spec.whatwg.org/#dom-paritytype-even"
+          },
+          {
+            "type": "enum-value",
+            "value": "odd",
+            "href": "https://serial.spec.whatwg.org/#dom-paritytype-odd"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://serial.spec.whatwg.org/#dom-paritytype"
+      },
+      "FlowControlType": {
+        "fragment": "enum FlowControlType {\n  \"none\",\n  \"hardware\"\n};",
+        "type": "enum",
+        "name": "FlowControlType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "none",
+            "href": "https://serial.spec.whatwg.org/#dom-flowcontroltype-none"
+          },
+          {
+            "type": "enum-value",
+            "value": "hardware",
+            "href": "https://serial.spec.whatwg.org/#dom-flowcontroltype-hardware"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://serial.spec.whatwg.org/#dom-flowcontroltype"
+      },
+      "SerialOutputSignals": {
+        "fragment": "dictionary SerialOutputSignals {\n  boolean dataTerminalReady;\n  boolean requestToSend;\n  boolean break;\n};",
+        "type": "dictionary",
+        "name": "SerialOutputSignals",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "dataTerminalReady",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoutputsignals-dataterminalready"
+          },
+          {
+            "type": "field",
+            "name": "requestToSend",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoutputsignals-requesttosend"
+          },
+          {
+            "type": "field",
+            "name": "break",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://serial.spec.whatwg.org/#dom-serialoutputsignals-break"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialoutputsignals"
+      },
+      "SerialInputSignals": {
+        "fragment": "dictionary SerialInputSignals {\n  required boolean dataCarrierDetect;\n  required boolean clearToSend;\n  required boolean ringIndicator;\n  required boolean dataSetReady;\n};",
+        "type": "dictionary",
+        "name": "SerialInputSignals",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "dataCarrierDetect",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals-datacarrierdetect"
+          },
+          {
+            "type": "field",
+            "name": "clearToSend",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals-cleartosend"
+          },
+          {
+            "type": "field",
+            "name": "ringIndicator",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals-ringindicator"
+          },
+          {
+            "type": "field",
+            "name": "dataSetReady",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals-datasetready"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[Exposed=Window, SecureContext]\npartial interface Navigator {\n  [SameObject] readonly attribute Serial serial;\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "serial",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Serial"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://serial.spec.whatwg.org/#dom-navigator-serial"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "WorkerNavigator": [
+        {
+          "fragment": "[Exposed=DedicatedWorker, SecureContext]\npartial interface WorkerNavigator {\n  [SameObject] readonly attribute Serial serial;\n};",
+          "type": "interface",
+          "name": "WorkerNavigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "serial",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Serial"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SameObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://serial.spec.whatwg.org/#dom-workernavigator-serial"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "DedicatedWorker"
+              },
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "Navigator",
+        "Serial",
+        "SerialPort"
+      ],
+      "DedicatedWorker": [
+        "WorkerNavigator",
+        "Serial",
+        "SerialPort"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "Serial"
+      ],
+      "WorkerNavigator": [
+        "Serial"
+      ],
+      "Serial": [
+        "EventTarget",
+        "EventHandler",
+        "SerialPort",
+        "SerialPortRequestOptions"
+      ],
+      "SerialPortRequestOptions": [
+        "SerialPortFilter",
+        "BluetoothServiceUUID"
+      ],
+      "SerialPortFilter": [
+        "BluetoothServiceUUID"
+      ],
+      "SerialPort": [
+        "EventTarget",
+        "EventHandler",
+        "ReadableStream",
+        "WritableStream",
+        "SerialPortInfo",
+        "SerialOptions",
+        "SerialOutputSignals",
+        "SerialInputSignals"
+      ],
+      "SerialPortInfo": [
+        "BluetoothServiceUUID"
+      ],
+      "SerialOptions": [
+        "ParityType",
+        "FlowControlType"
+      ],
+      "SerialOutputSignals": [],
+      "SerialInputSignals": []
+    },
+    "externalDependencies": [
+      "Navigator",
+      "WorkerNavigator",
+      "EventTarget",
+      "EventHandler",
+      "BluetoothServiceUUID",
+      "ReadableStream",
+      "WritableStream"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "html5test-com.dat#14": "Chromium deviation: <![CDATA[ in an SVG title (an HTML integration point) is parsed as a bogus comment. The markup declaration open state only checks that the adjusted current node is not in the HTML namespace (the html5lib test expects a text node)",
+  "html5test-com.dat#15": "Chromium deviation: <![CDATA[ in an SVG foreignObject (an HTML integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
+  "html5test-com.dat#18": "Chromium deviation: <![CDATA[ in a MathML mtext (a MathML text integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
+  "noscript01.dat#13": "Chromium deviation: a comment after an ignored <head> start tag in the 'in head noscript' insertion mode is inserted after the noscript element instead of in it (processed with the 'in head' rules, it is inserted in the current node)",
+  "search-element.dat#4": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "search-element.dat#5": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "search-element.dat#6": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "search-element.dat#7": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "search-element.dat#8": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "tests19.dat#48": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "tests19.dat#49": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "tests19.dat#50": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
+  "tests19.dat#51": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)"
+}

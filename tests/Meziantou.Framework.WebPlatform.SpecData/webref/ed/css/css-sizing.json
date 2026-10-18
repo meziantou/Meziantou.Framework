@@ -1,0 +1,557 @@
+{
+  "spec": {
+    "title": "CSS Box Sizing Module Level 3",
+    "url": "https://drafts.csswg.org/css-sizing-3/"
+  },
+  "properties": [
+    {
+      "name": "width",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-width",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements except non-replaced inlines",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type, recursing into fit-content()",
+      "logicalPropertyGroup": "size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "For width/height, specifies an automatic size (automatic block size/automatic inline size). See the relevant layout module for how to calculate this. For min-width/min-height, specifies an automatic minimum size. Unless otherwise defined by the relevant layout module, however, it resolves to a used value of 0. For backwards-compatibility, the resolved value of this keyword is zero for boxes of all [CSS2] display types (block and inline boxes, inline blocks, and all table display types) when aspect-ratio is auto. It also resolves to zero when no box is generated.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "width"
+      ]
+    },
+    {
+      "name": "height",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-height",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements except non-replaced inlines",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type, recursing into fit-content()",
+      "logicalPropertyGroup": "size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "For width/height, specifies an automatic size (automatic block size/automatic inline size). See the relevant layout module for how to calculate this. For min-width/min-height, specifies an automatic minimum size. Unless otherwise defined by the relevant layout module, however, it resolves to a used value of 0. For backwards-compatibility, the resolved value of this keyword is zero for boxes of all [CSS2] display types (block and inline boxes, inline blocks, and all table display types) when aspect-ratio is auto. It also resolves to zero when no box is generated.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "height"
+      ]
+    },
+    {
+      "name": "inline-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-inline-size",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements except non-replaced inlines",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type, recursing into fit-content()",
+      "logicalPropertyGroup": "size",
+      "styleDeclaration": [
+        "inline-size",
+        "inlineSize"
+      ]
+    },
+    {
+      "name": "block-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-block-size",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements except non-replaced inlines",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type, recursing into fit-content()",
+      "logicalPropertyGroup": "size",
+      "styleDeclaration": [
+        "block-size",
+        "blockSize"
+      ]
+    },
+    {
+      "name": "min-width",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-min-width",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "min-size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "For width/height, specifies an automatic size (automatic block size/automatic inline size). See the relevant layout module for how to calculate this. For min-width/min-height, specifies an automatic minimum size. Unless otherwise defined by the relevant layout module, however, it resolves to a used value of 0. For backwards-compatibility, the resolved value of this keyword is zero for boxes of all [CSS2] display types (block and inline boxes, inline blocks, and all table display types) when aspect-ratio is auto. It also resolves to zero when no box is generated.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "min-width",
+        "minWidth"
+      ]
+    },
+    {
+      "name": "min-height",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-min-height",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "min-size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "For width/height, specifies an automatic size (automatic block size/automatic inline size). See the relevant layout module for how to calculate this. For min-width/min-height, specifies an automatic minimum size. Unless otherwise defined by the relevant layout module, however, it resolves to a used value of 0. For backwards-compatibility, the resolved value of this keyword is zero for boxes of all [CSS2] display types (block and inline boxes, inline blocks, and all table display types) when aspect-ratio is auto. It also resolves to zero when no box is generated.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "min-height",
+        "minHeight"
+      ]
+    },
+    {
+      "name": "min-inline-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-min-inline-size",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "min-size",
+      "styleDeclaration": [
+        "min-inline-size",
+        "minInlineSize"
+      ]
+    },
+    {
+      "name": "min-block-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-min-block-size",
+      "value": "auto | <box-size>",
+      "initial": "auto",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "min-size",
+      "styleDeclaration": [
+        "min-block-size",
+        "minBlockSize"
+      ]
+    },
+    {
+      "name": "max-width",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-max-width",
+      "value": "none | <box-size>",
+      "initial": "none",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "max-size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "No limit on the size of the box.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-max-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "max-width",
+        "maxWidth"
+      ]
+    },
+    {
+      "name": "max-height",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-max-height",
+      "value": "none | <box-size>",
+      "initial": "none",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "max-size",
+      "values": [
+        {
+          "name": "<length-percentage [0,∞]>",
+          "prose": "Specifies the size of the box using <length> and/or <percentage>. The box-sizing property indicates whether the content box or border box is measured. Percentages are resolved against the width/height, as appropriate, of the box’s containing block. If, in a particular axis, the containing block’s size depends on the box’s size, see the relevant layout module for special rules on how to resolve percentages. Negative values are invalid.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-length-percentage-0",
+          "type": "value",
+          "value": "<length-percentage [0,∞]>"
+        },
+        {
+          "name": "none",
+          "prose": "No limit on the size of the box.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-max-width-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "stretch",
+          "prose": "Applies stretch-fit sizing, attempting to match the size of the box’s margin box to the size of its containing block. See § 4.2 Stretch-fit Sizing: filling the containing block.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Use the min-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Use the max-content size in the relevant axis; for a box’s block size, unless otherwise specified, this is equivalent to its automatic size.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Use the fit-content size in the relevant axis, i.e. min(max-content, max(min-content, stretch)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "max-height",
+        "maxHeight"
+      ]
+    },
+    {
+      "name": "max-inline-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-max-inline-size",
+      "value": "none | <box-size>",
+      "initial": "none",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "max-size",
+      "styleDeclaration": [
+        "max-inline-size",
+        "maxInlineSize"
+      ]
+    },
+    {
+      "name": "max-block-size",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-max-block-size",
+      "value": "none | <box-size>",
+      "initial": "none",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "relative to width/height of containing block",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value, recursing into fit-content()",
+      "logicalPropertyGroup": "max-size",
+      "styleDeclaration": [
+        "max-block-size",
+        "maxBlockSize"
+      ]
+    },
+    {
+      "name": "box-sizing",
+      "href": "https://drafts.csswg.org/css-sizing-3/#propdef-box-sizing",
+      "value": "content-box | border-box",
+      "initial": "content-box",
+      "appliesTo": "all elements that accept width or height",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "content-box",
+          "prose": "Sizes specified on sizing properties as <length-percentage> represent the box’s inner sizes, excluding the margins/border/padding: they are applied to the content box. The padding and border of the box are laid out and drawn outside the specified width and height.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-box-sizing-content-box",
+          "type": "value",
+          "value": "content-box"
+        },
+        {
+          "name": "border-box",
+          "prose": "Any <length-percentage> values in the sizing properties are applied to the border box, thus representing the box’s visually-apparent sizes: the padding and border of the box (but not its margins) are essentially laid out and drawn inside the used width and height, with the content box sized to fill the remaining space. More specifically, the content box width and height are calculated by subtracting the border and padding in the corresponding axis from the specified <length-percentage>, and flooring the result at zero (as the inner size of a box cannot be negative). Used values of the sizing properties, as exposed for instance through getComputedStyle(), also refer to the border box.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-box-sizing-border-box",
+          "type": "value",
+          "value": "border-box"
+        }
+      ],
+      "styleDeclaration": [
+        "box-sizing",
+        "boxSizing"
+      ]
+    },
+    {
+      "name": "column-width",
+      "href": "https://drafts.csswg.org/css-sizing-3/#column-sizing",
+      "value": "auto | <box-size>",
+      "computedValue": "as specified, with <length-percentage> values computed",
+      "animationType": "by computed value type",
+      "values": [
+        {
+          "name": "stretch",
+          "prose": "Specifies the optimal column width as the stretch-fit inline size of the multi-column container.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-column-width-stretch",
+          "type": "value",
+          "value": "stretch"
+        },
+        {
+          "name": "min-content",
+          "prose": "Specifies the optimal column width as the min-content inline size of the multi-column container’s contents.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-column-width-min-content",
+          "type": "value",
+          "value": "min-content"
+        },
+        {
+          "name": "max-content",
+          "prose": "Specifies the optimal column width as the max-content inline size of the multi-column container’s contents.",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-column-width-max-content",
+          "type": "value",
+          "value": "max-content"
+        },
+        {
+          "name": "fit-content",
+          "prose": "Specifies the optimal column width as min(max-content inline size, max(min-content inline size, stretch-fit inline size)).",
+          "href": "https://drafts.csswg.org/css-sizing-3/#valdef-column-width-fit-content",
+          "type": "value",
+          "value": "fit-content"
+        }
+      ],
+      "styleDeclaration": [
+        "column-width",
+        "columnWidth"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [
+    {
+      "name": "<box-size>",
+      "href": "https://drafts.csswg.org/css-sizing-3/#typedef-box-size",
+      "type": "type",
+      "value": "<length-percentage [0,∞]> | stretch | min-content | max-content | fit-content"
+    }
+  ]
+}

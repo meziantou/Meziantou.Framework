@@ -1,0 +1,1117 @@
+{
+  "spec": {
+    "title": "Handwriting Recognition API",
+    "url": "https://wicg.github.io/handwriting-recognition/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "HandwritingStroke"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "HandwritingRecognizer",
+          "HandwritingDrawing"
+        ]
+      }
+    },
+    "idlNames": {
+      "HandwritingModelConstraint": {
+        "fragment": "dictionary HandwritingModelConstraint {\n  required sequence<DOMString> languages;\n};",
+        "type": "dictionary",
+        "name": "HandwritingModelConstraint",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "languages",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingmodelconstraint-languages"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingmodelconstraint"
+      },
+      "HandwritingRecognizerQueryResult": {
+        "fragment": "dictionary HandwritingRecognizerQueryResult {\n  boolean textAlternatives;\n  boolean textSegmentation;\n  HandwritingHintsQueryResult hints;\n};",
+        "type": "dictionary",
+        "name": "HandwritingRecognizerQueryResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "textAlternatives",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognizerqueryresult-textalternatives"
+          },
+          {
+            "type": "field",
+            "name": "textSegmentation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognizerqueryresult-textsegmentation"
+          },
+          {
+            "type": "field",
+            "name": "hints",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HandwritingHintsQueryResult"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognizerqueryresult-hints"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingrecognizerqueryresult"
+      },
+      "HandwritingHintsQueryResult": {
+        "fragment": "dictionary HandwritingHintsQueryResult {\n  sequence<HandwritingRecognitionType> recognitionType;\n  sequence<HandwritingInputType> inputType;\n  boolean textContext;\n  boolean alternatives;\n};",
+        "type": "dictionary",
+        "name": "HandwritingHintsQueryResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "recognitionType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingRecognitionType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghintsqueryresult-recognitiontype"
+          },
+          {
+            "type": "field",
+            "name": "inputType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingInputType"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghintsqueryresult-inputtype"
+          },
+          {
+            "type": "field",
+            "name": "textContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghintsqueryresult-textcontext"
+          },
+          {
+            "type": "field",
+            "name": "alternatives",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghintsqueryresult-alternatives"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritinghintsqueryresult"
+      },
+      "HandwritingRecognitionType": {
+        "fragment": "enum HandwritingRecognitionType{\n  \"text\", \"per-character\"\n};",
+        "type": "enum",
+        "name": "HandwritingRecognitionType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "text",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognitiontype-text"
+          },
+          {
+            "type": "enum-value",
+            "value": "per-character",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognitiontype-per-character"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/handwriting-recognition/#enumdef-handwritingrecognitiontype"
+      },
+      "HandwritingInputType": {
+        "fragment": "enum HandwritingInputType {\n  \"mouse\", \"stylus\", \"touch\"\n};",
+        "type": "enum",
+        "name": "HandwritingInputType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "mouse",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinginputtype-mouse"
+          },
+          {
+            "type": "enum-value",
+            "value": "stylus",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinginputtype-stylus"
+          },
+          {
+            "type": "enum-value",
+            "value": "touch",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinginputtype-touch"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://wicg.github.io/handwriting-recognition/#enumdef-handwritinginputtype"
+      },
+      "HandwritingRecognizer": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface HandwritingRecognizer {\n  HandwritingDrawing startDrawing(optional HandwritingHints hints = {});\n\n  undefined finish();\n};",
+        "type": "interface",
+        "name": "HandwritingRecognizer",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "startDrawing",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "HandwritingDrawing"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "hints",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingHints"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognizer-startdrawing"
+          },
+          {
+            "type": "operation",
+            "name": "finish",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingrecognizer-finish"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#handwritingrecognizer"
+      },
+      "HandwritingHints": {
+        "fragment": "dictionary HandwritingHints {\n  DOMString recognitionType = \"text\";\n  DOMString inputType = \"mouse\";\n  DOMString textContext;\n  unsigned long alternatives = 3;\n};",
+        "type": "dictionary",
+        "name": "HandwritingHints",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "recognitionType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "text"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghints-recognitiontype"
+          },
+          {
+            "type": "field",
+            "name": "inputType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": {
+              "type": "string",
+              "value": "mouse"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghints-inputtype"
+          },
+          {
+            "type": "field",
+            "name": "textContext",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghints-textcontext"
+          },
+          {
+            "type": "field",
+            "name": "alternatives",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "3"
+            },
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritinghints-alternatives"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritinghints"
+      },
+      "HandwritingDrawing": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface HandwritingDrawing {\n  undefined addStroke(HandwritingStroke stroke);\n  undefined removeStroke(HandwritingStroke stroke);\n  undefined clear();\n  sequence<HandwritingStroke> getStrokes();\n\n  Promise<sequence<HandwritingPrediction>> getPrediction();\n};",
+        "type": "interface",
+        "name": "HandwritingDrawing",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "addStroke",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stroke",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingStroke"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawing-addstroke"
+          },
+          {
+            "type": "operation",
+            "name": "removeStroke",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "stroke",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingStroke"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawing-removestroke"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawing-clear"
+          },
+          {
+            "type": "operation",
+            "name": "getStrokes",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingStroke"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawing-getstrokes"
+          },
+          {
+            "type": "operation",
+            "name": "getPrediction",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "HandwritingPrediction"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawing-getprediction"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#handwritingdrawing"
+      },
+      "HandwritingStroke": {
+        "fragment": "[SecureContext, Exposed=Window]\ninterface HandwritingStroke {\n  constructor();\n  undefined addPoint(HandwritingPoint point);\n  sequence<HandwritingPoint> getPoints();\n  undefined clear();\n};",
+        "type": "interface",
+        "name": "HandwritingStroke",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [],
+            "extAttrs": [],
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingstroke-handwritingstroke"
+          },
+          {
+            "type": "operation",
+            "name": "addPoint",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "point",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingPoint"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingstroke-addpoint"
+          },
+          {
+            "type": "operation",
+            "name": "getPoints",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingPoint"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingstroke-getpoints"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingstroke-clear"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#handwritingstroke"
+      },
+      "HandwritingPoint": {
+        "fragment": "dictionary HandwritingPoint {\n  required double x;\n  required double y;\n\n  // Optional. Number of milliseconds since a reference time point for a\n  // drawing.\n  DOMHighResTimeStamp t;\n};",
+        "type": "dictionary",
+        "name": "HandwritingPoint",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "x",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingpoint-x"
+          },
+          {
+            "type": "field",
+            "name": "y",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingpoint-y"
+          },
+          {
+            "type": "field",
+            "name": "t",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingpoint-t"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingpoint"
+      },
+      "HandwritingPrediction": {
+        "fragment": "dictionary HandwritingPrediction {\n  required DOMString text;\n  sequence<HandwritingSegment> segmentationResult;\n};",
+        "type": "dictionary",
+        "name": "HandwritingPrediction",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "text",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingprediction-text"
+          },
+          {
+            "type": "field",
+            "name": "segmentationResult",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingSegment"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingprediction-segmentationresult"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingprediction"
+      },
+      "HandwritingSegment": {
+        "fragment": "dictionary HandwritingSegment {\n  required DOMString grapheme;\n  required unsigned long beginIndex;\n  required unsigned long endIndex;\n  required sequence<HandwritingDrawingSegment> drawingSegments;\n};",
+        "type": "dictionary",
+        "name": "HandwritingSegment",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "grapheme",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingsegment-grapheme"
+          },
+          {
+            "type": "field",
+            "name": "beginIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingsegment-beginindex"
+          },
+          {
+            "type": "field",
+            "name": "endIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingsegment-endindex"
+          },
+          {
+            "type": "field",
+            "name": "drawingSegments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HandwritingDrawingSegment"
+                }
+              ]
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingsegment-drawingsegments"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingsegment"
+      },
+      "HandwritingDrawingSegment": {
+        "fragment": "dictionary HandwritingDrawingSegment {\n  required unsigned long strokeIndex;\n  required unsigned long beginPointIndex;\n  required unsigned long endPointIndex;\n};",
+        "type": "dictionary",
+        "name": "HandwritingDrawingSegment",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "strokeIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawingsegment-strokeindex"
+          },
+          {
+            "type": "field",
+            "name": "beginPointIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawingsegment-beginpointindex"
+          },
+          {
+            "type": "field",
+            "name": "endPointIndex",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/handwriting-recognition/#dom-handwritingdrawingsegment-endpointindex"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://wicg.github.io/handwriting-recognition/#dictdef-handwritingdrawingsegment"
+      }
+    },
+    "idlExtendedNames": {
+      "Navigator": [
+        {
+          "fragment": "[SecureContext]\npartial interface Navigator {\n  Promise<HandwritingRecognizerQueryResult?>\n      queryHandwritingRecognizer(HandwritingModelConstraint constraint);\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "queryHandwritingRecognizer",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": true,
+                    "union": false,
+                    "idlType": "HandwritingRecognizerQueryResult"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "constraint",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HandwritingModelConstraint"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/handwriting-recognition/#dom-navigator-queryhandwritingrecognizer"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        },
+        {
+          "fragment": "[SecureContext]\npartial interface Navigator {\n  Promise<HandwritingRecognizer>\n      createHandwritingRecognizer(HandwritingModelConstraint constraint);\n};",
+          "type": "interface",
+          "name": "Navigator",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "createHandwritingRecognizer",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "Promise",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "return-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HandwritingRecognizer"
+                  }
+                ]
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "constraint",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "HandwritingModelConstraint"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://wicg.github.io/handwriting-recognition/#dom-navigator-createhandwritingrecognizer"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "HandwritingRecognizer",
+        "HandwritingDrawing",
+        "HandwritingStroke"
+      ]
+    },
+    "dependencies": {
+      "Navigator": [
+        "HandwritingRecognizerQueryResult",
+        "HandwritingModelConstraint",
+        "HandwritingRecognizer"
+      ],
+      "HandwritingModelConstraint": [],
+      "HandwritingRecognizerQueryResult": [
+        "HandwritingHintsQueryResult"
+      ],
+      "HandwritingHintsQueryResult": [
+        "HandwritingRecognitionType",
+        "HandwritingInputType"
+      ],
+      "HandwritingRecognizer": [
+        "HandwritingDrawing",
+        "HandwritingHints"
+      ],
+      "HandwritingHints": [],
+      "HandwritingDrawing": [
+        "HandwritingStroke",
+        "HandwritingPrediction"
+      ],
+      "HandwritingStroke": [
+        "HandwritingPoint"
+      ],
+      "HandwritingPoint": [
+        "DOMHighResTimeStamp"
+      ],
+      "HandwritingPrediction": [
+        "HandwritingSegment"
+      ],
+      "HandwritingSegment": [
+        "HandwritingDrawingSegment"
+      ],
+      "HandwritingDrawingSegment": []
+    },
+    "externalDependencies": [
+      "Navigator",
+      "DOMHighResTimeStamp"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

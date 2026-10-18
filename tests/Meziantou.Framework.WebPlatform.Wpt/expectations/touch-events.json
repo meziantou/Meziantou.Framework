@@ -1,0 +1,87 @@
+{
+  "touch-events/expose-legacy-touch-event-apis.html": {
+    "total": 16
+  },
+  "touch-events/historical.html": {
+    "total": 8
+  },
+  "touch-events/hover-state-caused-by-compatibility-mouse-events.tentative.html": {
+    "total": 14,
+    "failures": {
+      "The compatibility mouse events should set :hover, but shouldn't be preserved after the target is replaced": "FAIL"
+    }
+  },
+  "touch-events/idlharness.window.js": {
+    "total": 128,
+    "failures": {
+      "Document interface: attribute ontouchcancel": "FAIL",
+      "Document interface: attribute ontouchend": "FAIL",
+      "Document interface: attribute ontouchmove": "FAIL",
+      "Document interface: attribute ontouchstart": "FAIL",
+      "Document interface: document must inherit property \"ontouchcancel\" with the proper type": "FAIL",
+      "Document interface: document must inherit property \"ontouchend\" with the proper type": "FAIL",
+      "Document interface: document must inherit property \"ontouchmove\" with the proper type": "FAIL",
+      "Document interface: document must inherit property \"ontouchstart\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document must inherit property \"ontouchcancel\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document must inherit property \"ontouchend\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document must inherit property \"ontouchmove\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document must inherit property \"ontouchstart\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document.body must inherit property \"ontouchcancel\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document.body must inherit property \"ontouchend\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document.body must inherit property \"ontouchmove\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: document.body must inherit property \"ontouchstart\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: window must inherit property \"ontouchcancel\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: window must inherit property \"ontouchend\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: window must inherit property \"ontouchmove\" with the proper type": "FAIL",
+      "GlobalEventHandlers interface: window must inherit property \"ontouchstart\" with the proper type": "FAIL",
+      "HTMLElement interface: attribute ontouchcancel": "FAIL",
+      "HTMLElement interface: attribute ontouchend": "FAIL",
+      "HTMLElement interface: attribute ontouchmove": "FAIL",
+      "HTMLElement interface: attribute ontouchstart": "FAIL",
+      "Window interface: attribute ontouchcancel": "FAIL",
+      "Window interface: attribute ontouchend": "FAIL",
+      "Window interface: attribute ontouchmove": "FAIL",
+      "Window interface: attribute ontouchstart": "FAIL"
+    }
+  },
+  "touch-events/mouseevents-after-touchend.tentative.html": {
+    "total": 7,
+    "failures": {
+      "Multi tap should not cause mouse events": "FAIL"
+    }
+  },
+  "touch-events/multi-touch-interactions.html": {
+    "total": 73
+  },
+  "touch-events/multi-touch-interfaces.html": {
+    "total": 511
+  },
+  "touch-events/multi-touch-touchmove.html": {
+    "total": 1
+  },
+  "touch-events/pinch-zoom-change.html": {
+    "total": 1,
+    "failures": {
+      "Pinch-zoom immediately followed by touch-up stability": "FAIL"
+    }
+  },
+  "touch-events/single-tap-when-touchend-listener-use-sync-xhr.html": {
+    "total": 1
+  },
+  "touch-events/single-touch-vertical-rl.html": {
+    "total": 1
+  },
+  "touch-events/single-touch.html": {
+    "total": 227
+  },
+  "touch-events/touch-globaleventhandler-interface.html": {
+    "total": 3,
+    "failures": {
+      "Touch events are GlobalEventHandlers' own property": "PRECONDITION_FAILED",
+      "Touch events in GlobalEventHandlers": "PRECONDITION_FAILED"
+    }
+  },
+  "touch-events/touch-touchevent-constructor.html": {
+    "total": 5
+  }
+}

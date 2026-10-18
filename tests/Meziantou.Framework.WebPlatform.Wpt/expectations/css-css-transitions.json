@@ -1,0 +1,536 @@
+{
+  "css/css-transitions/AnimationEffect-getComputedTiming.tentative.html": {
+    "total": 22
+  },
+  "css/css-transitions/CSSTransition-canceling.tentative.html": {
+    "total": 11
+  },
+  "css/css-transitions/CSSTransition-currentTime.tentative.html": {
+    "total": 5
+  },
+  "css/css-transitions/CSSTransition-effect.tentative.html": {
+    "total": 10,
+    "failures": {
+      "A transition with a replaced effect still exhibits the regular transition reversing behavior": "FAIL"
+    }
+  },
+  "css/css-transitions/CSSTransition-finished.tentative.html": {
+    "total": 1
+  },
+  "css/css-transitions/CSSTransition-not-canceling.tentative.html": {
+    "total": 2
+  },
+  "css/css-transitions/CSSTransition-ready.tentative.html": {
+    "total": 2
+  },
+  "css/css-transitions/CSSTransition-startTime.tentative.html": {
+    "total": 5
+  },
+  "css/css-transitions/CSSTransition-transitionProperty.tentative.html": {
+    "total": 1
+  },
+  "css/css-transitions/Document-getAnimations.tentative.html": {
+    "total": 7
+  },
+  "css/css-transitions/Element-getAnimations.tentative.html": {
+    "total": 7
+  },
+  "css/css-transitions/KeyframeEffect-getKeyframes-width-and-height-transition.tentative.html": {
+    "total": 2
+  },
+  "css/css-transitions/KeyframeEffect-getKeyframes.tentative.html": {
+    "total": 5
+  },
+  "css/css-transitions/KeyframeEffect-setKeyframes.tentative.html": {
+    "total": 8,
+    "failures": {
+      "A transition with replaced kefyrames and composite 'add' exhibits normal reversing behavior, and the effect is not double counted when calculating the before change style": "FAIL",
+      "A transition with replaced keyframes animating a different property still exhibits normal reversing behavior  (reversing from the base value).": "FAIL",
+      "A transition with replaced keyframes animating nothing on a property being controlled by another modified transition exhibits normal reversing behavior and reverses from the other transition's current value.": "FAIL",
+      "A transition with replaced keyframes animating nothing still exhibits normal reversing behavior (reversing from the base value).": "FAIL"
+    }
+  },
+  "css/css-transitions/KeyframeEffect-target.tentative.html": {
+    "total": 3
+  },
+  "css/css-transitions/after-change-style-inherited-try-fallback.html": {
+    "total": 1,
+    "failures": {
+      "Position fallback correctly applied to after-change style": "FAIL"
+    }
+  },
+  "css/css-transitions/after-change-style-inherited.html": {
+    "total": 6
+  },
+  "css/css-transitions/all-interpolates-same-as-explicit-property.html": {
+    "total": 32
+  },
+  "css/css-transitions/allow-discrete-auto-inset.html": {
+    "reftest": "PASS"
+  },
+  "css/css-transitions/animations/animate-with-color-mix.html": {
+    "total": 6
+  },
+  "css/css-transitions/animations/change-duration-during-transition.html": {
+    "total": 1
+  },
+  "css/css-transitions/animations/color-transition-premultiplied.html": {
+    "total": 1
+  },
+  "css/css-transitions/animations/move-after-transition.html": {
+    "total": 1
+  },
+  "css/css-transitions/animations/text-shadow-composition.html": {
+    "total": 60
+  },
+  "css/css-transitions/animations/text-shadow-interpolation.html": {
+    "total": 168
+  },
+  "css/css-transitions/animations/transition-end-event-shorthands.html": {
+    "total": 1
+  },
+  "css/css-transitions/animations/transition-timing-function.html": {
+    "total": 1
+  },
+  "css/css-transitions/animations/vertical-align-composition.html": {
+    "total": 40
+  },
+  "css/css-transitions/animations/vertical-align-interpolation.html": {
+    "total": 182
+  },
+  "css/css-transitions/animations/z-index-interpolation.html": {
+    "total": 250
+  },
+  "css/css-transitions/before-load-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/changing-while-transition-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/changing-while-transition-002.html": {
+    "total": 1
+  },
+  "css/css-transitions/changing-while-transition-003.html": {
+    "total": 1
+  },
+  "css/css-transitions/changing-while-transition-004.html": {
+    "total": 1
+  },
+  "css/css-transitions/currentcolor-animation-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/custom-property-and-allow-discrete.html": {
+    "total": 2
+  },
+  "css/css-transitions/disconnected-element-001.html": {
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "Transitions are canceled when an element is re-parented": "TIMEOUT",
+      "Transitions are canceled when an element is re-parented to the same node": "NOTRUN"
+    }
+  },
+  "css/css-transitions/display-none-no-animations.html": {
+    "total": 1
+  },
+  "css/css-transitions/dynamic-root-element.html": {
+    "total": 1
+  },
+  "css/css-transitions/event-dispatch.tentative.html": {
+    "total": 30,
+    "failures": {
+      "Active -> Idle, no delay (display: none)": "FAIL",
+      "Active -> Idle, with negative delay (Animation.timeline = null)": "FAIL",
+      "Active -> Idle, with negative delay (display: none)": "FAIL",
+      "Active -> Idle, with positive delay (display: none)": "FAIL",
+      "After -> Before": "FAIL",
+      "Calculating the interval start and end time with negative end delay.": "FAIL",
+      "Cancel the transition after clearing the target effect": "FAIL",
+      "Idle or Pending -> Active": "FAIL",
+      "Restart transition after canceling transition immediately": "FAIL"
+    }
+  },
+  "css/css-transitions/events-001.html": {
+    "total": 9
+  },
+  "css/css-transitions/events-002.html": {
+    "total": 2
+  },
+  "css/css-transitions/events-003.html": {
+    "total": 1
+  },
+  "css/css-transitions/events-004.html": {
+    "total": 2
+  },
+  "css/css-transitions/events-005.html": {
+    "total": 3
+  },
+  "css/css-transitions/events-006.html": {
+    "total": 2
+  },
+  "css/css-transitions/events-007.html": {
+    "total": 1
+  },
+  "css/css-transitions/events-008.html": {
+    "total": 3
+  },
+  "css/css-transitions/historical.html": {
+    "total": 1
+  },
+  "css/css-transitions/idlharness-2.html": {
+    "total": 19,
+    "failures": {
+      "Partial dictionary TransitionEventInit: original dictionary defined": "FAIL",
+      "Partial interface TransitionEvent: original interface defined": "FAIL"
+    }
+  },
+  "css/css-transitions/idlharness.html": {
+    "total": 64
+  },
+  "css/css-transitions/inert-while-transitioning-to-display-none.html": {
+    "total": 1
+  },
+  "css/css-transitions/inherit-background-color-transition.html": {
+    "reftest": "TIMEOUT"
+  },
+  "css/css-transitions/inherit-height-transition.html": {
+    "total": 1
+  },
+  "css/css-transitions/inheritance.html": {
+    "total": 8
+  },
+  "css/css-transitions/no-transition-for-unchanged-pointer-valued-properties.html": {
+    "total": 1
+  },
+  "css/css-transitions/non-rendered-element-001.html": {
+    "total": 4
+  },
+  "css/css-transitions/non-rendered-element-002.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Transitions on ::before/::after pseudo-elements are canceled when the content property is cleared": "TIMEOUT"
+    }
+  },
+  "css/css-transitions/non-rendered-element-004.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Transitions on ::marker pseudo-elements are canceled when the parent display type is no longer list-item": "TIMEOUT"
+    }
+  },
+  "css/css-transitions/parsing/starting-style-parsing.html": {
+    "total": 5
+  },
+  "css/css-transitions/parsing/transition-behavior.html": {
+    "total": 28
+  },
+  "css/css-transitions/parsing/transition-computed.html": {
+    "total": 10
+  },
+  "css/css-transitions/parsing/transition-delay-computed.html": {
+    "total": 1
+  },
+  "css/css-transitions/parsing/transition-delay-invalid.html": {
+    "total": 5
+  },
+  "css/css-transitions/parsing/transition-delay-valid.html": {
+    "total": 4
+  },
+  "css/css-transitions/parsing/transition-duration-computed.html": {
+    "total": 3
+  },
+  "css/css-transitions/parsing/transition-duration-invalid.html": {
+    "total": 5
+  },
+  "css/css-transitions/parsing/transition-duration-valid.html": {
+    "total": 3
+  },
+  "css/css-transitions/parsing/transition-invalid.html": {
+    "total": 5
+  },
+  "css/css-transitions/parsing/transition-property-computed.html": {
+    "total": 10
+  },
+  "css/css-transitions/parsing/transition-property-invalid.html": {
+    "total": 66
+  },
+  "css/css-transitions/parsing/transition-property-valid.html": {
+    "total": 10
+  },
+  "css/css-transitions/parsing/transition-shorthand.html": {
+    "total": 18
+  },
+  "css/css-transitions/parsing/transition-timing-function-computed.html": {
+    "total": 22
+  },
+  "css/css-transitions/parsing/transition-timing-function-invalid.html": {
+    "total": 25
+  },
+  "css/css-transitions/parsing/transition-timing-function-valid.html": {
+    "total": 22
+  },
+  "css/css-transitions/parsing/transition-valid.html": {
+    "total": 10
+  },
+  "css/css-transitions/properties-value-001.html": {
+    "total": 580,
+    "failures": {
+      "vertical-align length(cm) / events": "FAIL",
+      "vertical-align length(em) / events": "FAIL",
+      "vertical-align length(ex) / events": "FAIL",
+      "vertical-align length(in) / events": "FAIL",
+      "vertical-align length(mm) / events": "FAIL",
+      "vertical-align length(pc) / events": "FAIL",
+      "vertical-align length(pt) / events": "FAIL",
+      "vertical-align length(px) / events": "FAIL",
+      "vertical-align percentage(%) / events": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-002.html": {
+    "total": 18,
+    "failures": {
+      "vertical-align vertical(keyword) / events": "FAIL",
+      "vertical-align vertical(keyword) / values": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-003.html": {
+    "total": 122,
+    "failures": {
+      "background-image image(data) / values": "FAIL",
+      "background-image image(gradient) / values": "FAIL",
+      "background-image image(url) / values": "FAIL",
+      "background-size background-size(keyword) / events": "FAIL",
+      "background-size background-size(keyword) / values": "FAIL",
+      "display display(block to inline-block) / events": "FAIL",
+      "display display(block to inline-block) / values": "FAIL",
+      "display display(static to absolute) / events": "FAIL",
+      "display display(static to absolute) / values": "FAIL",
+      "font-stretch font-stretch(keyword) / events": "FAIL",
+      "position position(absolute to fixed) / events": "FAIL",
+      "position position(absolute to fixed) / values": "FAIL",
+      "position position(relative to absolute) / events": "FAIL",
+      "position position(relative to absolute) / values": "FAIL",
+      "position position(static to absolute) / events": "FAIL",
+      "position position(static to absolute) / values": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-implicit-001.html": {
+    "total": 62,
+    "failures": {
+      "vertical-align length-em(em) / events": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-inherit-001.html": {
+    "total": 580,
+    "failures": {
+      "vertical-align length(cm) / events": "FAIL",
+      "vertical-align length(em) / events": "FAIL",
+      "vertical-align length(ex) / events": "FAIL",
+      "vertical-align length(in) / events": "FAIL",
+      "vertical-align length(mm) / events": "FAIL",
+      "vertical-align length(pc) / events": "FAIL",
+      "vertical-align length(pt) / events": "FAIL",
+      "vertical-align length(px) / events": "FAIL",
+      "vertical-align percentage(%) / events": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-inherit-002.html": {
+    "total": 580,
+    "failures": {
+      "vertical-align length(cm) / events": "FAIL",
+      "vertical-align length(em) / events": "FAIL",
+      "vertical-align length(ex) / events": "FAIL",
+      "vertical-align length(in) / events": "FAIL",
+      "vertical-align length(mm) / events": "FAIL",
+      "vertical-align length(pc) / events": "FAIL",
+      "vertical-align length(pt) / events": "FAIL",
+      "vertical-align length(px) / events": "FAIL",
+      "vertical-align percentage(%) / events": "FAIL"
+    }
+  },
+  "css/css-transitions/properties-value-inherit-003.html": {
+    "total": 62,
+    "failures": {
+      "background-position-x length-em(em) / events": "FAIL",
+      "border-bottom-width length-em(em) / events": "FAIL",
+      "border-left-width length-em(em) / events": "FAIL",
+      "border-right-width length-em(em) / events": "FAIL",
+      "border-top-width length-em(em) / events": "FAIL",
+      "bottom length-em(em) / events": "FAIL",
+      "height length-em(em) / events": "FAIL",
+      "left length-em(em) / events": "FAIL",
+      "letter-spacing length-em(em) / events": "FAIL",
+      "line-height length-em(em) / events": "FAIL",
+      "margin-bottom length-em(em) / events": "FAIL",
+      "margin-left length-em(em) / events": "FAIL",
+      "margin-right length-em(em) / events": "FAIL",
+      "margin-top length-em(em) / events": "FAIL",
+      "max-height length-em(em) / events": "FAIL",
+      "max-width length-em(em) / events": "FAIL",
+      "min-height length-em(em) / events": "FAIL",
+      "min-width length-em(em) / events": "FAIL",
+      "outline-offset length-em(em) / events": "FAIL",
+      "outline-width length-em(em) / events": "FAIL",
+      "padding-bottom length-em(em) / events": "FAIL",
+      "padding-left length-em(em) / events": "FAIL",
+      "padding-right length-em(em) / events": "FAIL",
+      "padding-top length-em(em) / events": "FAIL",
+      "right length-em(em) / events": "FAIL",
+      "text-decoration-inset length-em(em) / events": "FAIL",
+      "text-indent length-em(em) / events": "FAIL",
+      "top length-em(em) / events": "FAIL",
+      "vertical-align length-em(em) / events": "FAIL",
+      "width length-em(em) / events": "FAIL",
+      "word-spacing length-em(em) / events": "FAIL"
+    }
+  },
+  "css/css-transitions/pseudo-element-transform.html": {
+    "reftest": "TIMEOUT"
+  },
+  "css/css-transitions/pseudo-elements-001.html": {
+    "total": 4
+  },
+  "css/css-transitions/pseudo-elements-002.html": {
+    "total": 1
+  },
+  "css/css-transitions/render-blocking/no-transition-from-ua-to-blocking-stylesheet.html": {
+    "reftest": "PASS"
+  },
+  "css/css-transitions/retargetted-transition-with-box-sizing.html": {
+    "total": 1
+  },
+  "css/css-transitions/root-color-transition.html": {
+    "reftest": "PASS"
+  },
+  "css/css-transitions/shadow-root-insertion.html": {
+    "total": 1
+  },
+  "css/css-transitions/starting-of-transitions-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/starting-style-adjustment.html": {
+    "total": 1,
+    "failures": {
+      "The display property in <legend> @starting-style should be blockified so no transition should start": "FAIL"
+    }
+  },
+  "css/css-transitions/starting-style-cascade.html": {
+    "total": 6
+  },
+  "css/css-transitions/starting-style-name-defining-rules.html": {
+    "total": 2
+  },
+  "css/css-transitions/starting-style-rule-basic.html": {
+    "total": 3
+  },
+  "css/css-transitions/starting-style-rule-none.html": {
+    "total": 1,
+    "failures": {
+      "@starting-style with display:none": "FAIL"
+    }
+  },
+  "css/css-transitions/starting-style-rule-pseudo-elements.html": {
+    "total": 3
+  },
+  "css/css-transitions/starting-style-size-container.html": {
+    "total": 2
+  },
+  "css/css-transitions/transition-001.html": {
+    "total": 13
+  },
+  "css/css-transitions/transition-after-animation-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-background-position-with-edge-offset.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-base-response-001.html": {
+    "total": 3
+  },
+  "css/css-transitions/transition-base-response-002.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-base-response-003.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-behavior-events.html": {
+    "total": 2,
+    "failures": {
+      "transitionrun events": "FAIL",
+      "transitionstart events": "FAIL"
+    }
+  },
+  "css/css-transitions/transition-behavior.html": {
+    "total": 6
+  },
+  "css/css-transitions/transition-cancel-elapsed-time-on-removal.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-delay-001.html": {
+    "total": 21
+  },
+  "css/css-transitions/transition-duration-001.html": {
+    "total": 21
+  },
+  "css/css-transitions/transition-duration-infinite-cancelation.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-duration-shorthand.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-events-with-document-change.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-important.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-in-iframe-001.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-property-001.html": {
+    "total": 5
+  },
+  "css/css-transitions/transition-property-002.html": {
+    "total": 7
+  },
+  "css/css-transitions/transition-remove-and-change-immediate.html": {
+    "total": 1
+  },
+  "css/css-transitions/transition-reparented.html": {
+    "total": 1,
+    "failures": {
+      "When an element is reparented, any CSS Transition on it should be cancelled": "FAIL"
+    }
+  },
+  "css/css-transitions/transition-test.html": {
+    "reftest": "PASS"
+  },
+  "css/css-transitions/transition-zero-duration-with-delay.html": {
+    "total": 1
+  },
+  "css/css-transitions/transitioncancel-001.html": {
+    "total": 1,
+    "failures": {
+      "transitioncancel should be fired if the element is made display:none during the transition": "FAIL"
+    }
+  },
+  "css/css-transitions/transitioncancel-002.html": {
+    "total": 1
+  },
+  "css/css-transitions/transitioncancel-003.html": {
+    "total": 1
+  },
+  "css/css-transitions/transitionevent-interface.html": {
+    "total": 42
+  },
+  "css/css-transitions/transitions-retarget.html": {
+    "total": 1
+  },
+  "css/css-transitions/unregistered-custom-property-transition.html": {
+    "total": 3
+  },
+  "css/css-transitions/zero-duration-multiple-transition.html": {
+    "total": 1
+  }
+}

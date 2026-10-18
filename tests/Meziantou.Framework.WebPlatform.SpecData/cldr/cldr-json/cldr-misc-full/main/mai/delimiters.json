@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mai": {
+      "identity": {
+        "language": "mai"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

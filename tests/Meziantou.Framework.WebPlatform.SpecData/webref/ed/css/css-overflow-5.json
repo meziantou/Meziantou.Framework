@@ -1,0 +1,285 @@
+{
+  "spec": {
+    "title": "CSS Overflow Module Level 5",
+    "url": "https://drafts.csswg.org/css-overflow-5/"
+  },
+  "properties": [
+    {
+      "name": "scroll-target-group",
+      "href": "https://drafts.csswg.org/css-overflow-5/#propdef-scroll-target-group",
+      "value": "none | auto",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The element does not establish a scroll marker group container.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-target-group-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "The element establishes a scroll marker group container forming a scroll marker group containing all of the scroll marker elements for which this is the nearest ancestor scroll marker group container.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-target-group-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-target-group",
+        "scrollTargetGroup"
+      ]
+    },
+    {
+      "name": "scroll-marker-group",
+      "href": "https://drafts.csswg.org/css-overflow-5/#propdef-scroll-marker-group",
+      "value": "none | [ [ before | after ] || [ links | tabs ] ]",
+      "initial": "none",
+      "appliesTo": "scroll containers",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The scroll container does not create a '::scroll-marker-group' pseudo-element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-marker-group-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "before",
+          "prose": "The scroll container generates a ::scroll-marker-group pseudo-element. When originating from the root element, the generated pseudo-element’s box is the first child of the originating element. Otherwise, its box is an immediate preceding sibling to its originating element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-marker-group-before",
+          "type": "value",
+          "value": "before"
+        },
+        {
+          "name": "after",
+          "prose": "The scroll container generates a ::scroll-marker-group pseudo-element. When originating from the root element, the generated pseudo-element’s box is the last child of the originating element. Otherwise, its box is an immediate following sibling to its originating element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-marker-group-after",
+          "type": "value",
+          "value": "after"
+        },
+        {
+          "name": "links",
+          "prose": "The generated ::scroll-marker-group operates in \"links\" mode, functioning like a navigation list. This is the default mode if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-marker-group-links",
+          "type": "value",
+          "value": "links"
+        },
+        {
+          "name": "tabs",
+          "prose": "The generated ::scroll-marker-group operates in \"tabs\" mode, functioning like a tablist.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-marker-group-tabs",
+          "type": "value",
+          "value": "tabs"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-marker-group",
+        "scrollMarkerGroup"
+      ]
+    },
+    {
+      "name": "scroll-axis-lock",
+      "href": "https://drafts.csswg.org/css-overflow-5/#propdef-scroll-axis-lock",
+      "value": "auto | none",
+      "initial": "auto",
+      "appliesTo": "scroll container elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified value",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "The user agent must not lock scrolls on the element to one axis.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-axis-lock-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "auto",
+          "prose": "The user agent may lock scrolls on the element to one axis.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-axis-lock-auto",
+          "type": "value",
+          "value": "auto"
+        }
+      ],
+      "styleDeclaration": [
+        "scroll-axis-lock",
+        "scrollAxisLock"
+      ]
+    },
+    {
+      "name": "continue",
+      "newValues": "overflow | paginate | fragments",
+      "initial": "auto",
+      "appliesTo": "block containers [CSS2], flex containers [CSS3-FLEXBOX], and grid containers [CSS3-GRID-LAYOUT]",
+      "inherited": "no",
+      "percentages": "N/A",
+      "computedValue": "see below",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "overflow",
+          "prose": "Content that doesn’t fit overflows, according to the overflow property",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-continue-overflow",
+          "type": "value",
+          "value": "overflow"
+        },
+        {
+          "name": "paginate",
+          "prose": "Content that doesn’t fit paginates. This creates a paginated view inside the element similar to the way that 'overflow: scroll' creates a scrollable view. See paginated overflow",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-continue-paginate",
+          "type": "value",
+          "value": "paginate"
+        },
+        {
+          "name": "fragments",
+          "prose": "content that doesn’t fit causes the element to copy itself and continue laying out. See fragment overflow.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-continue-fragments",
+          "type": "value",
+          "value": "fragments"
+        }
+      ],
+      "styleDeclaration": [
+        "continue"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": "::scroll-marker-group",
+      "prose": "The ::scroll-marker-group fully styleable pseudo-element is generated by a scroll container element having a computed scroll-marker-group property that is not none.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-scroll-marker-group",
+      "value": "::scroll-marker-group"
+    },
+    {
+      "name": "::scroll-marker",
+      "prose": "When the computed content value of a ::scroll-marker pseudo-element is not none and its nearest ancestor scroll container scroll container has a computed scroll-marker-group property that is not none, the pseudo-element generates a box attached as a child of the ::scroll-marker-group pseudo-element’s generated box on its nearest ancestor scroll container. These boxes are added in the tree order of their originating element.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-scroll-marker",
+      "value": "::scroll-marker"
+    },
+    {
+      "name": ":target-current",
+      "prose": "Exactly one scroll marker within each scroll marker group is determined to be active at a time. Such \"active\" scroll markers match the :target-current pseudo-class.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-target-current",
+      "value": ":target-current"
+    },
+    {
+      "name": ":target-before",
+      "prose": "In addition to the :target-current pseudo-class, this specification introduces the :target-before and :target-after pseudo-classes for use with scroll marker elements.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-target-before",
+      "value": ":target-before"
+    },
+    {
+      "name": ":target-after",
+      "prose": "In addition to the :target-current pseudo-class, this specification introduces the :target-before and :target-after pseudo-classes for use with scroll marker elements.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-target-after",
+      "value": ":target-after"
+    },
+    {
+      "name": "::scroll-button()",
+      "value": "::scroll-button( '*' | <scroll-button-direction> )",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-scroll-button---scroll-button-direction"
+    },
+    {
+      "name": "::nth-fragment()",
+      "prose": "The ::nth-fragment() pseudo-element is a pseudo-element that describes some of the fragment boxes generated by an element. The argument to the pseudo-element takes the same syntax as the argument to the :nth-child() pseudo-class defined in [SELECT], and has the same meaning except that the number is relative to fragment boxes generated by the element instead of siblings of the element.",
+      "href": "https://drafts.csswg.org/css-overflow-5/#selectordef-nth-fragment"
+    }
+  ],
+  "values": [
+    {
+      "name": "<scroll-button-direction>",
+      "prose": "The four ::scroll-button() pseudo-elements are individually selected by the selector’s argument. A * arguments selects all four ::scroll-button()s; otherwise the selected pseudo-element is determined by the <scroll-button-direction> value:",
+      "href": "https://drafts.csswg.org/css-overflow-5/#typedef-scroll-button-direction",
+      "type": "type",
+      "values": [
+        {
+          "name": "up",
+          "prose": "Selects the ::scroll-button() corresponding to the given physical direction.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-up",
+          "type": "value",
+          "value": "up"
+        },
+        {
+          "name": "down",
+          "prose": "Selects the ::scroll-button() corresponding to the given physical direction.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-down",
+          "type": "value",
+          "value": "down"
+        },
+        {
+          "name": "left",
+          "prose": "Selects the ::scroll-button() corresponding to the given physical direction.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "Selects the ::scroll-button() corresponding to the given physical direction.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "block-start",
+          "prose": "Selects the indicated ::scroll-button() pseudo-element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-block-start",
+          "type": "value",
+          "value": "block-start"
+        },
+        {
+          "name": "block-end",
+          "prose": "Selects the indicated ::scroll-button() pseudo-element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-block-end",
+          "type": "value",
+          "value": "block-end"
+        },
+        {
+          "name": "inline-start",
+          "prose": "Selects the indicated ::scroll-button() pseudo-element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-inline-start",
+          "type": "value",
+          "value": "inline-start"
+        },
+        {
+          "name": "inline-end",
+          "prose": "Selects the indicated ::scroll-button() pseudo-element.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-inline-end",
+          "type": "value",
+          "value": "inline-end"
+        },
+        {
+          "name": "prev",
+          "prose": "Selects either the block-start or inline-start ::scroll-button(), whichever’s axis has more \"scrollable pages\" in the originating element: the originating element’s scrollable overflow height divided by its scrollport height, or the same but for widths. If both dimensions are equally sized, selects the block-start ::scroll-button(). For example, say the originating element was 800px wide and 500px tall, while its scrollable overflow area was 1200px wide and 1000px tall. The horizontal scrolling thus represents 1.5 \"pages\" (1200/800), while the vertical scrolling represents 2 \"pages\" (1000/500), so (assuming the element is in English) the ::scroll-button(prev) selector would select the block-start button.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-prev",
+          "type": "value",
+          "value": "prev"
+        },
+        {
+          "name": "next",
+          "prose": "Identical to prev, except it selects the block-end or inline-end ::scroll-button() instead.",
+          "href": "https://drafts.csswg.org/css-overflow-5/#valdef-scroll-button-direction-next",
+          "type": "value",
+          "value": "next"
+        }
+      ],
+      "value": "up | down | left | right | block-start | block-end | inline-start | inline-end | prev | next"
+    }
+  ]
+}

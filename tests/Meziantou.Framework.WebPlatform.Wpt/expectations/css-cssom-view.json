@@ -1,0 +1,854 @@
+{
+  "css/cssom-view/CaretPosition-001.html": {
+    "total": 2
+  },
+  "css/cssom-view/DOMRectList.html": {
+    "total": 2
+  },
+  "css/cssom-view/Element-currentCSSZoom.html": {
+    "total": 2
+  },
+  "css/cssom-view/GetBoundingRect.html": {
+    "total": 1
+  },
+  "css/cssom-view/HTMLBody-ScrollArea_quirksmode.html": {
+    "total": 10
+  },
+  "css/cssom-view/HTMLImageElement-x-and-y-ignore-transforms.html": {
+    "total": 1
+  },
+  "css/cssom-view/MediaQueryList-addListener-handleEvent.html": {
+    "total": 6,
+    "failures": {
+      "throws if handleEvent is falsy and not callable": "FAIL",
+      "throws if handleEvent is thruthy and not callable": "FAIL"
+    }
+  },
+  "css/cssom-view/MediaQueryList-addListener-removeListener.html": {
+    "total": 8
+  },
+  "css/cssom-view/MediaQueryList-change-event-matches-value.html": {
+    "total": 1
+  },
+  "css/cssom-view/MediaQueryList-extends-EventTarget-interop.html": {
+    "total": 8
+  },
+  "css/cssom-view/MediaQueryList-extends-EventTarget.html": {
+    "total": 7
+  },
+  "css/cssom-view/MediaQueryListEvent.html": {
+    "total": 6
+  },
+  "css/cssom-view/Screen-pixelDepth-Screen-colorDepth001.html": {
+    "total": 2
+  },
+  "css/cssom-view/add-background-attachment-fixed-during-smooth-scroll.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/background-change-during-smooth-scroll.html": {
+    "total": 1
+  },
+  "css/cssom-view/checkVisibility.html": {
+    "total": 15
+  },
+  "css/cssom-view/client-props-inline-list-item.html": {
+    "total": 1
+  },
+  "css/cssom-view/client-props-input.html": {
+    "total": 1
+  },
+  "css/cssom-view/client-props-root.html": {
+    "total": 1
+  },
+  "css/cssom-view/client-props-zoom.html": {
+    "total": 2
+  },
+  "css/cssom-view/client-scroll-props-input.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-geometryutils-connected-callback.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-geometryutils-convertPointFromNode.html": {
+    "total": 20
+  },
+  "css/cssom-view/cssom-geometryutils-convertQuadFromNode.html": {
+    "total": 18
+  },
+  "css/cssom-view/cssom-geometryutils-convertRectFromNode.html": {
+    "total": 18
+  },
+  "css/cssom-view/cssom-geometryutils-cross-origin-path.https.html": {
+    "total": 1
+  },
+  "css/cssom-view/cssom-geometryutils-element-types.html": {
+    "total": 41
+  },
+  "css/cssom-view/cssom-geometryutils-fragmentation.html": {
+    "total": 4
+  },
+  "css/cssom-view/cssom-geometryutils-getBoxQuads-options.html": {
+    "total": 17
+  },
+  "css/cssom-view/cssom-geometryutils-lifecycle.html": {
+    "total": 4
+  },
+  "css/cssom-view/cssom-geometryutils-same-origin-iframe.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-geometryutils-shadow-dom.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-geometryutils-text.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-geometryutils-transforms.html": {
+    "total": 10
+  },
+  "css/cssom-view/cssom-getBoundingClientRect-001.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-getBoundingClientRect-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/cssom-getBoundingClientRect-003.html": {
+    "total": 2
+  },
+  "css/cssom-view/cssom-getBoundingClientRect-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/cssom-getBoxQuads-001.html": {
+    "total": 6
+  },
+  "css/cssom-view/cssom-getBoxQuads-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/cssom-getClientRects-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/cssom-getClientRects.html": {
+    "total": 1
+  },
+  "css/cssom-view/cssom-view-img-attributes-001.html": {
+    "total": 4
+  },
+  "css/cssom-view/cssom-view-window-screen-interface.html": {
+    "total": 6
+  },
+  "css/cssom-view/detached-element-geometry.window.js": {
+    "total": 13
+  },
+  "css/cssom-view/devicePixelRatio-undisplayed-iframe.tentative.html": {
+    "total": 1
+  },
+  "css/cssom-view/dom-element-scroll.html": {
+    "total": 4
+  },
+  "css/cssom-view/element-scroll-arguments.html": {
+    "total": 12
+  },
+  "css/cssom-view/element-scroll-promise-after-removal.html": {
+    "total": 5,
+    "failures": {
+      "Element.scrollBy promise after iframe removal": "FAIL",
+      "Element.scrollBy promise after scroller removal": "FAIL",
+      "Element.scrollIntoView promise after inner scroller removal": "FAIL",
+      "Element.scrollIntoView promise after outer scroller removal": "FAIL",
+      "Element.scrollTo promise after scroller removal": "FAIL"
+    }
+  },
+  "css/cssom-view/element-scroll-promise-interruption.html": {
+    "total": 14,
+    "failures": {
+      "Element.scrollBy interrupted by a non-promise scroll": "FAIL",
+      "Element.scrollBy uninterrupted by an unrelated non-promise scroll": "FAIL",
+      "Element.scrollBy: interrupted by auto scroll": "FAIL",
+      "Element.scrollBy: interrupted by smooth scroll": "FAIL",
+      "Element.scrollIntoView interrupted by a non-promise scroll": "FAIL",
+      "Element.scrollIntoView uninterrupted by an unrelated non-promise scroll": "FAIL",
+      "Element.scrollIntoView: interrupted by auto scroll": "FAIL",
+      "Element.scrollIntoView: interrupted by inner scroll": "FAIL",
+      "Element.scrollIntoView: interrupted by outer scroll": "FAIL",
+      "Element.scrollIntoView: interrupted by smooth scroll": "FAIL",
+      "Element.scrollTo interrupted by a non-promise scroll": "FAIL",
+      "Element.scrollTo uninterrupted by an unrelated non-promise scroll": "FAIL",
+      "Element.scrollTo: interrupted by auto scroll": "FAIL",
+      "Element.scrollTo: interrupted by smooth scroll": "FAIL"
+    }
+  },
+  "css/cssom-view/element-scroll-promises.html": {
+    "total": 24,
+    "failures": {
+      "Element.scroll(auto): promise behavior": "FAIL",
+      "Element.scroll(auto): return type": "FAIL",
+      "Element.scroll(instant): promise behavior": "FAIL",
+      "Element.scroll(instant): return type": "FAIL",
+      "Element.scroll(smooth): promise behavior": "FAIL",
+      "Element.scroll(smooth): return type": "FAIL",
+      "Element.scrollBy(auto): promise behavior": "FAIL",
+      "Element.scrollBy(auto): return type": "FAIL",
+      "Element.scrollBy(instant): promise behavior": "FAIL",
+      "Element.scrollBy(instant): return type": "FAIL",
+      "Element.scrollBy(smooth): promise behavior": "FAIL",
+      "Element.scrollBy(smooth): return type": "FAIL",
+      "Element.scrollIntoView(auto): promise behavior": "FAIL",
+      "Element.scrollIntoView(auto): return type": "FAIL",
+      "Element.scrollIntoView(instant): promise behavior": "FAIL",
+      "Element.scrollIntoView(instant): return type": "FAIL",
+      "Element.scrollIntoView(smooth): promise behavior": "FAIL",
+      "Element.scrollIntoView(smooth): return type": "FAIL",
+      "Element.scrollTo(auto): promise behavior": "FAIL",
+      "Element.scrollTo(auto): return type": "FAIL",
+      "Element.scrollTo(instant): promise behavior": "FAIL",
+      "Element.scrollTo(instant): return type": "FAIL",
+      "Element.scrollTo(smooth): promise behavior": "FAIL",
+      "Element.scrollTo(smooth): return type": "FAIL"
+    }
+  },
+  "css/cssom-view/elementFromPoint-001.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-003.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-dynamic-anon-box.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-ellipsis-in-inline-box.html": {
+    "total": 3
+  },
+  "css/cssom-view/elementFromPoint-float-in-relative.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-float-in-table.html": {
+    "total": 2
+  },
+  "css/cssom-view/elementFromPoint-list-001.html": {
+    "total": 10
+  },
+  "css/cssom-view/elementFromPoint-mixed-font-sizes.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-parameters.html": {
+    "total": 4
+  },
+  "css/cssom-view/elementFromPoint-subpixel.html": {
+    "total": 4
+  },
+  "css/cssom-view/elementFromPoint-visibility-hidden-resizer.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint.html": {
+    "total": 11
+  },
+  "css/cssom-view/elementFromPosition.html": {
+    "total": 16,
+    "failures": {
+      "test some point of the element: bottom left corner": "FAIL",
+      "test some point of the element: bottom line": "FAIL",
+      "test some point of the element: bottom right corner": "FAIL",
+      "test some point of the element: right line": "FAIL",
+      "test some point of the element: top right corner": "FAIL"
+    }
+  },
+  "css/cssom-view/elementScroll-002.html": {
+    "total": 4
+  },
+  "css/cssom-view/elementScroll.html": {
+    "total": 8
+  },
+  "css/cssom-view/elementsFromPoint-iframes.html": {
+    "total": 2
+  },
+  "css/cssom-view/elementsFromPoint-inline-htb-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-htb-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-nested.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-vlr-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-vlr-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-vrl-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-vrl-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-invalid-cases.html": {
+    "total": 3
+  },
+  "css/cssom-view/elementsFromPoint-shadowroot.html": {
+    "total": 3
+  },
+  "css/cssom-view/elementsFromPoint-simple.html": {
+    "total": 6
+  },
+  "css/cssom-view/elementsFromPoint-svg-text.html": {
+    "total": 4
+  },
+  "css/cssom-view/elementsFromPoint-svg.html": {
+    "total": 6
+  },
+  "css/cssom-view/elementsFromPoint-table.html": {
+    "total": 4
+  },
+  "css/cssom-view/elementsFromPoint.html": {
+    "total": 9
+  },
+  "css/cssom-view/getBoundingClientRect-content-visibility-hidden.html": {
+    "total": 4
+  },
+  "css/cssom-view/getBoundingClientRect-empty-inline-002.html": {
+    "total": 4
+  },
+  "css/cssom-view/getBoundingClientRect-empty-inline.html": {
+    "total": 1
+  },
+  "css/cssom-view/getBoundingClientRect-newline.html": {
+    "total": 1
+  },
+  "css/cssom-view/getBoundingClientRect-scroll.html": {
+    "total": 6
+  },
+  "css/cssom-view/getBoundingClientRect-shy.html": {
+    "total": 12
+  },
+  "css/cssom-view/getBoundingClientRect-svg.html": {
+    "total": 3
+  },
+  "css/cssom-view/getBoundingClientRect-zoom.html": {
+    "total": 5
+  },
+  "css/cssom-view/getClientRects-br-htb-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-br-htb-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-br-vlr-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-br-vlr-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-br-vrl-ltr.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-br-vrl-rtl.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-inline-atomic-child.html": {
+    "total": 3
+  },
+  "css/cssom-view/getClientRects-inline-inline-child.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-inline-with-block-child.html": {
+    "total": 1
+  },
+  "css/cssom-view/getClientRects-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/getClientRects-zoom.html": {
+    "total": 5
+  },
+  "css/cssom-view/historical.html": {
+    "total": 2
+  },
+  "css/cssom-view/htmlelement-offset-width-001.html": {
+    "total": 1
+  },
+  "css/cssom-view/idlharness.html": {
+    "total": 417
+  },
+  "css/cssom-view/image-x-y-zoom.html": {
+    "total": 2
+  },
+  "css/cssom-view/inheritance.html": {
+    "total": 2
+  },
+  "css/cssom-view/interrupt-hidden-smooth-scroll.html": {
+    "total": 2
+  },
+  "css/cssom-view/long_scroll_composited.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/matchMedia-display-none-iframe.html": {
+    "total": 2
+  },
+  "css/cssom-view/matchMedia.html": {
+    "total": 10
+  },
+  "css/cssom-view/mouseEvent-offsetXY-svg.html": {
+    "total": 2
+  },
+  "css/cssom-view/mouseEvent.html": {
+    "total": 3
+  },
+  "css/cssom-view/negativeMargins.html": {
+    "total": 2
+  },
+  "css/cssom-view/offsetParent-block-in-inline.html": {
+    "total": 1
+  },
+  "css/cssom-view/offsetParent-body-and-html.html": {
+    "total": 6
+  },
+  "css/cssom-view/offsetParent-fixed.html": {
+    "total": 2
+  },
+  "css/cssom-view/offsetParent_element_test.html": {
+    "total": 2
+  },
+  "css/cssom-view/offsetTop-offsetLeft-nested-offsetParents.html": {
+    "total": 1
+  },
+  "css/cssom-view/offsetTop-offsetLeft-with-zoom.html": {
+    "total": 2
+  },
+  "css/cssom-view/offsetTopLeft-border-box.html": {
+    "total": 28
+  },
+  "css/cssom-view/offsetTopLeft-empty-inline-offset.html": {
+    "total": 6
+  },
+  "css/cssom-view/offsetTopLeft-empty-inline.html": {
+    "total": 3
+  },
+  "css/cssom-view/offsetTopLeft-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/offsetTopLeft-leading-space-inline.html": {
+    "total": 3
+  },
+  "css/cssom-view/offsetTopLeft-table-caption.html": {
+    "total": 1
+  },
+  "css/cssom-view/offsetTopLeft-trailing-space-inline.html": {
+    "total": 3
+  },
+  "css/cssom-view/offsetTopLeftInScrollableParent.html": {
+    "total": 8
+  },
+  "css/cssom-view/outer-svg.html": {
+    "total": 2
+  },
+  "css/cssom-view/parsing/scroll-behavior-computed.html": {
+    "total": 2
+  },
+  "css/cssom-view/parsing/scroll-behavior-invalid.html": {
+    "total": 3
+  },
+  "css/cssom-view/parsing/scroll-behavior-valid.html": {
+    "total": 2
+  },
+  "css/cssom-view/position-sticky-root-scroller-with-scroll-behavior.html": {
+    "total": 1
+  },
+  "css/cssom-view/pt-to-px-width.html": {
+    "total": 1
+  },
+  "css/cssom-view/range-bounding-client-rect-rtl-ligature-split.html": {
+    "total": 1
+  },
+  "css/cssom-view/range-bounding-client-rect-with-display-contents.html": {
+    "total": 1,
+    "failures": {
+      "the space between elements using a range should be the same as using another method": "FAIL"
+    }
+  },
+  "css/cssom-view/range-bounding-client-rect-with-nested-text.html": {
+    "total": 1
+  },
+  "css/cssom-view/range-bounding-client-rect-with-shadow-dom.html": {
+    "total": 4
+  },
+  "css/cssom-view/range-client-rects-surrogate-indexing.html": {
+    "total": 1
+  },
+  "css/cssom-view/resize-event-on-initial-layout-001.html": {
+    "total": 1
+  },
+  "css/cssom-view/resize-event-on-initial-layout-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/resizeTo-negative.html": {
+    "total": 1
+  },
+  "css/cssom-view/screen-detached-frame.html": {
+    "total": 1
+  },
+  "css/cssom-view/screenLeftTop.html": {
+    "total": 2
+  },
+  "css/cssom-view/scroll-back-to-initial-position.html": {
+    "total": 2
+  },
+  "css/cssom-view/scroll-behavior-default-css.html": {
+    "total": 3
+  },
+  "css/cssom-view/scroll-behavior-element.html": {
+    "total": 39
+  },
+  "css/cssom-view/scroll-behavior-main-frame-root.html": {
+    "total": 40
+  },
+  "css/cssom-view/scroll-behavior-main-frame-window.html": {
+    "total": 28
+  },
+  "css/cssom-view/scroll-behavior-scrollintoview-nested.html": {
+    "total": 2
+  },
+  "css/cssom-view/scroll-behavior-smooth-after-hiding-iframe.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-behavior-smooth-navigation.html": {
+    "total": 3
+  },
+  "css/cssom-view/scroll-behavior-smooth-positions.html": {
+    "total": 23
+  },
+  "css/cssom-view/scroll-behavior-smooth.html": {
+    "total": 3
+  },
+  "css/cssom-view/scroll-behavior-subframe-root.html": {
+    "total": 40
+  },
+  "css/cssom-view/scroll-behavior-subframe-window.html": {
+    "total": 28
+  },
+  "css/cssom-view/scroll-clamp-after-transform-shrinks-overflow.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-no-layout-box.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-offsets-fractional-zoom.html": {
+    "total": 72
+  },
+  "css/cssom-view/scroll-overflow-clip-quirks-001.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-overflow-clip-quirks-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-zoom.html": {
+    "total": 3
+  },
+  "css/cssom-view/scrollIntoView-align-scrollport-covering-child.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-container.html": {
+    "total": 5
+  },
+  "css/cssom-view/scrollIntoView-fixed-outside-of-viewport.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-fixed.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollIntoView-horizontal-partially-visible.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-horizontal-tb-writing-mode-and-rtl-direction.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-horizontal-tb-writing-mode.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-iframes.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollIntoView-inline-image.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-multiple-nested.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollIntoView-multiple.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollIntoView-nearest-oversized-element.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-nearest-visible-element.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-root-overflow-clip.html": {
+    "total": 2
+  },
+  "css/cssom-view/scrollIntoView-scrollMargin.html": {
+    "total": 3
+  },
+  "css/cssom-view/scrollIntoView-scrollPadding.html": {
+    "total": 3
+  },
+  "css/cssom-view/scrollIntoView-scrolling-box-with-large-border.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-scrolling-container.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-shadow.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-should-treat-slot-as-scroll-container.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/scrollIntoView-sideways-lr-writing-mode-and-rtl-direction.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-sideways-lr-writing-mode.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-sideways-rl-writing-mode-and-rtl-direction.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-sideways-rl-writing-mode.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-smooth.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollIntoView-stuck.tentative.html": {
+    "total": 1,
+    "failures": {
+      "CSSOM View - scrollIntoView doesn't consider scroll-padding when target is stuck": "FAIL"
+    }
+  },
+  "css/cssom-view/scrollIntoView-svg-shape.html": {
+    "total": 3
+  },
+  "css/cssom-view/scrollIntoView-then-scrollBy.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollIntoView-vertical-lr-writing-mode-and-rtl-direction.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-vertical-lr-writing-mode.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollIntoView-vertical-rl-writing-mode.html": {
+    "total": 9
+  },
+  "css/cssom-view/scrollLeft-of-scroller-with-wider-scrollbar.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollLeftTop.html": {
+    "total": 6
+  },
+  "css/cssom-view/scrollParent-quirks-mode.html": {
+    "total": 1,
+    "failures": {
+      "scrollParent of body is null when body is document scrolling element": "FAIL"
+    }
+  },
+  "css/cssom-view/scrollParent-shadow-tree.html": {
+    "total": 4,
+    "failures": {
+      "scrollParent from inside closed shadow tree": "FAIL",
+      "scrollParent from inside open shadow tree": "FAIL",
+      "scrollParent skips intermediate closed shadow tree nodes": "FAIL",
+      "scrollParent skips intermediate open shadow tree nodes": "FAIL"
+    }
+  },
+  "css/cssom-view/scrollParent.html": {
+    "total": 12,
+    "failures": {
+      "Element with no box has null scrollParent.": "FAIL",
+      "hidden element is a scroll container.": "FAIL",
+      "scrollParent follows absolute positioned containing block chain.": "FAIL",
+      "scrollParent follows fixed positioned containing block chain.": "FAIL",
+      "scrollParent of body is document scrolling element when body is not document scrolling element.": "FAIL",
+      "scrollParent of child in root viewport returns document scrolling element.": "FAIL",
+      "scrollParent of element fixed to root is null.": "FAIL",
+      "scrollParent of fixed element contained within root is document scrolling element.": "FAIL",
+      "scrollParent of root is null.": "FAIL",
+      "scrollParent of scrolling element is null.": "FAIL",
+      "scrollParent returns the nearest scroll container.": "FAIL",
+      "scrollParent skips ancestors with `display: contents`.": "FAIL"
+    }
+  },
+  "css/cssom-view/scrollTo-zoom.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/scrollTop-display-change.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/scrollWidthHeight-child-border-within-padding.tentative.html": {
+    "total": 5
+  },
+  "css/cssom-view/scrollWidthHeight-contain-layout.html": {
+    "total": 128
+  },
+  "css/cssom-view/scrollWidthHeight-flex-column-padding-001.html": {
+    "total": 2
+  },
+  "css/cssom-view/scrollWidthHeight-negative-margin-001.html": {
+    "total": 4
+  },
+  "css/cssom-view/scrollWidthHeight-negative-margin-002.html": {
+    "total": 600
+  },
+  "css/cssom-view/scrollWidthHeight-not-scrollable-fractional-zoom.html": {
+    "total": 5
+  },
+  "css/cssom-view/scrollWidthHeight-overflow-visible-margin-collapsing.html": {
+    "total": 140
+  },
+  "css/cssom-view/scrollWidthHeight-overflow-visible-negative-margins.html": {
+    "total": 50
+  },
+  "css/cssom-view/scrollWidthHeight.xht": {
+    "total": 12
+  },
+  "css/cssom-view/scrollWidthHeightWhenNotScrollable.xht": {
+    "total": 12
+  },
+  "css/cssom-view/scrolling-no-browsing-context.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrolling-quirks-vs-nonquirks.html": {
+    "total": 30
+  },
+  "css/cssom-view/scrollingElement-quirks-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/scrollingElement-quirks-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "css/cssom-view/scrollingElement.html": {
+    "total": 8
+  },
+  "css/cssom-view/scrollintoview-containingblock-chain.html": {
+    "total": 1
+  },
+  "css/cssom-view/scrollintoview-zero-height-item.html": {
+    "total": 1,
+    "failures": {
+      "scrollIntoView on zero height item": "FAIL"
+    }
+  },
+  "css/cssom-view/scrollintoview.html": {
+    "total": 40
+  },
+  "css/cssom-view/smooth-scroll-in-load-event.html": {
+    "total": 1
+  },
+  "css/cssom-view/smooth-scroll-nonstop.html": {
+    "total": 2
+  },
+  "css/cssom-view/smooth-scrollIntoView-with-smooth-fragment-scroll.html": {
+    "total": 2
+  },
+  "css/cssom-view/smooth-scrollIntoView-with-unrelated-gesture-scroll.html": {
+    "total": 1
+  },
+  "css/cssom-view/subpixel-sizes-and-offsets.tentative.html": {
+    "total": 15,
+    "failures": {
+      "clientLeft and clientTop don't round 44.1": "FAIL",
+      "clientLeft and clientTop don't round 44.5": "FAIL",
+      "clientLeft and clientTop don't round 44.9": "FAIL"
+    }
+  },
+  "css/cssom-view/table-border-collapse-client-width-height.html": {
+    "total": 1
+  },
+  "css/cssom-view/table-border-separate-client-width-height.html": {
+    "total": 1
+  },
+  "css/cssom-view/table-client-props.html": {
+    "total": 15
+  },
+  "css/cssom-view/table-offset-props.html": {
+    "total": 13
+  },
+  "css/cssom-view/table-scroll-props.html": {
+    "total": 13
+  },
+  "css/cssom-view/table-with-border-client-width-height.html": {
+    "total": 1
+  },
+  "css/cssom-view/ttwf-js-cssomview-getclientrects-length.html": {
+    "total": 3
+  },
+  "css/cssom-view/visual-scrollIntoView-001.html": {
+    "total": 1,
+    "failures": {
+      "Element.scrollIntoView scrolls visually": "FAIL"
+    }
+  },
+  "css/cssom-view/visual-scrollIntoView-002.html": {
+    "total": 1,
+    "failures": {
+      "Element.scrollIntoView scrolls visually to a position: fixed element with non-zero layout scroll offset": "FAIL"
+    }
+  },
+  "css/cssom-view/visual-scrollIntoView-003.html": {
+    "total": 1,
+    "failures": {
+      "Element.scrollIntoView scrolls visually to an element in nested position: fixed elements": "FAIL"
+    }
+  },
+  "css/cssom-view/window-screen-height-immutable.html": {
+    "total": 1
+  },
+  "css/cssom-view/window-screen-height.html": {
+    "total": 3
+  },
+  "css/cssom-view/window-screen-width-immutable.html": {
+    "total": 1
+  },
+  "css/cssom-view/window-screen-width.html": {
+    "total": 3
+  },
+  "css/cssom-view/window-scroll-arguments.html": {
+    "total": 12
+  },
+  "css/cssom-view/window-scroll-promise-interruption.html": {
+    "total": 4,
+    "failures": {
+      "Window.scrollBy: interruption by auto scroll call": "FAIL",
+      "Window.scrollBy: interruption by smooth scroll call": "FAIL",
+      "Window.scrollTo: interruption by auto scroll call": "FAIL",
+      "Window.scrollTo: interruption by smooth scroll call": "FAIL"
+    }
+  },
+  "css/cssom-view/window-scroll-promises.html": {
+    "total": 18,
+    "failures": {
+      "Window.scroll(auto): promise behavior": "FAIL",
+      "Window.scroll(auto): return type": "FAIL",
+      "Window.scroll(instant): promise behavior": "FAIL",
+      "Window.scroll(instant): return type": "FAIL",
+      "Window.scroll(smooth): promise behavior": "FAIL",
+      "Window.scroll(smooth): return type": "FAIL",
+      "Window.scrollBy(auto): promise behavior": "FAIL",
+      "Window.scrollBy(auto): return type": "FAIL",
+      "Window.scrollBy(instant): promise behavior": "FAIL",
+      "Window.scrollBy(instant): return type": "FAIL",
+      "Window.scrollBy(smooth): promise behavior": "FAIL",
+      "Window.scrollBy(smooth): return type": "FAIL",
+      "Window.scrollTo(auto): promise behavior": "FAIL",
+      "Window.scrollTo(auto): return type": "FAIL",
+      "Window.scrollTo(instant): promise behavior": "FAIL",
+      "Window.scrollTo(instant): return type": "FAIL",
+      "Window.scrollTo(smooth): promise behavior": "FAIL",
+      "Window.scrollTo(smooth): return type": "FAIL"
+    }
+  },
+  "css/cssom-view/window-scrollBy-display-change.html": {
+    "reftest": "PASS"
+  }
+}

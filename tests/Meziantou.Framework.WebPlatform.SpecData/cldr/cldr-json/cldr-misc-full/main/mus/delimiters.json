@@ -1,0 +1,15 @@
+{
+  "main": {
+    "mus": {
+      "identity": {
+        "language": "mus"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

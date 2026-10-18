@@ -1,0 +1,104 @@
+{
+  "spec": {
+    "title": "Selectors Level 5",
+    "url": "https://drafts.csswg.org/selectors-5/"
+  },
+  "properties": [],
+  "atrules": [],
+  "selectors": [
+    {
+      "name": ":local-link",
+      "prose": "The :local-link pseudo-class allows authors to style hyperlinks based on the users current location within a site and to differentiate site-internal versus site-external links.",
+      "href": "https://drafts.csswg.org/selectors-5/#local-link-pseudo",
+      "value": ":local-link"
+    },
+    {
+      "name": ":interest-source",
+      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently \"showing interest\" in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
+      "href": "https://drafts.csswg.org/selectors-5/#selectordef-interest-source",
+      "value": ":interest-source"
+    },
+    {
+      "name": ":interest-target",
+      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently \"showing interest\" in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
+      "href": "https://drafts.csswg.org/selectors-5/#selectordef-interest-target",
+      "value": ":interest-target"
+    },
+    {
+      "name": ":blank",
+      "prose": "The :blank pseudo-class applies to user-input elements whose input value is empty (consists of the empty string or otherwise null input).",
+      "href": "https://drafts.csswg.org/selectors-5/#blank-pseudo",
+      "value": ":blank"
+    },
+    {
+      "name": ":current",
+      "prose": "The :current pseudo-class represents the element, or an ancestor of the element, that is currently being displayed.",
+      "href": "https://drafts.csswg.org/selectors-5/#current-pseudo",
+      "value": ":current"
+    },
+    {
+      "name": ":current()",
+      "prose": "Its alternate form :current() takes a list of compound selectors as its argument: it represents the :current element that matches the argument or, if that does not match, the innermost ancestor of the :current element that does. (If neither the :current element nor its ancestors match the argument, then the selector does not represent anything.)",
+      "href": "https://drafts.csswg.org/selectors-5/#selectordef-current"
+    },
+    {
+      "name": ":past",
+      "prose": "The :past pseudo-class represents any element that is defined to occur entirely prior to a :current element. For example, the WebVTT spec defines the :past pseudo-class relative to the current playback position of a media element. If a time-based order of elements is not defined by the document language, then this represents any element that is a (possibly indirect) previous sibling of a :current element.",
+      "href": "https://drafts.csswg.org/selectors-5/#past-pseudo",
+      "value": ":past"
+    },
+    {
+      "name": ":future",
+      "prose": "The :future pseudo-class represents any element that is defined to occur entirely after a :current element. For example, the WebVTT spec defines the :future pseudo-class relative to the current playback position of a media element. If a time-based order of elements is not defined by the document language, then this represents any element that is a (possibly indirect) next sibling of a :current element.",
+      "href": "https://drafts.csswg.org/selectors-5/#future-pseudo",
+      "value": ":future"
+    },
+    {
+      "name": ":state()",
+      "value": ":state( <ident> )",
+      "href": "https://drafts.csswg.org/selectors-5/#state-pseudo"
+    },
+    {
+      "name": ":heading",
+      "prose": "The (non-functional) :heading pseudo-class matches an element which has a heading level, with respect to the semantics defined by the document language (e.g. [HTML5]).",
+      "href": "https://drafts.csswg.org/selectors-5/#heading-pseudo",
+      "value": ":heading"
+    },
+    {
+      "name": ":heading()",
+      "prose": "As a functional pseudo-class, :heading() notation represents elements that have a heading level among matching any of the provided integer values. The syntax is:",
+      "href": "https://drafts.csswg.org/selectors-5/#heading-functional-pseudo",
+      "value": ":heading( <level># )"
+    },
+    {
+      "name": "||",
+      "prose": "The column combinator, which consists of two pipes (||) represents the relationship of a column element to a cell element belonging to the column it represents. Column membership is determined based on the semantics of the document language only: whether and how the elements are presented is not considered. If a cell element belongs to more than one column, it is represented by a selector indicating membership in any of those columns.",
+      "href": "https://drafts.csswg.org/selectors-5/#selectordef-column",
+      "value": "'|' '|'"
+    },
+    {
+      "name": ":nth-col()",
+      "value": ":nth-col(An+B)",
+      "href": "https://drafts.csswg.org/selectors-5/#nth-col-pseudo"
+    },
+    {
+      "name": ":nth-last-col()",
+      "value": ":nth-last-col(An+B)",
+      "href": "https://drafts.csswg.org/selectors-5/#nth-last-col-pseudo"
+    }
+  ],
+  "values": [
+    {
+      "name": "<level>",
+      "prose": "where <level> is a <number-token> with its type flag set to \"integer\".",
+      "href": "https://drafts.csswg.org/selectors-5/#typedef-level",
+      "type": "type"
+    },
+    {
+      "name": "<combinator>",
+      "href": "https://drafts.csswg.org/selectors-5/#typedef-combinator",
+      "type": "type",
+      "value": "'>' | '+' | '~' | [ '|' '|' ] | [ / <wq-name> / ]"
+    }
+  ]
+}

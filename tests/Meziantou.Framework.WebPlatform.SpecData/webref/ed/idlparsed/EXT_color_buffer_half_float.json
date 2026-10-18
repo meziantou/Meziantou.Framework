@@ -1,0 +1,137 @@
+{
+  "spec": {
+    "title": "WebGL EXT_color_buffer_half_float Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_color_buffer_half_float/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_color_buffer_half_float"
+        ],
+        "Worker": [
+          "EXT_color_buffer_half_float"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_color_buffer_half_float": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_color_buffer_half_float {\n  const GLenum RGBA16F_EXT = 0x881A;\n  const GLenum RGB16F_EXT = 0x881B;\n  const GLenum FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT = 0x8211;\n  const GLenum UNSIGNED_NORMALIZED_EXT = 0x8C17;\n};",
+        "type": "interface",
+        "name": "EXT_color_buffer_half_float",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "RGBA16F_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x881A"
+            }
+          },
+          {
+            "type": "const",
+            "name": "RGB16F_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x881B"
+            }
+          },
+          {
+            "type": "const",
+            "name": "FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8211"
+            }
+          },
+          {
+            "type": "const",
+            "name": "UNSIGNED_NORMALIZED_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x8C17"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_color_buffer_half_float"
+      ],
+      "Worker": [
+        "EXT_color_buffer_half_float"
+      ]
+    },
+    "dependencies": {
+      "EXT_color_buffer_half_float": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

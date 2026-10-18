@@ -1,0 +1,16 @@
+{
+  "main": {
+    "en-MV": {
+      "identity": {
+        "language": "en",
+        "territory": "MV"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

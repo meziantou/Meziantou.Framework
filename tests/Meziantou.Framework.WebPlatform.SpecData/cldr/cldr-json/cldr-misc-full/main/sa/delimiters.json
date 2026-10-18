@@ -1,0 +1,15 @@
+{
+  "main": {
+    "sa": {
+      "identity": {
+        "language": "sa"
+      },
+      "delimiters": {
+        "quotationStart": "“",
+        "quotationEnd": "”",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

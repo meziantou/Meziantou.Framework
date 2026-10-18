@@ -1,0 +1,333 @@
+{
+  "spec": {
+    "title": "IceTransport Extensions for WebRTC",
+    "url": "https://w3c.github.io/webrtc-ice/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "RTCIceTransport"
+        ]
+      },
+      "functions": {}
+    },
+    "idlNames": {
+      "RTCIceGatherOptions": {
+        "fragment": "dictionary RTCIceGatherOptions {\n             RTCIceTransportPolicy     gatherPolicy = \"all\";\n             sequence<RTCIceServer> iceServers;\n};",
+        "type": "dictionary",
+        "name": "RTCIceGatherOptions",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "gatherPolicy",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "RTCIceTransportPolicy"
+            },
+            "default": {
+              "type": "string",
+              "value": "all"
+            },
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicegatheroptions-gatherpolicy"
+          },
+          {
+            "type": "field",
+            "name": "iceServers",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "sequence",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "RTCIceServer"
+                }
+              ]
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicegatheroptions-iceservers"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicegatheroptions"
+      }
+    },
+    "idlExtendedNames": {
+      "RTCIceParameters": [
+        {
+          "fragment": "partial dictionary RTCIceParameters {\n             boolean   iceLite;\n};",
+          "type": "dictionary",
+          "name": "RTCIceParameters",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "field",
+              "name": "iceLite",
+              "extAttrs": [],
+              "idlType": {
+                "type": "dictionary-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "boolean"
+              },
+              "default": null,
+              "required": false,
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtciceparameters-icelite"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "RTCIceTransport": [
+        {
+          "fragment": "[Exposed=Window]\npartial interface RTCIceTransport {\n    constructor();\n    undefined                      gather (optional RTCIceGatherOptions options = {});\n    undefined                      start (optional RTCIceParameters remoteParameters = {}, optional RTCIceRole role = \"controlled\");\n    undefined                      stop ();\n    undefined                      addRemoteCandidate (optional RTCIceCandidateInit remoteCandidate = {});\n                    attribute EventHandler        onerror;\n                    attribute EventHandler        onicecandidate;\n};",
+          "type": "interface",
+          "name": "RTCIceTransport",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "constructor",
+              "arguments": [],
+              "extAttrs": [],
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-constructor"
+            },
+            {
+              "type": "operation",
+              "name": "gather",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceGatherOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-gather"
+            },
+            {
+              "type": "operation",
+              "name": "start",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "remoteParameters",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceParameters"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "role",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceRole"
+                  },
+                  "default": {
+                    "type": "string",
+                    "value": "controlled"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-start"
+            },
+            {
+              "type": "operation",
+              "name": "stop",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-stop"
+            },
+            {
+              "type": "operation",
+              "name": "addRemoteCandidate",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "remoteCandidate",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "RTCIceCandidateInit"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [],
+              "special": "",
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-addremotecandidate"
+            },
+            {
+              "type": "attribute",
+              "name": "onerror",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-onerror"
+            },
+            {
+              "type": "attribute",
+              "name": "onicecandidate",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webrtc-ice/#dom-rtcicetransport-onicecandidate"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "RTCIceTransport"
+      ]
+    },
+    "dependencies": {
+      "RTCIceParameters": [],
+      "RTCIceGatherOptions": [
+        "RTCIceTransportPolicy",
+        "RTCIceServer"
+      ],
+      "RTCIceTransport": [
+        "RTCIceGatherOptions",
+        "RTCIceParameters",
+        "RTCIceRole",
+        "RTCIceCandidateInit",
+        "EventHandler"
+      ]
+    },
+    "externalDependencies": [
+      "RTCIceParameters",
+      "RTCIceTransportPolicy",
+      "RTCIceServer",
+      "RTCIceTransport",
+      "RTCIceRole",
+      "RTCIceCandidateInit",
+      "EventHandler"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

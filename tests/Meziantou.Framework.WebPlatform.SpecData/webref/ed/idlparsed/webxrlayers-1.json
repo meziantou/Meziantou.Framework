@@ -1,0 +1,2902 @@
+{
+  "spec": {
+    "title": "WebXR Layers API Level 1",
+    "url": "https://immersive-web.github.io/layers/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {
+        "Window": [
+          "XRWebGLBinding",
+          "XRMediaBinding",
+          "XRLayerEvent"
+        ]
+      },
+      "functions": {
+        "Window": [
+          "XRCompositionLayer",
+          "XRProjectionLayer",
+          "XRQuadLayer",
+          "XRCylinderLayer",
+          "XREquirectLayer",
+          "XRCubeLayer",
+          "XRSubImage",
+          "XRWebGLSubImage",
+          "XRRenderState",
+          "XRSession"
+        ]
+      }
+    },
+    "idlNames": {
+      "XRLayerLayout": {
+        "fragment": "enum XRLayerLayout {\n  \"default\",\n  \"mono\",\n  \"stereo\",\n  \"stereo-left-right\",\n  \"stereo-top-bottom\"\n};",
+        "type": "enum",
+        "name": "XRLayerLayout",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerlayout-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "mono",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerlayout-mono"
+          },
+          {
+            "type": "enum-value",
+            "value": "stereo",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerlayout-stereo"
+          },
+          {
+            "type": "enum-value",
+            "value": "stereo-left-right",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerlayout-stereo-left-right"
+          },
+          {
+            "type": "enum-value",
+            "value": "stereo-top-bottom",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerlayout-stereo-top-bottom"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/layers/#enumdef-xrlayerlayout"
+      },
+      "XRLayerQuality": {
+        "fragment": "enum XRLayerQuality {\n  \"default\",\n  \"text-optimized\",\n  \"graphics-optimized\"\n};",
+        "type": "enum",
+        "name": "XRLayerQuality",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "default",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerquality-default"
+          },
+          {
+            "type": "enum-value",
+            "value": "text-optimized",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerquality-text-optimized"
+          },
+          {
+            "type": "enum-value",
+            "value": "graphics-optimized",
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerquality-graphics-optimized"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/layers/#enumdef-xrlayerquality"
+      },
+      "XRCompositionLayer": {
+        "fragment": "[Exposed=Window] interface XRCompositionLayer : XRLayer {\n  readonly attribute XRLayerLayout layout;\n\n  attribute boolean blendTextureSourceAlpha;\n  attribute boolean forceMonoPresentation;\n  attribute float opacity;\n  readonly attribute unsigned long mipLevels;\n  attribute XRLayerQuality quality;\n\n  readonly attribute boolean needsRedraw;\n\n  undefined destroy();\n};",
+        "type": "interface",
+        "name": "XRCompositionLayer",
+        "inheritance": "XRLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "layout",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayerLayout"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-layout"
+          },
+          {
+            "type": "attribute",
+            "name": "blendTextureSourceAlpha",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-blendtexturesourcealpha"
+          },
+          {
+            "type": "attribute",
+            "name": "forceMonoPresentation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-forcemonopresentation"
+          },
+          {
+            "type": "attribute",
+            "name": "opacity",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-opacity"
+          },
+          {
+            "type": "attribute",
+            "name": "mipLevels",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-miplevels"
+          },
+          {
+            "type": "attribute",
+            "name": "quality",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayerQuality"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-quality"
+          },
+          {
+            "type": "attribute",
+            "name": "needsRedraw",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-needsredraw"
+          },
+          {
+            "type": "operation",
+            "name": "destroy",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrcompositionlayer-destroy"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrcompositionlayer"
+      },
+      "XRProjectionLayer": {
+        "fragment": "[Exposed=Window] interface XRProjectionLayer : XRCompositionLayer {\n  readonly attribute unsigned long textureWidth;\n  readonly attribute unsigned long textureHeight;\n  readonly attribute unsigned long textureArrayLength;\n\n  readonly attribute boolean ignoreDepthValues;\n  attribute float? fixedFoveation;\n  attribute XRRigidTransform? deltaPose;\n};",
+        "type": "interface",
+        "name": "XRProjectionLayer",
+        "inheritance": "XRCompositionLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "textureWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-texturewidth"
+          },
+          {
+            "type": "attribute",
+            "name": "textureHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-textureheight"
+          },
+          {
+            "type": "attribute",
+            "name": "textureArrayLength",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-texturearraylength"
+          },
+          {
+            "type": "attribute",
+            "name": "ignoreDepthValues",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-ignoredepthvalues"
+          },
+          {
+            "type": "attribute",
+            "name": "fixedFoveation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-fixedfoveation"
+          },
+          {
+            "type": "attribute",
+            "name": "deltaPose",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayer-deltapose"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrprojectionlayer"
+      },
+      "XRQuadLayer": {
+        "fragment": "[Exposed=Window] interface XRQuadLayer : XRCompositionLayer {\n  attribute XRSpace space;\n  attribute XRRigidTransform transform;\n\n  attribute float width;\n  attribute float height;\n\n  // Events\n  attribute EventHandler onredraw;\n};",
+        "type": "interface",
+        "name": "XRQuadLayer",
+        "inheritance": "XRCompositionLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "space",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayer-space"
+          },
+          {
+            "type": "attribute",
+            "name": "transform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayer-transform"
+          },
+          {
+            "type": "attribute",
+            "name": "width",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayer-width"
+          },
+          {
+            "type": "attribute",
+            "name": "height",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayer-height"
+          },
+          {
+            "type": "attribute",
+            "name": "onredraw",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayer-onredraw"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrquadlayer"
+      },
+      "XRCylinderLayer": {
+        "fragment": "[Exposed=Window] interface XRCylinderLayer : XRCompositionLayer {\n  attribute XRSpace space;\n  attribute XRRigidTransform transform;\n\n  attribute float radius;\n  attribute float centralAngle;\n  attribute float aspectRatio;\n\n  // Events\n  attribute EventHandler onredraw;\n};",
+        "type": "interface",
+        "name": "XRCylinderLayer",
+        "inheritance": "XRCompositionLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "space",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-space"
+          },
+          {
+            "type": "attribute",
+            "name": "transform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-transform"
+          },
+          {
+            "type": "attribute",
+            "name": "radius",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-radius"
+          },
+          {
+            "type": "attribute",
+            "name": "centralAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-centralangle"
+          },
+          {
+            "type": "attribute",
+            "name": "aspectRatio",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-aspectratio"
+          },
+          {
+            "type": "attribute",
+            "name": "onredraw",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayer-onredraw"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrcylinderlayer"
+      },
+      "XREquirectLayer": {
+        "fragment": "[Exposed=Window] interface XREquirectLayer : XRCompositionLayer {\n  attribute XRSpace space;\n  attribute XRRigidTransform transform;\n\n  attribute float radius;\n  attribute float centralHorizontalAngle;\n  attribute float upperVerticalAngle;\n  attribute float lowerVerticalAngle;\n\n  // Events\n  attribute EventHandler onredraw;\n};",
+        "type": "interface",
+        "name": "XREquirectLayer",
+        "inheritance": "XRCompositionLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "space",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-space"
+          },
+          {
+            "type": "attribute",
+            "name": "transform",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-transform"
+          },
+          {
+            "type": "attribute",
+            "name": "radius",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-radius"
+          },
+          {
+            "type": "attribute",
+            "name": "centralHorizontalAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-centralhorizontalangle"
+          },
+          {
+            "type": "attribute",
+            "name": "upperVerticalAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-upperverticalangle"
+          },
+          {
+            "type": "attribute",
+            "name": "lowerVerticalAngle",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-lowerverticalangle"
+          },
+          {
+            "type": "attribute",
+            "name": "onredraw",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayer-onredraw"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrequirectlayer"
+      },
+      "XRCubeLayer": {
+        "fragment": "[Exposed=Window] interface XRCubeLayer : XRCompositionLayer {\n  attribute XRSpace space;\n  attribute DOMPointReadOnly orientation;\n\n  // Events\n  attribute EventHandler onredraw;\n};",
+        "type": "interface",
+        "name": "XRCubeLayer",
+        "inheritance": "XRCompositionLayer",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "space",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcubelayer-space"
+          },
+          {
+            "type": "attribute",
+            "name": "orientation",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcubelayer-orientation"
+          },
+          {
+            "type": "attribute",
+            "name": "onredraw",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcubelayer-onredraw"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrcubelayer"
+      },
+      "XRSubImage": {
+        "fragment": "[Exposed=Window] interface XRSubImage {\n  [SameObject] readonly attribute XRViewport viewport;\n};",
+        "type": "interface",
+        "name": "XRSubImage",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "viewport",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRViewport"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrsubimage-viewport"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrsubimage"
+      },
+      "XRWebGLSubImage": {
+        "fragment": "[Exposed=Window] interface XRWebGLSubImage : XRSubImage {\n  [SameObject] readonly attribute WebGLTexture colorTexture;\n  [SameObject] readonly attribute WebGLTexture? depthStencilTexture;\n  [SameObject] readonly attribute WebGLTexture? motionVectorTexture;\n\n  readonly attribute unsigned long? imageIndex;\n  readonly attribute unsigned long colorTextureWidth;\n  readonly attribute unsigned long colorTextureHeight;\n  readonly attribute unsigned long? depthStencilTextureWidth;\n  readonly attribute unsigned long? depthStencilTextureHeight;\n};",
+        "type": "interface",
+        "name": "XRWebGLSubImage",
+        "inheritance": "XRSubImage",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "colorTexture",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "WebGLTexture"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-colortexture"
+          },
+          {
+            "type": "attribute",
+            "name": "depthStencilTexture",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WebGLTexture"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-depthstenciltexture"
+          },
+          {
+            "type": "attribute",
+            "name": "motionVectorTexture",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "WebGLTexture"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-motionvectortexture"
+          },
+          {
+            "type": "attribute",
+            "name": "imageIndex",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-imageindex"
+          },
+          {
+            "type": "attribute",
+            "name": "colorTextureWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-colortexturewidth"
+          },
+          {
+            "type": "attribute",
+            "name": "colorTextureHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-colortextureheight"
+          },
+          {
+            "type": "attribute",
+            "name": "depthStencilTextureWidth",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-depthstenciltexturewidth"
+          },
+          {
+            "type": "attribute",
+            "name": "depthStencilTextureHeight",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglsubimage-depthstenciltextureheight"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrwebglsubimage"
+      },
+      "XRTextureType": {
+        "fragment": "enum XRTextureType {\n  \"texture\",\n  \"texture-array\"\n};",
+        "type": "enum",
+        "name": "XRTextureType",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "texture",
+            "href": "https://immersive-web.github.io/layers/#dom-xrtexturetype-texture"
+          },
+          {
+            "type": "enum-value",
+            "value": "texture-array",
+            "href": "https://immersive-web.github.io/layers/#dom-xrtexturetype-texture-array"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://immersive-web.github.io/layers/#enumdef-xrtexturetype"
+      },
+      "XRProjectionLayerInit": {
+        "fragment": "dictionary XRProjectionLayerInit {\n  XRTextureType textureType = \"texture\";\n  GLenum colorFormat = 0x1908; // RGBA\n  GLenum depthFormat = 0x1902; // DEPTH_COMPONENT\n  double scaleFactor = 1.0;\n  boolean clearOnAccess = true;\n};",
+        "type": "dictionary",
+        "name": "XRProjectionLayerInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "textureType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRTextureType"
+            },
+            "default": {
+              "type": "string",
+              "value": "texture"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayerinit-texturetype"
+          },
+          {
+            "type": "field",
+            "name": "colorFormat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "default": {
+              "type": "number",
+              "value": "0x1908"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayerinit-colorformat"
+          },
+          {
+            "type": "field",
+            "name": "depthFormat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "default": {
+              "type": "number",
+              "value": "0x1902"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayerinit-depthformat"
+          },
+          {
+            "type": "field",
+            "name": "scaleFactor",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayerinit-scalefactor"
+          },
+          {
+            "type": "field",
+            "name": "clearOnAccess",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrprojectionlayerinit-clearonaccess"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrprojectionlayerinit"
+      },
+      "XRLayerInit": {
+        "fragment": "dictionary XRLayerInit {\n  required XRSpace space;\n  XRTextureType textureType = \"texture\";\n  GLenum colorFormat = 0x1908; // RGBA\n  GLenum? depthFormat;\n  unsigned long mipLevels = 1;\n  required unsigned long viewPixelWidth;\n  required unsigned long viewPixelHeight;\n  XRLayerLayout layout = \"mono\";\n  boolean isStatic = false;\n  boolean clearOnAccess = true;\n};",
+        "type": "dictionary",
+        "name": "XRLayerInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "space",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-space"
+          },
+          {
+            "type": "field",
+            "name": "textureType",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRTextureType"
+            },
+            "default": {
+              "type": "string",
+              "value": "texture"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-texturetype"
+          },
+          {
+            "type": "field",
+            "name": "colorFormat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "default": {
+              "type": "number",
+              "value": "0x1908"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-colorformat"
+          },
+          {
+            "type": "field",
+            "name": "depthFormat",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-depthformat"
+          },
+          {
+            "type": "field",
+            "name": "mipLevels",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": {
+              "type": "number",
+              "value": "1"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-miplevels"
+          },
+          {
+            "type": "field",
+            "name": "viewPixelWidth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-viewpixelwidth"
+          },
+          {
+            "type": "field",
+            "name": "viewPixelHeight",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned long"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-viewpixelheight"
+          },
+          {
+            "type": "field",
+            "name": "layout",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayerLayout"
+            },
+            "default": {
+              "type": "string",
+              "value": "mono"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-layout"
+          },
+          {
+            "type": "field",
+            "name": "isStatic",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-isstatic"
+          },
+          {
+            "type": "field",
+            "name": "clearOnAccess",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": true
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerinit-clearonaccess"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrlayerinit"
+      },
+      "XRQuadLayerInit": {
+        "fragment": "dictionary XRQuadLayerInit : XRLayerInit {\n  XRRigidTransform? transform;\n  float width = 1.0;\n  float height = 1.0;\n};",
+        "type": "dictionary",
+        "name": "XRQuadLayerInit",
+        "inheritance": "XRLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayerinit-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrquadlayerinit-height"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrquadlayerinit"
+      },
+      "XRCylinderLayerInit": {
+        "fragment": "dictionary XRCylinderLayerInit : XRLayerInit {\n  XRRigidTransform? transform;\n  float radius = 2.0;\n  float centralAngle = 0.78539;\n  float aspectRatio = 2.0;\n};",
+        "type": "dictionary",
+        "name": "XRCylinderLayerInit",
+        "inheritance": "XRLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "radius",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "2.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayerinit-radius"
+          },
+          {
+            "type": "field",
+            "name": "centralAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.78539"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayerinit-centralangle"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "2.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcylinderlayerinit-aspectratio"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrcylinderlayerinit"
+      },
+      "XREquirectLayerInit": {
+        "fragment": "dictionary XREquirectLayerInit : XRLayerInit {\n  XRRigidTransform? transform;\n  float radius = 0;\n  float centralHorizontalAngle = 6.28318;\n  float upperVerticalAngle = 1.570795;\n  float lowerVerticalAngle = -1.570795;\n};",
+        "type": "dictionary",
+        "name": "XREquirectLayerInit",
+        "inheritance": "XRLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "radius",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayerinit-radius"
+          },
+          {
+            "type": "field",
+            "name": "centralHorizontalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "6.28318"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayerinit-centralhorizontalangle"
+          },
+          {
+            "type": "field",
+            "name": "upperVerticalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.570795"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayerinit-upperverticalangle"
+          },
+          {
+            "type": "field",
+            "name": "lowerVerticalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "-1.570795"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrequirectlayerinit-lowerverticalangle"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrequirectlayerinit"
+      },
+      "XRCubeLayerInit": {
+        "fragment": "dictionary XRCubeLayerInit : XRLayerInit {\n  DOMPointReadOnly? orientation;\n};",
+        "type": "dictionary",
+        "name": "XRCubeLayerInit",
+        "inheritance": "XRLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "orientation",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "DOMPointReadOnly"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrcubelayerinit-orientation"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrcubelayerinit"
+      },
+      "XRWebGLBinding": {
+        "fragment": "[Exposed=Window] interface XRWebGLBinding {\n  constructor(XRSession session, XRWebGLRenderingContext context);\n\n  readonly attribute double nativeProjectionScaleFactor;\n  readonly attribute boolean usesDepthValues;\n\n  XRProjectionLayer createProjectionLayer(optional XRProjectionLayerInit init = {});\n  XRQuadLayer createQuadLayer(optional XRQuadLayerInit init = {});\n  XRCylinderLayer createCylinderLayer(optional XRCylinderLayerInit init = {});\n  XREquirectLayer createEquirectLayer(optional XREquirectLayerInit init = {});\n  XRCubeLayer createCubeLayer(optional XRCubeLayerInit init = {});\n\n  XRWebGLSubImage getSubImage(XRCompositionLayer layer, XRFrame frame, optional XREye eye = \"none\");\n  XRWebGLSubImage getViewSubImage(XRProjectionLayer layer, XRView view);\n\n  undefined foveateBoundTexture(GLenum target, float fixed_foveation);\n};",
+        "type": "interface",
+        "name": "XRWebGLBinding",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "session",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRSession"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "context",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRWebGLRenderingContext"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-xrwebglbinding"
+          },
+          {
+            "type": "attribute",
+            "name": "nativeProjectionScaleFactor",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-nativeprojectionscalefactor"
+          },
+          {
+            "type": "attribute",
+            "name": "usesDepthValues",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-usesdepthvalues"
+          },
+          {
+            "type": "operation",
+            "name": "createProjectionLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRProjectionLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRProjectionLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-createprojectionlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createQuadLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRQuadLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRQuadLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-createquadlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createCylinderLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRCylinderLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRCylinderLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-createcylinderlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createEquirectLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XREquirectLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XREquirectLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-createequirectlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createCubeLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRCubeLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRCubeLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-createcubelayer"
+          },
+          {
+            "type": "operation",
+            "name": "getSubImage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRWebGLSubImage"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "layer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRCompositionLayer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "frame",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRFrame"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eye",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XREye"
+                },
+                "default": {
+                  "type": "string",
+                  "value": "none"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-getsubimage"
+          },
+          {
+            "type": "operation",
+            "name": "getViewSubImage",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRWebGLSubImage"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "layer",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRProjectionLayer"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "view",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRView"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-getviewsubimage"
+          },
+          {
+            "type": "operation",
+            "name": "foveateBoundTexture",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "target",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "GLenum"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "fixed_foveation",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrwebglbinding-foveateboundtexture"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrwebglbinding"
+      },
+      "XRMediaLayerInit": {
+        "fragment": "dictionary XRMediaLayerInit {\n  required XRSpace space;\n  XRLayerLayout layout = \"mono\";\n  boolean invertStereo = false;\n};",
+        "type": "dictionary",
+        "name": "XRMediaLayerInit",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "space",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRSpace"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmedialayerinit-space"
+          },
+          {
+            "type": "field",
+            "name": "layout",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayerLayout"
+            },
+            "default": {
+              "type": "string",
+              "value": "mono"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmedialayerinit-layout"
+          },
+          {
+            "type": "field",
+            "name": "invertStereo",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": {
+              "type": "boolean",
+              "value": false
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmedialayerinit-invertstereo"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrmedialayerinit"
+      },
+      "XRMediaQuadLayerInit": {
+        "fragment": "dictionary XRMediaQuadLayerInit : XRMediaLayerInit {\n  XRRigidTransform? transform;\n  float? width;\n  float? height;\n};",
+        "type": "dictionary",
+        "name": "XRMediaQuadLayerInit",
+        "inheritance": "XRMediaLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaquadlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaquadlayerinit-width"
+          },
+          {
+            "type": "field",
+            "name": "height",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaquadlayerinit-height"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrmediaquadlayerinit"
+      },
+      "XRMediaCylinderLayerInit": {
+        "fragment": "dictionary XRMediaCylinderLayerInit : XRMediaLayerInit {\n  XRRigidTransform? transform;\n  float radius = 2.0;\n  float centralAngle = 0.78539;\n  float? aspectRatio;\n};",
+        "type": "dictionary",
+        "name": "XRMediaCylinderLayerInit",
+        "inheritance": "XRMediaLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediacylinderlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "radius",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "2.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediacylinderlayerinit-radius"
+          },
+          {
+            "type": "field",
+            "name": "centralAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.78539"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediacylinderlayerinit-centralangle"
+          },
+          {
+            "type": "field",
+            "name": "aspectRatio",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediacylinderlayerinit-aspectratio"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrmediacylinderlayerinit"
+      },
+      "XRMediaEquirectLayerInit": {
+        "fragment": "dictionary XRMediaEquirectLayerInit : XRMediaLayerInit {\n  XRRigidTransform? transform;\n  float radius = 0.0;\n  float centralHorizontalAngle = 6.28318;\n  float upperVerticalAngle = 1.570795;\n  float lowerVerticalAngle = -1.570795;\n};",
+        "type": "dictionary",
+        "name": "XRMediaEquirectLayerInit",
+        "inheritance": "XRMediaLayerInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "transform",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": false,
+              "idlType": "XRRigidTransform"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaequirectlayerinit-transform"
+          },
+          {
+            "type": "field",
+            "name": "radius",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "0.0"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaequirectlayerinit-radius"
+          },
+          {
+            "type": "field",
+            "name": "centralHorizontalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "6.28318"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaequirectlayerinit-centralhorizontalangle"
+          },
+          {
+            "type": "field",
+            "name": "upperVerticalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "1.570795"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaequirectlayerinit-upperverticalangle"
+          },
+          {
+            "type": "field",
+            "name": "lowerVerticalAngle",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "float"
+            },
+            "default": {
+              "type": "number",
+              "value": "-1.570795"
+            },
+            "required": false,
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediaequirectlayerinit-lowerverticalangle"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrmediaequirectlayerinit"
+      },
+      "XRMediaBinding": {
+        "fragment": "[Exposed=Window] interface XRMediaBinding {\n  constructor(XRSession session);\n\n  XRQuadLayer createQuadLayer(HTMLVideoElement video, optional XRMediaQuadLayerInit init = {});\n  XRCylinderLayer createCylinderLayer(HTMLVideoElement video, optional XRMediaCylinderLayerInit init = {});\n  XREquirectLayer createEquirectLayer(HTMLVideoElement video, optional XRMediaEquirectLayerInit init = {});\n};",
+        "type": "interface",
+        "name": "XRMediaBinding",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "session",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRSession"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediabinding-xrmediabinding"
+          },
+          {
+            "type": "operation",
+            "name": "createQuadLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRQuadLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "video",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLVideoElement"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRMediaQuadLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediabinding-createquadlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createCylinderLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRCylinderLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "video",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLVideoElement"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRMediaCylinderLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediabinding-createcylinderlayer"
+          },
+          {
+            "type": "operation",
+            "name": "createEquirectLayer",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XREquirectLayer"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "video",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "HTMLVideoElement"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "init",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRMediaEquirectLayerInit"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://immersive-web.github.io/layers/#dom-xrmediabinding-createequirectlayer"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrmediabinding"
+      },
+      "XRLayerEvent": {
+        "fragment": "[SecureContext, Exposed=Window] interface XRLayerEvent : Event {\n  constructor(DOMString type, XRLayerEventInit eventInitDict);\n  [SameObject] readonly attribute XRLayer layer;\n};",
+        "type": "interface",
+        "name": "XRLayerEvent",
+        "inheritance": "Event",
+        "members": [
+          {
+            "type": "constructor",
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "type",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "eventInitDict",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "XRLayerEventInit"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerevent-xrlayerevent"
+          },
+          {
+            "type": "attribute",
+            "name": "layer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayer"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayerevent-layer"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#xrlayerevent"
+      },
+      "XRLayerEventInit": {
+        "fragment": "dictionary XRLayerEventInit : EventInit {\n  required XRLayer layer;\n};",
+        "type": "dictionary",
+        "name": "XRLayerEventInit",
+        "inheritance": "EventInit",
+        "members": [
+          {
+            "type": "field",
+            "name": "layer",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "XRLayer"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://immersive-web.github.io/layers/#dom-xrlayereventinit-layer"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://immersive-web.github.io/layers/#dictdef-xrlayereventinit"
+      }
+    },
+    "idlExtendedNames": {
+      "XRRenderState": [
+        {
+          "fragment": "[SecureContext, Exposed=Window] partial interface XRRenderState {\n  readonly attribute FrozenArray<XRLayer> layers;\n};",
+          "type": "interface",
+          "name": "XRRenderState",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "layers",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "FrozenArray",
+                "nullable": false,
+                "union": false,
+                "idlType": [
+                  {
+                    "type": "attribute-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "XRLayer"
+                  }
+                ]
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/layers/#dom-xrrenderstate-layers"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
+      "XRSession": [
+        {
+          "fragment": "[SecureContext, Exposed=Window] partial interface XRSession {\n  readonly attribute unsigned long maxRenderLayers;\n};",
+          "type": "interface",
+          "name": "XRSession",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "maxRenderLayers",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": true,
+              "href": "https://immersive-web.github.io/layers/#dom-xrsession-maxrenderlayers"
+            }
+          ],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "SecureContext",
+              "rhs": null,
+              "arguments": []
+            },
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier",
+                "value": "Window"
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ]
+    },
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "XRCompositionLayer",
+        "XRProjectionLayer",
+        "XRQuadLayer",
+        "XRCylinderLayer",
+        "XREquirectLayer",
+        "XRCubeLayer",
+        "XRSubImage",
+        "XRWebGLSubImage",
+        "XRWebGLBinding",
+        "XRMediaBinding",
+        "XRLayerEvent",
+        "XRRenderState",
+        "XRSession"
+      ]
+    },
+    "dependencies": {
+      "XRCompositionLayer": [
+        "XRLayer",
+        "XRLayerLayout",
+        "XRLayerQuality"
+      ],
+      "XRProjectionLayer": [
+        "XRCompositionLayer",
+        "XRRigidTransform"
+      ],
+      "XRQuadLayer": [
+        "XRCompositionLayer",
+        "XRSpace",
+        "XRRigidTransform",
+        "EventHandler"
+      ],
+      "XRCylinderLayer": [
+        "XRCompositionLayer",
+        "XRSpace",
+        "XRRigidTransform",
+        "EventHandler"
+      ],
+      "XREquirectLayer": [
+        "XRCompositionLayer",
+        "XRSpace",
+        "XRRigidTransform",
+        "EventHandler"
+      ],
+      "XRCubeLayer": [
+        "XRCompositionLayer",
+        "XRSpace",
+        "DOMPointReadOnly",
+        "EventHandler"
+      ],
+      "XRSubImage": [
+        "XRViewport"
+      ],
+      "XRWebGLSubImage": [
+        "XRSubImage",
+        "WebGLTexture"
+      ],
+      "XRProjectionLayerInit": [
+        "XRTextureType",
+        "GLenum"
+      ],
+      "XRLayerInit": [
+        "XRSpace",
+        "XRTextureType",
+        "GLenum",
+        "XRLayerLayout"
+      ],
+      "XRQuadLayerInit": [
+        "XRLayerInit",
+        "XRRigidTransform"
+      ],
+      "XRCylinderLayerInit": [
+        "XRLayerInit",
+        "XRRigidTransform"
+      ],
+      "XREquirectLayerInit": [
+        "XRLayerInit",
+        "XRRigidTransform"
+      ],
+      "XRCubeLayerInit": [
+        "XRLayerInit",
+        "DOMPointReadOnly"
+      ],
+      "XRWebGLBinding": [
+        "XRSession",
+        "XRWebGLRenderingContext",
+        "XRProjectionLayer",
+        "XRProjectionLayerInit",
+        "XRQuadLayer",
+        "XRQuadLayerInit",
+        "XRCylinderLayer",
+        "XRCylinderLayerInit",
+        "XREquirectLayer",
+        "XREquirectLayerInit",
+        "XRCubeLayer",
+        "XRCubeLayerInit",
+        "XRWebGLSubImage",
+        "XRCompositionLayer",
+        "XRFrame",
+        "XREye",
+        "XRView",
+        "GLenum"
+      ],
+      "XRMediaLayerInit": [
+        "XRSpace",
+        "XRLayerLayout"
+      ],
+      "XRMediaQuadLayerInit": [
+        "XRMediaLayerInit",
+        "XRRigidTransform"
+      ],
+      "XRMediaCylinderLayerInit": [
+        "XRMediaLayerInit",
+        "XRRigidTransform"
+      ],
+      "XRMediaEquirectLayerInit": [
+        "XRMediaLayerInit",
+        "XRRigidTransform"
+      ],
+      "XRMediaBinding": [
+        "XRSession",
+        "XRQuadLayer",
+        "HTMLVideoElement",
+        "XRMediaQuadLayerInit",
+        "XRCylinderLayer",
+        "XRMediaCylinderLayerInit",
+        "XREquirectLayer",
+        "XRMediaEquirectLayerInit"
+      ],
+      "XRLayerEvent": [
+        "Event",
+        "XRLayerEventInit",
+        "XRLayer"
+      ],
+      "XRLayerEventInit": [
+        "EventInit",
+        "XRLayer"
+      ],
+      "XRRenderState": [
+        "XRLayer"
+      ],
+      "XRSession": []
+    },
+    "externalDependencies": [
+      "XRLayer",
+      "XRRigidTransform",
+      "XRSpace",
+      "EventHandler",
+      "DOMPointReadOnly",
+      "XRViewport",
+      "WebGLTexture",
+      "GLenum",
+      "XRSession",
+      "XRWebGLRenderingContext",
+      "XRFrame",
+      "XREye",
+      "XRView",
+      "HTMLVideoElement",
+      "Event",
+      "EventInit",
+      "XRRenderState"
+    ],
+    "hasObsoleteIdl": false
+  }
+}

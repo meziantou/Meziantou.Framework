@@ -1,0 +1,347 @@
+{
+  "spec": {
+    "title": "CSS Text Decoration Module Level 3",
+    "url": "https://drafts.csswg.org/css-text-decor-3/"
+  },
+  "properties": [
+    {
+      "name": "text-decoration-line",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line",
+      "value": "none | [ underline || overline || line-through || blink ]",
+      "initial": "none",
+      "appliesTo": "all elements",
+      "inherited": "no (but see prose, above)",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "Neither produces nor inhibits text decoration.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-decoration-line-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "underline",
+          "prose": "Each line of text is underlined.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-decoration-line-underline",
+          "type": "value",
+          "value": "underline"
+        },
+        {
+          "name": "overline",
+          "prose": "Each line of text has a line over it (i.e. on the opposite side from an underline).",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-decoration-line-overline",
+          "type": "value",
+          "value": "overline"
+        },
+        {
+          "name": "line-through",
+          "prose": "Each line of text has a line through the middle.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-decoration-line-line-through",
+          "type": "value",
+          "value": "line-through"
+        },
+        {
+          "name": "blink",
+          "prose": "The text blinks (alternates between visible and invisible). Conforming user agents may simply not blink the text. Note that not blinking the text is one technique to satisfy checkpoint 3.3 of WAI-UAAG. This value is deprecated in favor of Animations [CSS-ANIMATIONS-1].",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-decoration-line-blink",
+          "type": "value",
+          "value": "blink"
+        }
+      ],
+      "styleDeclaration": [
+        "text-decoration-line",
+        "textDecorationLine"
+      ]
+    },
+    {
+      "name": "text-decoration-style",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style",
+      "value": "solid | double | dotted | dashed | wavy",
+      "initial": "solid",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "specified keyword",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "styleDeclaration": [
+        "text-decoration-style",
+        "textDecorationStyle"
+      ]
+    },
+    {
+      "name": "text-decoration-color",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "all elements",
+      "inherited": "no",
+      "percentages": "n/a",
+      "computedValue": "computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "text-decoration-color",
+        "textDecorationColor"
+      ]
+    },
+    {
+      "name": "text-decoration",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration",
+      "value": "<'text-decoration-line'> || <'text-decoration-style'> || <'text-decoration-color'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "text-decoration",
+        "textDecoration"
+      ],
+      "longhands": [
+        "text-decoration-line",
+        "text-decoration-thickness",
+        "text-decoration-style",
+        "text-decoration-color"
+      ]
+    },
+    {
+      "name": "text-underline-position",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-underline-position",
+      "value": "auto | [ under || [ left | right ] ]",
+      "initial": "auto",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "auto",
+          "prose": "The user agent may use any algorithm to determine the underline’s position; however it must be placed at or under the alphabetic baseline. A typical “alphabetic” underline is positioned just below the alphabetic baseline",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#underline-auto",
+          "type": "value",
+          "value": "auto"
+        },
+        {
+          "name": "under",
+          "prose": "The underline is positioned under the element’s text content. In this case the underline usually does not cross the descenders. (This is sometimes called “accounting” underline.) This value can be combined with left or right if a particular side is preferred in vertical typographic modes. text-underline-position: under Because text-underline-position inherits, and is not reset by the text-decoration shorthand, the following example switches the document to use under underlining, which can be more appropriate for writing systems with long, complicated descenders. It is also often useful for mathematical or chemical texts that use many subscripts. :root { text-underline-position: under; }",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#underline-under",
+          "type": "value",
+          "value": "under"
+        },
+        {
+          "name": "left",
+          "prose": "In vertical typographic modes, the underline is aligned as for under, except it is always aligned to the left edge of the text. If this causes the underline to be drawn on the \"over\" side of the text, then an overline also switches sides and is drawn on the \"under\" side.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#underline-left",
+          "type": "value",
+          "value": "left"
+        },
+        {
+          "name": "right",
+          "prose": "In vertical typographic modes, the underline is aligned as for under, except it is always aligned to the right edge of the text. If this causes the underline to be drawn on the \"over\" side of the text, then an overline also switches sides and is drawn on the \"under\" side.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#underline-right",
+          "type": "value",
+          "value": "right"
+        }
+      ],
+      "styleDeclaration": [
+        "text-underline-position",
+        "textUnderlinePosition"
+      ]
+    },
+    {
+      "name": "text-emphasis-style",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-emphasis-style",
+      "value": "none | [ [ filled | open ] || [ dot | circle | double-circle | triangle | sesame ] ] | <string>",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "the keyword none, a pair of keywords representing the shape and fill, or a string",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "none",
+          "prose": "No emphasis marks.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-none",
+          "type": "value",
+          "value": "none"
+        },
+        {
+          "name": "filled",
+          "prose": "The shape is filled with solid color.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-filled",
+          "type": "value",
+          "value": "filled"
+        },
+        {
+          "name": "dot",
+          "prose": "Display small circles as marks. The filled dot is U+2022 '•', and the open dot is U+25E6 '◦'.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-dot",
+          "type": "value",
+          "value": "dot"
+        },
+        {
+          "name": "circle",
+          "prose": "Display large circles as marks. The filled circle is U+25CF '●', and the open circle is U+25CB '○'.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-circle",
+          "type": "value",
+          "value": "circle"
+        },
+        {
+          "name": "double-circle",
+          "prose": "Display double circles as marks. The filled double-circle is U+25C9 '◉', and the open double-circle is U+25CE '◎'.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-double-circle",
+          "type": "value",
+          "value": "double-circle"
+        },
+        {
+          "name": "triangle",
+          "prose": "Display triangles as marks. The filled triangle is U+25B2 '▲', and the open triangle is U+25B3 '△'.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-triangle",
+          "type": "value",
+          "value": "triangle"
+        },
+        {
+          "name": "sesame",
+          "prose": "Display sesames as marks. The filled sesame is U+FE45 '﹅', and the open sesame is U+FE46 '﹆'.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-sesame",
+          "type": "value",
+          "value": "sesame"
+        },
+        {
+          "name": "<string>",
+          "prose": "Display the given string as marks. Authors should not specify more than one character in <string>. The UA may truncate or ignore strings consisting of more than one grapheme cluster.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-style-string",
+          "type": "value",
+          "value": "<string>"
+        }
+      ],
+      "styleDeclaration": [
+        "text-emphasis-style",
+        "textEmphasisStyle"
+      ]
+    },
+    {
+      "name": "text-emphasis-color",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-emphasis-color",
+      "value": "<color>",
+      "initial": "currentcolor",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "text-emphasis-color",
+        "textEmphasisColor"
+      ]
+    },
+    {
+      "name": "text-emphasis",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-emphasis",
+      "value": "<'text-emphasis-style'> || <'text-emphasis-color'>",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "text-emphasis",
+        "textEmphasis"
+      ],
+      "longhands": [
+        "text-emphasis-style",
+        "text-emphasis-color"
+      ]
+    },
+    {
+      "name": "text-emphasis-position",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-emphasis-position",
+      "value": "[ over | under ] && [ right | left ]?",
+      "initial": "over right",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "specified keyword(s)",
+      "canonicalOrder": "per grammar",
+      "animationType": "discrete",
+      "values": [
+        {
+          "name": "over",
+          "prose": "Draw marks over the text in horizontal typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-position-over",
+          "type": "value",
+          "value": "over"
+        },
+        {
+          "name": "under",
+          "prose": "Draw marks under the text in horizontal typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-position-under",
+          "type": "value",
+          "value": "under"
+        },
+        {
+          "name": "right",
+          "prose": "Draw marks to the right of the text in vertical typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-position-right",
+          "type": "value",
+          "value": "right"
+        },
+        {
+          "name": "left",
+          "prose": "Draw marks to the left of the text in vertical typographic modes.",
+          "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-emphasis-position-left",
+          "type": "value",
+          "value": "left"
+        }
+      ],
+      "styleDeclaration": [
+        "text-emphasis-position",
+        "textEmphasisPosition"
+      ]
+    },
+    {
+      "name": "text-shadow",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#propdef-text-shadow",
+      "value": "none | [ <color>? && [ <length>{2} <length [0,∞]>? ] ]#",
+      "initial": "none",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "either the keyword none or a list, each item consisting of three absolute lengths plus a computed color",
+      "canonicalOrder": "per grammar",
+      "animationType": "as shadow list",
+      "styleDeclaration": [
+        "text-shadow",
+        "textShadow"
+      ]
+    }
+  ],
+  "atrules": [],
+  "selectors": [],
+  "values": [],
+  "warnings": [
+    {
+      "msg": "Dangling value",
+      "name": "open",
+      "prose": "The shape is hollow.",
+      "href": "https://drafts.csswg.org/css-text-decor-3/#valdef-text-text-emphasis-open",
+      "type": "value",
+      "value": "open",
+      "for": "text-text-emphasis"
+    }
+  ]
+}

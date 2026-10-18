@@ -1,0 +1,761 @@
+{
+  "css/css-variables/css-variable-change-style-001.html": {
+    "total": 9
+  },
+  "css/css-variables/css-variable-change-style-002.html": {
+    "total": 3
+  },
+  "css/css-variables/css-vars-custom-property-case-sensitive-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/css-vars-custom-property-inheritance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/custom-properties-inherit.html": {
+    "total": 1
+  },
+  "css/css-variables/missing-closing-nested-fallback.html": {
+    "total": 1
+  },
+  "css/css-variables/registered-property-light-dark.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/revert-in-fallback.html": {
+    "total": 4
+  },
+  "css/css-variables/revert-layer-in-fallback.html": {
+    "total": 4
+  },
+  "css/css-variables/revert-rule-in-fallback.html": {
+    "total": 4
+  },
+  "css/css-variables/revert-rule-to-var.html": {
+    "total": 1
+  },
+  "css/css-variables/test_variable_legal_values.html": {
+    "total": 23
+  },
+  "css/css-variables/transition-with-attribute-taint.html": {
+    "total": 1,
+    "failures": {
+      "Attribute tainted value blocked": "FAIL"
+    }
+  },
+  "css/css-variables/url-token-serialization.html": {
+    "total": 6
+  },
+  "css/css-variables/var-ident-function.html": {
+    "total": 5
+  },
+  "css/css-variables/var-parsing.html": {
+    "total": 18
+  },
+  "css/css-variables/variable-animation-from-to.html": {
+    "total": 4
+  },
+  "css/css-variables/variable-animation-guaranteed-invalid.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-animation-over-transition.html": {
+    "total": 4
+  },
+  "css/css-variables/variable-animation-substitute-into-keyframe-shorthand.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-substitute-into-keyframe-transform.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-substitute-into-keyframe.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-substitute-within-keyframe-fallback.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-substitute-within-keyframe-multiple.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-substitute-within-keyframe.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-animation-to-only.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-created-document.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-created-element.html": {
+    "total": 3
+  },
+  "css/css-variables/variable-css-wide-keywords-after-substitution.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-css-wide-keywords.html": {
+    "total": 30
+  },
+  "css/css-variables/variable-cssText.html": {
+    "total": 11
+  },
+  "css/css-variables/variable-cycles.html": {
+    "total": 11
+  },
+  "css/css-variables/variable-declaration-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-19.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-20.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-21.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-22.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-23.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-24.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-25.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-26.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-29.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-30.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-31.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-32.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-33.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-34.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-35.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-36.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-37.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-38.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-39.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-40.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-41.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-42.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-43.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-44.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-45.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-46.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-47.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-48.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-49.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-50.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-51.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-52.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-53.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-54.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-55.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-56.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-57.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-58.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-59.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-declaration-60.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-definition-border-shorthand-serialize.html": {
+    "total": 1
+  },
+  "css/css-variables/variable-definition-cascading.html": {
+    "total": 9
+  },
+  "css/css-variables/variable-definition-keywords.html": {
+    "total": 8
+  },
+  "css/css-variables/variable-definition.html": {
+    "total": 73
+  },
+  "css/css-variables/variable-empty-name-reserved.html": {
+    "total": 1
+  },
+  "css/css-variables/variable-exponential-blowup.html": {
+    "total": 1
+  },
+  "css/css-variables/variable-external-declaration-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-external-font-face-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-external-reference-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-external-supports-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-first-letter.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-first-line.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-font-face-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-font-face-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-generated-content-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-invalid-recovery.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-invalidation.html": {
+    "total": 4
+  },
+  "css/css-variables/variable-presentation-attribute.html": {
+    "total": 48,
+    "failures": {
+      "Testing 'alignment-baseline'.": "FAIL",
+      "Testing 'baseline-shift'.": "FAIL",
+      "Testing 'color-interpolation-filters'.": "FAIL",
+      "Testing 'fill'.": "FAIL",
+      "Testing 'flood-color'.": "FAIL",
+      "Testing 'font-family'.": "FAIL",
+      "Testing 'glyph-orientation-vertical'.": "FAIL",
+      "Testing 'kerning'.": "FAIL",
+      "Testing 'lighting-color'.": "FAIL",
+      "Testing 'pointer-events'.": "FAIL",
+      "Testing 'stop-color'.": "FAIL",
+      "Testing 'stroke'.": "FAIL",
+      "Testing 'writing-mode'.": "FAIL"
+    }
+  },
+  "css/css-variables/variable-pseudo-element.html": {
+    "total": 3
+  },
+  "css/css-variables/variable-recalc-with-initial.html": {
+    "total": 1
+  },
+  "css/css-variables/variable-reference-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-19.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-20.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-21.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-22.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-23.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-24.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-25.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-26.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-27.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-28.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-29.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-30.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-31.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-32.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-33.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-34.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-35.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-36.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-37.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-38.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-39.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-40.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-cssom.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-reference-name-substitution-attr-taint.html": {
+    "total": 9
+  },
+  "css/css-variables/variable-reference-name-substitution.html": {
+    "total": 24
+  },
+  "css/css-variables/variable-reference-perspective-origin.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-reference-refresh.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-reference-shorthands-cssom.html": {
+    "total": 1
+  },
+  "css/css-variables/variable-reference-shorthands.html": {
+    "total": 16
+  },
+  "css/css-variables/variable-reference-variable.html": {
+    "total": 2
+  },
+  "css/css-variables/variable-reference-visited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference-without-whitespace.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-reference.html": {
+    "total": 18,
+    "failures": {
+      "Variable reference left open at end of stylesheet": "FAIL"
+    }
+  },
+  "css/css-variables/variable-resolution-during-prioritary-properties.html": {
+    "total": 5
+  },
+  "css/css-variables/variable-substitution-background-properties.html": {
+    "total": 10
+  },
+  "css/css-variables/variable-substitution-basic.html": {
+    "total": 13
+  },
+  "css/css-variables/variable-substitution-filters.html": {
+    "total": 7
+  },
+  "css/css-variables/variable-substitution-replaced-size.html": {
+    "total": 6
+  },
+  "css/css-variables/variable-substitution-shadow-properties.html": {
+    "total": 3
+  },
+  "css/css-variables/variable-substitution-shorthands.html": {
+    "total": 51
+  },
+  "css/css-variables/variable-substitution-variable-declaration.html": {
+    "total": 31,
+    "failures": {
+      "target5 --varC": "FAIL"
+    }
+  },
+  "css/css-variables/variable-supports-01.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-02.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-03.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-04.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-05.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-06.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-07.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-08.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-09.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-10.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-11.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-12.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-13.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-14.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-15.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-16.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-17.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-18.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-19.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-20.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-21.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-22.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-23.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-24.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-25.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-26.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-27.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-28.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-29.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-30.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-31.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-32.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-33.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-34.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-35.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-36.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-37.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-38.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-39.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-40.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-41.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-42.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-43.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-44.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-45.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-46.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-47.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-48.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-49.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-50.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-51.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-52.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-53.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-54.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-55.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-56.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-57.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-58.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-59.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-60.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-61.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-62.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-63.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-64.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-65.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-66.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-supports-67.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/variable-transitions-transition-property-all-before-value.html": {
+    "total": 4
+  },
+  "css/css-variables/variable-transitions-value-before-transition-property-all.html": {
+    "total": 4
+  },
+  "css/css-variables/variables-animation-math-functions.html": {
+    "total": 36
+  },
+  "css/css-variables/variables-substitute-guaranteed-invalid.html": {
+    "total": 3
+  },
+  "css/css-variables/vars-background-shorthand-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/vars-border-shorthand-serialize.html": {
+    "total": 3
+  },
+  "css/css-variables/vars-font-shorthand-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/wide-keyword-fallback-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-variables/wide-keyword-fallback-002.html": {
+    "reftest": "PASS"
+  }
+}

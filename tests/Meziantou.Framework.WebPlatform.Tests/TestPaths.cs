@@ -2,7 +2,7 @@ namespace Meziantou.Framework.WebPlatform.Tests;
 
 internal static class TestPaths
 {
-    public static string Root { get; } = FindRoot();
+    public static string Root { get; } = FullPath.FromPath(AppContext.BaseDirectory).FindRequiredGitRepositoryRoot();
 
     public static string SpecData(params string[] path) => Path.Combine([Root, "tests", "Meziantou.Framework.WebPlatform.SpecData", .. path]);
 
@@ -14,16 +14,5 @@ internal static class TestPaths
             throw new InvalidOperationException($"'{result}' does not exist. Run 'eng/webplatform/fetch-tests.sh' to download the external test suites.");
 
         return result;
-    }
-
-    private static string FindRoot()
-    {
-        var directory = AppContext.BaseDirectory;
-        while (directory is not null && !File.Exists(Path.Combine(directory, "Meziantou.Framework.slnx")))
-        {
-            directory = Path.GetDirectoryName(directory);
-        }
-
-        return directory ?? throw new InvalidOperationException("Cannot find the repository root");
     }
 }

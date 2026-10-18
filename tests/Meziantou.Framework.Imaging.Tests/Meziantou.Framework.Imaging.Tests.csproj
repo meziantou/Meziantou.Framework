@@ -12,12 +12,9 @@
   <ItemGroup>
     <!--
       Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests): the usage examples are
-      compiled and run here (the README snippets, which use relative paths, are only compiled by the samples project), and
-      the sample sources are copied with the published Markdown files so that every C# block is compared with its snippet.
+      compiled and run here (the README snippets, which use relative paths, are only compiled by the samples project).
     -->
     <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\Examples.cs" Link="Documentation\Samples\Examples.cs" />
-    <None Include="..\..\samples\Meziantou.Framework.Imaging.Samples\*.cs" LinkBase="Documentation\samples\Meziantou.Framework.Imaging.Samples" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\src\Meziantou.Framework.Imaging\readme.md" Link="Documentation\src\Meziantou.Framework.Imaging\readme.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,16 +33,7 @@
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\GlobalUsings.cs" LinkBase="Shared\CorpusGenerator" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!--
-      The project files of the Imaging test projects, for the scope each one declares (Conformance/CorpusScopeTests). They
-      are copied with another extension: the build traversals of the repository take every project file they find.
-    -->
-    <None Include="..\Meziantou.Framework.Imaging.*Tests\*.csproj" Link="TestProjects\%(Filename).xml" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <!-- Shared helpers and the copy of the corpus; the README.md of the corpus holds the fixture-to-feature coverage matrix
-       verified against the manifest (FixtureCoverageMatrixTests) -->
+  <!-- Shared helpers -->
   <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
   <ItemGroup>
     <!-- The internal API of the font reader and the shaper -->

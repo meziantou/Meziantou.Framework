@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.TestHarness;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
@@ -7,7 +8,6 @@ namespace Meziantou.Framework.Imaging.Tests.Documentation;
 /// of src/Meziantou.Framework.Imaging) must be preceded by <c>&lt;!-- snippet: name --&gt;</c> and be
 /// exactly the snippet <c>name</c> of the sample sources (<c>// begin-snippet: name</c> ... <c>// end-snippet</c>), which are
 /// compiled by the samples project and by this test project (<see cref="DocumentationExampleTests"/> runs them).
-/// The files are copied to <c>&lt;test output&gt;/Documentation</c> by the project file.
 /// </summary>
 public sealed class DocumentationSnippetTests
 {
@@ -15,15 +15,16 @@ public sealed class DocumentationSnippetTests
     private const string BeginMarker = "// begin-snippet:";
     private const string EndMarker = "// end-snippet";
 
-    private static readonly FullPath Root = FullPath.FromPath(AppContext.BaseDirectory) / "Documentation";
+    private static readonly FullPath Root = RepositoryPaths.Root;
 
-    public static TheoryData<string> MarkdownFiles => [.. GetMarkdownFiles()];
+    private static readonly string[] PublishedMarkdownFiles = ["src/Meziantou.Framework.Imaging/readme.md"];
+
+    public static TheoryData<string> MarkdownFiles => [.. PublishedMarkdownFiles];
 
     [Fact]
-    public void PublishedMarkdownFilesAreCopied()
+    public void PublishedMarkdownFilesExist()
     {
-        var files = GetMarkdownFiles();
-        Assert.Contains("src/Meziantou.Framework.Imaging/readme.md", files);
+        Assert.All(PublishedMarkdownFiles, relativePath => Assert.True(File.Exists(Root / relativePath), $"{relativePath} does not exist."));
     }
 
     [Theory]
@@ -63,11 +64,6 @@ public sealed class DocumentationSnippetTests
         Assert.All(snippets, snippet => Assert.False(string.IsNullOrWhiteSpace(snippet.Value), $"Snippet '{snippet.Key}' is empty."));
     }
 
-    private static List<string> GetMarkdownFiles()
-        => [.. Directory.EnumerateFiles(Root, "*.md", SearchOption.AllDirectories)
-            .Select(path => FullPath.FromPath(path).MakePathRelativeTo(Root).Replace('\\', '/'))
-            .Order(StringComparer.Ordinal)];
-
     private static bool IsCSharp(string language)
         => language.Equals("csharp", StringComparison.OrdinalIgnoreCase) || language.Equals("cs", StringComparison.OrdinalIgnoreCase) || language.Equals("c#", StringComparison.OrdinalIgnoreCase);
 
@@ -98,12 +94,12 @@ public sealed class DocumentationSnippetTests
         return marker[SnippetMarker.Length..^3].Trim();
     }
 
-    /// <summary>Reads every snippet of the copied sample sources; a snippet with several regions joins them with a blank line.</summary>
+    /// <summary>Reads every snippet of the sample sources; a snippet with several regions joins them with a blank line.</summary>
     internal static Dictionary<string, string> LoadSnippets()
     {
         var parts = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var owners = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var path in Directory.EnumerateFiles(Root / "samples", "*.cs", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        foreach (var path in Directory.EnumerateFiles(Root / "samples" / "Meziantou.Framework.Imaging.Samples", "*.cs").Order(StringComparer.Ordinal))
         {
             var file = FullPath.FromPath(path).MakePathRelativeTo(Root).Replace('\\', '/');
             var lines = ReadLines(path);

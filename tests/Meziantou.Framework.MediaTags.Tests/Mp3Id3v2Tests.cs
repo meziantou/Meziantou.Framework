@@ -420,7 +420,9 @@ public sealed class Mp3Id3v2Tests
             Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", TrackTotal = 12, DiscTotal = 3 }).IsSuccess);
 
             var tags = MediaFile.ReadTags(tempFile).Value;
+            Assert.Null(tags.TrackNumber);
             Assert.Equal(12, tags.TrackTotal);
+            Assert.Null(tags.DiscNumber);
             Assert.Equal(3, tags.DiscTotal);
         }
         finally

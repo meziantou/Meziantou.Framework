@@ -432,6 +432,24 @@ public sealed class Mp3Id3v2Tests
     }
 
     [Fact]
+    public void RemoveTags_StackedId3v2Tags_RemovesThemAll()
+    {
+        // Some taggers prepend a new tag without removing the old one. Only the first is read, so removing it
+        // alone would bring back the tags of the second.
+        var source = File.ReadAllBytes(GetTestFilePath("basic.mp3"));
+        Assert.Equal("Test Title", MediaFile.ReadTags(new MemoryStream(source), MediaFormat.Mp3).Value.Title);
+        byte[] bytes = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 0, .. source];
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.False(written.AsSpan().StartsWith("ID3"u8));
+        Assert.Null(MediaFile.ReadTags(new MemoryStream(written), MediaFormat.Mp3).Value.Title);
+    }
+
+    [Fact]
     public void WriteTags_Duration_IsStoredInTheTag()
     {
         // Id3v2Reader parses TLEN, so not writing it drops an explicit duration on a read-modify-write.

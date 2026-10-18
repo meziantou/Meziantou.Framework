@@ -193,7 +193,7 @@ public class HtmlBlockParser : BlockParser
                 index = line.IndexOf(EndOfComment);
                 if (index >= 0)
                 {
-                    htmlBlock.UpdateSpanEnd(index + EndOfComment.Length);
+                    htmlBlock.UpdateSpanEnd(index + EndOfComment.Length - 1);
                     result = BlockState.Break;
                 }
                 break;
@@ -201,7 +201,7 @@ public class HtmlBlockParser : BlockParser
                 index = line.IndexOf(EndOfCDATA);
                 if (index >= 0)
                 {
-                    htmlBlock.UpdateSpanEnd(index + EndOfCDATA.Length);
+                    htmlBlock.UpdateSpanEnd(index + EndOfCDATA.Length - 1);
                     result = BlockState.Break;
                 }
                 break;
@@ -209,7 +209,7 @@ public class HtmlBlockParser : BlockParser
                 index = line.IndexOf(EndOfProcessingInstruction);
                 if (index >= 0)
                 {
-                    htmlBlock.UpdateSpanEnd(index + EndOfProcessingInstruction.Length);
+                    htmlBlock.UpdateSpanEnd(index + EndOfProcessingInstruction.Length - 1);
                     result = BlockState.Break;
                 }
                 break;
@@ -217,7 +217,7 @@ public class HtmlBlockParser : BlockParser
                 index = line.IndexOf('>');
                 if (index >= 0)
                 {
-                    htmlBlock.UpdateSpanEnd(index + 1);
+                    htmlBlock.UpdateSpanEnd(index);
                     result = BlockState.Break;
                 }
                 break;
@@ -225,7 +225,7 @@ public class HtmlBlockParser : BlockParser
                 index = line.IndexOf("</script>", 0, true);
                 if (index >= 0)
                 {
-                    htmlBlock.UpdateSpanEnd(index + "</script>".Length);
+                    htmlBlock.UpdateSpanEnd(index + "</script>".Length - 1);
                     result = BlockState.Break;
                 }
                 else
@@ -233,7 +233,7 @@ public class HtmlBlockParser : BlockParser
                     index = line.IndexOf("</pre>", 0, true);
                     if (index >= 0)
                     {
-                        htmlBlock.UpdateSpanEnd(index + "</pre>".Length);
+                        htmlBlock.UpdateSpanEnd(index + "</pre>".Length - 1);
                         result = BlockState.Break;
                     }
                     else
@@ -241,7 +241,7 @@ public class HtmlBlockParser : BlockParser
                         index = line.IndexOf("</style>", 0, true);
                         if (index >= 0)
                         {
-                            htmlBlock.UpdateSpanEnd(index + "</style>".Length);
+                            htmlBlock.UpdateSpanEnd(index + "</style>".Length - 1);
                             result = BlockState.Break;
                         }
                         else
@@ -249,7 +249,7 @@ public class HtmlBlockParser : BlockParser
                             index = line.IndexOf("</textarea>", 0, true);
                             if (index >= 0)
                             {
-                                htmlBlock.UpdateSpanEnd(index + "</textarea>".Length);
+                                htmlBlock.UpdateSpanEnd(index + "</textarea>".Length - 1);
                                 result = BlockState.Break;
                             }
                         }

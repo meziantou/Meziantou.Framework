@@ -32,6 +32,19 @@ public class TestSmartyPants
         TestParser.TestSpec("<<test>>", "<p>&laquo;test&raquo;</p>", pipeline);
     }
 
+    [Theory]
+    [InlineData("\\---", "<p>-&ndash;</p>")]
+    [InlineData("a \\-- b", "<p>a -- b</p>")]
+    [InlineData("a -\\-- b", "<p>a --- b</p>")]
+    public void EscapedDashIsNotPartOfADash(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseSmartyPants()
+            .Build();
+
+        TestParser.TestSpec(markdown, expected, pipeline);
+    }
+
     [Fact]
     public void RecognizesSupplementaryCharacters()
     {
@@ -84,8 +97,22 @@ public class TestSmartyPants
     [InlineData("\"a\r\nb\" c\r\n")]
     [InlineData("> 'a' -- b\n> \"c\n")]
     [InlineData("- *'a'* **b...**\n")]
+    [InlineData("\\---")]
+    [InlineData("a\n\\---\nb")]
+    [InlineData("a \\-- b")]
+    [InlineData("a -\\-- b")]
     public void Roundtrip(string markdown)
     {
         TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseSmartyPants());
+    }
+
+    [Theory]
+    [InlineData("<!--->")]
+    [InlineData("foo <!---> foo -->")]
+    [InlineData("a --> b")]
+    public void DashesBeforeASmileyRoundtrip(string markdown)
+    {
+        // "->" is a smiley: the "--" before it must not take its first '-'
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseEmojiAndSmiley().UseSmartyPants().DisableHtml());
     }
 }

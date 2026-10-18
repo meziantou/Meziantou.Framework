@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Fuzz" />
     <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Tests" />
   </ItemGroup>
 

@@ -353,8 +353,10 @@ internal static class Id3v2Reader
     /// </summary>
     /// <returns>
     /// <see langword="false"/> when a tag header is present but its declared size runs past the end of the
-    /// stream. A writer must not treat those bytes as audio, and must not treat the tag as absent either: doing
-    /// the first drops the audio and doing the second embeds a stale tag in the audio stream.
+    /// stream, or when the stream ends inside a header. A writer must not treat those bytes as audio, and must not
+    /// treat the tag as absent either: doing the first drops the audio and doing the second embeds a stale tag in
+    /// the audio stream. A cut-off header kept as audio also becomes a header once the ID3v1 tag that follows it
+    /// supplies its last bytes.
     /// </returns>
     public static bool TryGetTagSize(Stream stream, out int tagSize)
     {
@@ -362,10 +364,11 @@ internal static class Id3v2Reader
 
         var originalPosition = stream.Position;
         Span<byte> headerBytes = stackalloc byte[10];
-        if (stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false) < 10)
+        var bytesRead = stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false);
+        if (bytesRead < 10)
         {
             stream.Position = originalPosition;
-            return true;
+            return !headerBytes[..bytesRead].StartsWith("ID3"u8);
         }
 
         if (!Id3v2Header.TryParse(headerBytes, out var header))

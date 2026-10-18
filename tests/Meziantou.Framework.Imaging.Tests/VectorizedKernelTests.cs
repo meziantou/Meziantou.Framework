@@ -1,4 +1,5 @@
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -488,11 +489,12 @@ public sealed class VectorizedKernelTests
         const int Stride = 13;
         for (var round = 0; round < 20_000; round++)
         {
-            // Dequantized coefficients: sparse or dense, small or extreme (12-bit range times 16-bit quantization values)
+            // Dequantized coefficients: sparse or dense, small or extreme (12-bit range times 16-bit quantization values, and
+            // 16-bit coefficients times 16-bit quantization values, whose samples are beyond the range of 32-bit integers)
             // Every other block only has coefficients in its top-left 4x4 corner (the sparse transform)
             var block = new double[64];
             var density = random.NextDouble();
-            var magnitude = round % 4 == 0 ? 2047 * 255 : round % 4 == 1 ? 1023 : 64;
+            var magnitude = round % 8 == 4 ? short.MaxValue * ushort.MaxValue : round % 4 == 0 ? 2047 * 255 : round % 4 == 1 ? 1023 : 64;
             var sparse = round % 2 == 1;
             for (var i = 0; i < 64; i++)
             {
@@ -514,6 +516,11 @@ public sealed class VectorizedKernelTests
             if (System.Numerics.Vector.IsHardwareAccelerated && System.Numerics.Vector<double>.Count is 2 or 4 or 8)
             {
                 AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformVector(coefficients, destination, Stride, sparse));
+            }
+
+            if (Avx2.IsSupported)
+            {
+                AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformAvx2(coefficients, destination, Stride, sparse));
             }
         }
 
@@ -546,6 +553,26 @@ public sealed class VectorizedKernelTests
             JpegIdct.DequantizeScalar(coefficients, quantization, expected);
             JpegIdct.Dequantize(coefficients, quantization, actual);
             Assert.Equal(expected, actual);
+            if (Vector128.IsHardwareAccelerated)
+            {
+                Array.Clear(actual);
+                JpegIdct.DequantizeVector128(coefficients, quantization, actual);
+                Assert.Equal(expected, actual);
+            }
+
+            if (Sse2.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.DequantizeSse2(coefficients, quantization, actual);
+                Assert.Equal(expected, actual);
+            }
+
+            if (Avx2.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.DequantizeAvx2(coefficients, quantization, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 
@@ -704,6 +731,13 @@ public sealed class VectorizedKernelTests
                 JpegForwardDct.TransformAndQuantizeVector(samples, quantization, scratch, actual);
                 Assert.Equal(expected, actual);
             }
+
+            if (Avx2.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegForwardDct.TransformAndQuantizeAvx2(samples, quantization, scratch, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 
@@ -728,19 +762,13 @@ public sealed class VectorizedKernelTests
                 }
 
                 var expected = new float[3][];
-                var actual = new float[3][];
                 for (var c = 0; c < 3; c++)
                 {
                     expected[c] = new float[length];
-                    actual[c] = new float[length];
                 }
 
                 JpegEncoderCodec.ConvertRgbToYCbCrScalar(source, expected[0], expected[1], expected[2]);
-                JpegEncoderCodec.ConvertRgbToYCbCr(source, actual[0], actual[1], actual[2]);
-                for (var c = 0; c < 3; c++)
-                {
-                    Assert.Equal(expected[c], actual[c]);
-                }
+                AssertConversion(source, expected, JpegEncoderCodec.ConvertRgbToYCbCr);
             }
         }
 
@@ -762,20 +790,49 @@ public sealed class VectorizedKernelTests
         }
 
         var expectedAll = new float[3][];
-        var actualAll = new float[3][];
         for (var c = 0; c < 3; c++)
         {
             expectedAll[c] = new float[count];
-            actualAll[c] = new float[count];
         }
 
         JpegEncoderCodec.ConvertRgbToYCbCrScalar(all, expectedAll[0], expectedAll[1], expectedAll[2]);
-        JpegEncoderCodec.ConvertRgbToYCbCr(all, actualAll[0], actualAll[1], actualAll[2]);
-        for (var c = 0; c < 3; c++)
+        AssertConversion(all, expectedAll, JpegEncoderCodec.ConvertRgbToYCbCr);
+
+        // Each vector path on its own: whole 16-pixel groups, then the scalar reference for the rest
+        static void AssertConversion(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
         {
-            Assert.Equal(expectedAll[c], actualAll[c]);
+            AssertPath(source, expected, convert);
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrVector(source, luma, blue, red)));
+            }
+
+            if (Avx2.IsSupported)
+            {
+                AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx2(source, luma, blue, red)));
+            }
         }
+
+        static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
+        {
+            var actual = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                actual[c] = new float[expected[c].Length];
+            }
+
+            convert(source, actual[0], actual[1], actual[2]);
+            for (var c = 0; c < 3; c++)
+            {
+                Assert.Equal(expected[c], actual[c]);
+            }
+        }
+
+        static void Complete(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red, int done) =>
+            JpegEncoderCodec.ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
     }
+
+    private delegate void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

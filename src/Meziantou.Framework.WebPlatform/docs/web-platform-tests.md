@@ -562,6 +562,13 @@ The expectations are the results of Jint, with the WebAssembly runtime of `Mezia
 `RangeError`, as the WebAssembly core tests expect, instead of ending the process). `WptEngine` abstracts the engine, so
 that the adapter of another engine can be validated by the same tests (use `WPT_REPORT` to compare its results).
 
+## Timeouts
+
+The tests run in parallel, and a test can exceed its timeout on a loaded machine (e.g. the CI agents): a test whose result
+is not the expected one and has a timeout (the harness status or a subtest) runs again once, as with the
+`--retry-unexpected` option of wptrunner, and only the result of the second run is checked and reported. A test that
+times out deterministically still fails.
+
 ## Skipped tests
 
 `wpt-skip.json` lists the tests that are not run, with their reasons in the format of `wpt-reasons.json` (e.g. JavaScript

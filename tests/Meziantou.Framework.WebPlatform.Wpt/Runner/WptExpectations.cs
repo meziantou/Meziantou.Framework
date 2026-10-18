@@ -46,6 +46,15 @@ internal static class WptExpectations
             return;
         }
 
+        if (GetDifferences(test, result) is { } differences)
+        {
+            Assert.Fail(differences);
+        }
+    }
+
+    /// <summary>Returns the differences between the result of a test and its expectations, or null when it is the expected one.</summary>
+    public static string? GetDifferences(WptTest test, WptResult result)
+    {
         JsonObject? expected;
         lock (LockObject)
         {
@@ -80,16 +89,16 @@ internal static class WptExpectations
             }
         }
 
-        if (errors.Length > 0)
-        {
-            errors.AppendLine().AppendLine("Log:");
-            foreach (var line in result.Log)
-            {
-                errors.AppendLine(line);
-            }
+        if (errors.Length == 0)
+            return null;
 
-            Assert.Fail(errors.ToString());
+        errors.AppendLine().AppendLine("Log:");
+        foreach (var line in result.Log)
+        {
+            errors.AppendLine(line);
         }
+
+        return errors.ToString();
     }
 
     /// <summary>Returns the expected status of a reftest (<c>{ "reftest": "FAIL" }</c>), or null when it has no expectations.</summary>

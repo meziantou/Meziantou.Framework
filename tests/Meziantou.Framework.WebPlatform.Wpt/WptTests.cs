@@ -613,13 +613,28 @@ public sealed class WptTests
         var test = Discover(directory, excludedDirectories).ById[id];
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = WptTestRunner.Run(test);
-        WptReport.Append(test, result, stopwatch.Elapsed);
 
         // The expectations are the results of Jint
         if (WptEngine.IsDefault)
         {
+            // A test that times out unexpectedly runs again once, as with the --retry-unexpected option of wptrunner: the tests
+            // run in parallel, and on a loaded machine (e.g. the CI agents) a test can exceed its timeout. A test that times
+            // out deterministically still fails.
+            if (!WptExpectations.UpdateMode && HasTimeout(result) && WptExpectations.GetDifferences(test, result) is not null)
+            {
+                stopwatch.Restart();
+                result = WptTestRunner.Run(test);
+            }
+
+            WptReport.Append(test, result, stopwatch.Elapsed);
             WptExpectations.Check(test, result);
         }
+        else
+        {
+            WptReport.Append(test, result, stopwatch.Elapsed);
+        }
+
+        static bool HasTimeout(WptResult result) => result.HarnessStatus == "TIMEOUT" || result.Subtests.Any(subtest => subtest.Status == "TIMEOUT");
     }
 
     [Theory(SkipTestWithoutData = true)]

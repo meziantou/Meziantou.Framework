@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The working storage of the decoding of a glyph, charged to an allocation scope. It grows to the largest glyph and is
+/// The working storage of the decoding of a glyph, charged to an allocator. It grows to the largest glyph and is
 /// kept by its owner, so that decoding the same glyphs again allocates nothing.
 /// </summary>
 /// <remarks>A font has no cache and no state of its own: several threads can decode its glyphs, each with its own scratch.</remarks>
@@ -11,14 +11,14 @@ internal sealed class GlyphScratch : IDisposable
 {
     private const int InitialCapacity = 128;
 
-    private readonly AllocationScope _scope;
-    private PooledBuffer? _buffer;
+    private readonly FontAllocator _scope;
+    private FontBuffer? _buffer;
     private int _capacity;
-    private PooledBuffer? _work;
+    private FontBuffer? _work;
     private int _workCapacity;
     private int _workCount;
 
-    public GlyphScratch(AllocationScope scope)
+    public GlyphScratch(FontAllocator scope)
     {
         _scope = scope;
     }
@@ -37,7 +37,7 @@ internal sealed class GlyphScratch : IDisposable
     }
 
     /// <summary>Adds points, whose content is unspecified, and returns the index of the first one.</summary>
-    /// <exception cref="ImageResourceLimitException">The points exceed the allocation limit.</exception>
+    /// <exception cref="FontResourceLimitException">The points exceed the allocation limit.</exception>
     public int Add(int count)
     {
         var start = Count;
@@ -66,7 +66,7 @@ internal sealed class GlyphScratch : IDisposable
         if (required > _workCapacity)
         {
             var capacity = Math.Max(required, _workCapacity == 0 ? InitialCapacity : (long)_workCapacity * 2);
-            var buffer = ResampleWeights.Rent<double>(_scope, capacity);
+            var buffer = _scope.Rent<double>(capacity);
             if (_work is not null)
             {
                 _work.Span.CopyTo(buffer.Span);
@@ -100,7 +100,7 @@ internal sealed class GlyphScratch : IDisposable
     private void Grow(long required)
     {
         var capacity = Math.Max(required, _capacity == 0 ? InitialCapacity : (long)_capacity * 2);
-        var buffer = ResampleWeights.Rent<GlyphPoint>(_scope, capacity);
+        var buffer = _scope.Rent<GlyphPoint>(capacity);
         if (_buffer is not null)
         {
             _buffer.Span.CopyTo(buffer.Span);

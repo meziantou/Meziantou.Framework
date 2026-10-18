@@ -162,7 +162,17 @@ public sealed class Font
             }
         }
 
-        return new Font(Face.WithCoordinates(coordinates), _axes, _namedInstances);
+        FontFace instance;
+        try
+        {
+            instance = Face.WithCoordinates(coordinates);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+
+        return new Font(instance, _axes, _namedInstances);
     }
 
     /// <summary>Gets a named instance of a variable font.</summary>
@@ -195,7 +205,7 @@ public sealed class Font
     public static Font Load(string path, FontLoadOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return new Font(FontLoader.Load(path, options ?? FontLoadOptions.Default)[0]);
+        return new Font(FontFiles.Load(path, options ?? FontLoadOptions.Default)[0]);
     }
 
     /// <summary>Loads a font from a stream, read from its current position to its end. For a font collection, the first face is loaded.</summary>
@@ -212,7 +222,7 @@ public sealed class Font
     public static Font Load(Stream stream, FontLoadOptions? options = null)
     {
         ValidateReadableStream(stream);
-        return new Font(FontLoader.Load(stream, options ?? FontLoadOptions.Default)[0]);
+        return new Font(FontFiles.Load(stream, options ?? FontLoadOptions.Default)[0]);
     }
 
     /// <summary>Loads a font from the bytes of a font file. For a font collection, the first face is loaded.</summary>
@@ -224,7 +234,7 @@ public sealed class Font
     /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     public static Font Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
-        => new(FontLoader.Load(data, options ?? FontLoadOptions.Default)[0]);
+        => new(FontFiles.Load(data, options ?? FontLoadOptions.Default)[0]);
 
     /// <summary>Asynchronously loads a font from a file, using asynchronous file I/O. For a font collection, the first face is loaded.</summary>
     /// <param name="path">The path of the file.</param>
@@ -236,7 +246,7 @@ public sealed class Font
     public static Task<Font> LoadAsync(string path, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return LoadCoreAsync(FontLoader.LoadAsync(path, options ?? FontLoadOptions.Default, cancellationToken));
+        return LoadCoreAsync(FontFiles.LoadAsync(path, options ?? FontLoadOptions.Default, cancellationToken));
     }
 
     /// <summary>Asynchronously loads a font from a stream, read from its current position to its end. For a font collection, the first face is loaded.</summary>
@@ -250,7 +260,7 @@ public sealed class Font
     public static Task<Font> LoadAsync(Stream stream, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ValidateReadableStream(stream);
-        return LoadCoreAsync(FontLoader.LoadAsync(stream, options ?? FontLoadOptions.Default, cancellationToken));
+        return LoadCoreAsync(FontFiles.LoadAsync(stream, options ?? FontLoadOptions.Default, cancellationToken));
     }
 
     /// <summary>Gets the vertical metrics of the font at a size, in pixels.</summary>

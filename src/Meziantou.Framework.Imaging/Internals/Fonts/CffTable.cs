@@ -308,9 +308,9 @@ internal sealed class CffTable
     }
 
     /// <summary>Decodes the outline of a glyph into a sink.</summary>
-    /// <exception cref="InvalidImageContentException">The charstring of the glyph is malformed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The charstring uses a feature that is not supported.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit.</exception>
+    /// <exception cref="InvalidFontException">The charstring of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The charstring uses a feature that is not supported.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
     /// <summary>Decodes the outline of a glyph into a sink.</summary>
     /// <param name="table">The table.</param>
     /// <param name="glyphId">The glyph.</param>

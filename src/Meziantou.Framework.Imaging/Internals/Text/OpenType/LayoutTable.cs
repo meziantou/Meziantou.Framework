@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The header is validated when the table is read; everything else is validated when it is used, and a reference
-/// outside the table is an <see cref="InvalidImageContentException"/>.
+/// outside the table is an <see cref="InvalidFontException"/>.
 /// </remarks>
 internal sealed class LayoutTable
 {

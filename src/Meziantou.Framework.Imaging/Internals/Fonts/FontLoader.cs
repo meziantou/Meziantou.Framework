@@ -1,40 +1,33 @@
-using Meziantou.Framework.Imaging.Typography;
-
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Reads a font file into memory, within the limits of the configuration, and creates its faces.
+/// Reads a font file into memory, within the limits of an environment, and creates its faces.
 /// </summary>
 /// <remarks>
 /// The whole file is read: the tables of a font are a graph of offsets, and the font keeps its bytes to read them in
-/// place. The bytes read are bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
-/// by <see cref="ImageResourceLimits.MaxFontBytes"/>.
+/// place. The bytes read are bounded by <see cref="FontResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
+/// by <see cref="FontResourceLimits.MaxFontBytes"/>.
 /// </remarks>
 internal static class FontLoader
 {
     private const int ChunkLength = 64 * 1024;
 
-    public static FontFace[] Load(ReadOnlySpan<byte> data, FontLoadOptions options)
+    /// <param name="data">The bytes of the font file.</param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
+    public static FontFace[] Load(ReadOnlySpan<byte> data, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
-        var configuration = options.Configuration;
-        var limits = configuration.Limits;
+        var limits = environment.Limits;
         if (data.Length > limits.MaxEncodedBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, data.Length);
+            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, data.Length);
 
         EnsureFontBytes(limits, data.Length);
-        return Parse(data.ToArray(), options);
+        return Parse(data.ToArray(), environment, useEmbeddedBitmaps);
     }
 
-    public static FontFace[] Load(string path, FontLoadOptions options)
+    public static FontFace[] Load(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
-        using var stream = ImageIO.OpenFile(path, asynchronous: false);
-        return Load(stream, options);
-    }
-
-    public static FontFace[] Load(Stream stream, FontLoadOptions options)
-    {
-        var configuration = options.Configuration;
-        var limits = configuration.Limits;
+        var limits = environment.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
         var length = 0;
         while (true)
@@ -52,24 +45,13 @@ internal static class FontLoader
             EnsureEncodedBytes(limits, length);
         }
 
-        return Parse(Trim(buffer, length), options);
+        return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
     }
 
-    public static async Task<FontFace[]> LoadAsync(string path, FontLoadOptions options, CancellationToken cancellationToken)
+    public static async Task<FontFace[]> LoadAsync(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var stream = ImageIO.OpenFile(path, asynchronous: true);
-        await using (stream.ConfigureAwait(false))
-        {
-            return await LoadAsync(stream, options, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    public static async Task<FontFace[]> LoadAsync(Stream stream, FontLoadOptions options, CancellationToken cancellationToken)
-    {
-        var configuration = options.Configuration;
-        cancellationToken.ThrowIfCancellationRequested();
-        var limits = configuration.Limits;
+        var limits = environment.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
         var length = 0;
         while (true)
@@ -87,10 +69,10 @@ internal static class FontLoader
             EnsureEncodedBytes(limits, length);
         }
 
-        return Parse(Trim(buffer, length), options);
+        return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
     }
 
-    private static int GetInitialLength(Stream stream, ImageResourceLimits limits)
+    private static int GetInitialLength(Stream stream, FontResourceLimits limits)
     {
         // The remaining length of a seekable stream avoids the copies of a growing buffer. It is only a hint: the
         // limits are enforced on the bytes actually read.
@@ -98,7 +80,7 @@ internal static class FontLoader
         {
             var remaining = stream.Length - stream.Position;
             if (remaining > limits.MaxEncodedBytes)
-                throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, remaining);
+                throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, remaining);
 
             if (remaining is > 0 and < int.MaxValue)
                 return (int)remaining + 1;
@@ -107,11 +89,11 @@ internal static class FontLoader
         return ChunkLength;
     }
 
-    private static byte[] Grow(byte[] buffer, ImageResourceLimits limits)
+    private static byte[] Grow(byte[] buffer, FontResourceLimits limits)
     {
         var length = Math.Min((long)buffer.Length * 2, Math.Min(limits.MaxEncodedBytes + 1, Array.MaxLength));
         if (length <= buffer.Length)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, (long)buffer.Length + 1);
+            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, (long)buffer.Length + 1);
 
         var result = new byte[length];
         buffer.CopyTo(result, 0);
@@ -120,26 +102,25 @@ internal static class FontLoader
 
     private static byte[] Trim(byte[] buffer, int length) => length == buffer.Length ? buffer : buffer.AsSpan(0, length).ToArray();
 
-    private static void EnsureEncodedBytes(ImageResourceLimits limits, long length)
+    private static void EnsureEncodedBytes(FontResourceLimits limits, long length)
     {
         if (length > limits.MaxEncodedBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, length);
+            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, length);
     }
 
-    private static void EnsureFontBytes(ImageResourceLimits limits, long length)
+    private static void EnsureFontBytes(FontResourceLimits limits, long length)
     {
         if (length > limits.MaxFontBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, limits.MaxFontBytes, length);
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, length);
     }
 
     /// <summary>Creates the faces of a font file. The faces keep the bytes of a font; a compressed container is expanded first.</summary>
-    private static FontFace[] Parse(byte[] bytes, FontLoadOptions options)
+    private static FontFace[] Parse(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps)
     {
-        var configuration = options.Configuration;
         if (bytes.Length < 4)
-            throw new UnknownImageFormatException("The data is not a font: it is shorter than a font signature.");
+            throw new UnknownFontFormatException("The data is not a font: it is shorter than a font signature.");
 
-        var limits = configuration.Limits;
+        var limits = environment.Limits;
         switch (FontBinary.UInt32(bytes, 0))
         {
             case FontTags.Woff:
@@ -147,7 +128,7 @@ internal static class FontLoader
                 break;
 
             case FontTags.Woff2:
-                bytes = Woff2Reader.Decode(bytes, configuration);
+                bytes = Woff2Reader.Decode(bytes, environment);
                 break;
         }
 
@@ -156,16 +137,16 @@ internal static class FontLoader
         switch (bytes.Length < 4 ? 0 : FontBinary.UInt32(bytes, 0))
         {
             case FontTags.TrueType or FontTags.AppleTrueType or FontTags.OpenTypeCff or FontTags.PostScriptType1:
-                return [new FontFace(new FontData(bytes, configuration, options.UseEmbeddedBitmaps), directoryOffset: 0)];
+                return [new FontFace(new FontData(bytes, environment, useEmbeddedBitmaps), directoryOffset: 0)];
 
             case FontTags.Collection:
-                return ParseCollection(new FontData(bytes, configuration, options.UseEmbeddedBitmaps));
+                return ParseCollection(new FontData(bytes, environment, useEmbeddedBitmaps));
 
             case FontTags.Woff or FontTags.Woff2:
                 throw FontErrors.Invalid("a WOFF file contains another WOFF file.");
 
             default:
-                throw new UnknownImageFormatException("The data is not a font: it does not start with the signature of a TrueType, OpenType, WOFF or WOFF2 font or of a font collection.");
+                throw new UnknownFontFormatException("The data is not a font: it does not start with the signature of a TrueType, OpenType, WOFF or WOFF2 font or of a font collection.");
         }
     }
 

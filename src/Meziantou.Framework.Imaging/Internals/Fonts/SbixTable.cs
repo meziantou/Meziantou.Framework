@@ -88,15 +88,24 @@ internal sealed class SbixTable
             }
 
             // The three types of the specification. Another type (the PDF and mask data of older fonts) is no image.
-            var format = type switch
+            BitmapGlyphFormat format;
+            switch (type)
             {
-                Png => ImageFormat.Png,
-                Jpeg => ImageFormat.Jpeg,
-                Tiff => ImageFormat.Tiff,
-                _ => ImageFormat.Unknown,
-            };
-            if (format == ImageFormat.Unknown)
-                return false;
+                case Png:
+                    format = BitmapGlyphFormat.Png;
+                    break;
+
+                case Jpeg:
+                    format = BitmapGlyphFormat.Jpeg;
+                    break;
+
+                case Tiff:
+                    format = BitmapGlyphFormat.Tiff;
+                    break;
+
+                default:
+                    return false;
+            }
 
             var left = FontBinary.Int16(data, 0);
             var bottom = FontBinary.Int16(data, 2);

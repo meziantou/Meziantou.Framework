@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// The header is validated when the face is created. The rest is read when a baseline is asked for: a malformed
-/// offset or value is an <see cref="InvalidImageContentException"/>.
+/// offset or value is an <see cref="InvalidFontException"/>.
 /// </para>
 /// <para>
 /// The coordinate of a baseline whose position depends on a point of a glyph (the second format) is the value it

@@ -53,7 +53,7 @@ public sealed class ShapingConformanceTests
                 i += char.IsHighSurrogate(text[i]) && i + 1 < text.Length ? 2 : 1;
             }
 
-            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
             TextShaper.AddText(buffer, text);
             var script = GetScript(text);
 

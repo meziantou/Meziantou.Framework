@@ -134,8 +134,8 @@ internal static class TextShaper
     /// </param>
     /// <param name="scratch">The working storage that measures the outlines of a font without vertical origins, or <see langword="null"/> when the run is horizontal.</param>
     /// <param name="cache">What the runs of a layout share about their fonts, or <see langword="null"/> when the run is shaped on its own.</param>
-    /// <exception cref="InvalidImageContentException">A layout table of the font is malformed.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="InvalidFontException">A layout table of the font is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void Shape(GlyphBuffer buffer, FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, ReadOnlySpan<ShapingFeature> features, bool isVertical = false, GlyphScratch? scratch = null, ShapingCache? cache = null)
     {
         buffer.StartShaping();

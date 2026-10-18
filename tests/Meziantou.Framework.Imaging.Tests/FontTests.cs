@@ -1364,7 +1364,7 @@ public sealed class FontTests
                     Assert.True(double.IsFinite(layout.Width) && double.IsFinite(layout.Height));
                     usable++;
                 }
-                catch (Exception exception) when (exception is ImageException)
+                catch (Exception exception) when (exception is ImageException or FontException)
                 {
                 }
             }

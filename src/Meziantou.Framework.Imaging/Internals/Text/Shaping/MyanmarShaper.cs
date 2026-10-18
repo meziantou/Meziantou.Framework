@@ -258,7 +258,7 @@ internal static class MyanmarShaper
     }
 
     /// <summary>Reorders the syllables.</summary>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void Reorder(GlyphBuffer buffer, FontFace face)
     {
         InsertDottedCircles(buffer, face);

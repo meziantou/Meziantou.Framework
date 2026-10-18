@@ -125,13 +125,13 @@ public sealed class TextShaperTests
     {
         // The limit is checked when the buffer of a run grows beyond its first size.
         var text = new string('A', 40);
-        var buffer = new GlyphBuffer(new ImageResourceLimits { MaxTextGlyphs = 40 });
+        var buffer = new GlyphBuffer(new FontResourceLimits { MaxTextGlyphs = 40 });
         TextShaper.AddText(buffer, text);
         Assert.Equal(40, buffer.Length);
 
-        buffer = new GlyphBuffer(new ImageResourceLimits { MaxTextGlyphs = 39 });
-        var exception = Assert.Throws<ImageResourceLimitException>(() => TextShaper.AddText(buffer, text));
-        Assert.Equal(ImageResourceLimitKind.TextGlyphs, exception.Kind);
+        buffer = new GlyphBuffer(new FontResourceLimits { MaxTextGlyphs = 39 });
+        var exception = Assert.Throws<FontResourceLimitException>(() => TextShaper.AddText(buffer, text));
+        Assert.Equal(FontResourceLimitKind.TextGlyphs, exception.Kind);
         Assert.Equal(39, exception.Limit);
         Assert.Equal(40, exception.Requested);
     }
@@ -283,7 +283,7 @@ public sealed class TextShaperTests
         // a part that repeats.
         static GlyphBuffer Create(int letters)
         {
-            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
             for (var i = 0; i < letters; i++)
             {
                 buffer.Add(0x0712, letters - i);
@@ -523,7 +523,7 @@ public sealed class TextShaperTests
         }
 
         var font = FontTestSupport.Load(builder);
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         foreach (var codePoint in codePoints)
         {
             buffer.Add(codePoint, 0);
@@ -887,14 +887,14 @@ public sealed class TextShaperTests
 
         // A mark without letter before it, and the marks of Thai, are left where the font draws them.
         Assert.Equal("8=0+0|2=1+1000", Format(Shape(font, "\u0300A")));
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, "\u0E01\u0E48");
         TextShaper.Shape(buffer, font.Face, UnicodeScript.Thai, languages: [], isRightToLeft: false, []);
         Assert.Equal((0, 0), (buffer.Positions[1].XOffset, buffer.Positions[1].YOffset));
 
         // From right to left, a mark is drawn before its letter, from the same pen: the Hebrew alef has an advance of
         // 600, and the sheva goes under the middle of it.
-        buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, "\u05D0\u05B0");
         TextShaper.Shape(buffer, font.Face, UnicodeScript.Hebrew, languages: [], isRightToLeft: true, []);
         Assert.Equal(font.Face.MapCodePoint(0x05B0), buffer.Info[0].Glyph);
@@ -911,7 +911,7 @@ public sealed class TextShaperTests
         int Glyph(int character) => font.Face.MapCodePoint(character);
         string Shaped(string text)
         {
-            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
             TextShaper.AddText(buffer, text);
             TextShaper.Shape(buffer, font.Face, UnicodeScript.Arabic, languages: [], isRightToLeft: true, []);
             return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
@@ -965,7 +965,7 @@ public sealed class TextShaperTests
         int Form(int windows, int mac) => Glyph(useMacCodePoints ? mac : windows);
         string Shaped(string text)
         {
-            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
             TextShaper.AddText(buffer, text);
             TextShaper.Shape(buffer, font.Face, UnicodeScript.Thai, languages: [], isRightToLeft: false, []);
             return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
@@ -1048,14 +1048,14 @@ public sealed class TextShaperTests
         font = FontTestSupport.Load(FontSamples.Languages());
         var tags = FontSamples.LanguageSystemTags();
         Assert.HasCount(680, tags);
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, "A");
         TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, [ShapingFeature.ToTag(tags[500])], isRightToLeft: false, []);
         Assert.Equal("4 3 7 4", string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph)));
 
         static string ShapeInLanguage(Font font, string? language)
         {
-            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
             TextShaper.AddText(buffer, "A");
             TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, language is null ? [] : OpenTypeLanguage.GetTags(language), isRightToLeft: false, []);
             return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
@@ -1133,7 +1133,7 @@ public sealed class TextShaperTests
     {
         // A font can make three lookups of thirty thousand subtables with a few bytes: every offset is the same one.
         var font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 3, subtableCount: 30000));
-        var exception = Assert.Throws<InvalidImageContentException>(() => Shape(font, "A"));
+        var exception = Assert.Throws<InvalidFontException>(() => Shape(font, "A"));
         Assert.Contains("unreasonable amount of work", exception.Message, StringComparison.Ordinal);
 
         // Two of them are within what a font can have.
@@ -1247,7 +1247,7 @@ public sealed class TextShaperTests
 
         builder.CharacterMap[0x25CC] = FontSamples.BoxA;
         font = FontTestSupport.Load(builder);
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         foreach (var item in codePoints)
         {
             buffer.Add(item.CodePoint, 0);
@@ -1265,7 +1265,7 @@ public sealed class TextShaperTests
     /// <summary>Shapes a text in the order of its characters and gives the glyphs with their clusters.</summary>
     private static string Clusters(Font font, string text, UnicodeScript script)
     {
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, text);
         TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft: false, []);
         return string.Join(' ', buffer.Info.ToArray().Select(glyph => string.Create(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}")));
@@ -1274,7 +1274,7 @@ public sealed class TextShaperTests
     /// <summary>Shapes a text in the order of its characters and gives the identifiers of the glyphs.</summary>
     private static string Glyphs(Font font, string text, UnicodeScript script)
     {
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, text);
         TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft: false, []);
         return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
@@ -1282,7 +1282,7 @@ public sealed class TextShaperTests
 
     private static GlyphBuffer Shape(Font font, string text, params ShapingFeature[] features)
     {
-        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
         TextShaper.AddText(buffer, text);
         TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, languages: [], isRightToLeft: false, features);
         return buffer;

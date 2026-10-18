@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// <b>Bounds.</b> A font is untrusted input: its lookups can multiply glyphs without end. The buffer refuses to grow
-/// beyond <see cref="ImageResourceLimits.MaxTextGlyphs"/>, and counts the operations of the lookups so that a font
+/// beyond <see cref="FontResourceLimits.MaxTextGlyphs"/>, and counts the operations of the lookups so that a font
 /// cannot make shaping run for a time out of proportion with the text: a pass of a lookup over the glyphs is what
 /// shaping is, the lookups a rule applies and the number of subtables of the font are what is bounded.
 /// </para>
@@ -39,7 +39,7 @@ internal sealed class GlyphBuffer
     private long _subtables;
     private byte _nextLigatureId;
 
-    public GlyphBuffer(ImageResourceLimits limits)
+    public GlyphBuffer(FontResourceLimits limits)
     {
         _maxLength = limits.MaxTextGlyphs;
     }
@@ -81,7 +81,7 @@ internal sealed class GlyphBuffer
     /// shaping is, and is in proportion with the text as long as the lookups of the font are in reasonable number;
     /// what a lookup costs beyond it (the lookups its rules apply) is taken from the budget of the run.
     /// </summary>
-    /// <exception cref="InvalidImageContentException">The lookups have more subtables than a font can need.</exception>
+    /// <exception cref="InvalidFontException">The lookups have more subtables than a font can need.</exception>
     public void StartPass(int subtableCount)
     {
         _subtables += subtableCount;
@@ -90,7 +90,7 @@ internal sealed class GlyphBuffer
     }
 
     /// <summary>Spends operations of the budget.</summary>
-    /// <exception cref="InvalidImageContentException">The font asks for more work than a text can need.</exception>
+    /// <exception cref="InvalidFontException">The font asks for more work than a text can need.</exception>
     public void Charge(int count)
     {
         _operations -= count;
@@ -117,7 +117,7 @@ internal sealed class GlyphBuffer
     /// Replaces a range of glyphs by a number of glyphs, which are copies of the first glyph of the range (or of the
     /// glyph before the insertion point when the range is empty) and are then set by the caller.
     /// </summary>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public void Resize(int index, int oldCount, int newCount)
     {
         if (oldCount == newCount)
@@ -199,7 +199,7 @@ internal sealed class GlyphBuffer
     }
 
     /// <summary>Inserts copies of a positioned glyph after it.</summary>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public void Repeat(int index, int copies)
     {
         if (copies <= 0)
@@ -247,7 +247,7 @@ internal sealed class GlyphBuffer
             return;
 
         if (length > _maxLength)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.TextGlyphs, _maxLength, length);
+            throw new FontResourceLimitException(FontResourceLimitKind.TextGlyphs, _maxLength, length);
 
         Array.Resize(ref _info, (int)Math.Min(Math.Max(length, (long)_info.Length * 2), Math.Max(_maxLength, 32)));
     }

@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The size of the font is the sum of the lengths the directory declares: it is checked against
-/// <see cref="ImageResourceLimits.MaxFontBytes"/> before anything is allocated, and a table that does not decompress to
+/// <see cref="FontResourceLimits.MaxFontBytes"/> before anything is allocated, and a table that does not decompress to
 /// exactly its declared length is an error, so a small file cannot expand to more than the limit. The metadata and the
 /// private data of the file are not read.
 /// </para>
@@ -22,7 +22,7 @@ internal static class WoffReader
     private const int HeaderLength = 44;
     private const int EntryLength = 20;
 
-    public static byte[] Decode(byte[] file, ImageResourceLimits limits)
+    public static byte[] Decode(byte[] file, FontResourceLimits limits)
     {
         ReadOnlySpan<byte> data = file;
         var header = FontBinary.Slice(data, 0, HeaderLength);
@@ -52,10 +52,10 @@ internal static class WoffReader
         }
 
         if (total > limits.MaxFontBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, limits.MaxFontBytes, total);
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, total);
 
-        if (total > CheckedSizes.MaxBufferLength)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, CheckedSizes.MaxBufferLength, total);
+        if (total > Array.MaxLength)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, total);
 
         var font = new byte[total];
         SfntWriter.WriteHeader(font, flavor, tableCount);
@@ -114,7 +114,7 @@ internal static class WoffReader
 
         // ZLibStream reports a stream cut before its checksum as a clean end: verify the checksum, the last four bytes
         // of a zlib stream (RFC 1950).
-        if (length < 6 || BoundedInflater.ComputeAdler32(destination) != BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(offset + length - 4, 4)))
+        if (length < 6 || Adler32.Compute(destination) != BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(offset + length - 4, 4)))
             throw FontErrors.InvalidTable(tag, "has compressed data that is truncated or corrupted.");
     }
 }

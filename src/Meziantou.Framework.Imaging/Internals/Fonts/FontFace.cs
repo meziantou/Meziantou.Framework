@@ -604,7 +604,7 @@ internal sealed class FontFace
     /// <param name="baseline">The tag of the baseline.</param>
     /// <param name="coordinate">The coordinate of the baseline, with the delta of the <c>BASE</c> table in an instance of a variable font.</param>
     /// <returns><see langword="false"/> when the font has no <c>BASE</c> table, or the table does not give the baseline.</returns>
-    /// <exception cref="InvalidImageContentException">The table is malformed.</exception>
+    /// <exception cref="InvalidFontException">The table is malformed.</exception>
     public bool TryGetBaseline(bool isVertical, ReadOnlySpan<uint> scripts, uint baseline, out int coordinate)
     {
         var table = Data.Bytes.AsSpan(_baseOffset, _baseLength);
@@ -630,7 +630,7 @@ internal sealed class FontFace
     /// <param name="scripts">The script tags of the text, by order of preference.</param>
     /// <param name="center">The middle of the box.</param>
     /// <returns><see langword="false"/> when the font does not give the ideographic em box of the script.</returns>
-    /// <exception cref="InvalidImageContentException">The <c>BASE</c> table is malformed.</exception>
+    /// <exception cref="InvalidFontException">The <c>BASE</c> table is malformed.</exception>
     public bool TryGetIdeographicCenter(bool isVertical, ReadOnlySpan<uint> scripts, out double center)
     {
         var hasBottom = TryGetBaseline(isVertical, scripts, BaseTable.IdeographicBottom, out var bottom);
@@ -739,8 +739,8 @@ internal sealed class FontFace
     /// <param name="scratch">The working storage of the outlines.</param>
     /// <param name="budget">The complexity budget of the glyph.</param>
     /// <returns>The display list, or <see langword="null"/> when the glyph has no colors of its own.</returns>
-    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public ColorGlyph? BuildColorGlyph(int glyphId, int palette, GlyphScratch scratch, ref GlyphBudget budget)
     {
         if (_colr is null || (uint)glyphId >= (uint)GlyphCount)
@@ -971,9 +971,9 @@ internal sealed class FontFace
     }
 
     /// <summary>Decodes the outline of a glyph into a sink. A glyph without outline, such as a space, emits nothing.</summary>
-    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The outlines of the font are in a format that is not supported.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The outlines of the font are in a format that is not supported.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public void DecodeOutline(int glyphId, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
         if ((uint)glyphId >= (uint)GlyphCount)
@@ -1004,9 +1004,9 @@ internal sealed class FontFace
     /// <param name="sink">The sink.</param>
     /// <param name="scratch">The working storage of the outlines.</param>
     /// <param name="budget">The budget of the glyph.</param>
-    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The outlines of the font are in a format that is not supported.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The outlines of the font are in a format that is not supported.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public void DecodeOutline(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
         if (_eblc is not null && (uint)glyphId < (uint)GlyphCount && size is >= 1 and <= 255 && size == Math.Floor(size))

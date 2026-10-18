@@ -61,6 +61,7 @@ internal sealed class TextLayoutEngine
     private readonly TextSpan[] _spans;
     private readonly TextLayoutOptions _options;
     private readonly ImageResourceLimits _limits;
+    private readonly FontResourceLimits _fontLimits;
     private readonly GlyphBuffer _buffer;
     private readonly bool _wraps;
 
@@ -101,8 +102,10 @@ internal sealed class TextLayoutEngine
         _hasCentralBaseline = _isVertical && _orientation != TextOrientation.Sideways;
         _maxWidth = _isVertical ? maxHeight : maxWidth;
         _maxHeight = _isVertical ? maxWidth : maxHeight;
-        _limits = spans[0].Style.Fonts.Primary.Face.Data.Limits;
-        _buffer = new GlyphBuffer(_limits);
+        var primary = spans[0].Style.Fonts.Primary.Face;
+        _limits = ImageFontEnvironment.GetConfiguration(primary).Limits;
+        _fontLimits = primary.Data.Limits;
+        _buffer = new GlyphBuffer(_fontLimits);
         _wraps = options.Wrapping == TextWrapping.Wrap && !double.IsPositiveInfinity(_maxWidth);
     }
 
@@ -418,7 +421,7 @@ internal sealed class TextLayoutEngine
         var glyph = face.MapCodePoint(rune.Value);
         if (glyph != 0 && face.Gsub is not null)
         {
-            var buffer = _probeBuffer ??= new GlyphBuffer(_limits);
+            var buffer = _probeBuffer ??= new GlyphBuffer(_fontLimits);
             buffer.Clear();
             buffer.Add(rune.Value, 0);
             ReadOnlySpan<ShapingFeature> features = usesRotatedForms ? [new ShapingFeature(Vrt2, 1), new ShapingFeature(Vert, 0)] : [];
@@ -523,7 +526,7 @@ internal sealed class TextLayoutEngine
     }
 
     /// <summary>Gets the working storage that measures the outlines of a font without vertical origins.</summary>
-    private GlyphScratch GetScratch(FontFace face) => _scratch ??= new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
+    private GlyphScratch GetScratch(FontFace face) => _scratch ??= new GlyphScratch(face.Data.Environment.CreateAllocator("TextLayout"));
 
     /// <summary>Determines whether the texts of two styles can be shaped as one: they only differ by what is painted.</summary>
     private static bool AreShapedTogether(TextStyle first, TextStyle second)

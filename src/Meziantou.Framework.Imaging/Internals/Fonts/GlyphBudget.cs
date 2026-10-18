@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Counts the elementary operations spent to produce one glyph (outline points, components, operators), against
-/// <see cref="ImageResourceLimits.MaxGlyphComplexity"/>.
+/// <see cref="FontResourceLimits.MaxGlyphComplexity"/>.
 /// </summary>
 /// <remarks>
 /// A font is untrusted input: composite glyphs that refer to each other, or subroutines that call each other, can
@@ -16,17 +16,17 @@ internal struct GlyphBudget
     private readonly long _limit;
     private long _used;
 
-    public GlyphBudget(ImageResourceLimits limits)
+    public GlyphBudget(FontResourceLimits limits)
     {
         _limit = limits.MaxGlyphComplexity;
     }
 
     /// <summary>Spends operations.</summary>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the limit.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the limit.</exception>
     public void Charge(long count)
     {
         _used += count;
         if (_used > _limit)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.GlyphComplexity, _limit, _used);
+            throw new FontResourceLimitException(FontResourceLimitKind.GlyphComplexity, _limit, _used);
     }
 }

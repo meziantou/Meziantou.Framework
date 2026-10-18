@@ -684,14 +684,22 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 
 - Written from the OpenType specification, the WOFF 1.0 and 2.0 recommendations and Adobe Technical Notes #5176 (CFF)
   and #5177 (Type 2 charstrings); cite the section in the code.
-- **A font is not an image.** No `ImageFormat` member, no codec, no `Font*Exception`: the errors are the four content
-  exceptions with `ImageFormat.Unknown` (`FontErrors`), as for ICC profiles. An unsupported feature is named
-  `"Font: <feature>"`.
+- **The font code depends on nothing of the library.** `Internals/Fonts`, `Internals/Text/{Shaping,OpenType}` and
+  `Internals/Text/Glyph*.cs` use only their own types: `FontEnvironment` (the `FontResourceLimits` and a
+  `FontAllocator` for the temporary buffers; `ImageFontEnvironment` adapts an `ImageConfiguration` and its allocation
+  scopes, `ImageFontEnvironment.GetConfiguration` gets it back), `BitmapGlyphFormat` and the internal `FontException`
+  types (`InvalidFontException`, `UnsupportedFontFeatureException`, `UnknownFontFormatException`,
+  `FontResourceLimitException`), raised by `FontErrors`. Decoding the image of a bitmap glyph needs the codecs: it is
+  `BitmapGlyphDecoder`, in `Internals/Drawing`.
+- **A font is not an image.** No `ImageFormat` member, no codec: at the public boundary (`FontFiles`, `Font`,
+  `TextLayout`, the text members of `DrawingCanvas`), `FontExceptionTranslation` turns the exceptions of the font code
+  into the four content exceptions with `ImageFormat.Unknown`, as for ICC profiles. An unsupported feature is named
+  `"Font: <feature>"`. A new public member that reads a font translates them too.
 - **A font is immutable, thread-safe and not disposable.** It keeps one exact garbage-collected `byte[]` (`FontData`,
   like `MetadataBlob`), shared by the faces of a collection, bounded by `MaxFontBytes` before it is allocated; tables are
   read in place, never copied. It has no cache and no state: the working storage of a glyph is a caller-owned
-  `GlyphScratch` charged to an allocation scope, and a `GlyphBudget` per glyph.
-- **Untrusted input.** Every read goes through `FontBinary` (bounds-checked, `InvalidImageContentException`), table sizes
+  `GlyphScratch` charged to a `FontAllocator` (an allocation scope in the library), and a `GlyphBudget` per glyph.
+- **Untrusted input.** Every read goes through `FontBinary` (bounds-checked, `InvalidFontException`), table sizes
   use 64-bit arithmetic, and nothing is sized from a declared length before it is checked against a limit. Anything that
   can expand (composite glyphs, subroutines, later paint graphs and lookups) charges `GlyphBudget` per elementary
   operation: recursion depth alone does not bound the work. Outline coordinates are bounded (`FontErrors.MaxCoordinate`)
@@ -730,7 +738,7 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
     precision numbers of HarfBuzz. Advances and metrics are exact. `FontVariationTests` has the literals, computed by
     hand from `FontSamples.Variable` and `VariableCharstrings`.
 - **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
-  which format the font gives for the data, and `ColorImage` rejects data of another one. The bitmaps without colors
+  which format the font gives for the data, and `BitmapGlyphDecoder` rejects data of another one. The bitmaps without colors
   of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,
   ...)` emits a rectangle per run of pixels of a strike of one bit per pixel made for exactly that size, so nothing of
   the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
@@ -863,7 +871,7 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
     `Atan2`: the rule against trigonometric functions in drawing holds for the paints.
   - The degenerate cases are those of the specification, not of a renderer: equal sweep angles or stops at one
     offset give two colors when the color line pads and nothing when it repeats or reflects.
-  - A bitmap glyph (`SbixTable`, `CblcTable`, `ColorImage`) is a display list of one op, `FillImage`, whose paint is
+  - A bitmap glyph (`SbixTable`, `CblcTable`, `BitmapGlyphDecoder`) is a display list of one op, `FillImage`, whose paint is
     the image: decoded with the PNG decoder of the library under the limits of the font, scaled down once at layout
     time (`Resize`) when the strike is larger than the text, sampled bilinearly at draw time. The key of a color glyph
     in a layout is (font, glyph, palette) for paints and (font, glyph, size) for images. `FontFace.IsColorGlyph` is

@@ -122,22 +122,29 @@ internal static class FontTestSupport
         }
     }
 
-    /// <summary>Gets the outline of a glyph as an SVG path, with the numbers written to a number of decimals.</summary>
+    /// <summary>
+    /// Gets the outline of a glyph as an SVG path, with the numbers written to a number of decimals. The errors are the
+    /// exceptions of the library, as when the glyph is drawn.
+    /// </summary>
     public static string GetOutline(Font font, int glyphId, int decimals, ImageConfiguration? configuration = null)
-    {
-        using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
-        var budget = new GlyphBudget(font.Face.Data.Limits);
-        var sink = new SvgPathSink { Format = "0." + new string('#', decimals) };
-        font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
-        return sink.ToString();
-    }
+        => GetOutline(font, glyphId, new SvgPathSink { Format = "0." + new string('#', decimals) }, configuration);
 
     public static string GetOutline(Font font, int glyphId, ImageConfiguration? configuration = null)
+        => GetOutline(font, glyphId, new SvgPathSink(), configuration);
+
+    private static string GetOutline(Font font, int glyphId, SvgPathSink sink, ImageConfiguration? configuration)
     {
         using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
         var budget = new GlyphBudget(font.Face.Data.Limits);
-        var sink = new SvgPathSink();
-        font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
+        try
+        {
+            font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+
         return sink.ToString();
     }
 

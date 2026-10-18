@@ -5,26 +5,26 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The tables are read in place, never copied. The array is an exact garbage-collected array, bounded by
-/// <see cref="ImageResourceLimits.MaxFontBytes"/> when it is created: a font is an immutable object without owner or
-/// lifetime, like <see cref="Metadata.MetadataBlob"/>, so its bytes cannot be rented from the pool of an image.
+/// <see cref="FontResourceLimits.MaxFontBytes"/> when it is created: a font is an immutable object without owner or
+/// lifetime, so its bytes cannot be rented from a pool.
 /// </remarks>
 internal sealed class FontData
 {
-    public FontData(byte[] bytes, ImageConfiguration configuration, bool useEmbeddedBitmaps = false)
+    public FontData(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
         Bytes = bytes;
-        Configuration = configuration;
+        Environment = environment;
         UseEmbeddedBitmaps = useEmbeddedBitmaps;
     }
 
     public byte[] Bytes { get; }
 
-    /// <summary>Gets the configuration the font was loaded with.</summary>
-    public ImageConfiguration Configuration { get; }
+    /// <summary>Gets the environment the font was loaded with.</summary>
+    public FontEnvironment Environment { get; }
 
     /// <summary>Gets a value indicating whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</summary>
     public bool UseEmbeddedBitmaps { get; }
 
-    /// <summary>Gets the limits of the configuration the font was loaded with: they bound the work of decoding a glyph and the size of a text.</summary>
-    public ImageResourceLimits Limits => Configuration.Limits;
+    /// <summary>Gets the limits of the environment the font was loaded with: they bound the work of decoding a glyph and the size of a text.</summary>
+    public FontResourceLimits Limits => Environment.Limits;
 }

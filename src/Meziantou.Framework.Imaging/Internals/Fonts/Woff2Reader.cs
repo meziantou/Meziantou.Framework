@@ -15,8 +15,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The rebuilt font is not byte-identical to the one the file was made from: the glyphs are written again, with the
 /// same points. The bytes of the Brotli stream and the rebuilt glyph table are temporary storage, bounded by
-/// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>; the font itself is bounded by
-/// <see cref="ImageResourceLimits.MaxFontBytes"/> before it is allocated.
+/// <see cref="FontAllocator.Limit"/>; the font itself is bounded by
+/// <see cref="FontResourceLimits.MaxFontBytes"/> before it is allocated.
 /// </para>
 /// </remarks>
 internal static class Woff2Reader
@@ -28,9 +28,9 @@ internal static class Woff2Reader
     private static ReadOnlySpan<byte> KnownTags =>
         "cmapheadhheahmtxmaxpnameOS/2postcvt fpgmglyflocaprepCFF VORGEBDTEBLCgasphdmxkernLTSHPCLTVDMXvheavmtxBASEGDEFGPOSGSUBEBSCJSTFMATHCBDTCBLCCOLRCPALSVG sbixacntavarbdatblocbslncvarfdscfeatfmtxfvargvarhstyjustlcarmortmorxopbdproptrakZapfSilfGlatGlocFeatSill"u8;
 
-    public static byte[] Decode(byte[] file, ImageConfiguration configuration)
+    public static byte[] Decode(byte[] file, FontEnvironment environment)
     {
-        var limits = configuration.Limits;
+        var limits = environment.Limits;
         ReadOnlySpan<byte> data = file;
         var header = FontBinary.Slice(data, 0, HeaderLength);
         var flavor = FontBinary.UInt32(header, 4);
@@ -46,11 +46,11 @@ internal static class Woff2Reader
         AssignTables(tables, faces);
 
         var compressed = FontBinary.Slice(data, cursor, compressedLength);
-        var scope = AllocationScope.Create(configuration, "WOFF2");
-        if (sourceLength > CheckedSizes.MaxBufferLength)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, scope.Limit, sourceLength);
+        var scope = environment.CreateAllocator("WOFF2");
+        if (sourceLength > Array.MaxLength)
+            throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, scope.Limit, sourceLength);
 
-        using var source = scope.Rent((int)sourceLength, AllocationKind.Temporary, clear: false);
+        using var source = scope.Rent((int)sourceLength, clear: false);
         Decompress(compressed, source.Span);
 
         var rebuilt = new FontByteWriter?[tableCount];
@@ -68,7 +68,7 @@ internal static class Woff2Reader
     }
 
     /// <summary>Reads the table directory: section 4.1.</summary>
-    private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, ImageResourceLimits limits, out long sourceLength)
+    private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, FontResourceLimits limits, out long sourceLength)
     {
         var tables = new Table[tableCount];
         sourceLength = 0;
@@ -114,7 +114,7 @@ internal static class Woff2Reader
         // The tables that are copied are part of the font: more of them than a font can be is refused before the stream
         // is expanded.
         if (copiedLength > limits.MaxFontBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, limits.MaxFontBytes, copiedLength);
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, copiedLength);
 
         return tables;
     }
@@ -234,7 +234,7 @@ internal static class Woff2Reader
         }
     }
 
-    private static byte[] Build(ReadOnlySpan<byte> source, Table[] tables, Face[] faces, uint flavor, uint collectionVersion, FontByteWriter?[] rebuilt, AllocationScope scope, ImageResourceLimits limits)
+    private static byte[] Build(ReadOnlySpan<byte> source, Table[] tables, Face[] faces, uint flavor, uint collectionVersion, FontByteWriter?[] rebuilt, FontAllocator scope, FontResourceLimits limits)
     {
         // The length of each table of the font. The glyph tables are rebuilt first: their length is not known otherwise.
         for (var i = 0; i < tables.Length; i++)
@@ -295,10 +295,10 @@ internal static class Woff2Reader
         }
 
         if (position > limits.MaxFontBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, limits.MaxFontBytes, position);
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, limits.MaxFontBytes, position);
 
-        if (position > CheckedSizes.MaxBufferLength)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.FontBytes, CheckedSizes.MaxBufferLength, position);
+        if (position > Array.MaxLength)
+            throw new FontResourceLimitException(FontResourceLimitKind.FontBytes, Array.MaxLength, position);
 
         var font = new byte[position];
         if (flavor == FontTags.Collection)

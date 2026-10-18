@@ -65,7 +65,7 @@ internal readonly struct CffIndex
     }
 
     /// <summary>Gets an object.</summary>
-    /// <exception cref="InvalidImageContentException">The index is not an object of the INDEX, or its offsets are invalid.</exception>
+    /// <exception cref="InvalidFontException">The index is not an object of the INDEX, or its offsets are invalid.</exception>
     public ReadOnlySpan<byte> Get(ReadOnlySpan<byte> table, int index)
     {
         if ((uint)index >= (uint)Count)

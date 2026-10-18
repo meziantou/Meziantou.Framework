@@ -246,7 +246,7 @@ internal sealed class IndicShaper
     /// between them: the Unicode Standard, chapter 12, the tables of the vowel letters of each script ("to represent,
     /// use, do not use"). A text is then not read as the letter it does not have.
     /// </summary>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void SeparateVowelSequences(GlyphBuffer buffer, UnicodeScript script)
     {
         for (var i = 0; i + 1 < buffer.Length; i++)
@@ -327,7 +327,7 @@ internal sealed class IndicShaper
     /// The first reordering, before the basic shaping forms: "Find base consonant", "Decompose and reorder matras",
     /// "Reorder marks to canonical order", and the marking of the glyphs each basic feature applies to.
     /// </summary>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public void ReorderBeforeBasicForms(GlyphBuffer buffer)
     {
         SetConsonantPositions(buffer.Info);

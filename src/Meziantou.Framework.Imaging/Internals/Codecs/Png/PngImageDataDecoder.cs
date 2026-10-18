@@ -61,7 +61,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     private long _decodedScanlines;
     private bool _done;
     private bool _firstScanlineOfPass;
-    private uint _adler = BoundedInflater.Adler32Initial;
+    private uint _adler = Adler32.Initial;
     private long _compressedLength;
     private uint _trailer;
 
@@ -327,7 +327,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             throw Invalid("The zlib datastream of the PNG image data is invalid.", exception);
         }
 
-        _adler = BoundedInflater.UpdateAdler32(_adler, destination[..read]);
+        _adler = Adler32.Update(_adler, destination[..read]);
         return read;
     }
 }

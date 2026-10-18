@@ -8,10 +8,10 @@ internal sealed class FontByteWriter : IDisposable
 {
     private const int InitialCapacity = 4096;
 
-    private readonly AllocationScope _scope;
-    private PooledBuffer? _buffer;
+    private readonly FontAllocator _scope;
+    private FontBuffer? _buffer;
 
-    public FontByteWriter(AllocationScope scope)
+    public FontByteWriter(FontAllocator scope)
     {
         _scope = scope;
     }
@@ -25,7 +25,7 @@ internal sealed class FontByteWriter : IDisposable
     /// <summary>
     /// Adds bytes, whose content is unspecified, and returns them. The span is valid until the next call of this method.
     /// </summary>
-    /// <exception cref="ImageResourceLimitException">The bytes exceed the allocation limit.</exception>
+    /// <exception cref="FontResourceLimitException">The bytes exceed the allocation limit.</exception>
     public Span<byte> Append(long count)
     {
         var required = Length + count;
@@ -55,11 +55,11 @@ internal sealed class FontByteWriter : IDisposable
 
     private void Grow(long required)
     {
-        if (required > CheckedSizes.MaxBufferLength)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, _scope.Limit, required);
+        if (required > Array.MaxLength)
+            throw new FontResourceLimitException(FontResourceLimitKind.LiveAllocationBytes, _scope.Limit, required);
 
-        var capacity = Math.Min(CheckedSizes.MaxBufferLength, Math.Max(required, Math.Max(InitialCapacity, (long)(_buffer?.Length ?? 0) * 2)));
-        var buffer = _scope.Rent((int)capacity, AllocationKind.Temporary, clear: false);
+        var capacity = Math.Min(Array.MaxLength, Math.Max(required, Math.Max(InitialCapacity, (long)(_buffer?.Length ?? 0) * 2)));
+        var buffer = _scope.Rent((int)capacity, clear: false);
         if (_buffer is not null)
         {
             _buffer.Span[..Length].CopyTo(buffer.Span);

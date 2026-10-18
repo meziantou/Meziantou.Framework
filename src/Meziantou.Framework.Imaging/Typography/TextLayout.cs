@@ -263,7 +263,14 @@ public sealed class TextLayout
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(style);
-        return new TextLayout(TextLayoutEngine.Create(text, [new TextSpan(0, text.Length, style)], options ?? TextLayoutOptions.Default));
+        try
+        {
+            return new TextLayout(TextLayoutEngine.Create(text, [new TextSpan(0, text.Length, style)], options ?? TextLayoutOptions.Default));
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
     }
 
     /// <summary>Lays out a text whose parts have their own style.</summary>
@@ -284,7 +291,14 @@ public sealed class TextLayout
         if (text.SpanList.IsEmpty)
             throw new ArgumentException("The text has no span.", nameof(text));
 
-        return new TextLayout(TextLayoutEngine.Create(text.Text, text.SpanList.ToArray(), options ?? TextLayoutOptions.Default));
+        try
+        {
+            return new TextLayout(TextLayoutEngine.Create(text.Text, text.SpanList.ToArray(), options ?? TextLayoutOptions.Default));
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
     }
 
     /// <summary>Lays out a text with one style at the largest size, up to the size of the style, at which it fits a box.</summary>
@@ -361,8 +375,18 @@ public sealed class TextLayout
         if (!(minimumScale > 0 && minimumScale <= 1))
             throw new ArgumentOutOfRangeException(nameof(minimumScale), minimumScale, "The smallest scale must be more than 0 and up to 1.");
 
-        options ??= TextLayoutOptions.Default;
+        try
+        {
+            return CreateToFitCore(text, spans, width, height, options ?? TextLayoutOptions.Default, minimumScale);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
+    private static TextLayout CreateToFitCore(string text, TextSpan[] spans, double width, double height, TextLayoutOptions options, double minimumScale)
+    {
         // The whole text, at a scale: it fits when none of it is cut and its lines stay in the box
         if (TryFit(scale: 1, out var data))
             return new TextLayout(data);
@@ -1085,7 +1109,7 @@ public sealed class TextLayout
         {
             var face = _fonts[run.Font].Face;
             var scale = run.Size / face.UnitsPerEm;
-            using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
+            using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("TextLayout"));
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
                 if (!outlines.TryGetValue((run.Font, _glyphs[i], run.Size), out var recorded))
@@ -1120,7 +1144,7 @@ public sealed class TextLayout
                         }
                         else if (face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
                         {
-                            colorGlyph = ColorImage.CreateGlyph(face, bitmap, run.Size);
+                            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, run.Size);
                         }
 
                         colorIndex = -1;

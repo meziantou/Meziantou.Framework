@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Reads the big-endian values of the font tables. A font is untrusted input: every read is checked against the bounds
-/// of the table, and a read outside them is an <see cref="InvalidImageContentException"/>.
+/// of the table, and a read outside them is an <see cref="InvalidFontException"/>.
 /// </summary>
 internal static class FontBinary
 {

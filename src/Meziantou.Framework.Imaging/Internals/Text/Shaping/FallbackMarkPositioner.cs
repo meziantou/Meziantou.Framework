@@ -52,8 +52,8 @@ internal static class FallbackMarkPositioner
     /// <param name="buffer">The glyphs, in the order of the text, with their advances; the marks have no advance.</param>
     /// <param name="face">The font.</param>
     /// <param name="isRightToLeft">Whether the run is drawn from right to left: a mark is then drawn from the pen of its base, not from the pen after it.</param>
-    /// <exception cref="InvalidImageContentException">The outline of a glyph is malformed.</exception>
-    /// <exception cref="ImageResourceLimitException">Decoding an outline exceeds a limit of the configuration of the font.</exception>
+    /// <exception cref="InvalidFontException">The outline of a glyph is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">Decoding an outline exceeds a limit of the environment of the font.</exception>
     public static void Apply(GlyphBuffer buffer, FontFace face, bool isRightToLeft)
     {
         var info = buffer.Info;
@@ -76,7 +76,7 @@ internal static class FallbackMarkPositioner
 
                 if (end > i + 1)
                 {
-                    scratch ??= new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextShaper"));
+                    scratch ??= new GlyphScratch(face.Data.Environment.CreateAllocator("TextShaper"));
                     PositionAroundBase(buffer, face, scratch, i, end, isRightToLeft);
                 }
 

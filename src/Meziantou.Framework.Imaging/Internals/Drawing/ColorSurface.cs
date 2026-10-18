@@ -427,10 +427,10 @@ internal sealed class ColorSurface : IDisposable
         var y1 = (int)Math.Clamp(row + 1, 0, image.Height - 1);
         var pixels = image.Pixels;
         red = green = blue = alpha = 0;
-        Add(pixels[(y0 * image.Width) + x0], (1 - fx) * (1 - fy), ref red, ref green, ref blue, ref alpha);
-        Add(pixels[(y0 * image.Width) + x1], fx * (1 - fy), ref red, ref green, ref blue, ref alpha);
-        Add(pixels[(y1 * image.Width) + x0], (1 - fx) * fy, ref red, ref green, ref blue, ref alpha);
-        Add(pixels[(y1 * image.Width) + x1], fx * fy, ref red, ref green, ref blue, ref alpha);
+        Add(pixels, (y0 * image.Width) + x0, (1 - fx) * (1 - fy), ref red, ref green, ref blue, ref alpha);
+        Add(pixels, (y0 * image.Width) + x1, fx * (1 - fy), ref red, ref green, ref blue, ref alpha);
+        Add(pixels, (y1 * image.Width) + x0, (1 - fx) * fy, ref red, ref green, ref blue, ref alpha);
+        Add(pixels, (y1 * image.Width) + x1, fx * fy, ref red, ref green, ref blue, ref alpha);
         if (!(alpha > 0))
             return false;
 
@@ -439,12 +439,13 @@ internal sealed class ColorSurface : IDisposable
         blue /= alpha;
         return true;
 
-        static void Add(Rgba32 pixel, double weight, ref double red, ref double green, ref double blue, ref double alpha)
+        static void Add(byte[] pixels, int index, double weight, ref double red, ref double green, ref double blue, ref double alpha)
         {
-            var opacity = weight * (pixel.A / 255.0);
-            red += opacity * (pixel.R / 255.0);
-            green += opacity * (pixel.G / 255.0);
-            blue += opacity * (pixel.B / 255.0);
+            var pixel = pixels.AsSpan(index * 4, 4);
+            var opacity = weight * (pixel[3] / 255.0);
+            red += opacity * (pixel[0] / 255.0);
+            green += opacity * (pixel[1] / 255.0);
+            blue += opacity * (pixel[2] / 255.0);
             alpha += opacity;
         }
     }

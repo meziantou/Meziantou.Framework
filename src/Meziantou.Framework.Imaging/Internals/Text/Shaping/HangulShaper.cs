@@ -54,7 +54,7 @@ internal static class HangulShaper
     /// <summary>Composes the blocks the font has a glyph for, marks the letters of the others, and places the tone marks.</summary>
     /// <param name="buffer">The characters of the run, with their clusters.</param>
     /// <param name="face">The font.</param>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void ComposeSyllables(GlyphBuffer buffer, FontFace face)
     {
         // The syllable before the current character: [start, end).

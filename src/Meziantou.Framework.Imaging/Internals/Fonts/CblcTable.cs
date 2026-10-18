@@ -233,7 +233,7 @@ internal sealed class CblcTable
         if (length > glyphData.Length - header - 4)
             throw FontErrors.InvalidTable(FontTags.Cbdt, "has an image that is longer than the data of its glyph.");
 
-        glyph = new BitmapGlyph(dataOffset + (int)start + header + 4, (int)length, pixelsPerEmX, pixelsPerEmY, left, Bottom: null, top, ImageFormat.Png);
+        glyph = new BitmapGlyph(dataOffset + (int)start + header + 4, (int)length, pixelsPerEmX, pixelsPerEmY, left, Bottom: null, top, BitmapGlyphFormat.Png);
         return true;
     }
 

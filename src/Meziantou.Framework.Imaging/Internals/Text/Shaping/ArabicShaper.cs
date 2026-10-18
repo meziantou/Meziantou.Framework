@@ -384,7 +384,7 @@ internal static partial class ArabicShaper
     /// </summary>
     /// <param name="buffer">The positioned glyphs of a right-to-left run, in the order they are drawn in.</param>
     /// <param name="face">The font.</param>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void ApplyStretching(GlyphBuffer buffer, FontFace face)
     {
         var index = buffer.Length;

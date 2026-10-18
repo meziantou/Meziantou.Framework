@@ -201,7 +201,7 @@ internal static class KhmerShaper
     /// <param name="face">The font.</param>
     /// <param name="firstBit">The bit of the first feature of the plan in the masks of the glyphs.</param>
     /// <param name="hasCfar">Whether the font has the <c>cfar</c> feature.</param>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void Reorder(GlyphBuffer buffer, FontFace face, int firstBit, bool hasCfar)
     {
         InsertDottedCircles(buffer, face);

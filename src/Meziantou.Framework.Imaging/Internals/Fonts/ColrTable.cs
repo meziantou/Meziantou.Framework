@@ -108,8 +108,8 @@ internal sealed class ColrTable
     /// <param name="scratch">The working storage of the outlines.</param>
     /// <param name="budget">The complexity budget of the glyph.</param>
     /// <returns>The display list, or <see langword="null"/> when the table does not describe the glyph.</returns>
-    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
     public ColorGlyph? Build(ReadOnlySpan<byte> table, FontFace face, int glyphId, int palette, GlyphScratch scratch, ref GlyphBudget budget)
     {
         var builder = new Builder(this, table, face, palette, scratch, ref budget);

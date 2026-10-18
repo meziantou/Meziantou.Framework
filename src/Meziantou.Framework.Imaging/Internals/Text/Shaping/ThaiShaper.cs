@@ -21,7 +21,7 @@ internal static class ThaiShaper
 
     /// <summary>Decomposes each sara am and puts its ring before the marks above the consonant.</summary>
     /// <param name="buffer">The characters of the run, with their clusters.</param>
-    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    /// <exception cref="FontResourceLimitException">The glyphs exceed <see cref="FontResourceLimits.MaxTextGlyphs"/>.</exception>
     public static void DecomposeSaraAm(GlyphBuffer buffer)
     {
         for (var i = 0; i < buffer.Length; i++)

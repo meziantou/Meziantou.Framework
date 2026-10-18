@@ -747,7 +747,7 @@ internal ref struct CffCharstringInterpreter
         _sink.Close();
     }
 
-    private static InvalidImageContentException Invalid(string message) => FontErrors.InvalidTable(FontTags.Cff, $"has a charstring that {message}.");
+    private static InvalidFontException Invalid(string message) => FontErrors.InvalidTable(FontTags.Cff, $"has a charstring that {message}.");
 
     /// <summary>The argument stack and the transient array, in the frame of the caller: decoding a glyph allocates nothing.</summary>
     [StructLayout(LayoutKind.Auto)]

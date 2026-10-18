@@ -258,7 +258,7 @@ public sealed class InputLayerTests
     [Theory]
     [InlineData("", 0x00000001u)]
     [InlineData("Wikipedia", 0x11E60398u)]
-    public void Adler32MatchesPublishedVectors(string text, uint expected) => Assert.Equal(expected, BoundedInflater.ComputeAdler32(Encoding.ASCII.GetBytes(text)));
+    public void Adler32MatchesPublishedVectors(string text, uint expected) => Assert.Equal(expected, Adler32.Compute(Encoding.ASCII.GetBytes(text)));
 
     [Fact]
     public void BoundedInflaterValidatesCompletenessAndCharges()

@@ -48,8 +48,8 @@ internal static class GlyfOutlineReader
     private const int UnscaledComponentOffset = 0x1000;
 
     /// <summary>Decodes a glyph into a sink.</summary>
-    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
-    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public static void Decode(in GlyfContext context, int glyphId, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
         scratch.Reset();

@@ -380,6 +380,44 @@ fencedcode   ( 1, 0)  3-11
     }
 
     [Fact]
+    public void TestFencedCodeBlockOpenedAtEndOfText()
+    {
+        //     01 234
+        Check("01\n```", @"
+paragraph    ( 0, 0)  0-1
+literal      ( 0, 0)  0-1
+fencedcode   ( 1, 0)  3-5
+");
+    }
+
+    [Fact]
+    public void TestFencedCodeBlockSpanIncludesTheInfoString()
+    {
+        //     0123456 7
+        Check("```cs a\n", @"
+fencedcode   ( 0, 0)  0-6
+attributes   ( 0, 0)  0--1
+");
+    }
+
+    [Theory]
+    [InlineData("<!--\n-->")]
+    [InlineData("<![CDATA[\n]]>")]
+    [InlineData("<?\n?>")]
+    [InlineData("<!DOCTYPE\nhtml>")]
+    [InlineData("<script>\n</script>")]
+    [InlineData("<pre>\n</pre>")]
+    [InlineData("<style>\n</style>")]
+    [InlineData("<textarea>\n</textarea>")]
+    public void TestHtmlBlockClosedAtEndOfText(string markdown)
+    {
+        var document = MarkdownConverter.Parse(markdown);
+
+        Assert.Equal(new SourceSpan(0, markdown.Length - 1), document.Span);
+        Assert.Equal(new SourceSpan(0, markdown.Length - 1), document[0].Span);
+    }
+
+    [Fact]
     public void TestHtmlBlock()
     {
         //     012345 67 89ABCDE F 0
@@ -545,7 +583,7 @@ quote        ( 2, 4) 14-16
 paragraph    ( 2, 6) 16-16
 literal      ( 2, 6) 16-16
 quote        ( 4, 0) 19-27
-fencedcode   ( 4, 2) 21-24
+fencedcode   ( 4, 2) 21-25
 attributes   ( 0, 0)  0--1
 list         ( 6, 0) 29-40
 listitem     ( 6, 0) 29-40

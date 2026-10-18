@@ -287,7 +287,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
             fenced.FencedChar = matchChar;
             fenced.OpeningFencedCharCount = count;
             fenced.Span.Start = processor.Start;
-            fenced.Span.End = line.Start;
+            fenced.Span.End = line.End;
         }
 
         // Try to parse any attached attributes

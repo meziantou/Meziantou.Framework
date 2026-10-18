@@ -5,12 +5,20 @@
 #pragma warning disable CA1849 // Call async methods when in an async method
 #pragma warning disable MA0042 // Do not use blocking calls in an async method
 using System.Diagnostics;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.Versioning;
+
+// Generates the rules of src/Meziantou.Framework.Uri/PublicSuffix/PublicSuffixList.g.cs from the copy of the list shared
+// with Meziantou.Framework.WebPlatform (tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat),
+// so both libraries always embed the same version of the list. That file is downloaded by
+// 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- update publicsuffix'.
+//
+//   Generator            regenerate the rules and download the tests of the same commit of the list (exit code 1 when a file changed)
+//   Generator --check    fail if the generated rules are out of date (no network access)
+
+var check = args.Contains("--check", StringComparer.Ordinal);
 
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
@@ -19,17 +27,12 @@ var packagePath = root / "src" / "Meziantou.Framework.Uri";
 var outputPath = packagePath / "PublicSuffix";
 var generatedFilePath = outputPath / "PublicSuffixList.g.cs";
 var csprojPath = packagePath / "Meziantou.Framework.Uri.csproj";
+var listFilePath = root / "tests" / "Meziantou.Framework.WebPlatform.SpecData" / "publicsuffix" / "public_suffix_list.dat";
 var testDataFilePath = root / "tests" / "Meziantou.Framework.Uri.Tests" / "files" / "public_suffix_tests.txt";
 
-var (commitSha, commitDate) = await GetLastCommit();
-var listUrl = $"https://raw.githubusercontent.com/publicsuffix/list/{commitSha}/public_suffix_list.dat";
-var testsUrl = $"https://raw.githubusercontent.com/publicsuffix/list/{commitSha}/tests/tests.txt";
-
-Console.WriteLine("Downloading " + listUrl);
-var listContent = await SharedHttpClient.Instance.GetStringAsync(listUrl);
-Console.WriteLine("Downloading " + testsUrl);
-var testsContent = await SharedHttpClient.Instance.GetStringAsync(testsUrl);
-
+Console.WriteLine("Reading " + listFilePath.MakePathRelativeTo(root));
+var listContent = File.ReadAllText(listFilePath);
+var (version, commitSha) = ParseHeader(listContent);
 var (entries, ruleCount) = ParseList(listContent);
 if (entries.Count is 0)
     throw new InvalidOperationException("The public suffix list is empty");
@@ -72,15 +75,33 @@ var generated = $$"""
 
     static partial class PublicSuffixList
     {
-        // Public Suffix List source: {{listUrl}}
-        // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
+        // Public Suffix List source: https://publicsuffix.org/list/public_suffix_list.dat
+        // Version: {{version.ToString("O", CultureInfo.InvariantCulture)}}
+        // Commit: https://github.com/publicsuffix/list/commit/{{commitSha}}
         private const int EntryCount = {{entries.Count.ToString(CultureInfo.InvariantCulture)}};
         private const int RuleCountValue = {{ruleCount.ToString(CultureInfo.InvariantCulture)}};
-        private const long LastUpdatedTicks = {{commitDate.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture)}}L;
+        private const long LastUpdatedTicks = {{version.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture)}}L;
 
     {{body.ToString().TrimEnd('\n')}}
     }
     """.ReplaceLineEndings("\n");
+
+if (check)
+{
+    if (File.Exists(generatedFilePath) && File.ReadAllText(generatedFilePath).ReplaceLineEndings("\n") == generated)
+    {
+        Console.WriteLine("The public suffix list is up to date");
+        return 0;
+    }
+
+    Console.WriteLine($"{generatedFilePath.MakePathRelativeTo(root)} is not up to date: run 'dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator'");
+    return 1;
+}
+
+// The tests of the list are not part of the published file, so they are downloaded from the commit the file was published from
+var testsUrl = $"https://raw.githubusercontent.com/publicsuffix/list/{commitSha}/tests/tests.txt";
+Console.WriteLine("Downloading " + testsUrl);
+var testsContent = await SharedHttpClient.Instance.GetStringAsync(testsUrl);
 
 Directory.CreateDirectory(outputPath);
 Directory.CreateDirectory(testDataFilePath.Parent);
@@ -100,37 +121,33 @@ BumpPackageVersion(csprojPath);
 RunGitDiff(root);
 return 1;
 
-static async Task<(string Sha, DateTimeOffset Date)> GetLastCommit()
+// The published list starts with the version ("// VERSION: 2026-09-30_20-56-07_UTC") and the commit it was published from
+static (DateTimeOffset Version, string CommitSha) ParseHeader(string content)
 {
-    var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-    if (string.IsNullOrEmpty(token))
+    string? version = null;
+    string? commitSha = null;
+    foreach (var rawLine in content.ReplaceLineEndings("\n").Split('\n'))
     {
-        // gh auth token
-        var process = Process.Start(new ProcessStartInfo
+        var line = rawLine.Trim();
+        if (line.StartsWith("// VERSION: ", StringComparison.Ordinal))
         {
-            FileName = "gh",
-            Arguments = "auth token",
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-        });
-        process!.WaitForExit();
-        token = process.StandardOutput.ReadToEnd().Trim();
+            version = line["// VERSION: ".Length..];
+        }
+        else if (line.StartsWith("// COMMIT: ", StringComparison.Ordinal))
+        {
+            commitSha = line["// COMMIT: ".Length..];
+        }
+        else if (line.Contains("===BEGIN ICANN DOMAINS===", StringComparison.Ordinal))
+        {
+            break;
+        }
     }
 
-    using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/publicsuffix/list/commits?path=public_suffix_list.dat&per_page=1");
-    request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Meziantou.Framework.Uri.PublicSuffix.Generator", "1.0"));
-    if (!string.IsNullOrEmpty(token))
-    {
-        request.Headers.Add("Authorization", "Bearer " + token);
-    }
+    if (version is null || commitSha is null)
+        throw new InvalidOperationException("The public suffix list has no VERSION or COMMIT header");
 
-    using var response = await SharedHttpClient.Instance.SendAsync(request);
-    response.EnsureSuccessStatusCode();
-    using var commits = await response.Content.ReadFromJsonAsync<JsonDocument>();
-    var lastCommit = commits!.RootElement.EnumerateArray().First();
-    var sha = lastCommit.GetProperty("sha").GetString()!;
-    var date = lastCommit.GetProperty("commit").GetProperty("committer").GetProperty("date").GetDateTimeOffset();
-    return (sha, date);
+    var date = DateTimeOffset.ParseExact(version, "yyyy-MM-dd_HH-mm-ss'_UTC'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+    return (date, commitSha);
 }
 
 static (SortedDictionary<string, PublicSuffixRuleFlags> Entries, int RuleCount) ParseList(string content)

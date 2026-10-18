@@ -966,9 +966,9 @@
     "urls": {
       "public_suffix_list.dat": "https://publicsuffix.org/list/public_suffix_list.dat"
     },
-    "downloaded": "2026-10-02",
+    "downloaded": "2026-10-18",
     "files": {
-      "public_suffix_list.dat": "73c95828f5f62a3fce06d3fa9b2efd3f0a45a8c8dc2a65411545fab898a576f7"
+      "public_suffix_list.dat": "3e6ca639b7ef33f86ec0e6fe9a475857cf2585f28fdf485f38f14d5f00c1c2a4"
     }
   },
   "harfbuzz": {

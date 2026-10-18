@@ -1,7 +1,8 @@
 # Updates the specification data of Meziantou.Framework.WebPlatform (tests/Meziantou.Framework.WebPlatform.SpecData) and
 # the pinned external test suites, regenerates the code, and opens a pull request (see
 # src/Meziantou.Framework.WebPlatform/docs/updating-specs.md):
-# - specs: every source except the web-platform-tests (eng/webplatform/update-specs.sh --except wpt)
+# - specs: every source except the web-platform-tests and the public suffix list, which is updated by update-public-suffix-list.yml
+#   (eng/webplatform/update-specs.sh --except wpt publicsuffix)
 # - wpt: the web-platform-tests, with their expectations and their coverage (eng/webplatform/update-wpt.sh)
 on:
   workflow_dispatch:
@@ -29,10 +30,10 @@ jobs:
       matrix:
         include:
           - id: specs
-            script: ./eng/webplatform/update-specs.sh --except wpt
+            script: ./eng/webplatform/update-specs.sh --except wpt publicsuffix
             branch: update-webplatform-specs
             title: Update WebPlatform specification data and test suites
-            description: "Automated update of `tests/Meziantou.Framework.WebPlatform.SpecData` and of the pinned external test suites except WPT (`eng/webplatform/update-specs.sh --except wpt`)."
+            description: "Automated update of `tests/Meziantou.Framework.WebPlatform.SpecData` and of the pinned external test suites except WPT (`eng/webplatform/update-specs.sh --except wpt publicsuffix`)."
             failure: The tests of Meziantou.Framework.WebPlatform fail after the update
           - id: wpt
             script: ./eng/webplatform/update-wpt.sh

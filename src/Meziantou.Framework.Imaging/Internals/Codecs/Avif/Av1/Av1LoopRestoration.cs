@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -499,18 +501,10 @@ internal static class Av1LoopRestoration
         {
             var shift = pass is 0 && (i & 1) is not 0 ? 4 : 5;
             var bits = Av1Constants.SgrprojSgrBits + shift - Av1Constants.SgrprojRstBits;
-            var round = Vector128.Create(1 << (bits - 1));
             var samples = source.Slice(sourceOffset + (i * sourceStride), w);
             var outputRow = output.Slice(i * w, w);
-            var top = i * boxStride;
-            var middle = (i + 1) * boxStride;
-            var bottom = (i + 2) * boxStride;
-            for (var j = 0; j < vectorEnd; j += VectorWidth)
-            {
-                var input = Vector128.Create(samples.Slice(j, VectorWidth));
-                Neighborhood(a, b, pass, i, top + j, middle + j, bottom + j, Vector128.WidenLower(input).AsInt32(), round, bits).CopyTo(outputRow[j..]);
-                Neighborhood(a, b, pass, i, top + j + 4, middle + j + 4, bottom + j + 4, Vector128.WidenUpper(input).AsInt32(), round, bits).CopyTo(outputRow[(j + 4)..]);
-            }
+            var mode = pass is not 0 ? NeighborhoodMode.Full : (i & 1) is not 0 ? NeighborhoodMode.Middle : NeighborhoodMode.TopAndBottom;
+            FilterNeighborhoods(a.Slice(i * boxStride, 3 * boxStride), b.Slice(i * boxStride, 3 * boxStride), boxStride, samples[..vectorEnd], outputRow, mode, bits);
 
             for (var j = vectorEnd; j < w; j++)
             {
@@ -585,39 +579,64 @@ internal static class Av1LoopRestoration
         return Vector128.Max(quotient, Vector128<int>.One) - Vector128.Equals(z, Vector128.Create(255));
     }
 
-    // The filtered values of 4 samples of row i from their 3x3 neighborhoods: top, middle and bottom are the index of the
-    // column before the first sample in the rows i - 1, i and i + 1 of A and B
-    private static Vector128<int> Neighborhood(ReadOnlySpan<int> a, ReadOnlySpan<int> b, int pass, int i, int top, int middle, int bottom, Vector128<int> sample, Vector128<int> round, int bits)
+    // The filtered values of the samples of a row (a multiple of 8) from the weighted sums of their 3x3 neighborhoods in A and
+    // B, whose rows are the rows 0 (above the sample), 1 and 2 of a and b: the first pass weights the columns 5, 6, 5 of the
+    // middle row (odd rows) or of the rows above and below (even rows), the second pass weights the corners 3 and the others 4
+    private static void FilterNeighborhoods(ReadOnlySpan<int> a, ReadOnlySpan<int> b, int stride, ReadOnlySpan<ushort> samples, Span<int> output, NeighborhoodMode mode, int bits)
     {
-        Vector128<int> sumA;
-        Vector128<int> sumB;
-        if (pass is 0)
-        {
-            if ((i & 1) is not 0)
-            {
-                sumA = Weigh(a, middle, 5, 6);
-                sumB = Weigh(b, middle, 5, 6);
-            }
-            else
-            {
-                sumA = Weigh(a, top, 5, 6) + Weigh(a, bottom, 5, 6);
-                sumB = Weigh(b, top, 5, 6) + Weigh(b, bottom, 5, 6);
-            }
-        }
-        else
-        {
-            sumA = Weigh(a, top, 3, 4) + Weigh(a, middle, 4, 4) + Weigh(a, bottom, 3, 4);
-            sumB = Weigh(b, top, 3, 4) + Weigh(b, middle, 4, 4) + Weigh(b, bottom, 3, 4);
-        }
+        // Every load below reads the columns j to j + 5 of the 3 rows, and every store the samples j to j + 7
+        var count = samples.Length;
+        if (count % VectorWidth is not 0 || stride < count + 2 || a.Length < 3 * stride || b.Length < 3 * stride || output.Length < count)
+            throw new ArgumentOutOfRangeException(nameof(samples));
 
-        return ((sumA * sample) + sumB + round) >> bits;
+        ref var aRow = ref unsafe(MemoryMarshal.GetReference(a));
+        ref var bRow = ref unsafe(MemoryMarshal.GetReference(b));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(output));
+        var round = Vector128.Create(1 << (bits - 1));
+        for (var j = 0; j < count; j += VectorWidth)
+        {
+            var values = unsafe(Vector128.LoadUnsafe(ref input, (nuint)j));
+            for (var half = 0; half < VectorWidth; half += 4)
+            {
+                var index = (nuint)(j + half);
+                var sample = half is 0 ? Vector128.WidenLower(values).AsInt32() : Vector128.WidenUpper(values).AsInt32();
+                var sumA = WeighNeighborhood(ref aRow, index, (nuint)stride, mode);
+                var sumB = WeighNeighborhood(ref bRow, index, (nuint)stride, mode);
+                unsafe { (((sumA * sample) + sumB + round) >> bits).StoreUnsafe(ref destination, index); }
+            }
+        }
     }
 
-    // The weighted sum of 3 consecutive values of a row for 4 positions: the values index to index + 2 for the first one
-    private static Vector128<int> Weigh(ReadOnlySpan<int> values, int index, int sideWeight, int middleWeight)
+    // The weighted sum of the 3x3 neighborhoods of 4 samples, whose first neighbor is the column index of the row above
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> WeighNeighborhood(ref int values, nuint index, nuint stride, NeighborhoodMode mode)
     {
-        var sides = Vector128.Create(values.Slice(index, 4)) + Vector128.Create(values.Slice(index + 2, 4));
-        return (sides * sideWeight) + (Vector128.Create(values.Slice(index + 1, 4)) * middleWeight);
+        if (mode is NeighborhoodMode.Middle)
+        {
+            var left = unsafe(Vector128.LoadUnsafe(ref values, stride + index));
+            var center = unsafe(Vector128.LoadUnsafe(ref values, stride + index + 1));
+            var right = unsafe(Vector128.LoadUnsafe(ref values, stride + index + 2));
+            return ((left + right) * 5) + (center * 6);
+        }
+
+        // The rows above and below are weighted alike: their sums are weighted once
+        var outerLeft = unsafe(Vector128.LoadUnsafe(ref values, index) + Vector128.LoadUnsafe(ref values, (2 * stride) + index));
+        var outerCenter = unsafe(Vector128.LoadUnsafe(ref values, index + 1) + Vector128.LoadUnsafe(ref values, (2 * stride) + index + 1));
+        var outerRight = unsafe(Vector128.LoadUnsafe(ref values, index + 2) + Vector128.LoadUnsafe(ref values, (2 * stride) + index + 2));
+        if (mode is NeighborhoodMode.TopAndBottom)
+            return ((outerLeft + outerRight) * 5) + (outerCenter * 6);
+
+        var middle = unsafe(Vector128.LoadUnsafe(ref values, stride + index) + Vector128.LoadUnsafe(ref values, stride + index + 1) + Vector128.LoadUnsafe(ref values, stride + index + 2));
+        return ((outerLeft + outerRight) * 3) + ((outerCenter + middle) * 4);
+    }
+
+    // The rows of the neighborhood of a sample that have a weight in the box filter process
+    private enum NeighborhoodMode
+    {
+        Middle,
+        TopAndBottom,
+        Full,
     }
 
     // The weight of the neighbor (dy, dx) of the sample of row i in the box filter process (section 7.17.3)

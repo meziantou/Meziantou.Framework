@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'tools/Meziantou.Framework.Uri.PublicSuffix.Generator/**'
+      - 'tools/Meziantou.Framework.WebPlatform.SpecGen/PublicSuffixListGenerator.cs'
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -26,9 +27,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
+      # Meziantou.Framework.Uri and Meziantou.Framework.WebPlatform are both generated from
+      # tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat, so they always embed the same list.
+      # This workflow owns the updates of this file: update-webplatform-specs.yml excludes it.
       - run: |
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- update publicsuffix
+          if ($LASTEXITCODE -ne 0) { throw "The download of the public suffix list failed with exit code $LASTEXITCODE" }
+          dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw "The generation of the WebPlatform code failed with exit code $LASTEXITCODE" }
+
+          # Exit code 1 means that the list changed
           dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator
-          if ($LASTEXITCODE -ne 0) {
+          if ($LASTEXITCODE -gt 1) { throw "The generation of the Meziantou.Framework.Uri code failed with exit code $LASTEXITCODE" }
+          if ($LASTEXITCODE -eq 1) {
             $branch = "update-public-suffix-list"
             $title = "Update public suffix list"
             git config --global user.email "git@meziantou.net"

@@ -7,11 +7,12 @@ namespace Meziantou.Framework;
 
 static partial class PublicSuffixList
 {
-    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/52b71b3c4576ff77450cc7ebcfc7f34a916af3f9/public_suffix_list.dat
-    // Commit date: 2026-10-17T18:51:57.0000000+00:00
+    // Public Suffix List source: https://publicsuffix.org/list/public_suffix_list.dat
+    // Version: 2026-10-17T18:52:06.0000000+00:00
+    // Commit: https://github.com/publicsuffix/list/commit/52b71b3c4576ff77450cc7ebcfc7f34a916af3f9
     private const int EntryCount = 10398;
     private const int RuleCountValue = 10398;
-    private const long LastUpdatedTicks = 639278599170000000L;
+    private const long LastUpdatedTicks = 639278599260000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {

@@ -51,6 +51,11 @@ Sources:
   breaking (see [layout.md](layout.md#line-breaking)). The break engines that use them (`SoutheastAsianWordBreaker`,
   `JapanesePhraseBreaker`) are manual ports of `dictbe.cpp` and `mlbe.cpp` of the same release: a new release needs their
   changes to be ported
+- `publicsuffix`: the [Public Suffix List](https://publicsuffix.org/list/) (`public_suffix_list.dat`, Mozilla Public
+  License 2.0), for the public suffixes and the registrable domains of the hosts (`Urls/PublicSuffixList.g.cs`). It is
+  also the source of the list of `Meziantou.Framework.Uri` (`tools/Meziantou.Framework.Uri.PublicSuffix.Generator`, whose
+  `--check` CI verifies), so both libraries embed the same version of the list. The `Update public suffix list` workflow
+  updates it weekly and regenerates both libraries; `update-specs.sh` also runs the generator of `Meziantou.Framework.Uri`
 - `fonts`: fallback fonts of the WPT runner for the scripts that have no font in the web-platform-tests (Noto fonts
   of [google/fonts](https://github.com/google/fonts), SIL Open Font License 1.1; see
   [Fonts](web-platform-tests.md#fonts)). They are test data: pinned and fetched like a test suite (`tests/Meziantou.Framework.WebPlatform.External/fonts`),
@@ -108,6 +113,7 @@ Sources:
 ./eng/webplatform/update-specs.sh                 # everything
 ./eng/webplatform/update-specs.sh encoding        # a single source
 ./eng/webplatform/update-specs.sh --except wpt    # everything but WPT
+./eng/webplatform/update-specs.sh publicsuffix     # the public suffix list (also regenerates Meziantou.Framework.Uri)
 ./eng/webplatform/update-wpt.sh                   # WPT only, with its expectations and coverage
 ```
 
@@ -126,7 +132,7 @@ does not change. The reftests of a fetched directory are run by `WptReftests` (s
 [web-platform-tests.md](web-platform-tests.md#reftests)).
 
 The `Update specifications` workflow runs weekly and opens two pull requests: `automation/update-specs`
-(`eng/webplatform/update-specs.sh --except wpt`) and `automation/update-wpt` (`eng/webplatform/update-wpt.sh`). It needs the workflow to be
+(`eng/webplatform/update-specs.sh --except wpt publicsuffix`) and `automation/update-wpt` (`eng/webplatform/update-wpt.sh`). It needs the workflow to be
 enabled, and "Allow GitHub Actions to create and approve pull requests" in the settings of the repository. The pull
 requests created with `GITHUB_TOKEN` do not trigger the CI workflow: set the `SPEC_UPDATE_TOKEN` secret (a fine-grained
 token with the contents and pull requests write permissions) to run it.

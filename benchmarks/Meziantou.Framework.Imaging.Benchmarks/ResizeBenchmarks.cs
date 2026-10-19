@@ -73,6 +73,10 @@ public class ResizeBenchmarks
     public int CatmullRomUpscale() => Resize(_rgba32, ResamplingFilter.Bicubic, 2880, 1620);
 
     [Benchmark]
+    [Workload("1920x1080 -> 2880x1620 Rgba32 nearest neighbor (upscale)")]
+    public int NearestUpscale() => Resize(_rgba32, ResamplingFilter.NearestNeighbor, 2880, 1620);
+
+    [Benchmark]
     [Workload("1920x1080 -> 640x360 Rgba64 Catmull-Rom")]
     public int CatmullRom16() => Resize(_rgba64, ResamplingFilter.Bicubic, 640, 360);
 

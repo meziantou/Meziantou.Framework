@@ -384,6 +384,27 @@ public sealed class ResizeTests
         Assert.Equal([new Rgba64(0x1234, 0x5678, 0x9ABC, 0x0001), new Rgba64(0x1234, 0x5678, 0x9ABC, 0x0001), default, default], CopyRow(image.Frames[0], 0));
     }
 
+    [Fact]
+    public void NearestNeighborRepeatsSourceRowsWhenUpscalingVertically()
+    {
+        // Output rows that select the same source row are copied from the previous output row (zero alpha already cleared)
+        using var image = new Image<Rgba32>(2, 2);
+        image.Frames[0][0, 0] = new Rgba32(1, 2, 3, 4);
+        image.Frames[0][1, 0] = new Rgba32(5, 6, 7, 0);
+        image.Frames[0][0, 1] = new Rgba32(8, 9, 10, 255);
+        image.Frames[0][1, 1] = new Rgba32(11, 12, 13, 14);
+        image.Resize(new ResizeOptions(3, 5) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.NearestNeighbor }, Ct);
+
+        // Source rows 0, 0, 1, 1, 1 and columns 0, 1, 1 (a center on a boundary selects the higher index)
+        Rgba32[] first = [new(1, 2, 3, 4), default, default];
+        Rgba32[] second = [new(8, 9, 10, 255), new(11, 12, 13, 14), new(11, 12, 13, 14)];
+        Assert.Equal(first, CopyRow(image.Frames[0], 0));
+        Assert.Equal(first, CopyRow(image.Frames[0], 1));
+        Assert.Equal(second, CopyRow(image.Frames[0], 2));
+        Assert.Equal(second, CopyRow(image.Frames[0], 3));
+        Assert.Equal(second, CopyRow(image.Frames[0], 4));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // 16-bit precision (never through Rgba32)
     // -----------------------------------------------------------------------------------------------------------------

@@ -133,8 +133,15 @@ internal static class Resampler
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            var input = GetRow<TPixel>(source, ys[dy]);
             var output = GetRow<TPixel>(destination, dy);
+            if (dy > start && ys[dy] == ys[dy - 1])
+            {
+                // Upscaling repeats source rows: the previous output row is this one already (alpha zeroing included)
+                GetRow<TPixel>(destination, dy - 1).CopyTo(output);
+                continue;
+            }
+
+            var input = GetRow<TPixel>(source, ys[dy]);
             for (var dx = 0; dx < xs.Length; dx++)
             {
                 output[dx] = input[xs[dx]];

@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -210,14 +212,55 @@ internal abstract class WebDecoder
         return new Rune(codePoint).EncodeToUtf16(output);
     }
 
+    /// <summary>
+    /// Optional fast path of <see cref="DecodeToString"/>, called when the decoder is in its initial state: decodes the whole
+    /// input as the handler would, or returns false.
+    /// </summary>
+    protected virtual bool TryDecodeToStringFast(ReadOnlySpan<byte> input, [NotNullWhen(true)] out string? result)
+    {
+        result = null;
+        return false;
+    }
+
     /// <summary>Decodes a complete byte sequence.</summary>
     public string DecodeToString(ReadOnlySpan<byte> input)
     {
-        var builder = new StringBuilder(input.Length);
-        if (!DecodeTo(input, builder, flush: true))
-            throw new DecoderFallbackException("The input is not valid for the encoding");
+        if (!_finished && _restoredCount == 0 && TryDecodeToStringFast(input, out var result))
+        {
+            _finished = true;
+            return result;
+        }
 
-        return builder.ToString();
+        // Most encodings produce at most one UTF-16 code unit per byte: decode once into a buffer of this size, which grows
+        // for the others
+        var buffer = ArrayPool<char>.Shared.Rent(input.Length + MinimumOutputLength);
+        try
+        {
+            var length = 0;
+            while (true)
+            {
+                var status = Decode(input, buffer.AsSpan(length), flush: true, out var consumed, out var written);
+                length += written;
+                input = input[consumed..];
+                switch (status)
+                {
+                    case DecodeStatus.OutputFull:
+                        var larger = ArrayPool<char>.Shared.Rent(buffer.Length * 2);
+                        buffer.AsSpan(0, length).CopyTo(larger);
+                        ArrayPool<char>.Shared.Return(buffer);
+                        buffer = larger;
+                        continue;
+                    case DecodeStatus.Error:
+                        throw new DecoderFallbackException("The input is not valid for the encoding");
+                    default:
+                        return new string(buffer, 0, length);
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+        }
     }
 
     /// <summary>Decodes bytes and appends the result to <paramref name="builder"/>. Returns false on error in fatal mode.</summary>

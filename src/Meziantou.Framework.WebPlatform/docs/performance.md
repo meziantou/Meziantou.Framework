@@ -1,11 +1,9 @@
 # Performance
 
-`benchmarks/Meziantou.Framework.WebPlatform.Benchmarks` compares the library with [AngleSharp](https://anglesharp.github.io/)
-(and [HtmlAgilityPack](https://html-agility-pack.net/) for parsing) with [BenchmarkDotNet](https://benchmarkdotnet.org/).
+`benchmarks/Meziantou.Framework.WebPlatform.Benchmarks` measures the library with [BenchmarkDotNet](https://benchmarkdotnet.org/).
 The documents are a small page, the [HTML article of Wikipedia](https://en.wikipedia.org/wiki/HTML) and the [HTML
 Standard](https://html.spec.whatwg.org/) (13 MB, 724,000 nodes), and the style sheets of the Wikipedia article (230 KB)
-and of [Bootstrap](https://getbootstrap.com/) 5.3 (280 KB), downloaded once in `artifacts/benchmark-data`. The CSS
-benchmarks use [AngleSharp.Css](https://github.com/AngleSharp/AngleSharp.Css).
+and of [Bootstrap](https://getbootstrap.com/) 5.3 (280 KB), downloaded once in `artifacts/benchmark-data`.
 
 ```bash
 dotnet run --project benchmarks/Meziantou.Framework.WebPlatform.Benchmarks -c Release --framework net10.0 -- --filter '*'
@@ -14,8 +12,9 @@ dotnet run --project benchmarks/Meziantou.Framework.WebPlatform.Benchmarks -c Re
 
 ## Results
 
-.NET 10, Apple M-series, `ShortRun` job (2026-10-04). The ratio is the time of AngleSharp divided by the time of the
-library.
+.NET 10, Apple M-series, `ShortRun` job (2026-10-04). The AngleSharp columns were measured with AngleSharp 1.8.3 and
+AngleSharp.Css 1.1.2, when the benchmarks still compared the library with it; the ratio is the time of AngleSharp divided
+by the time of the library.
 
 | Benchmark | Library | AngleSharp | Ratio | Allocated (library / AngleSharp) |
 |---|---:|---:|---:|---:|
@@ -40,8 +39,7 @@ library.
 The computed style benchmarks (`StyleBenchmarks`) load a new document in each iteration (not measured), with the style
 sheets in a `style` element, then read `display`, `color`, `font-size` and `margin-top` of the computed style of each
 element. AngleSharp.Css 1.1.2 has no cache (each call cascades all the rules for the element and its ancestors), and it
-throws a `NullReferenceException` for 123 elements of the Wikipedia article (some `box-shadow` values), which the benchmark
-ignores.
+threw a `NullReferenceException` for 123 elements of the Wikipedia article (some `box-shadow` values), which were ignored.
 
 The layout benchmark (`LayoutBenchmarks`) loads the Wikipedia article with its style sheets and computes the styles of its
 elements in each iteration (not measured), then measures its first layout (the box tree, the text shaping with the
@@ -49,7 +47,7 @@ OpenType lookups of the fonts, the line breaking): about 280 ms and 200 MB alloc
 (`TextMeasurementBenchmarks`) are described in [layout.md](layout.md#text-shaping).
 
 Memory of the parsed documents (`memory`): the bytes retained by a document and the bytes allocated by the parser,
-per node (elements, text, comments, doctype):
+per node (elements, text, comments, doctype), with the AngleSharp values measured on the same date:
 
 | Document | Nodes | Retained bytes/node (library / AngleSharp) | Allocated bytes/node (library / AngleSharp) |
 |---|---:|---:|---:|

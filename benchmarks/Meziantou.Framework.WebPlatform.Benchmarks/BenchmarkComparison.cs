@@ -55,7 +55,7 @@ internal static class BenchmarkComparison
 
     private static string FormatRatio(double ratio) => double.IsInfinity(ratio) ? "new" : (ratio - 1).ToString("+0.0%;-0.0%;0.0%", CultureInfo.InvariantCulture);
 
-    /// <summary>Loads the results of the benchmarks of the library (the AngleSharp and HtmlAgilityPack benchmarks are ignored).</summary>
+    /// <summary>Loads the results of the benchmarks.</summary>
     private static Dictionary<string, (double Median, long Allocated)> Load(string directory)
     {
         var results = new Dictionary<string, (double, long)>(StringComparer.Ordinal);
@@ -64,10 +64,7 @@ internal static class BenchmarkComparison
             using var document = JsonDocument.Parse(File.ReadAllText(file));
             foreach (var benchmark in document.RootElement.GetProperty("Benchmarks").EnumerateArray())
             {
-                var method = benchmark.GetProperty("Method").GetString()!;
-                if (method.StartsWith("AngleSharp", StringComparison.Ordinal) || method.StartsWith("HtmlAgilityPack", StringComparison.Ordinal))
-                    continue;
-
+                var method = benchmark.GetProperty("Method").GetString();
                 var name = benchmark.GetProperty("Type").GetString() + "." + method + benchmark.GetProperty("Parameters").GetString() switch
                 {
                     { Length: > 0 } parameters => "(" + parameters + ")",

@@ -3,7 +3,6 @@ using System.Text;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
-using BrowsingContext = Meziantou.Framework.WebPlatform.Dom.BrowsingContext;
 
 namespace Meziantou.Framework.WebPlatform.Benchmarks;
 

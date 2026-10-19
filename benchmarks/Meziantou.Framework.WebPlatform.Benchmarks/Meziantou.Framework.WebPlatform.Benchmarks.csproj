@@ -7,10 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-    <!-- The other parsers the benchmarks compare with -->
-    <PackageReference Include="AngleSharp" Version="1.8.3" />
-    <PackageReference Include="AngleSharp.Css" Version="1.1.2" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />

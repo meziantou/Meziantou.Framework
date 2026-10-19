@@ -15,14 +15,11 @@ public class CssParseBenchmarks
     [GlobalSetup]
     public void Setup() => _css = BenchmarkData.Get(StyleSheet);
 
-    [Benchmark(Baseline = true)]
+    [Benchmark]
     public object Meziantou()
     {
         var sheet = new CssStyleSheet();
         sheet.ReplaceSync(_css);
         return sheet;
     }
-
-    [Benchmark]
-    public object AngleSharp() => new global::AngleSharp.Css.Parser.CssParser().ParseStyleSheet(_css);
 }

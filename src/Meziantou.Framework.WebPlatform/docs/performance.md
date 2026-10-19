@@ -1,11 +1,9 @@
 # Performance
 
-`benchmarks/Meziantou.Framework.WebPlatform.Benchmarks` compares the library with [AngleSharp](https://anglesharp.github.io/)
-(and [HtmlAgilityPack](https://html-agility-pack.net/) for parsing) with [BenchmarkDotNet](https://benchmarkdotnet.org/).
+`benchmarks/Meziantou.Framework.WebPlatform.Benchmarks` measures the library with [BenchmarkDotNet](https://benchmarkdotnet.org/).
 The documents are a small page, the [HTML article of Wikipedia](https://en.wikipedia.org/wiki/HTML) and the [HTML
 Standard](https://html.spec.whatwg.org/) (13 MB, 724,000 nodes), and the style sheets of the Wikipedia article (230 KB)
-and of [Bootstrap](https://getbootstrap.com/) 5.3 (280 KB), downloaded once in `artifacts/benchmark-data`. The CSS
-benchmarks use [AngleSharp.Css](https://github.com/AngleSharp/AngleSharp.Css).
+and of [Bootstrap](https://getbootstrap.com/) 5.3 (280 KB), downloaded once in `artifacts/benchmark-data`.
 
 ```bash
 dotnet run --project benchmarks/Meziantou.Framework.WebPlatform.Benchmarks -c Release --framework net10.0 -- --filter '*'
@@ -14,34 +12,31 @@ dotnet run --project benchmarks/Meziantou.Framework.WebPlatform.Benchmarks -c Re
 
 ## Results
 
-.NET 10, Apple M-series, `ShortRun` job (2026-10-04). The ratio is the time of AngleSharp divided by the time of the
-library.
+.NET 10, Apple M-series, `ShortRun` job (2026-10-04).
 
-| Benchmark | Library | AngleSharp | Ratio | Allocated (library / AngleSharp) |
-|---|---:|---:|---:|---:|
-| Parse small page | 8.4 µs | 19.7 µs | 2.3× | 18 KB / 52 KB |
-| Parse Wikipedia | 4.7 ms | 8.8 ms | 1.9× | 4.9 MB / 9.4 MB |
-| Parse HTML Standard | 221 ms | 488 ms | 2.2× | 144 MB / 263 MB |
-| `QuerySelectorAll("a")` | 64 µs | 120 µs | 1.9× | 64 KB / 65 KB |
-| `QuerySelectorAll("#content")` | 48 ns | 114 µs | 2,400× | 176 B / 352 B |
-| `QuerySelectorAll("div.mw-parser-output p a[href^='/wiki/']")` | 87 µs | 128 µs | 1.5× | 32 B / 296 B |
-| `QuerySelectorAll("li:nth-child(2n+1) > a")` | 101 µs | 200 µs | 2.0× | 16 KB / 16 KB |
-| `QuerySelectorAll("div:has(> table)")` | 62 µs | 2.7 ms | 44× | 176 B / 100 KB |
-| `OuterHtml` Wikipedia | 1.5 ms | 3.1 ms | 2.0× | 3.5 MB / 7.6 MB |
-| `OuterHtml` HTML Standard | 47 ms | 179 ms | 3.8× | 61 MB / 148 MB |
-| `TextContent` Wikipedia | 186 µs | 250 µs | 1.3× | 453 KB / 453 KB |
-| `TextContent` HTML Standard | 8.1 ms | 11.8 ms | 1.5× | 18 MB / 18 MB |
-| Build and update a tree with the DOM API | 178 µs | 562 µs | 3.2× | 663 KB / 1,023 KB |
-| Parse the Wikipedia style sheets | 6.0 ms | 7.0 ms | 1.2× | 10.1 MB / 9.6 MB |
-| Parse Bootstrap | 10.2 ms | 10.3 ms | 1.0× | 13.3 MB / 15.7 MB |
-| Computed style of all the elements of Wikipedia (7,864) | 106 ms | 17.1 s | 160× | 50 MB / 24.9 GB |
-| Computed style of all the elements of the small page with Bootstrap | 7.5 ms | 44 ms | 5.9× | 15 MB / 50 MB |
+| Benchmark | Time | Allocated |
+|---|---:|---:|
+| Parse small page | 8.4 µs | 18 KB |
+| Parse Wikipedia | 4.7 ms | 4.9 MB |
+| Parse HTML Standard | 221 ms | 144 MB |
+| `QuerySelectorAll("a")` | 64 µs | 64 KB |
+| `QuerySelectorAll("#content")` | 48 ns | 176 B |
+| `QuerySelectorAll("div.mw-parser-output p a[href^='/wiki/']")` | 87 µs | 32 B |
+| `QuerySelectorAll("li:nth-child(2n+1) > a")` | 101 µs | 16 KB |
+| `QuerySelectorAll("div:has(> table)")` | 62 µs | 176 B |
+| `OuterHtml` Wikipedia | 1.5 ms | 3.5 MB |
+| `OuterHtml` HTML Standard | 47 ms | 61 MB |
+| `TextContent` Wikipedia | 186 µs | 453 KB |
+| `TextContent` HTML Standard | 8.1 ms | 18 MB |
+| Build and update a tree with the DOM API | 178 µs | 663 KB |
+| Parse the Wikipedia style sheets | 6.0 ms | 10.1 MB |
+| Parse Bootstrap | 10.2 ms | 13.3 MB |
+| Computed style of all the elements of Wikipedia (7,864) | 106 ms | 50 MB |
+| Computed style of all the elements of the small page with Bootstrap | 7.5 ms | 15 MB |
 
 The computed style benchmarks (`StyleBenchmarks`) load a new document in each iteration (not measured), with the style
 sheets in a `style` element, then read `display`, `color`, `font-size` and `margin-top` of the computed style of each
-element. AngleSharp.Css 1.1.2 has no cache (each call cascades all the rules for the element and its ancestors), and it
-throws a `NullReferenceException` for 123 elements of the Wikipedia article (some `box-shadow` values), which the benchmark
-ignores.
+element.
 
 The layout benchmark (`LayoutBenchmarks`) loads the Wikipedia article with its style sheets and computes the styles of its
 elements in each iteration (not measured), then measures its first layout (the box tree, the text shaping with the
@@ -51,11 +46,11 @@ OpenType lookups of the fonts, the line breaking): about 280 ms and 200 MB alloc
 Memory of the parsed documents (`memory`): the bytes retained by a document and the bytes allocated by the parser,
 per node (elements, text, comments, doctype):
 
-| Document | Nodes | Retained bytes/node (library / AngleSharp) | Allocated bytes/node (library / AngleSharp) |
+| Document | Nodes | Retained bytes/node | Allocated bytes/node |
 |---|---:|---:|---:|
-| Small page | 65 | 364 / 1,536 | 297 / 1,269 |
-| Wikipedia | 15,468 | 558 / 1,045 | 333 / 760 |
-| HTML Standard | 724,173 | 251 / 435 | 208 / 386 |
+| Small page | 65 | 364 | 297 |
+| Wikipedia | 15,468 | 558 | 333 |
+| HTML Standard | 724,173 | 251 | 208 |
 
 ## Invalidation
 

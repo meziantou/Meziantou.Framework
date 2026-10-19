@@ -13,17 +13,6 @@ public class ParseBenchmarks
     [GlobalSetup]
     public void Setup() => _html = BenchmarkData.Get(Document);
 
-    [Benchmark(Baseline = true)]
+    [Benchmark]
     public object Meziantou() => HtmlDocumentParser.ParseDocument(_html);
-
-    [Benchmark]
-    public object AngleSharp() => new global::AngleSharp.Html.Parser.HtmlParser().ParseDocument(_html);
-
-    [Benchmark]
-    public object HtmlAgilityPack()
-    {
-        var document = new global::HtmlAgilityPack.HtmlDocument();
-        document.LoadHtml(_html);
-        return document;
-    }
 }

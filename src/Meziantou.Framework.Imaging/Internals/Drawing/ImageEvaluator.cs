@@ -511,38 +511,96 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return true;
         }
 
-        // The pixels of the run in the region are read at once; the others one by one, by the wrap mode
+        // The pixels of the run in the region are read at once; the others by the wrap mode, on each side
         var frameRow = _top + regionRow;
         var start = (int)Math.Clamp(_left - first, 0, count);
         var end = (int)Math.Clamp(_left + _regionWidth - first, start, count);
-        for (var i = 0; i < start; i++)
-        {
-            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
-        }
-
+        ReadOutside(frameRow, first, colors[..(start * 4)]);
         if (end > start)
         {
             ReadColors(frameRow, (int)(first + start), colors[(start * 4)..(end * 4)]);
         }
 
-        for (var i = end; i < count; i++)
-        {
-            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
-        }
-
+        ReadOutside(frameRow, first + end, colors[(end * 4)..]);
         return true;
     }
 
-    /// <summary>Reads a pixel of a row of the frame outside the region, by the wrap mode along x.</summary>
-    private void ReadShifted(int frameRow, int column, Span<ushort> color)
+    /// <summary>
+    /// Reads pixels of a row of the frame that are all on the same side of the region, by the wrap mode along x: they
+    /// repeat with a period (one pixel for the nearest pixel of the region, its width or twice its width when it is
+    /// repeated or mirrored), so the pixels of one period are read, run by run of the region, and copied over the others.
+    /// </summary>
+    /// <param name="frameRow">The row of the frame.</param>
+    /// <param name="first">The column of the first pixel, in the coordinates of the frame.</param>
+    /// <param name="colors">The colors of the pixels.</param>
+    private void ReadOutside(int frameRow, long first, Span<ushort> colors)
     {
-        if (TryWrap(column, _left, _regionWidth, _wrapModeX, out var regionColumn))
+        var count = colors.Length / 4;
+        if (count == 0)
+            return;
+
+        if (_wrapModeX is not (ImageWrapMode.Pad or ImageWrapMode.Repeat or ImageWrapMode.Reflect))
         {
-            ReadColors(frameRow, _left + regionColumn, color);
+            colors.Clear();
+            return;
         }
-        else
+
+        var period = _wrapModeX switch
         {
-            color.Clear();
+            ImageWrapMode.Pad => 1,
+            ImageWrapMode.Repeat => _regionWidth,
+            _ => 2L * _regionWidth,
+        };
+        var read = (int)Math.Min(count, period);
+        for (var i = 0; i < read;)
+        {
+            // The run of the region the pixel i starts, forward or mirrored: the column of TryWrap for every pixel of it
+            var offset = (first + i - _left) % period;
+            if (offset < 0)
+            {
+                offset += period;
+            }
+
+            int column;
+            int length;
+            var isMirrored = false;
+            if (_wrapModeX == ImageWrapMode.Pad)
+            {
+                column = first < _left ? 0 : _regionWidth - 1;
+                length = 1;
+            }
+            else if (offset < _regionWidth)
+            {
+                column = (int)offset;
+                length = Math.Min(read - i, _regionWidth - column);
+            }
+            else
+            {
+                // Mirrored: the columns go down from 2 w - 1 - offset
+                var last = (int)(period - 1 - offset);
+                length = Math.Min(read - i, last + 1);
+                column = last - length + 1;
+                isMirrored = true;
+            }
+
+            var run = colors.Slice(i * 4, length * 4);
+            ReadColors(frameRow, _left + column, run);
+            if (isMirrored)
+            {
+                var pixels = unsafe(MemoryMarshal.Cast<ushort, ulong>(run));
+                pixels.Reverse();
+            }
+
+            i += length;
+        }
+
+        // The pixel i is the pixel i - k period: the pixels already written are copied, as many as are a whole number of periods
+        for (var i = read; i < count;)
+        {
+            var copied = (int)(i / period * period);
+            var length = Math.Min(count - i, copied);
+            colors.Slice((i - copied) * 4, length * 4).CopyTo(colors[(i * 4)..]);
+            i += length;
         }
     }
 

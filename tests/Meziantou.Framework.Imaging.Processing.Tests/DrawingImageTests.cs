@@ -126,6 +126,62 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void ANarrowImageMovedByWholePixelsWrapsOverLongRuns()
+    {
+        // The pixels outside the region repeat with a period: a run much longer than the region, on both sides of it,
+        // gets the pixel of the region each center comes from
+        var random = new Random(20261019);
+        foreach (var wrapMode in Enum.GetValues<ImageWrapMode>())
+        {
+            foreach (var width in (int[])[1, 2, 3, 5, 8])
+            {
+                foreach (var shiftX in (int[])[-150, -37, -2, 0, 5, 150])
+                {
+                    using var source = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, width + 2, 3, random.Next);
+                    var region = new Rectangle(1, 1, width, 2);
+                    var brush = new ImageBrush(source.Frames[0]) { SourceRegion = region, Transform = AffineTransform.CreateTranslation(shiftX, -3), WrapMode = wrapMode, CompositeMode = CompositeMode.Source };
+                    using var image = new Image<Rgba64>(200, 3);
+                    image.Draw(canvas => canvas.Fill(brush), Ct);
+                    for (var y = 0; y < 3; y++)
+                    {
+                        for (var x = 0; x < 200; x++)
+                        {
+                            var column = Wrap(x - shiftX - region.X, region.Width, wrapMode);
+                            var row = Wrap(y + 3 - region.Y, region.Height, wrapMode);
+                            var expected = column is { } c && row is { } r ? ((Image<Rgba64>)source).Frames[0][region.X + c, region.Y + r] : default;
+                            // A transparent pixel has no color
+                            var actual = image.Frames[0][x, y];
+                            Assert.True(expected.A == 0 ? actual.A == 0 : expected == actual, $"{wrapMode}, width {width}, shift {shiftX}: pixel ({x}, {y}) is {actual}, not {expected}");
+                        }
+                    }
+                }
+            }
+        }
+
+        static int? Wrap(int offset, int size, ImageWrapMode wrapMode)
+        {
+            if (offset >= 0 && offset < size)
+                return offset;
+
+            switch (wrapMode)
+            {
+                case ImageWrapMode.Pad:
+                    return Math.Clamp(offset, 0, size - 1);
+
+                case ImageWrapMode.Repeat:
+                    return ((offset % size) + size) % size;
+
+                case ImageWrapMode.Reflect:
+                    var folded = ((offset % (2 * size)) + (2 * size)) % (2 * size);
+                    return folded < size ? folded : (2 * size) - 1 - folded;
+
+                default:
+                    return null;
+            }
+        }
+    }
+
+    [Fact]
     public void AnImageIsCompositedOverThePixelsInEveryPairOfPixelFormats()
     {
         // The colors of the source become 16-bit colors by the rules of pixel conversion (v * 257 from 8 bits, a gray

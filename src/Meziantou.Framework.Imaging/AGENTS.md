@@ -862,6 +862,9 @@ thin public types over its `FontFace`.
 - A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
   x64 (the Windows and Linux CI legs, or an x64 machine).
+- `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
+  default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
+  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC

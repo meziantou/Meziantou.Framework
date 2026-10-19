@@ -346,13 +346,19 @@ internal sealed partial class DrawingSession
         if (bounds.IsEmpty)
             return;
 
-        var processor = GetFilterProcessor(bounds.Width);
+        var filter = level.Filter!;
         var (scaleX, scaleY) = level.FilterScale;
+        var drawn = level.DirtyRight > level.DirtyLeft ? Rectangle.FromLTRB(level.DirtyLeft, level.DirtyTop, level.DirtyRight, level.DirtyBottom) : Rectangle.Empty;
+        bounds = GetLocalFilterArea(filter, scaleX, scaleY, bounds, drawn);
+        if (bounds.IsEmpty)
+            return;
+
+        var processor = GetFilterProcessor(bounds.Width);
         var m11 = _hasTransform ? _transform.M11 : 1;
         var m22 = _hasTransform ? _transform.M22 : 1;
         var (offsetX, offsetY) = GetTranslation();
         processor.Configure(_canvasBounds, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
-        level.Filter!.ApplyToLayer(processor, level.Frames![0], level.Storages![0], bounds, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
+        filter.ApplyToLayer(processor, level.Frames![0], level.Storages![0], bounds, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
 
         // A filter can give a color to pixels that were transparent (a flood, an image, an offset)
         level.MarkDirty(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
@@ -362,20 +368,62 @@ internal sealed partial class DrawingSession
     /// Applies the filter of a layer that holds pixels beyond the canvas to its image: the edge modes apply at the edges
     /// of the canvas, and what is drawn beyond them is read where a filter reads what is transparent there.
     /// </summary>
-    private void ApplyFilterLayer(BoundedLayer bounded, LayerLevel level)
+    /// <returns>The pixels of the image that may not be transparent: those that were filtered.</returns>
+    private Rectangle ApplyFilterLayer(BoundedLayer bounded, LayerLevel level)
     {
         var frame = bounded.Image.Frames[0];
         var storage = frame.GetStorage();
         var area = new Rectangle(0, 0, bounded.Image.Width, bounded.Image.Height);
-        var processor = GetFilterProcessor(area.Width);
         var (scaleX, scaleY) = level.FilterScale;
+        var filtered = GetLocalFilterArea(level.Filter!, scaleX, scaleY, area, bounded.Session.GetDrawnBounds());
+        if (filtered.IsEmpty)
+            return filtered;
+
+        var processor = GetFilterProcessor(filtered.Width);
         var m11 = _hasTransform ? _transform.M11 : 1;
         var m22 = _hasTransform ? _transform.M22 : 1;
         var (offsetX, offsetY) = GetTranslation();
         var canvas = new Rectangle(_canvasBounds.X - bounded.Left, _canvasBounds.Y - bounded.Top, _canvasBounds.Width, _canvasBounds.Height);
         processor.Configure(canvas, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX - bounded.Left, offsetY - bounded.Top, _cancellationToken);
         processor.Extent = area;
-        level.Filter!.ApplyToLayer(processor, frame, storage, area, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
+        level.Filter!.ApplyToLayer(processor, frame, storage, filtered, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
+        return filtered;
+    }
+
+    /// <summary>
+    /// Gets the pixels of a layer a filter changes: when the filter leaves transparent the pixels beyond its reach from
+    /// those that may not be transparent (<see cref="Filter.GetLocalSteps"/>), those within twice that reach, and
+    /// otherwise every pixel of the layer.
+    /// </summary>
+    /// <param name="filter">The filter.</param>
+    /// <param name="scaleX">The factor of the lengths of the filter along x.</param>
+    /// <param name="scaleY">The factor of the lengths of the filter along y.</param>
+    /// <param name="bounds">The pixels of the layer.</param>
+    /// <param name="drawn">The pixels of the layer that may not be transparent.</param>
+    /// <returns>The pixels to filter; empty when the filter leaves every pixel transparent.</returns>
+    /// <remarks>
+    /// The running sums of a blur leave values of a few units of the last place after what they sum (far below half a
+    /// step of a sample, so that they are written as transparent pixels), which a later sum reads: twice the reach (and
+    /// a pixel of interpolation per step) keeps every pixel within the reach the same as the filter of the whole layer
+    /// gives it, from the same values in the same order.
+    /// </remarks>
+    private static Rectangle GetLocalFilterArea(Filter filter, double scaleX, double scaleY, Rectangle bounds, Rectangle drawn)
+    {
+        var steps = filter.GetLocalSteps(isAfterReach: false);
+        if (steps < 0)
+            return bounds;
+
+        drawn = Rectangle.Intersect(drawn, bounds);
+        if (drawn.IsEmpty)
+            return Rectangle.Empty;
+
+        var (reachX, reachY) = filter.GetReach();
+        var margin = 2 * (Math.Ceiling(Math.Max(reachX * scaleX, reachY * scaleY)) + 1 + steps);
+        return Rectangle.FromLTRB(
+            (int)Math.Max(drawn.Left - margin, bounds.Left),
+            (int)Math.Max(drawn.Top - margin, bounds.Top),
+            (int)Math.Min(drawn.Right + margin, bounds.Right),
+            (int)Math.Min(drawn.Bottom + margin, bounds.Bottom));
     }
 
     /// <summary>Gets the processor of the filters and the row its pixels are read through.</summary>

@@ -1949,11 +1949,142 @@ public sealed class VectorizedKernelTests
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(color));
                 DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(color));
                 Assert.Equal(expected, actual);
+                if (Avx2.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx2(actual, coverage, new DrawingSource(color));
+                    Assert.Equal(expected, actual);
+                }
 
                 expected = (byte[])pixels.Clone();
                 actual = (byte[])pixels.Clone();
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(colors));
                 DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(colors));
+                Assert.Equal(expected, actual);
+                if (Avx2.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx2(actual, coverage, new DrawingSource(colors));
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingSourceOverOf16BitPixelsMatchesTheScalarReference()
+    {
+        // The products stay below 2^48, and the color below 2^49: a double holds them exactly
+        var scale = 65535UL * CoverageRasterizer.FullCoverage;
+        Assert.True(65535 * scale < (1UL << 48));
+        Assert.True((65535 * scale) + (scale / 2) < (1UL << 49));
+
+        var random = new Random(20261019);
+        int[] lengths = [2, 3, 4, 5, 7, 8, 9, 16, 17, 33, 64, 101];
+        foreach (var channels in new[] { 4, 1 })
+        {
+            foreach (var length in lengths)
+            {
+                for (var round = 0; round < 96; round++)
+                {
+                    var pixels = new ushort[length * channels];
+                    var colors = new ushort[length * 4];
+                    var coverage = new uint[length];
+                    var opaqueShare = round % 4;
+                    for (var i = 0; i < length; i++)
+                    {
+                        for (var c = 0; c < channels; c++)
+                        {
+                            pixels[(i * channels) + c] = (ushort)random.Next(65536);
+                        }
+
+                        if (channels == 4)
+                        {
+                            // Runs of opaque pixels, translucent and transparent ones
+                            pixels[(i * 4) + 3] = opaqueShare == 0 || random.Next(4) < opaqueShare ? ushort.MaxValue : random.Next(3) == 0 ? (ushort)0 : (ushort)random.Next(65536);
+                        }
+
+                        for (var c = 0; c < 4; c++)
+                        {
+                            colors[(i * 4) + c] = (ushort)random.Next(65536);
+                        }
+
+                        colors[(i * 4) + 3] = random.Next(4) switch
+                        {
+                            0 => 0,
+                            1 => ushort.MaxValue,
+                            2 => 32768,
+                            _ => (ushort)random.Next(65536),
+                        };
+
+                        coverage[i] = random.Next(5) switch
+                        {
+                            0 => 0,
+                            1 => CoverageRasterizer.FullCoverage,
+                            2 => (uint)random.Next(1, 256),
+                            3 => random.Next(2) == 0 ? 32768u : 65535u,
+                            _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                        };
+
+                        if (round >= 48)
+                        {
+                            // A paint one step from the pixel with half of the full weight: x / S is a whole number
+                            var step = random.Next(2) == 0 ? -1 : 1;
+                            for (var c = 0; c < Math.Min(channels, 3); c++)
+                            {
+                                colors[(i * 4) + c] = (ushort)Math.Clamp(pixels[(i * channels) + c] + step, 0, 65535);
+                            }
+                        }
+                    }
+
+                    if (round % 8 == 7)
+                    {
+                        // Runs without coverage, as outside of a clip
+                        for (var i = random.Next(8); i < length; i += random.Next(1, 24))
+                        {
+                            var end = Math.Min(length, i + random.Next(1, 40));
+                            coverage.AsSpan(i..end).Clear();
+                            i = end;
+                        }
+                    }
+
+                    var paintAlpha = (round / 4 % 4) switch
+                    {
+                        0 => 65535,
+                        1 => 32768,
+                        2 => 0,
+                        _ => random.Next(65536),
+                    };
+                    var color = new DrawingColor(colors[0], colors[1], colors[2], (ushort)paintAlpha);
+
+                    var expected = (ushort[])pixels.Clone();
+                    var actual = (ushort[])pixels.Clone();
+                    DrawingKernels.CompositeOverScalar<ushort>(expected, channels, coverage, new DrawingSource(color));
+                    DrawingKernels.CompositeOver16(actual, channels, coverage, new DrawingSource(color));
+                    Assert.Equal(expected, actual);
+
+                    expected = (ushort[])pixels.Clone();
+                    actual = (ushort[])pixels.Clone();
+                    DrawingKernels.CompositeOverScalar<ushort>(expected, channels, coverage, new DrawingSource(colors));
+                    DrawingKernels.CompositeOver16(actual, channels, coverage, new DrawingSource(colors));
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+
+        // Every paint one step from the pixel, at the weights that make x / S whole, and their neighbors
+        foreach (var (paintAlpha, q) in new (ushort, uint)[] { (65535, 32768), (32768, 65535), (65535, 32767), (65535, 32769), (65535, 1), (1, 1), (65535, 65535) })
+        {
+            for (var value = 0; value < 65536; value += 7)
+            {
+                var pixel = (ushort)value;
+                var paint = (ushort)Math.Min(value + 1, 65535);
+                ushort[] expected = [pixel, pixel, pixel, ushort.MaxValue, pixel, pixel, pixel, ushort.MaxValue];
+                ushort[] actual = [.. expected];
+                var source = new DrawingSource(new DrawingColor(paint, (ushort)(pixel == 0 ? 0 : pixel - 1), pixel, paintAlpha));
+                DrawingKernels.CompositeOverScalar<ushort>(expected, 4, [q, q], source);
+                DrawingKernels.CompositeOver16(actual, 4, [q, q], source);
                 Assert.Equal(expected, actual);
             }
         }

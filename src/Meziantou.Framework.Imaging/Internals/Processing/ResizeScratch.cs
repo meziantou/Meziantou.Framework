@@ -19,7 +19,7 @@ internal sealed class ResizeScratch : IDisposable
         RowCount = rowCount;
     }
 
-    /// <summary>Gets the working copy of the used part of one source row, plus one element for 3-sample pixels.</summary>
+    /// <summary>Gets the working copy of the used part of one source row (and the zeros the padded windows read after it), plus one element for 3-sample pixels.</summary>
     public Span<double> SourceRow => unsafe(MemoryMarshal.Cast<byte, double>((_working ?? throw new ObjectDisposedException(nameof(ResizeScratch))).Span));
 
     /// <summary>Gets the accumulator row (gather) or the horizontally resampled row (scatter).</summary>

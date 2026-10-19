@@ -669,7 +669,7 @@ internal static class ProcessingKernels
 
     /// <summary>
     /// Replaces the colors of the leading pixels of a row with their luma, 4 pixels at a time
-    /// (<see cref="PixelConverter.Luma8Vector"/>, <see cref="PixelConverter.Luma16Vector"/>: the results of
+    /// (<see cref="PixelConverter.Luma8Vector(Vector128{byte}, bool)"/>, <see cref="PixelConverter.Luma16Vector"/>: the results of
     /// <see cref="PixelConverter.Luma(uint, uint, uint, uint)"/>); alpha is kept.
     /// </summary>
     /// <returns>The number of pixels processed.</returns>
@@ -681,6 +681,29 @@ internal static class ProcessingKernels
         var i = 0;
         if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
         {
+            // x64: the same operations on every lane of 256-bit and 512-bit vectors (8 and 16 pixels)
+            if (Vector512.IsHardwareAccelerated)
+            {
+                for (; i + 16 <= length; i += 16)
+                {
+                    var pixels = unsafe(Vector512.LoadUnsafe(ref start, (nuint)(4 * i)));
+                    var luma = PixelConverter.Luma8Vector(pixels, bgr: typeof(TPixel) == typeof(Bgra32)).AsUInt32();
+                    var result = (luma * 0x010101u) | (pixels.AsUInt32() & Vector512.Create(0xFF000000u));
+                    unsafe { result.AsByte().StoreUnsafe(ref start, (nuint)(4 * i)); }
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i + 8 <= length; i += 8)
+                {
+                    var pixels = unsafe(Vector256.LoadUnsafe(ref start, (nuint)(4 * i)));
+                    var luma = PixelConverter.Luma8Vector(pixels, bgr: typeof(TPixel) == typeof(Bgra32)).AsUInt32();
+                    var result = (luma * 0x010101u) | (pixels.AsUInt32() & Vector256.Create(0xFF000000u));
+                    unsafe { result.AsByte().StoreUnsafe(ref start, (nuint)(4 * i)); }
+                }
+            }
+
             for (; i + 4 <= length; i += 4)
             {
                 var pixels = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(4 * i)));
@@ -694,6 +717,25 @@ internal static class ProcessingKernels
             // 4 pixels of 3 bytes: 16 bytes are read, only the 12 bytes of the 4 pixels are written
             var expand = Vector128.Create((byte)0, 1, 2, 0xFF, 3, 4, 5, 0xFF, 6, 7, 8, 0xFF, 9, 10, 11, 0xFF);
             var pack = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 0xFF, 0xFF, 0xFF, 0xFF);
+            if (Avx2.IsSupported)
+            {
+                // x64: 8 pixels, 4 per 128-bit lane (each lane read from the 12 bytes of its pixels, 16 bytes at both
+                // positions); the 24 bytes of the result are moved together and written as 16 + 8 bytes
+                var expand256 = Vector256.Create(expand, expand);
+                var pack256 = Vector256.Create(pack, pack);
+                var groups = Vector256.Create(0, 1, 2, 4, 5, 6, 7, 7);
+                for (; i + 10 <= length; i += 8)
+                {
+                    var loaded = Vector256.Create(unsafe(Vector128.LoadUnsafe(ref start, (nuint)(3 * i))), unsafe(Vector128.LoadUnsafe(ref start, (nuint)((3 * i) + 12))));
+                    var pixels = Avx2.Shuffle(loaded, expand256);
+                    var luma = PixelConverter.Luma8Vector(pixels, bgr: false).AsUInt32();
+                    var result = Avx2.PermuteVar8x32(Avx2.Shuffle((luma * 0x010101u).AsByte(), pack256).AsInt32(), groups).AsByte();
+                    ref var output = ref unsafe(Unsafe.Add(ref start, 3 * i));
+                    unsafe { result.GetLower().StoreUnsafe(ref output); }
+                    unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), result.AsUInt64().GetElement(2)); }
+                }
+            }
+
             for (; i + 6 <= length; i += 4)
             {
                 var pixels = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref start, (nuint)(3 * i))), expand);

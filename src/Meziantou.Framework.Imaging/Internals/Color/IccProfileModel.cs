@@ -168,7 +168,7 @@ internal sealed class IccProfileModel
             // Three-component matrix-based profile (annex F.3): linearize each channel, then the colorants give CIEXYZ
             Span<double> matrix = stackalloc double[9];
             ReadColorantMatrix(matrix);
-            stages.Add(new IccCurvesStage([ReadCurve(IccReader.TagRedCurve), ReadCurve(IccReader.TagGreenCurve), ReadCurve(IccReader.TagBlueCurve)]));
+            stages.Add(new IccCurvesStage(ReadRgbCurves()));
             stages.Add(new IccMatrixStage(matrix));
             return;
         }
@@ -188,17 +188,7 @@ internal sealed class IccProfileModel
             return [ReadCurve(IccReader.TagGrayCurve)];
 
         if (ChannelCount == 3 && IccReader.TryGetTag(_data.Span, IccReader.TagRedCurve, out _) && IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out _) && IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out _))
-        {
-            var red = ReadCurve(IccReader.TagRedCurve);
-
-            // The three tags of most profiles are one curve: its tables are then computed once
-            IccReader.TryGetTag(_data.Span, IccReader.TagRedCurve, out var redTag);
-            IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out var greenTag);
-            IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out var blueTag);
-            var green = redTag.SequenceEqual(greenTag) ? red : ReadCurve(IccReader.TagGreenCurve);
-            var blue = redTag.SequenceEqual(blueTag) ? red : greenTag.SequenceEqual(blueTag) ? green : ReadCurve(IccReader.TagBlueCurve);
-            return [red, green, blue];
-        }
+            return ReadRgbCurves();
 
         throw Unsupported("has no tone curve for each of its channels (it describes its colors with lookup tables only), so its samples have no linear light to be combined in.", "Linear light of an ICC profile without tone curves");
     }
@@ -242,9 +232,11 @@ internal sealed class IccProfileModel
             if (!IccMatrixStage.TryInvert(matrix, inverse))
                 throw Unsupported("has colorants that do not span a color space, so it cannot be a destination.", "ICC profile with a singular colorant matrix");
 
-            var red = Invert(ReadCurve(IccReader.TagRedCurve), IccReader.TagRedCurve);
-            var green = Invert(ReadCurve(IccReader.TagGreenCurve), IccReader.TagGreenCurve);
-            var blue = Invert(ReadCurve(IccReader.TagBlueCurve), IccReader.TagBlueCurve);
+            // A curve read once is inverted once: the channels of the same curve share the inverse (and its tables)
+            var curves = ReadRgbCurves();
+            var red = Invert(curves[0], IccReader.TagRedCurve);
+            var green = ReferenceEquals(curves[1], curves[0]) ? red : Invert(curves[1], IccReader.TagGreenCurve);
+            var blue = ReferenceEquals(curves[2], curves[0]) ? red : ReferenceEquals(curves[2], curves[1]) ? green : Invert(curves[2], IccReader.TagBlueCurve);
             stages.Add(new IccMatrixStage(inverse));
             stages.Add(new IccInverseCurvesStage([red, green, blue]));
             return;
@@ -361,6 +353,21 @@ internal sealed class IccProfileModel
             throw Invalid($"the {IccReader.FormatSignature(signature)} tag is not an XYZType with one value.");
 
         return (IccReader.ReadS15Fixed16(tag[8..]), IccReader.ReadS15Fixed16(tag[12..]), IccReader.ReadS15Fixed16(tag[16..]));
+    }
+
+    /// <summary>
+    /// Reads the red, green and blue tone curves. The three tags of most profiles are one curve: a tag whose bytes are
+    /// those of a previous one gives the same instance, so that its tables are computed once.
+    /// </summary>
+    private IccCurve[] ReadRgbCurves()
+    {
+        var red = ReadCurve(IccReader.TagRedCurve);
+        IccReader.TryGetTag(_data.Span, IccReader.TagRedCurve, out var redTag);
+        var green = IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out var greenTag) && redTag.SequenceEqual(greenTag) ? red : ReadCurve(IccReader.TagGreenCurve);
+        var blue = IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out var blueTag) && redTag.SequenceEqual(blueTag) ? red
+            : greenTag.SequenceEqual(blueTag) ? green
+            : ReadCurve(IccReader.TagBlueCurve);
+        return [red, green, blue];
     }
 
     private IccCurve ReadCurve(uint signature)

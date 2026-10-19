@@ -27,6 +27,7 @@ public class DrawingBenchmarks : IDisposable
     private VectorPath _clipPath = null!;
     private Brush _linear = null!;
     private Brush _vertical = null!;
+    private Brush _horizontal = null!;
     private Brush _radial = null!;
     private Brush _sweep = null!;
     private FilterGraph _turbulence = null!;
@@ -54,6 +55,7 @@ public class DrawingBenchmarks : IDisposable
         _clipPath = new VectorPathBuilder().AddEllipse(new PointD(512, 384), 480, 340).Build();
         _linear = new LinearGradientBrush(new PointD(40, 30), new PointD(980, 700), Stops) { SpreadMode = GradientSpreadMode.Reflect };
         _vertical = new LinearGradientBrush(new PointD(0, 0), new PointD(0, Height), Stops);
+        _horizontal = new LinearGradientBrush(new PointD(0, 0), new PointD(Width, 0), Stops);
         _radial = new RadialGradientBrush(new PointD(512, 384), 300, Stops) { SpreadMode = GradientSpreadMode.Repeat };
         _sweep = new SweepGradientBrush(new PointD(512, 384), Stops);
         _turbulence = new FilterGraph(new TurbulencePrimitive(FilterTurbulenceType.FractalNoise, 0.02, 0.03, 4, 7) { Subregion = new RectangleD(0, 0, 512, 384) });
@@ -154,6 +156,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Horizontal linear gradient with four stops: fill of an ellipse covering most of the canvas")]
+    public int FillHorizontalGradient()
+    {
+        _image.Draw(_horizontal, static (canvas, brush) => canvas.FillEllipse(brush, new PointD(512, 384), 500, 370));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("Radial gradient with four stops, repeated: fill of the canvas")]
     public int FillRadialGradient()
     {
@@ -190,6 +200,14 @@ public class DrawingBenchmarks : IDisposable
     public int DrawImageReduced()
     {
         _image.Draw(_photo.Frames[0], static (canvas, source) => canvas.DrawImage(source, new RectangleD(100, 80, 512, 384), ImageSampling.Smooth));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 Rgba32 image drawn at a whole-pixel position, covering the canvas")]
+    public int DrawImageAtPosition()
+    {
+        _image.Draw(_photo.Frames[0], static (canvas, source) => canvas.DrawImage(source, new PointD(-512, -384)));
         return _image.Width;
     }
 
@@ -235,6 +253,14 @@ public class DrawingBenchmarks : IDisposable
     public int Blur()
     {
         _image.Draw(static canvas => canvas.Blur(6, static canvas => canvas.FillCircle(new Rgba32(250, 120, 0), new PointD(600, 400), 150)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Blur 1.5 of the whole 1024x768 canvas: blur of the backdrop")]
+    public int BlurBackdrop()
+    {
+        _image.Draw(static canvas => canvas.BlurBackdrop(1.5));
         return _image.Width;
     }
 

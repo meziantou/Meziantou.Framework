@@ -244,6 +244,92 @@ internal static class DrawingKernels
         PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
     }
 
+    /// <summary>
+    /// Reads pixels of a row as the paint colors of a frame of the same pixel type: four samples per pixel, laid out as
+    /// <see cref="DrawingColor"/>. These are the colors <see cref="ConvertColors{TPixel}"/> gives for those
+    /// <see cref="ReadColors{TPixel}"/> reads, without the 16-bit colors in between: each sample is written as it is
+    /// stored, a format without alpha has an opaque one, and a gray format has its level first then two zeros. Every
+    /// sample goes back to itself through 16 bits, and the luma of a gray is that gray (<c>VectorizedKernelTests</c>
+    /// checks every 8-bit sample and every 16-bit gray).
+    /// </summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    public static void ReadDrawingColors<TPixel>(PixelStorage storage, int y, int x, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var count = destination.Length / 4;
+        var row = storage.GetRowSpanCore(y);
+        if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
+        {
+            var samples = row.Slice(x * 4, count * 4);
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                for (; i + 16 <= samples.Length; i += 16)
+                {
+                    var block = Vector128.Create(samples.Slice(i, 16));
+                    Vector128.WidenLower(block).CopyTo(destination.Slice(i, 8));
+                    Vector128.WidenUpper(block).CopyTo(destination.Slice(i + 8, 8));
+                }
+            }
+
+            for (; i < samples.Length; i++)
+            {
+                destination[i] = samples[i];
+            }
+        }
+        else if (typeof(TPixel) == typeof(Rgba64))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 4, count * 4);
+            samples.CopyTo(destination);
+        }
+        else if (typeof(TPixel) == typeof(Rgb24))
+        {
+            var samples = row.Slice(x * 3, count * 3);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i * 3];
+                entry[1] = samples[(i * 3) + 1];
+                entry[2] = samples[(i * 3) + 2];
+                entry[3] = byte.MaxValue;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Gray8))
+        {
+            var samples = row.Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i];
+                entry[1] = 0;
+                entry[2] = 0;
+                entry[3] = byte.MaxValue;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Gray16))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i];
+                entry[1] = 0;
+                entry[2] = 0;
+                entry[3] = ushort.MaxValue;
+            }
+        }
+        else
+        {
+            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row.</summary>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>
@@ -312,8 +398,18 @@ internal static class DrawingKernels
         }
 
         // A short run is cheaper pixel by pixel than searched for runs
-        if (coverage.Length >= MinFullRunSearchLength && source.Colors.IsEmpty && TryCompositeFullRuns(samples, channels, coverage, source))
-            return;
+        if (coverage.Length >= MinFullRunSearchLength)
+        {
+            if (source.Colors.IsEmpty)
+            {
+                if (TryCompositeFullRuns(samples, channels, coverage, source))
+                    return;
+            }
+            else if (source.Mode == CompositeMode.Source && channels == 4 && TryReplaceFullRuns(samples, coverage, source.Colors))
+            {
+                return;
+            }
+        }
 
         CompositeCore(samples, channels, coverage, source);
     }
@@ -406,6 +502,73 @@ internal static class DrawingKernels
 
             var next = coverage[start..].IndexOf(Full);
             first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>
+    /// Replaces pixels with a color of their own (<see cref="CompositeMode.Source"/>, color then alpha): the runs of full
+    /// coverage get their colors as they are; the other pixels go through the formulas.
+    /// </summary>
+    /// <returns><see langword="false"/> when no pixel is covered entirely.</returns>
+    /// <remarks>
+    /// With <c>q = Q</c>, the operator has <c>S = M Q sa</c> and <c>D = 0</c>: the alpha is <c>round(S / (M Q)) = sa</c>
+    /// and the color <c>round(sc S / S) = sc</c>, as the scalar path computes them (<c>S / 2 &lt; S</c>). A paint without
+    /// opacity makes the pixel transparent black, or leaves it as it is when it was transparent.
+    /// </remarks>
+    private static bool TryReplaceFullRuns<TSample>(Span<TSample> samples, ReadOnlySpan<uint> coverage, ReadOnlySpan<ushort> colors)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const uint Full = CoverageRasterizer.FullCoverage;
+        var first = coverage.IndexOf(Full);
+        if (first < 0)
+            return false;
+
+        var start = 0;
+        while (true)
+        {
+            if (first > start)
+            {
+                CompositeWithOperator(samples[(start * 4)..(first * 4)], 4, coverage[start..first], new DrawingSource(colors[(start * 4)..(first * 4)], CompositeMode.Source));
+            }
+
+            if (first == coverage.Length)
+                return true;
+
+            var length = coverage[first..].IndexOfAnyExcept(Full);
+            if (length < 0)
+            {
+                length = coverage.Length - first;
+            }
+
+            ReplacePixels(samples.Slice(first * 4, length * 4), colors.Slice(first * 4, length * 4));
+            start = first + length;
+            if (start == coverage.Length)
+                return true;
+
+            var next = coverage[start..].IndexOf(Full);
+            first = next < 0 ? coverage.Length : start + next;
+        }
+    }
+
+    /// <summary>Writes a color to each pixel of a run (color then alpha): a color without opacity erases the pixel, unless it is transparent already.</summary>
+    private static void ReplacePixels<TSample>(Span<TSample> pixels, ReadOnlySpan<ushort> colors)
+        where TSample : unmanaged, IBinaryInteger<TSample>
+    {
+        for (var i = 0; i + 4 <= pixels.Length; i += 4)
+        {
+            var color = colors.Slice(i, 4);
+            var pixel = pixels.Slice(i, 4);
+            if (color[3] != 0)
+            {
+                pixel[0] = TSample.CreateTruncating(color[0]);
+                pixel[1] = TSample.CreateTruncating(color[1]);
+                pixel[2] = TSample.CreateTruncating(color[2]);
+                pixel[3] = TSample.CreateTruncating(color[3]);
+            }
+            else if (pixel[3] != TSample.Zero)
+            {
+                pixel.Clear();
+            }
         }
     }
 

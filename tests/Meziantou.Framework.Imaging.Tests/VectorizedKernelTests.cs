@@ -1,5 +1,7 @@
+using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -1851,6 +1853,108 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingSourceOfColorsMatchesThePixelByPixelFormulas()
+    {
+        // A run of full coverage stores the colors; a pixel on its own always goes through the formulas
+        var random = new Random(20261018);
+        CheckSource<byte>(random, byte.MaxValue);
+        CheckSource<ushort>(random, ushort.MaxValue);
+
+        static void CheckSource<TSample>(Random random, int max)
+            where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+        {
+            int[] lengths = [16, 17, 31, 64, 101];
+            foreach (var length in lengths)
+            {
+                for (var round = 0; round < 64; round++)
+                {
+                    var pixels = new TSample[length * 4];
+                    var colors = new ushort[length * 4];
+                    var coverage = new uint[length];
+                    var fullShare = round % 4;
+                    for (var i = 0; i < length; i++)
+                    {
+                        for (var c = 0; c < 4; c++)
+                        {
+                            pixels[(i * 4) + c] = TSample.CreateTruncating(random.Next(max + 1));
+                            colors[(i * 4) + c] = (ushort)random.Next(max + 1);
+                        }
+
+                        // Transparent pixels with a hidden color, and paints without opacity
+                        if (random.Next(4) == 0)
+                        {
+                            pixels[(i * 4) + 3] = TSample.Zero;
+                        }
+
+                        if (random.Next(4) == 0)
+                        {
+                            colors[(i * 4) + 3] = 0;
+                        }
+
+                        coverage[i] = fullShare == 3 || random.Next(3) < fullShare ? CoverageRasterizer.FullCoverage : random.Next(3) switch
+                        {
+                            0 => 0,
+                            1 => (uint)random.Next(1, 256),
+                            _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
+                        };
+                    }
+
+                    var expected = (TSample[])pixels.Clone();
+                    for (var i = 0; i < length; i++)
+                    {
+                        DrawingKernels.Composite<TSample>(expected.AsSpan(i * 4, 4), 4, coverage.AsSpan(i, 1), new DrawingSource(colors.AsSpan(i * 4, 4), CompositeMode.Source));
+                    }
+
+                    var actual = (TSample[])pixels.Clone();
+                    DrawingKernels.Composite<TSample>(actual, 4, coverage, new DrawingSource(colors, CompositeMode.Source));
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void DrawingColorsReadFromAFrameOfTheSameFormatAreItsConvertedColors()
+    {
+        // Every sample of every channel (the channels are converted on their own), and every 16-bit gray
+        CheckColors(256, i => new Rgba32((byte)i, (byte)(255 - i), (byte)(i * 37), (byte)(i * 101)));
+        CheckColors(256, i => new Bgra32((byte)i, (byte)(255 - i), (byte)(i * 37), (byte)(i * 101)));
+        CheckColors(256, i => new Rgb24((byte)i, (byte)(255 - i), (byte)(i * 37)));
+        CheckColors(256, i => new Gray8((byte)i));
+        CheckColors(65536, i => new Gray16((ushort)i));
+        CheckColors(65536, i => new Rgba64((ushort)i, (ushort)(65535 - i), (ushort)(i * 37), (ushort)(i * 101)));
+
+        static void CheckColors<TPixel>(int count, Func<int, TPixel> create)
+            where TPixel : unmanaged
+        {
+            const int Width = 256;
+            using var image = new Image<TPixel>(Width, count / Width);
+            for (var i = 0; i < count; i++)
+            {
+                image.Frames[0][i % Width, i / Width] = create(i);
+            }
+
+            var storage = image.Frames[0].GetStorage();
+            var colors = new Rgba64[Width];
+            var expected = new ushort[Width * 4];
+            for (var y = 0; y < image.Height; y++)
+            {
+                DrawingKernels.ReadColors<TPixel>(storage, y, 0, colors);
+                DrawingKernels.ConvertColors<TPixel>(colors, expected);
+
+                // Runs that start anywhere, around the length of a vector
+                foreach (var (start, length) in new[] { (0, Width), (1, Width - 1), (3, 5), (5, 3), (7, 17), (2, 1) })
+                {
+                    var actual = new ushort[length * 4];
+                    DrawingKernels.ReadDrawingColors<TPixel>(storage, y, start, actual);
+                    Assert.Equal(expected.AsSpan(start * 4, length * 4).ToArray(), actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingBlurSumsMatchTheScalarReference()
     {
         var random = new Random(20261015);
@@ -1888,6 +1992,46 @@ public sealed class VectorizedKernelTests
                     BlurKernels.AccumulateScalar(expectedSums, weight, row);
                     BlurKernels.Accumulate(actualSums, weight, row);
                     Assert.Equal(expectedSums, actualSums);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingTurbulenceOfTheFourChannelsMatchesTheReferenceOfEachChannel()
+    {
+        var random = new Random(20261019);
+        Span<double> sums = stackalloc double[4];
+        foreach (var seed in new[] { 0, 7, 12345, -3, int.MaxValue })
+        {
+            var primitive = new TurbulencePrimitive(FilterTurbulenceType.Turbulence, 0.1, 0.1, 1, seed);
+            for (var i = 0; i < 2000; i++)
+            {
+                // Points on both sides of the origin, near the lattice and far from it, and stitching on tiles of any position
+                var scale = random.Next(3) switch
+                {
+                    0 => 4,
+                    1 => 300,
+                    _ => 3000,
+                };
+                var x = (random.NextDouble() - 0.5) * scale;
+                var y = random.Next(8) == 0 ? Math.Floor(x) : (random.NextDouble() - 0.5) * scale;
+                var octaves = random.Next(0, 9);
+                var isFractal = random.Next(2) == 0;
+                var isStitching = random.Next(2) == 0;
+                var stitch = new TurbulencePrimitive.Stitch
+                {
+                    Width = random.Next(1, 300),
+                    Height = random.Next(1, 300),
+                    WrapX = 4096 + random.Next(-300, 600),
+                    WrapY = 4096 + random.Next(-300, 600),
+                };
+
+                primitive.GetTurbulence(x, y, octaves, isFractal, isStitching, stitch, sums);
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(primitive.GetTurbulence(channel, x, y, octaves, isFractal, isStitching, stitch)), BitConverter.DoubleToInt64Bits(sums[channel]));
                 }
             }
         }

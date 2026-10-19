@@ -53,6 +53,79 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void AnImageMovedByWholePixelsPaintsThePixelsOfItsRegionInEveryWrapMode()
+    {
+        // Each pixel of the canvas gets the pixel of the region its center comes from, wrapped, as a solid brush of
+        // that color would paint it
+        var random = new Random(20261018);
+        ImageWrapMode[] wrapModes = [ImageWrapMode.Transparent, ImageWrapMode.Pad, ImageWrapMode.Repeat, ImageWrapMode.Reflect];
+        ImageSampling[] samplings = [ImageSampling.Nearest, ImageSampling.Bilinear, ImageSampling.Smooth, ImageSampling.Box];
+        (PixelFormat Source, PixelFormat Canvas)[] formats = [(PixelFormat.Rgba32, PixelFormat.Rgba32), (PixelFormat.Bgra32, PixelFormat.Bgra32), (PixelFormat.Rgba64, PixelFormat.Rgba64), (PixelFormat.Gray8, PixelFormat.Gray8), (PixelFormat.Gray16, PixelFormat.Gray16), (PixelFormat.Rgb24, PixelFormat.Rgb24), (PixelFormat.Rgba32, PixelFormat.Rgba64), (PixelFormat.Rgba64, PixelFormat.Rgb24), (PixelFormat.Gray8, PixelFormat.Bgra32)];
+        foreach (var (sourceFormat, canvasFormat) in formats)
+        {
+            foreach (var wrapMode in wrapModes)
+            {
+                Check(random, sourceFormat, canvasFormat, wrapMode, samplings[random.Next(samplings.Length)]);
+            }
+        }
+
+        static void Check(Random random, PixelFormat sourceFormat, PixelFormat canvasFormat, ImageWrapMode wrapMode, ImageSampling sampling)
+        {
+            using var source = DrawingTestSupport.CreateRandom(sourceFormat, random.Next(1, 30), random.Next(1, 6), random.Next);
+            using var colors = source.CloneAs<Rgba64>();
+            var region = new Rectangle(random.Next(source.Width), random.Next(source.Height), 1, 1);
+            region = new Rectangle(region.X, region.Y, random.Next(1, source.Width - region.X + 1), random.Next(1, source.Height - region.Y + 1));
+            var (shiftX, shiftY) = (random.Next(-40, 40), random.Next(-8, 8));
+            var brush = new ImageBrush(source.Frames[0]) { SourceRegion = region, Transform = AffineTransform.CreateTranslation(shiftX, shiftY), WrapMode = wrapMode, Sampling = sampling, CompositeMode = CompositeMode.Source };
+
+            // A rectangle of whole pixels: runs that start anywhere
+            var left = random.Next(0, 20);
+            var right = random.Next(left + 1, 41);
+            using var expected = DrawingTestSupport.CreateRandom(canvasFormat, 40, 9, new Random(1).Next);
+            using var actual = DrawingTestSupport.CreateRandom(canvasFormat, 40, 9, new Random(1).Next);
+            expected.Draw(
+                canvas =>
+                {
+                    for (var y = 0; y < 9; y++)
+                    {
+                        for (var x = left; x < right; x++)
+                        {
+                            var column = Wrap(x - shiftX - region.X, region.Width, wrapMode);
+                            var row = Wrap(y - shiftY - region.Y, region.Height, wrapMode);
+                            var color = column is { } c && row is { } r ? colors.Frames[0][region.X + c, region.Y + r] : default;
+                            canvas.FillRectangle(new SolidBrush(color) { CompositeMode = CompositeMode.Source }, new RectangleD(x, y, 1, 1));
+                        }
+                    }
+                },
+                Ct);
+            actual.Draw(canvas => canvas.FillRectangle(brush, new RectangleD(left, 0, right - left, 9)), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        }
+
+        static int? Wrap(int offset, int size, ImageWrapMode wrapMode)
+        {
+            if (offset >= 0 && offset < size)
+                return offset;
+
+            switch (wrapMode)
+            {
+                case ImageWrapMode.Pad:
+                    return Math.Clamp(offset, 0, size - 1);
+
+                case ImageWrapMode.Repeat:
+                    return ((offset % size) + size) % size;
+
+                case ImageWrapMode.Reflect:
+                    var folded = ((offset % (2 * size)) + (2 * size)) % (2 * size);
+                    return folded < size ? folded : (2 * size) - 1 - folded;
+
+                default:
+                    return null;
+            }
+        }
+    }
+
+    [Fact]
     public void AnImageIsCompositedOverThePixelsInEveryPairOfPixelFormats()
     {
         // The colors of the source become 16-bit colors by the rules of pixel conversion (v * 257 from 8 bits, a gray

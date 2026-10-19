@@ -92,6 +92,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private double _focalRadius;
     private double _focalGrowth;
     private double _max;
+    private int _width;
+    private bool _hasRowColors;
 
     public GradientEvaluator(AllocationScope scope)
     {
@@ -168,6 +170,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         _colorSpace = brush.ColorSpace;
         _brush = brush;
         _frame = frame;
+        _width = width;
+        _hasRowColors = false;
         if (_colorSpace != GradientColorSpace.Encoded)
         {
             // The colors are computed as 16-bit colors, then converted as those of any brush
@@ -292,7 +296,30 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <summary>Computes the colors of a run of pixels: four samples per pixel, laid out as <see cref="DrawingColor"/>.</summary>
+    /// <remarks>
+    /// A linear gradient without transformation whose axis is horizontal has the same colors on every row: its
+    /// parameter is <c>((px ax) + (py 0)) / |a|^2</c>, where <c>py 0</c> is a zero for every finite <c>py</c> and the sign
+    /// of a zero does not change any rounded sample. The colors of a whole row of the canvas are computed once, and every
+    /// run of the canvas is a part of them: each pixel is computed on its own.
+    /// </remarks>
     public override ReadOnlySpan<ushort> Evaluate(int y, int x, int count)
+    {
+        if (_kind == GradientKind.Linear && _axisY == 0 && !_hasTransform && !_isProjective && !_degenerate && x >= 0 && count <= _width - x)
+        {
+            if (!_hasRowColors)
+            {
+                EvaluateCore(y, 0, _width);
+                _hasRowColors = true;
+            }
+
+            return unsafe(MemoryMarshal.Cast<byte, ushort>(_colors!.Span)).Slice(x * 4, count * 4);
+        }
+
+        _hasRowColors = false;
+        return EvaluateCore(y, x, count);
+    }
+
+    private Span<ushort> EvaluateCore(int y, int x, int count)
     {
         var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(_colors!.Span))[..(count * 4)];
         var stops = Stops[..(_stopCount * ValuesPerStop)];

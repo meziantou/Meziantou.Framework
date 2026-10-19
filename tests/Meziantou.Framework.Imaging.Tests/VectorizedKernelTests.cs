@@ -1279,6 +1279,77 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlUpsamplingMatchesTheScalarReferenceBitForBit(int factor)
+    {
+        var random = new Random(192 + factor);
+        for (var round = 0; round < 600; round++)
+        {
+            // Every width up to 24 (the edges, the vector body and its tails), then larger ones, and targets cropped on both sides
+            var width = round < 24 ? round + 1 : random.Next(1, 70);
+            var height = random.Next(1, 7);
+            var stride = width + random.Next(3);
+            var targetWidth = round % 3 == 0 ? width * factor : random.Next(1, (width * factor) + 1);
+            var targetHeight = round % 4 == 0 ? height * factor : random.Next(1, (height * factor) + 1);
+            var source = new float[(stride * (height - 1)) + width];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = (round % 5) switch
+                {
+                    0 => random.Next(4) == 0 ? -0f : 0f,
+                    1 => (float)random.NextDouble() * 1e-38f,
+                    2 => (float)((random.NextDouble() - 0.5) * 1e30),
+                    _ => (float)(random.NextDouble() - 0.25),
+                };
+            }
+
+            var kernels = new float[factor * factor * 25];
+            for (var i = 0; i < kernels.Length; i++)
+            {
+                kernels[i] = (float)((random.NextDouble() * 0.3) - 0.05);
+            }
+
+            var expected = new float[targetWidth * targetHeight];
+            var actual = new float[targetWidth * targetHeight];
+            JpegXlUpsampler.UpsampleScalar(source, stride, width, height, factor, kernels, expected, targetWidth, targetHeight, TestContext.Current.CancellationToken);
+            JpegXlUpsampler.Upsample(source, stride, width, height, factor, kernels, actual, targetWidth, targetHeight, TestContext.Current.CancellationToken);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlNoiseHighPassMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(195);
+        for (var round = 0; round < 1000; round++)
+        {
+            // Every width up to 24 (the edges, the vector body and its tails), then larger ones
+            var width = round < 24 ? round + 1 : random.Next(1, 90);
+            var height = random.Next(1, 8);
+            var plane = new float[width * height];
+            for (var i = 0; i < plane.Length; i++)
+            {
+                plane[i] = (round % 4) switch
+                {
+                    0 => random.Next(4) == 0 ? -0f : 0f,
+                    1 => (float)((random.NextDouble() - 0.5) * 1e30),
+                    _ => 1f + (float)random.NextDouble(),
+                };
+            }
+
+            var expected = new float[plane.Length];
+            var actual = new float[plane.Length];
+            JpegXlNoise.HighPassScalar(plane, expected, width, height, TestContext.Current.CancellationToken);
+            JpegXlNoise.HighPass(plane, actual, width, height, TestContext.Current.CancellationToken);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlCanvasRowsMatchTheScalarReference()

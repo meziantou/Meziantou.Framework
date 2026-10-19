@@ -39,6 +39,30 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<style>:is(#target, div) { color: green } div.a { color: red }</style><div id=target class=a></div>", "rgb(0, 128, 0)")]
     public void Cascade_SpecificityImportanceAndOrder(string html, string expected) => Assert.Equal(expected, Get(html, "color"));
 
+    // The rules whose subject has one of several tags are candidates of the elements of each tag, and the ancestor filter
+    // matches the ancestors case-insensitively where the selectors do
+    [Theory]
+    [InlineData("<!DOCTYPE html><style>:is(h1, p) { color: green }</style><p id=target></p>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>:where(:is(h1, P), span) { color: green }</style><p id=target></p>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>:is(h1, p) { color: red }</style><div id=target></div>", "rgb(0, 0, 0)")]
+    [InlineData("<!DOCTYPE html><style>:heading { color: green }</style><h3 id=target></h3>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>:heading(2) { color: green }</style><div headingoffset=1><h1 id=target></h1></div>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>.a > div #target { color: green }</style><section class=a><div><p><span id=target></span></p></div></section>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>.b .a #target { color: red }</style><section class=a><div class=b><span id=target></span></div></section>", "rgb(0, 0, 0)")]
+    [InlineData("<style>.A #B span { color: green }</style><div class=a><p id=b><span id=target></span></p></div>", "rgb(0, 128, 0)")] // quirks mode
+    [InlineData("<!DOCTYPE html><style>SECTION span { color: green }</style><section><span id=target></span></section>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>.a span::before { content: 'x'; color: green }</style><div class=a><span id=target></span></div>", "rgb(0, 128, 0)", "::before")]
+    public void Cascade_CandidateRules(string html, string expected, string? pseudoElement = null) => Assert.Equal(expected, Get(html, "color", pseudoElement: pseudoElement));
+
+    [Fact]
+    public void Cascade_AncestorFilterFollowsTheMutations()
+    {
+        var document = Parse("<!DOCTYPE html><style>.a .b span { color: green }</style><div id=outer><div class=b><span id=target></span></div></div>");
+        Assert.Equal("rgb(0, 0, 0)", GetStyle(document, "#target").GetPropertyValue("color"));
+        document.GetElementById("outer")!.ClassName = "a";
+        Assert.Equal("rgb(0, 128, 0)", GetStyle(document, "#target").GetPropertyValue("color"));
+    }
+
     // https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay: overlay is a legacy value alias of auto
     [Theory]
     [InlineData("overflow: overlay", "overflow-x", "auto")]

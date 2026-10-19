@@ -53,6 +53,9 @@ internal sealed partial class StyleEngine
     /// <summary>The list of the matched declaration blocks of the last cascade, reused by the next one.</summary>
     private List<MatchedBlock>? _blocks;
 
+    /// <summary>The features of the ancestors of the element whose rules are being matched (see <see cref="MayMatchAncestors"/>).</summary>
+    private readonly SelectorAncestorFilter _ancestorFilter = new();
+
     /// <summary>
     /// The cascaded values of the matched declaration blocks, by hash code of the blocks: the elements that match the same
     /// rules (e.g. the items of a list) share their cascaded values, which are never modified (see <see cref="ComputedStyle"/>).
@@ -3177,7 +3180,7 @@ internal sealed partial class StyleEngine
             {
                 // A rule of the user agent for another rendering of the select element
             }
-            else if (Matches(rule, element, context) && MatchesContainerQueries(rule, element, pseudoElement) && (!rule.OnlyIfTableBorderIsNotZero || PresentationalHints.HasNonZeroTableBorder(element)))
+            else if (MayMatchAncestors(rule, element) && Matches(rule, element, context) && MatchesContainerQueries(rule, element, pseudoElement) && (!rule.OnlyIfTableBorderIsNotZero || PresentationalHints.HasNonZeroTableBorder(element)))
             {
                 AddBlocks(blocks, rule, depth, NoProximity);
             }
@@ -3328,6 +3331,22 @@ internal sealed partial class StyleEngine
             return null;
 
         return pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal) ? "select" : pseudoElement[(index + 1)..^1];
+    }
+
+    /// <summary>
+    /// Returns whether the ancestors of the element may match the compound selectors of the rule on the left of its descendant
+    /// and child combinators: the filter holds the features of the ancestors of the last element matched, so that the
+    /// elements matched in tree order only add the features of their parent. The classes animated by SMIL change without DOM
+    /// change: the filter is then not used.
+    /// </summary>
+    private bool MayMatchAncestors(CascadeRule rule, Element element)
+    {
+        var hints = rule.Selector.Hints;
+        if (hints.AncestorHashes.Length == 0 || _document.SmilOrNull is not null)
+            return true;
+
+        _ancestorFilter.SetParent(element.NodeDocument, SelectorAncestorFilter.GetParent(element));
+        return _ancestorFilter.MayMatch(hints);
     }
 
     private static bool Matches(CascadeRule rule, Element element, SelectorContext context) => rule.PseudoElement is null && rule.Kind != CascadeRuleKind.Part

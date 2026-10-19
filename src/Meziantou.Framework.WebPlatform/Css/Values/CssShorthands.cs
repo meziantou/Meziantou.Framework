@@ -27,6 +27,12 @@ namespace Meziantou.Framework.WebPlatform.Css.Values;
 /// </param>
 internal readonly record struct CssLonghandValue(string Name, string Value, string? ShorthandName = null, string? ShorthandValue = null, string? ComputationValue = null, string? TypedValue = null, bool TypedValueIsRepresentation = false);
 
+/// <summary>An immutable copy of the value of a longhand (see <see cref="Om.CssDeclarationEntry.Snapshot"/>): the cascaded values reference it instead of copying it.</summary>
+internal sealed class CssLonghandSnapshot(CssLonghandValue value)
+{
+    public CssLonghandValue Value { get; } = value;
+}
+
 /// <summary>Parses the values of properties, expands the shorthands and serializes them (https://drafts.csswg.org/cssom/#serialize-a-css-value).</summary>
 internal static class CssShorthands
 {

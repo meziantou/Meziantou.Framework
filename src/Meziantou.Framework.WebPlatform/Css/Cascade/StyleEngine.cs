@@ -96,6 +96,16 @@ internal sealed partial class StyleEngine
 
     /// <summary>The styles whose computed value of a property is computed before the one of a descendant (see <see cref="ComputedStyle"/>).</summary>
     internal List<ComputedStyle> PendingAncestors { get; } = [];
+
+    /// <summary>
+    /// The number of times a computation of a value read the style it computes the value for (the element, its fonts, the
+    /// environment...): a computation that does not change it computes a value that does not depend on the element.
+    /// </summary>
+    internal int ComputationContextReads { get; set; }
+
+    /// <summary>The computed values that do not depend on the element, by property and specified value (see <see cref="CssValueComputer.Compute"/>).</summary>
+    internal ContextFreeValueCache ContextFreeValues { get; } = new();
+
     private readonly Dictionary<ShadowRoot, PartElementMap> _partElementMaps = new(ReferenceEqualityComparer.Instance);
     private int _domVersion = -1;
     private int _elementStateVersion = -1;
@@ -821,35 +831,40 @@ internal sealed partial class StyleEngine
         if (_styles.TryGetValue((element, pseudoElement), out var style))
             return style;
 
-        // The ancestors are computed first (iteratively, the trees can be deep)
-        if (pseudoElement is null)
+        // The ancestors are computed first (iteratively, the trees can be deep); the highlight pseudo-elements inherit from the
+        // highlight pseudo-elements of the ancestors
+        if (pseudoElement is null || IsHighlightPseudoElement(pseudoElement))
         {
-            var missing = new List<Element>();
-            for (var ancestor = GetInheritanceParent(element); ancestor is not null && !_styles.ContainsKey((ancestor, null)); ancestor = GetInheritanceParent(ancestor))
-            {
-                missing.Add(ancestor);
-            }
+            ComputeMissingAncestorStyles(element, pseudoElement);
+        }
 
+        return _styles.TryGetValue((element, pseudoElement), out style) ? style : ComputeStyle(element, pseudoElement);
+    }
+
+    /// <summary>The elements whose style is computed before the one of a descendant (see <see cref="ComputeMissingAncestorStyles"/>), shared by the nested computations.</summary>
+    private readonly List<Element> _missingAncestors = [];
+
+    /// <summary>Computes the styles (or the styles of the pseudo-element) of the ancestors of an element that are not computed yet, from the topmost one.</summary>
+    private void ComputeMissingAncestorStyles(Element element, string? pseudoElement)
+    {
+        // Most styles are computed in tree order: the style of the parent is known
+        if (GetInheritanceParent(element) is not { } parent || _styles.ContainsKey((parent, pseudoElement)))
+            return;
+
+        // The elements are pushed on a list shared by the computations: a nested computation pushes its elements after them,
+        // and removes them before it returns
+        var missing = _missingAncestors;
+        var start = missing.Count;
+        for (Element? ancestor = parent; ancestor is not null && !_styles.ContainsKey((ancestor, pseudoElement)); ancestor = GetInheritanceParent(ancestor))
+        {
+            missing.Add(ancestor);
+        }
+
+        try
+        {
             // (a style may be computed by the computation of another one, e.g. when the styles are computed again after a change
             // of the style sheets: it is not computed twice, its descendants would inherit from the first one)
-            for (var i = missing.Count - 1; i >= 0; i--)
-            {
-                if (!_styles.ContainsKey((missing[i], null)))
-                {
-                    ComputeStyle(missing[i], pseudoElement: null);
-                }
-            }
-        }
-        else if (IsHighlightPseudoElement(pseudoElement))
-        {
-            // The highlight pseudo-elements inherit from the highlight pseudo-elements of the ancestors, computed first
-            var missing = new List<Element>();
-            for (var ancestor = GetInheritanceParent(element); ancestor is not null && !_styles.ContainsKey((ancestor, pseudoElement)); ancestor = GetInheritanceParent(ancestor))
-            {
-                missing.Add(ancestor);
-            }
-
-            for (var i = missing.Count - 1; i >= 0; i--)
+            for (var i = missing.Count - 1; i >= start; i--)
             {
                 if (!_styles.ContainsKey((missing[i], pseudoElement)))
                 {
@@ -857,8 +872,10 @@ internal sealed partial class StyleEngine
                 }
             }
         }
-
-        return _styles.TryGetValue((element, pseudoElement), out style) ? style : ComputeStyle(element, pseudoElement);
+        finally
+        {
+            missing.RemoveRange(start, missing.Count - start);
+        }
     }
 
     /// <summary>
@@ -2958,7 +2975,7 @@ internal sealed partial class StyleEngine
                 _inlineStylesUseTreeCountingFunctions = true;
             }
 
-            var source = CascadedValueSource.Create(_document.DocumentBaseUrl.Serialize(), root, mixin: null);
+            var source = GetStyleAttributeSource(root);
             if (declarations.Exists(d => !d.Important))
             {
                 blocks.Add(new MatchedBlock(declarations, Important: false, CascadeOrigin.Author, depth, Attached: true, CascadeRule.Unlayered, default, NoProximity, 0, source));
@@ -2981,14 +2998,20 @@ internal sealed partial class StyleEngine
 
         Dictionary<string, CascadedValue> cascaded;
         var blocksReferenced = false;
-        if (applies is null && !hasOwnDeclarations)
+        if (!hasOwnDeclarations)
         {
-            cascaded = GetSharedCascadedValues(blocks, out blocksReferenced);
+            // (the pseudo-elements whose properties are filtered share the filtered values, e.g. the ::marker of all the elements)
+            cascaded = GetSharedCascadedValues(blocks, applies, out blocksReferenced);
             shared = true;
         }
         else
         {
             cascaded = ComputeCascadedValues(blocks);
+            if (applies is not null)
+            {
+                cascaded = FilterCascadedValues(cascaded, applies);
+            }
+
             blocksReferenced = ReferencesBlocks(cascaded);
             shared = ReferenceEquals(cascaded, EmptyCascadedValues);
         }
@@ -2999,18 +3022,24 @@ internal sealed partial class StyleEngine
             _blocks = blocks;
         }
 
-        if (applies is not null)
+        return cascaded;
+    }
+
+    /// <summary>Removes the cascaded values of the properties that do not apply to a pseudo-element (see <see cref="GetPseudoElementPropertyFilter"/>).</summary>
+    private static Dictionary<string, CascadedValue> FilterCascadedValues(Dictionary<string, CascadedValue> cascaded, Func<string, bool> applies)
+    {
+        if (ReferenceEquals(cascaded, EmptyCascadedValues))
+            return cascaded;
+
+        foreach (var (name, _) in cascaded)
         {
-            foreach (var name in cascaded.Keys)
+            if (!applies(name))
             {
-                if (!applies(name))
-                {
-                    cascaded.Remove(name);
-                }
+                cascaded.Remove(name);
             }
         }
 
-        return cascaded;
+        return cascaded.Count == 0 ? EmptyCascadedValues : cascaded;
     }
 
     /// <summary>
@@ -3491,7 +3520,8 @@ internal sealed partial class StyleEngine
     /// Returns the cascaded values of the matched declaration blocks, shared by the elements that match the same blocks.
     /// </summary>
     /// <param name="blocksReferenced">Whether the cascaded values reference the list of the blocks (it must not be reused).</param>
-    private Dictionary<string, CascadedValue> GetSharedCascadedValues(List<MatchedBlock> blocks, out bool blocksReferenced)
+    /// <param name="applies">The filter of the properties of the pseudo-element (see <see cref="GetPseudoElementPropertyFilter"/>), or null.</param>
+    private Dictionary<string, CascadedValue> GetSharedCascadedValues(List<MatchedBlock> blocks, Func<string, bool>? applies, out bool blocksReferenced)
     {
         var span = CollectionsMarshal.AsSpan(blocks);
         var hash = new HashCode();
@@ -3502,11 +3532,12 @@ internal sealed partial class StyleEngine
             hash.Add(block.Declarations.Count);
         }
 
+        hash.Add(applies is null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(applies.Method));
         var key = hash.ToHashCode();
         _sharedCascades.TryGetValue(key, out var first);
         for (var entry = first; entry is not null; entry = entry.Next)
         {
-            if (span.SequenceEqual(entry.Blocks))
+            if (entry.Filter == applies?.Method && span.SequenceEqual(entry.Blocks))
             {
                 blocksReferenced = false;
                 return entry.Values;
@@ -3514,8 +3545,13 @@ internal sealed partial class StyleEngine
         }
 
         var values = ComputeCascadedValues(blocks);
+        if (applies is not null)
+        {
+            values = FilterCascadedValues(values, applies);
+        }
+
         blocksReferenced = ReferencesBlocks(values);
-        _sharedCascades[key] = new SharedCascade(blocks.ToArray(), values, first);
+        _sharedCascades[key] = new SharedCascade(blocks.ToArray(), applies?.Method, values, first);
         return values;
     }
 
@@ -3536,9 +3572,12 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>The cascaded values of a sequence of matched declaration blocks (the entries with the same hash code are chained).</summary>
-    private sealed class SharedCascade(MatchedBlock[] blocks, Dictionary<string, CascadedValue> values, SharedCascade? next)
+    private sealed class SharedCascade(MatchedBlock[] blocks, System.Reflection.MethodInfo? filter, Dictionary<string, CascadedValue> values, SharedCascade? next)
     {
         public MatchedBlock[] Blocks { get; } = blocks;
+
+        /// <summary>The filter of the properties of the pseudo-element the values were filtered with (see <see cref="GetPseudoElementPropertyFilter"/>), or null.</summary>
+        public System.Reflection.MethodInfo? Filter { get; } = filter;
 
         public Dictionary<string, CascadedValue> Values { get; } = values;
 
@@ -3557,45 +3596,74 @@ internal sealed partial class StyleEngine
         return false;
     }
 
-    /// <summary>Determines the cascaded value of each property (https://drafts.csswg.org/css-cascade-5/#cascaded).</summary>
-    private static Dictionary<string, CascadedValue> ComputeCascadedValues(List<MatchedBlock> blocks)
+    /// <summary>The source of the declarations of the last style attribute (see <see cref="GetStyleAttributeSource"/>), with the version of the styles and the base URL it was created for.</summary>
+    private (int Version, Urls.UrlRecord? BaseUrl, Node? Root, CascadedValueSource? Source) _styleAttributeSource;
+
+    /// <summary>Returns the source of the declarations of a style attribute of a tree: the document base URL and the root of the tree (the elements of a tree share it).</summary>
+    private CascadedValueSource? GetStyleAttributeSource(Node root)
     {
-        // The number of declarations is an upper bound of the number of properties: the dictionary is not resized
-        var capacity = 0;
-        foreach (var block in blocks)
-        {
-            capacity += block.Declarations.Count;
-        }
+        var baseUrl = _document.DocumentBaseUrl;
+        var cached = _styleAttributeSource;
+        if (cached.Version == _version && ReferenceEquals(cached.BaseUrl, baseUrl) && ReferenceEquals(cached.Root, root))
+            return cached.Source;
 
-        // Many elements have no declaration (e.g. span, or most of the pseudo-elements): they share an empty dictionary, which
-        // is never modified (the logical properties are mapped in place only when there are cascaded values)
-        if (capacity == 0)
-            return EmptyCascadedValues;
+        var source = CascadedValueSource.Create(baseUrl.Serialize(), root, mixin: null);
+        _styleAttributeSource = (_version, baseUrl, root, source);
+        return source;
+    }
 
-        var result = new Dictionary<string, CascadedValue>(capacity, StringComparer.Ordinal);
-        for (var i = blocks.Count - 1; i >= 0; i--)
+    /// <summary>The cascaded values being determined (see <see cref="ComputeCascadedValues"/>), reused by the cascades.</summary>
+    private Dictionary<string, CascadedValue> _cascadeScratch = new(StringComparer.Ordinal);
+
+    /// <summary>The number of cascaded values above which <see cref="_cascadeScratch"/> is replaced instead of cleared (clearing it costs its capacity).</summary>
+    private const int MaxCascadeScratchCount = 256;
+
+    /// <summary>Determines the cascaded value of each property (https://drafts.csswg.org/css-cascade-5/#cascaded).</summary>
+    private Dictionary<string, CascadedValue> ComputeCascadedValues(List<MatchedBlock> blocks)
+    {
+        // The values are determined in a dictionary reused by the cascades, then copied in a dictionary of their size: the
+        // declarations of the blocks often set the same properties (e.g. the rules of the user agent and of the author, the
+        // normal and important declarations of a style attribute)
+        var result = _cascadeScratch;
+        try
         {
-            var block = blocks[i];
-            var declarations = block.Declarations;
-            for (var j = 0; j < declarations.Count; j++)
+            for (var i = blocks.Count - 1; i >= 0; i--)
             {
-                var declaration = declarations[j];
-                if (declaration.Important != block.Important)
-                    continue;
+                var block = blocks[i];
+                var declarations = block.Declarations;
+                for (var j = 0; j < declarations.Count; j++)
+                {
+                    var declaration = declarations[j];
+                    if (declaration.Important != block.Important)
+                        continue;
 
-                var name = declaration.Name;
-                if (result.ContainsKey(name))
-                    continue;
+                    ref var cascaded = ref CollectionsMarshal.GetValueRefOrAddDefault(result, declaration.Name, out var exists);
+                    if (exists)
+                        continue;
 
-                var value = declaration.Value;
-                var rank = ((long)i << 20) | (uint)j;
-                result[name] = GetRollback(value) == Rollback.None
-                    ? WithSubstitutionRollback(new CascadedValue(value, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important }, blocks, i)
-                    : RollBack(blocks, name, i, value, rank);
+                    var snapshot = declaration.Snapshot;
+                    var rank = ((long)i << 20) | (uint)j;
+                    cascaded = GetRollback(snapshot.Value) == Rollback.None
+                        ? WithSubstitutionRollback(new CascadedValue(snapshot, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important }, blocks, i)
+                        : RollBack(blocks, declaration.Name, i, snapshot.Value, rank);
+                }
+            }
+
+            // Many elements have no declaration (e.g. span, or most of the pseudo-elements): they share an empty dictionary, which
+            // is never modified (the logical properties are mapped in place only when there are cascaded values)
+            return result.Count == 0 ? EmptyCascadedValues : new Dictionary<string, CascadedValue>(result, StringComparer.Ordinal);
+        }
+        finally
+        {
+            if (result.Count > MaxCascadeScratchCount)
+            {
+                _cascadeScratch = new(StringComparer.Ordinal);
+            }
+            else
+            {
+                result.Clear();
             }
         }
-
-        return result;
     }
 
     /// <summary>The keywords that roll back the cascade (https://drafts.csswg.org/css-cascade-5/#rollback-cascade).</summary>
@@ -3694,7 +3762,7 @@ internal sealed partial class StyleEngine
                     {
                         value = declaration.Value;
                         if (GetRollback(value) == Rollback.None)
-                            return WithSubstitutionRollback(new CascadedValue(value, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important }, blocks, i);
+                            return WithSubstitutionRollback(new CascadedValue(declaration.Snapshot, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important }, blocks, i);
 
                         index = i;
                         found = true;
@@ -3749,19 +3817,28 @@ internal sealed partial class StyleEngine
 internal readonly struct CascadedValue
 {
     private readonly CascadedValueExtra? _extra;
+    private readonly CssLonghandSnapshot? _value;
 
     /// <param name="value">The declared value.</param>
     /// <param name="rank">The precedence of the winning declaration (the higher the more important): it orders the logical and physical properties that map to each other.</param>
     /// <param name="source">The base URL, the tree scope and the mixin of the declaration, or null when they are all null.</param>
     public CascadedValue(CssLonghandValue value, long rank, CascadedValueSource? source)
+        : this(new CssLonghandSnapshot(value), rank, source)
     {
-        Value = value;
+    }
+
+    /// <param name="value">The declared value, shared with the declaration (see <see cref="CssDeclarationEntry.Snapshot"/>).</param>
+    /// <param name="rank">The precedence of the winning declaration (the higher the more important): it orders the logical and physical properties that map to each other.</param>
+    /// <param name="source">The base URL, the tree scope and the mixin of the declaration, or null when they are all null.</param>
+    public CascadedValue(CssLonghandSnapshot value, long rank, CascadedValueSource? source)
+    {
+        _value = value;
         Rank = rank;
         Source = source;
     }
 
     /// <summary>The declared value.</summary>
-    public CssLonghandValue Value { get; }
+    public CssLonghandValue Value => _value?.Value ?? default;
 
     /// <summary>The precedence of the winning declaration (the higher the more important): it orders the logical and physical properties that map to each other.</summary>
     public long Rank { get; }

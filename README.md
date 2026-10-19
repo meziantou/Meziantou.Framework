@@ -48,7 +48,6 @@
 | Meziantou.Framework.Fonts | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Fonts.svg)](https://www.nuget.org/packages/Meziantou.Framework.Fonts/) | [readme](src/Meziantou.Framework.Fonts/readme.md) |
 | Meziantou.Framework.FullPath | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.FullPath.svg)](https://www.nuget.org/packages/Meziantou.Framework.FullPath/) | [readme](src/Meziantou.Framework.FullPath/readme.md) |
 | Meziantou.Framework.Globbing | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Globbing.svg)](https://www.nuget.org/packages/Meziantou.Framework.Globbing/) | [readme](src/Meziantou.Framework.Globbing/readme.md) |
-| Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) | |
 | Meziantou.Framework.Html.Tool | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.Tool.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html.Tool/) | [readme](src/Meziantou.Framework.Html.Tool/readme.md) |
 | Meziantou.Framework.HtmlSanitizer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) | [readme](src/Meziantou.Framework.HtmlSanitizer/readme.md) |
 | Meziantou.Framework.HtmlToMarkdown | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlToMarkdown.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlToMarkdown/) | [readme](src/Meziantou.Framework.HtmlToMarkdown/readme.md) |

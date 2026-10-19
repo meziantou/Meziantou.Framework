@@ -24,6 +24,9 @@ public class DrawingBenchmarks : IDisposable
     private static readonly BlurFilter WeightedBlurFilter = new(1.5);
     private static readonly DropShadowFilter ShadowFilter = new(new Rgba64(0, 0, 0, 40000), new PointD(6, 8), 8);
 
+    // The 320x240 image scaled to 960x720, centered on the canvas, then rotated around the center of the canvas
+    private static readonly AffineTransform RotatedImageTransform = AffineTransform.CreateScale(3, 3).Then(AffineTransform.CreateTranslation(32, 24)).Then(AffineTransform.CreateRotation(20, new PointD(512, 384)));
+
     private Image<Rgba32> _image = null!;
     private Image<Rgba64> _image64 = null!;
     private Image<Rgba32> _source = null!;
@@ -36,6 +39,8 @@ public class DrawingBenchmarks : IDisposable
     private Brush _sweep = null!;
     private FilterGraph _turbulence = null!;
     private PointD[] _dots = null!;
+    private ImageBrush _repeatBrush = null!;
+    private ImageBrush _reflectBrush = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -56,6 +61,8 @@ public class DrawingBenchmarks : IDisposable
             canvas.FillCircle(new Rgba32(20, 40, 200, 180), new PointD(1024, 768), 600);
         });
 
+        _repeatBrush = new ImageBrush(_source.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = AffineTransform.CreateTranslation(-100, -50) };
+        _reflectBrush = new ImageBrush(_source.Frames[0]) { WrapMode = ImageWrapMode.Reflect, Transform = AffineTransform.CreateTranslation(-100, -50) };
         _clipPath = new VectorPathBuilder().AddEllipse(new PointD(512, 384), 480, 340).Build();
         _linear = new LinearGradientBrush(new PointD(40, 30), new PointD(980, 700), Stops) { SpreadMode = GradientSpreadMode.Reflect };
         _vertical = new LinearGradientBrush(new PointD(0, 0), new PointD(0, Height), Stops);
@@ -212,6 +219,38 @@ public class DrawingBenchmarks : IDisposable
     public int DrawImageAtPosition()
     {
         _image.Draw(_photo.Frames[0], static (canvas, source) => canvas.DrawImage(source, new PointD(-512, -384)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("320x240 Rgba32 image scaled 3 times and rotated by 20 degrees, bilinear: draw")]
+    public int DrawImageRotated()
+    {
+        _image.Draw(_source.Frames[0], static (canvas, source) => canvas.DrawImage(source, RotatedImageTransform));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("320x240 Rgba32 image scaled 3 times and rotated by 20 degrees, bicubic: draw")]
+    public int DrawImageRotatedBicubic()
+    {
+        _image.Draw(_source.Frames[0], static (canvas, source) => canvas.DrawImage(source, RotatedImageTransform, ImageSampling.Bicubic));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("320x240 Rgba32 image brush repeated, at a whole-pixel negative offset: fill of the canvas")]
+    public int FillImageBrushRepeat()
+    {
+        _image.Draw(_repeatBrush, static (canvas, brush) => canvas.Fill(brush));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("320x240 Rgba32 image brush reflected, at a whole-pixel negative offset: fill of the canvas")]
+    public int FillImageBrushReflect()
+    {
+        _image.Draw(_reflectBrush, static (canvas, brush) => canvas.Fill(brush));
         return _image.Width;
     }
 

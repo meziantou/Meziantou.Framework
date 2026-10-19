@@ -48,9 +48,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// With 128-bit hardware vector support (and little-endian byte order), the triangle filters and the color conversion process
-/// 16 samples at a time in 16-bit lanes; the edges and the remainders use the scalar code. The output is identical to the
-/// scalar reference: the filters use the same integer arithmetic, and the conversion an exact rewriting of it whose
-/// intermediate values fit in 16 bits (see <see cref="ConvertYCbCrVector"/>).
+/// 16 samples at a time in 16-bit lanes (the color conversion 32 with 256-bit vectors); the edges and the remainders use
+/// the scalar code. The output is identical to the scalar reference: the filters use the same integer arithmetic, and the
+/// conversion an exact rewriting of it whose intermediate values fit in 16 bits (see <see cref="ConvertYCbCrVector"/>).
 /// </para>
 /// </remarks>
 internal sealed class JpegRowWriter : JpegBandWriter
@@ -354,7 +354,12 @@ internal sealed class JpegRowWriter : JpegBandWriter
     /// <summary>Converts full-range YCbCr samples to interleaved RGB samples.</summary>
     internal static void ConvertYCbCr(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
     {
-        var done = UseVectors ? ConvertYCbCrVector(luma, blue, red, destination) : 0;
+        var done = UseVectors256 ? ConvertYCbCrVector256(luma, blue, red, destination) : 0;
+        if (UseVectors)
+        {
+            done += ConvertYCbCrVector(luma[done..], blue[done..], red[done..], destination[(3 * done)..]);
+        }
+
         ConvertYCbCrScalar(luma[done..], blue[done..], red[done..], destination[(3 * done)..]);
     }
 
@@ -378,6 +383,9 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
     /// <summary>Gets a value indicating whether the vector paths are used (128-bit hardware vectors, little-endian lanes).</summary>
     private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+
+    /// <summary>Gets a value indicating whether the color conversion processes 32 pixels at a time (256-bit hardware vectors, x64 with AVX2).</summary>
+    private static bool UseVectors256 => Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian;
 
     /// <summary>Converts the pixels of whole 16-pixel groups.</summary>
     /// <returns>The number of pixels converted.</returns>
@@ -435,6 +443,56 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<ushort> Clamp(Vector128<short> value) => Vector128.Min(Vector128.Max(value, Vector128<short>.Zero), Vector128.Create((short)255)).AsUInt16();
+    }
+
+    /// <summary>
+    /// Converts the pixels of whole 32-pixel groups with the arithmetic of <see cref="ConvertYCbCrVector"/> in 256-bit
+    /// vectors; the interleaving is the one of 16 pixels, on each half.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    private static int ConvertYCbCrVector256(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
+    {
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        ref var destinationStart = ref unsafe(MemoryMarshal.GetReference(destination));
+        var length = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), destination.Length / 3);
+        var x = 0;
+        for (; x + 32 <= length; x += 32)
+        {
+            var (y0, y1) = Vector256.Widen(unsafe(Vector256.LoadUnsafe(ref lumaStart, (nuint)x)));
+            var (b0, b1) = Vector256.Widen(unsafe(Vector256.LoadUnsafe(ref blueStart, (nuint)x)));
+            var (r0, r1) = Vector256.Widen(unsafe(Vector256.LoadUnsafe(ref redStart, (nuint)x)));
+            Convert16(y0.AsInt16(), b0.AsInt16() - Vector256.Create((short)128), r0.AsInt16() - Vector256.Create((short)128), out var red0, out var green0, out var blue0);
+            Convert16(y1.AsInt16(), b1.AsInt16() - Vector256.Create((short)128), r1.AsInt16() - Vector256.Create((short)128), out var red1, out var green1, out var blue1);
+            var r = Vector256.Narrow(red0, red1);
+            var g = Vector256.Narrow(green0, green1);
+            var b = Vector256.Narrow(blue0, blue1);
+
+            ref var output = ref unsafe(Unsafe.Add(ref destinationStart, 3 * x));
+            Interleave16(r.GetLower(), g.GetLower(), b.GetLower(), ref output);
+            Interleave16(r.GetUpper(), g.GetUpper(), b.GetUpper(), ref unsafe(Unsafe.Add(ref output, 48)));
+        }
+
+        return x;
+
+        // Sixteen pixels: R, G and B clamped to 0..255, in 16-bit lanes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert16(Vector256<short> luma, Vector256<short> cb, Vector256<short> cr, out Vector256<ushort> red, out Vector256<ushort> green, out Vector256<ushort> blue)
+        {
+            var rounding = Vector256.Create((short)128);
+            var redTerm = Vector256.ShiftRightArithmetic((Vector256.Create((short)103) * cr) + Vector256.ShiftRightArithmetic(Vector256.Create((short)-23) * cr, 8) + rounding, 8);
+            var blueTerm = Vector256.ShiftRightArithmetic((Vector256.Create((short)-58) * cb) + Vector256.ShiftRightArithmetic(Vector256.Create((short)-94) * cb, 8) + rounding, 8);
+            var greenHigh = (Vector256.Create((short)-88) * cb) + (Vector256.Create((short)73) * cr);
+            var greenLow = (Vector256.Create((short)-26) * cb) + (Vector256.Create((short)46) * cr);
+            var greenTerm = Vector256.ShiftRightArithmetic(greenHigh + Vector256.ShiftRightArithmetic(greenLow, 8) + rounding, 8);
+            red = Clamp(luma + cr + redTerm);
+            green = Clamp(luma - cr + greenTerm);
+            blue = Clamp(luma + cb + cb + blueTerm);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector256<ushort> Clamp(Vector256<short> value) => Vector256.Min(Vector256.Max(value, Vector256<short>.Zero), Vector256.Create((short)255)).AsUInt16();
     }
 
     private static byte Clamp(int value) => (uint)value <= 255 ? (byte)value : value < 0 ? (byte)0 : (byte)255;

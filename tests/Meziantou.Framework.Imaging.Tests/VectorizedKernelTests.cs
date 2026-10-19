@@ -2715,6 +2715,12 @@ public sealed class VectorizedKernelTests
                     WebPYuvConverter.ConvertSamples(luma, blue, red, withAlpha ? alpha : [], actual);
                     Assert.Equal(expected, actual);
                 }
+
+                var expectedRgb = new byte[length * 3];
+                var actualRgb = new byte[length * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(luma, blue, red, expectedRgb);
+                WebPYuvConverter.ConvertSamplesRgb(luma, blue, red, actualRgb);
+                Assert.Equal(expectedRgb, actualRgb);
             }
         }
 
@@ -2738,6 +2744,11 @@ public sealed class VectorizedKernelTests
                 WebPYuvConverter.ConvertSamplesScalar(lumas, blue, red, [], expected);
                 WebPYuvConverter.ConvertSamples(lumas, blue, red, [], actual);
                 Assert.Equal(expected, actual);
+                var expectedRgb = new byte[lumas.Length * 3];
+                var actualRgb = new byte[lumas.Length * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(lumas, blue, red, expectedRgb);
+                WebPYuvConverter.ConvertSamplesRgb(lumas, blue, red, actualRgb);
+                Assert.Equal(expectedRgb, actualRgb);
             }
         }
     }
@@ -4298,6 +4309,69 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPIntraPredictionMatchesTheScalarReference()
+    {
+        // The ten sub-block modes on random, extreme and nearly flat edges (every clamp of TrueMotion, every rounding of the
+        // averages), with random padding after the 13 edge pixels
+        var random = new Random(6387);
+        for (var round = 0; round < 3000; round++)
+        {
+            var edge = new byte[Vp8Reconstruction.SubBlockEdgeLength];
+            random.NextBytes(edge);
+            for (var i = 0; i < 13; i++)
+            {
+                edge[i] = (round % 4) switch
+                {
+                    0 => edge[i],
+                    1 => (byte)(random.Next(2) * 255),
+                    2 => (byte)(128 + random.Next(-2, 3)),
+                    _ => (byte)random.Next(250, 256),
+                };
+            }
+
+            for (var mode = 0; mode < 10; mode++)
+            {
+                var expected = new byte[16];
+                var actual = new byte[16];
+                Vp8Reconstruction.PredictSubBlockScalar(edge, mode, expected);
+                Vp8Reconstruction.PredictSubBlock(edge, mode, actual);
+                Assert.True(expected.AsSpan().SequenceEqual(actual), $"Sub-block mode {mode}, round {round}.");
+            }
+        }
+
+        // The whole-block modes (16x16 luma and 8x8 chroma) at every frame position (missing edges), on random and extreme
+        // planes
+        for (var round = 0; round < 400; round++)
+        {
+            foreach (var size in new[] { 16, 8 })
+            {
+                const int Stride = 3 * 16;
+                var expected = new byte[Stride * 3 * 16];
+                random.NextBytes(expected);
+                if (round % 2 == 1)
+                {
+                    for (var i = 0; i < expected.Length; i++)
+                    {
+                        expected[i] = (byte)(random.Next(2) * 255);
+                    }
+                }
+
+                var actual = (byte[])expected.Clone();
+                var mbX = random.Next(3);
+                var mbY = random.Next(3);
+                var offset = (mbY * size * Stride) + (mbX * size);
+                for (var mode = 0; mode < 4; mode++)
+                {
+                    Vp8Reconstruction.PredictBlockScalar(expected, Stride, offset, size, mbX, mbY, mode);
+                    Vp8Reconstruction.PredictBlock(actual, Stride, offset, size, mbX, mbY, mode);
+                    Assert.True(expected.AsSpan().SequenceEqual(actual), $"Mode {mode} of a {size}x{size} block at ({mbX}, {mbY}), round {round}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPLosslessTransformsMatchTheScalarReferences()
     {
         // Every predictor mode (14 and 15 included) on tiles of every size, with random, extreme and nearly flat pixels so that
@@ -4353,7 +4427,7 @@ public sealed class VectorizedKernelTests
     public void WebPAlphaAndOutputKernelsMatchTheScalarReferences()
     {
         // Alpha filtering and unfiltering (every filter, the first row and column, clamps of the gradient), the green
-        // extraction and the ARGB to RGBA rows, at lengths around the vector sizes
+        // extraction and the ARGB to RGBA and RGB rows, at lengths around the vector sizes
         var random = new Random(4053);
         for (var round = 0; round < 600; round++)
         {
@@ -4406,6 +4480,12 @@ public sealed class VectorizedKernelTests
                 WebPDecoder.ArgbToRgba(pixels, actualRgba, opaque);
                 Assert.Equal(expectedRgba, actualRgba);
             }
+
+            var expectedRgb = new byte[pixels.Length * 3];
+            var actualRgb = new byte[pixels.Length * 3];
+            WebPDecoder.ArgbToRgbScalar(pixels, expectedRgb);
+            WebPDecoder.ArgbToRgb(pixels, actualRgb);
+            Assert.Equal(expectedRgb, actualRgb);
         }
     }
 

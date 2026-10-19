@@ -580,6 +580,50 @@ public sealed class JpegProgressiveDecoderTests
         }
     }
 
+    [Fact]
+    public void AcRefinementsDecodeLikeTheBitAtATimeReference()
+    {
+        // The refinement walk reads the correction bits of the coefficients it passes over together; the reference reads them
+        // one at a time. Same pixels and same errors on valid, corrupted and truncated inputs: EOB runs across blocks and
+        // restart intervals, ZRL, runs past the band, magnitudes other than 1, and successive approximation from bit 5
+        var image = JpegTestImage.CreateRandom(37, 21, Layouts["4:2:0"], seed: 23, acDensity: 0.6);
+        var sparse = JpegTestImage.CreateRandom(64, 16, Layouts["gray"], seed: 24, acDensity: 0.05);
+        foreach (var (source, options) in new[] { (image, Progressive(ColorDeep, restartInterval: 3)), (image, Progressive(ColorStandard, huffman: JpegTestHuffmanStyle.Skewed)), (sparse, Progressive(GrayDeep, restartInterval: 5, maxEndOfBandRun: 3)) })
+        {
+            var data = source.Encode(options);
+            Assert.Equal(Decode(data, reference: true), Decode(data, reference: false));
+            for (var position = FindSegments(data, 0xDA)[0]; position < data.Length; position++)
+            {
+                foreach (var mask in new byte[] { 0x01, 0x08, 0x40, 0xFF })
+                {
+                    var corrupt = data.ToArray();
+                    corrupt[position] ^= mask;
+                    Assert.Equal(Decode(corrupt, reference: true), Decode(corrupt, reference: false));
+                }
+
+                Assert.Equal(Decode(data[..position], reference: true), Decode(data[..position], reference: false));
+            }
+        }
+
+        static string Decode(byte[] data, bool reference)
+        {
+            JpegProgressiveScanDecoder.TestUseReferenceRefinement = reference;
+            try
+            {
+                using var decoded = Image.Load<Rgb24>(data);
+                return Convert.ToHexString(GetBytes(decoded));
+            }
+            catch (ImageException exception)
+            {
+                return exception.GetType().Name + ": " + exception.Message;
+            }
+            finally
+            {
+                JpegProgressiveScanDecoder.TestUseReferenceRefinement = false;
+            }
+        }
+    }
+
     [Theory]
     [MemberData(nameof(Variants))]
     public async Task LargeImagesDecodeThroughEveryInputVariant(InputVariant variant)

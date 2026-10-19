@@ -77,7 +77,7 @@ internal static class SelectorQuery
             }
 
             Node? next = null;
-            for (var current = node; ; current = current.ParentNode!)
+            for (var current = node; ; current = current.ParentNode)
             {
                 if (current.NextSibling is { } sibling)
                 {

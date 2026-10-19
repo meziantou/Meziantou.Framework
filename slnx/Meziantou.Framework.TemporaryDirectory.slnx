@@ -18,7 +18,6 @@
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
-    <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="../src/Meziantou.Framework.HtmlToMarkdown.Tool/Meziantou.Framework.HtmlToMarkdown.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
     <Project Path="../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
@@ -55,6 +54,7 @@
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
@@ -93,5 +93,8 @@
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
   </Folder>
 </Solution>

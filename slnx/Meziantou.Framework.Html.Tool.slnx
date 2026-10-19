@@ -5,10 +5,14 @@
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
-    <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
   </Folder>
 </Solution>

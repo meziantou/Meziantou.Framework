@@ -1,5 +1,7 @@
 # Meziantou.Framework.Html.Tool
 
+The updated files are re-serialized in the standard HTML form, so the original formatting of the markup (attribute quotes, self-closing tags, etc.) is not preserved.
+
 <!-- help -->
 ## Help
 

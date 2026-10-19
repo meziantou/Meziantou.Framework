@@ -1057,6 +1057,82 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// The weighted predictor gives the predictions and the property of a transcription of the section H.5.2 of the
+    /// standard (four planes of sub-errors, every value computed as the text says), with the default parameters and with
+    /// parameters read from a header, on samples that follow a texture, on random samples and on the extreme samples whose
+    /// errors wrap the 32-bit sums.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)]
+    [InlineData(37, 3)]
+    [InlineData(64, 4)]
+    [InlineData(5, 5)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WeightedPredictorFollowsItsTranscription(int width, int seed)
+    {
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WeightedPredictorFollowsItsTranscription));
+        var header = JpegXlWeightedPredictorHeader.Default;
+        if (seed % 2 == 1)
+        {
+            using var writer = new LsbBitWriter(scope);
+            writer.WriteBits(0, 1);
+            for (var i = 0; i < 7; i++)
+            {
+                writer.WriteBits((uint)random.Next(32), 5);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                writer.WriteBits((uint)random.Next(16), 4);
+            }
+
+            writer.Finish();
+            var data = writer.WrittenSpan.ToArray();
+            header = JpegXlWeightedPredictorHeader.Read(new JpegXlBitReader(data, 0, data.Length));
+        }
+
+        var height = 40;
+        var samples = new int[width * height];
+        using var weighted = new JpegXlWeightedPredictor(header, width, scope);
+        var reference = new WeightedPredictorTranscription(header, width);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                long Get(int column, int row) => samples[(row * width) + column];
+                long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+                long top = y > 0 ? Get(x, y - 1) : left;
+                long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+                long topRight = x + 1 < width && y > 0 ? Get(x + 1, y - 1) : top;
+                long topTop = y > 1 ? Get(x, y - 2) : top;
+                var prediction = weighted.Predict(x, y, top, left, topRight, topLeft, topTop, out var property);
+                var expected = reference.Predict(x, y, top, left, topRight, topLeft, topTop, out var expectedProperty);
+                Assert.Equal((expected, expectedProperty), (prediction, property));
+
+                // Rows 0 to 9 follow a texture, 10 to 19 are random, 20 to 29 are extreme, then random again
+                var sample = (y / 10) switch
+                {
+                    0 => (int)Math.Clamp(prediction + random.Next(-6, 7), int.MinValue, int.MaxValue),
+                    2 => random.Next(4) switch
+                    {
+                        0 => int.MinValue,
+                        1 => int.MaxValue,
+                        2 => -(1 << 30),
+                        _ => 1 << 30,
+                    },
+                    _ => random.Next(-70000, 70000),
+                };
+                samples[(y * width) + x] = sample;
+                weighted.Update(sample, x, y);
+                reference.Update(sample, x, y);
+            }
+        }
+    }
+
     public static TheoryData<string> StillFiles =>
     [
         nameof(JpegXlTestFiles.Rgb),
@@ -1093,4 +1169,89 @@ public sealed class JpegXlDecoderTests
         => string.Create(
             System.Globalization.CultureInfo.InvariantCulture,
             $"{info.Format} {info.Width}x{info.Height} {info.PixelFormat} {info.ColorModel} {info.BitsPerComponent} frames={info.FrameCount} animated={info.IsAnimated} alpha={info.MayHaveTransparency} plays={info.Animation?.TotalPlays} orientation={info.Metadata.Orientation} xmp={info.Metadata.XmpProfile?.Data.Length} exif={info.Metadata.ExifProfile?.Data.Length} icc={info.Metadata.IccProfile?.Data.Length} cicp={info.Metadata.Cicp} transfer={info.Metadata.TransferFunction} mode={info.IdentifyMode}");
+    /// <summary>The section H.5.2 of the standard as it is written: the reference of <see cref="JpegXlWeightedPredictor"/>.</summary>
+    private sealed class WeightedPredictorTranscription(JpegXlWeightedPredictorHeader header, int width)
+    {
+        private readonly int _rowLength = width + 2;
+        private readonly int[] _errors = new int[(width + 2) * 2];
+        private readonly uint[][] _subErrors = [new uint[(width + 2) * 2], new uint[(width + 2) * 2], new uint[(width + 2) * 2], new uint[(width + 2) * 2]];
+        private readonly long[] _subPredictions = new long[4];
+        private long _prediction;
+
+        public long Predict(int x, int y, long north, long west, long northEast, long northWest, long northNorth, out int maxError)
+        {
+            var previousRow = (y & 1) != 0 ? _rowLength : 0;
+            var currentRow = _rowLength - previousRow;
+            var positionN = previousRow + x;
+            var positionNE = x < width - 1 ? positionN + 1 : positionN;
+            var positionNW = x > 0 ? positionN - 1 : positionN;
+            var weights = new uint[4];
+            for (var i = 0; i < 4; i++)
+            {
+                var error = _subErrors[i][positionN] + _subErrors[i][positionNE] + _subErrors[i][positionNW];
+                var shift = Math.Max(0, System.Numerics.BitOperations.Log2((ulong)error + 1) - 5);
+                weights[i] = 4 + ((header.Weights[i] * (uint)((1 << 24) / ((error >> shift) + 1))) >> shift);
+            }
+
+            north <<= 3;
+            west <<= 3;
+            northEast <<= 3;
+            northWest <<= 3;
+            northNorth <<= 3;
+            long errorW = x == 0 ? 0 : _errors[currentRow + x - 1];
+            long errorN = _errors[positionN];
+            long errorNW = _errors[positionNW];
+            long errorNE = _errors[positionNE];
+            long largest = errorW;
+            foreach (var error in new[] { errorN, errorNW, errorNE })
+            {
+                if (Math.Abs(error) > Math.Abs(largest))
+                {
+                    largest = error;
+                }
+            }
+
+            maxError = (int)largest;
+            _subPredictions[0] = west + northEast - north;
+            _subPredictions[1] = north - (((errorW + errorN + errorNE) * header.P1) >> 5);
+            _subPredictions[2] = west - (((errorW + errorN + errorNW) * header.P2) >> 5);
+            _subPredictions[3] = north - (((errorNW * header.P3A) + (errorN * header.P3B) + (errorNE * header.P3C) + ((northNorth - north) * header.P3D) + ((northWest - west) * header.P3E)) >> 5);
+            var logWeight = System.Numerics.BitOperations.Log2(weights[0] + weights[1] + weights[2] + weights[3]) - 4;
+            uint weightSum = 0;
+            for (var i = 0; i < 4; i++)
+            {
+                weights[i] >>= logWeight;
+                weightSum += weights[i];
+            }
+
+            var total = (long)(weightSum >> 1) - 1;
+            for (var i = 0; i < 4; i++)
+            {
+                total += _subPredictions[i] * weights[i];
+            }
+
+            var prediction = (total * ((1 << 24) / weightSum)) >> 24;
+            if (((errorN ^ errorW) | (errorN ^ errorNW)) <= 0)
+            {
+                prediction = Math.Clamp(prediction, Math.Min(west, Math.Min(northEast, north)), Math.Max(west, Math.Max(northEast, north)));
+            }
+
+            _prediction = prediction;
+            return (prediction + 3) >> 3;
+        }
+
+        public void Update(int value, int x, int y)
+        {
+            var previousRow = (y & 1) != 0 ? _rowLength : 0;
+            var currentRow = _rowLength - previousRow;
+            var scaled = (long)value << 3;
+            _errors[currentRow + x] = (int)(_prediction - scaled);
+            for (var i = 0; i < 4; i++)
+            {
+                var error = (uint)((Math.Abs(_subPredictions[i] - scaled) + 3) >> 3);
+                _subErrors[i][currentRow + x] = error;
+                _subErrors[i][previousRow + x + 1] += error;
+            }
+        }
+    }
 }

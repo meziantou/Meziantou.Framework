@@ -122,8 +122,6 @@ public partial class Document : Node
     /// <summary>The named elements of the document tree by name, created on the first property access once the document has candidate elements.</summary>
     internal DocumentNamedItemMap? NamedItemMap { get; set; }
 
-    /// <summary>The indexes of the children of the last parent matched by :nth-child() (see <see cref="Css.Selectors.NthIndexCache"/>).</summary>
-    internal Css.Selectors.NthIndexCache? NthIndexCache { get; set; }
 
     /// <summary>https://dom.spec.whatwg.org/#concept-document-mode</summary>
     internal DocumentMode Mode { get; set; }

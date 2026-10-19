@@ -563,6 +563,12 @@ public abstract partial class Node
         node._parent = null;
         node._previousSibling = null;
         node._nextSibling = null;
+        if (node is Element element)
+        {
+            // (the cached index is stamped with the version of the children of the parent: it must not be valid in another parent)
+            element.ElementIndexStamp = 0;
+        }
+
         _childCount--;
         _childrenVersion++;
         NodeDocument.IncrementTreeVersion(this, node, removed: true);

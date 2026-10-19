@@ -19,8 +19,18 @@ internal sealed partial class StyleEngine
     /// </summary>
     internal static bool VerifyInvalidations { get; set; } = System.Environment.GetEnvironmentVariable("WEBPLATFORM_VERIFY_STYLE_INVALIDATION") == "1";
 
-    /// <summary>The names of the pseudo-elements whose styles are computed, by element (to discard them with the style of the element).</summary>
-    private readonly Dictionary<Element, List<string>> _pseudoElementStyleNames = new(ReferenceEqualityComparer.Instance);
+    /// <summary>
+    /// The names of the pseudo-elements whose styles are computed, by element (to discard them with the style of the element). The
+    /// arrays are never modified (a name is added by replacing the array), so the elements share the common ones (see
+    /// <see cref="CommonPseudoElementStyleNames"/>).
+    /// </summary>
+    private readonly Dictionary<Element, string[]> _pseudoElementStyleNames = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The names of the pseudo-elements whose styles <see cref="RecalculateAllStyles"/> computes for every element, in its order.</summary>
+    private static readonly string[][] CommonPseudoElementStyleNames =
+    [
+        ["marker"], ["marker", "before"], ["marker", "before", "after"], ["marker", "after"], ["before"], ["before", "after"], ["after"],
+    ];
 
     /// <summary>Whether styles of WebVTT objects were computed (they inherit from their media element, out of the tree).</summary>
     private bool _hasWebVttStyles;
@@ -37,11 +47,20 @@ internal sealed partial class StyleEngine
     private void AddPseudoElementStyleName(Element element, string pseudoElement)
     {
         ref var names = ref CollectionsMarshal.GetValueRefOrAddDefault(_pseudoElementStyleNames, element, out _);
-        names ??= [];
-        if (!names.Contains(pseudoElement))
+        if (names is not null && Array.IndexOf(names, pseudoElement) >= 0)
+            return;
+
+        string[] result = names is null ? [pseudoElement] : [.. names, pseudoElement];
+        foreach (var common in CommonPseudoElementStyleNames)
         {
-            names.Add(pseudoElement);
+            if (common.AsSpan().SequenceEqual(result))
+            {
+                result = common;
+                break;
+            }
         }
+
+        names = result;
     }
 
     /// <summary>The changes of the document since the last update of the styles (see <see cref="ConsumeElementInvalidations"/>).</summary>

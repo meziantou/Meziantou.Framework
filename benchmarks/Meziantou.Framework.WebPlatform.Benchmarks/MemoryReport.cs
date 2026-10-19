@@ -16,7 +16,7 @@ internal static class MemoryReport
     {
         Console.WriteLine("| Type | Instance bytes |");
         Console.WriteLine("|---|---:|");
-        foreach (var name in new[] { "Dom.Text", "Dom.Comment", "Dom.Element", "Dom.HtmlDivElement", "Dom.Attr", "Dom.NodeRareData", "Dom.ElementRareData" })
+        foreach (var name in new[] { "Dom.Text", "Dom.Comment", "Dom.Element", "Dom.HtmlDivElement", "Dom.Attr", "Dom.NodeRareData", "Dom.ElementRareData", "Css.Cascade.ComputedStyle", "Css.Layout.LayoutStyle" })
         {
             if (typeof(Node).Assembly.GetType("Meziantou.Framework.WebPlatform." + name) is { } type)
             {
@@ -39,11 +39,24 @@ internal static class MemoryReport
         foreach (var name in new[] { "wikipedia-styled", "small-bootstrap" })
         {
             var html = BenchmarkData.Get(name);
-            MeasureStyles(name, html, allProperties: false);
-            MeasureStyles(name, html, allProperties: true);
+            MeasureStyles(name, html, StyleMeasurement.Properties);
+            MeasureStyles(name, html, StyleMeasurement.AllProperties);
+            MeasureStyles(name, html, StyleMeasurement.Layout);
         }
 
         return 0;
+    }
+
+    private enum StyleMeasurement
+    {
+        /// <summary>The styles of the elements, and the values of a few properties.</summary>
+        Properties,
+
+        /// <summary>The styles of the elements, and the resolved values of all the properties (which compute the layout).</summary>
+        AllProperties,
+
+        /// <summary>The layout alone (the box tree, the fragments, and the values the layout computes), once the styles of the elements are computed.</summary>
+        Layout,
     }
 
     private const int Documents = 3;
@@ -70,11 +83,14 @@ internal static class MemoryReport
         Console.WriteLine($"| {name} | {nodes:N0} | {retained / (double)nodes:N0} | {allocated / (double)nodes:N0} | {FormatRareData(documents[0])} |");
     }
 
-    /// <summary>The bytes retained by the computed styles of all the elements of a document (the document itself is not counted).</summary>
-    private static void MeasureStyles(string name, string html, bool allProperties)
+    /// <summary>
+    /// The bytes retained by the computed styles of all the elements of a document (the document itself is not counted), or by
+    /// its layout (<see cref="StyleMeasurement.Layout"/>).
+    /// </summary>
+    private static void MeasureStyles(string name, string html, StyleMeasurement measurement)
     {
-        // The first document initializes the static data
-        ComputeStyles(Load(html, out var warmup), allProperties);
+        // The first document initializes the static data (e.g. the fonts and the shaping caches of the layout)
+        ComputeStyles(Load(html, out var warmup), allProperties: true);
         warmup.Dispose();
 
         var contexts = new BrowsingContext[Documents];
@@ -83,20 +99,44 @@ internal static class MemoryReport
         {
             documents[i] = Load(html, out contexts[i]);
 
-            // The style engine of the document (style sheets, rule indexes) is not part of the styles of the elements
-            GC.KeepAlive(documents[i].DefaultView!.GetComputedStyle(documents[i].DocumentElement!).GetPropertyValue("display"));
+            // The style engine of the document (style sheets, rule indexes) is not part of the styles of the elements: the rules
+            // are indexed without computing a style (the first style read computes the styles of all the elements, and of their
+            // ::marker, ::before and ::after pseudo-elements)
+            GC.KeepAlive(documents[i].GetStyleEngine().MayHavePseudoElementRules("before"));
+            if (measurement == StyleMeasurement.Layout)
+            {
+                // (display does not compute the layout, unlike the resolved values of some properties, e.g. a margin in %)
+                var window = documents[i].DefaultView!;
+                foreach (var element in documents[i].QuerySelectorAll("*").Cast<Element>())
+                {
+                    GC.KeepAlive(window.GetComputedStyle(element).GetPropertyValue("display"));
+                }
+            }
         }
 
         var baseline = GetCompactedHeapSize();
         var length = 0;
         foreach (var document in documents)
         {
-            length += ComputeStyles(document, allProperties);
+            if (measurement == StyleMeasurement.Layout)
+            {
+                GC.KeepAlive(document.GetLayoutEngine().EnsureLayout());
+            }
+            else
+            {
+                length += ComputeStyles(document, measurement == StyleMeasurement.AllProperties);
+            }
         }
 
         var retained = (GetCompactedHeapSize() - baseline) / Documents;
         var elements = documents[0].QuerySelectorAll("*").Length;
-        Console.WriteLine($"| {name} | {(allProperties ? "all" : string.Join(", ", Properties))} | {elements:N0} | {retained / (double)elements:N0} | {FormatRareData(documents[0])} |");
+        var description = measurement switch
+        {
+            StyleMeasurement.Properties => string.Join(", ", Properties),
+            StyleMeasurement.AllProperties => "all",
+            _ => "layout only",
+        };
+        Console.WriteLine($"| {name} | {description} | {elements:N0} | {retained / (double)elements:N0} | {FormatRareData(documents[0])} |");
         GC.KeepAlive(length);
         foreach (var context in contexts)
         {

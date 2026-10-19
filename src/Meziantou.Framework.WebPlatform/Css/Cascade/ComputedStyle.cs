@@ -44,8 +44,9 @@ internal sealed partial class ComputedStyle
     private RareData? _rareData;
     private LayoutStyle? _layout;
 
-    /// <summary>The styles derived from this style by the box tree (see <see cref="GetDerivedStyle"/>), or null.</summary>
-    private List<(object Key, ComputedStyle Style)>? _derivedStyles;
+    /// <summary>The names of the custom properties that have a value (see <see cref="GetCustomPropertyNames"/>), shared with the parent when they are the same.</summary>
+    private string[]? _customPropertyNames;
+
     private bool _logicalPropertiesResolved;
     private double _fontSize = double.NaN;
     private double _lineHeight = double.NaN;
@@ -71,7 +72,11 @@ internal sealed partial class ComputedStyle
         Element = element;
         PseudoElement = pseudoElement;
         Parent = parent;
-        SelectStyle = pseudoElement is null && element is Dom.HtmlSelectElement ? this : parent?.SelectStyle;
+        if ((pseudoElement is null && element is Dom.HtmlSelectElement ? this : parent?.SelectStyle) is { } selectStyle)
+        {
+            Rare.SelectStyle = selectStyle;
+        }
+
         IsHighlight = StyleEngine.IsHighlightPseudoElement(pseudoElement);
         _cascaded = cascaded;
         _cascadedShared = cascadedShared;
@@ -80,14 +85,18 @@ internal sealed partial class ComputedStyle
         if (unvisitedStyle is not null)
         {
             // The visited style has the animations of the style of the element
-            _unvisitedStyle = unvisitedStyle;
-            VisitedLink = unvisitedStyle.VisitedLink;
+            Rare.UnvisitedStyle = unvisitedStyle;
+            Rare.VisitedLink = unvisitedStyle.VisitedLink;
             _effects = unvisitedStyle._effects;
             _smilAnimations = unvisitedStyle._smilAnimations;
             return;
         }
 
-        VisitedLink = GetVisitedLink(engine, element, pseudoElement, parent);
+        if (GetVisitedLink(engine, element, pseudoElement, parent) is { } visitedLink)
+        {
+            Rare.VisitedLink = visitedLink;
+        }
+
         if (animated)
         {
             _effects = engine.Document.AnimationsOrNull?.GetElementAnimations(element)?.Get(pseudoElement);
@@ -138,7 +147,7 @@ internal sealed partial class ComputedStyle
     /// The style of the nearest select element the style is in (the style itself for a select element), or null: the rules of
     /// the user agent of the select element depend on its rendering (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2).
     /// </summary>
-    internal ComputedStyle? SelectStyle { get; }
+    internal ComputedStyle? SelectStyle => _rareData?.SelectStyle;
 
     /// <summary>The style the properties are inherited from: the parent in the flat tree, or the originating element of a pseudo-element.</summary>
     public ComputedStyle? Parent { get; }
@@ -156,7 +165,17 @@ internal sealed partial class ComputedStyle
     /// The style of the same highlight pseudo-element of the parent element in the flat tree, which the applicable properties
     /// inherit from (https://drafts.csswg.org/css-pseudo-4/#highlight-cascade), or null for the root element and the other pseudo-elements.
     /// </summary>
-    public ComputedStyle? HighlightParent { get; init; }
+    public ComputedStyle? HighlightParent
+    {
+        get => _rareData?.HighlightParent;
+        init
+        {
+            if (value is not null)
+            {
+                Rare.HighlightParent = value;
+            }
+        }
+    }
 
     /// <summary>Whether the element is the root element (https://drafts.csswg.org/selectors-4/#root-pseudo).</summary>
     public bool IsRoot => PseudoElement is null && Element.ParentNode is Document;
@@ -229,7 +248,7 @@ internal sealed partial class ComputedStyle
     /// Returns whether a property that is not inherited may have a value other than its initial value (see <see cref="MayHaveCascadedValue"/>);
     /// the values of a highlight pseudo-element and of a visited style may come from another style.
     /// </summary>
-    private bool MayHaveNonInheritedValue(string property) => IsHighlight || _unvisitedStyle is not null || MayHaveCascadedValue(property);
+    private bool MayHaveNonInheritedValue(string property) => IsHighlight || UnvisitedStyle is not null || MayHaveCascadedValue(property);
 
     /// <summary>The computed font size in pixels.</summary>
     public double FontSize => double.IsNaN(_fontSize) ? _fontSize = CssValueComputer.ParsePixels(GetComputedValue("font-size")) ?? CssValueComputer.MediumFontSize : _fontSize;
@@ -279,14 +298,34 @@ internal sealed partial class ComputedStyle
     /// the computed style of the element, before the position options and the anchor functions resolved by the layout
     /// (<see cref="WithPositionOption"/>); null for the computed style of the element.
     /// </summary>
-    internal ComputedStyle? PositionBaseStyle { get; private init; }
+    internal ComputedStyle? PositionBaseStyle
+    {
+        get => _rareData?.PositionBaseStyle;
+        private init
+        {
+            if (value is not null)
+            {
+                Rare.PositionBaseStyle = value;
+            }
+        }
+    }
 
     /// <summary>
     /// The properties whose anchor functions were resolved by the layout (see <see cref="WithPositionOption"/>): the resolved values
     /// are computed from the animated values (e.g. the interpolation of two anchor functions), so they replace the animation and
     /// transition origins too.
     /// </summary>
-    private HashSet<string>? ResolvedAnchorProperties { get; init; }
+    private HashSet<string>? ResolvedAnchorProperties
+    {
+        get => _rareData?.ResolvedAnchorProperties;
+        init
+        {
+            if (value is not null)
+            {
+                Rare.ResolvedAnchorProperties = value;
+            }
+        }
+    }
 
     /// <summary>
     /// Returns the style of an absolutely positioned element with declarations of the position fallback origin
@@ -361,7 +400,7 @@ internal sealed partial class ComputedStyle
     /// <param name="create">Creates the derived style from this style.</param>
     internal ComputedStyle GetDerivedStyle<TState>(object key, TState state, Func<ComputedStyle, TState, ComputedStyle> create)
     {
-        if (_derivedStyles is { } derivedStyles)
+        if (_rareData?.DerivedStyles is { } derivedStyles)
         {
             foreach (var (derivedKey, derived) in derivedStyles)
             {
@@ -371,7 +410,7 @@ internal sealed partial class ComputedStyle
         }
 
         var style = create(this, state);
-        (_derivedStyles ??= new(1)).Add((key, style));
+        (Rare.DerivedStyles ??= new(1)).Add((key, style));
         return style;
     }
 
@@ -408,7 +447,17 @@ internal sealed partial class ComputedStyle
     /// multiplied by the line scaling factor"). The computed values are not changed: the font-relative lengths are the ones of
     /// the computed font size.
     /// </summary>
-    internal double UsedFontScale { get; private init; } = 1;
+    internal double UsedFontScale
+    {
+        get => _rareData?.UsedFontScale ?? 1;
+        private init
+        {
+            if (value != 1)
+            {
+                Rare.UsedFontScale = value;
+            }
+        }
+    }
 
     /// <summary>
     /// Returns the style of the element with the same cascaded values and parent whose used font size is multiplied by a factor
@@ -752,20 +801,19 @@ internal sealed partial class ComputedStyle
     private string GetUsedColor()
     {
         // The color of a visited style has the alpha of the color of the style of the element (see GetVisitedDependentValue)
-        if (_unvisitedStyle is { } unvisited)
+        if (UnvisitedStyle is { } unvisited)
         {
-            if (_visitedUsedColor is { } cached)
+            if (_rareData?.VisitedUsedColor is { } cached)
                 return cached;
 
             var visitedColor = GetOwnUsedColor();
             var unvisitedColor = unvisited.GetOwnUsedColor();
-            return _visitedUsedColor = visitedColor == "currentcolor" || unvisitedColor == "currentcolor" ? visitedColor : CombineVisitedColor("color", unvisitedColor, visitedColor) ?? visitedColor;
+            return Rare.VisitedUsedColor = visitedColor == "currentcolor" || unvisitedColor == "currentcolor" ? visitedColor : CombineVisitedColor("color", unvisitedColor, visitedColor) ?? visitedColor;
         }
 
         return GetOwnUsedColor();
     }
 
-    private string? _visitedUsedColor;
 
     /// <summary>Returns the used color of the style, whose alpha is not yet the one of the unvisited color for a visited style.</summary>
     private string GetOwnUsedColor()
@@ -830,8 +878,7 @@ internal sealed partial class ComputedStyle
         if (physical is not null)
         {
             result = GetComputedValue(physical);
-            _computed.Set(property, result);
-            return result;
+            return _computed.Set(property, result, Engine.ComputedValueTable);
         }
 
         var definition = CssPropertyRegistry.Get(property);
@@ -865,8 +912,7 @@ internal sealed partial class ComputedStyle
             computing.Remove(this, property);
         }
 
-        _computed.Set(property, result);
-        return result;
+        return _computed.Set(property, result, Engine.ComputedValueTable);
     }
 
     /// <summary>Returns whether the computed value of the property is being computed (a dependency cycle when it is needed again).</summary>
@@ -933,7 +979,7 @@ internal sealed partial class ComputedStyle
             return originating.GetComputedValue(name);
 
         // Only the colors of a visited style differ from the ones of the style of the element (see ComputedStyle.VisitedLinks.cs)
-        if (_unvisitedStyle is { } unvisited && !VisitedProperties.Contains(name))
+        if (UnvisitedStyle is { } unvisited && !VisitedProperties.Contains(name))
             return unvisited.GetComputedValue(name);
 
         // The animation origin (https://drafts.csswg.org/css-cascade-5/#cascade-origin-animation)
@@ -1257,7 +1303,7 @@ internal sealed partial class ComputedStyle
     public string? GetCustomPropertyValue(string name)
     {
         // The custom properties of a visited style are the ones of the style of the element
-        if (_unvisitedStyle is { } unvisited)
+        if (UnvisitedStyle is { } unvisited)
             return unvisited.GetCustomPropertyValue(name);
 
         if (_rareData?.CustomProperties is { } customProperties && customProperties.TryGetValue(name, out var result))
@@ -1322,7 +1368,7 @@ internal sealed partial class ComputedStyle
     /// </summary>
     public bool IsCustomPropertyTainted(string name)
     {
-        if (_unvisitedStyle is { } unvisited)
+        if (UnvisitedStyle is { } unvisited)
             return unvisited.IsCustomPropertyTainted(name);
 
         var source = GetCustomPropertySource(name);
@@ -1342,7 +1388,7 @@ internal sealed partial class ComputedStyle
     {
         var registration = RegisteredProperties.GetValueOrDefault(name);
         var style = this;
-        while (style.Parent is { } parent && style._unvisitedStyle is null && style._effects is not { Count: > 0 } && ((registration?.Inherits ?? true) || style.IsHighlight)
+        while (style.Parent is { } parent && style.UnvisitedStyle is null && style._effects is not { Count: > 0 } && ((registration?.Inherits ?? true) || style.IsHighlight)
             && !(style.HasCustomPropertyDeclarations && style._cascaded.ContainsKey(name)) && style._rareData?.CustomProperties?.ContainsKey(name) is not true)
         {
             style = parent;
@@ -1518,9 +1564,39 @@ internal sealed partial class ComputedStyle
     /// <summary>The names of the custom properties that have a value (declared, inherited or the initial value of a registered property), in lexicographical order.</summary>
     public IReadOnlyList<string> GetCustomPropertyNames()
     {
-        if (_rareData?.CustomPropertyNames is { } customPropertyNames)
+        if (_customPropertyNames is { } customPropertyNames)
             return customPropertyNames;
 
+        // A style that declares no custom property has the custom properties of its parent (see InheritsAllCustomProperties):
+        // the styles share the list of the nearest ancestor that declares one
+        var source = this;
+        while (source._customPropertyNames is null && source.Parent is { } parent && source.InheritsAllCustomProperties(parent))
+        {
+            source = parent;
+        }
+
+        var result = source._customPropertyNames ?? source.ComputeCustomPropertyNames();
+        for (var style = this; !ReferenceEquals(style, source); style = style.Parent!)
+        {
+            style._customPropertyNames = result;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns whether the style has the custom properties of its parent, with the same values: it neither declares nor animates
+    /// one, no custom property is registered (a registered property may not be inherited), and it is not a visited style or a
+    /// highlight pseudo-element (which inherit differently).
+    /// </summary>
+    private bool InheritsAllCustomProperties(ComputedStyle parent)
+    {
+        return UnvisitedStyle is null && !IsHighlight && _effects is not { Count: > 0 } && RegisteredProperties.Count == 0 && parent.RegisteredProperties.Count == 0
+            && !HasCustomPropertyDeclarations;
+    }
+
+    private string[] ComputeCustomPropertyNames()
+    {
         var names = new SortedSet<string>(RegisteredProperties.Keys, StringComparer.Ordinal);
         for (var style = this; style is not null; style = style.Parent)
         {
@@ -1535,7 +1611,15 @@ internal sealed partial class ComputedStyle
             style.AddAnimatedCustomPropertyNames(names);
         }
 
-        return Rare.CustomPropertyNames = [.. names.Where(name => GetCustomPropertyValue(name) is not null)];
+        string[] result = [.. names.Where(name => GetCustomPropertyValue(name) is not null)];
+
+        // (the elements that declare the same custom properties as their parent share its list)
+        if (Parent?._customPropertyNames is { } parentNames && parentNames.AsSpan().SequenceEqual(result))
+        {
+            result = parentNames;
+        }
+
+        return _customPropertyNames = result;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1803,17 +1887,39 @@ internal sealed partial class ComputedStyle
         return result;
     }
 
-    /// <summary>The state of the styles that use custom properties or mixins: most styles do not.</summary>
+    /// <summary>The data that most styles do not have (see <see cref="RareData"/>).</summary>
     private RareData Rare => _rareData ??= new RareData();
 
+    /// <summary>The data of the styles that only some styles have (e.g. the custom properties, the styles of the visited links, of the anchor-positioned boxes, of the highlight pseudo-elements), allocated on first use.</summary>
     private sealed class RareData
     {
+        /// <summary>The unvisited style of a visited style (the computed style of the element, see <see cref="VisitedOrSelf"/>).</summary>
+        public ComputedStyle? UnvisitedStyle;
+        public ComputedStyle? VisitedStyle;
+
+        /// <summary>The cascaded values of the visited style, when they are known (see <see cref="GetVisitedCascadedValues"/>).</summary>
+        public Dictionary<string, CascadedValue>? VisitedCascaded;
+
+        /// <summary>The style that the style was derived from with the same cascaded values (and the same cascaded values of its visited style).</summary>
+        public ComputedStyle? VisitedCascadeSource;
+        public string? VisitedUsedColor;
+        public Element? VisitedLink;
+        public Element? UseInstanceRoot;
+        public ComputedStyle? SelectStyle;
+        public ComputedStyle? HighlightParent;
+        public ComputedStyle? PositionBaseStyle;
+        public HashSet<string>? ResolvedAnchorProperties;
+        public double UsedFontScale = 1;
+        public ComputedStyle? AfterChangeStyle;
+        public ForcedColorsData? ForcedColors;
+
+        /// <summary>The styles derived from this style by the box tree (see <see cref="GetDerivedStyle"/>).</summary>
+        public List<(object Key, ComputedStyle Style)>? DerivedStyles;
         public Dictionary<string, string?>? CustomProperties;
         public HashSet<string>? TaintedCustomProperties;
         public Dictionary<CssMixinApplication, CssFunctionFrame>? MixinFrames;
         public bool CustomPropertyTainted;
         public List<string>? CustomPropertyStack;
-        public List<string>? CustomPropertyNames;
         public HashSet<string>? CustomPropertyCycles;
         public Dictionary<string, HashSet<string>>? UnitCycles;
 
@@ -1823,10 +1929,8 @@ internal sealed partial class ComputedStyle
 
     /// <summary>
     /// The computed values of a style, by property: most styles only have a few computed values (e.g. display), which are
-    /// stored in a small array, searched linearly. The other styles store a bitmap of the computed properties, by property
-    /// index (see <see cref="CssPropertyRegistry.GetIndex"/>), and the values of these properties in a packed array, in the
-    /// order of their index: unlike a dictionary, it has no buckets, no hash codes and no names, and unlike an array indexed
-    /// by property, it does not have a slot for each of the hundreds of properties.
+    /// stored in a small array, searched linearly. The other styles store them in <see cref="PackedValues"/>. The values are
+    /// shared with the other styles of the engine (see <see cref="ComputedValueTable"/>).
     /// </summary>
     private struct ComputedValues
     {
@@ -1834,29 +1938,16 @@ internal sealed partial class ComputedStyle
 
         private (string Property, string Value)[]? _array;
 
-        /// <summary>The number of values (in <see cref="_array"/> or in <see cref="_values"/>).</summary>
+        /// <summary>The number of values in <see cref="_array"/>.</summary>
         private int _count;
 
-        /// <summary>The bit of the index of each property that has a value in <see cref="_values"/>, once there are more than <see cref="MaxArrayLength"/> values.</summary>
-        private ulong[]? _present;
-
-        /// <summary>The values of the properties of <see cref="_present"/>, in the order of their index.</summary>
-        private string[]? _values;
+        /// <summary>The values, once there are more than <see cref="MaxArrayLength"/> values.</summary>
+        private PackedValues? _packed;
 
         public readonly bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
         {
-            if (_present is not null)
-            {
-                var index = CssPropertyRegistry.GetIndex(property);
-                if (index >= 0 && IsPresent(index))
-                {
-                    value = _values![GetPosition(index)];
-                    return true;
-                }
-
-                value = null;
-                return false;
-            }
+            if (_packed is { } packed)
+                return packed.TryGetValue(property, out value);
 
             var array = _array;
             for (var i = 0; i < _count; i++)
@@ -1875,43 +1966,35 @@ internal sealed partial class ComputedStyle
 
         public readonly bool ContainsKey(string property) => TryGetValue(property, out _);
 
-        public void Set(string property, string value)
+        /// <summary>Sets the value of a property, and returns the value that is stored: an equal string shared by the styles when there is one.</summary>
+        /// <param name="table">The values shared by the styles of the engine (see <see cref="StyleEngine.ComputedValueTable"/>).</param>
+        public string Set(string property, string value, ComputedValueTable table)
         {
-            if (_present is not null)
-            {
-                // The values are only stored by property index: the names that are not supported properties are never computed
-                var index = CssPropertyRegistry.GetIndex(property);
-                if (index >= 0)
-                {
-                    SetByIndex(index, value);
-                }
+            if (_packed is { } packed)
+                return packed.Set(property, value);
 
-                return;
-            }
-
+            value = table.Share(value);
             for (var i = 0; i < _count; i++)
             {
                 if (string.Equals(_array![i].Property, property, StringComparison.Ordinal))
                 {
                     _array[i].Value = value;
-                    return;
+                    return value;
                 }
             }
 
             if (_count == MaxArrayLength)
             {
-                var array = _array!;
-                _array = null;
-                _count = 0;
-                _present = new ulong[(CssPropertyRegistry.PropertyNameCount + 63) / 64];
-                _values = new string[MaxArrayLength * 2];
-                foreach (var (existingProperty, existingValue) in array)
+                packed = new PackedValues(table);
+                foreach (var (existingProperty, existingValue) in _array!)
                 {
-                    Set(existingProperty, existingValue);
+                    packed.Set(existingProperty, existingValue);
                 }
 
-                Set(property, value);
-                return;
+                _packed = packed;
+                _array = null;
+                _count = 0;
+                return packed.Set(property, value);
             }
 
             if (_array is null || _count == _array.Length)
@@ -1920,14 +2003,116 @@ internal sealed partial class ComputedStyle
             }
 
             _array[_count++] = (property, value);
+            return value;
+        }
+    }
+
+    /// <summary>
+    /// The computed values of a style that computes many properties (see <see cref="ComputedValues"/>): a bitmap of the computed
+    /// properties, by property index (see <see cref="CssPropertyRegistry.GetIndex"/>), and the indexes of their values in the
+    /// table of the values shared by the styles (see <see cref="ComputedValueTable"/>), in the order of the property indexes:
+    /// unlike a dictionary, it has no buckets, no hash codes and no names, unlike an array indexed by property, it does not have a
+    /// slot for each of the hundreds of properties, and a value takes 2 bytes instead of a reference. The values that are not in
+    /// the table are stored in <see cref="_ownValues"/> (their index has <see cref="OwnValueFlag"/>).
+    /// </summary>
+    private sealed class PackedValues(ComputedValueTable table)
+    {
+        private const int OwnValueFlag = 1 << 15;
+
+        private readonly ComputedValueTable _table = table;
+
+        /// <summary>The bit of the index of each property that has a value.</summary>
+        private readonly ulong[] _present = new ulong[(CssPropertyRegistry.PropertyNameCount + 63) / 64];
+
+        /// <summary>The indexes of the values of the properties of <see cref="_present"/>, in the order of the property indexes.</summary>
+        private ushort[] _indexes = new ushort[16];
+        private int _count;
+
+        /// <summary>The values that are not in <see cref="_table"/>.</summary>
+        private string[]? _ownValues;
+        private int _ownValueCount;
+
+        public bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
+        {
+            var index = CssPropertyRegistry.GetIndex(property);
+            if (index < 0 || !IsPresent(index))
+            {
+                value = null;
+                return false;
+            }
+
+            var valueIndex = _indexes[GetPosition(index)];
+            value = (valueIndex & OwnValueFlag) == 0 ? _table[valueIndex] : _ownValues![valueIndex & ~OwnValueFlag];
+            return true;
         }
 
-        private readonly bool IsPresent(int index) => (_present![index >> 6] & (1UL << index)) != 0;
-
-        /// <summary>The position of the value of the property in <see cref="_values"/>: the number of present properties whose index is lower.</summary>
-        private readonly int GetPosition(int index)
+        /// <summary>Sets the value of a property, and returns the value that is stored (the string of the table when the value is in the table).</summary>
+        public string Set(string property, string value)
         {
-            var present = _present!;
+            // The values are only stored by property index: the names that are not supported properties are never computed
+            var index = CssPropertyRegistry.GetIndex(property);
+            if (index < 0)
+                return value;
+
+            var position = GetPosition(index);
+            if (IsPresent(index))
+            {
+                ref var existing = ref _indexes[position];
+                if (_table.TryGetIndex(value, out var tableIndex))
+                {
+                    existing = tableIndex;
+                    return _table[tableIndex];
+                }
+
+                if ((existing & OwnValueFlag) != 0)
+                {
+                    _ownValues![existing & ~OwnValueFlag] = value;
+                }
+                else
+                {
+                    existing = AddOwnValue(value);
+                }
+
+                return value;
+            }
+
+            if (_count == _indexes.Length)
+            {
+                // The arrays grow by half of their length, as the number of computed values is usually far from the number of properties
+                Array.Resize(ref _indexes, Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
+            }
+
+            Array.Copy(_indexes, position, _indexes, position + 1, _count - position);
+            _present[index >> 6] |= 1UL << index;
+            _count++;
+            if (_table.TryGetIndex(value, out var valueIndex))
+            {
+                _indexes[position] = valueIndex;
+                return _table[valueIndex];
+            }
+
+            _indexes[position] = AddOwnValue(value);
+            return value;
+        }
+
+        /// <summary>Adds a value that is not in the table (at most one per property: a property whose value is replaced reuses its slot).</summary>
+        private ushort AddOwnValue(string value)
+        {
+            if (_ownValues is null || _ownValueCount == _ownValues.Length)
+            {
+                Array.Resize(ref _ownValues, _ownValues is null ? 4 : _ownValues.Length * 2);
+            }
+
+            _ownValues[_ownValueCount] = value;
+            return (ushort)(OwnValueFlag | _ownValueCount++);
+        }
+
+        private bool IsPresent(int index) => (_present[index >> 6] & (1UL << index)) != 0;
+
+        /// <summary>The position of the value of the property in <see cref="_indexes"/>: the number of present properties whose index is lower.</summary>
+        private int GetPosition(int index)
+        {
+            var present = _present;
             var word = index >> 6;
             var position = System.Numerics.BitOperations.PopCount(present[word] & ((1UL << index) - 1));
             for (var i = 0; i < word; i++)
@@ -1936,27 +2121,6 @@ internal sealed partial class ComputedStyle
             }
 
             return position;
-        }
-
-        private void SetByIndex(int index, string value)
-        {
-            var position = GetPosition(index);
-            if (IsPresent(index))
-            {
-                _values![position] = value;
-                return;
-            }
-
-            if (_count == _values!.Length)
-            {
-                // The arrays grow by half of their length, as the number of computed values is usually far from the number of properties
-                Array.Resize(ref _values, Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
-            }
-
-            Array.Copy(_values, position, _values, position + 1, _count - position);
-            _values[position] = value;
-            _present![index >> 6] |= 1UL << index;
-            _count++;
         }
     }
 }

@@ -97,6 +97,14 @@ internal sealed partial class StyleEngine
     /// <summary>The styles whose computed value of a property is computed before the one of a descendant (see <see cref="ComputedStyle"/>).</summary>
     internal List<ComputedStyle> PendingAncestors { get; } = [];
 
+    /// <summary>
+    /// The computed values that the styles of the engine share (see <see cref="Cascade.ComputedValueTable"/>), replaced by a new
+    /// table when it is full (the styles keep the table their values refer to).
+    /// </summary>
+    internal ComputedValueTable ComputedValueTable => _computedValueTable is { IsFull: false } table ? table : _computedValueTable = new();
+
+    private ComputedValueTable? _computedValueTable;
+
     /// <summary>Returns the shared cascaded values whose logical properties are mapped for each writing mode and direction (see <see cref="_logicalCascades"/>).</summary>
     internal List<(string WritingMode, bool RightToLeft, Dictionary<string, CascadedValue> Mapped)> GetLogicalCascades(Dictionary<string, CascadedValue> cascaded) => _logicalCascades.GetOrCreateValue(cascaded);
 

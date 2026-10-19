@@ -58,7 +58,6 @@ internal sealed partial class ComputedStyle
 
     // 0: not computed yet, 1: the colors are forced, -1: they are not
     private sbyte _forcedColorsAdjusted;
-    private ForcedColorsData? _forcedColors;
 
     /// <summary>The state of a style in forced colors mode.</summary>
     private sealed class ForcedColorsData
@@ -226,7 +225,7 @@ internal sealed partial class ComputedStyle
     internal string GetUsedValue(string property)
     {
         var value = GetResolvedValue(property, forceColors: Environment.ForcedColors);
-        if (VisitedLink is null || _unvisitedStyle is not null)
+        if (VisitedLink is null || UnvisitedStyle is not null)
             return value;
 
         var physical = LogicalProperties.GetPhysicalProperty(property, this) ?? property;
@@ -284,7 +283,7 @@ internal sealed partial class ComputedStyle
     /// </summary>
     private string GetForcedColor(string computedValue)
     {
-        var data = _forcedColors ??= new ForcedColorsData();
+        var data = Rare.ForcedColors ??= new ForcedColorsData();
         return data.UsedColor ??= HasSystemColor("color", computedValue) ? computedValue : GetUserAgentColor().Value;
     }
 
@@ -343,7 +342,7 @@ internal sealed partial class ComputedStyle
     /// </summary>
     private ComputedStyle GetUserAgentStyle()
     {
-        var data = _forcedColors ??= new ForcedColorsData();
+        var data = Rare.ForcedColors ??= new ForcedColorsData();
         return data.UserAgentStyle ??= Engine.CreateUserAgentStyle(this);
     }
 
@@ -365,7 +364,7 @@ internal sealed partial class ComputedStyle
     /// </summary>
     private (string Keyword, string Value) GetUserAgentColor()
     {
-        if (_forcedColors?.UserAgentColor is { } cached)
+        if (_rareData?.ForcedColors?.UserAgentColor is { } cached)
             return cached;
 
         // (iteratively: the trees can be deep)
@@ -373,7 +372,7 @@ internal sealed partial class ComputedStyle
         (string Keyword, string Value)? result = null;
         for (var style = this; style is not null; style = style.Parent)
         {
-            if (style._forcedColors?.UserAgentColor is { } known)
+            if (style._rareData?.ForcedColors?.UserAgentColor is { } known)
             {
                 result = known;
                 break;
@@ -395,7 +394,7 @@ internal sealed partial class ComputedStyle
         {
             foreach (var style in styles)
             {
-                (style._forcedColors ??= new ForcedColorsData()).UserAgentColor = color;
+                (style.Rare.ForcedColors ??= new ForcedColorsData()).UserAgentColor = color;
             }
         }
 

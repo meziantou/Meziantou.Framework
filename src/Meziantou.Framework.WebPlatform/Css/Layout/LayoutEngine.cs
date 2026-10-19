@@ -59,6 +59,9 @@ internal sealed partial class LayoutEngine
     /// <summary>The number of updates of the box tree that patched it instead of building it again (see <see cref="BoxTree.TryPatch"/>), for the tests and the diagnostics.</summary>
     public int BoxTreePatchCount { get; private set; }
 
+    /// <summary>The number of layouts of the viewport box: a pass lays it out again when its scrollbars change (see <see cref="LayoutViewport(LayoutContext, ContainerBox)"/>), for the tests.</summary>
+    internal int ViewportLayoutCount { get; private set; }
+
     /// <summary>
     /// Whether the incremental updates of the box tree and of the layout are verified (the <c>WEBPLATFORM_VERIFY_INCREMENTAL_LAYOUT</c>
     /// environment variable is <c>1</c>): after each patch of the box tree, the tree is built again and compared with the patched
@@ -554,12 +557,32 @@ internal sealed partial class LayoutEngine
         var writingDirection = rootStyle is null ? WritingDirection.HorizontalLtr : new WritingDirection(rootStyle.WritingMode, Direction.Ltr);
         var gutter = rootStyle?.Overflow.ScrollbarGutter ?? ScrollbarGutter.Auto;
         var scrollbars = ScrollContainers.GetForcedScrollbars(overflow);
+        var guessedVerticalScrollbar = false;
         if (_viewportScrollState is { } previous)
         {
             scrollbars |= previous.Scrollbars & ((overflow.X == OverflowKind.Auto ? Scrollbars.Horizontal : Scrollbars.None) | (overflow.Y == OverflowKind.Auto ? Scrollbars.Vertical : Scrollbars.None));
         }
+        else if (overflow.Y == OverflowKind.Auto && writingDirection.IsHorizontal && (scrollbars & Scrollbars.Vertical) == Scrollbars.None
+            && context.ViewportSize.Width > thickness && context.ViewportSize.Height > 0
+            && EstimateTextBlockSize(viewport, context.ViewportSize.Width, 2 * context.ViewportSize.Height) >= 2 * context.ViewportSize.Height)
+        {
+            // The first layout of a document starts without scrollbars, which a long document then lays out again with its
+            // vertical scrollbar (the layout result cache keeps nothing once the initial containing block is narrower): the
+            // vertical scrollbar is assumed when the text of the document cannot fit in the viewport
+            scrollbars |= Scrollbars.Vertical;
+            guessedVerticalScrollbar = true;
+        }
 
         var root = LayoutViewport(context, viewport, ScrollContainers.GetScrollbarSides(scrollbars, overflow, writingDirection, gutter, thickness), scrollbars);
+
+        // The guess holds when the document overflows the viewport by far: the 15px or so of the scrollbar cannot make it fit.
+        // Else the layout starts again without scrollbars, as the specification requires.
+        if (guessedVerticalScrollbar && root.GetScrollingArea().Height < 1.5 * root.PaddingBoxRect.Height)
+        {
+            scrollbars &= ~Scrollbars.Vertical;
+            root = LayoutViewport(context, viewport, ScrollContainers.GetScrollbarSides(scrollbars, overflow, writingDirection, gutter, thickness), scrollbars);
+        }
+
         for (var pass = 0; pass < 2; pass++)
         {
             var needed = ScrollContainers.GetNeededScrollbars(overflow, root.GetScrollingArea(), root.PaddingBoxRect);
@@ -578,8 +601,54 @@ internal sealed partial class LayoutEngine
         return root;
     }
 
-    private static BoxFragment LayoutViewport(LayoutContext context, ContainerBox viewport, Sides<double> scrollbarSides, Scrollbars scrollbars)
+    /// <summary>
+    /// Returns a rough lower estimate of the block size of the text of the in-flow boxes of a horizontal document laid out in a
+    /// viewport of the given width, stopping once it reaches <paramref name="limit"/>: the area of the characters (half an em wide,
+    /// 1.2em tall) divided by the width. The contents of the boxes that clip their overflow or skip their contents, and of the
+    /// absolutely positioned boxes, are ignored.
+    /// </summary>
+    private static double EstimateTextBlockSize(ContainerBox viewport, double width, double limit)
     {
+        const double AverageCharacterWidth = 0.5;
+        const double LineHeight = 1.2;
+        var area = 0d;
+        var areaLimit = limit * width;
+        LayoutBox? box = viewport.FirstChild;
+        while (box is not null)
+        {
+            if (box is TextRun run)
+            {
+                if (!run.IsCollapsibleWhiteSpace)
+                {
+                    var fontSize = run.Style.FontSize;
+                    area += run.Length * AverageCharacterWidth * LineHeight * fontSize * fontSize;
+                    if (area >= areaLimit)
+                        return limit;
+                }
+            }
+            else if (box is ContainerBox { FirstChild: { } firstChild, SkipsContents: false } container && !PositionedLayout.IsAbsolutelyPositioned(container)
+                && ScrollContainers.GetUsedOverflow(container) is (OverflowKind.Visible, OverflowKind.Visible))
+            {
+                box = firstChild;
+                continue;
+            }
+
+            // The next box in tree order that is not a descendant of the box
+            while (box is not null && box.NextSibling is null)
+            {
+                box = box.Parent is { } parent && !ReferenceEquals(parent, viewport) ? parent : null;
+            }
+
+            box = box?.NextSibling;
+        }
+
+        return area / width;
+    }
+
+    private BoxFragment LayoutViewport(LayoutContext context, ContainerBox viewport, Sides<double> scrollbarSides, Scrollbars scrollbars)
+    {
+        ViewportLayoutCount++;
+
         // https://drafts.csswg.org/css-display/#initial-containing-block: the root element is laid out in the initial
         // containing block, which has the size of the viewport (without its scrollbars) and the writing mode of the root element
         var size = new PhysicalSize(Math.Max(0, context.ViewportSize.Width - scrollbarSides.HorizontalSum()), Math.Max(0, context.ViewportSize.Height - scrollbarSides.VerticalSum()));

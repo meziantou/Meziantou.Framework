@@ -438,27 +438,38 @@ internal static class HtmlElementStates
     /// <summary>Returns the language of the element (https://html.spec.whatwg.org/multipage/dom.html#language), or null when unknown.</summary>
     public static string? GetLanguage(Element element)
     {
-        for (Node? node = element; node is not null; node = node.ParentNode is ShadowRoot shadowRoot ? shadowRoot.Host : node.ParentNode)
+        for (Node? node = element; node is not null; node = GetLanguageParent(node))
         {
-            if (node is not Element current)
-                continue;
-
-            // https://w3c.github.io/webvtt/#the-cue-pseudo-element: the language of a WebVTT internal node object is its
-            // applicable language
-            if (current is WebVtt.WebVttElement vttElement)
-                return vttElement.Language;
-
-            // xml:lang has priority over lang
-            if (current.GetAttributeValue(Namespaces.Xml, "lang") is { } xmlLang)
-                return xmlLang;
-
-            if ((current.IsHtmlNamespace || ReferenceEquals(current.NamespaceUri, Namespaces.Svg)) && current.GetAttributeValue("lang") is { } lang)
-                return lang;
+            if (node is Element current && TryGetOwnLanguage(current, out var language))
+                return language;
         }
 
         // The pragma-set default language, then the language of the higher-level protocol (the Content-Language header)
         var document = element.NodeDocument;
         return document.PragmaSetDefaultLanguage ?? document.ProtocolLanguage;
+    }
+
+    /// <summary>The node the language of a node is inherited from (see <see cref="GetLanguage"/>): its parent, or the host of its shadow root.</summary>
+    internal static Node? GetLanguageParent(Node node) => node.ParentNode is ShadowRoot shadowRoot ? shadowRoot.Host : node.ParentNode;
+
+    /// <summary>Returns the language set on the element itself (its lang or xml:lang attribute), which it does not inherit (see <see cref="GetLanguage"/>).</summary>
+    internal static bool TryGetOwnLanguage(Element element, out string? language)
+    {
+        // https://w3c.github.io/webvtt/#the-cue-pseudo-element: the language of a WebVTT internal node object is its
+        // applicable language
+        if (element is WebVtt.WebVttElement vttElement)
+        {
+            language = vttElement.Language;
+            return true;
+        }
+
+        // xml:lang has priority over lang
+        language = element.GetAttributeValue(Namespaces.Xml, "lang");
+        if (language is not null)
+            return true;
+
+        language = element.IsHtmlNamespace || ReferenceEquals(element.NamespaceUri, Namespaces.Svg) ? element.GetAttributeValue("lang") : null;
+        return language is not null;
     }
 
     /// <summary>Extended filtering (https://www.rfc-editor.org/rfc/rfc4647#section-3.3.2), with the implicit wildcard of Selectors 4.</summary>

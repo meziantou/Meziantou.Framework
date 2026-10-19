@@ -309,13 +309,38 @@ internal sealed class BoxFragment : Fragment
         public ScrollState? State;
     }
 
+    /// <summary>
+    /// The properties that few fragments have (fragmentation, positioning, replaced contents, gaps, MathML), allocated on first
+    /// use to keep the fragments small.
+    /// </summary>
+    private sealed class RareData
+    {
+        public BoxFragment? UnfragmentedFragment;
+        public BoxFragment? StitchedBox;
+        public double StitchedOffset;
+        public GapGeometry? GapGeometry;
+        public LogicalRect[]? ColumnRects;
+        public MathFragmentData? MathData;
+        public Sides<double>? UntrimmedMargin;
+        public PhysicalOffset StickyOffset;
+        public PhysicalOffset AnchorScrollShift;
+        public StickyPositionConstraints? StickyConstraints;
+        public Sides<double?>? ResolvedInsets;
+        public List<OutOfFlowCandidate>? PendingOutOfFlow;
+        public PhysicalRect? ReplacedContentRect;
+    }
+
     private OverflowFlags _flags;
+    private RareData? _rareData;
     private ScrollContainerData? _scrollData;
     private int _inFlowChildCount;
     private PhysicalRect _scrollableOverflow;
     private PhysicalRect _inkOverflow;
 
     private ScrollContainerData ScrollData => _scrollData ??= new ScrollContainerData();
+
+    /// <summary>Returns the rare data to set a property, or null when it is not allocated and the value is the default one (which needs no storage).</summary>
+    private RareData? GetRareData(bool hasValue) => hasValue ? _rareData ??= new RareData() : _rareData;
 
     /// <summary>The number of children that are not absolutely positioned boxes appended by <see cref="AppendOutOfFlowChildren"/> (they are first in <see cref="Fragment.Children"/>).</summary>
     internal int InFlowChildCount => _inFlowChildCount;
@@ -340,7 +365,11 @@ internal sealed class BoxFragment : Fragment
     /// box split by the fragmentation (see <see cref="FragmentSlicer"/>), else null: its size and its edges are the ones of the
     /// whole box (the resolved values of getComputedStyle); its children are not its children anymore.
     /// </summary>
-    internal BoxFragment? UnfragmentedFragment { get; private init; }
+    internal BoxFragment? UnfragmentedFragment
+    {
+        get => _rareData?.UnfragmentedFragment;
+        private init => GetRareData(value is not null)?.UnfragmentedFragment = value;
+    }
 
     /// <summary>
     /// The box of all the fragments of a box split by the block fragmentation stitched together in the block axis (a fragment
@@ -348,10 +377,18 @@ internal sealed class BoxFragment : Fragment
     /// (https://drafts.csswg.org/css-break-3/#valdef-box-decoration-break-slice: "the box is rendered as if it were not fragmented,
     /// and then sliced by the breaks"), else null. See <see cref="StitchedOffset"/>.
     /// </summary>
-    internal BoxFragment? StitchedBox { get; private set; }
+    internal BoxFragment? StitchedBox
+    {
+        get => _rareData?.StitchedBox;
+        private set => GetRareData(value is not null)?.StitchedBox = value;
+    }
 
     /// <summary>The block size of the fragments of the box that precede this one: the offset of this fragment in <see cref="StitchedBox"/>.</summary>
-    internal double StitchedOffset { get; private set; }
+    internal double StitchedOffset
+    {
+        get => _rareData?.StitchedOffset ?? 0;
+        private set => GetRareData(value != 0)?.StitchedOffset = value;
+    }
 
     /// <summary>
     /// Sets the stitched box of the fragments of a box split by the block fragmentation (see <see cref="StitchedBox"/>): the
@@ -386,7 +423,11 @@ internal sealed class BoxFragment : Fragment
     /// in the logical coordinates of the fragment (see <see cref="GapDecorations.GetDecorations"/> for the painted rectangles). Null
     /// for the other boxes, and for the containers without rule.
     /// </summary>
-    public GapGeometry? GapGeometry { get; internal set; }
+    public GapGeometry? GapGeometry
+    {
+        get => _rareData?.GapGeometry;
+        internal set => GetRareData(value is not null)?.GapGeometry = value;
+    }
 
     /// <summary>
     /// The column boxes of a multi-column container (https://drafts.csswg.org/css-multicol-2/#column-pseudo), in the logical
@@ -395,14 +436,22 @@ internal sealed class BoxFragment : Fragment
     /// overflow of the container, as in Blink (the overflow columns extend it to their column boxes, not only to their contents).
     /// Null for the other boxes.
     /// </summary>
-    public LogicalRect[]? ColumnRects { get; internal set; }
+    public LogicalRect[]? ColumnRects
+    {
+        get => _rareData?.ColumnRects;
+        internal set => GetRareData(value is not null)?.ColumnRects = value;
+    }
 
     /// <summary>
     /// The metrics of a MathML box laid out by the math layout (the ink extent, the italic correction, the top accent attachment)
     /// and the graphical items it draws (the fraction bars, the radical symbols, the stretched operators), for the layout of its
     /// parent and for the painting (<see cref="Painter"/>); null for the other boxes (see <see cref="MathFormattingContext"/>).
     /// </summary>
-    public MathFragmentData? MathData { get; internal set; }
+    public MathFragmentData? MathData
+    {
+        get => _rareData?.MathData;
+        internal set => GetRareData(value is not null)?.MathData = value;
+    }
 
     /// <summary>
     /// Creates the fragment of the box in a fragmentainer (https://drafts.csswg.org/css-break-3/#box-splitting): a fragment with the
@@ -454,7 +503,11 @@ internal sealed class BoxFragment : Fragment
     /// margins are discarded by the layout (they are zero in <see cref="Margin"/>), but they are still the resolved values of the
     /// margin properties (WPT css/css-box/margin-trim/margin-trim-computed-value.html).
     /// </summary>
-    internal Sides<double>? UntrimmedMargin { get; set; }
+    internal Sides<double>? UntrimmedMargin
+    {
+        get => _rareData?.UntrimmedMargin;
+        set => GetRareData(value is not null)?.UntrimmedMargin = value;
+    }
 
     /// <summary>
     /// Trims block-axis margins of the box, in the writing mode of its containing block (https://drafts.csswg.org/css-box-4/#margin-trim):
@@ -491,13 +544,21 @@ internal sealed class BoxFragment : Fragment
     /// The offset of a sticky positioned box (https://drafts.csswg.org/css-position-3/#stickypos-insets) for the current scroll
     /// positions (see <see cref="StickyConstraints"/>): <see cref="Fragment.Offset"/> includes it.
     /// </summary>
-    public PhysicalOffset StickyOffset { get; internal set; }
+    public PhysicalOffset StickyOffset
+    {
+        get => _rareData?.StickyOffset ?? default;
+        internal set => GetRareData(value != PhysicalOffset.Zero)?.StickyOffset = value;
+    }
 
     /// <summary>
     /// The default scroll shift of an anchor-positioned box (https://drafts.csswg.org/css-anchor-position-1/#default-scroll-shift): it
     /// follows the scrolling of its default anchor box since the anchor recalculation point; <see cref="Fragment.Offset"/> includes it.
     /// </summary>
-    public PhysicalOffset AnchorScrollShift { get; internal set; }
+    public PhysicalOffset AnchorScrollShift
+    {
+        get => _rareData?.AnchorScrollShift ?? default;
+        internal set => GetRareData(value != PhysicalOffset.Zero)?.AnchorScrollShift = value;
+    }
 
     /// <summary>
     /// Whether <c>position-visibility</c> hides the box (https://drafts.csswg.org/css-anchor-position-1/#position-visibility): its
@@ -556,7 +617,11 @@ internal sealed class BoxFragment : Fragment
     internal int LayoutPass { get; set; }
 
     /// <summary>The constraints of a sticky positioned box, to compute its offset for any scroll position (#347), or null.</summary>
-    public StickyPositionConstraints? StickyConstraints { get; internal set; }
+    public StickyPositionConstraints? StickyConstraints
+    {
+        get => _rareData?.StickyConstraints;
+        internal set => GetRareData(value is not null)?.StickyConstraints = value;
+    }
 
     /// <summary>
     /// The resolved values of the insets of a positioned box (https://drafts.csswg.org/cssom/#resolved-values), in the
@@ -564,14 +629,22 @@ internal sealed class BoxFragment : Fragment
     /// box is resolved from the opposite one or from the static position), the specified values in px when the box is
     /// over-constrained, null for an <c>auto</c> inset of a sticky positioned box. Null for the static boxes.
     /// </summary>
-    public Sides<double?>? ResolvedInsets { get; internal set; }
+    public Sides<double?>? ResolvedInsets
+    {
+        get => _rareData?.ResolvedInsets;
+        internal set => GetRareData(value is not null)?.ResolvedInsets = value;
+    }
 
     /// <summary>
     /// The absolutely positioned descendants whose containing block is an ancestor of the box (or an inline box of an ancestor
     /// block container), with their static positions in the coordinates of this fragment: the ancestor lays them out once its
     /// size is known (see <see cref="PositionedLayout.LayoutOutOfFlowDescendants"/>). Null when there are none.
     /// </summary>
-    internal List<OutOfFlowCandidate>? PendingOutOfFlow { get; set; }
+    internal List<OutOfFlowCandidate>? PendingOutOfFlow
+    {
+        get => _rareData?.PendingOutOfFlow;
+        set => GetRareData(value is not null)?.PendingOutOfFlow = value;
+    }
 
     /// <summary>
     /// The used <c>z-index</c> of the box (https://drafts.csswg.org/css2/#z-index): its integer value for a positioned box, a flex
@@ -600,7 +673,11 @@ internal sealed class BoxFragment : Fragment
     /// box, in the coordinates of the fragment (it may overflow the content box, which clips it). Null for the other boxes and
     /// for the form controls.
     /// </summary>
-    public PhysicalRect? ReplacedContentRect { get; set; }
+    public PhysicalRect? ReplacedContentRect
+    {
+        get => _rareData?.ReplacedContentRect;
+        set => GetRareData(value is not null)?.ReplacedContentRect = value;
+    }
 
     /// <summary>
     /// Whether the fragment is the first fragment of its box (e.g. the first line of an inline box split over several lines):

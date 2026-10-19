@@ -3584,8 +3584,9 @@ public sealed class VectorizedKernelTests
     public void HeifYuvConversionMatchesTheScalarReference(PixelFormat layout, bool monochrome, bool limitedRangeAlpha)
     {
         // Every matrix that has no transfer characteristics, both ranges, the alpha planes of both ranges, and widths around
-        // the vector sizes, with random samples and the extremes of the range
-        var bitDepths = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? new[] { 10, 12 } : [8];
+        // the vector sizes, with random samples and the extremes of the range. The 8-bit pixels of 10 and 12-bit samples are
+        // not what a decoder produces, but the matrices of their color planes have the vector path
+        var bitDepths = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? new[] { 10, 12 } : [8, 10, 12];
         int[] matrices = monochrome ? [Av1Constants.McBt601] : [Av1Constants.McIdentity, Av1Constants.McBt709, Av1Constants.McUnspecified, Av1Constants.McFcc, Av1Constants.McBt470BG, Av1Constants.McBt601, Av1Constants.McSmpte240, Av1Constants.McSmpteYcgco, Av1Constants.McBt2020Ncl, Av1Constants.McSmpte2085, Av1Constants.McChromatNcl];
         var random = new Random((int)layout + (monochrome ? 10 : 0) + (limitedRangeAlpha ? 100 : 0));
         foreach (var bitDepth in bitDepths)
@@ -3603,6 +3604,13 @@ public sealed class VectorizedKernelTests
                         var format = new HeifBitstreamFormat(bitDepth, monochrome, 0, 0, Av1Constants.CspUnknown, matrix, fullRange, ColorDescriptionPresent: true, ColorPrimaries: 1, TransferCharacteristics: 1);
                         HeifBitstreamFormat? alphaFormat = withAlpha ? new HeifBitstreamFormat(bitDepth, IsMonochrome: true, 0, 0, Av1Constants.CspUnknown, Av1Constants.McIdentity, !limitedRangeAlpha, ColorDescriptionPresent: false, 2, 2) : null;
                         var converter = new HeifYuvConverter(AvifBinding.Instance, format, matrix, fullRange, alphaFormat, layout, isPremultiplied: false, colorPrimaries: 1, transferCharacteristics: 1);
+                        if (!monochrome && matrix is not (Av1Constants.McIdentity or Av1Constants.McSmpte2085) && (layout is PixelFormat.Rgba64 ? !withAlpha : !withAlpha || bitDepth is 8))
+                        {
+                            // The matrices that the vector paths convert: Rgba64 pixels without alpha, and 8-bit pixels with an
+                            // 8-bit alpha plane
+                            Assert.True(converter.HasVectorPath, $"{layout} {bitDepth}-bit, matrix {matrix}, full range {fullRange}, alpha {withAlpha}");
+                        }
+
                         foreach (var width in new[] { 1, 7, 8, 9, 10, 11, 15, 16, 17, 18, 19, 31, 33, 64, 101 })
                         {
                             var y = new ushort[width];

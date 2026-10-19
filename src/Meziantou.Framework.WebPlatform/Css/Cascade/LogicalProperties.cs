@@ -10,8 +10,41 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// </summary>
 internal static class LogicalProperties
 {
-    /// <summary>How a logical property maps to a physical property: the template of the physical name and the logical axis or side.</summary>
-    private sealed record Mapping(string Prefix, string Suffix, LogicalKind Kind);
+    /// <summary>
+    /// How a logical property maps to a physical property: the template of the physical name and the logical axis or side, and
+    /// the physical names for each writing mode and direction (computed once).
+    /// </summary>
+    private sealed class Mapping(string prefix, string suffix, LogicalKind kind)
+    {
+        private readonly string?[] _physicalNames = new string?[WritingModeCount * 2];
+
+        public string Prefix { get; } = prefix;
+
+        public string Suffix { get; } = suffix;
+
+        public LogicalKind Kind { get; } = kind;
+
+        /// <summary>Returns the physical property for a writing mode (its index, see <see cref="GetWritingModeIndex"/>, and its name) and a direction.</summary>
+        public string GetPhysicalName(int writingModeIndex, string writingMode, bool rtl)
+        {
+            // (the mappings are shared by the threads: a name computed twice is the same)
+            ref var name = ref _physicalNames[(writingModeIndex * 2) + (rtl ? 1 : 0)];
+            return name ??= ComputePhysicalProperty(this, writingMode, rtl);
+        }
+    }
+
+    /// <summary>The number of writing modes whose physical names are cached by <see cref="Mapping"/>: the values of <c>writing-mode</c>, and the other values.</summary>
+    private const int WritingModeCount = 6;
+
+    private static int GetWritingModeIndex(string writingMode) => writingMode switch
+    {
+        "horizontal-tb" or "" => 0,
+        "vertical-rl" => 1,
+        "vertical-lr" => 2,
+        "sideways-rl" => 3,
+        "sideways-lr" => 4,
+        _ => 5,
+    };
 
     private enum LogicalKind
     {
@@ -51,7 +84,13 @@ internal static class LogicalProperties
             return null;
 
         var writingMode = style.GetComputedValue("writing-mode");
-        var rtl = IsRightToLeft(style);
+        var writingModeIndex = GetWritingModeIndex(writingMode);
+        var rtl = style.GetComputedValue("direction") == "rtl" && !(writingModeIndex is 1 or 2 && style.GetComputedValue("text-orientation") == "upright");
+        return mapping.GetPhysicalName(writingModeIndex, writingMode, rtl);
+    }
+
+    private static string ComputePhysicalProperty(Mapping mapping, string writingMode, bool rtl)
+    {
         var vertical = writingMode is not ("horizontal-tb" or "");
 
         // The physical sides of the block and inline axes

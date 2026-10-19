@@ -34,6 +34,9 @@ internal sealed partial class ComputedStyle
         if (ResolvedAnchorProperties is { } resolved && resolved.Contains(name))
             return false;
 
+        if (!MayBeAnimated(name))
+            return false;
+
         var transition = IncludeTransitions ? GetTransitionEffect(name) : null;
         var important = (TryGetCascadedValue(name, out var cascaded) && cascaded.IsImportant) || HasUserAgentImportantOverlay(name);
         var effects = important ? null : GetEffectStack(name);
@@ -62,6 +65,9 @@ internal sealed partial class ComputedStyle
     private bool TryGetAnimatedCustomPropertyValue(string name, out string? value)
     {
         value = null;
+        if (!MayBeAnimated(name))
+            return false;
+
         var transition = IncludeTransitions ? GetTransitionEffect(name) : null;
         var important = _cascaded.TryGetValue(name, out var cascaded) && cascaded.IsImportant;
         var effects = important ? null : GetEffectStack(name);
@@ -362,6 +368,45 @@ internal sealed partial class ComputedStyle
         }
 
         return result;
+    }
+
+    /// <summary>The properties of the keyframes of the effects (see <see cref="MayBeAnimated"/>), or null when they are not collected yet.</summary>
+    private HashSet<string>? _keyframeProperties;
+
+    /// <summary>The version of the animations of the document and the number of effects when <see cref="_keyframeProperties"/> was collected.</summary>
+    private (int Version, int Count) _keyframePropertiesVersion;
+
+    /// <summary>Whether a keyframe of the effects has a flow-relative longhand, whose physical property depends on the writing mode.</summary>
+    private bool _keyframesHaveFlowRelativeLonghands;
+
+    /// <summary>
+    /// Returns whether a keyframe of the effects of the style may have a value of a property (a physical longhand or a custom
+    /// property): the properties of all the keyframes are collected once, so the properties that no effect animates are not
+    /// looked up in each effect.
+    /// </summary>
+    private bool MayBeAnimated(string property)
+    {
+        var effects = _effects!;
+        var version = (Engine.Document.AnimationsOrNull?.Version ?? 0, effects.Count);
+        if (_keyframeProperties is null || version != _keyframePropertiesVersion)
+        {
+            var properties = new HashSet<string>(StringComparer.Ordinal);
+            var flowRelative = false;
+            foreach (var effect in effects)
+            {
+                foreach (var keyframe in effect.Keyframes)
+                {
+                    properties.UnionWith(keyframe.Longhands.Keys);
+                    flowRelative |= keyframe.HasFlowRelativeLonghands;
+                }
+            }
+
+            _keyframeProperties = properties;
+            _keyframesHaveFlowRelativeLonghands = flowRelative;
+            _keyframePropertiesVersion = version;
+        }
+
+        return _keyframesHaveFlowRelativeLonghands || _keyframeProperties.Contains(property);
     }
 
     private bool Animates(KeyframeEffect effect, string property)

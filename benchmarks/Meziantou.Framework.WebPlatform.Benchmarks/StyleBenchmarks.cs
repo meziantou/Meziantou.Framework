@@ -1,3 +1,4 @@
+using System.Globalization;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -54,5 +55,34 @@ public class StyleBenchmarks
         }
 
         return length;
+    }
+}
+
+/// <summary>Runs <see cref="StyleBenchmarks"/> in a loop, to profile it (e.g. with <c>dotnet-trace</c>).</summary>
+internal static class StyleProfile
+{
+    public static int Run(string document, int count)
+    {
+        var benchmarks = new StyleBenchmarks { Document = document };
+        benchmarks.Setup();
+        var cpu = TimeSpan.Zero;
+        var allocated = 0L;
+        var minimum = TimeSpan.MaxValue;
+        var length = 0;
+        for (var i = 0; i < count; i++)
+        {
+            benchmarks.SetupIteration();
+            var start = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
+            var allocatedStart = GC.GetAllocatedBytesForCurrentThread();
+            length = benchmarks.Meziantou();
+            var elapsed = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - start;
+            allocated += GC.GetAllocatedBytesForCurrentThread() - allocatedStart;
+            cpu += elapsed;
+            minimum = elapsed < minimum ? elapsed : minimum;
+        }
+
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{document}: {cpu.TotalMilliseconds / count:F3} ms CPU per invocation (minimum {minimum.TotalMilliseconds:F3} ms), {allocated / count / 1024 / 1024.0:F1} MB allocated, result {length}"));
+        benchmarks.Cleanup();
+        return 0;
     }
 }

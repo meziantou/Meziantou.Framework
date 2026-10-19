@@ -315,8 +315,8 @@ public class HighlighterTests
     public void Highlight_ByteOrderMark_IsKeptAndDoesNotPreventHighlighting()
     {
         Assert.Equal(
-            "﻿<span class=\"hljs-punctuation\">{</span><span class=\"hljs-attr\">&quot;a&quot;</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-number\">1</span><span class=\"hljs-punctuation\">}</span>",
-            SyntaxHighlighter.Highlight("﻿{\"a\": 1}", "json", new HighlightOptions { IgnoreIllegals = false }));
+            "\uFEFF<span class=\"hljs-punctuation\">{</span><span class=\"hljs-attr\">&quot;a&quot;</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-number\">1</span><span class=\"hljs-punctuation\">}</span>",
+            SyntaxHighlighter.Highlight("\uFEFF{\"a\": 1}", "json", new HighlightOptions { IgnoreIllegals = false }));
     }
 
     [Fact]

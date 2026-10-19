@@ -223,7 +223,7 @@ internal static partial class WebPCorpus
     {
         var icc = CommonCorpus.IccProfile("RGB ");
         var exif = CommonCorpus.ExifTiff(littleEndian: false, 6, pixelSize: (6, 4), software: "Lorem ipsum");
-        var xmp = Bytes.Utf8("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF " +
+        var xmp = Bytes.Utf8("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF " +
                              "xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><rdf:Description rdf:about=\"\" " +
                              "xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:title>Lorem ipsum</dc:title></rdf:Description></rdf:RDF>" +
                              "</x:xmpmeta><?xpacket end=\"r\"?>");

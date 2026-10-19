@@ -295,7 +295,7 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
 
         // A byte order mark is not part of the document it starts. It is trivia of its own, so that the whitespace after
         // it can be edited like any other.
-        if (Position == 0 && Current == '﻿')
+        if (Position == 0 && Current == '\uFEFF')
         {
             Position++;
             return true;
@@ -358,7 +358,7 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
     {
         var start = position - GetIndentation(position);
 
-        return start == 0 || IsEndOfLine(_text[start - 1]) || (start == 1 && _text[0] == '﻿');
+        return start == 0 || IsEndOfLine(_text[start - 1]) || (start == 1 && _text[0] == '\uFEFF');
     }
 
     private bool IsAtEnd => Position >= _text.Length;

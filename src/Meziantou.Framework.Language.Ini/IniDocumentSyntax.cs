@@ -510,7 +510,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
 
     private static IniPropertySyntax? LastOrNull(IReadOnlyList<IniPropertySyntax> properties) => properties.Count > 0 ? properties[^1] : null;
 
-    private static bool IsByteOrderMark(SyntaxTrivia trivia) => trivia.IsKind(SyntaxKind.WhitespaceTrivia) && trivia.ToFullString() is "﻿";
+    private static bool IsByteOrderMark(SyntaxTrivia trivia) => trivia.IsKind(SyntaxKind.WhitespaceTrivia) && trivia.ToFullString() is "\uFEFF";
 
     /// <summary>Where each section header and property sits, worked out once per document.</summary>
     /// <remarks>The lists it hands out are read-only, as the document that shares them is immutable.</remarks>

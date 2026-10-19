@@ -32,7 +32,7 @@ internal static class QRCodePngScenarios
         new("KanjiSingleCharacter", "漢") { ErrorCorrectionLevel = ErrorCorrectionLevel.L },
         new("KanjiSentence", "こんにちは世界"),
         // The first and last characters of the two Shift JIS ranges Kanji mode accepts.
-        new("KanjiRangeBoundaries", "　滌漾熙"),
+        new("KanjiRangeBoundaries", "\u3000滌漾熙"),
         new("MixedKanjiAndAsciiUsesByteMode", "Hello漢字World"),
 
         // ───── Version boundaries ─────

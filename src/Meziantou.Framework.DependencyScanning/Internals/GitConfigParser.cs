@@ -268,7 +268,7 @@ internal static class GitConfigParser
         public Reader(string text)
         {
             _text = text;
-            _position = text.Length > 0 && text[0] is '﻿' ? 1 : 0;
+            _position = text.Length > 0 && text[0] is '\uFEFF' ? 1 : 0;
         }
 
         public int Peek()

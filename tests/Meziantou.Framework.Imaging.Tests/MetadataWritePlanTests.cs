@@ -137,7 +137,7 @@ public sealed class MetadataWritePlanTests
     [InlineData("Two  spaces", false)]
     [InlineData("Tab\tKeyword", false)]
     [InlineData("Ābc", false)] // outside Latin-1
-    [InlineData(" nbsp", false)] // non-breaking space is not allowed
+    [InlineData("\u00A0nbsp", false)] // non-breaking space is not allowed
     public void PngKeywordsFollowTheSpecification(string keyword, bool supported)
     {
         var metadata = WithText(new ImageTextEntry(keyword, "value"));

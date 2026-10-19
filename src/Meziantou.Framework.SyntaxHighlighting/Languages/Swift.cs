@@ -7,9 +7,9 @@ internal static class Swift
 {
     // highlight.js builds these from alternations of character classes; a single class is equivalent and faster.
     private const string IdentifierHeadChars =
-        @"a-zA-Z_¨ª­¯²-µ·-º¼-¾À-ÖØ-öø-ÿ" +
-        @"Ā-˿Ͱ-ᙿᚁ-᠍᠏-ᶿḀ-῿​-‍‪-‮‿-⁀⁔" +
-        @"⁠-⁯⁰-⃏℀-↏①-⓿❶-➓Ⰰ-ⷿ⺀-⿿〄-〇" +
+        "a-zA-Z_¨ª\u00AD¯²-µ·-º¼-¾À-ÖØ-öø-ÿ" +
+        "Ā-˿Ͱ-ᙿᚁ-᠍᠏-ᶿḀ-῿\u200B-‍\u202A-\u202E‿-⁀⁔" +
+        "\u2060-\u206F⁰-⃏℀-↏①-⓿❶-➓Ⰰ-ⷿ⺀-⿿〄-〇" +
         @"〡-〯〱-〿぀-퟿豈-ﴽ﵀-﷏ﷰ-︟︰-﹄﹇-﻾＀-�";
 
     private const string IdentifierChars = IdentifierHeadChars + @"0-9̀-ͯ᷀-᷿⃐-⃿︠-︯";

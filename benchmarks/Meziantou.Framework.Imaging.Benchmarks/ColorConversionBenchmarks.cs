@@ -66,7 +66,7 @@ public class ColorConversionBenchmarks
     }
 
     [Benchmark]
-    [Workload("1920x1080 RGB 16-bit, sRGB to linear sRGB (decoding curve evaluated)")]
+    [Workload("1920x1080 RGB 16-bit, sRGB to linear sRGB (decoding curve from tables)")]
     public int SrgbToLinear16()
     {
         _srgbToLinear.Convert(_rgb16, _converted16);

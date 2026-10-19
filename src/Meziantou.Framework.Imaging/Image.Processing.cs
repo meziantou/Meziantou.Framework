@@ -376,7 +376,11 @@ public abstract partial class Image
         cancellationToken.ThrowIfCancellationRequested();
         if (!pipeline.IsIdentity)
         {
-            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline), cancellationToken);
+            // 16-bit samples read the first stage from tables when the image is large enough (the tables are rented once,
+            // after the replacements are reserved, and released with the conversion)
+            var colors = PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16 ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
+            using var scratch = new ColorConversionScratch();
+            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
         }
 
         // Committed (or nothing to convert): the pixels are now described by the destination profile. A CICP description
@@ -699,7 +703,7 @@ public abstract partial class Image
             => frame.TransformPixels(source, destination, region, transform, cancellationToken);
     }
 
-    private readonly struct ColorConversionFiller(IccPipeline pipeline) : IGeometryFiller
+    private readonly struct ColorConversionFiller(IccPipeline pipeline, long colors, ColorConversionScratch scratch) : IGeometryFiller
     {
         // Colors change, pixels do not move: a cursor hotspot stays where it is
         public bool TryMapPoint(Point source, out Point destination)
@@ -708,12 +712,18 @@ public abstract partial class Image
             return true;
         }
 
-        public void Prepare(AllocationScope scope)
-        {
-        }
+        public void Prepare(AllocationScope scope) => scratch.Uint16Tables = IccUInt16InputTables.Create(pipeline, colors, scope);
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
-            => frame.ConvertColorPixels(source, destination, pipeline, cancellationToken);
+            => frame.ConvertColorPixels(source, destination, pipeline, scratch.Uint16Tables, cancellationToken);
+    }
+
+    /// <summary>The storage rented by <see cref="ColorConversionFiller.Prepare"/>, released with the conversion.</summary>
+    private sealed class ColorConversionScratch : IDisposable
+    {
+        public IccUInt16InputTables? Uint16Tables { get; set; }
+
+        public void Dispose() => Uint16Tables?.Dispose();
     }
 
     [StructLayout(LayoutKind.Auto)]

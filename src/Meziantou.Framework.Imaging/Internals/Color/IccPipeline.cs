@@ -29,6 +29,11 @@ internal sealed class IccPipeline
 
     private readonly IccStage[] _stages;
 
+    // The curves of the first stage when it is one curve per source channel (ByteInputTables): the tone curves, or the
+    // CICP decoding of every channel
+    private readonly IccCurve[]? _inputCurves;
+    private readonly CicpDecodeStage? _inputDecode;
+
     // The inverse tone curves of the last stage, one per destination channel, when it is not the first stage and not
     // only identities (cheaper to evaluate than to look up)
     private readonly IccInverseCurve[]? _outputCurves;
@@ -50,6 +55,7 @@ internal sealed class IccPipeline
         // IccCurvesStage on the same normalized sample, so that using the table gives bit-identical results
         if (stages.Length > 0 && stages[0] is IccCurvesStage { Curves: var curves } && curves.Length == sourceChannelCount)
         {
+            _inputCurves = curves;
             var tables = new double[sourceChannelCount][];
             for (var channel = 0; channel < tables.Length; channel++)
             {
@@ -66,6 +72,7 @@ internal sealed class IccPipeline
         }
         else if (stages.Length > 0 && stages[0] is CicpDecodeStage decode && decode.ChannelCount == sourceChannelCount)
         {
+            _inputDecode = decode;
             // The same function for every channel of a CICP source, evaluated as the stage does
             var table = new double[256];
             for (var sample = 0; sample < table.Length; sample++)
@@ -99,6 +106,9 @@ internal sealed class IccPipeline
 
     /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
     internal IccInverseCurve[]? OutputCurves => _outputCurves;
+
+    /// <summary>Gets a value indicating whether the first stage is one curve per source channel (<see cref="ByteInputTables"/> is not <see langword="null"/>).</summary>
+    public bool HasInputCurves => ByteInputTables is not null;
 
     /// <summary>Gets the number of stages.</summary>
     internal int StageCount => _stages.Length;
@@ -299,6 +309,15 @@ internal sealed class IccPipeline
 
         return tables;
     }
+
+    /// <summary>
+    /// Evaluates the first stage on one normalized sample of a source channel, as the stage does, when it is one curve per
+    /// source channel (<see cref="HasInputCurves"/>).
+    /// </summary>
+    public double EvaluateInputCurve(int channel, double value) => _inputDecode is { } decode ? decode.Evaluate(value) : _inputCurves![channel].Evaluate(value);
+
+    /// <summary>Determines whether two source channels have the same input curve (the same function, so the same table), when <see cref="HasInputCurves"/>.</summary>
+    public bool HaveSameInputCurve(int channel, int other) => _inputDecode is not null || ReferenceEquals(_inputCurves![channel], _inputCurves[other]);
 
     /// <summary>
     /// Applies the stages from <paramref name="first"/> to <paramref name="end"/> (excluded) to colors stored by component

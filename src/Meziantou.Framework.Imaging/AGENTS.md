@@ -869,8 +869,13 @@ thin public types over its `FontFace`.
   (`IccPipeline.GetByteOutputTables`, one table per channel and per pipeline, built once the pipeline has converted
   `ByteOutputTablesThreshold` colors so that small images never pay for them; identity curves are cheaper than a table
   and are evaluated). A function that is not monotone at the scale of the last bits of its input (PQ, a decreasing tone
-  curve) gets no table and keeps the scalar path. 16-bit samples are not covered: 65,535 thresholds cost more
-  evaluations than most images.
+  curve) gets no table and keeps the scalar path. 16-bit samples get no thresholds: 65,535 of them cost far more
+  evaluations than the 256 of 8 bits (a bisection and a check around each one), more than most images. Their inputs
+  are covered instead: a 16-bit conversion of at least `IccUInt16InputTables.Threshold` colors (`ConvertColorProfile`
+  counts every frame, `IccColorTransform` a call) reads its first stage (one curve per source channel) from a
+  65,536-entry table per distinct curve, built with the same evaluation of every sample value, so it is exact, and
+  rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
+  16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

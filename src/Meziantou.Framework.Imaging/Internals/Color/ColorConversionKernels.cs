@@ -21,7 +21,12 @@ internal static class ColorConversionKernels
     /// 8 bits), alpha is copied unchanged, hidden colors of transparent pixels included.
     /// </summary>
     /// <typeparam name="TPixel">The pixel type of both storages; its color channels match the channel counts of the conversion.</typeparam>
-    public static void ConvertRows<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken)
+    /// <param name="source">The leased source pixels.</param>
+    /// <param name="destination">The leased destination pixels.</param>
+    /// <param name="pipeline">The conversion.</param>
+    /// <param name="uint16Tables">The values of the first stage for 16-bit samples, or <see langword="null"/> to evaluate it.</param>
+    /// <param name="cancellationToken">The token checked between row bands.</param>
+    public static void ConvertRows<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
         var height = source.Height;
@@ -50,11 +55,11 @@ internal static class ColorConversionKernels
             }
             else if (typeof(TPixel) == typeof(Rgba64))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 4, 4);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 4, 4, uint16Tables: uint16Tables);
             }
             else if (typeof(TPixel) == typeof(Gray16))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1, uint16Tables: uint16Tables);
             }
             else
             {
@@ -72,7 +77,8 @@ internal static class ColorConversionKernels
     /// <param name="sourceStride">The samples per source color: the source channels, then the samples copied unchanged (alpha).</param>
     /// <param name="destinationStride">The samples per destination color: the destination channels, then the copied samples.</param>
     /// <param name="reverseColorOrder">Whether three-channel colors are stored blue first on both sides.</param>
-    public static void Convert<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder = false)
+    /// <param name="uint16Tables">The values of the first stage for 16-bit samples, or <see langword="null"/> to evaluate it.</param>
+    public static void Convert<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder = false, IccUInt16InputTables? uint16Tables = null)
         where T : unmanaged
         where TSample : struct, IIccSample<T>
     {
@@ -88,17 +94,18 @@ internal static class ColorConversionKernels
             return;
         }
 
-        ConvertBatches<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder);
+        ConvertBatches<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder, typeof(T) == typeof(ushort) ? uint16Tables : null);
     }
 
     /// <summary>
     /// Converts interleaved colors like <see cref="ConvertScalar"/>, <see cref="IccPipeline.BatchSize"/> colors at a time
     /// stored by component (<see cref="IccPipeline.ApplyBatch"/>), so that each stage loops over the colors instead of
     /// being called for each of them. The first stage of 8-bit colors (one curve per source channel) is read from the
-    /// tables of the pipeline, and once the pipeline has them, the 8-bit samples of the last stage (one curve per
-    /// destination channel) are read from its threshold tables: every color gets the samples of <see cref="ConvertScalar"/>.
+    /// tables of the pipeline, as is the first stage of 16-bit colors when <paramref name="uint16Tables"/> are given, and
+    /// once the pipeline has them, the 8-bit samples of the last stage (one curve per destination channel) are read from
+    /// its threshold tables: every color gets the samples of <see cref="ConvertScalar"/>.
     /// </summary>
-    private static void ConvertBatches<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
+    private static void ConvertBatches<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder, IccUInt16InputTables? uint16Tables)
         where T : unmanaged
         where TSample : struct, IIccSample<T>
     {
@@ -110,7 +117,7 @@ internal static class ColorConversionKernels
         var count = source.Length / sourceStride;
         var byteTables = typeof(T) == typeof(byte) ? pipeline.ByteInputTables : null;
         var outputTables = byteTables is not null ? pipeline.GetByteOutputTables(count) : null;
-        var firstStage = byteTables is not null ? 1 : 0;
+        var firstStage = byteTables is not null || uint16Tables is not null ? 1 : 0;
         var endStage = outputTables is not null ? pipeline.StageCount - 1 : pipeline.StageCount;
 
         // Component c of color i of the batch is at c * BatchSize + i; the samples copied unchanged are kept apart, so that
@@ -128,6 +135,10 @@ internal static class ColorConversionKernels
                 if (byteTables is not null)
                 {
                     LoadFromTable(byteTables[channel], unsafe(MemoryMarshal.Cast<T, byte>(input)), offset, sourceStride, values);
+                }
+                else if (uint16Tables is not null)
+                {
+                    LoadFromTable(uint16Tables.GetTable(channel), unsafe(MemoryMarshal.Cast<T, ushort>(input)), offset, sourceStride, values);
                 }
                 else
                 {
@@ -177,6 +188,14 @@ internal static class ColorConversionKernels
 
     // Reads the first stage of one channel of a batch from its table
     private static void LoadFromTable(ReadOnlySpan<double> table, ReadOnlySpan<byte> input, int offset, int stride, Span<double> values)
+    {
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = table[input[(i * stride) + offset]];
+        }
+    }
+
+    private static void LoadFromTable(ReadOnlySpan<double> table, ReadOnlySpan<ushort> input, int offset, int stride, Span<double> values)
     {
         for (var i = 0; i < values.Length; i++)
         {

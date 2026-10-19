@@ -3099,6 +3099,150 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1FilmGrainMatchesTheScalarReference(int bitDepth)
+    {
+        // Frames of every sample format, with odd sizes (a partial last stripe, an odd last chroma column), wider than a chunk
+        // of the vector path, and random grain parameters over their coded range: scaling points, chroma scaling from luma,
+        // auto-regression lags and coefficients, the shifts, the chroma multipliers, overlap and the restricted range
+        var random = new Random(bitDepth * 7);
+        var maxSample = (1 << bitDepth) - 1;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(Av1FilmGrainMatchesTheScalarReference));
+        (int SubX, int SubY, bool Monochrome)[] formats = [(1, 1, false), (1, 0, false), (0, 0, false), (1, 1, true)];
+        for (var round = 0; round < 64; round++)
+        {
+            var (subX, subY, monochrome) = formats[round % formats.Length];
+            var width = round < 8 ? random.Next(1, 20) : random.Next(1, 600);
+            var height = random.Next(1, 100);
+            var identity = subX is 0 && !monochrome && random.Next(2) == 0;
+            var sequenceParameters = new Av1SequenceParameters(width, height, bitDepth, monochrome, subX, subY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: identity ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Use128x128Superblock: false, EnableCdef: true, EnableRestoration: true, Av1Levels.GetLevelIndex(width, height));
+            using var output = new PooledPayloadWriter(scope);
+            Av1HeaderWriter.WriteSequenceHeader(output, sequenceParameters);
+            var sequence = Av1SequenceHeader.Parse(output.WrittenSpan, operatingPoint: 0);
+            var frame = new Av1FrameBuffer(sequence, new Av1FrameHeader { FrameWidth = width, FrameHeight = height, UpscaledWidth = width });
+            frame.Allocate(scope);
+            try
+            {
+                for (var plane = 0; plane < frame.PlaneCount; plane++)
+                {
+                    var samples = frame.GetPlane(plane);
+                    for (var y = 0; y < samples.Height; y++)
+                    {
+                        var row = samples.GetRow(y);
+                        for (var x = 0; x < row.Length; x++)
+                        {
+                            row[x] = (round / formats.Length % 3) switch
+                            {
+                                0 => (ushort)random.Next(maxSample + 1),
+                                1 => (ushort)(random.Next(2) * maxSample),
+                                _ => (ushort)Math.Clamp((maxSample / 2) + random.Next(-8, 9), 0, maxSample),
+                            };
+                        }
+                    }
+                }
+
+                var grain = CreateGrainParameters(random, sequence);
+                var expected = ApplyGrain(frame, grain, scalar: true);
+                var actual = ApplyGrain(frame, grain, scalar: false);
+                for (var plane = 0; plane < frame.PlaneCount; plane++)
+                {
+                    Assert.True(expected[plane].AsSpan().SequenceEqual(actual[plane]), $"Round {round}: plane {plane}, {width}x{height}, subsampling {subX}/{subY}, {grain.NumYPoints}/{grain.NumCbPoints}/{grain.NumCrPoints} points, CfL {grain.ChromaScalingFromLuma}, overlap {grain.OverlapFlag}, clip {grain.ClipToRestrictedRange}.");
+                }
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+
+        ushort[][] ApplyGrain(Av1FrameBuffer frame, Av1FilmGrainParameters grain, bool scalar)
+        {
+            var luma = frame.GetPlane(0);
+            var planes = new ushort[frame.PlaneCount][];
+            for (var plane = 0; plane < planes.Length; plane++)
+            {
+                planes[plane] = new ushort[frame.GetPlane(plane).Width * frame.GetPlane(plane).Height];
+            }
+
+            using var filmGrain = new Av1FilmGrain(scope, frame.Sequence, grain, luma.Width, luma.Height, vectorized: !scalar);
+            var chromaWidth = frame.PlaneCount > 1 ? frame.GetPlane(1).Width : 0;
+            var chromaRowsPerStripe = Av1FilmGrain.StripeHeight >> frame.Sequence.SubsamplingY;
+            for (var stripe = 0; stripe < filmGrain.StripeCount; stripe++)
+            {
+                var lumaRows = planes[0].AsSpan(stripe * Av1FilmGrain.StripeHeight * luma.Width);
+                Span<ushort> uRows = default;
+                Span<ushort> vRows = default;
+                if (frame.PlaneCount > 1)
+                {
+                    uRows = planes[1].AsSpan(stripe * chromaRowsPerStripe * chromaWidth);
+                    vRows = planes[2].AsSpan(stripe * chromaRowsPerStripe * chromaWidth);
+                }
+
+                filmGrain.ApplyStripe(frame, stripe, lumaRows, luma.Width, uRows, vRows, chromaWidth);
+            }
+
+            return planes;
+        }
+
+        // The parameters that film_grain_params can code for the sequence (section 5.9.30)
+        static Av1FilmGrainParameters CreateGrainParameters(Random random, Av1SequenceHeader sequence)
+        {
+            var numYPoints = random.Next(4) == 0 ? 0 : random.Next(1, Av1FilmGrainParameters.MaxLumaPoints + 1);
+            var chromaScalingFromLuma = !sequence.Monochrome && random.Next(4) == 0;
+            var is420 = sequence.SubsamplingX is 1 && sequence.SubsamplingY is 1;
+            var numCbPoints = 0;
+            var numCrPoints = 0;
+            if (!sequence.Monochrome && !chromaScalingFromLuma && !(is420 && numYPoints is 0))
+            {
+                numCbPoints = random.Next(Av1FilmGrainParameters.MaxChromaPoints + 1);
+                numCrPoints = is420 && numCbPoints is 0 ? 0 : random.Next(is420 ? 1 : 0, Av1FilmGrainParameters.MaxChromaPoints + 1);
+            }
+
+            var lag = random.Next(4);
+            var numPosLuma = 2 * lag * (lag + 1);
+            var numPosChroma = numYPoints is not 0 ? numPosLuma + 1 : numPosLuma;
+            return new Av1FilmGrainParameters
+            {
+                GrainSeed = random.Next(1 << 16),
+                NumYPoints = numYPoints,
+                PointYValue = Points(random, numYPoints),
+                PointYScaling = Bytes(random, numYPoints),
+                ChromaScalingFromLuma = chromaScalingFromLuma,
+                NumCbPoints = numCbPoints,
+                PointCbValue = Points(random, numCbPoints),
+                PointCbScaling = Bytes(random, numCbPoints),
+                NumCrPoints = numCrPoints,
+                PointCrValue = Points(random, numCrPoints),
+                PointCrScaling = Bytes(random, numCrPoints),
+                GrainScaling = 8 + random.Next(4),
+                ArCoeffLag = lag,
+                ArCoeffsY = numYPoints is not 0 ? Coefficients(random, numPosLuma) : [],
+                ArCoeffsCb = chromaScalingFromLuma || numCbPoints is not 0 ? Coefficients(random, numPosChroma) : [],
+                ArCoeffsCr = chromaScalingFromLuma || numCrPoints is not 0 ? Coefficients(random, numPosChroma) : [],
+                ArCoeffShift = 6 + random.Next(4),
+                GrainScaleShift = random.Next(4),
+                CbMult = numCbPoints is not 0 ? random.Next(256) : 0,
+                CbLumaMult = numCbPoints is not 0 ? random.Next(256) : 0,
+                CbOffset = numCbPoints is not 0 ? random.Next(512) : 0,
+                CrMult = numCrPoints is not 0 ? random.Next(256) : 0,
+                CrLumaMult = numCrPoints is not 0 ? random.Next(256) : 0,
+                CrOffset = numCrPoints is not 0 ? random.Next(512) : 0,
+                OverlapFlag = random.Next(2) == 0,
+                ClipToRestrictedRange = random.Next(2) == 0,
+            };
+        }
+
+        static byte[] Points(Random random, int count) => [.. Enumerable.Range(0, 256).OrderBy(_ => random.Next()).Take(count).Order().Select(value => (byte)value)];
+
+        static byte[] Bytes(Random random, int count) => [.. Enumerable.Range(0, count).Select(_ => (byte)random.Next(256))];
+
+        static sbyte[] Coefficients(Random random, int count) => [.. Enumerable.Range(0, count).Select(_ => (sbyte)random.Next(-128, 128))];
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1InterPredictionMatchesTheScalarReference(int bitDepth)
     {
         // Blocks of every size at every sub-sample position (whole-sample positions, which skip the filters, in a third of the

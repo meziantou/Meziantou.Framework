@@ -10,6 +10,9 @@ namespace Meziantou.Framework.WebPlatform.Unicode;
 /// </summary>
 internal static class GraphemeClusters
 {
+    // The first character whose Grapheme_Cluster_Break is Extend (U+0300 COMBINING GRAVE ACCENT)
+    private const char FirstExtend = (char)0x0300;
+
     /// <summary>Returns the end of the grapheme cluster that starts at <paramref name="index"/> (a cluster boundary).</summary>
     public static int GetNextBoundary(ReadOnlySpan<char> text, int index)
     {
@@ -17,7 +20,7 @@ internal static class GraphemeClusters
         if (index >= text.Length)
             return text.Length;
 
-        return index + Framework.Unicode.GetGraphemeClusterLength(text[index..]);
+        return index + GetClusterLength(text, index);
     }
 
     /// <summary>Returns the start of the grapheme cluster that ends at or contains the position before <paramref name="index"/>.</summary>
@@ -54,7 +57,7 @@ internal static class GraphemeClusters
     public static int Count(ReadOnlySpan<char> text)
     {
         var count = 0;
-        for (var i = 0; i < text.Length; i += Framework.Unicode.GetGraphemeClusterLength(text[i..]))
+        for (var i = 0; i < text.Length; i += GetClusterLength(text, i))
         {
             count++;
         }
@@ -70,11 +73,41 @@ internal static class GraphemeClusters
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(boundaries.Length, text.Length);
         boundaries[..text.Length].Clear();
-        for (var i = 0; i < text.Length; i += Framework.Unicode.GetGraphemeClusterLength(text[i..]))
+        var i = 0;
+        while (i < text.Length)
         {
+            if (IsPrintableAscii(text[i]))
+            {
+                // Each character of a run of printable ASCII characters is a cluster of its own (GB999), except the last one,
+                // which the next character extends when it is a mark or a joiner (U+0300 and above)
+                var end = text[i..].IndexOfAnyExceptInRange(' ', '~');
+                end = end < 0 ? text.Length : i + end;
+                var last = end < text.Length && text[end] >= FirstExtend ? end - 1 : end;
+                boundaries[i..last].Fill(true);
+                i = last;
+                if (i == end)
+                    continue;
+            }
+
             boundaries[i] = true;
+            i += Framework.Unicode.GetGraphemeClusterLength(text[i..]);
         }
     }
+
+    /// <summary>Returns the length of the grapheme cluster that starts at <paramref name="index"/> (a cluster boundary).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static int GetClusterLength(ReadOnlySpan<char> text, int index)
+    {
+        // A printable ASCII character is a cluster of its own, unless the next character is a mark or a joiner (GB9, GB9a):
+        // there is no Extend, SpacingMark or ZWJ character before U+0300
+        if (IsPrintableAscii(text[index]) && (index + 1 == text.Length || text[index + 1] < FirstExtend))
+            return 1;
+
+        return Framework.Unicode.GetGraphemeClusterLength(text[index..]);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsPrintableAscii(char c) => c is >= ' ' and <= '~';
 
     /// <summary>Reads the code point at <paramref name="index"/>; a lone surrogate is returned as is (its properties are the ones of the surrogate code point).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

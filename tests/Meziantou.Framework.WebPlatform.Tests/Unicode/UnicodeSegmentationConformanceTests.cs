@@ -63,6 +63,47 @@ public sealed class UnicodeSegmentationConformanceTests
     }
 
     [Fact]
+    public void GraphemeBoundaries_PrintableAscii()
+    {
+        // The printable ASCII characters are a cluster of their own before the characters below U+0300; the marks and the joiners
+        // (U+0300 and above) extend them
+        var failures = new List<string>();
+        for (var c = ' '; c <= '~'; c++)
+        {
+            for (var next = 0; next < 0x400; next++)
+            {
+                foreach (var text in (ReadOnlySpan<string>)[$"{c}{(char)next}", $"ab{c}{(char)next}a", $"{(char)next}{c}{c}\u0301{c}"])
+                {
+                    var expected = new bool[text.Length];
+                    for (var i = 0; i < text.Length; i += global::Meziantou.Framework.Unicode.GetGraphemeClusterLength(text.AsSpan(i)))
+                    {
+                        expected[i] = true;
+                    }
+
+                    var actual = new bool[text.Length];
+                    GraphemeClusters.GetBoundaries(text, actual);
+                    if (!expected.AsSpan().SequenceEqual(actual) || GraphemeClusters.GetNextBoundary(text, 0) != global::Meziantou.Framework.Unicode.GetGraphemeClusterLength(text))
+                    {
+                        failures.Add(string.Join(' ', text.Select(x => ((int)x).ToString("X4", CultureInfo.InvariantCulture))));
+                    }
+                }
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join('\n', failures.Take(50)));
+    }
+
+    [Fact]
+    public void WordBoundaries_AsciiProperties()
+    {
+        for (var c = 0; c < 0x80; c++)
+        {
+            var expected = (byte)((int)UnicodeProperties.GetWordBreak(c) | (UnicodeEmoji.IsExtendedPictographic(c) ? 0x20 : 0));
+            Assert.Equal(expected, WordBoundaries.GetWordBreakProperties(c));
+        }
+    }
+
+    [Fact]
     public void WordBreakTest()
     {
         var failures = new List<string>();

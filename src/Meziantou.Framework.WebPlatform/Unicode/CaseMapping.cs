@@ -13,6 +13,12 @@ internal static class CaseMapping
     /// <summary>Writes the full uppercase mapping of a code point (e.g. <c>ß</c> → <c>SS</c>, <c>ﬃ</c> → <c>FFI</c>) in UTF-16; returns its length.</summary>
     public static int ToUpper(int codePoint, Span<char> destination)
     {
+        if (codePoint < 0x80)
+        {
+            destination[0] = (char)(codePoint is >= 'a' and <= 'z' ? codePoint - 0x20 : codePoint);
+            return 1;
+        }
+
         Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
         return WriteUtf16(mapping[..UnicodeProperties.GetUppercaseMapping(codePoint, mapping)], destination);
     }
@@ -23,6 +29,9 @@ internal static class CaseMapping
     /// </summary>
     public static int ToTitle(int codePoint, Span<char> destination)
     {
+        if (codePoint < 0x80)
+            return ToUpper(codePoint, destination);
+
         Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
         return WriteUtf16(mapping[..UnicodeProperties.GetTitlecaseMapping(codePoint, mapping)], destination);
     }
@@ -30,6 +39,12 @@ internal static class CaseMapping
     /// <summary>Writes the full lowercase mapping of a code point (e.g. <c>İ</c> → <c>i</c> U+0307) in UTF-16; returns its length.</summary>
     public static int ToLower(int codePoint, Span<char> destination)
     {
+        if (codePoint < 0x80)
+        {
+            destination[0] = (char)(codePoint is >= 'A' and <= 'Z' ? codePoint + 0x20 : codePoint);
+            return 1;
+        }
+
         Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
         return WriteUtf16(mapping[..UnicodeProperties.GetLowercaseMapping(codePoint, mapping)], destination);
     }

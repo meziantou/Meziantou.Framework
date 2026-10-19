@@ -20,6 +20,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>XMP </c>) was collected, so readers and eager loads report the same metadata.
 /// </description></item>
 /// <item><description>
+/// An eager load of a still lossy image without alpha converts the pixel rows as soon as they are final
+/// (<see cref="Vp8Decoder.DecodeRows"/>): the planes are a window of a few macroblock rows. Elsewhere (sequential readers,
+/// whose caller may own the frame, and images with alpha) the whole frame is decoded first, so that malformed data leaves
+/// the frame untouched.
+/// </description></item>
+/// <item><description>
 /// When the input ends in the bitstream of a still lossy image, a sequential reader that asks for renderings gets the
 /// macroblock rows whose data was received (<see cref="Vp8Decoder.DecodePartial"/>), the other rows being zero.
 /// </description></item>
@@ -32,7 +38,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// libwebp animation decoder and the browsers do). Durations are the exact milliseconds; zero is kept.
 /// </description></item>
 /// <item><description>
-/// Memory: the payloads of one image (the walker), the decoded image (ARGB pixels, or Y'CbCr planes and an alpha plane),
+/// Memory: the payloads of one image (the walker), the decoded image (ARGB pixels, or Y'CbCr planes, or a window of them,
+/// and an alpha plane),
 /// the compositor canvas of an animation and two rows, all charged to the operation scope and released after each image.
 /// Frames and pixels are charged to the per-input limits before each image is decoded.
 /// </description></item>
@@ -84,6 +91,29 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         sink.BeginFrame(isAnimated ? AnimationTiming.FromWebPDuration(frame.DurationMilliseconds) : FrameDuration.Zero);
         _framesStarted++;
         EnsureRows(structure.Width);
+        if (!isAnimated && !frame.IsLossless && alpha is null && _context.Sequential is null)
+        {
+            // An eager load discards the frame on failure: the rows are converted as soon as they are final
+            using var decoder = Vp8Decoder.Open(_context.Scope, bitstream.Data, 0, bitstream.Length, _context.CancellationToken);
+            var lossyRow = _row!.RawBuffer.AsSpan(0, frame.Width * _bytesPerPixel);
+            using var lossyTarget = sink.LeaseCurrentFrame();
+            while (decoder.DecodeRows(out var firstRow, out var endRow))
+            {
+                for (var y = firstRow; y < endRow; y++)
+                {
+                    var direct = sink.GetDirectRow(lossyTarget, y);
+                    var destination = direct.IsEmpty ? lossyRow : direct;
+                    WebPYuvConverter.ConvertRow(decoder.Planes, decoder.LumaOrigin, y, default, destination, _scratch!.RawBuffer, _bytesPerPixel);
+                    if (direct.IsEmpty)
+                    {
+                        sink.WriteRow(lossyTarget, y, lossyRow);
+                    }
+                }
+            }
+
+            return true;
+        }
+
         using var image = DecodeImage(frame, alpha, bitstream);
         if (!isAnimated)
         {
@@ -361,7 +391,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
             }
 
             var alpha = _alpha is null ? default : _alpha.RawBuffer.AsSpan(y * _width, _width);
-            WebPYuvConverter.ConvertRow(_planes!, y, alpha, destination, scratch, bytesPerPixel);
+            WebPYuvConverter.ConvertRow(_planes!, lumaOrigin: 0, y, alpha, destination, scratch, bytesPerPixel);
         }
 
         public void Dispose()

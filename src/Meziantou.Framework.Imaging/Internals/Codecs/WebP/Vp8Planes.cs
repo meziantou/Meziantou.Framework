@@ -2,7 +2,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The reconstructed Y'CbCr 4:2:0 planes of a VP8 frame, padded to whole macroblocks (16x16 luma, 8x8 chroma), rented from
-/// the decoder's allocation scope (<see cref="AllocationKind.DecoderState"/>).
+/// the decoder's allocation scope (<see cref="AllocationKind.DecoderState"/>): every row of the frame, or a window of
+/// <see cref="Rows"/> luma rows (<see cref="Vp8Decoder.DecodeRows"/>).
 /// </summary>
 internal sealed class Vp8Planes : IDisposable
 {
@@ -10,10 +11,11 @@ internal sealed class Vp8Planes : IDisposable
     private PooledBuffer? _u;
     private PooledBuffer? _v;
 
-    private Vp8Planes(int width, int height, PooledBuffer y, PooledBuffer u, PooledBuffer v)
+    private Vp8Planes(int width, int height, int rows, PooledBuffer y, PooledBuffer u, PooledBuffer v)
     {
         Width = width;
         Height = height;
+        Rows = rows;
         YStride = ((width + 15) >> 4) * 16;
         UVStride = YStride / 2;
         _y = y;
@@ -33,12 +35,15 @@ internal sealed class Vp8Planes : IDisposable
     /// <summary>Gets the chroma row length (<see cref="YStride"/> / 2).</summary>
     public int UVStride { get; }
 
-    /// <summary>Gets the padded luma plane (<see cref="YStride"/> x padded height).</summary>
-    public Span<byte> Y => Get(_y).AsSpan(0, YStride * PaddedHeight);
+    /// <summary>Gets the number of luma rows of the planes: <see cref="PaddedHeight"/>, or the height of a window (a multiple of 8).</summary>
+    public int Rows { get; }
 
-    public Span<byte> U => Get(_u).AsSpan(0, UVStride * (PaddedHeight / 2));
+    /// <summary>Gets the padded luma plane (<see cref="YStride"/> x <see cref="Rows"/>).</summary>
+    public Span<byte> Y => Get(_y).AsSpan(0, YStride * Rows);
 
-    public Span<byte> V => Get(_v).AsSpan(0, UVStride * (PaddedHeight / 2));
+    public Span<byte> U => Get(_u).AsSpan(0, UVStride * (Rows / 2));
+
+    public Span<byte> V => Get(_v).AsSpan(0, UVStride * (Rows / 2));
 
     /// <summary>Gets the height padded to a multiple of 16.</summary>
     public int PaddedHeight => ((Height + 15) >> 4) * 16;
@@ -46,11 +51,15 @@ internal sealed class Vp8Planes : IDisposable
     /// <summary>Rents the planes of a <paramref name="width"/> x <paramref name="height"/> frame (zeroed).</summary>
     /// <exception cref="ImageResourceLimitException">The planes exceed the live-allocation limit.</exception>
     public static Vp8Planes Create(AllocationScope scope, int width, int height)
+        => Create(scope, width, height, ((height + 15) >> 4) * 16);
+
+    /// <summary>Rents planes of <paramref name="rows"/> luma rows (a multiple of 8, at most the padded height) of a <paramref name="width"/> x <paramref name="height"/> frame (zeroed).</summary>
+    /// <exception cref="ImageResourceLimitException">The planes exceed the live-allocation limit.</exception>
+    public static Vp8Planes Create(AllocationScope scope, int width, int height, int rows)
     {
         ArgumentNullException.ThrowIfNull(scope);
         var stride = (long)((width + 15) >> 4) * 16;
-        var paddedHeight = (long)((height + 15) >> 4) * 16;
-        var lumaLength = stride * paddedHeight;
+        var lumaLength = stride * rows;
         if (lumaLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
@@ -62,7 +71,7 @@ internal sealed class Vp8Planes : IDisposable
             y = scope.Rent((int)lumaLength, AllocationKind.DecoderState);
             u = scope.Rent(chromaLength, AllocationKind.DecoderState);
             var v = scope.Rent(chromaLength, AllocationKind.DecoderState);
-            return new Vp8Planes(width, height, y, u, v);
+            return new Vp8Planes(width, height, rows, y, u, v);
         }
         catch
         {

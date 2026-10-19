@@ -43,19 +43,20 @@ internal static class WebPYuvConverter
 
     /// <summary>Converts row <paramref name="y"/> of the planes to RGBA (alpha from <paramref name="alpha"/>, or opaque) or RGB pixels.</summary>
     /// <param name="planes">The reconstructed planes.</param>
+    /// <param name="lumaOrigin">The frame row of the first luma row of the planes (a multiple of 8; <c>lumaOrigin / 2</c> for chroma): the planes hold the chroma rows the row needs.</param>
     /// <param name="y">The row (0 to <c>Height - 1</c>).</param>
     /// <param name="alpha">The alpha values of the row, or empty for opaque pixels (always empty for RGB pixels).</param>
     /// <param name="destination">At least <c>bytesPerPixel * Width</c> bytes.</param>
     /// <param name="scratch">At least <c>2 * Width</c> bytes of scratch space.</param>
     /// <param name="bytesPerPixel">4 for RGBA pixels, 3 for RGB pixels.</param>
-    public static void ConvertRow(Vp8Planes planes, int y, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
+    public static void ConvertRow(Vp8Planes planes, int lumaOrigin, int y, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
     {
         var width = planes.Width;
         var upU = scratch[..width];
         var upV = scratch.Slice(width, width);
-        UpsampleRow(planes.U, planes.UVStride, planes.Width, planes.Height, y, upU);
-        UpsampleRow(planes.V, planes.UVStride, planes.Width, planes.Height, y, upV);
-        var luma = planes.Y.Slice(y * planes.YStride, width);
+        UpsampleRow(planes.U, planes.UVStride, planes.Width, planes.Height, lumaOrigin / 2, y, upU);
+        UpsampleRow(planes.V, planes.UVStride, planes.Width, planes.Height, lumaOrigin / 2, y, upV);
+        var luma = planes.Y.Slice((y - lumaOrigin) * planes.YStride, width);
         if (bytesPerPixel == 3)
         {
             ConvertSamplesRgb(luma, upU, upV, destination[..(width * 3)]);
@@ -127,14 +128,14 @@ internal static class WebPYuvConverter
         }
     }
 
-    /// <summary>Upsamples one chroma plane to the luma row <paramref name="y"/> (centered bilinear 9-3-3-1 weights).</summary>
-    public static void UpsampleRow(ReadOnlySpan<byte> plane, int stride, int width, int height, int y, Span<byte> destination)
+    /// <summary>Upsamples one chroma plane, which holds the frame rows from <paramref name="chromaOrigin"/>, to the luma row <paramref name="y"/> (centered bilinear 9-3-3-1 weights).</summary>
+    public static void UpsampleRow(ReadOnlySpan<byte> plane, int stride, int width, int height, int chromaOrigin, int y, Span<byte> destination)
     {
         var chromaWidth = (width + 1) >> 1;
         var chromaHeight = (height + 1) >> 1;
         var near = y >> 1;
         var far = (y & 1) == 0 ? Math.Max(near - 1, 0) : Math.Min(near + 1, chromaHeight - 1);
-        UpsampleSamples(plane.Slice(near * stride, chromaWidth), plane.Slice(far * stride, chromaWidth), destination[..width]);
+        UpsampleSamples(plane.Slice((near - chromaOrigin) * stride, chromaWidth), plane.Slice((far - chromaOrigin) * stride, chromaWidth), destination[..width]);
     }
 
     /// <summary>

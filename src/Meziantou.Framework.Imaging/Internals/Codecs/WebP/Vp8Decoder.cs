@@ -25,14 +25,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// always clamps (identical for streams that declare clamping unnecessary), and no upscaling is applied.
 /// </description></item>
 /// <item><description>
-/// Intra prediction uses the unfiltered reconstruction (the loop filter runs once the whole frame is reconstructed, in
-/// macroblock order); edges outside the frame are 127 above (and above-left on the first row) and 129 on the left;
+/// Intra prediction uses the unfiltered reconstruction: a macroblock row is filtered once the next one is reconstructed (it
+/// reads only the last pixel row of the row above it), and the result is the one of filtering the whole frame once it is
+/// reconstructed, in macroblock order. Edges outside the frame are 127 above (and above-left on the first row) and 129 on
+/// the left;
 /// sub-blocks on the right column of a macroblock take their above-right pixels from the macroblock row above, the last
 /// macroblock of a row replicating its above neighbor's last pixel.
 /// </description></item>
 /// <item><description>
 /// Dequantized coefficients are stored as 16-bit values (as in the reference decoders), and the inner edges of a
 /// macroblock are filtered when it is predicted per sub-block or has at least one decoded non-zero coefficient.
+/// </description></item>
+/// <item><description>
+/// <see cref="Decode"/> and <see cref="DecodePartial"/> return planes of the whole frame. <see cref="Open"/> decodes into a
+/// window of <see cref="WindowMacroblockRows"/> macroblock rows and 24 rows above them, and <see cref="DecodeRows"/> gives
+/// the pixel rows as soon as they are final, the loop filter of the next macroblock row and the chroma rows of their
+/// upsampling included: a pixel row is final 7 rows (and one macroblock row) after its macroblock row is reconstructed.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -43,6 +51,14 @@ internal sealed class Vp8Decoder : IDisposable
 
     /// <summary>The number of zero bytes a partition may be read past its end: the decoder's two-byte window looks ahead of the arithmetic decoder.</summary>
     public const int MaxOverrunBytes = 2;
+
+    /// <summary>The number of macroblock rows decoded between two moves of the window of <see cref="Open"/>.</summary>
+    public const int WindowMacroblockRows = 8;
+
+    // The luma rows kept above the macroblock row being reconstructed when the window moves: 8 rows of the macroblock row
+    // above the previous one (not converted yet, and read and changed by the loop filter of the previous one) and the
+    // previous one (not filtered yet)
+    private const int WindowContextRows = 24;
 
     private static ReadOnlySpan<sbyte> KeyFrameYModeTree => [-Vp8Tables.BPred, 2, 4, 6, -Vp8Tables.DcPred, -Vp8Tables.VPred, -Vp8Tables.HPred, -Vp8Tables.TmPred];
 
@@ -117,6 +133,13 @@ internal sealed class Vp8Decoder : IDisposable
 
     private Vp8Planes? _planes;
 
+    // The frame row of the first luma row of the planes (a multiple of 8), the next macroblock row of DecodeRows (the
+    // macroblock row count when only the filter of the last one is left, more once every row is given) and the pixel rows
+    // given so far
+    private int _lumaOrigin;
+    private int _nextMacroblockRow;
+    private int _rowsDone;
+
     private Vp8Decoder(AllocationScope scope, byte[] data, CancellationToken cancellationToken)
     {
         _scope = scope;
@@ -162,12 +185,90 @@ internal sealed class Vp8Decoder : IDisposable
         return new Vp8FrameHeader(width, height, firstPartitionSize);
     }
 
+    /// <summary>Gets the planes of a decoder from <see cref="Open"/>: a window of the frame rows from <see cref="LumaOrigin"/>.</summary>
+    public Vp8Planes Planes => _planes ?? throw new ObjectDisposedException(nameof(Vp8Decoder));
+
+    /// <summary>Gets the frame row of the first luma row of <see cref="Planes"/> (a multiple of 8; half of it for chroma).</summary>
+    public int LumaOrigin => _lumaOrigin;
+
     /// <summary>Decodes a VP8 chunk payload into Y'CbCr planes.</summary>
     /// <returns>The planes; the caller disposes them.</returns>
     public static Vp8Planes Decode(AllocationScope scope, byte[] data, int offset, int length, CancellationToken cancellationToken)
     {
         using var decoder = new Vp8Decoder(scope, data, cancellationToken);
         return decoder.DecodeFrame(offset, length, length, out _)!;
+    }
+
+    /// <summary>
+    /// Parses the headers of a VP8 chunk payload and rents a window of planes; <see cref="DecodeRows"/> then decodes the
+    /// frame, macroblock row after macroblock row.
+    /// </summary>
+    /// <returns>The decoder; the caller disposes it.</returns>
+    public static Vp8Decoder Open(AllocationScope scope, byte[] data, int offset, int length, CancellationToken cancellationToken)
+    {
+        var decoder = new Vp8Decoder(scope, data, cancellationToken);
+        try
+        {
+            var paddedHeight = decoder.Start(offset, length, length) * 16;
+            var rows = Math.Min(paddedHeight, WindowContextRows + (WindowMacroblockRows * 16));
+            decoder._planes = Vp8Planes.Create(scope, decoder._width, decoder._height, rows);
+            return decoder;
+        }
+        catch
+        {
+            decoder.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Decodes the next macroblock row (or applies the loop filter to the last one) and gives the pixel rows that became
+    /// final: <see cref="Planes"/> holds them (with the chroma rows they need) until the next call.
+    /// </summary>
+    /// <param name="firstRow">The first final pixel row.</param>
+    /// <param name="endRow">The row after the last final pixel row (<paramref name="firstRow"/> when no row became final).</param>
+    /// <returns><see langword="false"/> once every row was given.</returns>
+    /// <exception cref="InvalidImageContentException">The data is truncated.</exception>
+    public bool DecodeRows(out int firstRow, out int endRow)
+    {
+        firstRow = endRow = _rowsDone;
+        var mbY = _nextMacroblockRow;
+        if (mbY > _mbHeight)
+            return false;
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        int end;
+        if (mbY < _mbHeight)
+        {
+            var planes = Planes;
+            if ((mbY * 16) + 16 - _lumaOrigin > planes.Rows)
+            {
+                // Move the rows that are still needed to the top of the window
+                var origin = (mbY * 16) - WindowContextRows;
+                planes.Y.Slice((origin - _lumaOrigin) * planes.YStride, WindowContextRows * planes.YStride).CopyTo(planes.Y);
+                planes.U.Slice(((origin - _lumaOrigin) / 2) * planes.UVStride, (WindowContextRows / 2) * planes.UVStride).CopyTo(planes.U);
+                planes.V.Slice(((origin - _lumaOrigin) / 2) * planes.UVStride, (WindowContextRows / 2) * planes.UVStride).CopyTo(planes.V);
+                _lumaOrigin = origin;
+            }
+
+            if (!DecodeMacroblockRow(mbY))
+                throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+
+            // Until the loop filter of this row: the last 3 luma rows of the row above, and the chroma rows of the luma rows
+            // after the 7 last ones
+            FilterMacroblockRow(mbY - 1);
+            end = mbY == 0 ? 0 : (mbY * 16) - 7;
+        }
+        else
+        {
+            FilterMacroblockRow(mbY - 1);
+            end = _height;
+        }
+
+        _nextMacroblockRow = mbY + 1;
+        endRow = Math.Max(firstRow, Math.Min(end, _height));
+        _rowsDone = endRow;
+        return true;
     }
 
     /// <summary>
@@ -203,13 +304,49 @@ internal sealed class Vp8Decoder : IDisposable
     private Vp8Planes? DecodeFrame(int offset, int length, int receivedLength, out int decodedRows)
     {
         decodedRows = 0;
+        var mbHeight = Start(offset, length, receivedLength);
+        if (mbHeight == 0)
+            return null;
+
+        _planes = Vp8Planes.Create(_scope, _width, _height);
+        var mbRows = mbHeight;
+        for (var mbY = 0; mbY < mbHeight; mbY++)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (!DecodeMacroblockRow(mbY))
+            {
+                if (receivedLength == length)
+                    throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
+
+                mbRows = mbY;
+                break;
+            }
+
+            FilterMacroblockRow(mbY - 1);
+        }
+
+        if (mbRows == 0)
+            return null;
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        FilterMacroblockRow(mbRows - 1);
+        decodedRows = Math.Min(_height, mbRows * 16);
+        var planes = _planes;
+        _planes = null;
+        return planes;
+    }
+
+    /// <summary>Parses the frame header and the partitions, and rents the per-frame state (not the planes).</summary>
+    /// <returns>The number of macroblock rows; 0 when the headers were not received.</returns>
+    private int Start(int offset, int length, int receivedLength)
+    {
         var isPartial = receivedLength < length;
         if (isPartial && receivedLength < FrameHeaderLength)
-            return null;
+            return 0;
 
         var frame = ReadFrameHeader(_data.AsSpan(offset, Math.Min(length, FrameHeaderLength)), length);
         if (isPartial && receivedLength < FrameHeaderLength + frame.FirstPartitionSize)
-            return null;
+            return 0;
 
         _width = frame.Width;
         _height = frame.Height;
@@ -218,50 +355,40 @@ internal sealed class Vp8Decoder : IDisposable
         _header = new Vp8BoolDecoder(_data, offset + FrameHeaderLength, frame.FirstPartitionSize);
         ParseFrameHeader();
         SetupPartitions(offset + FrameHeaderLength + frame.FirstPartitionSize, length - FrameHeaderLength - frame.FirstPartitionSize, offset + receivedLength);
-
-        _planes = Vp8Planes.Create(_scope, _width, _height);
         _aboveModes = new byte[_mbWidth * 4];
         _aboveNonZero = new byte[_mbWidth * 9];
         var filterBuffer = _scope.Rent(_mbWidth * _mbHeight, AllocationKind.DecoderState, clear: true);
         _buffers.Add(filterBuffer);
         _filterInfo = filterBuffer.RawBuffer;
-        var mbRows = _mbHeight;
-        for (var mbY = 0; mbY < _mbHeight; mbY++)
+        return _mbHeight;
+    }
+
+    /// <summary>Decodes and reconstructs a macroblock row (not filtered).</summary>
+    /// <returns>
+    /// <see langword="false"/> when the row read past the end of a partition (a partition received in part has no byte past
+    /// what was received): the row is reconstructed, but its data is truncated.
+    /// </returns>
+    private bool DecodeMacroblockRow(int mbY)
+    {
+        var partition = mbY & (_partitions.Length - 1);
+        ref var tokens = ref _partitions[partition];
+        Array.Clear(_leftModes);
+        Array.Clear(_leftNonZero);
+        for (var mbX = 0; mbX < _mbWidth; mbX++)
         {
-            _cancellationToken.ThrowIfCancellationRequested();
-            var partition = mbY & (_partitions.Length - 1);
-            ref var tokens = ref _partitions[partition];
-            Array.Clear(_leftModes);
-            Array.Clear(_leftNonZero);
-            for (var mbX = 0; mbX < _mbWidth; mbX++)
-            {
-                DecodeMacroblock(mbX, mbY, ref tokens);
-            }
-
-            // A partition received in part has no byte past what was received: a row that read one is not decoded
-            if (_header.OverrunBytes > MaxOverrunBytes || tokens.OverrunBytes > (_truncatedPartitions[partition] ? 0 : MaxOverrunBytes))
-            {
-                if (!isPartial)
-                    throw Invalid("The VP8 data is truncated (a partition ends before the last macroblock that uses it).");
-
-                mbRows = mbY;
-                break;
-            }
+            DecodeMacroblock(mbX, mbY, ref tokens);
         }
 
-        if (mbRows == 0)
-            return null;
+        return _header.OverrunBytes <= MaxOverrunBytes && tokens.OverrunBytes <= (_truncatedPartitions[partition] ? 0 : MaxOverrunBytes);
+    }
 
-        if (_filterLevel != 0)
+    /// <summary>Applies the loop filter to a reconstructed macroblock row (nothing for -1), once the next one is reconstructed or none follows.</summary>
+    private void FilterMacroblockRow(int mbY)
+    {
+        if (_filterLevel != 0 && mbY >= 0)
         {
-            _cancellationToken.ThrowIfCancellationRequested();
-            Vp8LoopFilter.Apply(_planes, _filterInfo, _mbWidth, mbRows, _simpleFilter, _sharpness);
+            Vp8LoopFilter.ApplyRow(_planes!, _filterInfo.AsSpan(mbY * _mbWidth, _mbWidth), mbY, _lumaOrigin, _simpleFilter, _sharpness);
         }
-
-        decodedRows = Math.Min(_height, mbRows * 16);
-        var planes = _planes;
-        _planes = null;
-        return planes;
     }
 
     private void ParseFrameHeader()
@@ -503,7 +630,7 @@ internal sealed class Vp8Decoder : IDisposable
         var inner = !hasY2 || nonZero;
         _filterInfo[(mbY * _mbWidth) + mbX] = (byte)(level | (inner ? 0x80 : 0));
 
-        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients, _blocksWithCoefficients, _blocksWithAc);
+        Vp8Reconstruction.ReconstructMacroblock(_planes!, mbX, mbY, _mbWidth, yMode, subModes, uvMode, coefficients, _blocksWithCoefficients, _blocksWithAc, _lumaOrigin);
 
         // Clear only what was written, for the next macroblock
         for (var written = _blocksWritten; written != 0; written &= written - 1)

@@ -38,15 +38,16 @@ internal static class Vp8Reconstruction
     /// <param name="coefficients">The dequantized coefficients of the 24 blocks.</param>
     /// <param name="blocksWithCoefficients">Bit <c>i</c> is clear when every coefficient of block <c>i</c> is zero (no residual).</param>
     /// <param name="blocksWithAc">Bit <c>i</c> is clear when every coefficient of block <c>i</c> but the DC is zero.</param>
-    public static void ReconstructMacroblock(Vp8Planes planes, int mbX, int mbY, int mbWidth, int yMode, ReadOnlySpan<byte> subModes, int uvMode, ReadOnlySpan<short> coefficients, uint blocksWithCoefficients, uint blocksWithAc)
+    /// <param name="lumaOrigin">The frame row of the first luma row of the planes (a multiple of 8; <c>lumaOrigin / 2</c> for chroma).</param>
+    public static void ReconstructMacroblock(Vp8Planes planes, int mbX, int mbY, int mbWidth, int yMode, ReadOnlySpan<byte> subModes, int uvMode, ReadOnlySpan<short> coefficients, uint blocksWithCoefficients, uint blocksWithAc, int lumaOrigin)
     {
         var y = planes.Y;
         var yStride = planes.YStride;
-        var yOffset = (mbY * 16 * yStride) + (mbX * 16);
+        var yOffset = (((mbY * 16) - lumaOrigin) * yStride) + (mbX * 16);
         if (yMode == Vp8Tables.BPred)
         {
             Span<byte> aboveRight = stackalloc byte[4];
-            GetMacroblockAboveRight(y, yStride, mbX, mbY, mbWidth, aboveRight);
+            GetMacroblockAboveRight(y, yStride, yOffset, mbX, mbY, mbWidth, aboveRight);
             for (var by = 0; by < 4; by++)
             {
                 for (var bx = 0; bx < 4; bx++)
@@ -69,7 +70,7 @@ internal static class Vp8Reconstruction
         }
 
         var uvStride = planes.UVStride;
-        var uvOffset = (mbY * 8 * uvStride) + (mbX * 8);
+        var uvOffset = (((mbY * 8) - (lumaOrigin / 2)) * uvStride) + (mbX * 8);
         for (var plane = 0; plane < 2; plane++)
         {
             var data = plane == 0 ? planes.U : planes.V;
@@ -189,6 +190,9 @@ internal static class Vp8Reconstruction
     /// on the row above it (127 on the first row; the last above pixel repeated on the last macroblock of a row).
     /// </summary>
     public static void GetMacroblockAboveRight(ReadOnlySpan<byte> plane, int stride, int mbX, int mbY, int mbWidth, Span<byte> aboveRight)
+        => GetMacroblockAboveRight(plane, stride, (mbY * 16 * stride) + (mbX * 16), mbX, mbY, mbWidth, aboveRight);
+
+    private static void GetMacroblockAboveRight(ReadOnlySpan<byte> plane, int stride, int macroblockOffset, int mbX, int mbY, int mbWidth, Span<byte> aboveRight)
     {
         if (mbY == 0)
         {
@@ -196,14 +200,14 @@ internal static class Vp8Reconstruction
             return;
         }
 
-        var row = ((mbY * 16) - 1) * stride;
+        var above = macroblockOffset - stride;
         if (mbX == mbWidth - 1)
         {
-            aboveRight.Fill(plane[row + (mbX * 16) + 15]);
+            aboveRight.Fill(plane[above + 15]);
         }
         else
         {
-            plane.Slice(row + (mbX * 16) + 16, 4).CopyTo(aboveRight);
+            plane.Slice(above + 16, 4).CopyTo(aboveRight);
         }
     }
 

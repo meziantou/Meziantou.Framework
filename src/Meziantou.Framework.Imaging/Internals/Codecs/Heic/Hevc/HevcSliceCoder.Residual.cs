@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 // The transform coefficient levels of a transform block
@@ -6,6 +8,10 @@ internal ref partial struct HevcSliceCoder
     // sigCtx of sig_coeff_flag (GetSigCtx) for each scan position n of a sub-block, 16 values per block size, colour
     // component, scan order, sub-block (the first one or another one) and prevCsbf: see GetSigCtxIndex
     private static readonly byte[] SigCtxTable = CreateSigCtxTable();
+
+    // sigCtx of every scan position of the blocks that use the context of transform_skip_context_enabled_flag, which is
+    // in the ctxIdx of the decoding
+    private static ReadOnlySpan<byte> SingleSigCtx => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
     /// <summary>
     /// Reads the transform coefficient levels of a transform block (clause 7.3.8.11 "Residual coding syntax" and clause
@@ -163,6 +169,10 @@ internal ref partial struct HevcSliceCoder
             _tools |= HevcTools.TransformSkipContext;
         }
 
+        // ctxIdx of sig_coeff_flag: sigCtx, after the 27 contexts of the luma for the chroma. The blocks that use the context
+        // of transform_skip_context_enabled_flag have a single sigCtx: 42 for the luma and 16 for the chroma
+        var sigCoeffFlagContext = HevcContextLayout.SigCoeffFlag + (cIdx is 0 ? 0 : 27) + (transformSkipContext ? (cIdx is 0 ? 42 : 16) : 0);
+
         for (var i = lastSubBlock; i >= 0; i--)
         {
             var xS = HevcScanOrder.X(subBlockScan[i]);
@@ -186,7 +196,7 @@ internal ref partial struct HevcSliceCoder
 
             // sig_coeff_flag (clause 9.3.4.2.5): the scan positions of the significant coefficients, the last one first
             var prevCsbf = rightCsbf + (belowCsbf << 1);
-            ReadOnlySpan<byte> sigCtxs = SigCtxTable.AsSpan(GetSigCtxIndex(log2TrafoSize, cIdx, scanIdx, (xS | yS) is not 0, prevCsbf), 16);
+            var sigCtxs = transformSkipContext ? SingleSigCtx : SigCtxTable.AsSpan(GetSigCtxIndex(log2TrafoSize, cIdx, scanIdx, (xS | yS) is not 0, prevCsbf), 16);
             var numSig = 0;
             var n = 15;
             if (i == lastSubBlock)
@@ -195,32 +205,7 @@ internal ref partial struct HevcSliceCoder
                 n = lastScanPos - 1;
             }
 
-            for (; n >= 0; n--)
-            {
-                if (n is 0 && inferSbDcSigCoeffFlag)
-                {
-                    // The sub-block is coded and none of its other coefficients is significant
-                    significant[numSig++] = 0;
-                    break;
-                }
-
-                int sigCtx;
-                if (transformSkipContext)
-                {
-                    sigCtx = cIdx is 0 ? 42 : 16;
-                }
-                else
-                {
-                    sigCtx = sigCtxs[n];
-                }
-
-                if (_cabac.DecodeDecision(HevcContextLayout.SigCoeffFlag + (cIdx is 0 ? sigCtx : 27 + sigCtx)) is not 0)
-                {
-                    significant[numSig++] = (byte)n;
-                    inferSbDcSigCoeffFlag = false;
-                }
-            }
-
+            numSig = ReadSigCoeffFlags(_cabac, sigCoeffFlagContext, sigCtxs, n, inferSbDcSigCoeffFlag, significant, numSig);
             if (numSig is 0)
                 continue;
 
@@ -231,27 +216,8 @@ internal ref partial struct HevcSliceCoder
                 ctxSet++;
             }
 
-            greater1Ctx = 1;
-            var lastGreater1Index = -1;
             var greater1Count = Math.Min(numSig, 8);
-            for (var k = 0; k < greater1Count; k++)
-            {
-                var ctxInc = (ctxSet * 4) + Math.Min(3, greater1Ctx) + (cIdx is 0 ? 0 : 16);
-                var flag = _cabac.DecodeDecision(HevcContextLayout.CoeffAbsLevelGreater1Flag + ctxInc);
-                greater1Flag[k] = (byte)flag;
-                if (flag is not 0)
-                {
-                    greater1Ctx = 0;
-                    if (lastGreater1Index < 0)
-                    {
-                        lastGreater1Index = k;
-                    }
-                }
-                else if (greater1Ctx > 0)
-                {
-                    greater1Ctx++;
-                }
-            }
+            greater1Ctx = ReadGreater1Flags(_cabac, HevcContextLayout.CoeffAbsLevelGreater1Flag + (ctxSet * 4) + (cIdx is 0 ? 0 : 16), greater1Flag[..greater1Count], out var lastGreater1Index);
 
             // coeff_abs_level_greater2_flag (clause 9.3.4.2.7): the first coefficient that is greater than 1
             var greater2Flag = 0;
@@ -295,7 +261,7 @@ internal ref partial struct HevcSliceCoder
                         cRiceParam = Math.Min(cRiceParam, 4);
                     }
 
-                    var coeffAbsLevelRemaining = ReadCoeffAbsLevelRemaining(cRiceParam);
+                    var coeffAbsLevelRemaining = ReadCoeffAbsLevelRemaining(_cabac, cRiceParam);
                     if (firstRemaining && persistentRice)
                     {
                         UpdateStatCoeff(sbType, coeffAbsLevelRemaining);
@@ -438,29 +404,98 @@ internal ref partial struct HevcSliceCoder
         return sigCtx;
     }
 
-    // The binarization of coeff_abs_level_remaining (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of
-    // cRiceParam bins, or a prefix of 4 bins and an Exp-Golomb code of order cRiceParam + 1
-    private readonly int ReadCoeffAbsLevelRemaining(int cRiceParam)
+    // sig_coeff_flag (clause 9.3.4.2.5) of the scan positions n to 0 of a sub-block, whose ctxIdx is contextBase + sigCtxs[ n ]:
+    // the positions of the significant coefficients are appended to significant after its first numSig items. Returns the
+    // number of significant coefficients. The loops of bins are not inlined in ResidualCoding, where the registers of the
+    // arithmetic decoder would not stay in registers (HevcCabacEngine)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadSigCoeffFlags(HevcCabacDecoder cabac, int contextBase, ReadOnlySpan<byte> sigCtxs, int n, bool inferSbDcSigCoeffFlag, Span<byte> significant, int numSig)
     {
+        var contexts = cabac.Contexts;
+        var engine = cabac.Engine;
+        for (; n >= 0; n--)
+        {
+            if (n is 0 && inferSbDcSigCoeffFlag)
+            {
+                // The sub-block is coded and none of its other coefficients is significant
+                significant[numSig++] = 0;
+                break;
+            }
+
+            if (engine.DecodeDecision(contexts, contextBase + sigCtxs[n], cabac) is not 0)
+            {
+                significant[numSig++] = (byte)n;
+                inferSbDcSigCoeffFlag = false;
+            }
+        }
+
+        cabac.Engine = engine;
+        return numSig;
+    }
+
+    // coeff_abs_level_greater1_flag (clause 9.3.4.2.6) of the first significant coefficients of a sub-block, whose ctxIdx is
+    // contextBase + Min( 3, greater1Ctx ). Returns greater1Ctx after the last flag. Not inlined, like ReadSigCoeffFlags
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadGreater1Flags(HevcCabacDecoder cabac, int contextBase, Span<byte> greater1Flag, out int lastGreater1Index)
+    {
+        var contexts = cabac.Contexts;
+        var engine = cabac.Engine;
+        var greater1Ctx = 1;
+        lastGreater1Index = -1;
+        for (var k = 0; k < greater1Flag.Length; k++)
+        {
+            var flag = engine.DecodeDecision(contexts, contextBase + Math.Min(3, greater1Ctx), cabac);
+            greater1Flag[k] = (byte)flag;
+            if (flag is not 0)
+            {
+                greater1Ctx = 0;
+                if (lastGreater1Index < 0)
+                {
+                    lastGreater1Index = k;
+                }
+            }
+            else if (greater1Ctx > 0)
+            {
+                greater1Ctx++;
+            }
+        }
+
+        cabac.Engine = engine;
+        return greater1Ctx;
+    }
+
+    // The binarization of coeff_abs_level_remaining (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of
+    // cRiceParam bins, or a prefix of 4 bins and an Exp-Golomb code of order cRiceParam + 1. Not inlined, like
+    // ReadSigCoeffFlags
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadCoeffAbsLevelRemaining(HevcCabacDecoder cabac, int cRiceParam)
+    {
+        var engine = cabac.Engine;
         var prefix = 0;
-        while (_cabac.DecodeBypass() is not 0)
+        while (engine.DecodeBypass(cabac) is not 0)
         {
             // The longest codes are those of the largest transform coefficient levels: a longer prefix is not a value
             if (++prefix > 32)
                 throw HevcErrors.Invalid("a transform coefficient level is out of range.");
         }
 
+        long value;
         if (prefix <= 3)
-            return (prefix << cRiceParam) + _cabac.DecodeBypassBits(cRiceParam);
+        {
+            value = (prefix << cRiceParam) + engine.DecodeBypassBits(cRiceParam, cabac);
+        }
+        else
+        {
+            var length = prefix - 3 + cRiceParam;
+            if (length > 30)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
 
-        var length = prefix - 3 + cRiceParam;
-        if (length > 30)
-            throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+            value = (((1L << (prefix - 3)) + 3 - 1) << cRiceParam) + engine.DecodeBypassBits(length, cabac);
+            if (value > 2 * -(long)HevcInverseTransform.CoeffMin)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+        }
 
-        var value = (((1L << (prefix - 3)) + 3 - 1) << cRiceParam) + _cabac.DecodeBypassBits(length);
-        if (value > 2 * -(long)HevcInverseTransform.CoeffMin)
-            throw HevcErrors.Invalid("a transform coefficient level is out of range.");
-
+        cabac.Engine = engine;
         return (int)value;
     }
 

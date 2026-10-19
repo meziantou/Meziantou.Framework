@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>
@@ -12,75 +14,31 @@ namespace Meziantou.Framework.Fonts;
 /// <c>{min,max}</c> after what is repeated; parentheses.
 /// </para>
 /// <para>
-/// A pattern is compiled once into a nondeterministic automaton and matched by following all its states at once: the
-/// time is proportional to the length of the syllable, whatever the text is, and the match is the longest one.
+/// A pattern is compiled once into a nondeterministic automaton, then into the deterministic automaton that follows
+/// all its states at once (the subset construction): a match reads one entry of a table per character, and is the
+/// longest one.
 /// </para>
 /// </remarks>
 internal sealed class SyllablePattern
 {
-    // The largest automaton whose working storage is on the stack: the patterns of the models are well below.
-    private const int MaxStackStates = 4096;
+    // The categories are the values 0 to 63, the bits of the sets of categories of the names.
+    private const int CategoryBits = 6;
+    private const int CategoryCount = 1 << CategoryBits;
 
-    // A state has a set of categories and one successor, or no category and up to two successors it leads to
-    // without reading a character. The last state is the accepting one.
-    private readonly ulong[] _categories;
-    private readonly int[] _next;
-    private readonly int[] _alternative;
-    private readonly int _start;
-    private readonly int _accept;
+    // A state of the deterministic automaton is a byte: the patterns of the models have a few dozen states.
+    private const int MaxStates = byte.MaxValue + 1;
 
-    // The states a state leads to without reading a character, itself included, for the states a match enters: the
-    // start and the successors of the states that read a character. _closureStarts has the first one in _closures,
-    // and -1 for the states a match never enters.
-    private readonly int[] _closureStarts;
-    private readonly int[] _closureLengths;
-    private readonly int[] _closures;
+    // State 0 has no state of the nondeterministic automaton: a match that enters it is over. State 1 is the start.
+    private const int StartState = 1;
 
-    // The categories a match can start with: a text that starts with another one does not match.
-    private readonly ulong _firstCategories;
+    // The state a state and a category lead to, at (state << CategoryBits) | category.
+    private readonly byte[] _transitions;
+    private readonly bool[] _isAccepting;
 
-    private SyllablePattern(List<ulong> categories, List<int> next, List<int> alternative, int start, int accept)
+    private SyllablePattern(byte[] transitions, bool[] isAccepting)
     {
-        _categories = [.. categories];
-        _next = [.. next];
-        _alternative = [.. alternative];
-        _start = start;
-        _accept = accept;
-
-        var count = _categories.Length;
-        _closureStarts = new int[count];
-        _closureLengths = new int[count];
-        _closureStarts.AsSpan().Fill(-1);
-        var closures = new List<int>();
-        var states = new int[count];
-        var isActive = new bool[count];
-        AddClosure(_start);
-        for (var state = 0; state < count; state++)
-        {
-            if (_categories[state] != 0)
-            {
-                AddClosure(_next[state]);
-            }
-        }
-
-        _closures = [.. closures];
-        foreach (var state in _closures.AsSpan(_closureStarts[_start], _closureLengths[_start]))
-        {
-            _firstCategories |= _categories[state];
-        }
-
-        void AddClosure(int state)
-        {
-            if (state < 0 || _closureStarts[state] >= 0)
-                return;
-
-            isActive.AsSpan().Clear();
-            var length = 0;
-            Add(state, states, ref length, isActive);
-            _closureStarts[state] = closures.Count;
-            _closureLengths[state] = length;
-            closures.AddRange(states.AsSpan(0, length));
-        }
+        _transitions = transitions;
+        _isAccepting = isAccepting;
     }
 
     /// <summary>Compiles a pattern.</summary>
@@ -97,110 +55,58 @@ internal sealed class SyllablePattern
 
         var accept = builder.AddState(0, -1, -1);
         builder.Connect(exits, accept);
-        return new SyllablePattern(builder.Categories, builder.Next, builder.Alternative, start, accept);
+        var (transitions, isAccepting) = builder.ToDeterministic(start, accept, pattern);
+        return new SyllablePattern(transitions, isAccepting);
     }
 
     /// <summary>Finds the longest sequence of glyphs the pattern matches from a glyph.</summary>
     /// <param name="info">The glyphs, with their syllable categories.</param>
     /// <param name="start">The first glyph.</param>
-    /// <param name="states">Working storage: at least <see cref="StateCount"/> entries, twice.</param>
     /// <returns>The number of glyphs of the match; 0 when the pattern does not match, or matches nothing.</returns>
-    public int Match(ReadOnlySpan<GlyphInfo> info, int start, Span<int> states) => Match(info, default, info.Length, start, states);
-
-    /// <summary>Finds the longest sequence of categories the pattern matches from one of them.</summary>
-    /// <param name="categories">The syllable categories of the characters.</param>
-    /// <param name="start">The first one.</param>
-    /// <param name="states">Working storage: at least <see cref="StateCount"/> entries, twice.</param>
-    public int Match(ReadOnlySpan<byte> categories, int start, Span<int> states) => Match(default, categories, categories.Length, start, states);
-
-    private int Match(ReadOnlySpan<GlyphInfo> info, ReadOnlySpan<byte> categories, int length, int start, Span<int> states)
+    public int Match(ReadOnlySpan<GlyphInfo> info, int start)
     {
-        // No state reads the first character: the match is empty.
-        if (start < length && (_firstCategories & (1UL << ((categories.IsEmpty ? info[start].SyllableCategory : categories[start]) & 63))) == 0)
-            return 0;
-
-        var count = _categories.Length;
-        var current = states[..count];
-        var following = states.Slice(count, count);
-        Span<bool> isActive = count <= MaxStackStates ? stackalloc bool[count] : new bool[count];
-        isActive.Clear();
-        var currentCount = 0;
-        Enter(_start, current, ref currentCount, isActive);
+        var transitions = _transitions;
+        var isAccepting = _isAccepting;
+        var state = StartState;
         var longest = 0;
-        for (var i = start; ; i++)
+        for (var i = start; i < info.Length; i++)
         {
-            var isAccepted = false;
-            for (var j = 0; j < currentCount; j++)
-            {
-                isAccepted |= current[j] == _accept;
-            }
-
-            if (isAccepted)
-            {
-                longest = i - start;
-            }
-
-            if (i >= length || currentCount == 0)
+            state = transitions[(state << CategoryBits) | (info[i].SyllableCategory & (CategoryCount - 1))];
+            if (state == 0)
                 break;
 
-            var category = 1UL << ((categories.IsEmpty ? info[i].SyllableCategory : categories[i]) & 63);
-            isActive.Clear();
-            var followingCount = 0;
-            for (var j = 0; j < currentCount; j++)
+            if (isAccepting[state])
             {
-                var state = current[j];
-                if ((_categories[state] & category) != 0)
-                {
-                    Enter(_next[state], following, ref followingCount, isActive);
-                }
+                longest = i - start + 1;
             }
-
-            var swap = current;
-            current = following;
-            following = swap;
-            currentCount = followingCount;
         }
 
         return longest;
     }
 
-    /// <summary>Gets the number of states of the automaton.</summary>
-    public int StateCount => _categories.Length;
-
-    // Adds a state and the states it leads to without reading a character, from the closure of the state: the states
-    // Add would add. The set of the active states is the same: Add expands every state it activates.
-    private void Enter(int state, Span<int> states, ref int count, Span<bool> isActive)
+    /// <summary>Finds the longest sequence of categories the pattern matches from one of them.</summary>
+    /// <param name="categories">The syllable categories of the characters.</param>
+    /// <param name="start">The first one.</param>
+    /// <returns>The number of categories of the match; 0 when the pattern does not match, or matches nothing.</returns>
+    public int Match(ReadOnlySpan<byte> categories, int start)
     {
-        if (state < 0)
-            return;
-
-        foreach (var target in _closures.AsSpan(_closureStarts[state], _closureLengths[state]))
+        var transitions = _transitions;
+        var isAccepting = _isAccepting;
+        var state = StartState;
+        var longest = 0;
+        for (var i = start; i < categories.Length; i++)
         {
-            if (!isActive[target])
+            state = transitions[(state << CategoryBits) | (categories[i] & (CategoryCount - 1))];
+            if (state == 0)
+                break;
+
+            if (isAccepting[state])
             {
-                isActive[target] = true;
-                states[count++] = target;
+                longest = i - start + 1;
             }
         }
-    }
 
-    // Adds a state and the states it leads to without reading a character.
-    private void Add(int state, Span<int> states, ref int count, Span<bool> isActive)
-    {
-        while (state >= 0 && !isActive[state])
-        {
-            isActive[state] = true;
-            states[count++] = state;
-            if (_categories[state] != 0 || state == _accept)
-                return;
-
-            if (_alternative[state] >= 0)
-            {
-                Add(_alternative[state], states, ref count, isActive);
-            }
-
-            state = _next[state];
-        }
+        return longest;
     }
 
     private sealed class Builder(IReadOnlyDictionary<string, ulong> categories, IReadOnlyDictionary<string, string> patterns)
@@ -219,6 +125,86 @@ internal sealed class SyllablePattern
             Next.Add(next);
             Alternative.Add(alternative);
             return Categories.Count - 1;
+        }
+
+        // The deterministic automaton of the states from start to accept. Each of its states is a set of states of the
+        // nondeterministic one, as bits: the states a match can be in after the same categories, which are those a
+        // category leads to, with the states they lead to without reading a character. The first set is the empty one,
+        // the second one the start.
+        public (byte[] Transitions, bool[] IsAccepting) ToDeterministic(int start, int accept, string pattern)
+        {
+            var words = (Categories.Count + 63) / 64;
+            var sets = new List<ulong[]>();
+            var indexes = new Dictionary<ulong[], int>(StateSetComparer.Instance);
+            var transitions = new List<byte>();
+            AddSet(new ulong[words]);
+            var startSet = new ulong[words];
+            AddClosure(startSet, start);
+            AddSet(startSet);
+
+            // The sets are numbered in the order they are found, and their transitions added in that order.
+            for (var index = 0; index < sets.Count; index++)
+            {
+                var set = sets[index];
+                for (var category = 0; category < CategoryCount; category++)
+                {
+                    var target = new ulong[words];
+                    for (var word = 0; word < words; word++)
+                    {
+                        for (var bits = set[word]; bits != 0; bits &= bits - 1)
+                        {
+                            var state = (word * 64) + BitOperations.TrailingZeroCount(bits);
+                            if ((Categories[state] & (1UL << category)) != 0)
+                            {
+                                AddClosure(target, Next[state]);
+                            }
+                        }
+                    }
+
+                    if (!indexes.TryGetValue(target, out var targetIndex))
+                    {
+                        targetIndex = AddSet(target);
+                    }
+
+                    transitions.Add((byte)targetIndex);
+                }
+            }
+
+            var isAccepting = new bool[sets.Count];
+            for (var index = 0; index < sets.Count; index++)
+            {
+                isAccepting[index] = (sets[index][accept / 64] & (1UL << (accept % 64))) != 0;
+            }
+
+            return ([.. transitions], isAccepting);
+
+            int AddSet(ulong[] set)
+            {
+                if (sets.Count == MaxStates)
+                    throw new ArgumentException($"The pattern '{pattern}' needs more than {MaxStates} states", nameof(pattern));
+
+                indexes.Add(set, sets.Count);
+                sets.Add(set);
+                return sets.Count - 1;
+            }
+        }
+
+        // Adds a state and the states it leads to without reading a character.
+        private void AddClosure(ulong[] set, int state)
+        {
+            while (state >= 0 && (set[state / 64] & (1UL << (state % 64))) == 0)
+            {
+                set[state / 64] |= 1UL << (state % 64);
+                if (Categories[state] != 0)
+                    return;
+
+                if (Alternative[state] >= 0)
+                {
+                    AddClosure(set, Alternative[state]);
+                }
+
+                state = Next[state];
+            }
         }
 
         // An exit is a successor that is not set yet: the state, and which of its two successors.
@@ -373,6 +359,25 @@ internal sealed class SyllablePattern
             }
 
             throw new ArgumentException($"The pattern refers to '{item}', which is not defined", nameof(item));
+        }
+    }
+
+    // Sets of states compare by their bits.
+    private sealed class StateSetComparer : IEqualityComparer<ulong[]>
+    {
+        public static StateSetComparer Instance { get; } = new();
+
+        public bool Equals(ulong[]? x, ulong[]? y) => x.AsSpan().SequenceEqual(y);
+
+        public int GetHashCode(ulong[] obj)
+        {
+            var hash = new HashCode();
+            foreach (var word in obj)
+            {
+                hash.Add(word);
+            }
+
+            return hash.ToHashCode();
         }
     }
 }

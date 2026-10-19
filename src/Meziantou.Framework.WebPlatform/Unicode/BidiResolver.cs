@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -63,6 +64,11 @@ internal sealed class BidiResolver
     // BD16: the bracket stack has a fixed size
     private const int MaxBracketStackDepth = 63;
 
+    // The first character whose Bidi_Class can be R, AL or AN, or that is an explicit formatting character (see MayBeRightToLeft)
+    private const char FirstRightToLeftCharacter = (char)0x0590;
+
+    private static readonly SearchValues<char> LeftToRightParagraphSeparators = SearchValues.Create("\n\r\u001C\u001D\u001E\u0085\u2029");
+
     private BidiClass[] _originalClasses = []; // Bidi_Class of the code point of each code unit (rule L1)
     private BidiClass[] _initialTypes = [];    // Bidi_Class of each code unit; BN for the low surrogate of a pair
     private BidiClass[] _types = [];           // the types modified by the rules
@@ -70,6 +76,7 @@ internal sealed class BidiResolver
     private int[] _isolateMatches = [];        // BD9: the matching PDI of an isolate initiator, the initiator of a PDI, or -1
     private char[] _text = [];                 // to identify the paired brackets
     private bool _hasText;
+    private bool _isLeftToRightOnly; // all the levels are 0: the classes of the text are not read (_originalClasses is not set)
     private int _length;
     private readonly List<BidiParagraph> _paragraphs = [];
 
@@ -95,6 +102,9 @@ internal sealed class BidiResolver
     /// <summary>Returns the embedding levels of the code units of a single-line text (rules P1 to L1).</summary>
     public static byte[] GetLevels(ReadOnlySpan<char> text, BidiParagraphDirection direction)
     {
+        if (IsLeftToRightOnly(text, direction))
+            return new byte[text.Length];
+
         var resolver = new BidiResolver();
         resolver.Resolve(text, direction);
         var levels = new byte[text.Length];
@@ -122,8 +132,84 @@ internal sealed class BidiResolver
     public void Resolve(ReadOnlySpan<char> text, BidiParagraphDirection direction)
     {
         EnsureCapacity(text.Length);
+        if (IsLeftToRightOnly(text, direction))
+        {
+            ResolveLeftToRightOnly(text);
+            return;
+        }
+
         GetClasses(text, _originalClasses);
         ResolveCore(text, text.Length, direction);
+    }
+
+    /// <summary>
+    /// Whether all the levels of a text are 0: the paragraph level is 0 (or is the level of the first strong character, which
+    /// can only be L) and no character can be R, AL or AN, nor an explicit formatting character (<see cref="MayBeRightToLeft"/>).
+    /// The EN characters are L after W7 (sos and every strong type are L), the neutrals are L (N1, N2), and rule L1 resets
+    /// characters to the paragraph level, 0.
+    /// </summary>
+    private static bool IsLeftToRightOnly(ReadOnlySpan<char> text, BidiParagraphDirection direction)
+    {
+        if (direction is not (BidiParagraphDirection.LeftToRight or BidiParagraphDirection.AutoLeftToRight))
+            return false;
+
+        while (true)
+        {
+            var index = text.IndexOfAnyInRange(FirstRightToLeftCharacter, char.MaxValue);
+            if (index < 0)
+                return true;
+
+            if (MayBeRightToLeft(text[index]))
+                return false;
+
+            text = text[(index + 1)..];
+        }
+    }
+
+    private static bool IsLeftToRightOnly(ReadOnlySpan<BidiClass> types)
+    {
+        foreach (var type in types)
+        {
+            if (type is R or AL or AN or LRE or RLE or LRO or RLO or PDF or LRI or RLI or FSI or PDI)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether the Bidi_Class of a UTF-16 code unit can be R, AL or AN, or an explicit formatting character: the blocks of the
+    /// right-to-left scripts of the BMP (their unassigned code points are R or AL), U+200F RIGHT-TO-LEFT MARK, the embeddings,
+    /// overrides and isolates, and the surrogates (the right-to-left scripts outside of the BMP).
+    /// </summary>
+    internal static bool MayBeRightToLeft(char c)
+        => c is (>= (char)0x0590 and <= (char)0x08FF) or (char)0x200F or (>= (char)0x202A and <= (char)0x202E) or (>= (char)0x2066 and <= (char)0x2069)
+            or (>= (char)0xD800 and <= (char)0xDFFF) or (>= (char)0xFB1D and <= (char)0xFDFF) or (>= (char)0xFE70 and <= (char)0xFEFF);
+
+    // P1 without the classes of the characters: the paragraph separators (B) are LF, CR, U+001C to U+001E, U+0085 and U+2029
+    private void ResolveLeftToRightOnly(ReadOnlySpan<char> text)
+    {
+        _length = text.Length;
+        _hasText = !text.IsEmpty;
+        _isLeftToRightOnly = true;
+        _paragraphs.Clear();
+        _levels.AsSpan(0, text.Length).Clear();
+        var start = 0;
+        while (start < text.Length)
+        {
+            var separator = text[start..].IndexOfAny(LeftToRightParagraphSeparators);
+            if (separator < 0)
+                break;
+
+            var end = start + separator + 1;
+            _paragraphs.Add(new BidiParagraph(start, end, 0));
+            start = end;
+        }
+
+        if (start < text.Length || text.IsEmpty)
+        {
+            _paragraphs.Add(new BidiParagraph(start, text.Length, 0));
+        }
     }
 
     /// <summary>
@@ -143,6 +229,7 @@ internal sealed class BidiResolver
 
     private void ResolveCore(ReadOnlySpan<char> text, int length, BidiParagraphDirection direction)
     {
+        _isLeftToRightOnly = false;
         _length = length;
         _hasText = !text.IsEmpty;
         _paragraphs.Clear();
@@ -213,6 +300,9 @@ internal sealed class BidiResolver
             return;
 
         _levels.AsSpan(start, end - start).CopyTo(lineLevels);
+        if (_isLeftToRightOnly)
+            return; // L1 resets characters to the paragraph level, 0
+
         var paragraph = GetParagraphIndex(end - 1);
         var trailing = preservedTrailingLength == 0;
         for (var i = end - 1 - preservedTrailingLength; i >= start; i--)
@@ -392,6 +482,13 @@ internal sealed class BidiResolver
         _paragraphs.Add(new BidiParagraph(start, end, paragraphLevel));
         if (start == end)
             return;
+
+        // The levels of a left-to-right paragraph without R, AL, AN nor explicit formatting characters are all 0 (see IsLeftToRightOnly)
+        if (paragraphLevel == 0 && IsLeftToRightOnly(_initialTypes.AsSpan(start, end - start)))
+        {
+            _levels.AsSpan(start, end - start).Clear();
+            return;
+        }
 
         ResolveExplicitLevels(start, end, paragraphLevel);
 

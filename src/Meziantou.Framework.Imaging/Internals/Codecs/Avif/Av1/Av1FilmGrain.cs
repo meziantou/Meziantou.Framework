@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -5,6 +7,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// parameters of the frame header, to the samples of an output frame. The reference frames are never modified: the grain is
 /// applied to the rows that are output, by stripes of 32 luma rows, which must be requested in increasing order.
 /// </summary>
+/// <remarks>
+/// With 128-bit hardware vectors, the auto-regressive filter of the grain templates sums the taps of the rows above a row
+/// with vectors, and the rows of a stripe are processed by chunks: the scaling of every sample is looked up first (above 8
+/// bits, in a table of the interpolated scaling of every sample value, built from the same function), then the scaled noise
+/// is added to 8 samples at a time, with the arithmetic of the scalar references.
+/// </remarks>
 internal sealed class Av1FilmGrain : IDisposable
 {
     /// <summary>The number of luma rows of a stripe.</summary>
@@ -13,6 +21,9 @@ internal sealed class Av1FilmGrain : IDisposable
     private const int LumaGrainWidth = 82;
     private const int LumaGrainHeight = 73;
     private const int NoiseStripeRows = 34;
+
+    // The number of samples of a row processed at a time by the vector path: the size of its scratch on the stack
+    private const int ChunkLength = 256;
 
     private readonly Av1FilmGrainParameters _parameters;
     private readonly int _bitDepth;
@@ -27,6 +38,8 @@ internal sealed class Av1FilmGrain : IDisposable
     private readonly int _chromaGrainWidth;
     private readonly int _chromaGrainHeight;
     private readonly int _noiseStride;
+    private readonly int _expandedLength;
+    private readonly bool _vectorized;
     private Av1PooledArray<short>? _buffer;
     private int _randomRegister;
     private int _currentStripe = -1;
@@ -34,7 +47,17 @@ internal sealed class Av1FilmGrain : IDisposable
     /// <summary>Prepares the grain of a frame of <paramref name="width"/> x <paramref name="height"/> luma samples.</summary>
     /// <exception cref="ImageResourceLimitException">The working buffers exceed the live-allocation limit.</exception>
     public Av1FilmGrain(AllocationScope scope, Av1SequenceHeader sequence, Av1FilmGrainParameters parameters, int width, int height)
+        : this(scope, sequence, parameters, width, height, Vector128.IsHardwareAccelerated)
     {
+    }
+
+    /// <summary>
+    /// Prepares the grain of a frame, with the vector paths when <paramref name="vectorized"/> is <see langword="true"/> and
+    /// the hardware supports them, or with the scalar references (the tests compare both).
+    /// </summary>
+    internal Av1FilmGrain(AllocationScope scope, Av1SequenceHeader sequence, Av1FilmGrainParameters parameters, int width, int height, bool vectorized)
+    {
+        _vectorized = vectorized && Vector128.IsHardwareAccelerated;
         _parameters = parameters;
         _bitDepth = sequence.BitDepth;
         _planeCount = sequence.PlaneCount;
@@ -51,7 +74,8 @@ internal sealed class Av1FilmGrain : IDisposable
 
         // A noise stripe is written a few samples beyond the width of the frame
         _noiseStride = width + NoiseStripeRows + 2;
-        _buffer = Av1PooledArray<short>.Rent(scope, GrainLength + ScalingLength + (2L * 3 * NoiseStripeRows * _noiseStride));
+        _expandedLength = _bitDepth > 8 ? 1 << _bitDepth : 0;
+        _buffer = Av1PooledArray<short>.Rent(scope, GrainLength + ScalingLength + (3L * _expandedLength) + (2L * 3 * NoiseStripeRows * _noiseStride));
         GenerateGrain();
         InitializeScalingLookup();
     }
@@ -67,11 +91,14 @@ internal sealed class Av1FilmGrain : IDisposable
 
     private Span<short> GetScalingLut(int plane) => Buffer.Slice(GrainLength + (plane * 256), 256);
 
+    // ScaleLut of every sample value of a plane: the scaling lookup itself for 8-bit samples
+    private Span<short> GetSampleScaling(int plane) => _expandedLength is 0 ? GetScalingLut(plane) : Buffer.Slice(GrainLength + ScalingLength + (plane * _expandedLength), _expandedLength);
+
     // noiseStripe[ lumaNum ][ plane ] for the stripe being output (which 0) and for the previous one (which 1)
     private Span<short> GetNoiseStripe(int which, int plane)
     {
         var slot = (_currentStripe + which) & 1;
-        return Buffer.Slice(GrainLength + ScalingLength + (((slot * 3) + plane) * NoiseStripeRows * _noiseStride), NoiseStripeRows * _noiseStride);
+        return Buffer.Slice(GrainLength + ScalingLength + (3 * _expandedLength) + (((slot * 3) + plane) * NoiseStripeRows * _noiseStride), NoiseStripeRows * _noiseStride);
     }
 
     /// <summary>Gets the number of stripes of the frame.</summary>
@@ -108,7 +135,11 @@ internal sealed class Av1FilmGrain : IDisposable
 
         var lag = parameters.ArCoeffLag;
         var arShift = parameters.ArCoeffShift;
-        if (parameters.NumYPoints > 0)
+        if (parameters.NumYPoints > 0 && _vectorized)
+        {
+            ApplyAutoRegressionVector(luma, LumaGrainWidth, LumaGrainHeight, parameters.ArCoeffsY, lag, arShift, lumaGrain: default);
+        }
+        else if (parameters.NumYPoints > 0)
         {
             var coefficients = parameters.ArCoeffsY;
             for (var y = 3; y < LumaGrainHeight; y++)
@@ -164,6 +195,15 @@ internal sealed class Av1FilmGrain : IDisposable
         // A plane without grain has no coefficients: its grain is never read
         ReadOnlySpan<sbyte> coefficientsCb = useCb ? parameters.ArCoeffsCb : default;
         ReadOnlySpan<sbyte> coefficientsCr = useCr ? parameters.ArCoeffsCr : default;
+        if (_vectorized)
+        {
+            // Without luma points, the coefficient of the luma grain is not coded
+            ReadOnlySpan<short> lumaGrain = parameters.NumYPoints > 0 ? luma : default;
+            ApplyAutoRegressionVector(cb, _chromaGrainWidth, _chromaGrainHeight, coefficientsCb, lag, arShift, lumaGrain);
+            ApplyAutoRegressionVector(cr, _chromaGrainWidth, _chromaGrainHeight, coefficientsCr, lag, arShift, lumaGrain);
+            return;
+        }
+
         for (var y = 3; y < _chromaGrainHeight; y++)
         {
             for (var x = 3; x < _chromaGrainWidth - 3; x++)
@@ -213,6 +253,85 @@ internal sealed class Av1FilmGrain : IDisposable
         }
     }
 
+    // The auto-regressive filter of section 7.18.3.3 on a grain template of width x height samples (rows of 82 samples), for
+    // the rows from 3 and the columns 3 to width - 4: the taps of the rows above, which are final, are added for the whole row
+    // 4 columns at a time; the luma term of a chroma template (lumaGrain is not empty) and the taps on the left in the row,
+    // which the filter has just written, are then added one sample at a time. The integer sums are those of the scalar code;
+    // a missing coefficient (a template without grain has none) is 0.
+    private void ApplyAutoRegressionVector(Span<short> grain, int width, int height, ReadOnlySpan<sbyte> coefficients, int lag, int shift, ReadOnlySpan<short> lumaGrain)
+    {
+        var count = width - 6;
+        Span<int> sums = stackalloc int[LumaGrainWidth];
+        sums = sums[..count];
+        var rowTaps = (2 * lag) + 1;
+        // The taps of the rows above come first, then the taps on the left, then the luma term
+        var lumaPosition = (lag * rowTaps) + lag;
+        var leftTaps = coefficients.Length >= lumaPosition ? coefficients.Slice(lag * rowTaps, lag) : default;
+        var lumaCoefficient = !lumaGrain.IsEmpty && lumaPosition < coefficients.Length ? coefficients[lumaPosition] : 0;
+        for (var y = 3; y < height; y++)
+        {
+            sums.Clear();
+            for (var deltaRow = -lag; deltaRow < 0; deltaRow++)
+            {
+                var above = grain.Slice(((y + deltaRow) * LumaGrainWidth) + 3 - lag, count + (2 * lag));
+                for (var deltaCol = -lag; deltaCol <= lag; deltaCol++)
+                {
+                    var position = ((deltaRow + lag) * rowTaps) + deltaCol + lag;
+                    if (position < coefficients.Length && coefficients[position] is not 0)
+                        AddTap(above.Slice(deltaCol + lag, count), coefficients[position], sums);
+                }
+            }
+
+            if (lumaCoefficient is not 0)
+            {
+                var lumaY = ((y - 3) << _subY) + 3;
+                var lumaRow = lumaGrain.Slice(lumaY * LumaGrainWidth, LumaGrainWidth);
+                var nextLumaRow = lumaGrain.Slice((lumaY + _subY) * LumaGrainWidth, LumaGrainWidth);
+                for (var x = 3; x < width - 3; x++)
+                {
+                    var lumaX = ((x - 3) << _subX) + 3;
+                    int lumaSum = lumaRow[lumaX];
+                    if (_subX is not 0)
+                        lumaSum += lumaRow[lumaX + 1];
+
+                    if (_subY is not 0)
+                        lumaSum += _subX is 0 ? nextLumaRow[lumaX] : nextLumaRow[lumaX] + nextLumaRow[lumaX + 1];
+
+                    sums[x - 3] += Round2(lumaSum, _subX + _subY) * lumaCoefficient;
+                }
+            }
+
+            var row = grain.Slice(y * LumaGrainWidth, width);
+            for (var x = 3; x < width - 3; x++)
+            {
+                var sum = sums[x - 3];
+                for (var t = 0; t < leftTaps.Length; t++)
+                {
+                    sum += row[x - lag + t] * leftTaps[t];
+                }
+
+                row[x] = (short)Math.Clamp(row[x] + Round2(sum, shift), _grainMin, _grainMax);
+            }
+        }
+    }
+
+    // sums[i] += source[i] * coefficient, 4 values at a time
+    private static void AddTap(ReadOnlySpan<short> source, int coefficient, Span<int> sums)
+    {
+        var multiplier = Vector128.Create(coefficient);
+        var i = 0;
+        for (; i <= sums.Length - 4; i += 4)
+        {
+            var samples = Vector128.WidenLower(Vector64.Create(source.Slice(i, 4)).ToVector128());
+            (Vector128.Create(sums.Slice(i, 4)) + (samples * multiplier)).CopyTo(sums[i..]);
+        }
+
+        for (; i < sums.Length; i++)
+        {
+            sums[i] += source[i] * coefficient;
+        }
+    }
+
     // Section 7.18.3.4 "Scaling lookup initialization process"
     private void InitializeScalingLookup()
     {
@@ -242,22 +361,32 @@ internal sealed class Av1FilmGrain : IDisposable
             if (numPoints is 0)
             {
                 lut.Clear();
-                continue;
+            }
+            else
+            {
+                lut[..xs[0]].Fill(ys[0]);
+                for (var i = 0; i < numPoints - 1; i++)
+                {
+                    var deltaY = ys[i + 1] - ys[i];
+                    var deltaX = xs[i + 1] - xs[i];
+                    var delta = deltaY * ((65536 + (deltaX >> 1)) / deltaX);
+                    for (var x = 0; x < deltaX; x++)
+                    {
+                        lut[xs[i] + x] = (short)(ys[i] + (((x * delta) + 32768) >> 16));
+                    }
+                }
+
+                lut[xs[numPoints - 1]..].Fill(ys[numPoints - 1]);
             }
 
-            lut[..xs[0]].Fill(ys[0]);
-            for (var i = 0; i < numPoints - 1; i++)
+            if (_expandedLength is not 0)
             {
-                var deltaY = ys[i + 1] - ys[i];
-                var deltaX = xs[i + 1] - xs[i];
-                var delta = deltaY * ((65536 + (deltaX >> 1)) / deltaX);
-                for (var x = 0; x < deltaX; x++)
+                var scaling = GetSampleScaling(plane);
+                for (var index = 0; index < scaling.Length; index++)
                 {
-                    lut[xs[i] + x] = (short)(ys[i] + (((x * delta) + 32768) >> 16));
+                    scaling[index] = (short)ScaleLut(lut, index);
                 }
             }
-
-            lut[xs[numPoints - 1]..].Fill(ys[numPoints - 1]);
         }
     }
 
@@ -295,36 +424,31 @@ internal sealed class Av1FilmGrain : IDisposable
                 var planeOffsetY = planeSubY is 1 ? 6 + offsetY : 9 + (offsetY * 2);
                 var grain = GetGrain(plane);
                 var stripe = GetNoiseStripe(0, plane);
+                var columns = NoiseStripeRows >> planeSubX;
+
+                // With overlap, the first 2 columns (1 when subsampled) of a block are blended with the block on their left
+                var blended = overlap && x > 0 ? 2 >> planeSubX : 0;
                 for (var i = 0; i < (NoiseStripeRows >> planeSubY); i++)
                 {
-                    for (var j = 0; j < (NoiseStripeRows >> planeSubX); j++)
+                    var grainRow = grain.Slice(((planeOffsetY + i) * LumaGrainWidth) + planeOffsetX, columns);
+                    var stripeRow = stripe.Slice((i * _noiseStride) + (planeSubX is 0 ? x * 2 : x), columns);
+                    for (var j = 0; j < blended; j++)
                     {
-                        int g = grain[((planeOffsetY + i) * LumaGrainWidth) + planeOffsetX + j];
+                        int g = grainRow[j];
+                        int old = stripeRow[j];
                         if (planeSubX is 0)
                         {
-                            var index = (i * _noiseStride) + (x * 2) + j;
-                            if (j < 2 && overlap && x > 0)
-                            {
-                                int old = stripe[index];
-                                g = j is 0 ? (old * 27) + (g * 17) : (old * 17) + (g * 27);
-                                g = Math.Clamp(Round2(g, 5), _grainMin, _grainMax);
-                            }
-
-                            stripe[index] = (short)g;
+                            g = j is 0 ? (old * 27) + (g * 17) : (old * 17) + (g * 27);
                         }
                         else
                         {
-                            var index = (i * _noiseStride) + x + j;
-                            if (j is 0 && overlap && x > 0)
-                            {
-                                int old = stripe[index];
-                                g = (old * 23) + (g * 22);
-                                g = Math.Clamp(Round2(g, 5), _grainMin, _grainMax);
-                            }
-
-                            stripe[index] = (short)g;
+                            g = (old * 23) + (g * 22);
                         }
+
+                        stripeRow[j] = (short)Math.Clamp(Round2(g, 5), _grainMin, _grainMax);
                     }
+
+                    grainRow[blended..].CopyTo(stripeRow[blended..]);
                 }
             }
         }
@@ -369,6 +493,7 @@ internal sealed class Av1FilmGrain : IDisposable
     /// <param name="chromaStride">The number of samples of a row of <paramref name="u"/> and <paramref name="v"/>.</param>
     public void ApplyStripe(Av1FrameBuffer frame, int lumaNum, Span<ushort> y, int lumaStride, Span<ushort> u, Span<ushort> v, int chromaStride)
     {
+        var vectorized = _vectorized;
         if (lumaNum != _currentStripe + 1)
             throw new InvalidOperationException("The stripes of a frame are output in order.");
 
@@ -407,6 +532,7 @@ internal sealed class Av1FilmGrain : IDisposable
                 var destination = plane is 1 ? u : v;
                 var hasGrain = (plane is 1 ? parameters.NumCbPoints : parameters.NumCrPoints) > 0 || parameters.ChromaScalingFromLuma;
                 var lut = GetScalingLut(plane);
+                var scaling = GetSampleScaling(plane);
                 var stripe = GetNoiseStripe(0, plane);
                 var previous = GetNoiseStripe(1, plane);
                 var lumaMult = (plane is 1 ? parameters.CbLumaMult : parameters.CrLumaMult) - 128;
@@ -423,6 +549,12 @@ internal sealed class Av1FilmGrain : IDisposable
                     }
 
                     var lumaRow = lumaPlane.GetRow((firstRow + i) << _subY);
+                    if (vectorized)
+                    {
+                        ApplyChromaRow(sourceRow[..chromaWidth], lumaRow, destinationRow, scaling, stripe, previous, i, lumaMult, mult, offset, maxSample, minValue, maxChroma);
+                        continue;
+                    }
+
                     for (var x = 0; x < chromaWidth; x++)
                     {
                         var lumaX = x << _subX;
@@ -448,6 +580,7 @@ internal sealed class Av1FilmGrain : IDisposable
         }
 
         var lumaLut = GetScalingLut(0);
+        var lumaScaling = GetSampleScaling(0);
         var lumaStripe = GetNoiseStripe(0, 0);
         var previousLumaStripe = GetNoiseStripe(1, 0);
         var firstLumaRow = lumaNum * StripeHeight;
@@ -462,6 +595,12 @@ internal sealed class Av1FilmGrain : IDisposable
                 continue;
             }
 
+            if (vectorized)
+            {
+                ApplyLumaRow(sourceRow[.._width], destinationRow, lumaScaling, lumaStripe, previousLumaStripe, i, minValue, maxLuma);
+                continue;
+            }
+
             for (var x = 0; x < _width; x++)
             {
                 int orig = sourceRow[x];
@@ -469,6 +608,134 @@ internal sealed class Av1FilmGrain : IDisposable
                 noise = Round2(ScaleLut(lumaLut, orig) * noise, scalingShift);
                 destinationRow[x] = (ushort)Math.Clamp(orig + noise, minValue, maxLuma);
             }
+        }
+    }
+
+    // The vector path of a luma row, by chunks: the scaling of every sample, then the scaled noise
+    private void ApplyLumaRow(ReadOnlySpan<ushort> sourceRow, Span<ushort> destinationRow, ReadOnlySpan<short> scaling, ReadOnlySpan<short> stripe, ReadOnlySpan<short> previous, int i, int minValue, int maxValue)
+    {
+        Span<short> noise = stackalloc short[ChunkLength];
+        Span<short> scale = stackalloc short[ChunkLength];
+        for (var x0 = 0; x0 < sourceRow.Length; x0 += ChunkLength)
+        {
+            var count = Math.Min(ChunkLength, sourceRow.Length - x0);
+            var source = sourceRow.Slice(x0, count);
+            for (var k = 0; k < source.Length; k++)
+            {
+                scale[k] = scaling[source[k]];
+            }
+
+            AddNoise(source, GetNoiseChunk(stripe, previous, planeSubY: 0, i, x0, count, noise), scale[..count], destinationRow.Slice(x0, count), _parameters.GrainScaling, minValue, maxValue);
+        }
+    }
+
+    // The vector path of a chroma row, by chunks: the merged value of every sample, its scaling, then the scaled noise
+    private void ApplyChromaRow(ReadOnlySpan<ushort> sourceRow, ReadOnlySpan<ushort> lumaRow, Span<ushort> destinationRow, ReadOnlySpan<short> scaling, ReadOnlySpan<short> stripe, ReadOnlySpan<short> previous, int i, int lumaMult, int mult, int offset, int maxSample, int minValue, int maxValue)
+    {
+        Span<short> noise = stackalloc short[ChunkLength];
+        Span<short> scale = stackalloc short[ChunkLength];
+        Span<ushort> merged = stackalloc ushort[ChunkLength];
+        var subX = _subX;
+        var chromaScalingFromLuma = _parameters.ChromaScalingFromLuma;
+        var lastLuma = _width - 1;
+
+        // The samples whose 8 samples from them have their luma samples in the row (the last sample of a row of odd width
+        // averages the last luma sample with itself)
+        var vectorEnd = (_width >> subX) - 7;
+        var lumaMultiplier = Vector128.Create(lumaMult);
+        var multiplier = Vector128.Create(mult);
+        var mergedOffset = Vector128.Create(offset);
+        var maximum = Vector128.Create(maxSample);
+        for (var x0 = 0; x0 < sourceRow.Length; x0 += ChunkLength)
+        {
+            var count = Math.Min(ChunkLength, sourceRow.Length - x0);
+            var source = sourceRow.Slice(x0, count);
+            var k = 0;
+            for (; k < count - 7 && x0 + k < vectorEnd; k += 8)
+            {
+                Vector128<int> low;
+                Vector128<int> high;
+                if (subX is 1)
+                {
+                    // The average of the pairs of luma samples, from the low and high halves of their 32-bit lanes
+                    var first = Vector128.Create(lumaRow.Slice((x0 + k) * 2, 8)).AsInt32();
+                    var second = Vector128.Create(lumaRow.Slice(((x0 + k) * 2) + 8, 8)).AsInt32();
+                    low = ((first & Vector128.Create(0xFFFF)) + (first >>> 16) + Vector128<int>.One) >> 1;
+                    high = ((second & Vector128.Create(0xFFFF)) + (second >>> 16) + Vector128<int>.One) >> 1;
+                }
+                else
+                {
+                    var luma = Vector128.Create(lumaRow.Slice(x0 + k, 8));
+                    low = Vector128.WidenLower(luma).AsInt32();
+                    high = Vector128.WidenUpper(luma).AsInt32();
+                }
+
+                if (!chromaScalingFromLuma)
+                {
+                    var samples = Vector128.Create(source.Slice(k, 8));
+                    low = Vector128.Min(Vector128.Max((((low * lumaMultiplier) + (Vector128.WidenLower(samples).AsInt32() * multiplier)) >> 6) + mergedOffset, Vector128<int>.Zero), maximum);
+                    high = Vector128.Min(Vector128.Max((((high * lumaMultiplier) + (Vector128.WidenUpper(samples).AsInt32() * multiplier)) >> 6) + mergedOffset, Vector128<int>.Zero), maximum);
+                }
+
+                Vector128.Narrow(low.AsUInt32(), high.AsUInt32()).CopyTo(merged[k..]);
+            }
+
+            for (; k < count; k++)
+            {
+                var lumaX = (x0 + k) << subX;
+                var averageLuma = subX is 1 ? (lumaRow[lumaX] + lumaRow[Math.Min(lumaX + 1, lastLuma)] + 1) >> 1 : lumaRow[lumaX];
+                merged[k] = (ushort)(chromaScalingFromLuma ? averageLuma : Math.Clamp((((averageLuma * lumaMult) + (source[k] * mult)) >> 6) + offset, 0, maxSample));
+            }
+
+            for (k = 0; k < count; k++)
+            {
+                scale[k] = scaling[merged[k]];
+            }
+
+            AddNoise(source, GetNoiseChunk(stripe, previous, _subY, i, x0, count, noise), scale[..count], destinationRow.Slice(x0, count), _parameters.GrainScaling, minValue, maxValue);
+        }
+    }
+
+    // GetNoise for the samples x0 to x0 + count - 1 of the row i of a stripe: the row of the noise stripe, or, for the rows
+    // that overlap the previous stripe, their blend in the scratch
+    private ReadOnlySpan<short> GetNoiseChunk(ReadOnlySpan<short> stripe, ReadOnlySpan<short> previous, int planeSubY, int i, int x0, int count, Span<short> scratch)
+    {
+        var row = stripe.Slice((i * _noiseStride) + x0, count);
+        if (!_parameters.OverlapFlag || _currentStripe is 0 || i >= (2 >> planeSubY))
+            return row;
+
+        var old = previous.Slice(((i + (StripeHeight >> planeSubY)) * _noiseStride) + x0, count);
+        var (oldWeight, weight) = planeSubY is not 0 ? (23, 22) : i is 0 ? (27, 17) : (17, 27);
+        var blended = scratch[..count];
+        for (var k = 0; k < blended.Length; k++)
+        {
+            blended[k] = (short)Math.Clamp(Round2((old[k] * oldWeight) + (row[k] * weight), 5), _grainMin, _grainMax);
+        }
+
+        return blended;
+    }
+
+    // destination = Clamp(source + Round2(scale * noise, shift), min, max), 8 samples at a time: the products fit 32 bits (the
+    // scaling is below 256 and the noise at most 2^11 in magnitude), the scaled noise and the sums 16 bits
+    private static void AddNoise(ReadOnlySpan<ushort> source, ReadOnlySpan<short> noise, ReadOnlySpan<short> scale, Span<ushort> destination, int shift, int min, int max)
+    {
+        var round = Vector128.Create(1 << (shift - 1));
+        var minimum = Vector128.Create((short)min);
+        var maximum = Vector128.Create((short)max);
+        var x = 0;
+        for (; x <= source.Length - 8; x += 8)
+        {
+            var scaling = Vector128.Create(scale.Slice(x, 8));
+            var grain = Vector128.Create(noise.Slice(x, 8));
+            var low = ((Vector128.WidenLower(scaling) * Vector128.WidenLower(grain)) + round) >> shift;
+            var high = ((Vector128.WidenUpper(scaling) * Vector128.WidenUpper(grain)) + round) >> shift;
+            var sum = Vector128.Create(source.Slice(x, 8)).AsInt16() + Vector128.Narrow(low, high);
+            Vector128.Min(Vector128.Max(sum, minimum), maximum).AsUInt16().CopyTo(destination[x..]);
+        }
+
+        for (; x < source.Length; x++)
+        {
+            destination[x] = (ushort)Math.Clamp(source[x] + Round2(scale[x] * noise[x], shift), min, max);
         }
     }
 

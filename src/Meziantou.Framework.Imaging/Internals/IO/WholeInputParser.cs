@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The bridge between the forward-only input pipeline and the random-access container formats (TIFF, BigTIFF, ICO, CUR, ANI):
-/// it buffers the whole input, then runs the random-access decoder over the buffered bytes.
+/// it buffers the whole input, then runs the random-access decoder over the buffered bytes, in place.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +25,6 @@ internal sealed class WholeInputParser<TResult> : ImageParser<TResult>
 {
     private readonly ImageCodecContext _context;
     private readonly Func<RandomAccessSource, TResult> _decode;
-    private PooledBuffer? _buffer;
     private TResult? _result;
     private bool _completed;
 
@@ -51,26 +50,21 @@ internal sealed class WholeInputParser<TResult> : ImageParser<TResult>
         }
 
         consumed = buffer.Length;
-        _buffer = _context.Scope.Rent(buffer.Length, AllocationKind.DecoderState, clear: false);
-        buffer.CopyTo(_buffer.Span);
 
-        // The driver already charged these bytes to the encoded-byte limit when it consumed them
-        using var input = RandomAccessInput.Create(_buffer.Memory);
-        _result = _decode(new RandomAccessSource(input, _context, Format, chargeReads: false));
+        // The decode is synchronous: it reads the bytes of the driver (the caller's span, or the read buffer of a stream) in
+        // place, pinned until it returns, instead of a copy. The driver already charged them to the encoded-byte limit
+        unsafe
+        {
+            fixed (byte* data = buffer)
+            {
+                using var input = RandomAccessInput.CreatePinned(data, buffer.Length);
+                _result = _decode(new RandomAccessSource(input, _context, Format, chargeReads: false));
+            }
+        }
+
         _completed = true;
         return ParseStatus.Complete;
     }
 
     public override TResult GetResult() => _completed ? _result! : throw new InvalidOperationException($"The {ImageFormatNames.Get(Format)} data was not parsed.");
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _buffer?.Dispose();
-            _buffer = null;
-        }
-
-        base.Dispose(disposing);
-    }
 }

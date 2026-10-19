@@ -79,6 +79,15 @@ public partial class Element : Node
     private int _attributeCount;
     private string? _id;
 
+    /// <summary>
+    /// The index of the element among the element children of its parent, cached for :nth-child() and :nth-last-child():
+    /// it is valid when <see cref="ElementIndexStamp"/> is the <see cref="Node.ChildrenVersion"/> of the parent plus one.
+    /// </summary>
+    internal int ElementIndex { get; set; }
+
+    /// <summary>The <see cref="Node.ChildrenVersion"/> of the parent plus one when <see cref="ElementIndex"/> was computed, or 0.</summary>
+    internal int ElementIndexStamp { get; set; }
+
     internal Element(Document document, string localName, string? @namespace, string? prefix)
         : base(document)
     {

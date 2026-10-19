@@ -17,6 +17,8 @@ public class PixelRowBenchmarks
     private Image<Rgba32> _image = null!;
     private Image<Rgba64> _rgba64 = null!;
     private Image<Rgb24> _rgb24 = null!;
+    private Image<Gray8> _gray8 = null!;
+    private Image<Gray16> _gray16 = null!;
     private Image<Rgba32> _framed = null!;
     private Image<Rgba64> _framed64 = null!;
 
@@ -26,6 +28,8 @@ public class PixelRowBenchmarks
         _image = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight);
         _rgb24 = _image.CloneAs<Rgb24>(Flatten);
+        _gray8 = _image.CloneAs<Gray8>(Flatten);
+        _gray16 = _rgba64.CloneAs<Gray16>(Flatten);
 
         // The content inside a uniform white frame of 100 pixels: the automatic crop finds a border and weighs the content
         var framed = BenchmarkInputs.ResizeRgba32Source;
@@ -50,6 +54,8 @@ public class PixelRowBenchmarks
         _image?.Dispose();
         _rgba64?.Dispose();
         _rgb24?.Dispose();
+        _gray8?.Dispose();
+        _gray16?.Dispose();
         _framed?.Dispose();
         _framed64?.Dispose();
     }
@@ -113,6 +119,33 @@ public class PixelRowBenchmarks
     public int Rotate90Rgba32()
     {
         using var copy = _image.Clone();
+        copy.Rotate(RotateMode.Rotate90);
+        return copy.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Rgb24: clone, then rotate by 90 degrees")]
+    public int Rotate90Rgb24()
+    {
+        using var copy = _rgb24.Clone();
+        copy.Rotate(RotateMode.Rotate90);
+        return copy.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Gray8: clone, then rotate by 90 degrees")]
+    public int Rotate90Gray8()
+    {
+        using var copy = _gray8.Clone();
+        copy.Rotate(RotateMode.Rotate90);
+        return copy.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Gray16: clone, then rotate by 90 degrees")]
+    public int Rotate90Gray16()
+    {
+        using var copy = _gray16.Clone();
         copy.Rotate(RotateMode.Rotate90);
         return copy.Width;
     }

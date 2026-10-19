@@ -223,8 +223,6 @@ internal static class UniversalShaper
         SyllablePattern.Compile("R? ((tail) | (number_joiner_terminated_cluster_tail) | (numeral_cluster_tail)) ZWNJ?", PatternCategories, PatternParts),
     ];
 
-    private static readonly int MaxStateCount = Patterns.Max(pattern => pattern.StateCount);
-
     /// <summary>Determines whether a script is shaped with the universal model: "Registered tags for the Universal Shaping Engine".</summary>
     public static bool IsUniversalScript(UnicodeScript script)
     {
@@ -610,7 +608,6 @@ internal static class UniversalShaper
 
             indexes[count] = info.Length;
             var seen = categories.AsSpan(0, count);
-            Span<int> states = stackalloc int[MaxStateCount * 2];
             var serial = 0;
             var start = 0;
             while (start < count)
@@ -625,7 +622,7 @@ internal static class UniversalShaper
                         length = 1;
                     }
 
-                    var matched = Patterns[i].Match(seen, start, states);
+                    var matched = Patterns[i].Match(seen, start);
                     if (matched > length)
                     {
                         length = matched;

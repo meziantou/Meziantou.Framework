@@ -1,16 +1,11 @@
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework;
 
 /// <summary>Converts HTML fragments to Markdown text.</summary>
 public static class HtmlToMarkdown
 {
-    // An HtmlParser holds only its configuration; each parse builds its own document, so a
-    // single instance is shared across calls. Constructing one costs more than parsing a
-    // small fragment, which made it a significant share of the cost of converting one.
-    private static readonly HtmlParser Parser = new();
-
     /// <summary>Converts an HTML fragment to Markdown using default options.</summary>
     /// <param name="html">The HTML fragment to convert.</param>
     /// <returns>The converted Markdown text.</returns>
@@ -28,7 +23,7 @@ public static class HtmlToMarkdown
         if (string.IsNullOrWhiteSpace(html))
             return "";
 
-        var document = Parser.ParseDocument("<body>" + html + "</body>");
+        var document = HtmlDocumentParser.ParseDocument("<body>" + html + "</body>");
         var state = new ConversionState(options);
         var body = document.Body!;
         ConvertDescendants(body, state);
@@ -46,9 +41,9 @@ public static class HtmlToMarkdown
     /// is converted before any of its ancestors, and the result is recorded in
     /// <paramref name="state"/> for the ancestor to read back.
     /// </summary>
-    private static void ConvertDescendants(INode root, ConversionState state)
+    private static void ConvertDescendants(Node root, ConversionState state)
     {
-        var stack = new Stack<(INode Node, bool ChildrenConverted)>();
+        var stack = new Stack<(Node Node, bool ChildrenConverted)>();
         PushChildren(stack, root);
 
         while (stack.Count > 0)
@@ -65,7 +60,7 @@ public static class HtmlToMarkdown
                 PushChildren(stack, node);
         }
 
-        static void PushChildren(Stack<(INode Node, bool ChildrenConverted)> stack, INode parent)
+        static void PushChildren(Stack<(Node Node, bool ChildrenConverted)> stack, Node parent)
         {
             foreach (var child in parent.ChildNodes)
                 stack.Push((child, ChildrenConverted: false));
@@ -77,22 +72,22 @@ public static class HtmlToMarkdown
     /// HTML. The descendants of such an element are never read back, so the traversal does
     /// not need to convert them.
     /// </summary>
-    private static bool IsOpaqueElement(INode node)
+    private static bool IsOpaqueElement(Node node)
     {
-        return node is IElement el && el.LocalName is "pre" or "code" or "script" or "style" or "noscript";
+        return node is Element el && el.LocalName is "pre" or "code" or "script" or "style" or "noscript";
     }
 
-    private static string ConvertNode(INode node, ConversionState state)
+    private static string ConvertNode(Node node, ConversionState state)
     {
         return node switch
         {
-            IText text => ConvertText(text, state),
-            IElement element => ConvertElement(element, state),
+            Text text => ConvertText(text, state),
+            Element element => ConvertElement(element, state),
             _ => "",
         };
     }
 
-    private static string ConvertText(IText text, ConversionState state)
+    private static string ConvertText(Text text, ConversionState state)
     {
         var content = CollapseWhitespace(text.Data);
         if (state.Options.UseSimplePunctuation)
@@ -107,7 +102,7 @@ public static class HtmlToMarkdown
         return content;
     }
 
-    private static string ConvertElement(IElement element, ConversionState state)
+    private static string ConvertElement(Element element, ConversionState state)
     {
         return element.LocalName switch
         {
@@ -149,7 +144,7 @@ public static class HtmlToMarkdown
     /// Processes children of a container node, grouping inline nodes and
     /// separating block elements with blank lines.
     /// </summary>
-    private static string ConvertChildNodes(INode parent, ConversionState state)
+    private static string ConvertChildNodes(Node parent, ConversionState state)
     {
         var blocks = new List<string>();
         var inlineBuf = new StringBuilder();
@@ -180,7 +175,7 @@ public static class HtmlToMarkdown
     /// Concatenates all children as inline content (no block grouping).
     /// Used inside inline elements like strong, em, a, etc.
     /// </summary>
-    private static string ConvertInlineContent(INode parent, ConversionState state)
+    private static string ConvertInlineContent(Node parent, ConversionState state)
     {
         var sb = new StringBuilder();
         foreach (var child in parent.ChildNodes)
@@ -194,7 +189,7 @@ public static class HtmlToMarkdown
     // Block converters
     // =========================================================================
 
-    private static string ConvertHeading(IElement element, ConversionState state)
+    private static string ConvertHeading(Element element, ConversionState state)
     {
         // A heading is a single line: a line break in its content would end the heading and
         // turn the remainder into a separate paragraph.
@@ -223,13 +218,13 @@ public static class HtmlToMarkdown
         return CollapseWhitespace(content.Replace("\\\n", "\n", StringComparison.Ordinal));
     }
 
-    private static string ConvertParagraph(IElement element, ConversionState state)
+    private static string ConvertParagraph(Element element, ConversionState state)
     {
         var content = ConvertInlineContent(element, state).Trim();
         return PostProcessLineStart(content);
     }
 
-    private static string ConvertBlockquote(IElement element, ConversionState state)
+    private static string ConvertBlockquote(Element element, ConversionState state)
     {
         var content = ConvertChildNodes(element, state);
         if (string.IsNullOrEmpty(content))
@@ -237,7 +232,7 @@ public static class HtmlToMarkdown
         return PrefixLines(content, "> ", "> ", ">");
     }
 
-    private static string ConvertPre(IElement element, ConversionState state)
+    private static string ConvertPre(Element element, ConversionState state)
     {
         var codeElement = element.QuerySelector("code");
 
@@ -245,10 +240,10 @@ public static class HtmlToMarkdown
         // <pre>. QuerySelector matches any descendant, so using it unconditionally would
         // silently drop everything around the match. The language may still come from a
         // nested <code>, because a wrong language annotation costs less than lost content.
-        var contentElement = GetSingleSignificantChild(element) is IElement { LocalName: "code" } soleCodeChild
+        var contentElement = GetSingleSignificantChild(element) is Element { LocalName: "code" } soleCodeChild
             ? soleCodeChild
             : element;
-        var content = contentElement.TextContent;
+        var content = contentElement.TextContent ?? "";
         var language = ExtractLanguage(codeElement) ?? ExtractLanguage(element);
 
         if (state.Options.CodeBlockStyle == CodeBlockStyle.Indented)
@@ -259,7 +254,7 @@ public static class HtmlToMarkdown
         return FencedCodeBlock(content, language, state.Options.CodeBlockFenceCharacter);
     }
 
-    private static string ConvertUnorderedList(IElement element, ConversionState state)
+    private static string ConvertUnorderedList(Element element, ConversionState state)
     {
         var marker = state.Options.UnorderedListMarker + " ";
         var indent = new string(' ', marker.Length);
@@ -277,7 +272,7 @@ public static class HtmlToMarkdown
         return string.Join(isLoose ? "\n\n" : "\n", items);
     }
 
-    private static string ConvertOrderedList(IElement element, ConversionState state)
+    private static string ConvertOrderedList(Element element, ConversionState state)
     {
         var start = ParseListStart(element.GetAttribute("start"));
         var isLoose = IsLooseList(element);
@@ -319,7 +314,7 @@ public static class HtmlToMarkdown
     /// Converts the content of a list item, using single newline before
     /// sublists (tight) and double newline before other block elements.
     /// </summary>
-    private static string ConvertListItemContent(IElement li, ConversionState state)
+    private static string ConvertListItemContent(Element li, ConversionState state)
     {
         var parts = new List<(string Content, bool IsList)>();
         var inlineBuf = new StringBuilder();
@@ -339,7 +334,7 @@ public static class HtmlToMarkdown
                 var block = state.GetConverted(child);
                 if (!string.IsNullOrEmpty(block))
                 {
-                    var isList = child is IElement el && el.LocalName is "ul" or "ol";
+                    var isList = child is Element el && el.LocalName is "ul" or "ol";
                     parts.Add((block, isList));
                 }
             }
@@ -367,7 +362,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertTable(IElement table, ConversionState state)
+    private static string ConvertTable(Element table, ConversionState state)
     {
         var headerRows = new List<List<(string Content, string? Align)>>();
         var bodyRows = new List<List<(string Content, string? Align)>>();
@@ -427,7 +422,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertDefinitionList(IElement element, ConversionState state)
+    private static string ConvertDefinitionList(Element element, ConversionState state)
     {
         var sb = new StringBuilder();
         var isFirst = true;
@@ -467,11 +462,11 @@ public static class HtmlToMarkdown
     // Inline converters
     // =========================================================================
 
-    private static string ConvertStrong(IElement element, ConversionState state)
+    private static string ConvertStrong(Element element, ConversionState state)
     {
         // Collapse redundant nesting: <strong><strong>x</strong></strong>
         var onlyChild = GetSingleSignificantChild(element);
-        if (onlyChild is IElement childEl && childEl.LocalName is "strong" or "b")
+        if (onlyChild is Element childEl && childEl.LocalName is "strong" or "b")
             return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
@@ -479,10 +474,10 @@ public static class HtmlToMarkdown
         return WrapInlineMarker(content, marker);
     }
 
-    private static string ConvertEmphasis(IElement element, ConversionState state)
+    private static string ConvertEmphasis(Element element, ConversionState state)
     {
         var onlyChild = GetSingleSignificantChild(element);
-        if (onlyChild is IElement childEl && childEl.LocalName is "em" or "i")
+        if (onlyChild is Element childEl && childEl.LocalName is "em" or "i")
             return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
@@ -490,13 +485,13 @@ public static class HtmlToMarkdown
         return WrapInlineMarker(content, marker);
     }
 
-    private static string ConvertStrikethrough(IElement element, ConversionState state)
+    private static string ConvertStrikethrough(Element element, ConversionState state)
     {
         var content = ConvertInlineContent(element, state);
         return WrapInlineMarker(content, "~~");
     }
 
-    private static string ConvertInlineCode(IElement element)
+    private static string ConvertInlineCode(Element element)
     {
         var content = element.TextContent;
         if (string.IsNullOrEmpty(content))
@@ -521,7 +516,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertLink(IElement element, ConversionState state)
+    private static string ConvertLink(Element element, ConversionState state)
     {
         // GetAttribute returns null only when the attribute is absent: <a href> yields "".
         var href = element.GetAttribute("href");
@@ -544,7 +539,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertImage(IElement element)
+    private static string ConvertImage(Element element)
     {
         var src = element.GetAttribute("src");
         if (string.IsNullOrEmpty(src))
@@ -566,7 +561,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertBreak(IElement element, ConversionState state)
+    private static string ConvertBreak(Element element, ConversionState state)
     {
         if (IsInTableCell(element))
             return "<br>";
@@ -576,7 +571,7 @@ public static class HtmlToMarkdown
     /// <summary>
     /// Determines whether an element is inside a table cell by walking its ancestors.
     /// </summary>
-    private static bool IsInTableCell(IElement element)
+    private static bool IsInTableCell(Element element)
     {
         for (var parent = element.ParentElement; parent is not null; parent = parent.ParentElement)
         {
@@ -587,14 +582,14 @@ public static class HtmlToMarkdown
         return false;
     }
 
-    private static string ConvertInput(IElement element)
+    private static string ConvertInput(Element element)
     {
         if (string.Equals(element.GetAttribute("type"), "checkbox", StringComparison.OrdinalIgnoreCase))
             return element.HasAttribute("checked") ? "[x]" : "[ ]";
         return "";
     }
 
-    private static string ConvertUnknownElement(IElement element, ConversionState state)
+    private static string ConvertUnknownElement(Element element, ConversionState state)
     {
         return state.Options.UnknownElementHandling switch
         {
@@ -609,13 +604,13 @@ public static class HtmlToMarkdown
     /// removed. Those elements are stripped everywhere else, so passing an unknown element
     /// through verbatim must not reintroduce them.
     /// </summary>
-    private static string GetOuterHtmlWithoutStrippedElements(IElement element)
+    private static string GetOuterHtmlWithoutStrippedElements(Element element)
     {
         if (element.QuerySelector(StrippedElementsSelector) is null)
             return element.OuterHtml;
 
-        var clone = (IElement)element.Clone(deep: true);
-        foreach (var stripped in clone.QuerySelectorAll(StrippedElementsSelector).ToArray())
+        var clone = (Element)element.CloneNode(subtree: true);
+        foreach (var stripped in clone.QuerySelectorAll<Element>(StrippedElementsSelector))
         {
             stripped.Remove();
         }
@@ -627,7 +622,7 @@ public static class HtmlToMarkdown
     // Table helpers
     // =========================================================================
 
-    private static List<(string Content, string? Align)> ExtractTableRow(IElement tr, ConversionState state)
+    private static List<(string Content, string? Align)> ExtractTableRow(Element tr, ConversionState state)
     {
         var cells = new List<(string Content, string? Align)>();
 
@@ -649,7 +644,7 @@ public static class HtmlToMarkdown
     /// than concatenated, then the result is collapsed onto a single line: a row of a pipe
     /// table cannot contain a line break.
     /// </summary>
-    private static string ConvertTableCellContent(IElement cell, ConversionState state)
+    private static string ConvertTableCellContent(Element cell, ConversionState state)
     {
         var content = ConvertChildNodes(cell, state).Trim();
         if (!content.Contains('\n', StringComparison.Ordinal))
@@ -676,7 +671,7 @@ public static class HtmlToMarkdown
     /// 1. The CSS text-align property from the style attribute
     /// 2. The HTML align attribute
     /// </summary>
-    private static string? GetCellAlignment(IElement cell)
+    private static string? GetCellAlignment(Element cell)
     {
         var style = cell.GetAttribute("style");
         if (style is not null)
@@ -782,7 +777,7 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string? ExtractLanguage(IElement? element)
+    private static string? ExtractLanguage(Element? element)
     {
         if (element is null) return null;
 
@@ -1273,9 +1268,9 @@ public static class HtmlToMarkdown
     // Classification helpers
     // =========================================================================
 
-    private static bool IsBlockElement(INode node)
+    private static bool IsBlockElement(Node node)
     {
-        return node is IElement el && el.LocalName is
+        return node is Element el && el.LocalName is
             "h1" or "h2" or "h3" or "h4" or "h5" or "h6"
             or "p" or "blockquote" or "pre" or "ul" or "ol" or "li"
             or "hr" or "table" or "thead" or "tbody" or "tfoot" or "tr"
@@ -1287,15 +1282,15 @@ public static class HtmlToMarkdown
 
     private const string StrippedElementsSelector = "script, style, noscript";
 
-    private static bool IsStrippedElement(INode node)
+    private static bool IsStrippedElement(Node node)
     {
-        return node is IElement el && el.LocalName is "script" or "style" or "noscript";
+        return node is Element el && el.LocalName is "script" or "style" or "noscript";
     }
 
     /// <summary>
     /// A list is "loose" if any list item contains block elements other than sublists.
     /// </summary>
-    private static bool IsLooseList(IElement listElement)
+    private static bool IsLooseList(Element listElement)
     {
         foreach (var li in listElement.Children)
         {
@@ -1333,12 +1328,12 @@ public static class HtmlToMarkdown
     /// Returns the single non-whitespace child node, or null if there are
     /// zero or multiple significant children.
     /// </summary>
-    private static INode? GetSingleSignificantChild(IElement element)
+    private static Node? GetSingleSignificantChild(Element element)
     {
-        INode? result = null;
+        Node? result = null;
         foreach (var child in element.ChildNodes)
         {
-            if (child is IText text && string.IsNullOrWhiteSpace(text.Data))
+            if (child is Text text && string.IsNullOrWhiteSpace(text.Data))
                 continue;
             if (result is not null)
                 return null;
@@ -1391,7 +1386,7 @@ public static class HtmlToMarkdown
 
     private sealed class ConversionState
     {
-        private readonly Dictionary<INode, string> _converted = [];
+        private readonly Dictionary<Node, string> _converted = [];
 
         public HtmlToMarkdownOptions Options { get; }
 
@@ -1400,8 +1395,8 @@ public static class HtmlToMarkdown
             Options = options;
         }
 
-        public void SetConverted(INode node, string markdown) => _converted[node] = markdown;
+        public void SetConverted(Node node, string markdown) => _converted[node] = markdown;
 
-        public string GetConverted(INode node) => _converted.TryGetValue(node, out var markdown) ? markdown : "";
+        public string GetConverted(Node node) => _converted.TryGetValue(node, out var markdown) ? markdown : "";
     }
 }

@@ -1,5 +1,7 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -11,6 +13,7 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
 {
     private const int ExtraBits = 3;
     private const long Rounding = ((1 << ExtraBits) >> 1) - 1;
+    private const int SubPredictorCount = 4;
 
     private readonly int _width;
     private readonly int _rowLength;
@@ -28,10 +31,15 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     private readonly uint _weight2;
     private readonly uint _weight3;
 
-    // Two rows (the current one and the previous one) of width + 2 entries, for the error of the prediction and, in four
-    // planes, of each sub-predictor
-    private readonly PooledBuffer _errors;
-    private readonly PooledBuffer _subErrors;
+    // Two rows (the current one and the previous one) of width + 2 positions: the error of the prediction and, interleaved
+    // (the four of a position are contiguous), the errors of the four sub-predictors
+    private readonly PooledBuffer _errorBuffer;
+    private readonly PooledBuffer _subErrorBuffer;
+
+    // The arrays of the buffers, which do not change until they are returned: the spans are read for every sample
+    private byte[]? _errors;
+    private byte[]? _subErrors;
+    private readonly int _errorCount;
     private long _prediction;
     private long _prediction0;
     private long _prediction1;
@@ -56,16 +64,20 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         _weight3 = header.Weights[3];
 
         var planeLength = ((long)width + 2) * 2;
-        _errors = Rent(scope, planeLength * sizeof(int));
+        _errorBuffer = Rent(scope, planeLength * sizeof(int));
         try
         {
-            _subErrors = Rent(scope, planeLength * 4 * sizeof(uint));
+            _subErrorBuffer = Rent(scope, planeLength * SubPredictorCount * sizeof(uint));
         }
         catch
         {
-            _errors.Dispose();
+            _errorBuffer.Dispose();
             throw;
         }
+
+        _errorCount = (int)planeLength;
+        _errors = _errorBuffer.RawBuffer;
+        _subErrors = _subErrorBuffer.RawBuffer;
 
         static PooledBuffer Rent(AllocationScope scope, long bytes)
         {
@@ -73,6 +85,25 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
                 throw CheckedSizes.CreateOverflowException(scope.Limits);
 
             return scope.Rent((int)bytes, AllocationKind.DecoderState, clear: true);
+        }
+    }
+
+    // The arrays hold at least the values they were rented for
+    private Span<int> Errors
+    {
+        get
+        {
+            var array = _errors ?? ThrowDisposed();
+            return unsafe(MemoryMarshal.CreateSpan(ref Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference(array)), _errorCount));
+        }
+    }
+
+    private Span<uint> SubErrors
+    {
+        get
+        {
+            var array = _subErrors ?? ThrowDisposed();
+            return unsafe(MemoryMarshal.CreateSpan(ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetArrayDataReference(array)), _errorCount * SubPredictorCount));
         }
     }
 
@@ -102,22 +133,20 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     public long Predict(int x, int y, long north, long west, long northEast, long northWest, long northNorth, out int maxError)
     {
         var rowLength = _rowLength;
-        var planeLength = rowLength * 2;
         var previousRow = (y & 1) != 0 ? rowLength : 0;
         var currentRow = rowLength - previousRow;
         var positionN = previousRow + x;
         var positionNE = x < _width - 1 ? positionN + 1 : positionN;
         var positionNW = x > 0 ? positionN - 1 : positionN;
-        var errors = unsafe(MemoryMarshal.Cast<byte, int>(_errors.RawBuffer.AsSpan()))[..planeLength];
-        var subErrors = unsafe(MemoryMarshal.Cast<byte, uint>(_subErrors.RawBuffer.AsSpan()))[..(planeLength * 4)];
-        var sub0 = subErrors[..planeLength];
-        var sub1 = subErrors.Slice(planeLength, planeLength);
-        var sub2 = subErrors.Slice(planeLength * 2, planeLength);
-        var sub3 = subErrors.Slice(planeLength * 3, planeLength);
-        var weight0 = GetErrorWeight(sub0[positionN] + sub0[positionNE] + sub0[positionNW], _weight0);
-        var weight1 = GetErrorWeight(sub1[positionN] + sub1[positionNE] + sub1[positionNW], _weight1);
-        var weight2 = GetErrorWeight(sub2[positionN] + sub2[positionNE] + sub2[positionNW], _weight2);
-        var weight3 = GetErrorWeight(sub3[positionN] + sub3[positionNE] + sub3[positionNW], _weight3);
+        var errors = Errors;
+
+        // The errors of the four sub-predictors at the three neighbors above, added lane by lane (wrapping, as uint additions do)
+        var subErrors = SubErrors;
+        var sums = LoadSubErrors(subErrors, positionN) + LoadSubErrors(subErrors, positionNE) + LoadSubErrors(subErrors, positionNW);
+        var weight0 = GetErrorWeight(sums.GetElement(0), _weight0);
+        var weight1 = GetErrorWeight(sums.GetElement(1), _weight1);
+        var weight2 = GetErrorWeight(sums.GetElement(2), _weight2);
+        var weight3 = GetErrorWeight(sums.GetElement(3), _weight3);
 
         north <<= ExtraBits;
         west <<= ExtraBits;
@@ -131,18 +160,19 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         long errorNE = errors[positionNE];
         var sumWN = errorN + errorW;
 
+        // The errors are 32-bit values: their magnitudes are computed without the overflow check of Math.Abs
         long largest = errorW;
-        if (Math.Abs(errorN) > Math.Abs(largest))
+        if (Magnitude(errorN) > Magnitude(largest))
         {
             largest = errorN;
         }
 
-        if (Math.Abs(errorNW) > Math.Abs(largest))
+        if (Magnitude(errorNW) > Magnitude(largest))
         {
             largest = errorNW;
         }
 
-        if (Math.Abs(errorNE) > Math.Abs(largest))
+        if (Magnitude(errorNE) > Magnitude(largest))
         {
             largest = errorNE;
         }
@@ -166,7 +196,8 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         weight3 >>= shift;
         var weightSum = weight0 + weight1 + weight2 + weight3;
         var total = (long)(weightSum >> 1) - 1 + (prediction0 * weight0) + (prediction1 * weight1) + (prediction2 * weight2) + (prediction3 * weight3);
-        var prediction = (total * Reciprocals[(int)weightSum - 1]) >> 24;
+        // The sum of the reduced weights is 13 to 31
+        var prediction = (total * Reciprocals[((int)weightSum - 1) & 63]) >> 24;
 
         // When the errors of the neighbors do not all have the same sign, the prediction is kept; otherwise it is clamped to the neighbors
         if (((errorN ^ errorW) | (errorN ^ errorNW)) <= 0)
@@ -184,37 +215,44 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     public void Update(int value, int x, int y)
     {
         var rowLength = _rowLength;
-        var planeLength = rowLength * 2;
         var previousRow = (y & 1) != 0 ? rowLength : 0;
         var currentRow = rowLength - previousRow;
         var scaled = (long)value << ExtraBits;
-        var errors = unsafe(MemoryMarshal.Cast<byte, int>(_errors.RawBuffer.AsSpan()));
-        errors[currentRow + x] = (int)(_prediction - scaled);
-        var subErrors = unsafe(MemoryMarshal.Cast<byte, uint>(_subErrors.RawBuffer.AsSpan()))[..(planeLength * 4)];
-        Update(subErrors[..planeLength], _prediction0);
-        Update(subErrors.Slice(planeLength, planeLength), _prediction1);
-        Update(subErrors.Slice(planeLength * 2, planeLength), _prediction2);
-        Update(subErrors.Slice(planeLength * 3, planeLength), _prediction3);
+        Errors[currentRow + x] = (int)(_prediction - scaled);
+        var errors = Vector128.Create(GetSubError(_prediction0, scaled), GetSubError(_prediction1, scaled), GetSubError(_prediction2, scaled), GetSubError(_prediction3, scaled));
+        var subErrors = SubErrors;
+        errors.CopyTo(subErrors.Slice((currentRow + x) * SubPredictorCount, SubPredictorCount));
 
-        void Update(Span<uint> subErrors, long prediction)
-        {
-            var error = (uint)((Math.Abs(prediction - scaled) + Rounding) >> ExtraBits);
-            subErrors[currentRow + x] = error;
-
-            // The error also counts for the sample on the right of the one above
-            subErrors[previousRow + x + 1] += error;
-        }
+        // The errors also count for the sample on the right of the one above
+        var right = subErrors.Slice((previousRow + x + 1) * SubPredictorCount, SubPredictorCount);
+        (Vector128.Create<uint>(right) + errors).CopyTo(right);
     }
 
     public void Dispose()
     {
-        _errors.Dispose();
-        _subErrors.Dispose();
+        _errors = null;
+        _subErrors = null;
+        _errorBuffer.Dispose();
+        _subErrorBuffer.Dispose();
     }
 
+    [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+    private static byte[] ThrowDisposed() => throw new ObjectDisposedException(nameof(JpegXlWeightedPredictor));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> LoadSubErrors(ReadOnlySpan<uint> subErrors, int position) => Vector128.Create(subErrors.Slice(position * SubPredictorCount, SubPredictorCount));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long Magnitude(long value) => (value ^ (value >> 63)) - (value >> 63);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint GetSubError(long prediction, long scaled) => (uint)((Math.Abs(prediction - scaled) + Rounding) >> ExtraBits);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint GetErrorWeight(uint error, uint maxWeight)
     {
+        // The error shifted right is below 64: it is below 2^(shift + 6)
         var shift = Math.Max(0, BitOperations.Log2((ulong)error + 1) - 5);
-        return 4 + ((maxWeight * Reciprocals[(int)(error >> shift)]) >> shift);
+        return 4 + ((maxWeight * Reciprocals[(int)(error >> shift) & 63]) >> shift);
     }
 }

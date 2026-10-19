@@ -334,14 +334,7 @@ public abstract partial class Node
                 return candidate;
         }
 
-        var context = Css.Selectors.SelectorContext.ForDomApi(this);
-        for (var node = FirstChild; node is not null; node = node.GetNextInTreeOrder(this))
-        {
-            if (node is T element && Css.Selectors.SelectorMatcher.Matches(selector, element, context))
-                return element;
-        }
-
-        return null;
+        return Css.Selectors.SelectorQuery.Find<T>(this, selector, Css.Selectors.SelectorContext.ForDomApi(this), result: null, seen: null);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall</summary>
@@ -373,13 +366,7 @@ public abstract partial class Node
         if (TryAddQuerySelectorAllResultsById(selector, result, seen, context))
             return;
 
-        for (var node = FirstChild; node is not null; node = node.GetNextInTreeOrder(this))
-        {
-            if (node is T element && Css.Selectors.SelectorMatcher.Matches(selector, element, context) && (seen is null || seen.Add(element)))
-            {
-                result.Add(element);
-            }
-        }
+        Css.Selectors.SelectorQuery.Find(this, selector, context, result, seen);
     }
 
     /// <summary>

@@ -126,6 +126,62 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void ANarrowImageMovedByWholePixelsWrapsOverLongRuns()
+    {
+        // The pixels outside the region repeat with a period: a run much longer than the region, on both sides of it,
+        // gets the pixel of the region each center comes from
+        var random = new Random(20261019);
+        foreach (var wrapMode in Enum.GetValues<ImageWrapMode>())
+        {
+            foreach (var width in (int[])[1, 2, 3, 5, 8])
+            {
+                foreach (var shiftX in (int[])[-150, -37, -2, 0, 5, 150])
+                {
+                    using var source = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, width + 2, 3, random.Next);
+                    var region = new Rectangle(1, 1, width, 2);
+                    var brush = new ImageBrush(source.Frames[0]) { SourceRegion = region, Transform = AffineTransform.CreateTranslation(shiftX, -3), WrapMode = wrapMode, CompositeMode = CompositeMode.Source };
+                    using var image = new Image<Rgba64>(200, 3);
+                    image.Draw(canvas => canvas.Fill(brush), Ct);
+                    for (var y = 0; y < 3; y++)
+                    {
+                        for (var x = 0; x < 200; x++)
+                        {
+                            var column = Wrap(x - shiftX - region.X, region.Width, wrapMode);
+                            var row = Wrap(y + 3 - region.Y, region.Height, wrapMode);
+                            var expected = column is { } c && row is { } r ? ((Image<Rgba64>)source).Frames[0][region.X + c, region.Y + r] : default;
+                            // A transparent pixel has no color
+                            var actual = image.Frames[0][x, y];
+                            Assert.True(expected.A == 0 ? actual.A == 0 : expected == actual, $"{wrapMode}, width {width}, shift {shiftX}: pixel ({x}, {y}) is {actual}, not {expected}");
+                        }
+                    }
+                }
+            }
+        }
+
+        static int? Wrap(int offset, int size, ImageWrapMode wrapMode)
+        {
+            if (offset >= 0 && offset < size)
+                return offset;
+
+            switch (wrapMode)
+            {
+                case ImageWrapMode.Pad:
+                    return Math.Clamp(offset, 0, size - 1);
+
+                case ImageWrapMode.Repeat:
+                    return ((offset % size) + size) % size;
+
+                case ImageWrapMode.Reflect:
+                    var folded = ((offset % (2 * size)) + (2 * size)) % (2 * size);
+                    return folded < size ? folded : (2 * size) - 1 - folded;
+
+                default:
+                    return null;
+            }
+        }
+    }
+
+    [Fact]
     public void AnImageIsCompositedOverThePixelsInEveryPairOfPixelFormats()
     {
         // The colors of the source become 16-bit colors by the rules of pixel conversion (v * 257 from 8 bits, a gray
@@ -941,6 +997,47 @@ public sealed class DrawingImageTests
 
                 default:
                     return null;
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, 300, 200)]
+    [InlineData(PixelFormat.Gray16, 300, 200)]
+    [InlineData(PixelFormat.Rgb24, 700, 450)]
+    [InlineData(PixelFormat.Bgra32, 700, 450)]
+    public void APixelReadOnItsOwnDoesNotDependOnTheMemoryLeftForTheDrawing(PixelFormat format, int width, int height)
+    {
+        // The pixels a rotated image reads one by one are converted once for the shape when there is room for them (a
+        // region of 700x450 has more of them than are kept, a region of 300x200 has them all kept): the colors are
+        // those of the pixels read one by one
+        var random = new Random(20261019 + width);
+        using var source = DrawingTestSupport.CreateRandom(format, width, height, random.Next);
+        using var probe = new Image<Rgba32>(64, 48);
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        var scale = 64.0 / width;
+        var placements = new[]
+        {
+            AffineTransform.CreateScale(scale * 1.7, scale * 1.7).Then(AffineTransform.CreateRotation(23, new PointD(32, 24))),
+            AffineTransform.CreateScale(scale * 0.6, scale * 0.8).Then(AffineTransform.CreateSkew(15, -10)).Then(AffineTransform.CreateTranslation(9, 4)),
+        };
+        foreach (var sampling in Enum.GetValues<ImageSampling>())
+        {
+            foreach (var wrapMode in (ImageWrapMode[])[ImageWrapMode.Transparent, ImageWrapMode.Repeat, ImageWrapMode.Reflect])
+            {
+                foreach (var transform in placements)
+                {
+                    var brush = new ImageBrush(source.Frames[0]) { Transform = transform, WrapMode = wrapMode, Sampling = sampling };
+
+                    // Room for the drawing but not for the pixels it keeps: they are read one by one
+                    using var kept = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30));
+                    using var limited = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session + 100_000 } });
+                    kept.Draw(canvas => canvas.Fill(brush), Ct);
+                    limited.Draw(canvas => canvas.Fill(brush), Ct);
+                    Assert.True(kept.Owner.Scope.GetDiagnostics().PeakLiveBytes > session + 100_000);
+                    Assert.Equal(DrawingTestSupport.ReadSamples(kept.Frames[0]), DrawingTestSupport.ReadSamples(limited.Frames[0]));
+                }
             }
         }
     }

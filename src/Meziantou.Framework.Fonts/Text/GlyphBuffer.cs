@@ -192,6 +192,24 @@ internal sealed class GlyphBuffer
         Length = (int)newLength;
     }
 
+    /// <summary>Removes the glyphs at increasing indexes, moving the glyphs that follow each of them once.</summary>
+    public void Remove(ReadOnlySpan<int> indexes)
+    {
+        if (indexes.IsEmpty)
+            return;
+
+        var write = indexes[0];
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            var start = indexes[i] + 1;
+            var end = i + 1 < indexes.Length ? indexes[i + 1] : Length;
+            Array.Copy(_info, start, _info, write, end - start);
+            write += end - start;
+        }
+
+        Length = write;
+    }
+
     /// <summary>Gives a range of glyphs one cluster: the smallest of theirs, extended to the glyphs that already share a cluster with an end of the range.</summary>
     public void MergeClusters(int start, int end)
     {

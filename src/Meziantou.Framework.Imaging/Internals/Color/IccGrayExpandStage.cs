@@ -10,4 +10,18 @@ internal sealed class IccGrayExpandStage(double scale0, double scale1, double sc
         values[1] = value * scale1;
         values[2] = value * scale2;
     }
+
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        var first = GetComponent(components, 0, count);
+        var second = GetComponent(components, 1, count);
+        var third = GetComponent(components, 2, count);
+        for (var i = 0; i < first.Length; i++)
+        {
+            var value = first[i];
+            first[i] = value * scale0;
+            second[i] = value * scale1;
+            third[i] = value * scale2;
+        }
+    }
 }

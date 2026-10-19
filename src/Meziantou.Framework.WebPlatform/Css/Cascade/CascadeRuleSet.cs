@@ -219,6 +219,11 @@ internal sealed class CascadeRuleSet
     private readonly Dictionary<string, List<CascadeRule>> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<CascadeRule> _universal = [];
 
+    /// <summary>The rules added to the lists of several tags (e.g. <c>:is(h1, h2)</c>), enumerated once by <see cref="EnumerateRules"/>.</summary>
+    private HashSet<CascadeRule>? _multipleTagRules;
+
+    private static readonly string[] HeadingTags = ["h1", "h2", "h3", "h4", "h5", "h6"];
+
     /// <summary>The pseudo-elements of the rules of the lists of candidates (most elements have no rule for their pseudo-elements).</summary>
     private readonly HashSet<string> _pseudoElements = new(StringComparer.Ordinal);
 
@@ -357,10 +362,84 @@ internal sealed class CascadeRuleSet
         {
             AddTo(_byTag, tag, rule);
         }
+        else if (GetSubjectTags(rule.Selector.Compounds[^1]) is { Count: > 0 } tags)
+        {
+            // The subject can only be one of a few elements (e.g. :is(h1, h2) or :heading): the rule is a candidate of each
+            foreach (var subjectTag in tags)
+            {
+                if (!_byTag.TryGetValue(subjectTag, out var list) || list.Count == 0 || !ReferenceEquals(list[^1], rule))
+                {
+                    AddTo(_byTag, subjectTag, rule);
+                }
+            }
+
+            (_multipleTagRules ??= []).Add(rule);
+        }
         else
         {
             _universal.Add(rule);
         }
+    }
+
+    /// <summary>
+    /// Returns the ASCII lowercase local names one of which the subject of a compound selector without type selector must
+    /// have, or null when it can be any element: the arguments of a :is() or :where() whose subjects have type selectors,
+    /// and the headings of :heading and :heading() (the HTML elements h1 to h6).
+    /// </summary>
+    private static List<string>? GetSubjectTags(CompoundSelector compound)
+    {
+        foreach (var simple in compound.Selectors)
+        {
+            switch (simple)
+            {
+                case PseudoElementSelector:
+                    return null;
+
+                case PseudoClassSelector { Kind: PseudoClass.Heading or PseudoClass.HeadingFunction }:
+                    return [.. HeadingTags];
+
+                case PseudoClassSelector { Kind: PseudoClass.Is or PseudoClass.Where, Argument: { Selectors.Length: > 0 } argument }:
+                {
+                    var tags = new List<string>();
+                    foreach (var complex in argument.Selectors)
+                    {
+                        var subject = complex.Compounds[^1];
+                        var subjectTag = GetTypeSelectorTag(subject);
+                        if (subjectTag is not null)
+                        {
+                            tags.Add(subjectTag);
+                        }
+                        else if (GetSubjectTags(subject) is { } nestedTags)
+                        {
+                            tags.AddRange(nestedTags);
+                        }
+                        else
+                        {
+                            tags = null;
+                            break;
+                        }
+                    }
+
+                    if (tags is not null)
+                        return tags;
+
+                    break;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GetTypeSelectorTag(CompoundSelector compound)
+    {
+        foreach (var simple in compound.Selectors)
+        {
+            if (simple is TypeSelector { LowercaseLocalName: { } localName })
+                return localName;
+        }
+
+        return null;
     }
 
     /// <summary>Returns whether a candidate rule may apply to a pseudo-element (see <see cref="CascadeRule.PseudoElement"/>), or to an element when the name is null.</summary>
@@ -401,6 +480,15 @@ internal sealed class CascadeRuleSet
         foreach (var rules in _byTag.Values)
         {
             foreach (var rule in rules)
+            {
+                if (_multipleTagRules is null || !_multipleTagRules.Contains(rule))
+                    yield return rule;
+            }
+        }
+
+        if (_multipleTagRules is not null)
+        {
+            foreach (var rule in _multipleTagRules)
                 yield return rule;
         }
 

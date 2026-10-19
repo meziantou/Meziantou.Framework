@@ -18,6 +18,7 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// The encoder is far slower than the decoder, and than the encoders of the other formats: its inputs are a 512x384
 /// photo-like still and the first 8 images of the 320x240 animation of <see cref="AnimationBenchmarks"/>, at the fastest
 /// (0) and default (5) efforts. Quality and size trade-offs are measured by the <c>avif-quality</c> command, not here.
+/// The image sequence written at effort 0 is also decoded: its luma motion vectors are whole samples, unlike the ones of libaom.
 /// </remarks>
 [Config(typeof(WorkloadConfig))]
 public class AvifBenchmarks : IDisposable
@@ -29,6 +30,7 @@ public class AvifBenchmarks : IDisposable
     private byte[] _still420 = null!;
     private byte[] _still444 = null!;
     private byte[] _animation = null!;
+    private byte[] _encodedAnimation = null!;
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _frames = null!;
 
@@ -64,7 +66,8 @@ public class AvifBenchmarks : IDisposable
         ImageWorkloads.Encode(_photo, new AvifEncoder { Effort = 0 }, _output);
         WorkloadChecks.RequireLossless(_output.ToArray(), source);
         ImageWorkloads.Encode(_frames, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 }, _output);
-        Require(_output.ToArray(), BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, EncodedFrames);
+        _encodedAnimation = _output.ToArray();
+        Require(_encodedAnimation, BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, EncodedFrames);
     }
 
     [GlobalCleanup]
@@ -111,6 +114,14 @@ public class AvifBenchmarks : IDisposable
         }
 
         return count;
+    }
+
+    [Benchmark]
+    [Workload("320x240x8 AVIF image sequence of the encoder (effort 0: whole-sample luma motion, lossless alpha) -> Rgba32", Frames = EncodedFrames)]
+    public int DecodeEncodedAnimation()
+    {
+        using var image = Image.Load<Rgba32>(_encodedAnimation);
+        return image.Frames.Count;
     }
 
     [Benchmark]

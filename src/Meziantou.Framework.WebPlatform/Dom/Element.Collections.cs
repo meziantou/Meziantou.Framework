@@ -173,6 +173,9 @@ internal readonly struct ClassNames
 
     public string this[int index] => _single ?? _list![index];
 
+    /// <summary>Returns whether the class is one of the classes (case-sensitive).</summary>
+    public bool Contains(string className) => _single is not null ? _single == className : _list is not null && _list.Contains(className);
+
     public Enumerator GetEnumerator() => new(this);
 
     public struct Enumerator(ClassNames names)

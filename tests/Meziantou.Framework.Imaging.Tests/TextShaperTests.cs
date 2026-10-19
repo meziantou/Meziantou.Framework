@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Typography;
@@ -198,6 +199,51 @@ public sealed class TextShaperTests
         Assert.Equal(FontResourceLimitKind.TextGlyphs, exception.Kind);
         Assert.Equal(39, exception.Limit);
         Assert.Equal(40, exception.Requested);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheGlyphsOfABufferStayInOrderWhateverTheEditsAre()
+    {
+        // Glyphs replaced by more or fewer glyphs, and the components of ligatures removed at once.
+        var random = new Random(42);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
+        var expected = new List<int>();
+        var next = 0;
+        for (var i = 0; i < 20; i++)
+        {
+            buffer.Add(next, next);
+            expected.Add(next++);
+        }
+
+        for (var step = 0; step < 2000; step++)
+        {
+            var index = random.Next(expected.Count + 1);
+            if (random.Next(3) == 0 && expected.Count > 4)
+            {
+                // Removed glyphs at increasing indexes, as the components of a ligature.
+                var indexes = Enumerable.Range(0, expected.Count).OrderBy(_ => random.Next()).Take(random.Next(1, 4)).Order().ToArray();
+                buffer.Remove(indexes);
+                for (var j = indexes.Length - 1; j >= 0; j--)
+                {
+                    expected.RemoveAt(indexes[j]);
+                }
+            }
+            else
+            {
+                var oldCount = random.Next(Math.Min(3, expected.Count - Math.Min(index, expected.Count)) + 1);
+                var newCount = random.Next(4);
+                buffer.Resize(index, oldCount, newCount);
+                expected.RemoveRange(index, oldCount);
+                for (var j = 0; j < newCount; j++)
+                {
+                    buffer.Info[index + j].Glyph = next;
+                    expected.Insert(index + j, next++);
+                }
+            }
+
+            Assert.Equal(expected, buffer.Info.ToArray().Select(info => info.Glyph));
+        }
     }
 
     [Fact]
@@ -564,7 +610,7 @@ public sealed class TextShaperTests
         var patterns = new Dictionary<string, string>(StringComparer.Ordinal) { ["pair"] = "B C" };
         var compiled = SyllablePattern.Compile(pattern, categories, patterns);
         var info = text.Split(' ').Select(name => new GlyphInfo { SyllableCategory = (byte)(name[0] - 'A' + 1) }).ToArray();
-        Assert.Equal(expected, compiled.Match(info, 0, new int[compiled.StateCount * 2]));
+        Assert.Equal(expected, compiled.Match(info, 0));
     }
 
     [Theory]
@@ -1252,6 +1298,46 @@ public sealed class TextShaperTests
         // Two of them are within what a font can have.
         font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 2, subtableCount: 30000));
         Assert.Equal(1, Shape(font, "A").Length);
+    }
+
+    [Theory]
+    [InlineData(new int[] { 1, 0 })]
+    [InlineData(new int[] { 1, 5, 3, 7, 255, 256, 600 })]
+    [InlineData(new int[] { 1, 3, 9, 4, 12 })]
+    [InlineData(new int[] { 1, 3, 9, 9, 12 })]
+    [InlineData(new int[] { 2, 3, 0, 4, 0, 250, 300, 5, 1000, 1000, 65534 })]
+    [InlineData(new int[] { 2, 2, 10, 20, 0, 15, 30, 11 })]
+    [InlineData(new int[] { 2, 2, 20, 10, 0, 40, 50, 11 })]
+    [InlineData(new int[] { 2, 2, 40, 50, 0, 10, 20, 11 })]
+    [InlineData(new int[] { 1, 4, 3, 7 })]
+    [InlineData(new int[] { 2, 2, 10, 20, 0 })]
+    [InlineData(new int[] { 3, 1, 5 })]
+    public void TheCoverageCacheGivesTheIndexesOfTheSearch(int[] words)
+    {
+        // The table: its format, its count, then glyphs or ranges, some out of order or overlapping, some truncated
+        var table = new byte[(words.Length * 2) + 2];
+        for (var i = 0; i < words.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(2 + (i * 2)), (ushort)words[i]);
+        }
+
+        var cache = new CoverageCache(offset: 2);
+        for (var glyph = 0; glyph < 1100; glyph++)
+        {
+            Assert.Equal(Find(() => LayoutCommon.GetCoverage(table, 2, glyph)), Find(() => cache.Get(table, glyph)));
+        }
+
+        static string Find(Func<int> lookup)
+        {
+            try
+            {
+                return lookup().ToString(CultureInfo.InvariantCulture);
+            }
+            catch (InvalidFontException)
+            {
+                return "invalid";
+            }
+        }
     }
 
     /// <summary>

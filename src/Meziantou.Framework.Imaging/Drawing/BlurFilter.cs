@@ -61,4 +61,7 @@ public sealed class BlurFilter : Filter
     internal override void Apply(FilterProcessor processor, FilterSurface surface) => processor.Blur(surface, SigmaX, SigmaY, EdgeMode);
 
     internal override (double X, double Y) GetReach() => (GaussianKernel.GetRadius(SigmaX), GaussianKernel.GetRadius(SigmaY));
+
+    // The other edge modes read the pixels of the edges of the canvas, which may be far from what is drawn
+    internal override int GetLocalSteps(bool isAfterReach) => EdgeMode == FilterEdgeMode.Transparent ? 1 : -1;
 }

@@ -4,4 +4,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class IccGrayReduceStage(int index, double scale) : IccStage
 {
     public override void Apply(Span<double> values) => values[0] = values[index] * scale;
+
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        var result = GetComponent(components, 0, count);
+        var source = GetComponent(components, index, count);
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = source[i] * scale;
+        }
+    }
 }

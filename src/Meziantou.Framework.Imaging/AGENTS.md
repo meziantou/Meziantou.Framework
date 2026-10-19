@@ -464,7 +464,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
-  proven so in `VectorizedKernelTests`.
+  proven so in `VectorizedKernelTests`. `ColorConversionKernels.Convert` converts 64 colors at a time stored by
+  component (`IccStage.ApplyBatch`): the stages of matrix-based conversions loop over the colors (the matrix in vectors,
+  each lane with the products and sums of the scalar stage, in the same order, without fused multiply-add), the others
+  apply their scalar stage to each color.
 - The source of `ConvertColorProfile` may be the CICP color description of an image without profile, or the `cicp`
   tag of an ICC profile of PQ or HLG samples (`IccProfile.Cicp`, whose curves only approximate the functions)
   (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
@@ -594,7 +597,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
-  of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
+  of the canvas stay rows of the image, it converts each row of the image once; otherwise it converts the pixels it reads
+  one by one by segments of a row, kept for the lease (a direct table, or a hashed one of 8,192 segments for a large
+  region; the pixels are read one by one when the scope has no room for it). An image moved by whole pixels reads one
+  period of its wrap mode run by run and copies it over the rest of the run. `DrawImage` is a fill of the rectangle
   with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
   is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
   columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
@@ -633,6 +639,13 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
   frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
+- A filter that leaves transparent what is beyond its reach (`Filter.GetLocalSteps`: blurs with transparent edges,
+  shadows, color matrices that add no alpha, before any reach) applies to what is within twice its reach of what is
+  drawn on its layer (`GetLocalFilterArea`: the dirty rectangle, or the drawn bounds the session of a bounded layer
+  tracks), and only those pixels of the layer are drawn. Twice: the running sums of a blur leave values of a few units
+  of the last place after what they sum, which the next sum reads; they are written as transparent pixels, and the
+  pixels within the reach are the bits of the whole layer (`AFilterThatKeepsTransparentPixelsAppliesOnlyWhere...`).
+  A color matrix after a blur is excluded: the straight color of such a value is anything.
 - The surfaces of a filter graph (`FilterGraphContext.Bounds`) are the filtered surface when a primitive reads the
   drawing or its alpha, and otherwise only the pixels its subregions cover, so that a small subregion of a large canvas
   stays in the buffer pool. On a layer (`FilterGraph.ApplyToLayer`), the filtered surface of such a graph is that
@@ -855,7 +868,11 @@ thin public types over its `FontFace`.
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
 - A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
-  x64 (the Windows and Linux CI legs, or an x64 machine).
+  x64 (the Windows and Linux CI legs, or an x64 machine). The inverse transform kernels are written once over
+  `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
+- `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
+  default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
+  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC
@@ -863,8 +880,13 @@ thin public types over its `FontFace`.
   (`IccPipeline.GetByteOutputTables`, one table per channel and per pipeline, built once the pipeline has converted
   `ByteOutputTablesThreshold` colors so that small images never pay for them; identity curves are cheaper than a table
   and are evaluated). A function that is not monotone at the scale of the last bits of its input (PQ, a decreasing tone
-  curve) gets no table and keeps the scalar path. 16-bit samples are not covered: 65,535 thresholds cost more
-  evaluations than most images.
+  curve) gets no table and keeps the scalar path. 16-bit samples get no thresholds: 65,535 of them cost far more
+  evaluations than the 256 of 8 bits (a bisection and a check around each one), more than most images. Their inputs
+  are covered instead: a 16-bit conversion of at least `IccUInt16InputTables.Threshold` colors (`ConvertColorProfile`
+  counts every frame, `IccColorTransform` a call) reads its first stage (one curve per source channel) from a
+  65,536-entry table per distinct curve, built with the same evaluation of every sample value, so it is exact, and
+  rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
+  16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

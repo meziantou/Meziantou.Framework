@@ -83,7 +83,8 @@ internal sealed class TextLayoutEngine
     private readonly Dictionary<(FontFace Face, int CodePoint, bool UsesRotatedForms), bool> _verticalForms = [];
     private readonly List<ShapingFeature> _features = [];
     private GlyphBuffer? _probeBuffer;
-    private readonly ShapingCache _shapingCache = new();
+    private readonly List<(Font Font, ShapingCache Cache)> _shapingCaches = [];
+    private readonly List<Item> _reclaimedItems = [];
     private GlyphScratch? _scratch;
     private readonly List<Font> _fonts = [];
     private readonly List<Line> _lines = [];
@@ -136,6 +137,10 @@ internal sealed class TextLayoutEngine
         finally
         {
             engine._scratch?.Dispose();
+            foreach (var (font, cache) in engine._shapingCaches)
+            {
+                font.ReturnShapingCache(cache);
+            }
         }
     }
 
@@ -425,7 +430,7 @@ internal sealed class TextLayoutEngine
             buffer.Clear();
             buffer.Add(rune.Value, 0);
             ReadOnlySpan<ShapingFeature> features = usesRotatedForms ? [new ShapingFeature(Vrt2, 1), new ShapingFeature(Vert, 0)] : [];
-            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, features, isVertical: true, GetScratch(face), _shapingCache);
+            TextShaper.Shape(buffer, face, UnicodeScripts.GetScript(rune.Value), [], isRightToLeft: false, features, isVertical: true, GetScratch(face), GetShapingCache(font));
             hasVerticalForm = buffer.Length == 1 && buffer.Info[0].Glyph != glyph;
         }
 
@@ -526,6 +531,20 @@ internal sealed class TextLayoutEngine
     }
 
     /// <summary>Gets the working storage that measures the outlines of a font without vertical origins.</summary>
+    /// <summary>Gets the shaping cache of a font for the layout: the one the font kept from a layout before.</summary>
+    private ShapingCache GetShapingCache(Font font)
+    {
+        foreach (var (cached, cache) in _shapingCaches)
+        {
+            if (ReferenceEquals(cached, font))
+                return cache;
+        }
+
+        var rented = font.RentShapingCache();
+        _shapingCaches.Add((font, rented));
+        return rented;
+    }
+
     private GlyphScratch GetScratch(FontFace face) => _scratch ??= new GlyphScratch(face.Data.Environment.CreateAllocator("TextLayout"));
 
     /// <summary>Determines whether the texts of two styles can be shaped as one: they only differ by what is painted.</summary>
@@ -651,8 +670,9 @@ internal sealed class TextLayoutEngine
     {
         item.IsPending = false;
         item.NeedsShaping = false;
-        item.GlyphStart = paragraph.Glyphs.Count;
         item.GlyphCount = 0;
+        ReclaimGlyphs(paragraph, item.End - item.Start + (suffix?.Length ?? 0));
+        item.GlyphStart = paragraph.Glyphs.Count;
         paragraph.Advances.AsSpan(item.Start - paragraph.Start, item.End - item.Start).Clear();
         if (item.IsTabulation)
             return;
@@ -678,7 +698,7 @@ internal sealed class TextLayoutEngine
         var style = item.Style;
         var isRightToLeft = (item.Level & 1) != 0;
         var features = GetFeatures(style, !_isVertical ? ShapingOrientation.Horizontal : item.IsUpright ? ShapingOrientation.Upright : ShapingOrientation.Sideways);
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, _shapingCache);
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, GetShapingCache(item.Font));
         var scale = GetSize(style) / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
@@ -719,6 +739,50 @@ internal sealed class TextLayoutEngine
         {
             paragraph.Advances[Math.Clamp(glyph.Cluster, item.Start, item.End - 1) - paragraph.Start] += glyph.Advance;
         }
+    }
+
+    /// <summary>
+    /// Makes room for the glyphs of an item that is shaped: an item shaped again leaves its former glyphs in the list of
+    /// the paragraph, so before the list grows, the glyphs that no item of the paragraph refers to any more are dropped
+    /// when they are most of it. The glyphs of the other items keep their order.
+    /// </summary>
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="count">The number of glyphs about to be added.</param>
+    private void ReclaimGlyphs(Paragraph paragraph, int count)
+    {
+        var glyphs = paragraph.Glyphs;
+        if (glyphs.Count + (long)count <= glyphs.Capacity)
+            return;
+
+        var live = 0;
+        var items = _reclaimedItems;
+        items.Clear();
+        foreach (var item in paragraph.Items)
+        {
+            if (item.GlyphCount > 0)
+            {
+                live += item.GlyphCount;
+                items.Add(item);
+            }
+        }
+
+        if (live * 2L > glyphs.Count)
+            return;
+
+        // The glyphs of an item never overlap those of another one: moving them down in the order of their start
+        // never overwrites glyphs that are still to be moved.
+        items.Sort((first, second) => first.GlyphStart.CompareTo(second.GlyphStart));
+        var storage = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(glyphs);
+        var next = 0;
+        foreach (var item in items)
+        {
+            storage.Slice(item.GlyphStart, item.GlyphCount).CopyTo(storage[next..]);
+            item.GlyphStart = next;
+            next += item.GlyphCount;
+        }
+
+        glyphs.RemoveRange(next, glyphs.Count - next);
+        items.Clear();
     }
 
     /// <summary>Puts the characters of an item in the buffer of the shaper, with what a line adds after its last character.</summary>
@@ -829,13 +893,13 @@ internal sealed class TextLayoutEngine
         var scale = size / item.Font.UnitsPerEm;
         var characterCount = _buffer.Length;
         var features = GetFeatures(style, ShapingOrientation.Combined);
-        TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, features, isVertical: false, scratch: null, _shapingCache);
+        TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, features, isVertical: false, scratch: null, GetShapingCache(item.Font));
         var width = GetBufferWidth() * scale;
         if (width > size && characterCount is >= 2 and <= 4)
         {
             _features.Add(new ShapingFeature(WidthFeatures[characterCount - 2], 1));
             FillBuffer(item, suffix: null);
-            TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features), isVertical: false, scratch: null, _shapingCache);
+            TextShaper.Shape(_buffer, face, item.Script, style.LanguageTags, item.IsCombinedRightToLeft, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_features), isVertical: false, scratch: null, GetShapingCache(item.Font));
             width = GetBufferWidth() * scale;
         }
 
@@ -1724,9 +1788,13 @@ internal sealed class TextLayoutEngine
 
         // Lines are aligned in the width they are wrapped at, or in the width of the widest one.
         var box = double.IsPositiveInfinity(_maxWidth) ? naturalWidth : _maxWidth;
-        var glyphs = new List<int>();
-        var positions = new List<double>();
-        var anchors = new List<double>();
+
+        // Most lists have about one entry per glyph of the lines: they are given that capacity, so that filling them
+        // does not grow them again and again (the limit on the glyphs is checked below).
+        var glyphCapacity = (int)Math.Min(_glyphCount, _limits.MaxTextGlyphs + 1L);
+        var glyphs = new List<int>(glyphCapacity);
+        var positions = new List<double>(glyphCapacity * 2);
+        var anchors = new List<double>(glyphCapacity);
         var runs = new List<GlyphRun>();
         var brushes = new List<Brush?>();
         var decorations = new List<DecorationRectangle>();
@@ -1740,9 +1808,9 @@ internal sealed class TextLayoutEngine
 
         // The rectangle of each placeholder, in the order of the text; empty for one the layout does not hold
         var placeholders = placeholderCount == 0 ? [] : new RectangleD[placeholderCount];
-        var hitBoxes = new List<TextHitBox>();
+        var hitBoxes = new List<TextHitBox>(glyphCapacity);
         var hitBoxStarts = new int[_lines.Count + 1];
-        var boundaries = new List<int>();
+        var boundaries = new List<int>(_text.Length + _lines.Count);
         var clusters = new List<int>();
         var textLines = new TextLine[_lines.Count];
 
@@ -2244,7 +2312,11 @@ internal sealed class TextLayoutEngine
 
         public List<Item> Items { get; } = [];
 
-        public List<ShapedGlyph> Glyphs { get; } = [];
+        /// <summary>
+        /// Gets the glyphs of the items, in the order they were shaped. The list starts with room for about one glyph
+        /// per character, up to the text a few lines need: only the start of the text after a line is shaped.
+        /// </summary>
+        public List<ShapedGlyph> Glyphs { get; } = new(Math.Min(end - start, 4096) + 16);
 
         /// <summary>
         /// Gets or sets, for each character, the end of the text set in the room of one upright character it is in,

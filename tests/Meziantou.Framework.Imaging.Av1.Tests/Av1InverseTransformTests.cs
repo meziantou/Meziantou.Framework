@@ -171,6 +171,117 @@ public sealed class Av1InverseTransformTests
         Assert.All(residual, value => Assert.Equal(residual[0], value));
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    public void DcOnlyResidualIsTheResidualOfTheTransform(int bitDepth)
+    {
+        // Every transform size, the dequantized DC coefficients near the ends of their range and near zero, and a stride over
+        // the whole range (an exhaustive sweep of every value was run once)
+        var min = -(1 << (7 + bitDepth));
+        var max = (1 << (7 + bitDepth)) - 1;
+        var values = new List<int>();
+        for (var i = 0; i <= 300; i++)
+        {
+            values.Add(min + i);
+            values.Add(max - i);
+            values.Add(i - 150);
+        }
+
+        for (long dc = min; dc <= max; dc += (1 << (bitDepth - 2)) + 7)
+        {
+            values.Add((int)dc);
+        }
+
+        var dequant = new int[1024];
+        var residual = new int[4096];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            int w = Av1Tables.TxWidth[txSz];
+            int h = Av1Tables.TxHeight[txSz];
+            var size = w * h;
+            var coded = Math.Min(32, w) * Math.Min(32, h);
+            foreach (var dc in values)
+            {
+                var expected = Av1Reconstruction.GetDcOnlyResidual(dc, txSz, bitDepth);
+                dequant[0] = dc;
+                Av1InverseTransform.TransformScalar(dequant.AsSpan(0, coded), residual.AsSpan(0, size), txSz, Av1Constants.DctDct, lossless: false, bitDepth);
+                Assert.False(residual.AsSpan(0, size).ContainsAnyExcept(expected), $"Transform size {txSz}, {bitDepth}-bit, DC {dc}: scalar transform.");
+                Av1InverseTransform.Transform(dequant.AsSpan(0, coded), residual.AsSpan(0, size), txSz, Av1Constants.DctDct, lossless: false, bitDepth);
+                Assert.False(residual.AsSpan(0, size).ContainsAnyExcept(expected), $"Transform size {txSz}, {bitDepth}-bit, DC {dc}: transform.");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DcOnlyReconstructionIsTheReconstructionOfTheTransform(int bitDepth)
+    {
+        // A DCT_DCT block whose only coefficient is the DC coefficient adds one value to the prediction: the reconstruction of
+        // section 7.12.3 step by step (the division by dqDenom, the transform and the clip), for every transform size, with
+        // and without a quantizer matrix, on random and extreme predictions, with coefficients that clamp
+        var random = new Random(bitDepth * 41);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 80;
+        var scratch = new int[1024 + 4096];
+        byte[] scan = [0];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            int w = Av1Tables.TxWidth[txSz];
+            int h = Av1Tables.TxHeight[txSz];
+            for (var round = 0; round < 200; round++)
+            {
+                var quant = new int[1024];
+                quant[0] = (round % 4) switch
+                {
+                    0 => random.Next(-8, 9),
+                    1 => random.Next(-2000, 2001),
+                    2 => random.Next(-(1 << 20), 1 << 20),
+                    _ => random.Next(2) is 0 ? -(1 << 23) : (1 << 23) - 1,
+                };
+                var dcQuantizer = random.Next(4, 5000);
+                var matrix = round % 3 is 0 ? new[] { (byte)random.Next(32, 256) } : [];
+                var expected = new ushort[Stride * (h + 1)];
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    expected[i] = (round % 5) switch
+                    {
+                        0 => 0,
+                        1 => (ushort)maxSample,
+                        2 => (ushort)(random.Next(2) * maxSample),
+                        _ => (ushort)random.Next(maxSample + 1),
+                    };
+                }
+
+                var actual = expected.ToArray();
+                var x = 8;
+                var y = 1;
+                Av1Reconstruction.Reconstruct(actual, Stride, x, y, quant, new Av1Scan(scan), eob: 1, scratch, txSz, Av1Constants.DctDct, lossless: false, bitDepth, dcQuantizer, acQuantizer: 1, matrix);
+
+                long q = dcQuantizer;
+                if (matrix.Length > 0)
+                    q = ((q * matrix[0]) + 16) >> 5;
+
+                var dq = quant[0] * q;
+                var dq2 = (Math.Abs(dq) & 0xFFFFFF) / Av1Reconstruction.GetDequantizationDenominator(txSz);
+                var dequant = new int[Math.Min(32, w) * Math.Min(32, h)];
+                dequant[0] = (int)Math.Clamp(dq < 0 ? -dq2 : dq2, -(1 << (7 + bitDepth)), (1 << (7 + bitDepth)) - 1);
+                var residual = new int[w * h];
+                Av1InverseTransform.TransformScalar(dequant, residual, txSz, Av1Constants.DctDct, lossless: false, bitDepth);
+                for (var i = 0; i < h; i++)
+                {
+                    Av1Reconstruction.AddResidualScalar(expected.AsSpan(((y + i) * Stride) + x, w), residual.AsSpan(i * w, w), maxSample);
+                }
+
+                Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, {bitDepth}-bit, round {round}: coefficient {quant[0]}, quantizer {dcQuantizer}.");
+            }
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void TransformFollowsTheTwoDimensionalProcessOnSparseBlocks()

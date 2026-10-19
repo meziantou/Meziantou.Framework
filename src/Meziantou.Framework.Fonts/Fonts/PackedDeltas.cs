@@ -43,6 +43,27 @@ internal ref struct PackedDeltas
         };
     }
 
+    /// <summary>Skips deltas as reading them would: the bytes they take must be in the data, and the next delta read is the one after them.</summary>
+    public void Advance(int count)
+    {
+        while (count > 0)
+        {
+            if (_runRemaining == 0)
+            {
+                var control = FontBinary.UInt8(_data, _position++);
+                _runSize = GetSize(control);
+                _runRemaining = (control & RunCountMask) + 1;
+            }
+
+            var skipped = Math.Min(count, _runRemaining);
+            _runRemaining -= skipped;
+            _position += skipped * _runSize;
+            count -= skipped;
+        }
+
+        FontBinary.EnsureRange(_data, _position, 0);
+    }
+
     /// <summary>Gets the position that follows a number of packed deltas; a run that goes beyond them is skipped whole.</summary>
     public static int Skip(ReadOnlySpan<byte> data, int position, int count)
     {

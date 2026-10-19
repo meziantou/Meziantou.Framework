@@ -253,29 +253,9 @@ namespace Meziantou.Framework.HumanReadable.ValueFormatters
 {
     public static class FormatterExtensions
     {
-        public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddHtmlFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? formatterOptions = null) => throw null;
         public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddJsonFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions? formatterOptions = null) => throw null;
         public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddUrlEncodedFormFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions? formatterOptions = null) => throw null;
         public static Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions AddXmlFormatter(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions serializerOptions, Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions? formatterOptions = null) => throw null;
-    }
-
-    public enum HtmlAttributeQuote
-    {
-        DoubleQuote = 0,
-        SimpleQuote = 1,
-    }
-
-    public sealed class HtmlFormatterOptions : System.IEquatable<Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions>
-    {
-        public Meziantou.Framework.HumanReadable.ValueFormatters.HtmlAttributeQuote? AttributeQuote { get => throw null; set { } }
-        public bool OrderAttributes { get => throw null; set { } }
-        public bool RedactContentSecurityPolicyNonce { get => throw null; set { } }
-        public bool Equals(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public override string ToString() => throw null;
-        public static bool operator ==(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
-        public static bool operator !=(Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? left, Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions? right) => throw null;
     }
 
     public sealed class JsonFormatter : Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter

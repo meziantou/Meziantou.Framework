@@ -221,7 +221,7 @@ internal sealed class LineBreaker
             var graphemeBoundary = i == nextGraphemeBoundary;
             if (graphemeBoundary)
             {
-                nextGraphemeBoundary = i + Framework.Unicode.GetGraphemeClusterLength(text[i..]);
+                nextGraphemeBoundary = i + GraphemeClusters.GetClusterLength(text, i);
             }
 
             graphemeBoundary |= options.IsUnicodeDefault;
@@ -614,6 +614,11 @@ internal sealed class LineBreaker
 
         // LB8a: ZWJ ×
         if (a.LastClass == ZWJ)
+            return NoBreak;
+
+        // LB28 for the most common pair of the Latin text: no rule from LB11 to LB27 applies between two letters (the context
+        // rules read the class of a, which is the last non-space sequence, and the quote flags are only set on QU)
+        if (aClass is AL or HL && bClass is AL or HL && ((a.Flags | b.Flags) & UnitFlags.SoutheastAsianLetter) == UnitFlags.None)
             return NoBreak;
 
         // As in the browsers, a space is a soft wrap opportunity whatever follows it: UAX #14 forbids the breaks before a word

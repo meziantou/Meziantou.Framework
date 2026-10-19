@@ -43,4 +43,21 @@ public sealed class FilterChain : Filter
 
         return (x, y);
     }
+
+    internal override int GetLocalSteps(bool isAfterReach)
+    {
+        var steps = 0;
+        foreach (var filter in _filters)
+        {
+            var count = filter.GetLocalSteps(isAfterReach);
+            if (count < 0)
+                return -1;
+
+            steps += count;
+            var (x, y) = filter.GetReach();
+            isAfterReach |= x > 0 || y > 0;
+        }
+
+        return steps;
+    }
 }

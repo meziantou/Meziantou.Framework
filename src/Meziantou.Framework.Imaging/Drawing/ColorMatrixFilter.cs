@@ -25,4 +25,8 @@ public sealed class ColorMatrixFilter : Filter
     internal override void Apply(FilterProcessor processor, FilterSurface surface) => processor.ApplyColorMatrix(surface, Matrix);
 
     internal override (double X, double Y) GetReach() => (0, 0);
+
+    // A transparent pixel stays transparent when the matrix adds no alpha. The straight color of a value left by the
+    // running sums of a blur is anything: the matrix could make it visible
+    internal override int GetLocalSteps(bool isAfterReach) => !isAfterReach && !(Matrix.Values[19] > 0) ? 1 : -1;
 }

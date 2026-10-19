@@ -47,10 +47,18 @@ internal static class IcoEntryDecoder
 
     private static Image DecodePng(RandomAccessSource source, ImageFormat format, IcoRepresentation representation, ImageDecodeRequest request, ImageCodecContext context)
     {
-        // The PNG codec charges the payload bytes itself, so the read does not charge them twice
-        using var payload = source.ReadToBuffer(representation.Offset, representation.Length, charge: false);
+        // The PNG codec charges the payload bytes itself, so the read does not charge them twice. An input held in memory is
+        // decoded where it is
+        PooledBuffer? copy = null;
+        if (!source.TryGetSpan(representation.Offset, representation.Length, out var payload, charge: false))
+        {
+            copy = source.ReadToBuffer(representation.Offset, representation.Length, charge: false);
+            payload = copy.Span;
+        }
+
+        using var owner = copy;
         using var parser = PngCodec.Instance.CreateDecodeParser(request, context);
-        var image = ImageInputPump.Run(payload.Span, parser, context);
+        var image = ImageInputPump.Run(payload, parser, context);
         try
         {
             if (image.IsAnimated || image.Frames.Count != 1 || image.PosterFrame is not null)

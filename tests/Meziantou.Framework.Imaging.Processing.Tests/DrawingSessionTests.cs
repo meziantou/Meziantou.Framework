@@ -3741,6 +3741,58 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void AFilterThatKeepsTransparentPixelsAppliesOnlyWhereItsReachMovesTheDrawing()
+    {
+        // Erasing the whole layer first makes every pixel of it drawn on: the filter then applies to the whole layer.
+        // A blur, a shadow and their chains leave transparent what is beyond their reach, and are applied to the
+        // pixels around the drawing only: the same pixels. So is a filter that may give a color to transparent
+        // pixels, which applies to the whole layer anyway.
+        var luminanceToAlpha = new ColorMatrix([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2125, 0.7154, 0.0721, 0, 0]);
+        var stops = new GradientStop[] { new(0, new Rgba64(65535, 0, 0, 65535)), new(1, new Rgba64(0, 0, 65535, 20000)) };
+        var erase = new SolidBrush(new Rgba64(0, 0, 0, 0)) { CompositeMode = CompositeMode.Source };
+        Filter[] filters =
+        [
+            new BlurFilter(0.8),
+            new BlurFilter(3.3, 2),
+            new DropShadowFilter(new Rgba64(0, 0, 0, 40000), new PointD(-4.5, 2.25), 2),
+            new FilterChain(new ColorMatrixFilter(ColorMatrix.CreateSepia()), new BlurFilter(2.5), new DropShadowFilter(new Rgba64(65535, 0, 0, 30000), new PointD(3, 3.5), 1.2)),
+            new FilterChain(new BlurFilter(2.5), new ColorMatrixFilter(luminanceToAlpha)),
+            new ColorMatrixFilter(ColorMatrix.CreateOpacity(0.5)),
+        ];
+
+        foreach (var filter in filters)
+        {
+            DrawingAction drawing = layer =>
+            {
+                layer.FillCircle(new Rgba32(250, 30, 30, 200), new PointD(50.3, 30.6), 14);
+                layer.FillRectangle(new LinearGradientBrush(new PointD(70, 40), new PointD(110, 70), stops), new RectangleD(70, 40, 40, 30));
+                layer.FillCircle(new Rgba32(10, 20, 30), new PointD(2, 77), 3.5);
+            };
+
+            DrawingAction erased = layer =>
+            {
+                layer.Fill(erase);
+                drawing(layer);
+            };
+
+            // A layer of the canvas (under a clip), and a layer larger than it, which holds the pixels its reach brings into it
+            var clip = new RectangleD(4, 3, 112, 74);
+            Assert.Equal(Draw<Rgba32>(canvas => canvas.Clip(clip, clipped => clipped.Filter(filter, erased))), Draw<Rgba32>(canvas => canvas.Clip(clip, clipped => clipped.Filter(filter, drawing))));
+            Assert.Equal(Draw<Rgba32>(canvas => canvas.Filter(filter, erased)), Draw<Rgba32>(canvas => canvas.Filter(filter, drawing)));
+            Assert.Equal(Draw<Rgba64>(canvas => canvas.Filter(filter, erased)), Draw<Rgba64>(canvas => canvas.Filter(filter, drawing)));
+        }
+
+        static int[] Draw<TPixel>(DrawingAction action)
+            where TPixel : unmanaged
+        {
+            using var image = new Image<TPixel>(120, 80);
+            image.Draw(canvas => canvas.FillRectangle(new Rgba32(200, 220, 240, 160), new RectangleD(0, 0, 60, 80)), Ct);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void AFilterMovesAndBlursWhatIsDrawnBeyondTheCanvasIntoIt()
     {
         // A square entirely above and to the left of the canvas casts its shadow on it, as the element of a page that is

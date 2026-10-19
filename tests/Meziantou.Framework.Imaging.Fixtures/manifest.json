@@ -86141,10 +86141,10 @@
       },
       "decodeOptions": {
         "limits": {
-          "MaxLiveAllocationBytes": 65536
+          "MaxLiveAllocationBytes": 49152
         }
       },
-      "notes": "Reuses heic/lossless-rgb8-64x64 with 64 KiB of live allocations: enough to read the file and to parse the container, not to decode a 64x64 picture."
+      "notes": "Reuses heic/lossless-rgb8-64x64 with 48 KiB of live allocations: enough to read the file and to parse the container, not to decode a 64x64 picture."
     },
     {
       "id": "limit/heic/sequence-frames-over-limit",

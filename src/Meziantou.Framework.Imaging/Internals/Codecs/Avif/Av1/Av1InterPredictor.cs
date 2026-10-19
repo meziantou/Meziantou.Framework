@@ -130,7 +130,9 @@ internal static class Av1InterPredictor
 
     // PredictBlockScalar for a reference of the size of the frame (steps of one sample): every sample of the block uses the
     // same taps, and the taps of consecutive samples read consecutive samples. The rows whose taps are all inside the
-    // reference are filtered 4 samples at a time with the integer expressions of the scalar code, the others like it
+    // reference are filtered 4 samples at a time with the integer expressions of the scalar code, the others like it.
+    // The taps of the position 0 of every filter are 128 on the sample itself and 0 elsewhere: a filter at a whole-sample
+    // position is the exact expression of CenterTap, and a vertical one reads the rows 3 to h + 2 of the intermediate array only
     private static void PredictBlockUnscaled(
         ReadOnlySpan<ushort> reference,
         int referenceStride,
@@ -148,12 +150,30 @@ internal static class Av1InterPredictor
         Span<int> pred,
         int predStride)
     {
-        var intermediateHeight = h + 7;
+        var xFraction = (x >> 6) & Av1Constants.SubpelMask;
+        var yFraction = ((y & 1023) >> 6) & Av1Constants.SubpelMask;
+        if (xFraction is 0 && yFraction is 0)
+        {
+            PredictBlockWholeSample(reference, referenceStride, lastX, lastY, x >> Av1Constants.ScaleSubpelBits, y >> Av1Constants.ScaleSubpelBits, w, h, interRound0, interRound1, pred, predStride);
+            return;
+        }
+
+        var firstRow = yFraction is 0 ? 3 : 0;
+        var intermediateHeight = yFraction is 0 ? h + 3 : h + 7;
         var filters = Av1Tables.SubpelFilters;
-        var tapsH = filters.Slice((SelectFilter(horizontalFilter, w) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + (((x >> 6) & Av1Constants.SubpelMask) * Av1Tables.SubpelFiltersLength2), 8);
+        var tapsH = filters.Slice((SelectFilter(horizontalFilter, w) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + (xFraction * Av1Tables.SubpelFiltersLength2), 8);
         var first = (x >> Av1Constants.ScaleSubpelBits) - 3;
         var round0 = Vector128.Create((1 << interRound0) >> 1);
-        if (first >= 0 && first + w + 6 <= lastX)
+        if (xFraction is 0)
+        {
+            // The sample at first + 3 of each output, which can be inside the reference when the 8 taps are not
+            for (var r = firstRow; r < intermediateHeight; r++)
+            {
+                var source = reference.Slice(Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride, lastX + 1);
+                CenterTapRow(source, first + 3, lastX, interRound0, intermediate.Slice(r * w, w));
+            }
+        }
+        else if (first >= 0 && first + w + 6 <= lastX)
         {
             var h0 = Vector128.Create((int)tapsH[0]);
             var h1 = Vector128.Create((int)tapsH[1]);
@@ -163,7 +183,7 @@ internal static class Av1InterPredictor
             var h5 = Vector128.Create((int)tapsH[5]);
             var h6 = Vector128.Create((int)tapsH[6]);
             var h7 = Vector128.Create((int)tapsH[7]);
-            for (var r = 0; r < intermediateHeight; r++)
+            for (var r = firstRow; r < intermediateHeight; r++)
             {
                 var source = reference.Slice((Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride) + first, w + 7);
                 var destination = intermediate.Slice(r * w, w);
@@ -177,7 +197,7 @@ internal static class Av1InterPredictor
         }
         else
         {
-            for (var r = 0; r < intermediateHeight; r++)
+            for (var r = firstRow; r < intermediateHeight; r++)
             {
                 var source = reference.Slice(Math.Clamp((y >> Av1Constants.ScaleSubpelBits) + r - 3, 0, lastY) * referenceStride, lastX + 1);
                 var destination = intermediate.Slice(r * w, w);
@@ -194,8 +214,23 @@ internal static class Av1InterPredictor
             }
         }
 
+        if (yFraction is 0)
+        {
+            for (var r = 0; r < h; r++)
+            {
+                var row = intermediate.Slice((r + 3) * w, w);
+                var destination = pred.Slice(r * predStride, w);
+                for (var c = 0; c < w; c += 4)
+                {
+                    CenterTap(Vector128.Create(row[c..]), interRound1).CopyTo(destination[c..]);
+                }
+            }
+
+            return;
+        }
+
         // The rows of the vertical filter start at the row of the block: (y & 1023) is below one sample
-        var tapsV = filters.Slice((SelectFilter(verticalFilter, h) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + ((((y & 1023) >> 6) & Av1Constants.SubpelMask) * Av1Tables.SubpelFiltersLength2), 8);
+        var tapsV = filters.Slice((SelectFilter(verticalFilter, h) * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2) + (yFraction * Av1Tables.SubpelFiltersLength2), 8);
         var v0 = Vector128.Create((int)tapsV[0]);
         var v1 = Vector128.Create((int)tapsV[1]);
         var v2 = Vector128.Create((int)tapsV[2]);
@@ -219,6 +254,63 @@ internal static class Av1InterPredictor
 
         static Vector128<int> Load(ReadOnlySpan<ushort> samples, int index) => Vector128.WidenLower(Vector64.Create(samples.Slice(index, 4)).ToVector128()).AsInt32();
     }
+
+    // PredictBlockUnscaled at a whole-sample position in both directions: each output is the sample of the reference through
+    // the center taps of the two filters
+    private static void PredictBlockWholeSample(ReadOnlySpan<ushort> reference, int referenceStride, int lastX, int lastY, int column, int row, int w, int h, int interRound0, int interRound1, Span<int> pred, int predStride)
+    {
+        var inside = column >= 0 && column + w - 1 <= lastX;
+        for (var r = 0; r < h; r++)
+        {
+            var source = reference.Slice(Math.Clamp(row + r, 0, lastY) * referenceStride, lastX + 1);
+            var destination = pred.Slice(r * predStride, w);
+            if (inside)
+            {
+                source = source.Slice(column, w);
+                for (var c = 0; c < w; c += 4)
+                {
+                    var samples = Vector128.WidenLower(Vector64.Create(source.Slice(c, 4)).ToVector128()).AsInt32();
+                    CenterTap(CenterTap(samples, interRound0), interRound1).CopyTo(destination[c..]);
+                }
+            }
+            else
+            {
+                CenterTapRow(source, column, lastX, interRound0, destination);
+                for (var c = 0; c < w; c += 4)
+                {
+                    CenterTap(Vector128.Create(destination[c..]), interRound1).CopyTo(destination[c..]);
+                }
+            }
+        }
+    }
+
+    // The horizontal filter at a whole-sample position: the samples from column, nearest inside the reference, through the
+    // center tap
+    private static void CenterTapRow(ReadOnlySpan<ushort> source, int column, int lastX, int round, Span<int> destination)
+    {
+        if (column >= 0 && column + destination.Length - 1 <= lastX)
+        {
+            source = source.Slice(column, destination.Length);
+            for (var c = 0; c < destination.Length; c += 4)
+            {
+                CenterTap(Vector128.WidenLower(Vector64.Create(source.Slice(c, 4)).ToVector128()).AsInt32(), round).CopyTo(destination[c..]);
+            }
+        }
+        else
+        {
+            for (var c = 0; c < destination.Length; c++)
+            {
+                destination[c] = CenterTap(source[Math.Clamp(column + c, 0, lastX)], round);
+            }
+        }
+    }
+
+    // ((128 * value) + ((1 << round) >> 1)) >> round, the filter at the position 0 and its rounding, without the product:
+    // 128 * value + 2^(round - 1) is 128 * (value + 2^(round - 8)) when round is above 7, and the rounding term is below
+    // the shifted bits otherwise
+    private static int CenterTap(int value, int round) => round <= 7 ? value << (7 - round) : (value + (1 << (round - 8))) >> (round - 7);
+
+    private static Vector128<int> CenterTap(Vector128<int> value, int round) => round <= 7 ? value << (7 - round) : (value + Vector128.Create(1 << (round - 8))) >> (round - 7);
 
     // The 4-tap variants of the filters are used for the blocks of 4 samples or less in the direction of the filter
     private static int SelectFilter(int interpFilter, int size)

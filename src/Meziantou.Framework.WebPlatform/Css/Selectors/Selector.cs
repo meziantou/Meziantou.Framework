@@ -198,6 +198,11 @@ public sealed class ComplexSelector
     /// <summary>Whether the selector contains a pseudo-element (it then never matches an element).</summary>
     public bool HasPseudoElement => Compounds[^1].HasPseudoElement;
 
+    /// <summary>The features that let the matching reject most elements early, computed on first use.</summary>
+    internal SelectorHints Hints => _hints ??= SelectorHints.Create(this);
+
+    private SelectorHints? _hints;
+
     /// <summary>Serializes the selector (https://drafts.csswg.org/cssom/#serialize-a-selector).</summary>
     public override string ToString() => SelectorSerializer.Serialize(this);
 }
@@ -208,7 +213,14 @@ public sealed class CompoundSelector
     internal CompoundSelector(SimpleSelector[] selectors)
     {
         Selectors = ImmutableCollectionsMarshal.AsImmutableArray(selectors);
-        HasPseudoElement = selectors.Any(s => s is PseudoElementSelector);
+        foreach (var selector in selectors)
+        {
+            if (selector is PseudoElementSelector)
+            {
+                HasPseudoElement = true;
+                break;
+            }
+        }
     }
 
     /// <summary>The simple selectors, in source order.</summary>
@@ -392,6 +404,8 @@ public sealed class AttributeSelector : SimpleSelector
         Operator = op;
         Value = value;
         CaseSensitivity = caseSensitivity;
+        IsDefaultCaseInsensitiveHtml = SelectorMatcher.CaseInsensitiveAttributes.Contains(LowercaseName);
+        ValueHasWhitespace = value.AsSpan().IndexOfAny(" \t\n\r\f") >= 0;
     }
 
     /// <summary>Gets the namespace constraint of the attribute.</summary>
@@ -401,6 +415,15 @@ public sealed class AttributeSelector : SimpleSelector
     public string Name { get; }
 
     internal string LowercaseName { get; }
+
+    /// <summary>
+    /// Whether the value is matched ASCII case-insensitively by default on the HTML elements of an HTML document, when the
+    /// attribute has no namespace (https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors).
+    /// </summary>
+    internal bool IsDefaultCaseInsensitiveHtml { get; }
+
+    /// <summary>Whether the value contains ASCII whitespace: <c>[att~=val]</c> then never matches.</summary>
+    internal bool ValueHasWhitespace { get; }
 
     /// <summary>Gets the operator used to compare the attribute value.</summary>
     public AttributeOperator Operator { get; }

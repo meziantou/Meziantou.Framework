@@ -13,4 +13,27 @@ internal sealed class IccInverseCurvesStage(IccInverseCurve[] curves) : IccStage
             values[i] = curves[i].Evaluate(values[i]);
         }
     }
+
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        for (var channel = 0; channel < curves.Length; channel++)
+        {
+            var curve = curves[channel];
+            if (curve.IsIdentity)
+            {
+                // Evaluate only clips: the same values
+                foreach (ref var value in GetComponent(components, channel, count))
+                {
+                    value = IccCurve.Clip(value);
+                }
+
+                continue;
+            }
+
+            foreach (ref var value in GetComponent(components, channel, count))
+            {
+                value = curve.Evaluate(value);
+            }
+        }
+    }
 }

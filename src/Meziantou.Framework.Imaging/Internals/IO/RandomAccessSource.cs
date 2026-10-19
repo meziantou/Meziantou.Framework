@@ -128,6 +128,40 @@ internal sealed class RandomAccessSource
         }
     }
 
+    /// <summary>
+    /// Gets a range of an input held in memory without copying it, with the checks of <see cref="ReadToBuffer"/>; the bytes
+    /// of an input read from a stream are not available this way.
+    /// </summary>
+    /// <param name="offset">The offset from the first byte of the input.</param>
+    /// <param name="length">The number of bytes; it must fit in one buffer.</param>
+    /// <param name="span">The bytes, valid while the input is.</param>
+    /// <param name="charge"><see langword="false"/> for bytes another parser will charge itself.</param>
+    /// <returns><see langword="false"/> when the input is not in memory: nothing was checked or charged, use <see cref="ReadToBuffer"/>.</returns>
+    /// <exception cref="InvalidImageContentException">The range is outside the input.</exception>
+    /// <exception cref="ImageResourceLimitException">The range is longer than one buffer, or a limit is exceeded.</exception>
+    public bool TryGetSpan(long offset, long length, out ReadOnlySpan<byte> span, bool charge = true)
+    {
+        span = default;
+        if (!_input.IsInMemory)
+            return false;
+
+        EnsureRange(offset, length);
+        if (length > CheckedSizes.MaxBufferLength)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, CheckedSizes.MaxBufferLength, length);
+
+        if (length == 0)
+            return true;
+
+        _context.CancellationToken.ThrowIfCancellationRequested();
+        if (charge && _chargeReads)
+        {
+            _context.Tracker.ChargeEncodedBytes(length);
+        }
+
+        span = _input.GetSpan(_origin + offset, (int)length);
+        return true;
+    }
+
     /// <summary>Determines whether a range is entirely inside the input.</summary>
     /// <param name="offset">The offset from the first byte of the input.</param>
     /// <param name="length">The number of bytes.</param>

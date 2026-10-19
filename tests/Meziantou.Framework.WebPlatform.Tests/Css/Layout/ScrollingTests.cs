@@ -157,6 +157,24 @@ public sealed class ScrollingTests : IDisposable
     }
 
     [Fact]
+    public void Viewport_FirstLayoutAssumesTheScrollbarOfALongText()
+    {
+        var document = Parse("<p id=a>" + string.Concat(Enumerable.Repeat("xxxx ", 4000)) + "</p>");
+        Assert.Equal((785, 600), (document.DocumentElement!.ClientWidth, document.DocumentElement.ClientHeight));
+        Assert.Equal(785, GetRect(document, "a").Width);
+        Assert.Equal(1, document.GetLayoutEngine().ViewportLayoutCount);
+    }
+
+    [Fact]
+    public void Viewport_FirstLayoutWithoutScrollbarWhenTheLongTextFits()
+    {
+        // The text is long enough for the vertical scrollbar to be assumed, but it is on a single line
+        var document = Parse("<p id=a style='white-space: nowrap'>" + string.Concat(Enumerable.Repeat("xxxx ", 4000)) + "</p>");
+        Assert.Equal((800, 585), (document.DocumentElement!.ClientWidth, document.DocumentElement.ClientHeight));
+        Assert.Equal(800, GetRect(document, "a").Width);
+    }
+
+    [Fact]
     public void Viewport_OverflowPropagatedFromTheBody()
     {
         var document = Parse("<style>body { overflow: hidden }</style><div style='height: 2000px'></div><div id=a style='overflow: hidden; height: 10px'></div>");

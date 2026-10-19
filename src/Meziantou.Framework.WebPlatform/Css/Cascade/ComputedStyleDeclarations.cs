@@ -95,7 +95,7 @@ internal sealed class ComputedStyleDeclarations
     /// </summary>
     internal ComputedStyle? GetStyle()
     {
-        if (_isEmpty || !IsRendered(_element))
+        if (_isEmpty || !IsElementRendered())
             return null;
 
         var pseudoElement = _pseudoElement;
@@ -122,6 +122,32 @@ internal sealed class ComputedStyleDeclarations
         }
 
         return ContainerQueries.GetStyleWithContainerLayout(_element, pseudoElement);
+    }
+
+    /// <summary>The style engine and its version when <see cref="_isRendered"/> was determined (see <see cref="IsElementRendered"/>).</summary>
+    private (StyleEngine? Engine, int Version) _renderedVersion;
+    private bool _isRendered;
+
+    /// <summary>
+    /// Returns whether the element is rendered (see <see cref="IsRendered"/>), determined again when the styles of its document
+    /// change (each declaration read walks the ancestors otherwise). A nested document depends on the styles of its container,
+    /// it is not cached.
+    /// </summary>
+    private bool IsElementRendered()
+    {
+        var document = _element.NodeDocument;
+        if (document.BrowsingContext is { Container: not null })
+            return IsRendered(_element);
+
+        var engine = document.GetStyleEngine();
+        var version = (engine, engine.Version);
+        if (_renderedVersion != version)
+        {
+            _isRendered = IsRendered(_element);
+            _renderedVersion = version;
+        }
+
+        return _isRendered;
     }
 
     /// <summary>

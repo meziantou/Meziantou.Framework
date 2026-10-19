@@ -52,6 +52,40 @@ public sealed class BidiResolverTests
     }
 
     [Fact]
+    public void LeftToRightText()
+    {
+        // The characters that can be R, AL or AN, or an explicit formatting character, and the paragraph separators are LF, CR,
+        // U+001C to U+001E, U+0085 and U+2029
+        for (var c = 0; c <= char.MaxValue; c++)
+        {
+            if (BidiResolver.MayBeRightToLeft((char)c))
+                continue;
+
+            var type = CharacterProperties.GetBidiClass(c);
+            Assert.False(type is BidiClass.R or BidiClass.AL or BidiClass.AN or BidiClass.LRE or BidiClass.RLE or BidiClass.LRO or BidiClass.RLO or BidiClass.PDF or BidiClass.LRI or BidiClass.RLI or BidiClass.FSI or BidiClass.PDI, $"U+{c:X4} is {type}");
+            Assert.Equal(c is '\n' or '\r' or 0x1C or 0x1D or 0x1E or 0x85 or 0x2029, type == BidiClass.B);
+        }
+
+        // The levels of a left-to-right text are the ones of the resolution from the classes
+        var text = "Hello, world! 123 + 4.5 = caf\u00E9 na\u0308ive \u0391\u03B2\u03B3 \u0430\u0431\r\nnext\u0085(paragraph)\u001C\t\u00A0\u201Cend\u201D \u2013 \u4E2D\u6587\u2029x ";
+        var classes = new BidiClass[text.Length];
+        BidiResolver.GetClasses(text, classes);
+        foreach (var direction in (ReadOnlySpan<BidiParagraphDirection>)[BidiParagraphDirection.LeftToRight, BidiParagraphDirection.AutoLeftToRight])
+        {
+            var resolver = new BidiResolver();
+            resolver.Resolve(text, direction);
+            var reference = new BidiResolver();
+            reference.Resolve(text, classes, direction);
+            Assert.Equal(reference.Paragraphs.ToArray(), resolver.Paragraphs.ToArray());
+            Assert.Equal(reference.Levels.ToArray(), resolver.Levels.ToArray());
+            var expected = new byte[text.Length];
+            reference.GetLineLevels(0, text.Length, expected);
+            Assert.Equal(expected, BidiResolver.GetLevels(text, direction));
+            Assert.Equal(6, resolver.Paragraphs.Count);
+        }
+    }
+
+    [Fact]
     public void AutoDirection()
     {
         var resolver = new BidiResolver();

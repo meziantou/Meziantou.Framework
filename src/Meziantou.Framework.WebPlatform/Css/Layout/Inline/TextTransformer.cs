@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
@@ -518,18 +520,62 @@ internal static class TextTransformer
         if (transform == TextTransform.None || text.Length == 0)
             return text;
 
-        var builder = new StringBuilder(text.Length);
-        Span<char> buffer = stackalloc char[MaxLength];
-        var inWord = false;
-        for (var index = 0; index < text.Length;)
+        // The ASCII letters of uppercase and lowercase do not depend on their context, except the i of Turkic and Lithuanian:
+        // the runs of ASCII characters are converted at once
+        var asciiRuns = transform is TextTransform.Uppercase or TextTransform.Lowercase && language is CaseLanguage.None or CaseLanguage.Dutch or CaseLanguage.Greek;
+        var capitalize = (transform & TextTransform.Capitalize) != TextTransform.None;
+        var buffer = ArrayPool<char>.Shared.Rent(text.Length + MaxLength);
+        try
         {
-            var count = Transform(text, index, transform, language, wordStart: !inWord, buffer, out var consumed);
-            builder.Append(buffer[..count]);
-            inWord = IsWordCharacter(text, index);
-            index += consumed;
+            var length = 0;
+            var inWord = false;
+            for (var index = 0; index < text.Length;)
+            {
+                if (asciiRuns)
+                {
+                    var runLength = text.AsSpan(index).IndexOfAnyExceptInRange((char)0, (char)0x7F);
+                    runLength = runLength < 0 ? text.Length - index : runLength;
+                    if (runLength > 0)
+                    {
+                        EnsureCapacity(ref buffer, length, runLength);
+                        var run = text.AsSpan(index, runLength);
+                        var status = transform == TextTransform.Uppercase ? Ascii.ToUpper(run, buffer.AsSpan(length), out _) : Ascii.ToLower(run, buffer.AsSpan(length), out _);
+                        Debug.Assert(status == OperationStatus.Done);
+                        length += runLength;
+                        index += runLength;
+                        if (index == text.Length)
+                            break;
+                    }
+                }
+
+                EnsureCapacity(ref buffer, length, MaxLength);
+                length += Transform(text, index, transform, language, wordStart: !inWord, buffer.AsSpan(length, MaxLength), out var consumed);
+                if (capitalize)
+                {
+                    inWord = IsWordCharacter(text, index);
+                }
+
+                index += consumed;
+            }
+
+            var result = buffer.AsSpan(0, length);
+            return result.SequenceEqual(text) ? text : result.ToString();
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
         }
 
-        return builder.Equals(text) ? text : builder.ToString();
+        static void EnsureCapacity(ref char[] buffer, int length, int count)
+        {
+            if (buffer.Length - length >= count)
+                return;
+
+            var newBuffer = ArrayPool<char>.Shared.Rent(Math.Max(buffer.Length * 2, length + count));
+            buffer.AsSpan(0, length).CopyTo(newBuffer);
+            ArrayPool<char>.Shared.Return(buffer);
+            buffer = newBuffer;
+        }
     }
 
     /// <summary>

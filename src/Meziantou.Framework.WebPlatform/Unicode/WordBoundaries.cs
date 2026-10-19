@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using WordBreak = Meziantou.Framework.UnicodeWordBreak;
@@ -26,46 +27,75 @@ internal static class WordBoundaries
 
         // The code points, and the "effective" sequence of WB4: the Extend, Format and ZWJ characters are attached to the
         // preceding character (except after the start of the text, CR, LF and Newline)
-        var count = 0;
-        for (var i = 0; i < text.Length; count++)
+        var count = CountCodePoints(text);
+        int[]? rentedIndexes = null;
+        byte[]? rentedProperties = null;
+        var indexes = count <= 256 ? stackalloc int[count * 3] : (rentedIndexes = ArrayPool<int>.Shared.Rent(count * 3));
+        var properties = count <= 256 ? stackalloc byte[count] : (rentedProperties = ArrayPool<byte>.Shared.Rent(count));
+        try
+        {
+            var starts = indexes[..count];
+            var bases = indexes.Slice(count, count); // the index of the effective character of each code point
+            var effective = indexes.Slice(count * 2, count); // the code point of each effective character
+            var effectiveCount = 0;
+            for (int i = 0, index = 0; i < text.Length; index++)
+            {
+                var codePoint = GraphemeClusters.ReadCodePoint(text, i, out var length);
+                starts[index] = i;
+                properties[index] = GetWordBreakProperties(codePoint);
+                var wordBreak = (WordBreak)(properties[index] & 0x1F);
+                if (index > 0 && IsIgnorable(wordBreak) && (WordBreak)(properties[effective[effectiveCount - 1]] & 0x1F) is not (WordBreak.CR or WordBreak.LF or WordBreak.Newline))
+                {
+                    bases[index] = effectiveCount - 1;
+                }
+                else
+                {
+                    bases[index] = effectiveCount;
+                    effective[effectiveCount++] = index;
+                }
+
+                i += length;
+                if (length == 2)
+                {
+                    boundaries[i - 1] = false;
+                }
+            }
+
+            boundaries[0] = true;
+            for (var index = 1; index < count; index++)
+            {
+                boundaries[starts[index]] = IsBoundary(text, starts, properties[..count], bases, effective[..effectiveCount], index, tailored);
+            }
+        }
+        finally
+        {
+            if (rentedIndexes is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedIndexes);
+            }
+
+            if (rentedProperties is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedProperties);
+            }
+        }
+    }
+
+    // The number of code points of the text: a surrogate pair is one code point
+    private static int CountCodePoints(ReadOnlySpan<char> text)
+    {
+        var first = text.IndexOfAnyInRange((char)0xD800, (char)0xDFFF);
+        if (first < 0)
+            return text.Length;
+
+        var count = first;
+        for (var i = first; i < text.Length; count++)
         {
             GraphemeClusters.ReadCodePoint(text, i, out var length);
             i += length;
         }
 
-        var starts = count <= 256 ? stackalloc int[count] : new int[count];
-        var properties = count <= 256 ? stackalloc byte[count] : new byte[count];
-        var bases = count <= 256 ? stackalloc int[count] : new int[count]; // the index of the effective character of each code point
-        var effective = count <= 256 ? stackalloc int[count] : new int[count]; // the code point of each effective character
-        var effectiveCount = 0;
-        for (int i = 0, index = 0; i < text.Length; index++)
-        {
-            var codePoint = GraphemeClusters.ReadCodePoint(text, i, out var length);
-            starts[index] = i;
-            properties[index] = GetWordBreakProperties(codePoint);
-            var wordBreak = (WordBreak)(properties[index] & 0x1F);
-            if (index > 0 && IsIgnorable(wordBreak) && (WordBreak)(properties[effective[effectiveCount - 1]] & 0x1F) is not (WordBreak.CR or WordBreak.LF or WordBreak.Newline))
-            {
-                bases[index] = effectiveCount - 1;
-            }
-            else
-            {
-                bases[index] = effectiveCount;
-                effective[effectiveCount++] = index;
-            }
-
-            i += length;
-            if (length == 2)
-            {
-                boundaries[i - 1] = false;
-            }
-        }
-
-        boundaries[0] = true;
-        for (var index = 1; index < count; index++)
-        {
-            boundaries[starts[index]] = IsBoundary(text, starts, properties, bases, effective[..effectiveCount], index, tailored);
-        }
+        return count;
     }
 
     /// <summary>
@@ -136,7 +166,27 @@ internal static class WordBoundaries
     }
 
     /// <summary>The packed word break properties of a code point: Word_Break (bits 0-4) and Extended_Pictographic (bit 5).</summary>
-    private static byte GetWordBreakProperties(int codePoint) => (byte)((int)UnicodeProperties.GetWordBreak(codePoint) | (UnicodeEmoji.IsExtendedPictographic(codePoint) ? 0x20 : 0));
+    internal static byte GetWordBreakProperties(int codePoint)
+    {
+        if (codePoint < 0x80)
+            return AsciiWordBreakProperties[codePoint];
+
+        return (byte)((int)UnicodeProperties.GetWordBreak(codePoint) | (UnicodeEmoji.IsExtendedPictographic(codePoint) ? 0x20 : 0));
+    }
+
+    // The word break properties of the ASCII characters (no ASCII character is Extended_Pictographic): CR, LF, Newline (VT, FF),
+    // WSegSpace, Double_Quote, Single_Quote, MidNum (, ;), MidNumLet (.), MidLetter (:), Numeric, ALetter and ExtendNumLet (_)
+    private static ReadOnlySpan<byte> AsciiWordBreakProperties =>
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 17, 17, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        21, 0, 2, 0, 0, 0, 0, 20, 0, 0, 0, 0, 16, 0, 14, 0,
+        18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 15, 16, 0, 0, 0, 0,
+        0, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 0, 0, 0, 0, 6,
+        0, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 0, 0, 0, 0, 0,
+    ];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsIgnorable(WordBreak value) => value is WordBreak.Extend or WordBreak.Format or WordBreak.ZWJ;

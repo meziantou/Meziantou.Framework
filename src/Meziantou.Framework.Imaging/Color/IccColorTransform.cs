@@ -83,7 +83,17 @@ public sealed class IccColorTransform
     public void Convert(ReadOnlySpan<ushort> source, Span<ushort> destination)
     {
         Validate(source, destination);
-        ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_pipeline, source, destination, SourceChannelCount, DestinationChannelCount);
+
+        // Many colors read the first stage from tables, rented for the call from a scope of the default limits
+        var colors = source.Length / SourceChannelCount;
+        if (colors < IccUInt16InputTables.Threshold || !_pipeline.HasInputCurves || _pipeline.IsIdentity)
+        {
+            ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_pipeline, source, destination, SourceChannelCount, DestinationChannelCount);
+            return;
+        }
+
+        using var tables = IccUInt16InputTables.Create(_pipeline, colors, AllocationScope.Create(configuration: null, nameof(IccColorTransform)));
+        ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_pipeline, source, destination, SourceChannelCount, DestinationChannelCount, uint16Tables: tables);
     }
 
     /// <summary>Converts floating-point samples in [0, 1].</summary>

@@ -16,15 +16,28 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// source are clamped to the nearest edge pixel: their normalized weights are added, in increasing <c>i</c>, to the weight
 /// of pixel 0 or <c>n - 1</c>. The window of <c>d</c> is therefore <c>[clamp(lo), clamp(hi)]</c>; windows are
 /// non-decreasing in <c>d</c>, which the streaming vertical pass relies on.</para>
+/// <para>
+/// The weights of the horizontal pass of a resize are padded (<see cref="CreatePadded"/>): every window is widened with zero
+/// weights to the same number of taps (<see cref="PaddedCount"/>), so that the vector loops sum several output pixels with
+/// one loop and no tails. The padding taps come before the window only where the window would otherwise end after
+/// <see cref="Last"/>. A padding tap adds <c>0 x</c> to the sum of the scalar loop: the working samples are finite (they
+/// are computed from 8- or 16-bit samples), so that product is a zero, and a sum started from <c>+0</c> is never <c>-0</c>
+/// (in round-to-nearest, <c>a + b</c> is <c>-0</c> only when both are), so adding a zero, before or after the other taps,
+/// leaves every bit of it unchanged: <c>+0 + -0</c> is <c>+0</c> and <c>s + 0</c> is <c>s</c> for a nonzero <c>s</c>.
+/// </para>
 /// </remarks>
 internal sealed class ResampleWeights : IDisposable
 {
     private readonly PooledBuffer _windows;
     private readonly PooledBuffer _weights;
 
-    private ResampleWeights(int outputLength, PooledBuffer windows, PooledBuffer weights)
+    private ResampleWeights(int outputLength, int first, int last, int paddedCount, int group, PooledBuffer windows, PooledBuffer weights)
     {
         OutputLength = outputLength;
+        First = first;
+        Last = last;
+        PaddedCount = paddedCount;
+        Group = group;
         _windows = windows;
         _weights = weights;
     }
@@ -33,10 +46,28 @@ internal sealed class ResampleWeights : IDisposable
     public int OutputLength { get; }
 
     /// <summary>Gets the first source index used by any output pixel.</summary>
-    public int First => GetStart(0);
+    public int First { get; }
 
     /// <summary>Gets the last source index used by any output pixel.</summary>
-    public int Last => GetStart(OutputLength - 1) + GetCount(OutputLength - 1) - 1;
+    public int Last { get; }
+
+    /// <summary>
+    /// Gets the number of taps of every padded window (<see cref="CreatePadded"/>: a multiple of <see cref="Group"/>, at least
+    /// <see cref="MaxCount"/>), or 0 when the windows are not padded.
+    /// </summary>
+    public int PaddedCount { get; }
+
+    /// <summary>
+    /// Gets the number of output pixels whose padded weights are interleaved: tap <c>k</c> of output pixel <c>d</c> is at
+    /// <c>((d / Group) * PaddedCount + k) * Group + d % Group</c> (1: the padded weights of an output pixel are contiguous).
+    /// </summary>
+    public int Group { get; }
+
+    /// <summary>
+    /// Gets the number of source indexes that the padded windows read from <see cref="First"/>: <c>Last - First + 1</c>, or
+    /// <see cref="PaddedCount"/> when that is larger.
+    /// </summary>
+    public int PaddedSourceLength => Math.Max(Last - First + 1, PaddedCount);
 
     /// <summary>Gets the largest window.</summary>
     public int MaxCount { get; private set; }
@@ -51,20 +82,36 @@ internal sealed class ResampleWeights : IDisposable
 
     /// <summary>Computes the weights of an axis.</summary>
     /// <exception cref="ImageResourceLimitException">The tables exceed the allocation limit; nothing stays charged.</exception>
-    public static ResampleWeights Create(AllocationScope scope, ResampleAxis axis, ResamplingFilter filter)
+    public static ResampleWeights Create(AllocationScope scope, ResampleAxis axis, ResamplingFilter filter) => Create(scope, axis, filter, group: 0);
+
+    /// <summary>
+    /// Computes the weights of an axis, every window padded with zero weights to <see cref="PaddedCount"/> taps and the weights
+    /// of <paramref name="group"/> consecutive output pixels interleaved (see <see cref="Group"/>).
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The tables exceed the allocation limit; nothing stays charged.</exception>
+    public static ResampleWeights CreatePadded(AllocationScope scope, ResampleAxis axis, ResamplingFilter filter, int group)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(group);
+        return Create(scope, axis, filter, group);
+    }
+
+    // Group 0: every window has its own length
+    private static ResampleWeights Create(AllocationScope scope, ResampleAxis axis, ResamplingFilter filter, int group)
     {
         var outputLength = axis.OutputLength;
         var sourceLength = axis.SourceLength;
         var scale = axis.FilterScale;
         var support = ResamplingKernels.GetRadius(filter) * scale;
 
-        // First pass: the windows (start, count, offset of the weights) and the total number of weights
+        // First pass: the windows (start, count, then the offset of the weights, or the start of the padded window) and the
+        // total number of weights
         var windows = Rent<int>(scope, 3L * outputLength);
         PooledBuffer? weightBuffer = null;
         try
         {
             var table = unsafe(MemoryMarshal.Cast<byte, int>(windows.Span));
             long total = 0;
+            var maxCount = 0;
             for (var d = 0; d < outputLength; d++)
             {
                 var (lo, hi) = GetContributors(axis.GetCenter(d), support);
@@ -74,12 +121,32 @@ internal sealed class ResampleWeights : IDisposable
                 table[(3 * d) + 1] = count;
                 table[(3 * d) + 2] = (int)total;
                 total += count;
+                maxCount = Math.Max(maxCount, count);
                 if (total > CheckedSizes.MaxBufferLength / sizeof(double))
                     throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, scope.Limit, total * sizeof(double));
             }
 
+            var first = table[0];
+            var last = table[3 * (outputLength - 1)] + table[(3 * (outputLength - 1)) + 1] - 1;
+            var paddedCount = 0;
+            if (group is not 0)
+            {
+                // A padded window starts with its window, or earlier when it would otherwise end after the last source index
+                // (but never before the first one): the padded windows contain their windows and stay within
+                // [first, first + PaddedSourceLength - 1]
+                paddedCount = (maxCount + group - 1) / group * group;
+                total = ((long)outputLength + group - 1) / group * group * paddedCount;
+                if (total > CheckedSizes.MaxBufferLength / sizeof(double))
+                    throw new ImageResourceLimitException(ImageResourceLimitKind.LiveAllocationBytes, scope.Limit, total * sizeof(double));
+
+                for (var d = 0; d < outputLength; d++)
+                {
+                    table[(3 * d) + 2] = Math.Max(first, Math.Min(table[3 * d], last + 1 - paddedCount));
+                }
+            }
+
             weightBuffer = Rent<double>(scope, total);
-            var result = new ResampleWeights(outputLength, windows, weightBuffer);
+            var result = new ResampleWeights(outputLength, first, last, paddedCount, Math.Max(group, 1), windows, weightBuffer);
             result.Fill(axis, filter, scale, support);
             return result;
         }
@@ -98,14 +165,23 @@ internal sealed class ResampleWeights : IDisposable
     public int GetCount(int index) => Windows[(3 * index) + 1];
 
     /// <summary>Gets the weights of the window of output pixel <paramref name="index"/>, in increasing source index.</summary>
+    /// <exception cref="InvalidOperationException">The padded weights of several output pixels are interleaved.</exception>
     public ReadOnlySpan<double> GetWeights(int index)
     {
+        if (Group is not 1)
+            throw new InvalidOperationException("The weights of an output pixel are interleaved with those of other output pixels.");
+
         var windows = Windows;
-        return unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)).Slice(windows[(3 * index) + 2], windows[(3 * index) + 1]);
+        var offset = PaddedCount is 0 ? windows[(3 * index) + 2] : (index * PaddedCount) + windows[3 * index] - windows[(3 * index) + 2];
+        return unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)).Slice(offset, windows[(3 * index) + 1]);
     }
 
-    /// <summary>Gets the windows and weights as spans, for loops that read the window of every output pixel.</summary>
-    public WindowTable GetWindowTable() => new(Windows, unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)));
+    /// <summary>Gets the padded windows and weights as spans, for the loops that read the window of every output pixel.</summary>
+    public WindowTable GetWindowTable()
+    {
+        Debug.Assert(PaddedCount is not 0);
+        return new(Windows, unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)));
+    }
 
     public void Dispose()
     {
@@ -151,10 +227,24 @@ internal sealed class ResampleWeights : IDisposable
             Debug.Assert(sum > 0);
             var start = windows[3 * d];
             var count = windows[(3 * d) + 1];
-            var weights = all.Slice(windows[(3 * d) + 2], count);
-            for (var i = lo; i <= hi; i++)
+            if (PaddedCount is 0)
             {
-                weights[Clamp(i, sourceLength) - start] += Evaluate(filter, i, center, scale) / sum;
+                var weights = all.Slice(windows[(3 * d) + 2], count);
+                for (var i = lo; i <= hi; i++)
+                {
+                    weights[Clamp(i, sourceLength) - start] += Evaluate(filter, i, center, scale) / sum;
+                }
+            }
+            else
+            {
+                // The same weights at their taps of the padded window (see Group)
+                var paddedStart = windows[(3 * d) + 2];
+                var weights = all.Slice(d / Group * PaddedCount * Group, PaddedCount * Group);
+                var lane = d % Group;
+                for (var i = lo; i <= hi; i++)
+                {
+                    weights[((Clamp(i, sourceLength) - paddedStart) * Group) + lane] += Evaluate(filter, i, center, scale) / sum;
+                }
             }
 
             maxCount = Math.Max(maxCount, count);
@@ -178,22 +268,21 @@ internal sealed class ResampleWeights : IDisposable
         return ResamplingKernels.Evaluate(filter, scale == 1 ? distance : distance / scale);
     }
 
-    /// <summary>The windows and weights of an axis as spans (<see cref="GetStart"/> and <see cref="GetWeights"/> without the per-call casts).</summary>
+    /// <summary>The padded windows and weights of an axis as spans, without the per-call casts.</summary>
     internal readonly ref struct WindowTable
     {
         private readonly ReadOnlySpan<int> _windows;
-        private readonly ReadOnlySpan<double> _weights;
 
         public WindowTable(ReadOnlySpan<int> windows, ReadOnlySpan<double> weights)
         {
             _windows = windows;
-            _weights = weights;
+            Weights = weights;
         }
 
-        /// <summary>Gets the first source index of the window of output pixel <paramref name="index"/>.</summary>
-        public int GetStart(int index) => _windows[3 * index];
+        /// <summary>Gets the padded weights (see <see cref="Group"/>).</summary>
+        public ReadOnlySpan<double> Weights { get; }
 
-        /// <summary>Gets the weights of the window of output pixel <paramref name="index"/>, in increasing source index.</summary>
-        public ReadOnlySpan<double> GetWeights(int index) => _weights.Slice(_windows[(3 * index) + 2], _windows[(3 * index) + 1]);
+        /// <summary>Gets the first source index of the padded window of output pixel <paramref name="index"/>.</summary>
+        public int GetPaddedStart(int index) => _windows[(3 * index) + 2];
     }
 }

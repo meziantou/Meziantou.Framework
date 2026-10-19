@@ -464,7 +464,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
-  proven so in `VectorizedKernelTests`.
+  proven so in `VectorizedKernelTests`. `ColorConversionKernels.Convert` converts 64 colors at a time stored by
+  component (`IccStage.ApplyBatch`): the stages of matrix-based conversions loop over the colors (the matrix in vectors,
+  each lane with the products and sums of the scalar stage, in the same order, without fused multiply-add), the others
+  apply their scalar stage to each color.
 - The source of `ConvertColorProfile` may be the CICP color description of an image without profile, or the `cicp`
   tag of an ICC profile of PQ or HLG samples (`IccProfile.Cicp`, whose curves only approximate the functions)
   (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
@@ -860,6 +863,9 @@ thin public types over its `FontFace`.
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
   x64 (the Windows and Linux CI legs, or an x64 machine). The inverse transform kernels are written once over
   `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
+- `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
+  default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
+  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC
@@ -867,8 +873,13 @@ thin public types over its `FontFace`.
   (`IccPipeline.GetByteOutputTables`, one table per channel and per pipeline, built once the pipeline has converted
   `ByteOutputTablesThreshold` colors so that small images never pay for them; identity curves are cheaper than a table
   and are evaluated). A function that is not monotone at the scale of the last bits of its input (PQ, a decreasing tone
-  curve) gets no table and keeps the scalar path. 16-bit samples are not covered: 65,535 thresholds cost more
-  evaluations than most images.
+  curve) gets no table and keeps the scalar path. 16-bit samples get no thresholds: 65,535 of them cost far more
+  evaluations than the 256 of 8 bits (a bisection and a check around each one), more than most images. Their inputs
+  are covered instead: a 16-bit conversion of at least `IccUInt16InputTables.Threshold` colors (`ConvertColorProfile`
+  counts every frame, `IccColorTransform` a call) reads its first stage (one curve per source channel) from a
+  65,536-entry table per distinct curve, built with the same evaluation of every sample value, so it is exact, and
+  rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
+  16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
   parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).

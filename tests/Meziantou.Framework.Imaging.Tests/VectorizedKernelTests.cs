@@ -1504,27 +1504,124 @@ public sealed class VectorizedKernelTests
     public void ResampleHorizontalMatchesTheScalarLoopBitForBit(int channels)
     {
         // Doubles, not rounded samples: the interleaved loops must keep the exact summation order of every output sample.
-        // Odd output lengths leave a single last pixel; downscales give windows of different lengths in one pair.
+        // Output lengths that are not multiples of the pixels of an iteration leave tails; downscales give windows of
+        // different lengths, padded with zero weights after them, or before them at the right edge; small sources give
+        // padded windows longer than the source (whose samples after the last used column are read, and must be finite).
         var random = new Random(channels);
-        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129)];
+        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (9, 17), (50, 19), (1000, 9), (5, 23), (20, 15)];
+        var group = Resampler.GetHorizontalWeightsGroup(channels);
         foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
         {
             foreach (var (sourceLength, outputLength) in sizes)
             {
-                using var weights = ResampleWeights.Create(AllocationScope.Create(configuration: null), ResampleAxis.FullExtent(sourceLength, outputLength), filter);
-                var working = new double[(((weights.Last - weights.First) + 1) * channels) + 1];
+                var axis = ResampleAxis.FullExtent(sourceLength, outputLength);
+                using var weights = ResampleWeights.Create(AllocationScope.Create(configuration: null), axis, filter);
+                using var padded = group is 0 ? ResampleWeights.Create(AllocationScope.Create(configuration: null), axis, filter) : ResampleWeights.CreatePadded(AllocationScope.Create(configuration: null), axis, filter, group);
+                Assert.Equal(weights.First, padded.First);
+                Assert.Equal(weights.Last, padded.Last);
+                var working = new double[(Math.Max(padded.PaddedSourceLength, weights.Last - weights.First + 1) * channels) + 1];
                 for (var i = 0; i < working.Length; i++)
                 {
                     working[i] = (random.NextDouble() * 70000) - 3000;
                 }
 
+                // The output is followed by values that the loops must not overwrite
                 var expected = new double[outputLength * channels];
-                var actual = new double[outputLength * channels];
+                var actual = new double[(outputLength * channels) + 8];
+                actual.AsSpan(expected.Length).Fill(-1);
                 Resampler.ResampleHorizontalScalar(working, expected, weights, channels);
-                Resampler.ResampleHorizontal(working, actual, weights, channels);
+                Resampler.ResampleHorizontal(working, actual.AsSpan(0, expected.Length), padded, channels);
                 for (var i = 0; i < expected.Length; i++)
                 {
                     Assert.Equal(BitConverter.DoubleToInt64Bits(expected[i]), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+
+                Assert.All(actual[expected.Length..], value => Assert.Equal(-1, value));
+                if (padded.Group == 1)
+                {
+                    // The scalar loop reads the weights of the windows from the padded table too
+                    Resampler.ResampleHorizontalScalar(working, actual, padded, channels);
+                    for (var i = 0; i < expected.Length; i++)
+                    {
+                        Assert.Equal(BitConverter.DoubleToInt64Bits(expected[i]), BitConverter.DoubleToInt64Bits(actual[i]));
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ResamplerRowAdditionsMatchTheScalarLoopsBitForBit()
+    {
+        // Lengths that cover the 512-, 256- and 128-bit loops and every tail; samples of both signs, zeros of both signs (the
+        // first term 0 + w x turns -0 into +0), and weights that are zero or negative
+        var random = new Random(512);
+        for (var length = 0; length <= 100; length++)
+        {
+            for (var rows = 1; rows <= 4; rows++)
+            {
+                var buffer = new double[(rows + 1) * length];
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = random.Next(6) switch
+                    {
+                        0 => 0d,
+                        1 => -0d,
+                        2 => random.Next(65536) * (double)random.Next(65536),
+                        _ => (random.NextDouble() - 0.3) * 1e5,
+                    };
+                }
+
+                var weights = new double[rows];
+                var offsets = new int[rows];
+                for (var t = 0; t < rows; t++)
+                {
+                    weights[t] = random.Next(5) == 0 ? 0 : random.NextDouble() - 0.25;
+                    offsets[t] = (t + 1) * length;
+                }
+
+                foreach (var accumulate in new[] { false, true })
+                {
+                    var expected = new double[length];
+                    for (var i = 0; i < length; i++)
+                    {
+                        var sum = (accumulate ? buffer[i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
+                        for (var t = 1; t < rows; t++)
+                        {
+                            sum += weights[t] * buffer[offsets[t] + i];
+                        }
+
+                        expected[i] = sum;
+                    }
+
+                    var actual = buffer.ToArray();
+                    Resampler.SetWeightedSum(actual, 0, length, offsets, weights, accumulate);
+                    Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Take(length).Select(BitConverter.DoubleToInt64Bits));
+                    Assert.Equal(buffer.Skip(length), actual.Skip(length));
+                }
+
+                // One row at a time: 0 + w0 x0 + w1 x1 + ...
+                var accumulator = new double[length];
+                var reference = new double[length];
+                for (var t = 0; t < rows; t++)
+                {
+                    var row = buffer.AsSpan(offsets[t], length);
+                    if (t == 0)
+                    {
+                        Resampler.SetScaled(accumulator, row, weights[t]);
+                    }
+                    else
+                    {
+                        Resampler.AddScaled(accumulator, row, weights[t]);
+                    }
+
+                    for (var i = 0; i < length; i++)
+                    {
+                        reference[i] = (t == 0 ? 0d : reference[i]) + (weights[t] * row[i]);
+                    }
+
+                    Assert.Equal(reference.Select(BitConverter.DoubleToInt64Bits), accumulator.Select(BitConverter.DoubleToInt64Bits));
                 }
             }
         }
@@ -4856,6 +4953,259 @@ public sealed class VectorizedKernelTests
                 {
                     ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, samples, stride, stride, reverse);
                     Assert.Equal(expected, samples);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<IccPipeline> GetBatchTestPipelines()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination)[] pairs =
+        [
+            (Metadata.IccProfile.Srgb, displayP3),
+            (displayP3, Metadata.IccProfile.Srgb),
+            (BuiltInIccProfiles.LinearSrgb, Metadata.IccProfile.Srgb),
+            (Metadata.IccProfile.Srgb, BuiltInIccProfiles.LinearSrgb),
+            (IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(0, 4096, 16384, 36864, 65535)), Metadata.IccProfile.Srgb),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Parametric(4, 2.4, 1 / 1.055, 0.055 / 1.055, 1 / 12.92, 0.04045, 0.005, 0.005), IccTestProfiles.Parametric(1, 1.8, 1.1, -0.1), IccTestProfiles.Parametric(2, 2.2, 0.9, 0.1, 0.05))),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(65535, 30000, 0))),
+            (Metadata.IccProfile.Srgb, Metadata.IccProfile.SrgbGray),
+            (IccTestProfiles.Gray(IccTestProfiles.Gamma(563)), Metadata.IccProfile.SrgbGray),
+            (IccTestProfiles.GrayPaper(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.RgbLabLutAToB(), IccTestProfiles.RgbXyzLut16()),
+            (IccTestProfiles.CmykLabLut16(), displayP3),
+            (Metadata.IccProfile.Srgb, IccTestProfiles.CmykLabLut16()),
+        ];
+
+        foreach (var (source, destination) in pairs)
+        {
+            yield return IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+            yield return IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.Perceptual, blackPointCompensation: true);
+            yield return IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.AbsoluteColorimetric, blackPointCompensation: false);
+        }
+
+        // CICP sources (a decoding stage first, tone mapping) and destinations (an encoding stage last)
+        yield return IccPipeline.Create(new CicpColorSpace(9, CicpTransfer.Srgb, IsGray: false), Metadata.IccProfile.Srgb, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+        yield return IccPipeline.Create(new CicpColorSpace(1, CicpTransfer.Linear, IsGray: true), Metadata.IccProfile.SrgbGray, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: true);
+        var pq = new CicpColorSpace(9, CicpTransfer.Pq, IsGray: false);
+        yield return IccPipeline.Create(pq, displayP3, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false, new HdrToneMapStage(pq, HdrToneMappingOperator.Bt2390, 1000, 203));
+        yield return IccPipeline.Create(displayP3, new CicpColorSpace(9, CicpTransfer.Srgb, IsGray: false), Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorConversionBatchesMatchTheScalarReference()
+    {
+        // Colors are converted 64 at a time stored by component: 8-bit, 16-bit (with and without the input tables) and
+        // floating-point samples, for whole batches and partial ones, with copied samples, in both channel orders and in
+        // place, give the samples of the stage-by-stage reference
+        var random = new Random(2718);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        foreach (var pipeline in GetBatchTestPipelines())
+        {
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            using var tables = IccUInt16InputTables.Create(pipeline, IccUInt16InputTables.Threshold, scope);
+            Assert.Equal(pipeline.HasInputCurves, tables is not null);
+            foreach (var colors in new[] { 1, 63, 64, 65, 200 })
+            {
+                foreach (var (extra, reverse) in new[] { (0, false), (1, false), (1, true) })
+                {
+                    if (reverse && (sourceChannels != 3 || destinationChannels != 3))
+                        continue;
+
+                    var sourceStride = sourceChannels + extra;
+                    var destinationStride = destinationChannels + extra;
+                    var bytes = new byte[colors * sourceStride];
+                    random.NextBytes(bytes);
+                    var words = new ushort[bytes.Length];
+                    var floats = new float[bytes.Length];
+                    for (var i = 0; i < words.Length; i++)
+                    {
+                        words[i] = (ushort)random.Next(65536);
+                        floats[i] = (i % 7) switch
+                        {
+                            0 => float.NaN,
+                            1 => -0.25f,
+                            2 => 1.5f,
+                            _ => random.NextSingle(),
+                        };
+                    }
+
+                    // Edge samples
+                    bytes[0] = 0;
+                    bytes[^1] = byte.MaxValue;
+                    words[0] = 0;
+                    words[^1] = ushort.MaxValue;
+
+                    AssertBatches<byte, IccByteSample>(pipeline, bytes, sourceStride, destinationStride, reverse, uint16Tables: null);
+                    AssertBatches<ushort, IccUInt16Sample>(pipeline, words, sourceStride, destinationStride, reverse, uint16Tables: null);
+                    AssertBatches<ushort, IccUInt16Sample>(pipeline, words, sourceStride, destinationStride, reverse, tables);
+                    AssertBatches<float, IccSingleSample>(pipeline, floats, sourceStride, destinationStride, reverse, uint16Tables: null);
+                }
+            }
+        }
+
+        Assert.Equal(0, scope.LiveBytes);
+
+        static void AssertBatches<T, TSample>(IccPipeline pipeline, T[] samples, int sourceStride, int destinationStride, bool reverse, IccUInt16InputTables? uint16Tables)
+            where T : unmanaged
+            where TSample : struct, IIccSample<T>
+        {
+            var colors = samples.Length / sourceStride;
+            var expected = new T[colors * destinationStride];
+            var actual = new T[expected.Length];
+            ColorConversionKernels.ConvertScalar<T, TSample>(pipeline, samples, expected, sourceStride, destinationStride, reverse);
+            ColorConversionKernels.Convert<T, TSample>(pipeline, samples, actual, sourceStride, destinationStride, reverse, uint16Tables);
+            Assert.Equal(expected, actual);
+
+            // In place: with equal strides, and with a destination stride smaller than the source one (the decoders that
+            // drop the black channel of CMYK samples convert in place)
+            if (sourceStride >= destinationStride)
+            {
+                var copy = (T[])samples.Clone();
+                ColorConversionKernels.Convert<T, TSample>(pipeline, copy, copy.AsSpan(0, expected.Length), sourceStride, destinationStride, reverse, uint16Tables);
+                Assert.Equal(expected, copy.AsSpan(0, expected.Length).ToArray());
+            }
+        }
+    }
+
+    [Fact]
+    public void ColorConversionUInt16InputTablesMatchTheScalarReferenceExhaustively()
+    {
+        // The first stage of a 16-bit conversion is read from 65,536-entry tables: every sample value of every channel gives
+        // exactly the samples of the stage-by-stage reference; channels of the same curve share their table
+        var scope = new AllocationScope(new ImageResourceLimits());
+        foreach (var pipeline in GetBatchTestPipelines())
+        {
+            using (var small = IccUInt16InputTables.Create(pipeline, IccUInt16InputTables.Threshold - 1, scope))
+            {
+                Assert.Null(small);
+            }
+
+            using var tables = IccUInt16InputTables.Create(pipeline, IccUInt16InputTables.Threshold, scope);
+            if (tables is null)
+                continue;
+
+            var sourceChannels = pipeline.SourceChannelCount;
+            var destinationChannels = pipeline.DestinationChannelCount;
+            for (var channel = 0; channel < sourceChannels; channel++)
+            {
+                var table = tables.GetTable(channel);
+                for (var sample = 0; sample <= ushort.MaxValue; sample++)
+                {
+                    Assert.Equal(pipeline.EvaluateInputCurve(channel, IccUInt16Sample.Load((ushort)sample)), table[sample]);
+                }
+            }
+
+            // Each channel takes every value while the others follow a different sequence
+            var samples = new ushort[65536 * sourceChannels * sourceChannels];
+            var position = 0;
+            for (var channel = 0; channel < sourceChannels; channel++)
+            {
+                for (var value = 0; value < 65536; value++)
+                {
+                    for (var other = 0; other < sourceChannels; other++)
+                    {
+                        samples[position++] = other == channel ? (ushort)value : (ushort)((value * (37 + (60 * other))) + (91 * channel));
+                    }
+                }
+            }
+
+            var expected = new ushort[(samples.Length / sourceChannels) * destinationChannels];
+            var actual = new ushort[expected.Length];
+            ColorConversionKernels.ConvertScalar<ushort, IccUInt16Sample>(pipeline, samples, expected, sourceChannels, destinationChannels);
+            ColorConversionKernels.Convert<ushort, IccUInt16Sample>(pipeline, samples, actual, sourceChannels, destinationChannels, uint16Tables: tables);
+            Assert.Equal(expected, actual);
+        }
+
+        Assert.Equal(0, scope.LiveBytes);
+
+        // sRGB has one curve for its three channels: one table
+        var srgb = IccPipeline.Create(Metadata.IccProfile.Srgb, BuiltInIccProfiles.LinearSrgb, Metadata.IccRenderingIntent.RelativeColorimetric, blackPointCompensation: false);
+        Assert.True(srgb.HaveSameInputCurve(0, 2));
+        using (IccUInt16InputTables.Create(srgb, IccUInt16InputTables.Threshold, scope))
+        {
+            Assert.Equal(scope.GetChargedSize(65536 * sizeof(double)), scope.LiveBytes);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorProfileConversionOfLargeUInt16ImagesMatchesTheScalarReference()
+    {
+        // From IccUInt16InputTables.Threshold colors, ConvertColorProfile reads the first stage of 16-bit pixels from tables
+        // rented for the conversion: the pixels are those of the stage-by-stage reference, alpha included
+        const int Width = 400;
+        const int Height = 400;
+        var bytes = new byte[Width * Height * 8];
+        new Random(5772).NextBytes(bytes);
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var pipeline = IccColorTransform.Create(Metadata.IccProfile.Srgb, displayP3).Pipeline;
+        var expected = new ushort[bytes.Length / 2];
+        ColorConversionKernels.ConvertScalar<ushort, IccUInt16Sample>(pipeline, unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ushort>(bytes.AsSpan())), expected, 4, 4);
+
+        using var image = Image.ImportPixelBytes<Rgba64>(bytes, Width, Height);
+        image.Metadata.IccProfile = Metadata.IccProfile.Srgb;
+        image.ConvertColorProfile(displayP3);
+        var actual = new byte[bytes.Length];
+        image.Frames[0].CopyPixelBytesTo(actual);
+        Assert.Equal(unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan())).ToArray(), actual);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ColorStageBatchesMatchTheStagesColorByColor()
+    {
+        // Every stage applied to colors stored by component gives what it gives to each color, including values outside
+        // [0, 1], infinities and values that are not a number, for whole and partial vectors
+        Span<double> special = [double.NaN, double.PositiveInfinity, double.NegativeInfinity, -0.0, 0, 1, -1e-300, 1e300, double.Epsilon, 0.5];
+        var random = new Random(1618);
+        IccStage[] stages =
+        [
+            new IccMatrixStage([0.4124, 0.3576, 0.1805, 0.2126, 0.7152, 0.0722, 0.0193, 0.1192, 0.9505], [0.01, -0.02, 0.03]),
+            IccMatrixStage.CreateScale(1.5, 0.25, -2),
+            new IccCurvesStage([IccCurve.FromGamma(2.2), IccCurve.FromTable([0, 0.2, 1]), IccCurve.Identity, IccCurve.FromGamma(0.5)]),
+            new IccClipStage(3),
+            new IccGrayExpandStage(0.9642, 1, 0.8249),
+            new IccGrayReduceStage(1, 0.01),
+            new CicpDecodeStage(CicpTransfer.Srgb, 3),
+            new CicpEncodeStage(CicpTransfer.Pq, 3),
+            IccLabToXyzStage.Instance,
+        ];
+
+        Span<double> components = stackalloc double[IccPipeline.MaxChannels * IccPipeline.BatchSize];
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        foreach (var stage in stages)
+        {
+            foreach (var count in new[] { 1, 3, 4, 5, 63, 64 })
+            {
+                for (var i = 0; i < components.Length; i++)
+                {
+                    components[i] = random.Next(4) == 0 ? special[random.Next(special.Length)] : (random.NextDouble() * 3) - 1;
+                }
+
+                var original = components.ToArray();
+                stage.ApplyBatch(components, count);
+                for (var i = 0; i < IccPipeline.BatchSize; i++)
+                {
+                    for (var channel = 0; channel < IccPipeline.MaxChannels; channel++)
+                    {
+                        values[channel] = original[(channel * IccPipeline.BatchSize) + i];
+                    }
+
+                    // Colors past the count are left unchanged
+                    if (i < count)
+                    {
+                        stage.Apply(values);
+                    }
+
+                    for (var channel = 0; channel < IccPipeline.MaxChannels; channel++)
+                    {
+                        Assert.Equal(BitConverter.DoubleToInt64Bits(values[channel]), BitConverter.DoubleToInt64Bits(components[(channel * IccPipeline.BatchSize) + i]));
+                    }
                 }
             }
         }

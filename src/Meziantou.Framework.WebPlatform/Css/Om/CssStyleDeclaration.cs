@@ -12,7 +12,21 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// <summary>A CSS declaration (https://drafts.csswg.org/cssom/#css-declaration).</summary>
 internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important)
 {
-    public CssLonghandValue Value { get; set; } = value;
+    private CssLonghandValue _value = value;
+    private CssLonghandSnapshot? _snapshot;
+
+    public CssLonghandValue Value
+    {
+        get => _value;
+        set
+        {
+            _value = value;
+            _snapshot = null;
+        }
+    }
+
+    /// <summary>An immutable copy of the value, shared by the cascaded values of the elements the declaration applies to (a new one is created when the value changes).</summary>
+    public CssLonghandSnapshot Snapshot => _snapshot ??= new CssLonghandSnapshot(_value);
 
     public string Name => Value.Name;
 

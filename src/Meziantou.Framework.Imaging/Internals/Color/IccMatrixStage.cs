@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>Applies a 3x3 matrix (row-major) followed by an offset to the first three components.</summary>
@@ -59,6 +63,64 @@ internal sealed class IccMatrixStage : IccStage
         values[1] = (_m10 * x) + (_m11 * y) + (_m12 * z) + _o1;
         values[2] = (_m20 * x) + (_m21 * y) + (_m22 * z) + _o2;
     }
+
+    /// <summary>
+    /// Applies the matrix to colors stored by component, several colors per vector: every lane computes the products and
+    /// sums of <see cref="Apply"/> in the same order, without fused multiply-add, so the results are bit-identical.
+    /// </summary>
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        var first = GetComponent(components, 0, count);
+        var second = GetComponent(components, 1, count);
+        var third = GetComponent(components, 2, count);
+        var i = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            ref var x = ref unsafe(MemoryMarshal.GetReference(first));
+            ref var y = ref unsafe(MemoryMarshal.GetReference(second));
+            ref var z = ref unsafe(MemoryMarshal.GetReference(third));
+            for (; i + Vector256<double>.Count <= count; i += Vector256<double>.Count)
+            {
+                var (r0, r1, r2) = ApplyVector(unsafe(Vector256.LoadUnsafe(ref x, (nuint)i)), unsafe(Vector256.LoadUnsafe(ref y, (nuint)i)), unsafe(Vector256.LoadUnsafe(ref z, (nuint)i)));
+                unsafe { r0.StoreUnsafe(ref x, (nuint)i); }
+                unsafe { r1.StoreUnsafe(ref y, (nuint)i); }
+                unsafe { r2.StoreUnsafe(ref z, (nuint)i); }
+            }
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            ref var x = ref unsafe(MemoryMarshal.GetReference(first));
+            ref var y = ref unsafe(MemoryMarshal.GetReference(second));
+            ref var z = ref unsafe(MemoryMarshal.GetReference(third));
+            for (; i + Vector128<double>.Count <= count; i += Vector128<double>.Count)
+            {
+                var (r0, r1, r2) = ApplyVector(unsafe(Vector128.LoadUnsafe(ref x, (nuint)i)), unsafe(Vector128.LoadUnsafe(ref y, (nuint)i)), unsafe(Vector128.LoadUnsafe(ref z, (nuint)i)));
+                unsafe { r0.StoreUnsafe(ref x, (nuint)i); }
+                unsafe { r1.StoreUnsafe(ref y, (nuint)i); }
+                unsafe { r2.StoreUnsafe(ref z, (nuint)i); }
+            }
+        }
+
+        for (; i < first.Length; i++)
+        {
+            var (x, y, z) = (first[i], second[i], third[i]);
+            first[i] = (_m00 * x) + (_m01 * y) + (_m02 * z) + _o0;
+            second[i] = (_m10 * x) + (_m11 * y) + (_m12 * z) + _o1;
+            third[i] = (_m20 * x) + (_m21 * y) + (_m22 * z) + _o2;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private (Vector128<double> First, Vector128<double> Second, Vector128<double> Third) ApplyVector(Vector128<double> x, Vector128<double> y, Vector128<double> z)
+        => ((Vector128.Create(_m00) * x) + (Vector128.Create(_m01) * y) + (Vector128.Create(_m02) * z) + Vector128.Create(_o0),
+            (Vector128.Create(_m10) * x) + (Vector128.Create(_m11) * y) + (Vector128.Create(_m12) * z) + Vector128.Create(_o1),
+            (Vector128.Create(_m20) * x) + (Vector128.Create(_m21) * y) + (Vector128.Create(_m22) * z) + Vector128.Create(_o2));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private (Vector256<double> First, Vector256<double> Second, Vector256<double> Third) ApplyVector(Vector256<double> x, Vector256<double> y, Vector256<double> z)
+        => ((Vector256.Create(_m00) * x) + (Vector256.Create(_m01) * y) + (Vector256.Create(_m02) * z) + Vector256.Create(_o0),
+            (Vector256.Create(_m10) * x) + (Vector256.Create(_m11) * y) + (Vector256.Create(_m12) * z) + Vector256.Create(_o1),
+            (Vector256.Create(_m20) * x) + (Vector256.Create(_m21) * y) + (Vector256.Create(_m22) * z) + Vector256.Create(_o2));
 
     /// <summary>Inverts a 3x3 matrix.</summary>
     /// <returns><see langword="false"/> if the matrix is singular or not finite.</returns>

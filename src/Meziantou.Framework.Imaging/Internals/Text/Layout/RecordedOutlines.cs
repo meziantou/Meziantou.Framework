@@ -37,6 +37,12 @@ internal sealed class RecordedOutlines
     {
         var commands = _commands.AsSpan(_commandStarts[outline], _commandStarts[outline + 1] - _commandStarts[outline]);
         var coordinates = _coordinates.AsSpan(_coordinateStarts[outline], _coordinateStarts[outline + 1] - _coordinateStarts[outline]);
+        Replay(commands, coordinates, sink);
+    }
+
+    /// <summary>Sends the calls of an outline recorded as commands and their coordinates to a sink.</summary>
+    internal static void Replay(ReadOnlySpan<byte> commands, ReadOnlySpan<double> coordinates, OutlineSink sink)
+    {
         var index = 0;
         foreach (var command in commands)
         {
@@ -66,6 +72,118 @@ internal sealed class RecordedOutlines
                     sink.Close();
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// Records one outline at a time and measures it with a <see cref="GlyphBoundsSink"/>: the storage is kept from an
+    /// outline to the next one. An outline with more than <see cref="MaxCoordinates"/> coordinates is measured but not
+    /// recorded (<see cref="IsRecorded"/>).
+    /// </summary>
+    internal sealed class SingleRecorder : OutlineSink
+    {
+        /// <summary>The largest number of coordinates of a recorded outline: about the outlines of a few thousand points.</summary>
+        public const int MaxCoordinates = 1 << 16;
+
+        private readonly List<byte> _commands = [];
+        private readonly List<double> _coordinates = [];
+
+        /// <summary>Gets the bounds of the outline.</summary>
+        public GlyphBoundsSink Bounds { get; } = new();
+
+        /// <summary>Gets a value indicating whether the outline is recorded: not when it is too large.</summary>
+        public bool IsRecorded { get; private set; }
+
+        /// <summary>Starts an outline, which replaces the one recorded before.</summary>
+        public void Begin()
+        {
+            Bounds.Reset();
+            _commands.Clear();
+            _coordinates.Clear();
+            IsRecorded = true;
+        }
+
+        /// <summary>Sends the recorded outline to a sink, which receives the calls the font made.</summary>
+        public void Replay(OutlineSink sink) => RecordedOutlines.Replay(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_commands), System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_coordinates), sink);
+
+        public override void MoveTo(double x, double y)
+        {
+            if (Reserve(2))
+            {
+                _commands.Add(MoveToCommand);
+                _coordinates.Add(x);
+                _coordinates.Add(y);
+            }
+
+            Bounds.MoveTo(x, y);
+        }
+
+        public override void LineTo(double x, double y)
+        {
+            if (Reserve(2))
+            {
+                _commands.Add(LineToCommand);
+                _coordinates.Add(x);
+                _coordinates.Add(y);
+            }
+
+            Bounds.LineTo(x, y);
+        }
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y)
+        {
+            if (Reserve(4))
+            {
+                _commands.Add(QuadraticToCommand);
+                _coordinates.Add(controlX);
+                _coordinates.Add(controlY);
+                _coordinates.Add(x);
+                _coordinates.Add(y);
+            }
+
+            Bounds.QuadraticTo(controlX, controlY, x, y);
+        }
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y)
+        {
+            if (Reserve(6))
+            {
+                _commands.Add(CubicToCommand);
+                _coordinates.Add(control1X);
+                _coordinates.Add(control1Y);
+                _coordinates.Add(control2X);
+                _coordinates.Add(control2Y);
+                _coordinates.Add(x);
+                _coordinates.Add(y);
+            }
+
+            Bounds.CubicTo(control1X, control1Y, control2X, control2Y, x, y);
+        }
+
+        public override void Close()
+        {
+            if (Reserve(0))
+            {
+                _commands.Add(CloseCommand);
+            }
+
+            Bounds.Close();
+        }
+
+        // Whether a command with a number of coordinates is recorded: once the outline is too large, it is not, and the
+        // storage is given back.
+        private bool Reserve(int coordinates)
+        {
+            if (!IsRecorded)
+                return false;
+
+            if (_coordinates.Count + coordinates <= MaxCoordinates && _commands.Count < MaxCoordinates)
+                return true;
+
+            IsRecorded = false;
+            _commands.Clear();
+            _coordinates.Clear();
+            return false;
         }
     }
 

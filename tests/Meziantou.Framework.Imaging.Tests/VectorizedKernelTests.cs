@@ -1550,6 +1550,83 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ResamplerRowAdditionsMatchTheScalarLoopsBitForBit()
+    {
+        // Lengths that cover the 512-, 256- and 128-bit loops and every tail; samples of both signs, zeros of both signs (the
+        // first term 0 + w x turns -0 into +0), and weights that are zero or negative
+        var random = new Random(512);
+        for (var length = 0; length <= 100; length++)
+        {
+            for (var rows = 1; rows <= 4; rows++)
+            {
+                var buffer = new double[(rows + 1) * length];
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = random.Next(6) switch
+                    {
+                        0 => 0d,
+                        1 => -0d,
+                        2 => random.Next(65536) * (double)random.Next(65536),
+                        _ => (random.NextDouble() - 0.3) * 1e5,
+                    };
+                }
+
+                var weights = new double[rows];
+                var offsets = new int[rows];
+                for (var t = 0; t < rows; t++)
+                {
+                    weights[t] = random.Next(5) == 0 ? 0 : random.NextDouble() - 0.25;
+                    offsets[t] = (t + 1) * length;
+                }
+
+                foreach (var accumulate in new[] { false, true })
+                {
+                    var expected = new double[length];
+                    for (var i = 0; i < length; i++)
+                    {
+                        var sum = (accumulate ? buffer[i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
+                        for (var t = 1; t < rows; t++)
+                        {
+                            sum += weights[t] * buffer[offsets[t] + i];
+                        }
+
+                        expected[i] = sum;
+                    }
+
+                    var actual = buffer.ToArray();
+                    Resampler.SetWeightedSum(actual, 0, length, offsets, weights, accumulate);
+                    Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Take(length).Select(BitConverter.DoubleToInt64Bits));
+                    Assert.Equal(buffer.Skip(length), actual.Skip(length));
+                }
+
+                // One row at a time: 0 + w0 x0 + w1 x1 + ...
+                var accumulator = new double[length];
+                var reference = new double[length];
+                for (var t = 0; t < rows; t++)
+                {
+                    var row = buffer.AsSpan(offsets[t], length);
+                    if (t == 0)
+                    {
+                        Resampler.SetScaled(accumulator, row, weights[t]);
+                    }
+                    else
+                    {
+                        Resampler.AddScaled(accumulator, row, weights[t]);
+                    }
+
+                    for (var i = 0; i < length; i++)
+                    {
+                        reference[i] = (t == 0 ? 0d : reference[i]) + (weights[t] * row[i]);
+                    }
+
+                    Assert.Equal(reference.Select(BitConverter.DoubleToInt64Bits), accumulator.Select(BitConverter.DoubleToInt64Bits));
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData((int)WorkingAlpha.None)]
     [InlineData((int)WorkingAlpha.Premultiplied)]

@@ -888,6 +888,18 @@ internal static class Resampler
     {
         Debug.Assert(accumulator.Length == row.Length);
         var i = 0;
+        if (!TestForceScalar && Vector512.IsHardwareAccelerated)
+        {
+            // The remaining samples go through the 256-bit loop below
+            ref var accumulatorStart = ref unsafe(MemoryMarshal.GetReference(accumulator));
+            ref var rowStart = ref unsafe(MemoryMarshal.GetReference(row[..accumulator.Length]));
+            var w = Vector512.Create(weight);
+            for (; i + 8 <= accumulator.Length; i += 8)
+            {
+                unsafe { (Vector512<double>.Zero + (w * Vector512.LoadUnsafe(ref rowStart, (nuint)i))).StoreUnsafe(ref accumulatorStart, (nuint)i); }
+            }
+        }
+
         if (!TestForceScalar && Vector256.IsHardwareAccelerated)
         {
             ref var accumulatorStart = ref unsafe(MemoryMarshal.GetReference(accumulator));
@@ -934,6 +946,39 @@ internal static class Resampler
 
         var i = 0;
         ref var start = ref unsafe(MemoryMarshal.GetReference(buffer));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // Blocks of 32 samples; the remaining ones go through the 256-bit loop below
+            for (; i + 32 <= length; i += 32)
+            {
+                ref var target = ref unsafe(Unsafe.Add(ref start, accumulatorOffset + i));
+                var sum0 = accumulate ? unsafe(Vector512.LoadUnsafe(ref target)) : Vector512<double>.Zero;
+                var sum1 = accumulate ? unsafe(Vector512.LoadUnsafe(ref target, 8)) : Vector512<double>.Zero;
+                var sum2 = accumulate ? unsafe(Vector512.LoadUnsafe(ref target, 16)) : Vector512<double>.Zero;
+                var sum3 = accumulate ? unsafe(Vector512.LoadUnsafe(ref target, 24)) : Vector512<double>.Zero;
+                var w = Vector512.Create(weights[0]);
+                ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
+                sum0 += w * unsafe(Vector512.LoadUnsafe(ref row));
+                sum1 += w * unsafe(Vector512.LoadUnsafe(ref row, 8));
+                sum2 += w * unsafe(Vector512.LoadUnsafe(ref row, 16));
+                sum3 += w * unsafe(Vector512.LoadUnsafe(ref row, 24));
+                for (var t = 1; t < offsets.Length; t++)
+                {
+                    w = Vector512.Create(weights[t]);
+                    row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
+                    sum0 += w * unsafe(Vector512.LoadUnsafe(ref row));
+                    sum1 += w * unsafe(Vector512.LoadUnsafe(ref row, 8));
+                    sum2 += w * unsafe(Vector512.LoadUnsafe(ref row, 16));
+                    sum3 += w * unsafe(Vector512.LoadUnsafe(ref row, 24));
+                }
+
+                unsafe { sum0.StoreUnsafe(ref target); }
+                unsafe { sum1.StoreUnsafe(ref target, 8); }
+                unsafe { sum2.StoreUnsafe(ref target, 16); }
+                unsafe { sum3.StoreUnsafe(ref target, 24); }
+            }
+        }
+
         if (Vector256.IsHardwareAccelerated)
         {
             for (; i + 16 <= length; i += 16)
@@ -1015,6 +1060,18 @@ internal static class Resampler
     {
         Debug.Assert(accumulator.Length == row.Length);
         var i = 0;
+        if (!TestForceScalar && Vector512.IsHardwareAccelerated)
+        {
+            // The remaining samples go through the 256-bit loop below
+            ref var accumulatorStart = ref unsafe(MemoryMarshal.GetReference(accumulator));
+            ref var rowStart = ref unsafe(MemoryMarshal.GetReference(row[..accumulator.Length]));
+            var w = Vector512.Create(weight);
+            for (; i + 8 <= accumulator.Length; i += 8)
+            {
+                unsafe { (Vector512.LoadUnsafe(ref accumulatorStart, (nuint)i) + (w * Vector512.LoadUnsafe(ref rowStart, (nuint)i))).StoreUnsafe(ref accumulatorStart, (nuint)i); }
+            }
+        }
+
         if (TestForceScalar)
         {
             // Scalar loop below

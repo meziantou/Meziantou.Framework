@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
@@ -60,6 +61,18 @@ internal static class Av1Reconstruction
         var min = -(1 << (7 + bitDepth));
         var max = (1 << (7 + bitDepth)) - 1;
         var useMatrix = !quantizerMatrix.IsEmpty && txType < Av1Constants.Idtx;
+        var maxSample = (1 << bitDepth) - 1;
+        if (eob is 1 && txType is Av1Constants.DctDct && !lossless && scan[0] is 0)
+        {
+            // Only the DC coefficient may not be zero: the residual is one value
+            long dcQ = dcQuantizer;
+            if (useMatrix)
+                dcQ = ((dcQ * quantizerMatrix[0]) + 16) >> 5;
+
+            AddConstant(plane, stride, x, y, w, h, GetDcOnlyResidual(Dequantize(quant[0], dcQ, dqDenom, min, max), txSz, bitDepth), maxSample);
+            return;
+        }
+
         dequant.Clear();
         for (var c = 0; c < eob; c++)
         {
@@ -72,19 +85,13 @@ internal static class Av1Reconstruction
             if (useMatrix)
                 q = ((q * quantizerMatrix[i]) + 16) >> 5;
 
-            var dq = coefficient * q;
-            var dq2 = (Math.Abs(dq) & 0xFFFFFF) / dqDenom;
-            if (dq < 0)
-                dq2 = -dq2;
-
-            dequant[i] = (int)Math.Clamp(dq2, min, max);
+            dequant[i] = Dequantize(coefficient, q, dqDenom, min, max);
         }
 
         Av1InverseTransform.Transform(dequant, residual, txSz, txType, lossless, bitDepth);
 
         var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
         var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
-        var maxSample = (1 << bitDepth) - 1;
         for (var i = 0; i < h; i++)
         {
             var yy = flipUD ? h - i - 1 : i;
@@ -100,6 +107,83 @@ internal static class Av1Reconstruction
             else
             {
                 AddResidual(row, residualRow, maxSample);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the residual of a DCT_DCT transform block whose only coefficient that is not zero is the DC coefficient:
+    /// every sample of the residual of <see cref="Av1InverseTransform.Transform"/> is this value.
+    /// </summary>
+    /// <param name="dc">The dequantized DC coefficient.</param>
+    /// <param name="txSz">The transform size.</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    // The steps of the transform for this input: the input of the row transform is scaled for a 2:1 block; the butterfly of
+    // the first two elements of the row DCT gives Round2( dc * cos128( 32 ), 12 ) to every element of the first row, the
+    // other rotations combine it with zeros, and the Hadamard steps clamp it to the row range. Then the row shift and the
+    // clamp to the column range, the same DCT for the columns (clamped to the column range) and the column shift
+    internal static int GetDcOnlyResidual(int dc, int txSz, int bitDepth)
+    {
+        const int Cos128Of32 = 2896;
+        var rowLimit = 1 << (bitDepth + 7);
+        var colLimit = 1 << (Math.Max(bitDepth + 6, 16) - 1);
+        var value = dc;
+        if (Math.Abs(Av1Tables.TxWidthLog2[txSz] - Av1Tables.TxHeightLog2[txSz]) is 1)
+            value = Round2(value * (long)Cos128Of32, 12);
+
+        value = Math.Clamp(Round2(value * (long)Cos128Of32, 12), -rowLimit, rowLimit - 1);
+        value = Math.Clamp(Round2(value, Av1Tables.TransformRowShift[txSz]), -colLimit, colLimit - 1);
+        value = Math.Clamp(Round2(value * (long)Cos128Of32, 12), -colLimit, colLimit - 1);
+        return Round2(value, 4);
+    }
+
+    // The dequantization of a coefficient (section 7.12.3)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Dequantize(int coefficient, long q, int dqDenom, int min, int max)
+    {
+        var dq = coefficient * q;
+        var dq2 = (Math.Abs(dq) & 0xFFFFFF) / dqDenom;
+        if (dq < 0)
+            dq2 = -dq2;
+
+        return (int)Math.Clamp(dq2, min, max);
+    }
+
+    private static int Round2(long value, int bits) => bits is 0 ? (int)value : (int)((value + (1L << (bits - 1))) >> bits);
+
+    /// <summary>Adds <paramref name="value"/> to the samples of a block, clamped to 0 to <paramref name="maxSample"/>.</summary>
+    internal static void AddConstant(Span<ushort> plane, int stride, int x, int y, int w, int h, int value, int maxSample)
+    {
+        if (value is 0)
+            return;
+
+        // The samples are 0 to maxSample, at most 4095: Clip( sample + value ) is Clip( sample + Clip( value, -maxSample,
+        // maxSample ) ), whose sums fit 16-bit lanes
+        var addend = (short)Math.Clamp(value, -maxSample, maxSample);
+        for (var i = 0; i < h; i++)
+        {
+            var row = plane.Slice(((y + i) * stride) + x, w);
+            var j = 0;
+            if (Vector128.IsHardwareAccelerated && w >= Vector128<ushort>.Count)
+            {
+                var add = Vector128.Create(addend);
+                var max = Vector128.Create((short)maxSample);
+                for (; j < w; j += Vector128<ushort>.Count)
+                {
+                    var sum = Vector128.Create(row[j..]).AsInt16() + add;
+                    Vector128.Min(Vector128.Max(sum, Vector128<short>.Zero), max).AsUInt16().CopyTo(row[j..]);
+                }
+            }
+            else if (Vector64.IsHardwareAccelerated && w == Vector64<ushort>.Count)
+            {
+                var sum = Vector64.Create(row).AsInt16() + Vector64.Create(addend);
+                Vector64.Min(Vector64.Max(sum, Vector64<short>.Zero), Vector64.Create((short)maxSample)).AsUInt16().CopyTo(row);
+                j = w;
+            }
+
+            for (; j < w; j++)
+            {
+                row[j] = (ushort)Math.Clamp(row[j] + addend, 0, maxSample);
             }
         }
     }

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Unicode;
 
@@ -36,6 +37,19 @@ internal sealed class Utf8Decoder(bool fatal) : WebDecoder(fatal)
         var status = Utf8.ToUtf16(input, output, out bytesConsumed, out charsWritten, replaceInvalidSequences: false, isFinalBlock: false);
         _ = status;
         return bytesConsumed > 0;
+    }
+
+    protected override bool TryDecodeToStringFast(ReadOnlySpan<byte> input, [NotNullWhen(true)] out string? result)
+    {
+        // The BCL replaces the invalid sequences by U+FFFD as the Encoding Standard does (maximal subparts)
+        if (_bytesNeeded != 0 || (Fatal && !Utf8.IsValid(input)))
+        {
+            result = null;
+            return false;
+        }
+
+        result = Encoding.UTF8.GetString(input);
+        return true;
     }
 
     protected override HandlerResult Handle(int value, out int codePoint1, out int codePoint2)
@@ -140,13 +154,26 @@ internal sealed class SingleByteDecoder(bool fatal, int indexOffset) : WebDecode
     {
         var index = EncodingIndexes.SingleByte.Slice(indexOffset, 128);
         var length = Math.Min(input.Length, output.Length);
+        input = input[..length];
+        output = output[..length];
         var i = 0;
-        for (; i < length; i++)
+        while (i < length)
         {
             var value = input[i];
             if (value < 0x80)
             {
-                output[i] = (char)value;
+                // A run of ASCII bytes is widened at once. A single ASCII byte between non-ASCII bytes (e.g. a space
+                // between words) is cheaper to copy directly.
+                if (i + 1 < length && input[i + 1] < 0x80)
+                {
+                    _ = Ascii.ToUtf16(input[i..], output[i..], out var written);
+                    i += written;
+                }
+                else
+                {
+                    output[i++] = (char)value;
+                }
+
                 continue;
             }
 
@@ -154,7 +181,7 @@ internal sealed class SingleByteDecoder(bool fatal, int indexOffset) : WebDecode
             if (codePoint == 0)
                 break;
 
-            output[i] = (char)codePoint;
+            output[i++] = (char)codePoint;
         }
 
         bytesConsumed = i;

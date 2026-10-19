@@ -105,6 +105,7 @@ internal sealed class HtmlTokenizer
     private static readonly SearchValues<char> PlainTextStopChars = SearchValues.Create("\0\r");
     private static readonly SearchValues<char> DoubleQuotedStopChars = SearchValues.Create("\"&\0\r");
     private static readonly SearchValues<char> SingleQuotedStopChars = SearchValues.Create("'&\0\r");
+    private static readonly SearchValues<char> UnquotedStopChars = SearchValues.Create("\t\n\f\r &>\0\"'<=`");
     private static readonly SearchValues<char> TagNameStopChars = SearchValues.Create("\t\n\f\r />\0ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     private static readonly SearchValues<char> AttributeNameStopChars = SearchValues.Create("\t\n\f\r />=\0\"'<ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     private static readonly SearchValues<char> CommentStopChars = SearchValues.Create("<-\0\r");
@@ -293,6 +294,21 @@ internal sealed class HtmlTokenizer
             _lineCountPosition = 0;
             _lineCountLine = 1;
             _lineCountLineStart = 0;
+        }
+
+        // Fast path: without CR, the lines end at the LF characters
+        var slice = _input.AsSpan(_lineCountPosition, position - _lineCountPosition);
+        if (!slice.Contains('\r'))
+        {
+            var lineFeedCount = slice.Count('\n');
+            if (lineFeedCount > 0)
+            {
+                _lineCountLine += lineFeedCount;
+                _lineCountLineStart = _lineCountPosition + slice.LastIndexOf('\n') + 1;
+            }
+
+            _lineCountPosition = position;
+            return (_lineCountLine, position - _lineCountLineStart);
         }
 
         for (var i = _lineCountPosition; i < position; i++)
@@ -901,7 +917,6 @@ internal sealed class HtmlTokenizer
     // State machine
     // ----------------------------------------------------------------------------------------------------------------
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void Step()
     {
         switch (_state)
@@ -1734,6 +1749,23 @@ internal sealed class HtmlTokenizer
 
             case TokenizerState.AttributeValueUnquoted:
             {
+                if (!_reconsume)
+                {
+                    var remaining = _input.AsSpan(_position, _limit - _position);
+                    var index = FindStop(remaining, UnquotedStopChars);
+                    if (index < 0)
+                    {
+                        index = remaining.Length;
+                    }
+
+                    if (index > 0)
+                    {
+                        _attributeValue.Append(remaining[..index]);
+                        _position += index;
+                        return;
+                    }
+                }
+
                 var c = Consume();
                 switch (c)
                 {

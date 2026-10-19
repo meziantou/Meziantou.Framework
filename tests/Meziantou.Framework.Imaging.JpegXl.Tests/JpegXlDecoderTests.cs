@@ -822,6 +822,241 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// The restoration filters run as a pipeline over rings of rows; the result is the one of each filter applied to the
+    /// whole frame after the previous one, computed here sample by sample from section J of the standard: every combination
+    /// of filters, default and custom parameters, frames of one sample (mirrored several times) to several blocks, blocks
+    /// the edge-preserving filter leaves, and rows with padding after them.
+    /// </summary>
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame()
+    {
+        var random = new Random(186);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame));
+        for (var round = 0; round < 600; round++)
+        {
+            var width = round < 120 ? 1 + (round % 12) : random.Next(1, 80);
+            var height = round < 120 ? 1 + (round / 12) : random.Next(1, 45);
+            var isGaborEnabled = round % 5 != 4;
+            var iterations = round % 4;
+            var filter = CreateRestorationFilter(scope, random, isGaborEnabled, iterations, isCustom: round % 3 == 2);
+            var stride = width + random.Next(3);
+            var blocksWide = (width + 7) / 8;
+            var inverseSigma = new float[blocksWide * ((height + 7) / 8)];
+            for (var i = 0; i < inverseSigma.Length; i++)
+            {
+                inverseSigma[i] = random.Next(6) == 0 ? -4f : (float)(-0.01 - (random.NextDouble() * 3.8));
+            }
+
+            var input = new float[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                input[c] = new float[stride * height];
+                for (var i = 0; i < input[c].Length; i++)
+                {
+                    input[c][i] = (round % 4) switch
+                    {
+                        0 => 0.25f,
+                        1 => (float)random.NextDouble() * 1e-3f,
+                        2 => random.Next(4) == 0 ? -0f : (float)((random.NextDouble() - 0.5) * 1e3),
+                        _ => (float)random.NextDouble(),
+                    };
+                }
+            }
+
+            var expected = FilterWholeFrames(input, stride, width, height, filter, isGaborEnabled, iterations, inverseSigma, blocksWide);
+            var planes = new Av1PooledArray<float>[3];
+            try
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    planes[c] = Av1PooledArray<float>.Rent(scope, input[c].Length, clear: false);
+                    input[c].CopyTo(planes[c].Span);
+                }
+
+                if (round % 2 == 0 && isGaborEnabled)
+                {
+                    // The Modular frames apply the two filters one after the other
+                    JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, scope, TestContext.Current.CancellationToken);
+                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, inverseSigma, blocksWide, scope, TestContext.Current.CancellationToken);
+                }
+                else
+                {
+                    JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, inverseSigma, blocksWide, scope, TestContext.Current.CancellationToken);
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(planes[c].Span[..input[c].Length].ToArray(), BitConverter.SingleToInt32Bits));
+                }
+            }
+            finally
+            {
+                foreach (var plane in planes)
+                {
+                    plane?.Dispose();
+                }
+            }
+        }
+    }
+
+    /// <summary>Reads the parameters of the restoration filters from a header that sets them, with random weights and scales when <paramref name="isCustom"/> is set.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static JpegXlRestorationFilter CreateRestorationFilter(AllocationScope scope, Random random, bool isGaborEnabled, int iterations, bool isCustom)
+    {
+        using var writer = new LsbBitWriter(scope);
+        writer.WriteBool(false);
+        writer.WriteBool(isGaborEnabled);
+        if (isGaborEnabled)
+        {
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                for (var i = 0; i < 6; i++)
+                {
+                    writer.WriteF16((float)(random.NextDouble() * 0.3));
+                }
+            }
+        }
+
+        writer.WriteBits((uint)iterations, 2);
+        if (iterations > 0)
+        {
+            writer.WriteBool(false);
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                writer.WriteF16((float)(random.NextDouble() * 60));
+                writer.WriteF16((float)(random.NextDouble() * 8));
+                writer.WriteF16((float)(random.NextDouble() * 5));
+                writer.WriteBits(0, 32);
+            }
+
+            writer.WriteBool(isCustom);
+            if (isCustom)
+            {
+                writer.WriteF16(0.46f);
+                writer.WriteF16((float)(random.NextDouble() * 2));
+                writer.WriteF16((float)(random.NextDouble() * 10));
+                writer.WriteF16((float)random.NextDouble());
+            }
+        }
+
+        writer.WriteU64(0);
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        return JpegXlRestorationFilter.Read(new JpegXlBitReader(data, 0, data.Length), isModular: false);
+    }
+
+    /// <summary>The Gabor-like filter, then each step of the edge-preserving filter, each on the whole frame: the result of the previous filter, mirrored at its edges.</summary>
+    private static float[][] FilterWholeFrames(float[][] input, int stride, int width, int height, JpegXlRestorationFilter filter, bool isGaborEnabled, int iterations, float[] inverseSigma, int blocksWide)
+    {
+        var current = Array.ConvertAll(input, plane => (float[])plane.Clone());
+        float At(int c, int x, int y) => current[c][(Mirror(y, height) * stride) + Mirror(x, width)];
+        if (isGaborEnabled)
+        {
+            var next = Array.ConvertAll(current, plane => (float[])plane.Clone());
+            for (var c = 0; c < 3; c++)
+            {
+                var side = filter.GaborWeights[c * 2];
+                var corner = filter.GaborWeights[(c * 2) + 1];
+                var scale = 1f / (1f + (4f * (side + corner)));
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        var sides = (At(c, x - 1, y) + At(c, x + 1, y)) + (At(c, x, y - 1) + At(c, x, y + 1));
+                        var corners = (At(c, x - 1, y - 1) + At(c, x + 1, y - 1)) + (At(c, x - 1, y + 1) + At(c, x + 1, y + 1));
+                        next[c][(y * stride) + x] = (corners * (corner * scale)) + ((sides * (side * scale)) + (At(c, x, y) * scale));
+                    }
+                }
+            }
+
+            current = next;
+        }
+
+        (int Y, int X)[] wide = [(-2, 0), (-1, -1), (-1, 0), (-1, 1), (0, -2), (0, -1), (0, 1), (0, 2), (1, -1), (1, 0), (1, 1), (2, 0)];
+        (int Y, int X)[] cross = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+        (int Y, int X)[] patch = [(0, 0), (-1, 0), (0, -1), (1, 0), (0, 1)];
+        int[] steps = iterations switch
+        {
+            0 => [],
+            1 => [1],
+            2 => [1, 2],
+            _ => [0, 1, 2],
+        };
+        foreach (var step in steps)
+        {
+            var neighbors = step == 0 ? wide : cross;
+            var compared = step == 2 ? patch[..1] : patch;
+            var sigmaScale = step switch
+            {
+                0 => filter.EpfPass0SigmaScale * 1.65f,
+                1 => 1.65f,
+                _ => filter.EpfPass2SigmaScale * 1.65f,
+            };
+            var borderScale = sigmaScale * filter.EpfBorderSadMultiplier;
+            var next = Array.ConvertAll(current, plane => (float[])plane.Clone());
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    // A block whose strength is under 0.3 is left as it is
+                    var blockInverseSigma = inverseSigma[((y / 8) * blocksWide) + (x / 8)];
+                    if (blockInverseSigma < -3.90524291751269967465540850526868f)
+                        continue;
+
+                    var scaledInverseSigma = blockInverseSigma * ((y % 8) is 0 or 7 || (x % 8) is 0 or 7 ? borderScale : sigmaScale);
+                    var weightSum = 1f;
+                    var sums = new[] { At(0, x, y), At(1, x, y), At(2, x, y) };
+                    foreach (var neighbor in neighbors)
+                    {
+                        var distances = new float[3];
+                        for (var c = 0; c < 3; c++)
+                        {
+                            foreach (var offset in compared)
+                            {
+                                distances[c] += MathF.Abs(At(c, x + offset.X, y + offset.Y) - At(c, x + offset.X + neighbor.X, y + offset.Y + neighbor.Y));
+                            }
+                        }
+
+                        var distance = (distances[0] * filter.EpfChannelScale[0]) + (distances[1] * filter.EpfChannelScale[1]) + (distances[2] * filter.EpfChannelScale[2]);
+                        var weight = (distance * scaledInverseSigma) + 1f;
+                        if (weight > 0)
+                        {
+                            weightSum += weight;
+                            for (var c = 0; c < 3; c++)
+                            {
+                                sums[c] += weight * At(c, x + neighbor.X, y + neighbor.Y);
+                            }
+                        }
+                    }
+
+                    var inverseWeight = 1f / weightSum;
+                    for (var c = 0; c < 3; c++)
+                    {
+                        next[c][(y * stride) + x] = sums[c] * inverseWeight;
+                    }
+                }
+            }
+
+            current = next;
+        }
+
+        return current;
+
+        static int Mirror(int position, int size)
+        {
+            while (position < 0 || position >= size)
+            {
+                position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
+            }
+
+            return position;
+        }
+    }
+
     public static TheoryData<string> StillFiles =>
     [
         nameof(JpegXlTestFiles.Rgb),

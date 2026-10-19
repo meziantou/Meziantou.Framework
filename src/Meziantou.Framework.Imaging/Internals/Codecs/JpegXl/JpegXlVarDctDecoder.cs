@@ -1100,18 +1100,15 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var height = (int)_frame.CodedHeight;
         var stride = _blocksWide * 8;
         ReadOnlySpan<Av1PooledArray<float>> planes = [_planes[0]!, _planes[1]!, _planes[2]!];
-        if (filter.IsGaborEnabled)
+        using var inverseSigma = filter.EpfIterations > 0 ? Av1PooledArray<float>.Rent(_scope, (long)_blocksWide * _blocksHigh, clear: false) : null;
+        var blocks = inverseSigma is null ? default : inverseSigma.Span[..(_blocksWide * _blocksHigh)];
+        if (inverseSigma is not null)
         {
-            JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, _scope, _cancellationToken);
+            JpegXlRestorationFilters.ComputeInverseSigma(filter, _globalScale, QuantField, Sharpness, blocks);
         }
 
-        if (filter.EpfIterations > 0)
-        {
-            using var inverseSigma = Av1PooledArray<float>.Rent(_scope, (long)_blocksWide * _blocksHigh, clear: false);
-            var blocks = inverseSigma.Span[..(_blocksWide * _blocksHigh)];
-            JpegXlRestorationFilters.ComputeInverseSigma(filter, _globalScale, QuantField, Sharpness, blocks);
-            JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, blocks, _blocksWide, _scope, _cancellationToken);
-        }
+        // The Gabor-like filter and the steps of the edge-preserving filter, in one pass over the rows
+        JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, blocks, _blocksWide, _scope, _cancellationToken);
     }
 
     public void Dispose()

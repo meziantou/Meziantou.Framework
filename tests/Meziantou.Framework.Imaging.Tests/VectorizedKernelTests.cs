@@ -4129,6 +4129,11 @@ public sealed class VectorizedKernelTests
             HevcSampleAdaptiveOffset.BandOffsetRowScalar(samples, expected, bitDepth - 5, saoLeftClass, offsets, maxValue);
             HevcSampleAdaptiveOffset.BandOffsetRow(samples, actual, bitDepth - 5, saoLeftClass, offsets, maxValue);
             Assert.Equal(expected, actual);
+
+            // The coding tree blocks of the band offset are modified in place
+            var inPlace = (ushort[])samples.Clone();
+            HevcSampleAdaptiveOffset.BandOffsetRow(inPlace, inPlace, bitDepth - 5, saoLeftClass, offsets, maxValue);
+            Assert.Equal(expected, inPlace);
         }
     }
 

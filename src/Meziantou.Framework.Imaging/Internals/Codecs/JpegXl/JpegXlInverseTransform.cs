@@ -94,6 +94,12 @@ internal static class JpegXlInverseTransform
         // Four one-dimensional transforms at once, one per lane, each with the operations of the scalar one in the same order
         if (Vector128.IsHardwareAccelerated && rows >= 4 && columns >= 4)
         {
+            if (rows == 8 && columns == 8)
+            {
+                InverseDct8x8(coefficients, output, stride);
+                return;
+            }
+
             InverseDctVector(coefficients, rows, columns, output, stride, scratch);
             return;
         }
@@ -264,6 +270,195 @@ internal static class JpegXlInverseTransform
         }
     }
 
+    /// <summary>
+    /// The inverse DCT of a block of 8x8 samples, kept in registers: the operations of <see cref="InverseDctVector"/> in
+    /// the same order, without its stores and loads between the two passes. With eight lanes, each pass is one 8x8
+    /// transposition and eight transforms; with four, it is four 4x4 transpositions and two sets of four.
+    /// </summary>
+    /// <param name="coefficients">The 64 coefficients, a row of vertical frequencies per horizontal frequency.</param>
+    /// <param name="output">Receives the samples.</param>
+    /// <param name="stride">The distance between two rows of <paramref name="output"/>.</param>
+    private static void InverseDct8x8(ReadOnlySpan<float> coefficients, Span<float> output, int stride)
+    {
+        // Every position read or written is checked here, once for the block
+        if (coefficients.Length < 64 || stride < 8 || output.Length < (7 * stride) + 8)
+            throw new ArgumentOutOfRangeException(nameof(output));
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        if (Vector256.IsHardwareAccelerated && Avx.IsSupported)
+        {
+            InverseDct8x8Vector256(ref source, ref target, (nuint)stride);
+            return;
+        }
+
+        InverseDct8x8Vector128(ref source, ref target, (nuint)stride);
+    }
+
+    private static void InverseDct8x8Vector128(ref float source, ref float target, nuint stride)
+    {
+        // The vertical frequencies of the horizontal frequencies 0 to 3, then 4 to 7, as lanes: the samples of each column
+        Transpose(Load128(ref source, 0), Load128(ref source, 8), Load128(ref source, 16), Load128(ref source, 24), out var a0, out var a1, out var a2, out var a3);
+        Transpose(Load128(ref source, 4), Load128(ref source, 12), Load128(ref source, 20), Load128(ref source, 28), out var a4, out var a5, out var a6, out var a7);
+        InverseDct8(ref a0, ref a1, ref a2, ref a3, ref a4, ref a5, ref a6, ref a7);
+        Transpose(Load128(ref source, 32), Load128(ref source, 40), Load128(ref source, 48), Load128(ref source, 56), out var b0, out var b1, out var b2, out var b3);
+        Transpose(Load128(ref source, 36), Load128(ref source, 44), Load128(ref source, 52), Load128(ref source, 60), out var b4, out var b5, out var b6, out var b7);
+        InverseDct8(ref b0, ref b1, ref b2, ref b3, ref b4, ref b5, ref b6, ref b7);
+
+        // The horizontal frequencies of the rows 0 to 3, then 4 to 7, as lanes: the samples of each row
+        Transpose(a0, a1, a2, a3, out var c0, out var c1, out var c2, out var c3);
+        Transpose(b0, b1, b2, b3, out var c4, out var c5, out var c6, out var c7);
+        InverseDct8(ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
+        StoreRows(c0, c1, c2, c3, ref target, stride);
+        StoreRows(c4, c5, c6, c7, ref target, stride, column: 4);
+        Transpose(a4, a5, a6, a7, out var d0, out var d1, out var d2, out var d3);
+        Transpose(b4, b5, b6, b7, out var d4, out var d5, out var d6, out var d7);
+        InverseDct8(ref d0, ref d1, ref d2, ref d3, ref d4, ref d5, ref d6, ref d7);
+        ref var lower = ref unsafe(Unsafe.Add(ref target, 4 * stride));
+        StoreRows(d0, d1, d2, d3, ref lower, stride);
+        StoreRows(d4, d5, d6, d7, ref lower, stride, column: 4);
+    }
+
+    /// <summary>Stores four columns of four samples, one vector per column, as four rows.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRows(Vector128<float> column0, Vector128<float> column1, Vector128<float> column2, Vector128<float> column3, ref float target, nuint stride, nuint column = 0)
+    {
+        Transpose(column0, column1, column2, column3, out var row0, out var row1, out var row2, out var row3);
+        unsafe
+        {
+            row0.StoreUnsafe(ref target, column);
+            row1.StoreUnsafe(ref target, stride + column);
+            row2.StoreUnsafe(ref target, (2 * stride) + column);
+            row3.StoreUnsafe(ref target, (3 * stride) + column);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> Load128(ref float source, nuint offset) => unsafe(Vector128.LoadUnsafe(ref source, offset));
+
+    private static void InverseDct8x8Vector256(ref float source, ref float target, nuint stride)
+    {
+        Vector256<float> r0, r1, r2, r3, r4, r5, r6, r7;
+        unsafe
+        {
+            r0 = Vector256.LoadUnsafe(ref source);
+            r1 = Vector256.LoadUnsafe(ref source, 8);
+            r2 = Vector256.LoadUnsafe(ref source, 16);
+            r3 = Vector256.LoadUnsafe(ref source, 24);
+            r4 = Vector256.LoadUnsafe(ref source, 32);
+            r5 = Vector256.LoadUnsafe(ref source, 40);
+            r6 = Vector256.LoadUnsafe(ref source, 48);
+            r7 = Vector256.LoadUnsafe(ref source, 56);
+        }
+
+        // The vertical frequencies of each horizontal frequency as lanes, then the horizontal frequencies of each row
+        Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        InverseDct8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        InverseDct8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        unsafe
+        {
+            r0.StoreUnsafe(ref target);
+            r1.StoreUnsafe(ref target, stride);
+            r2.StoreUnsafe(ref target, 2 * stride);
+            r3.StoreUnsafe(ref target, 3 * stride);
+            r4.StoreUnsafe(ref target, 4 * stride);
+            r5.StoreUnsafe(ref target, 5 * stride);
+            r6.StoreUnsafe(ref target, 6 * stride);
+            r7.StoreUnsafe(ref target, 7 * stride);
+        }
+    }
+
+    /// <summary>Transposes eight vectors of eight values in place: the lane i of the vector j becomes the lane j of the vector i.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Transpose(ref Vector256<float> r0, ref Vector256<float> r1, ref Vector256<float> r2, ref Vector256<float> r3, ref Vector256<float> r4, ref Vector256<float> r5, ref Vector256<float> r6, ref Vector256<float> r7)
+    {
+        // Pairs of rows interleaved, then quarters of four rows, within each half; then the halves exchanged
+        var t0 = Avx.UnpackLow(r0, r1);
+        var t1 = Avx.UnpackHigh(r0, r1);
+        var t2 = Avx.UnpackLow(r2, r3);
+        var t3 = Avx.UnpackHigh(r2, r3);
+        var t4 = Avx.UnpackLow(r4, r5);
+        var t5 = Avx.UnpackHigh(r4, r5);
+        var t6 = Avx.UnpackLow(r6, r7);
+        var t7 = Avx.UnpackHigh(r6, r7);
+        var s0 = Avx.Shuffle(t0, t2, 0x44);
+        var s1 = Avx.Shuffle(t0, t2, 0xEE);
+        var s2 = Avx.Shuffle(t1, t3, 0x44);
+        var s3 = Avx.Shuffle(t1, t3, 0xEE);
+        var s4 = Avx.Shuffle(t4, t6, 0x44);
+        var s5 = Avx.Shuffle(t4, t6, 0xEE);
+        var s6 = Avx.Shuffle(t5, t7, 0x44);
+        var s7 = Avx.Shuffle(t5, t7, 0xEE);
+        r0 = Avx.Permute2x128(s0, s4, 0x20);
+        r1 = Avx.Permute2x128(s1, s5, 0x20);
+        r2 = Avx.Permute2x128(s2, s6, 0x20);
+        r3 = Avx.Permute2x128(s3, s7, 0x20);
+        r4 = Avx.Permute2x128(s0, s4, 0x31);
+        r5 = Avx.Permute2x128(s1, s5, 0x31);
+        r6 = Avx.Permute2x128(s2, s6, 0x31);
+        r7 = Avx.Permute2x128(s3, s7, 0x31);
+    }
+
+    /// <summary>Four one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of <see cref="InverseDct8(Span{Vector128{float}})"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InverseDct8(ref Vector128<float> v0, ref Vector128<float> v1, ref Vector128<float> v2, ref Vector128<float> v3, ref Vector128<float> v4, ref Vector128<float> v5, ref Vector128<float> v6, ref Vector128<float> v7)
+    {
+        var e0 = v0;
+        var e1 = v2;
+        var e2 = v4;
+        var e3 = v6;
+        var o0 = Vector128.Create(MathF.Sqrt(2)) * v1;
+        var o1 = v1 + v3;
+        var o2 = v3 + v5;
+        var o3 = v5 + v7;
+        InverseDct4(ref e0, ref e1, ref e2, ref e3);
+        InverseDct4(ref o0, ref o1, ref o2, ref o3);
+        var secants = HalfSecants;
+        var scaled = o0 * Vector128.Create(secants[4]);
+        v0 = e0 + scaled;
+        v7 = e0 - scaled;
+        scaled = o1 * Vector128.Create(secants[5]);
+        v1 = e1 + scaled;
+        v6 = e1 - scaled;
+        scaled = o2 * Vector128.Create(secants[6]);
+        v2 = e2 + scaled;
+        v5 = e2 - scaled;
+        scaled = o3 * Vector128.Create(secants[7]);
+        v3 = e3 + scaled;
+        v4 = e3 - scaled;
+    }
+
+    /// <summary>Eight one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of <see cref="InverseDct8(Span{Vector128{float}})"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InverseDct8(ref Vector256<float> v0, ref Vector256<float> v1, ref Vector256<float> v2, ref Vector256<float> v3, ref Vector256<float> v4, ref Vector256<float> v5, ref Vector256<float> v6, ref Vector256<float> v7)
+    {
+        var e0 = v0;
+        var e1 = v2;
+        var e2 = v4;
+        var e3 = v6;
+        var o0 = Vector256.Create(MathF.Sqrt(2)) * v1;
+        var o1 = v1 + v3;
+        var o2 = v3 + v5;
+        var o3 = v5 + v7;
+        InverseDct4(ref e0, ref e1, ref e2, ref e3);
+        InverseDct4(ref o0, ref o1, ref o2, ref o3);
+        var secants = HalfSecants;
+        var scaled = o0 * Vector256.Create(secants[4]);
+        v0 = e0 + scaled;
+        v7 = e0 - scaled;
+        scaled = o1 * Vector256.Create(secants[5]);
+        v1 = e1 + scaled;
+        v6 = e1 - scaled;
+        scaled = o2 * Vector256.Create(secants[6]);
+        v2 = e2 + scaled;
+        v5 = e2 - scaled;
+        scaled = o3 * Vector256.Create(secants[7]);
+        v3 = e3 + scaled;
+        v4 = e3 - scaled;
+    }
+
     /// <summary>Loads four lines of <paramref name="length"/> values, one after the other, as the lanes of <paramref name="destination"/>.</summary>
     private static void LoadTransposed(ReadOnlySpan<float> source, int length, Span<Vector128<float>> destination)
     {
@@ -418,6 +613,24 @@ internal static class JpegXlInverseTransform
         v0 = e0 + scaled;
         v3 = e0 - scaled;
         scaled = o1 * Vector128.Create(HalfSecants[3]);
+        v1 = e1 + scaled;
+        v2 = e1 - scaled;
+    }
+
+    /// <summary>Eight one-dimensional inverse DCTs of four values, one per lane: the operations of the transform of four lanes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InverseDct4(ref Vector256<float> v0, ref Vector256<float> v1, ref Vector256<float> v2, ref Vector256<float> v3)
+    {
+        var e0 = v0 + v2;
+        var e1 = v0 - v2;
+        var o = Vector256.Create(MathF.Sqrt(2)) * v1;
+        var o1 = v1 + v3;
+        var o0 = o + o1;
+        o1 = o - o1;
+        var scaled = o0 * Vector256.Create(HalfSecants[2]);
+        v0 = e0 + scaled;
+        v3 = e0 - scaled;
+        scaled = o1 * Vector256.Create(HalfSecants[3]);
         v1 = e1 + scaled;
         v2 = e1 - scaled;
     }

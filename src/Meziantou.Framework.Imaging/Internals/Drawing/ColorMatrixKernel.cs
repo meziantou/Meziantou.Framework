@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -329,12 +330,30 @@ internal static class ColorMatrixKernel
             var alpha = Vector128.Create(a);
             var rows01 = (((((_red01 * red) + (_green01 * green)) + (_blue01 * blue)) + (_alpha01 * alpha)) + _offset01) + Vector128.Create(RoundingOffset);
             var rows23 = (((((_red23 * red) + (_green23 * green)) + (_blue23 * blue)) + (_alpha23 * alpha)) + _offset23) + Vector128.Create(RoundingOffset);
-            return (Vector128.ConvertToInt64(Clamp(Vector128.Floor(rows01), _max)), Vector128.ConvertToInt64(Clamp(Vector128.Floor(rows23), _max)));
+            return (ToInt64(Clamp(Vector128.Floor(rows01), _max)), ToInt64(Clamp(Vector128.Floor(rows23), _max)));
         }
 
         // Written so that a value that is not a number is zero, as in Row
         private static Vector128<double> Clamp(Vector128<double> value, Vector128<double> max)
             => Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(value, max), max, Vector128.ConditionalSelect(Vector128.GreaterThan(value, Vector128<double>.Zero), value, Vector128<double>.Zero));
+    }
+
+    /// <summary>Converts whole numbers from 0 to 2^52, as <see cref="Vector128.ConvertToInt64(Vector128{double})"/> does.</summary>
+    /// <remarks>Arm64 converts them with one instruction; x64 emulates that conversion without AVX-512 and takes <see cref="ToInt64WithBias"/>.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<long> ToInt64(Vector128<double> value)
+        => AdvSimd.Arm64.IsSupported ? Vector128.ConvertToInt64(value) : ToInt64WithBias(value);
+
+    /// <summary>Converts whole numbers from 0 to 2^52 with an addition and a subtraction.</summary>
+    /// <remarks>
+    /// Adding 2^52 to such a number is exact whatever the rounding mode (from 2^52 to 2^53, the doubles are the whole
+    /// numbers), and the sum minus the bits of 2^52 is the number.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<long> ToInt64WithBias(Vector128<double> value)
+    {
+        var bias = Vector128.Create(4503599627370496.0);
+        return (value + bias).AsInt64() - bias.AsInt64();
     }
 
     // Written so that a value that is not a number is zero

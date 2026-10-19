@@ -2143,6 +2143,19 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void DrawingColorMatrixConversionWithBiasMatchesTheConversion()
+    {
+        // Every sample of the 8-bit and 16-bit formats, which x64 converts this way, then the largest whole numbers it takes
+        for (var i = 0; i <= ushort.MaxValue; i += 2)
+        {
+            Assert.Equal(Vector128.Create((long)i, i + 1), ColorMatrixKernel.ToInt64WithBias(Vector128.Create((double)i, i + 1)));
+        }
+
+        Assert.Equal(Vector128.Create((1L << 52) - 1, 1L << 52), ColorMatrixKernel.ToInt64WithBias(Vector128.Create((double)((1L << 52) - 1), 1L << 52)));
+        Assert.Equal(Vector128.Create((long)ushort.MaxValue, 0), ColorMatrixKernel.ToInt64(Vector128.Create((double)ushort.MaxValue, 0)));
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingCoverageProductsMatchTheScalarReference()
     {

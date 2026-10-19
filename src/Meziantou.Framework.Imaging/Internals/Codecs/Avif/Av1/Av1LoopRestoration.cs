@@ -26,9 +26,6 @@ internal static class Av1LoopRestoration
     // The number of samples of a row processed at a time by the vector paths
     private const int VectorWidth = 8;
 
-    // a2 of the box filter process for the values 0 to 254 of z (section 7.17.3), instead of a division per box
-    private static readonly byte[] SgrA2 = CreateSgrA2();
-
     /// <summary>The Wiener filter process (section 7.17.4).</summary>
     /// <param name="source">The padded source: the sample (0, 0) of the block is at <paramref name="sourceOffset"/>.</param>
     /// <param name="sourceStride">The number of samples of a row of <paramref name="source"/>.</param>
@@ -490,31 +487,7 @@ internal static class Av1LoopRestoration
                 }
             }
 
-            long sumSquares = 0;
-            long sum = 0;
-            for (var k = 0; k < diameter - 1; k++)
-            {
-                sumSquares += columnSquares[k];
-                sum += columnSums[k];
-            }
-
-            var aRow = a.Slice((i + 1) * boxStride, boxStride);
-            var bRow = b.Slice((i + 1) * boxStride, boxStride);
-            for (var j = -1; j < w + 1; j++)
-            {
-                sumSquares += columnSquares[j + diameter];
-                sum += columnSums[j + diameter];
-                var aa = Round2(sumSquares, 2 * depthShift);
-                var d = Round2(sum, depthShift);
-                var p = Math.Max(0, (aa * n) - (d * d));
-                var z = Round2(p * s, Av1Constants.SgrprojMtableBits);
-                long a2 = z >= 255 ? 256 : SgrA2[(int)z];
-                var b2 = ((1 << Av1Constants.SgrprojSgrBits) - a2) * sum * oneOverN;
-                aRow[j + 1] = (int)a2;
-                bRow[j + 1] = (int)Round2(b2, Av1Constants.SgrprojRecipBits);
-                sumSquares -= columnSquares[j + 1];
-                sum -= columnSums[j + 1];
-            }
+            ComputeBoxes(columnSums, columnSquares, diameter, n, s, oneOverN, depthShift, a.Slice((i + 1) * boxStride, boxStride), b.Slice((i + 1) * boxStride, boxStride));
         }
 
         // The weighted sums of section 7.17.3 over the 3x3 neighborhood of a sample, whose rows are the rows i, i + 1 and i + 2
@@ -560,6 +533,58 @@ internal static class Av1LoopRestoration
         }
     }
 
+    // A and B of a row of boxes (section 7.17.3) from the sums of the columns of the row, 4 boxes at a time in 32-bit lanes:
+    // the box m (column m - 1 of the block) is the sum of the columns m to m + diameter - 1. The 64-bit arithmetic of the scalar
+    // reference fits these lanes for samples of up to 12 bits:
+    // - a sum of the squares of 25 samples is at most 25 * 4095^2 < 2^29, so aa < 2^21, aa * n < 2^26 and d * d < 2^26;
+    // - z only matters up to 255, and p is limited to the smallest value whose z is 255, which keeps p * s below 255 * 2^20;
+    // - b2 = (256 - a2) * oneOverN * sum, where a2 >= 1, sum <= 4095 * n and oneOverN * n is 164 * 25 = 4100 or 455 * 9 = 4095,
+    //   is at most 255 * 4100 * 4095 = 4,281,322,500: with its rounding term, it is below 2^32 and is shifted as an unsigned value.
+    private static void ComputeBoxes(ReadOnlySpan<int> columnSums, ReadOnlySpan<int> columnSquares, int diameter, int n, int s, int oneOverN, int depthShift, Span<int> aRow, Span<int> bRow)
+    {
+        var count = aRow.Length;
+        var squareShift = 2 * depthShift;
+        var squareRound = Vector128.Create(squareShift is 0 ? 0 : 1 << (squareShift - 1));
+        var sumRound = Vector128.Create(depthShift is 0 ? 0 : 1 << (depthShift - 1));
+        const int ZRound = 1 << (Av1Constants.SgrprojMtableBits - 1);
+        var pLimit = Vector128.Create(((255 << Av1Constants.SgrprojMtableBits) - ZRound + s - 1) / s);
+        var bRound = Vector128.Create(1 << (Av1Constants.SgrprojRecipBits - 1));
+        var maxA2 = Vector128.Create(1 << Av1Constants.SgrprojSgrBits);
+        for (var start = 0; start < count; start += 4)
+        {
+            // When the count is not a multiple of 4, the last boxes overlap the previous ones, which get the same values again
+            var m = Math.Min(start, count - 4);
+            var sumSquares = Vector128.Create(columnSquares.Slice(m, 4));
+            var sum = Vector128.Create(columnSums.Slice(m, 4));
+            for (var k = 1; k < diameter; k++)
+            {
+                sumSquares += Vector128.Create(columnSquares.Slice(m + k, 4));
+                sum += Vector128.Create(columnSums.Slice(m + k, 4));
+            }
+
+            var aa = (sumSquares + squareRound) >> squareShift;
+            var d = (sum + sumRound) >> depthShift;
+            var p = Vector128.Min(Vector128.Max((aa * n) - (d * d), Vector128<int>.Zero), pLimit);
+            var a2 = GetA2(((p * s) + Vector128.Create(ZRound)) >> Av1Constants.SgrprojMtableBits);
+            var b2 = (maxA2 - a2) * oneOverN * sum;
+            a2.CopyTo(aRow[m..]);
+            ((b2 + bRound) >>> Av1Constants.SgrprojRecipBits).CopyTo(bRow[m..]);
+        }
+    }
+
+    /// <summary>
+    /// a2 of the box filter process (section 7.17.3) for values of z from 0 to 255: 1 for 0, 256 for 255, and otherwise
+    /// ((z &lt;&lt; 8) + z / 2) / (z + 1), computed in single precision: the dividend is below 2^16 and the divisor at most 255,
+    /// so the rounded quotient is within 2^-16 of the exact one, which is at least 1/255 below the next integer, and its
+    /// truncation is the integer quotient.
+    /// </summary>
+    internal static Vector128<int> GetA2(Vector128<int> z)
+    {
+        var dividend = Vector128.ConvertToSingle((z << Av1Constants.SgrprojSgrBits) + (z >> 1));
+        var quotient = Vector128.ConvertToInt32(dividend / Vector128.ConvertToSingle(z + Vector128<int>.One));
+        return Vector128.Max(quotient, Vector128<int>.One) - Vector128.Equals(z, Vector128.Create(255));
+    }
+
     // The filtered values of 4 samples of row i from their 3x3 neighborhoods: top, middle and bottom are the index of the
     // column before the first sample in the rows i - 1, i and i + 1 of A and B
     private static Vector128<int> Neighborhood(ReadOnlySpan<int> a, ReadOnlySpan<int> b, int pass, int i, int top, int middle, int bottom, Vector128<int> sample, Vector128<int> round, int bits)
@@ -602,18 +627,6 @@ internal static class Av1LoopRestoration
             return ((i + dy) & 1) is not 0 ? (dx is 0 ? 6 : 5) : 0;
 
         return dx is 0 || dy is 0 ? 4 : 3;
-    }
-
-    private static byte[] CreateSgrA2()
-    {
-        var values = new byte[255];
-        values[0] = 1;
-        for (var z = 1; z < values.Length; z++)
-        {
-            values[z] = (byte)(((z << Av1Constants.SgrprojSgrBits) + (z / 2)) / (z + 1));
-        }
-
-        return values;
     }
 
     private static long Round2(long value, int bits) => bits is 0 ? value : (value + (1L << (bits - 1))) >> bits;

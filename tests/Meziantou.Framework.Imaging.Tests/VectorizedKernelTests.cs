@@ -3008,7 +3008,9 @@ public sealed class VectorizedKernelTests
     public void Av1LoopRestorationFiltersMatchTheScalarReferences(int bitDepth)
     {
         // Blocks of every width around the vector size up to the largest one, on a padded source of random, extreme, flat and
-        // ramp samples, with Wiener coefficients and self-guided weights over their whole coded range and every self-guided set
+        // ramp samples, with Wiener coefficients and self-guided weights over their whole coded range and every self-guided set.
+        // The bounds of the 32-bit lanes of the self-guided boxes are reached by a source of maximum samples (the largest sums,
+        // z = 0 and the largest b2) and by a checkerboard of 0 and the maximum (the largest variance of a 3x3 and a 5x5 box)
         var random = new Random(bitDepth);
         var maxSample = (1 << bitDepth) - 1;
         var scratch = new int[Av1LoopRestoration.ScratchLength];
@@ -3028,12 +3030,14 @@ public sealed class VectorizedKernelTests
             var source = new ushort[(h + (2 * Padding)) * sourceStride];
             for (var i = 0; i < source.Length; i++)
             {
-                source[i] = (round % 4) switch
+                source[i] = (round / 16 % 6) switch
                 {
                     0 => (ushort)random.Next(maxSample + 1),
                     1 => (ushort)(random.Next(2) * maxSample),
                     2 => (ushort)Math.Clamp((maxSample / 2) + random.Next(-3, 4), 0, maxSample),
-                    _ => (ushort)Math.Clamp((i % sourceStride * maxSample / sourceStride) + random.Next(-8, 9), 0, maxSample),
+                    3 => (ushort)Math.Clamp((i % sourceStride * maxSample / sourceStride) + random.Next(-8, 9), 0, maxSample),
+                    4 => (ushort)maxSample,
+                    _ => (ushort)(((i % sourceStride) + (i / sourceStride)) % 2 * maxSample),
                 };
             }
 
@@ -3072,6 +3076,21 @@ public sealed class VectorizedKernelTests
             {
                 values[i] = random.Next(int.MinValue, int.MaxValue);
             }
+        }
+    }
+
+    [Fact]
+    public void Av1SelfGuidedA2MatchesTheIntegerDivisionForEveryZ()
+    {
+        for (var z = 0; z <= 255; z++)
+        {
+            var expected = z switch
+            {
+                0 => 1,
+                255 => 256,
+                _ => ((z << Av1Constants.SgrprojSgrBits) + (z / 2)) / (z + 1),
+            };
+            Assert.Equal(Vector128.Create(expected), Av1LoopRestoration.GetA2(Vector128.Create(z)));
         }
     }
 

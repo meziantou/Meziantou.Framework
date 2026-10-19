@@ -945,6 +945,47 @@ public sealed class DrawingImageTests
         }
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, 300, 200)]
+    [InlineData(PixelFormat.Gray16, 300, 200)]
+    [InlineData(PixelFormat.Rgb24, 700, 450)]
+    [InlineData(PixelFormat.Bgra32, 700, 450)]
+    public void APixelReadOnItsOwnDoesNotDependOnTheMemoryLeftForTheDrawing(PixelFormat format, int width, int height)
+    {
+        // The pixels a rotated image reads one by one are converted once for the shape when there is room for them (a
+        // region of 700x450 has more of them than are kept, a region of 300x200 has them all kept): the colors are
+        // those of the pixels read one by one
+        var random = new Random(20261019 + width);
+        using var source = DrawingTestSupport.CreateRandom(format, width, height, random.Next);
+        using var probe = new Image<Rgba32>(64, 48);
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        var scale = 64.0 / width;
+        var placements = new[]
+        {
+            AffineTransform.CreateScale(scale * 1.7, scale * 1.7).Then(AffineTransform.CreateRotation(23, new PointD(32, 24))),
+            AffineTransform.CreateScale(scale * 0.6, scale * 0.8).Then(AffineTransform.CreateSkew(15, -10)).Then(AffineTransform.CreateTranslation(9, 4)),
+        };
+        foreach (var sampling in Enum.GetValues<ImageSampling>())
+        {
+            foreach (var wrapMode in (ImageWrapMode[])[ImageWrapMode.Transparent, ImageWrapMode.Repeat, ImageWrapMode.Reflect])
+            {
+                foreach (var transform in placements)
+                {
+                    var brush = new ImageBrush(source.Frames[0]) { Transform = transform, WrapMode = wrapMode, Sampling = sampling };
+
+                    // Room for the drawing but not for the pixels it keeps: they are read one by one
+                    using var kept = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30));
+                    using var limited = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session + 100_000 } });
+                    kept.Draw(canvas => canvas.Fill(brush), Ct);
+                    limited.Draw(canvas => canvas.Fill(brush), Ct);
+                    Assert.True(kept.Owner.Scope.GetDiagnostics().PeakLiveBytes > session + 100_000);
+                    Assert.Equal(DrawingTestSupport.ReadSamples(kept.Frames[0]), DrawingTestSupport.ReadSamples(limited.Frames[0]));
+                }
+            }
+        }
+    }
+
     [Fact]
     public void AnImageBrushCanMaskAndEraseWithAnOperator()
     {

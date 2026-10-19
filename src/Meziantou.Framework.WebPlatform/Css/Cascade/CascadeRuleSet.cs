@@ -222,6 +222,12 @@ internal sealed class CascadeRuleSet
     /// <summary>The pseudo-elements of the rules of the lists of candidates (most elements have no rule for their pseudo-elements).</summary>
     private readonly HashSet<string> _pseudoElements = new(StringComparer.Ordinal);
 
+    /// <summary>The pseudo-elements of the rules that declare an animation or a transition property, with the host, slotted and part rules (see <see cref="DeclaresAnimationsFor"/>).</summary>
+    private readonly HashSet<string> _animatedPseudoElements = new(StringComparer.Ordinal);
+
+    /// <summary>The rules of a pseudo-element that declare an animation or a transition property.</summary>
+    private readonly HashSet<CascadeRule> _animatedPseudoElementRules = new(ReferenceEqualityComparer.Instance);
+
     private StyleInvalidationFeatures? _invalidationFeatures;
 
     public List<CascadeRule> HostRules { get; } = [];
@@ -280,9 +286,14 @@ internal sealed class CascadeRuleSet
             ReferencesExternalResources = true;
         }
 
-        if (!DeclaresAnimations && rule.Declarations.Exists(static declaration => IsAnimationProperty(declaration.Name)))
+        if ((!DeclaresAnimations || rule.PseudoElement is not null) && rule.Declarations.Exists(static declaration => IsAnimationProperty(declaration.Name)))
         {
             DeclaresAnimations = true;
+            if (rule.PseudoElement is { } animatedPseudoElement)
+            {
+                _animatedPseudoElements.Add(animatedPseudoElement);
+                _animatedPseudoElementRules.Add(rule);
+            }
         }
 
         if (!DeclaresContentVisibility && rule.Declarations.Exists(static declaration => IsContentVisibilityProperty(declaration.Name)))
@@ -461,6 +472,27 @@ internal sealed class CascadeRuleSet
             foreach (var rule in rules)
             {
                 if (string.Equals(rule.PseudoElement, pseudoElement, StringComparison.Ordinal))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Returns whether a rule of the set (a host, slotted or part rule included) declares an animation or a transition property for the pseudo-element.</summary>
+    public bool DeclaresAnimationsFor(string pseudoElement) => _animatedPseudoElements.Contains(pseudoElement);
+
+    /// <summary>Returns whether a candidate rule of the element (see <see cref="GetCandidates"/>) has the pseudo-element and declares an animation or a transition property (its selector is not matched).</summary>
+    public bool MayHaveAnimationRulesFor(Element element, string pseudoElement)
+    {
+        if (!_animatedPseudoElements.Contains(pseudoElement))
+            return false;
+
+        foreach (var rules in GetCandidates(element))
+        {
+            foreach (var rule in rules)
+            {
+                if (string.Equals(rule.PseudoElement, pseudoElement, StringComparison.Ordinal) && _animatedPseudoElementRules.Contains(rule))
                     return true;
             }
         }

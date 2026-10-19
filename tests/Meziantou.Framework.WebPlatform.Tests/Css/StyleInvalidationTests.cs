@@ -364,6 +364,45 @@ public sealed class StyleInvalidationTests : IDisposable
     }
 
     [Fact]
+    public void Transition_OfAPseudoElementWhoseElementKeepsItsStyle()
+    {
+        var document = Parse("<style>#a::before { content: 'x'; color: red; transition: color 1s linear } #a.on::before { color: green }</style><div id=a></div><div id=b></div>");
+        var engine = document.GetStyleEngine();
+        var a = Find(document, "#a");
+        var styleOfA = engine.GetStyle(a);
+        var styleOfB = Style(document, "#b");
+        Assert.Equal(Red, document.DefaultView!.GetComputedStyle(a, "::before").GetPropertyValue("color"));
+
+        a.ClassList.Add("on");
+
+        // (the style of another element is read: the transition starts without a read of the style of the pseudo-element)
+        Assert.Same(styleOfB, Style(document, "#b"));
+        Assert.Same(styleOfA, engine.GetStyle(a));
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(a)?.Get("before"));
+    }
+
+    [Fact]
+    public void Transition_OfAnInsertedElement_StartsFromItsStartingStyle()
+    {
+        var document = Parse("<style>.item { opacity: 1; transition: opacity 1s linear } @starting-style { .item { opacity: 0 } }</style><div id=list><div class=item></div></div><div id=b></div>");
+        var engine = document.GetStyleEngine();
+        _ = ComputeAll(document);
+        var styleOfB = Style(document, "#b");
+        var count = engine.ElementInvalidationCount;
+        var item = document.CreateElement("div");
+        item.ClassList.Add("item");
+        var container = document.CreateElement("div");
+        container.AppendChild(item);
+
+        Find(document, "#list").AppendChild(container);
+
+        // (the style of another element is read: the transition starts without a read of the style of the inserted element)
+        Assert.Same(styleOfB, Style(document, "#b"));
+        Assert.Equal(count + 1, engine.ElementInvalidationCount);
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(item)?.Get(pseudoElement: null));
+    }
+
+    [Fact]
     public void Animation_RestylesTheTargetOnly()
     {
         var document = Parse("<style>@keyframes fade { from { opacity: 0 } to { opacity: 1 } } #a { animation: fade 1s linear }</style><div id=a><span id=c></span></div><div id=b></div>");

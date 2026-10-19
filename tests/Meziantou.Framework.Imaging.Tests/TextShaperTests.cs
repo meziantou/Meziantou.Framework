@@ -201,6 +201,51 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheGlyphsOfABufferStayInOrderWhateverTheEditsAre()
+    {
+        // Glyphs replaced by more or fewer glyphs, and the components of ligatures removed at once.
+        var random = new Random(42);
+        var buffer = new GlyphBuffer(FontResourceLimits.Default);
+        var expected = new List<int>();
+        var next = 0;
+        for (var i = 0; i < 20; i++)
+        {
+            buffer.Add(next, next);
+            expected.Add(next++);
+        }
+
+        for (var step = 0; step < 2000; step++)
+        {
+            var index = random.Next(expected.Count + 1);
+            if (random.Next(3) == 0 && expected.Count > 4)
+            {
+                // Removed glyphs at increasing indexes, as the components of a ligature.
+                var indexes = Enumerable.Range(0, expected.Count).OrderBy(_ => random.Next()).Take(random.Next(1, 4)).Order().ToArray();
+                buffer.Remove(indexes);
+                for (var j = indexes.Length - 1; j >= 0; j--)
+                {
+                    expected.RemoveAt(indexes[j]);
+                }
+            }
+            else
+            {
+                var oldCount = random.Next(Math.Min(3, expected.Count - Math.Min(index, expected.Count)) + 1);
+                var newCount = random.Next(4);
+                buffer.Resize(index, oldCount, newCount);
+                expected.RemoveRange(index, oldCount);
+                for (var j = 0; j < newCount; j++)
+                {
+                    buffer.Info[index + j].Glyph = next;
+                    expected.Insert(index + j, next++);
+                }
+            }
+
+            Assert.Equal(expected, buffer.Info.ToArray().Select(info => info.Glyph));
+        }
+    }
+
+    [Fact]
     public void ScriptTagsFollowTheOpenTypeRegistry()
     {
         static string[] Tags(UnicodeScript script)

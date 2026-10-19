@@ -29,6 +29,7 @@ public class KernelBenchmarks : IDisposable
         var random = new Random(20);
         random.NextBytes(_row);
         random.NextBytes(_previous);
+        random.NextBytes(_filtered);
         for (var b = 0; b < _blocks.Length; b++)
         {
             var block = _blocks[b] = new double[64];
@@ -64,6 +65,22 @@ public class KernelBenchmarks : IDisposable
 
     [Benchmark]
     public void PngPaeth() => PngFilters.Filter(PngFilters.Paeth, _row, _previous, 3, _filtered);
+
+    // Unfilter rewrites its row in place: the reconstructed bytes are as random as the filtered ones, so every call costs the same
+    [Benchmark]
+    public void PngUnfilterSub1() => PngFilters.Unfilter(PngFilters.Sub, _filtered, _previous, 1);
+
+    [Benchmark]
+    public void PngUnfilterSub4() => PngFilters.Unfilter(PngFilters.Sub, _filtered, _previous, 4);
+
+    [Benchmark]
+    public void PngUnfilterAverage1() => PngFilters.Unfilter(PngFilters.Average, _filtered, _previous, 1);
+
+    [Benchmark]
+    public void PngUnfilterPaeth1() => PngFilters.Unfilter(PngFilters.Paeth, _filtered, _previous, 1);
+
+    [Benchmark]
+    public void PngUnfilterPaeth2() => PngFilters.Unfilter(PngFilters.Paeth, _filtered, _previous, 2);
 
     [Benchmark]
     public long PngAdaptiveCostScalar() => PngFilters.GetAdaptiveCostScalar(_row);

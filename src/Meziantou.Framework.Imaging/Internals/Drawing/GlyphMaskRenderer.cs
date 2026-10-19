@@ -74,8 +74,12 @@ internal sealed class GlyphMaskRenderer : IDisposable
     /// <param name="isAliased">Whether the coverage is the one of the centers of the pixels.</param>
     /// <param name="scratch">The scratch of the outlines.</param>
     /// <param name="cancellationToken">The token checked by the sweep.</param>
+    /// <param name="prepareOnly">
+    /// Whether to stop once every buffer the mask needs is rented (the edges and the scratch of the sweep), before the sweep:
+    /// <see cref="Coverage"/> is then not computed.
+    /// </param>
     /// <returns><see langword="false"/> when the glyph is too large for a mask.</returns>
-    public bool Render(FontFace face, int glyph, double size, in Affine2D linear, double fractionX, double fractionY, double boldWidth, bool isAliased, GlyphScratch scratch, CancellationToken cancellationToken)
+    public bool Render(FontFace face, int glyph, double size, in Affine2D linear, double fractionX, double fractionY, double boldWidth, bool isAliased, GlyphScratch scratch, CancellationToken cancellationToken, bool prepareOnly = false)
     {
         Left = Top = Width = Height = 0;
         _bounds.Reset();
@@ -135,6 +139,13 @@ internal sealed class GlyphMaskRenderer : IDisposable
             budget = new GlyphBudget(face.Data.Limits);
             face.DecodeOutline(glyph, size, _glyphSink, scratch, ref budget);
             emboldener.End();
+        }
+
+        // The sweep rents nothing: Begin rents its scratch, and the next Begin resets what an unfinished sweep left
+        if (prepareOnly)
+        {
+            _rasterizer.Begin(_edges, FillRule.NonZero, isAliased, cancellationToken);
+            return true;
         }
 
         var coverage = unsafe(MemoryMarshal.Cast<byte, uint>(_coverage.Span))[..(Width * Height)];

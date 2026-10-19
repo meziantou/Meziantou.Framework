@@ -306,6 +306,10 @@ internal static class Resampler
         {
             ResampleHorizontal3Vector128(working, output, xWeights);
         }
+        else if (channels == 1)
+        {
+            ResampleHorizontal1Interleaved(working, output, xWeights);
+        }
         else
         {
             ResampleHorizontalScalar(working, output, xWeights, channels);
@@ -377,45 +381,120 @@ internal static class Resampler
         }
     }
 
+    // The vector loops below compute two output pixels per iteration (four for gray): each pixel is one chain of dependent
+    // additions, so a single pixel at a time waits for the latency of every add. Each accumulator still sums its own taps
+    // in increasing order (the taps both windows have, then the remaining taps of each), so the sums are those of the
+    // scalar loop.
     private static void ResampleHorizontal4Vector256(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
     {
         var first = xWeights.First;
-        ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output[..(xWeights.OutputLength * 4)]));
-        for (var dx = 0; dx < xWeights.OutputLength; dx++)
+        var table = xWeights.GetWindowTable();
+        var outputLength = xWeights.OutputLength;
+        ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output[..(outputLength * 4)]));
+        var dx = 0;
+        for (; dx + 1 < outputLength; dx += 2)
         {
-            var weights = xWeights.GetWeights(dx);
-            var input = working.Slice((xWeights.GetStart(dx) - first) * 4, weights.Length * 4);
-            ref var inputStart = ref unsafe(MemoryMarshal.GetReference(input));
-            var sum = Vector256<double>.Zero;
-            for (var k = 0; k < weights.Length; k++)
+            var weights0 = table.GetWeights(dx);
+            var weights1 = table.GetWeights(dx + 1);
+            ref var input0 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 4, weights0.Length * 4)));
+            ref var input1 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx + 1) - first) * 4, weights1.Length * 4)));
+            ref var w0 = ref unsafe(MemoryMarshal.GetReference(weights0));
+            ref var w1 = ref unsafe(MemoryMarshal.GetReference(weights1));
+            var common = Math.Min(weights0.Length, weights1.Length);
+            var sum0 = Vector256<double>.Zero;
+            var sum1 = Vector256<double>.Zero;
+            for (var k = 0; k < common; k++)
             {
-                sum += Vector256.Create(weights[k]) * unsafe(Vector256.LoadUnsafe(ref inputStart, (nuint)(4 * k)));
+                sum0 += Vector256.Create(unsafe(Unsafe.Add(ref w0, k))) * unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(4 * k)));
+                sum1 += Vector256.Create(unsafe(Unsafe.Add(ref w1, k))) * unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(4 * k)));
             }
 
+            sum0 = Add4Vector256(sum0, ref input0, ref w0, common, weights0.Length);
+            sum1 = Add4Vector256(sum1, ref input1, ref w1, common, weights1.Length);
+            unsafe { sum0.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
+            unsafe { sum1.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 4)); }
+        }
+
+        if (dx < outputLength)
+        {
+            var weights = table.GetWeights(dx);
+            ref var input = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 4, weights.Length * 4)));
+            var sum = Add4Vector256(Vector256<double>.Zero, ref input, ref unsafe(MemoryMarshal.GetReference(weights)), 0, weights.Length);
             unsafe { sum.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
         }
+    }
+
+    /// <summary>Adds the taps <paramref name="start"/> to <paramref name="end"/> (excluded) of a window of 4-sample pixels.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> Add4Vector256(Vector256<double> sum, ref double input, ref double weights, int start, int end)
+    {
+        for (var k = start; k < end; k++)
+        {
+            sum += Vector256.Create(unsafe(Unsafe.Add(ref weights, k))) * unsafe(Vector256.LoadUnsafe(ref input, (nuint)(4 * k)));
+        }
+
+        return sum;
     }
 
     private static void ResampleHorizontal4Vector128(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
     {
         var first = xWeights.First;
-        ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output[..(xWeights.OutputLength * 4)]));
-        for (var dx = 0; dx < xWeights.OutputLength; dx++)
+        var table = xWeights.GetWindowTable();
+        var outputLength = xWeights.OutputLength;
+        ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output[..(outputLength * 4)]));
+        var dx = 0;
+        for (; dx + 1 < outputLength; dx += 2)
         {
-            var weights = xWeights.GetWeights(dx);
-            var input = working.Slice((xWeights.GetStart(dx) - first) * 4, weights.Length * 4);
-            ref var inputStart = ref unsafe(MemoryMarshal.GetReference(input));
-            var low = Vector128<double>.Zero;
-            var high = Vector128<double>.Zero;
-            for (var k = 0; k < weights.Length; k++)
+            var weights0 = table.GetWeights(dx);
+            var weights1 = table.GetWeights(dx + 1);
+            ref var input0 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 4, weights0.Length * 4)));
+            ref var input1 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx + 1) - first) * 4, weights1.Length * 4)));
+            ref var w0 = ref unsafe(MemoryMarshal.GetReference(weights0));
+            ref var w1 = ref unsafe(MemoryMarshal.GetReference(weights1));
+            var common = Math.Min(weights0.Length, weights1.Length);
+            var low0 = Vector128<double>.Zero;
+            var high0 = Vector128<double>.Zero;
+            var low1 = Vector128<double>.Zero;
+            var high1 = Vector128<double>.Zero;
+            for (var k = 0; k < common; k++)
             {
-                var w = Vector128.Create(weights[k]);
-                low += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)(4 * k)));
-                high += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)((4 * k) + 2)));
+                var weight0 = Vector128.Create(unsafe(Unsafe.Add(ref w0, k)));
+                var weight1 = Vector128.Create(unsafe(Unsafe.Add(ref w1, k)));
+                low0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(4 * k)));
+                high0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((4 * k) + 2)));
+                low1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(4 * k)));
+                high1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((4 * k) + 2)));
             }
 
+            Add4Vector128(ref low0, ref high0, ref input0, ref w0, common, weights0.Length);
+            Add4Vector128(ref low1, ref high1, ref input1, ref w1, common, weights1.Length);
+            unsafe { low0.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
+            unsafe { high0.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 2)); }
+            unsafe { low1.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 4)); }
+            unsafe { high1.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 6)); }
+        }
+
+        if (dx < outputLength)
+        {
+            var weights = table.GetWeights(dx);
+            ref var input = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 4, weights.Length * 4)));
+            var low = Vector128<double>.Zero;
+            var high = Vector128<double>.Zero;
+            Add4Vector128(ref low, ref high, ref input, ref unsafe(MemoryMarshal.GetReference(weights)), 0, weights.Length);
             unsafe { low.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
             unsafe { high.StoreUnsafe(ref outputStart, (nuint)((4 * dx) + 2)); }
+        }
+    }
+
+    /// <summary>Adds the taps <paramref name="start"/> to <paramref name="end"/> (excluded) of a window of 4-sample pixels.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Add4Vector128(ref Vector128<double> low, ref Vector128<double> high, ref double input, ref double weights, int start, int end)
+    {
+        for (var k = start; k < end; k++)
+        {
+            var weight = Vector128.Create(unsafe(Unsafe.Add(ref weights, k)));
+            low += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * k)));
+            high += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * k) + 2)));
         }
     }
 
@@ -427,25 +506,66 @@ internal static class Resampler
     private static void ResampleHorizontal3Vector128(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
     {
         var first = xWeights.First;
+        var table = xWeights.GetWindowTable();
         var outputLength = xWeights.OutputLength;
-        for (var dx = 0; dx < outputLength; dx++)
+        var dx = 0;
+        for (; dx + 1 < outputLength; dx += 2)
         {
-            var weights = xWeights.GetWeights(dx);
-            var input = working.Slice((xWeights.GetStart(dx) - first) * 3, (weights.Length * 3) + 1);
-            ref var inputStart = ref unsafe(MemoryMarshal.GetReference(input));
-            var low = Vector128<double>.Zero;
-            var high = Vector128<double>.Zero;
-            for (var k = 0; k < weights.Length; k++)
+            var weights0 = table.GetWeights(dx);
+            var weights1 = table.GetWeights(dx + 1);
+            ref var input0 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 3, (weights0.Length * 3) + 1)));
+            ref var input1 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx + 1) - first) * 3, (weights1.Length * 3) + 1)));
+            ref var w0 = ref unsafe(MemoryMarshal.GetReference(weights0));
+            ref var w1 = ref unsafe(MemoryMarshal.GetReference(weights1));
+            var common = Math.Min(weights0.Length, weights1.Length);
+            var low0 = Vector128<double>.Zero;
+            var high0 = Vector128<double>.Zero;
+            var low1 = Vector128<double>.Zero;
+            var high1 = Vector128<double>.Zero;
+            for (var k = 0; k < common; k++)
             {
-                var w = Vector128.Create(weights[k]);
-                low += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)(3 * k)));
-                high += w * unsafe(Vector128.LoadUnsafe(ref inputStart, (nuint)((3 * k) + 2)));
+                var weight0 = Vector128.Create(unsafe(Unsafe.Add(ref w0, k)));
+                var weight1 = Vector128.Create(unsafe(Unsafe.Add(ref w1, k)));
+                low0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(3 * k)));
+                high0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((3 * k) + 2)));
+                low1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(3 * k)));
+                high1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((3 * k) + 2)));
             }
 
+            Add3Vector128(ref low0, ref high0, ref input0, ref w0, common, weights0.Length);
+            Add3Vector128(ref low1, ref high1, ref input1, ref w1, common, weights1.Length);
+            var o = output.Slice(dx * 3, 6);
+            o[0] = low0.GetElement(0);
+            o[1] = low0.GetElement(1);
+            o[2] = high0.GetElement(0);
+            o[3] = low1.GetElement(0);
+            o[4] = low1.GetElement(1);
+            o[5] = high1.GetElement(0);
+        }
+
+        if (dx < outputLength)
+        {
+            var weights = table.GetWeights(dx);
+            ref var input = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 3, (weights.Length * 3) + 1)));
+            var low = Vector128<double>.Zero;
+            var high = Vector128<double>.Zero;
+            Add3Vector128(ref low, ref high, ref input, ref unsafe(MemoryMarshal.GetReference(weights)), 0, weights.Length);
             var o = output.Slice(dx * 3, 3);
             o[0] = low.GetElement(0);
             o[1] = low.GetElement(1);
             o[2] = high.GetElement(0);
+        }
+    }
+
+    /// <summary>Adds the taps <paramref name="start"/> to <paramref name="end"/> (excluded) of a window of 3-sample pixels.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Add3Vector128(ref Vector128<double> low, ref Vector128<double> high, ref double input, ref double weights, int start, int end)
+    {
+        for (var k = start; k < end; k++)
+        {
+            var weight = Vector128.Create(unsafe(Unsafe.Add(ref weights, k)));
+            low += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * k)));
+            high += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)((3 * k) + 2)));
         }
     }
 
@@ -456,22 +576,112 @@ internal static class Resampler
     private static void ResampleHorizontal3Vector256(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
     {
         var first = xWeights.First;
+        var table = xWeights.GetWindowTable();
         var outputLength = xWeights.OutputLength;
-        for (var dx = 0; dx < outputLength; dx++)
+        var dx = 0;
+        for (; dx + 1 < outputLength; dx += 2)
         {
-            var weights = xWeights.GetWeights(dx);
-            var input = working.Slice((xWeights.GetStart(dx) - first) * 3, (weights.Length * 3) + 1);
-            ref var inputStart = ref unsafe(MemoryMarshal.GetReference(input));
-            var sum = Vector256<double>.Zero;
-            for (var k = 0; k < weights.Length; k++)
+            var weights0 = table.GetWeights(dx);
+            var weights1 = table.GetWeights(dx + 1);
+            ref var input0 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 3, (weights0.Length * 3) + 1)));
+            ref var input1 = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx + 1) - first) * 3, (weights1.Length * 3) + 1)));
+            ref var w0 = ref unsafe(MemoryMarshal.GetReference(weights0));
+            ref var w1 = ref unsafe(MemoryMarshal.GetReference(weights1));
+            var common = Math.Min(weights0.Length, weights1.Length);
+            var sum0 = Vector256<double>.Zero;
+            var sum1 = Vector256<double>.Zero;
+            for (var k = 0; k < common; k++)
             {
-                sum += Vector256.Create(weights[k]) * unsafe(Vector256.LoadUnsafe(ref inputStart, (nuint)(3 * k)));
+                sum0 += Vector256.Create(unsafe(Unsafe.Add(ref w0, k))) * unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(3 * k)));
+                sum1 += Vector256.Create(unsafe(Unsafe.Add(ref w1, k))) * unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(3 * k)));
             }
 
+            sum0 = Add3Vector256(sum0, ref input0, ref w0, common, weights0.Length);
+            sum1 = Add3Vector256(sum1, ref input1, ref w1, common, weights1.Length);
+            var o = output.Slice(dx * 3, 6);
+            o[0] = sum0.GetElement(0);
+            o[1] = sum0.GetElement(1);
+            o[2] = sum0.GetElement(2);
+            o[3] = sum1.GetElement(0);
+            o[4] = sum1.GetElement(1);
+            o[5] = sum1.GetElement(2);
+        }
+
+        if (dx < outputLength)
+        {
+            var weights = table.GetWeights(dx);
+            ref var input = ref unsafe(MemoryMarshal.GetReference(working.Slice((table.GetStart(dx) - first) * 3, (weights.Length * 3) + 1)));
+            var sum = Add3Vector256(Vector256<double>.Zero, ref input, ref unsafe(MemoryMarshal.GetReference(weights)), 0, weights.Length);
             var o = output.Slice(dx * 3, 3);
             o[0] = sum.GetElement(0);
             o[1] = sum.GetElement(1);
             o[2] = sum.GetElement(2);
+        }
+    }
+
+    /// <summary>Adds the taps <paramref name="start"/> to <paramref name="end"/> (excluded) of a window of 3-sample pixels.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> Add3Vector256(Vector256<double> sum, ref double input, ref double weights, int start, int end)
+    {
+        for (var k = start; k < end; k++)
+        {
+            sum += Vector256.Create(unsafe(Unsafe.Add(ref weights, k))) * unsafe(Vector256.LoadUnsafe(ref input, (nuint)(3 * k)));
+        }
+
+        return sum;
+    }
+
+    /// <summary>1-sample pixels, four output pixels per iteration (four independent chains of additions).</summary>
+    private static void ResampleHorizontal1Interleaved(ReadOnlySpan<double> working, Span<double> output, ResampleWeights xWeights)
+    {
+        var first = xWeights.First;
+        var table = xWeights.GetWindowTable();
+        var outputLength = xWeights.OutputLength;
+        output = output[..outputLength];
+        var dx = 0;
+        for (; dx + 3 < outputLength; dx += 4)
+        {
+            var weights0 = table.GetWeights(dx);
+            var weights1 = table.GetWeights(dx + 1);
+            var weights2 = table.GetWeights(dx + 2);
+            var weights3 = table.GetWeights(dx + 3);
+            ref var input0 = ref unsafe(MemoryMarshal.GetReference(working.Slice(table.GetStart(dx) - first, weights0.Length)));
+            ref var input1 = ref unsafe(MemoryMarshal.GetReference(working.Slice(table.GetStart(dx + 1) - first, weights1.Length)));
+            ref var input2 = ref unsafe(MemoryMarshal.GetReference(working.Slice(table.GetStart(dx + 2) - first, weights2.Length)));
+            ref var input3 = ref unsafe(MemoryMarshal.GetReference(working.Slice(table.GetStart(dx + 3) - first, weights3.Length)));
+            ref var w0 = ref unsafe(MemoryMarshal.GetReference(weights0));
+            ref var w1 = ref unsafe(MemoryMarshal.GetReference(weights1));
+            ref var w2 = ref unsafe(MemoryMarshal.GetReference(weights2));
+            ref var w3 = ref unsafe(MemoryMarshal.GetReference(weights3));
+            var common = Math.Min(Math.Min(weights0.Length, weights1.Length), Math.Min(weights2.Length, weights3.Length));
+            double sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0;
+            for (var k = 0; k < common; k++)
+            {
+                sum0 += unsafe(Unsafe.Add(ref w0, k)) * unsafe(Unsafe.Add(ref input0, k));
+                sum1 += unsafe(Unsafe.Add(ref w1, k)) * unsafe(Unsafe.Add(ref input1, k));
+                sum2 += unsafe(Unsafe.Add(ref w2, k)) * unsafe(Unsafe.Add(ref input2, k));
+                sum3 += unsafe(Unsafe.Add(ref w3, k)) * unsafe(Unsafe.Add(ref input3, k));
+            }
+
+            output[dx] = Add1(sum0, weights0, working[(table.GetStart(dx) - first)..], common);
+            output[dx + 1] = Add1(sum1, weights1, working[(table.GetStart(dx + 1) - first)..], common);
+            output[dx + 2] = Add1(sum2, weights2, working[(table.GetStart(dx + 2) - first)..], common);
+            output[dx + 3] = Add1(sum3, weights3, working[(table.GetStart(dx + 3) - first)..], common);
+        }
+
+        for (; dx < outputLength; dx++)
+        {
+            output[dx] = Add1(0, table.GetWeights(dx), working[(table.GetStart(dx) - first)..], 0);
+        }
+
+        static double Add1(double sum, ReadOnlySpan<double> weights, ReadOnlySpan<double> input, int start)
+        {
+            for (var k = start; k < weights.Length; k++)
+            {
+                sum += weights[k] * input[k];
+            }
+
+            return sum;
         }
     }
 

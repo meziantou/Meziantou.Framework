@@ -1,7 +1,11 @@
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -25,9 +29,11 @@ internal static class PngFilters
     /// <param name="bytesPerPixel">The number of bytes per complete pixel, at least 1.</param>
     /// <exception cref="InvalidImageContentException">The filter type is not 0 to 4.</exception>
     /// <remarks>
-    /// With 128-bit hardware vector support, Up adds whole vectors, and Sub, Average and Paeth reconstruct one pixel per
-    /// step for pixels of 3, 4, 6 and 8 bytes: the bytes of a pixel only depend on the previous pixel, so they are computed
-    /// together in the lanes of one vector (16-bit lanes for Average and Paeth, whose intermediate values exceed a byte).
+    /// With 128-bit hardware vector support, Up adds whole vectors; Sub reconstructs 16 bytes per step as a prefix sum
+    /// inside the vector (modulo 256 additions are associative); Average and Paeth reconstruct one pixel per step for
+    /// pixels of 3, 4, 6 and 8 bytes: the bytes of a pixel only depend on the previous pixel, so they are computed together
+    /// in the lanes of one vector (16-bit lanes, whose intermediate values exceed a byte). For pixels of 1 and 2 bytes,
+    /// Paeth runs a branch-free scalar loop.
     /// The result is identical to <see cref="UnfilterScalar(byte, Span{byte}, ReadOnlySpan{byte}, int)"/>, the reference.
     /// </remarks>
     public static void Unfilter(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
@@ -45,12 +51,26 @@ internal static class PngFilters
             return;
         }
 
-        // The pixel-at-a-time loops stop before the last 16 bytes; the scalar reference reconstructs the rest
+        // The vector loops stop before the last 16 bytes; the scalar reference reconstructs the rest
         var done = 0;
-        if (filterType is Sub or Average or Paeth)
+        if (filterType == Sub)
         {
             done = bytesPerPixel switch
             {
+                1 => UnfilterSubVector<PixelSize1>(row),
+                2 => UnfilterSubVector<PixelSize2>(row),
+                3 => UnfilterSubVector<PixelSize3>(row),
+                4 => UnfilterSubVector<PixelSize4>(row),
+                6 => UnfilterSubVector<PixelSize6>(row),
+                8 => UnfilterSubVector<PixelSize8>(row),
+                _ => 0,
+            };
+        }
+        else if (filterType is Average or Paeth)
+        {
+            done = bytesPerPixel switch
+            {
+                1 or 2 when filterType == Paeth => UnfilterPaethBytes(row, previous, bytesPerPixel),
                 3 => UnfilterPixels<PixelSize3>(filterType, row, previous),
                 4 => UnfilterPixels<PixelSize4>(filterType, row, previous),
                 6 => UnfilterPixels<PixelSize6>(filterType, row, previous),
@@ -452,7 +472,120 @@ internal static class PngFilters
     }
 
     /// <summary>
-    /// Reconstructs the pixels of a Sub, Average or Paeth scanline whose 16 following bytes exist (whole vectors are loaded;
+    /// Reconstructs a Sub scanline 16 bytes at a time: each byte is the sum (modulo 256) of the filtered bytes at distances
+    /// 0, bpp, 2 bpp, ... in the vector (shifted copies added for distances bpp, 2 bpp, 4 bpp and 8 bpp below 16), plus the
+    /// reconstructed byte of the same channel in the last pixel of the previous vector.
+    /// </summary>
+    /// <returns>The number of bytes reconstructed (a multiple of 16).</returns>
+    private static int UnfilterSubVector<TSize>(Span<byte> row)
+        where TSize : struct, IPixelSize
+    {
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        var length = (nuint)row.Length;
+        var last = Vector128<byte>.Zero;
+        nuint i = 0;
+        for (; i + (nuint)Vector128<byte>.Count <= length; i += (nuint)Vector128<byte>.Count)
+        {
+            var value = unsafe(Vector128.LoadUnsafe(ref current, i));
+            value += ShiftBytesUp(value, (byte)TSize.Value);
+            if (TSize.Value < 8)
+            {
+                value += ShiftBytesUp(value, (byte)(2 * TSize.Value));
+            }
+
+            if (TSize.Value < 4)
+            {
+                value += ShiftBytesUp(value, (byte)(4 * TSize.Value));
+            }
+
+            if (TSize.Value < 2)
+            {
+                value += ShiftBytesUp(value, 8);
+            }
+
+            // Lane j continues the channel of lane 16 - bpp + (j mod bpp) of the previous vector
+            value += TSize.Value switch
+            {
+                1 => Vector128.Shuffle(last, Vector128.Create((byte)15)),
+                2 => Vector128.Shuffle(last.AsUInt16(), Vector128.Create((ushort)7)).AsByte(),
+                3 => Vector128.Shuffle(last, Vector128.Create((byte)13, 14, 15, 13, 14, 15, 13, 14, 15, 13, 14, 15, 13, 14, 15, 13)),
+                4 => Vector128.Shuffle(last.AsUInt32(), Vector128.Create(3u)).AsByte(),
+                6 => Vector128.Shuffle(last, Vector128.Create((byte)10, 11, 12, 13, 14, 15, 10, 11, 12, 13, 14, 15, 10, 11, 12, 13)),
+                _ => Vector128.Shuffle(last.AsUInt64(), Vector128.Create(1ul)).AsByte(),
+            };
+            unsafe { value.StoreUnsafe(ref current, i); }
+            last = value;
+        }
+
+        return (int)i;
+    }
+
+    /// <summary>Moves the bytes of a vector <paramref name="count"/> lanes up (to higher indices), shifting in zeros.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SuppressMessage("Performance", "CA1857:A constant is expected for the parameter", Justification = "The callers pass multiples of TSize.Value, a JIT-time constant once the generic loop is specialized and this method inlined.")]
+    private static Vector128<byte> ShiftBytesUp(Vector128<byte> value, byte count)
+    {
+        if (Sse2.IsSupported)
+            return Sse2.ShiftLeftLogical128BitLane(value, count);
+
+        if (AdvSimd.IsSupported)
+            return AdvSimd.ExtractVector128(Vector128<byte>.Zero, value, (byte)(Vector128<byte>.Count - count));
+
+        // Lanes below count get an index of 240 or more, which selects zero
+        return Vector128.Shuffle(value, Vector128<byte>.Indices - Vector128.Create(count));
+    }
+
+    /// <summary>
+    /// Reconstructs a Paeth scanline of 1- or 2-byte pixels: each byte depends on the byte just reconstructed, so the loop is
+    /// scalar, without bounds checks, and the predictor is chosen without branches (random data defeats the predictor of
+    /// the reference's branches).
+    /// </summary>
+    /// <returns>The number of bytes reconstructed (the whole row).</returns>
+    private static int UnfilterPaethBytes(Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
+    {
+        Debug.Assert(bytesPerPixel is 1 or 2 && row.Length >= bytesPerPixel && previous.Length == row.Length);
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var above = ref unsafe(MemoryMarshal.GetReference(previous));
+        var length = (nint)row.Length;
+        var bpp = (nint)bytesPerPixel;
+
+        // With a = c = 0 (first pixel) the predictor is the byte above
+        for (nint i = 0; i < bpp; i++)
+        {
+            unsafe { Unsafe.Add(ref current, i) += Unsafe.Add(ref above, i); }
+        }
+
+        for (var i = bpp; i < length; i++)
+        {
+            int a, b, c;
+            unsafe
+            {
+                a = Unsafe.Add(ref current, i - bpp);
+                b = Unsafe.Add(ref above, i);
+                c = Unsafe.Add(ref above, i - bpp);
+            }
+
+            // |p - a| = |b - c|, |p - b| = |a - c| and |p - c| = |(a - c) + (b - c)|, as in the scalar predictor
+            var distanceA = Abs(b - c);
+            var distanceB = Abs(a - c);
+            var distanceC = Abs(b - c + a - c);
+            var useA = (distanceA <= distanceB) & (distanceA <= distanceC);
+            var predictor = distanceB <= distanceC ? b : c;
+            predictor = useA ? a : predictor;
+            unsafe { Unsafe.Add(ref current, i) += (byte)predictor; }
+        }
+
+        return row.Length;
+
+        static int Abs(int value)
+        {
+            var sign = value >> 31;
+            return (value ^ sign) - sign;
+        }
+    }
+
+    /// <summary>
+    /// Reconstructs the pixels of an Average or Paeth scanline whose 16 following bytes exist (whole vectors are loaded;
     /// only the bytes of the pixel are stored), one pixel per step.
     /// </summary>
     /// <returns>The number of bytes reconstructed (a multiple of the pixel size).</returns>
@@ -464,16 +597,7 @@ internal static class PngFilters
         var step = (nuint)TSize.Value;
         var last = (nuint)(row.Length - Vector128<byte>.Count);
         nuint i = 0;
-        if (filterType == Sub)
-        {
-            var left = Vector128<byte>.Zero;
-            for (; i <= last; i += step)
-            {
-                left += unsafe(Vector128.LoadUnsafe(ref current, i));
-                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), left);
-            }
-        }
-        else if (filterType == Average)
+        if (filterType == Average)
         {
             // floor((left + above) / 2) needs 9 bits: 16-bit lanes, the sum reduced modulo 256 before it is the next "left"
             var byteMask = Vector128.Create((ushort)0xFF);
@@ -601,6 +725,16 @@ internal static class PngFilters
     private interface IPixelSize
     {
         static abstract int Value { get; }
+    }
+
+    private readonly struct PixelSize1 : IPixelSize
+    {
+        public static int Value => 1;
+    }
+
+    private readonly struct PixelSize2 : IPixelSize
+    {
+        public static int Value => 2;
     }
 
     private readonly struct PixelSize3 : IPixelSize

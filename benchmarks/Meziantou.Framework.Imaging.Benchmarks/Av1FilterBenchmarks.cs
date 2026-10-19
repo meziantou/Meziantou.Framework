@@ -5,8 +5,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// The AV1 post-processing filters on their own, at sizes that the decoded corpus of <see cref="AvifBenchmarks"/> is too small
-/// to weigh: the self-guided loop restoration of 64x64 blocks with every parameter set, and the film grain synthesis of a
-/// 640x480 4:2:0 frame (the grain templates, then the grain of every stripe). Inputs are seeded random data;
+/// to weigh: the self-guided loop restoration of 64x64 blocks with every parameter set, the film grain synthesis of a
+/// 640x480 4:2:0 frame (the grain templates, then the grain of every stripe), and the CDEF of the 4x4 chroma blocks of
+/// 4:2:0 frames. Inputs are seeded random data;
 /// <c>VectorizedKernelTests</c> checks the vector paths against their scalar references.
 /// </summary>
 [MemoryDiagnoser]
@@ -14,6 +15,8 @@ public sealed class Av1FilterBenchmarks : IDisposable
 {
     private const int GrainWidth = 640;
     private const int GrainHeight = 480;
+    private const int CdefBlocks = 1024;
+    private const int CdefStride = 4 + 4;
     private const int BlockSize = Av1LoopRestoration.MaxBlockWidth;
     private const int SetCount = 16;
     private const int SourceStride = BlockSize + (2 * Av1LoopRestoration.Padding);
@@ -27,6 +30,9 @@ public sealed class Av1FilterBenchmarks : IDisposable
     private Av1FrameBuffer _frame8 = null!;
     private Av1FrameBuffer _frame10 = null!;
     private Av1FilmGrainParameters _grain = null!;
+    private readonly ushort[] _cdefWindows = new ushort[CdefBlocks * (4 + 4) * CdefStride];
+    private readonly ushort[] _cdefOutput = new ushort[CdefBlocks * 4 * CdefStride];
+    private readonly int[][] _cdefOffsets = new int[8][];
 
     [GlobalSetup]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded benchmark inputs.")]
@@ -45,6 +51,18 @@ public sealed class Av1FilterBenchmarks : IDisposable
         for (var set = 0; set < SetCount; set++)
         {
             _units[set] = [Av1Constants.RestoreSgrproj, 0, 0, 0, 0, 0, 0, (sbyte)set, Av1Tables.SgrprojXqdMid[0], Av1Tables.SgrprojXqdMid[1]];
+        }
+
+        // The chroma blocks of 4:2:0 frames: the window of a block has 2 rows and 2 columns around it, and the taps of every
+        // direction
+        for (var i = 0; i < _cdefWindows.Length; i++)
+        {
+            _cdefWindows[i] = (ushort)Math.Clamp(128 + random.Next(-20, 21), 0, 255);
+        }
+
+        for (var direction = 0; direction < 8; direction++)
+        {
+            _cdefOffsets[direction] = GetCdefTapOffsets(direction);
         }
 
         // Grain on the 3 planes, with the largest auto-regression lag and overlapping blocks: the parameters of a typical
@@ -103,7 +121,41 @@ public sealed class Av1FilterBenchmarks : IDisposable
     [Benchmark]
     public void FilmGrain10() => ApplyGrain(_frame10);
 
+    [Benchmark(OperationsPerInvoke = CdefBlocks)]
+    public void CdefChroma()
+    {
+        const int WindowLength = (4 + 4) * CdefStride;
+        for (var block = 0; block < CdefBlocks; block++)
+        {
+            // Strengths of a typical frame at 8 bits: primary 2 to 5, secondary 1 or 2, the damping of the chroma (5 - 1)
+            var priStr = 2 + (block & 3);
+            var secStr = 1 + ((block >> 2) & 1);
+            var priShift = Math.Max(0, 4 - System.Numerics.BitOperations.Log2((uint)priStr));
+            var secShift = Math.Max(0, 4 - System.Numerics.BitOperations.Log2((uint)secStr));
+            Av1Cdef.FilterInteriorRows(_cdefOutput.AsSpan(block * 4 * CdefStride, 4 * CdefStride), _cdefWindows.AsSpan(block * WindowLength, WindowLength), CdefStride, 4, 4, _cdefOffsets[block & 7], priStr, secStr, priShift, secShift, (priStr & 1) is 0 ? 4 : 3, (priStr & 1) is 0 ? 2 : 3, 2, 1);
+        }
+    }
+
     public void Dispose() => Cleanup();
+
+    // The offsets of the taps of a direction in the window (section 7.15.3): 4 primary taps, then 8 secondary taps
+    private static int[] GetCdefTapOffsets(int direction)
+    {
+        var offsets = new int[12];
+        for (var k = 0; k < 2; k++)
+        {
+            offsets[2 * k] = Offset(direction, k);
+            offsets[(2 * k) + 1] = -offsets[2 * k];
+            offsets[4 + (4 * k)] = Offset((direction + 6) & 7, k);
+            offsets[5 + (4 * k)] = -offsets[4 + (4 * k)];
+            offsets[6 + (4 * k)] = Offset((direction + 2) & 7, k);
+            offsets[7 + (4 * k)] = -offsets[6 + (4 * k)];
+        }
+
+        return offsets;
+
+        static int Offset(int d, int k) => (Av1Tables.CdefDirections[((d * 2) + k) * 2] * CdefStride) + Av1Tables.CdefDirections[(((d * 2) + k) * 2) + 1];
+    }
 
     private void ApplyGrain(Av1FrameBuffer frame)
     {

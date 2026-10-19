@@ -2803,6 +2803,7 @@ public sealed class VectorizedKernelTests
     [InlineData(4, 4, 8)]
     [InlineData(4, 8, 12)]
     [InlineData(8, 4, 10)]
+    [InlineData(4, 3, 10)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1CdefInteriorRowsMatchTheScalarReference(int width, int height, int bitDepth)
     {

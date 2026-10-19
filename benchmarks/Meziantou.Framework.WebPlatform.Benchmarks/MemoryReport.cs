@@ -163,7 +163,7 @@ internal static class MemoryReport
     /// <summary>The number of elements of the document that have rare data, and the percentage of the elements.</summary>
     private static string FormatRareData(Document document)
     {
-        if (RareDataProperty is null)
+        if (RareDataProperty is not { } rareDataProperty)
             return "";
 
         var elements = 0;
@@ -176,7 +176,7 @@ internal static class MemoryReport
             if (node is Element)
             {
                 elements++;
-                if (RareDataProperty.GetValue(node) is not null)
+                if (rareDataProperty.GetValue(node) is not null)
                 {
                     withRareData++;
                 }

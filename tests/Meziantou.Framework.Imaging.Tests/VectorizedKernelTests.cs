@@ -1504,27 +1504,47 @@ public sealed class VectorizedKernelTests
     public void ResampleHorizontalMatchesTheScalarLoopBitForBit(int channels)
     {
         // Doubles, not rounded samples: the interleaved loops must keep the exact summation order of every output sample.
-        // Odd output lengths leave a single last pixel; downscales give windows of different lengths in one pair.
+        // Output lengths that are not multiples of the pixels of an iteration leave tails; downscales give windows of
+        // different lengths, padded with zero weights after them, or before them at the right edge; small sources give
+        // padded windows longer than the source (whose samples after the last used column are read, and must be finite).
         var random = new Random(channels);
-        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129)];
+        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (9, 17), (50, 19), (1000, 9), (5, 23), (20, 15)];
+        var group = Resampler.GetHorizontalWeightsGroup(channels);
         foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
         {
             foreach (var (sourceLength, outputLength) in sizes)
             {
-                using var weights = ResampleWeights.Create(AllocationScope.Create(configuration: null), ResampleAxis.FullExtent(sourceLength, outputLength), filter);
-                var working = new double[(((weights.Last - weights.First) + 1) * channels) + 1];
+                var axis = ResampleAxis.FullExtent(sourceLength, outputLength);
+                using var weights = ResampleWeights.Create(AllocationScope.Create(configuration: null), axis, filter);
+                using var padded = group is 0 ? ResampleWeights.Create(AllocationScope.Create(configuration: null), axis, filter) : ResampleWeights.CreatePadded(AllocationScope.Create(configuration: null), axis, filter, group);
+                Assert.Equal(weights.First, padded.First);
+                Assert.Equal(weights.Last, padded.Last);
+                var working = new double[(Math.Max(padded.PaddedSourceLength, weights.Last - weights.First + 1) * channels) + 1];
                 for (var i = 0; i < working.Length; i++)
                 {
                     working[i] = (random.NextDouble() * 70000) - 3000;
                 }
 
+                // The output is followed by values that the loops must not overwrite
                 var expected = new double[outputLength * channels];
-                var actual = new double[outputLength * channels];
+                var actual = new double[(outputLength * channels) + 8];
+                actual.AsSpan(expected.Length).Fill(-1);
                 Resampler.ResampleHorizontalScalar(working, expected, weights, channels);
-                Resampler.ResampleHorizontal(working, actual, weights, channels);
+                Resampler.ResampleHorizontal(working, actual.AsSpan(0, expected.Length), padded, channels);
                 for (var i = 0; i < expected.Length; i++)
                 {
                     Assert.Equal(BitConverter.DoubleToInt64Bits(expected[i]), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+
+                Assert.All(actual[expected.Length..], value => Assert.Equal(-1, value));
+                if (padded.Group == 1)
+                {
+                    // The scalar loop reads the weights of the windows from the padded table too
+                    Resampler.ResampleHorizontalScalar(working, actual, padded, channels);
+                    for (var i = 0; i < expected.Length; i++)
+                    {
+                        Assert.Equal(BitConverter.DoubleToInt64Bits(expected[i]), BitConverter.DoubleToInt64Bits(actual[i]));
+                    }
                 }
             }
         }

@@ -858,7 +858,8 @@ thin public types over its `FontFace`.
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
 - A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
-  x64 (the Windows and Linux CI legs, or an x64 machine).
+  x64 (the Windows and Linux CI legs, or an x64 machine). The inverse transform kernels are written once over
+  `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC

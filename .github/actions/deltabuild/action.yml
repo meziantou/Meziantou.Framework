@@ -29,7 +29,11 @@ inputs:
     required: false
     default: ""
   base-commit:
-    description: Optional base commit SHA to pass as --base-commit
+    description: |
+      Base commit SHA to pass as --base-commit. Required on pull_request runs, where it should be
+      github.event.pull_request.base.sha. Without it, DeltaBuild compares HEAD with its merge-base
+      with origin/<base branch>, which contains the changes once the pull request is merged: a job
+      that starts or is rerun after the merge then finds no changed file and skips everything.
     required: false
     default: ""
   run-generate:
@@ -138,6 +142,9 @@ runs:
         # and are not valid git commits for DeltaBuild base selection.
         if ($env:BASE_COMMIT -and $env:BASE_COMMIT -notmatch '^0+$') {
           $arguments += @("--base-commit", $env:BASE_COMMIT)
+        }
+        elseif ($env:GITHUB_EVENT_NAME -eq "pull_request") {
+          throw "The base-commit input is required on pull_request runs, see its description"
         }
 
         if ($env:SHARD) {

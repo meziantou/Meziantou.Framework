@@ -37,6 +37,13 @@ internal sealed partial class DrawingSession
     private readonly List<LayerLevel> _layers = [];
     private int _layerDepth;
 
+    // The pixels of the frames that the draw calls may have changed (outside any layer), when they are tracked
+    private bool _tracksDrawn;
+    private int _drawnLeft;
+    private int _drawnTop;
+    private int _drawnRight;
+    private int _drawnBottom;
+
     /// <summary>Starts a layer: the draw calls that follow paint it, until <see cref="PopLayer"/>.</summary>
     /// <param name="opacity">The opacity the layer is drawn with, from 0 to 1.</param>
     /// <param name="mode">The operator that combines the layer with what is under it.</param>
@@ -313,6 +320,7 @@ internal sealed partial class DrawingSession
             session._originY = _originY + top;
             session._clipsGeometry = _clipsGeometry;
             session._isLayerFrame = true;
+            session._tracksDrawn = true;
             session._canvasBounds = new Rectangle(_canvasBounds.X - left, _canvasBounds.Y - top, _canvasBounds.Width, _canvasBounds.Height);
             var toImage = AffineTransform.CreateTranslation(-left, -top);
             session.PushTransform(_hasTransform ? _transform.Then(toImage) : toImage);
@@ -483,9 +491,16 @@ internal sealed partial class DrawingSession
                 if (draw && !bounded.IsEmpty && level.Opacity != 0)
                 {
                     var (shiftX, shiftY) = (0, 0);
+                    var area = new Rectangle(0, 0, bounded.Image.Width, bounded.Image.Height);
                     if (level.Effect == LayerEffect.Filter)
                     {
-                        ApplyFilterLayer(bounded, level);
+                        area = ApplyFilterLayer(bounded, level);
+                        if (area.IsEmpty)
+                        {
+                            // Drawing it would have changed no pixel, but the pixels were about to change
+                            RemoveStaleThumbnail();
+                            return;
+                        }
                     }
                     else if (level.Effect == LayerEffect.FarShadow)
                     {
@@ -495,7 +510,7 @@ internal sealed partial class DrawingSession
                         (shiftX, shiftY) = ((DropShadowFilter)level.Filter!).ShadowOnly ? level.CasterShift : default;
                     }
 
-                    DrawBoundedLayer(bounded, level, shiftX, shiftY);
+                    DrawBoundedLayer(bounded, level, shiftX, shiftY, area);
                 }
             }
             finally
@@ -620,14 +635,18 @@ internal sealed partial class DrawingSession
         }
     }
 
-    /// <summary>Draws the image of a layer of a rectangle at its place, moved by whole pixels: its frame on every frame, or each of its frames on its own.</summary>
-    private void DrawBoundedLayer(BoundedLayer bounded, LayerLevel level, int shiftX, int shiftY)
+    /// <summary>
+    /// Draws the image of a layer of a rectangle at its place, moved by whole pixels: its frame on every frame, or each
+    /// of its frames on its own. Only the pixels of <paramref name="area"/> are drawn: every other pixel of the image is
+    /// transparent, which the operator of the layer (source-over) changes nothing with, or it is the whole image.
+    /// </summary>
+    private void DrawBoundedLayer(BoundedLayer bounded, LayerLevel level, int shiftX, int shiftY, Rectangle area)
     {
         var layerFrames = bounded.Image.Frames;
         var left = bounded.Left + shiftX;
         var top = bounded.Top + shiftY;
         var placement = AffineTransform.CreateTranslation(left, top);
-        var bounds = new Rectangle(left, top, bounded.Image.Width, bounded.Image.Height);
+        var bounds = new Rectangle(left + area.Left, top + area.Top, area.Width, area.Height);
         if (layerFrames.Count == 1)
         {
             DrawLayerFrame(layerFrames[0], bounds, level, placement);
@@ -680,12 +699,30 @@ internal sealed partial class DrawingSession
         }
     }
 
+    /// <summary>Gets the pixels of the frames that the draw calls may have changed outside any layer: the session of a bounded layer tracks them.</summary>
+    private Rectangle GetDrawnBounds()
+        => _drawnRight > _drawnLeft ? Rectangle.FromLTRB(_drawnLeft, _drawnTop, _drawnRight, _drawnBottom) : Rectangle.Empty;
+
     /// <summary>Records that pixels of what the draw calls paint may have changed: those of the layer of the current depth, if any.</summary>
     private void MarkDrawn(int left, int top, int right, int bottom)
     {
         if (_layerDepth != 0)
         {
             _layers[_layerDepth - 1].MarkDirty(left, top, right, bottom);
+        }
+        else if (_tracksDrawn && right > left && bottom > top)
+        {
+            if (_drawnRight <= _drawnLeft)
+            {
+                (_drawnLeft, _drawnTop, _drawnRight, _drawnBottom) = (left, top, right, bottom);
+            }
+            else
+            {
+                _drawnLeft = Math.Min(_drawnLeft, left);
+                _drawnTop = Math.Min(_drawnTop, top);
+                _drawnRight = Math.Max(_drawnRight, right);
+                _drawnBottom = Math.Max(_drawnBottom, bottom);
+            }
         }
     }
 

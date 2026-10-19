@@ -636,6 +636,13 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
   frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
+- A filter that leaves transparent what is beyond its reach (`Filter.GetLocalSteps`: blurs with transparent edges,
+  shadows, color matrices that add no alpha, before any reach) applies to what is within twice its reach of what is
+  drawn on its layer (`GetLocalFilterArea`: the dirty rectangle, or the drawn bounds the session of a bounded layer
+  tracks), and only those pixels of the layer are drawn. Twice: the running sums of a blur leave values of a few units
+  of the last place after what they sum, which the next sum reads; they are written as transparent pixels, and the
+  pixels within the reach are the bits of the whole layer (`AFilterThatKeepsTransparentPixelsAppliesOnlyWhere...`).
+  A color matrix after a blur is excluded: the straight color of such a value is anything.
 - The surfaces of a filter graph (`FilterGraphContext.Bounds`) are the filtered surface when a primitive reads the
   drawing or its alpha, and otherwise only the pixels its subregions cover, so that a small subregion of a large canvas
   stays in the buffer pool. On a layer (`FilterGraph.ApplyToLayer`), the filtered surface of such a graph is that

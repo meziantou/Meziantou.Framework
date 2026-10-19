@@ -225,16 +225,15 @@ internal static class MyanmarShaper
             glyph.SyllableCategory = GetCategory(glyph.CodePoint);
         }
 
-        Span<int> states = stackalloc int[Math.Max(ConsonantPattern.StateCount, BrokenPattern.StateCount) * 2];
         var serial = 0;
         var start = 0;
         while (start < info.Length)
         {
-            var length = ConsonantPattern.Match(info, start, states);
+            var length = ConsonantPattern.Match(info, start);
             var kind = ConsonantSyllable;
 
             // A joiner alone is not a syllable without its base.
-            var broken = info[start].SyllableCategory is Joiner or NonJoiner ? 0 : BrokenPattern.Match(info, start, states);
+            var broken = info[start].SyllableCategory is Joiner or NonJoiner ? 0 : BrokenPattern.Match(info, start);
             if (broken > length)
             {
                 length = broken;

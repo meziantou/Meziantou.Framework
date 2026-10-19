@@ -130,8 +130,6 @@ internal sealed class IndicShaper
         (Compile("reph? n complex_syllable_tail"), BrokenCluster),
     ];
 
-    private static readonly int MaxStateCount = Patterns.Max(pattern => pattern.Pattern.StateCount);
-
     private readonly FontFace _face;
     private readonly UnicodeScript _script;
     private readonly int _firstBit;
@@ -212,7 +210,6 @@ internal sealed class IndicShaper
             Get(glyph.CodePoint, out glyph.SyllableCategory, out glyph.SyllablePosition);
         }
 
-        Span<int> states = stackalloc int[MaxStateCount * 2];
         var serial = 0;
         var start = 0;
         while (start < info.Length)
@@ -222,7 +219,7 @@ internal sealed class IndicShaper
             var kind = NonIndicCluster;
             foreach (var (pattern, patternKind) in Patterns)
             {
-                var matched = pattern.Match(info, start, states);
+                var matched = pattern.Match(info, start);
                 if (matched > length)
                 {
                     length = matched;

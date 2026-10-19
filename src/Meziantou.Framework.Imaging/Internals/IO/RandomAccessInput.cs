@@ -38,10 +38,29 @@ internal abstract class RandomAccessInput : IDisposable
     /// <exception cref="ArgumentException">The stream is not seekable.</exception>
     public static RandomAccessInput Create(Stream stream, long origin, bool ownsStream) => new StreamInput(stream, origin, ownsStream);
 
+    /// <summary>
+    /// Creates an input over bytes the caller keeps pinned until it disposes the input: a synchronous decode reads the
+    /// bytes of the input driver in place (<see cref="WholeInputParser{TResult}"/>) instead of copying them.
+    /// </summary>
+    /// <param name="data">The first byte of the whole encoded input.</param>
+    /// <param name="length">The number of bytes.</param>
+    /// <returns>The input; reading it after it was disposed throws <see cref="ObjectDisposedException"/>.</returns>
+    public static unsafe RandomAccessInput CreatePinned(byte* data, int length) => new PinnedInput(data, length);
+
     /// <summary>Reads a validated, non-empty range.</summary>
     /// <param name="offset">The offset from the first byte of the input.</param>
     /// <param name="destination">The destination, filled completely.</param>
     public abstract void Read(long offset, Span<byte> destination);
+
+    /// <summary>Gets a value indicating whether the input is held in memory, so that <see cref="GetSpan"/> can serve its bytes without a copy.</summary>
+    public virtual bool IsInMemory => false;
+
+    /// <summary>Gets a validated range of an input held in memory (<see cref="IsInMemory"/>) without copying it.</summary>
+    /// <param name="offset">The offset from the first byte of the input.</param>
+    /// <param name="length">The number of bytes.</param>
+    /// <returns>The bytes, valid until the input is disposed.</returns>
+    /// <exception cref="NotSupportedException">The input is not held in memory.</exception>
+    public virtual ReadOnlySpan<byte> GetSpan(long offset, int length) => throw new NotSupportedException("The input is not held in memory.");
 
     public void Dispose()
     {
@@ -59,6 +78,10 @@ internal abstract class RandomAccessInput : IDisposable
 
         public override void Read(long offset, Span<byte> destination) => data.Span.Slice((int)offset, destination.Length).CopyTo(destination);
 
+        public override bool IsInMemory => true;
+
+        public override ReadOnlySpan<byte> GetSpan(long offset, int length) => data.Span.Slice((int)offset, length);
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -67,6 +90,32 @@ internal abstract class RandomAccessInput : IDisposable
             }
 
             base.Dispose(disposing);
+        }
+    }
+
+    private sealed class PinnedInput(byte* data, int length) : RandomAccessInput
+    {
+        private byte* _data = data;
+
+        public override long Length => length;
+
+        public override void Read(long offset, Span<byte> destination) => GetBytes().Slice((int)offset, destination.Length).CopyTo(destination);
+
+        public override bool IsInMemory => true;
+
+        public override ReadOnlySpan<byte> GetSpan(long offset, int length) => GetBytes().Slice((int)offset, length);
+
+        protected override void Dispose(bool disposing)
+        {
+            // The bytes are only pinned while the input is alive
+            _data = null;
+            base.Dispose(disposing);
+        }
+
+        private ReadOnlySpan<byte> GetBytes()
+        {
+            ObjectDisposedException.ThrowIf(_data is null && length != 0, this);
+            return unsafe(new ReadOnlySpan<byte>(_data, length));
         }
     }
 

@@ -1999,6 +1999,54 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingFilterBlurColumnStripsMatchTheColumnByColumnReference()
+    {
+        // Surfaces narrower than a strip, between two strips, shorter than the windows; edges inside, around and across
+        // the surface; the weights below a deviation of 2 and the three boxes of odd and even sizes above it
+        var random = new Random(20261019);
+        var scope = AllocationScope.Create(configuration: null);
+        (int Width, int Height)[] sizes = [(1, 1), (1, 19), (19, 1), (3, 2), (7, 13), (8, 8), (9, 30), (17, 5), (33, 12)];
+        double[] sigmas = [0.4, 1, 1.7, 1.99, 2, 2.6, 3, 3.5, 5.5, 12];
+        foreach (var (width, height) in sizes)
+        {
+            foreach (var sigma in sigmas)
+            {
+                foreach (var mode in Enum.GetValues<FilterEdgeMode>())
+                {
+                    var bounds = new Rectangle(random.Next(-4, 5), random.Next(-4, 5), width, height);
+                    var edges = random.Next(3) switch
+                    {
+                        0 => bounds,
+                        1 => Rectangle.FromLTRB(bounds.Left - random.Next(4), bounds.Top - random.Next(4), bounds.Right + random.Next(4), bounds.Bottom + random.Next(4)),
+                        _ => new Rectangle(bounds.Left + random.Next(-3, 4), bounds.Top + random.Next(-3, 4), Math.Max(1, width + random.Next(-3, 4)), Math.Max(1, height + random.Next(-3, 4))),
+                    };
+                    var extent = random.Next(2) == 0 ? edges : Rectangle.FromLTRB(edges.Left - 2, edges.Top - 3, edges.Right + 1, edges.Bottom + 2);
+                    var values = Enumerable.Range(0, 4 * width * height).Select(_ => random.Next(5) == 0 ? 0f : (float)random.NextDouble()).ToArray();
+                    var sigmaX = random.Next(3) == 0 ? 0 : sigma * random.NextDouble();
+                    var expected = Blur(useColumnStrips: false);
+                    var actual = Blur(useColumnStrips: true);
+                    for (var i = 0; i < expected.Length; i++)
+                    {
+                        Assert.Equal(BitConverter.SingleToInt32Bits(expected[i]), BitConverter.SingleToInt32Bits(actual[i]));
+                    }
+
+                    float[] Blur(bool useColumnStrips)
+                    {
+                        using var processor = new FilterProcessor(scope, ImageConfiguration.Default) { UseColumnStrips = useColumnStrips };
+                        processor.Configure(edges, edgeOverride: null, 1, 1, 1, 0, 0, 1, 0, 0, CancellationToken.None);
+                        processor.Extent = extent;
+                        using var surface = new FilterSurface(scope, bounds);
+                        values.CopyTo(surface.Values);
+                        processor.Blur(surface, sigmaX, sigma, mode);
+                        return surface.Values.ToArray();
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingTurbulenceOfTheFourChannelsMatchesTheReferenceOfEachChannel()
     {
         var random = new Random(20261019);

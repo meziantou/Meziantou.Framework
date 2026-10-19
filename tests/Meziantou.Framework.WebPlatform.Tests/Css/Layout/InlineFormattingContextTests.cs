@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.Extensions.Time.Testing;
@@ -1076,5 +1077,47 @@ public sealed class InlineFormattingContextTests : IDisposable
             """);
         Assert.Equal(20, GetRect(document, "d").Height);
         Assert.Equal(10, GetRect(document, "e").Height);
+    }
+
+    [Fact]
+    public void ShrinkToFit_LayoutOfTheMeasuredItems_IsTheLayoutOfTheItems()
+    {
+        // The layout of a float reuses the items collected to measure it: it is the same as the layout of a block of its width
+        const string Content = "XX&shy;XXX <span style='white-space: nowrap'>X X</span><span id=i1 style='display: inline-block; width: 15px; height: 5px'></span>"
+            + "<span id=i2 style='display: inline-block; width: 5px; height: 5px'></span> XX&nbsp;X <span style='white-space: pre-wrap'>X\tX</span>"
+            + " <span style='overflow-wrap: anywhere'>XXXXXXXXXX</span>   XX\n  XX";
+        var floated = Parse($"<div style='width: 75px; letter-spacing: 1px'><div id=d style='float: left'>{Content}</div></div>");
+        var width = GetRect(floated, "d").Width;
+        var block = Parse($"<div style='width: 75px; letter-spacing: 1px'><div id=d style='width: {width.ToString(CultureInfo.InvariantCulture)}px'>{Content}</div></div>");
+        Assert.Equal(GetLayout(block), GetLayout(floated));
+
+        static List<string> GetLayout(Document document)
+        {
+            var origin = GetRect(document, "d");
+            var result = new List<string> { origin.Size.ToString(), GetRect(document, "i1").ToString(), GetRect(document, "i2").ToString() };
+            foreach (var text in GetTextFragments(document, "d"))
+            {
+                var rect = text.GetRectInRoot();
+                result.Add($"{text.Start}-{text.End}: {rect.X - origin.X},{rect.Y - origin.Y} {rect.Width}x{rect.Height}");
+            }
+
+            return result;
+        }
+    }
+
+    [Fact]
+    public void PlainText_MandatoryBreakCharacters()
+    {
+        var document = Parse("<div id=d style='width: 200px'>XX\u2028XX\u2029XX</div>");
+        Assert.Equal(30, GetRect(document, "d").Height);
+    }
+
+    [Fact]
+    public void PlainText_RightToLeftCharactersInsideAWord()
+    {
+        var document = Parse("<div id=d style='width: 200px'>XX\u05D0\u05D1XX</div>");
+        var texts = GetTextFragments(document, "d");
+        Assert.Equal(3, texts.Count);
+        Assert.True(texts.Single(text => text.Start == 2).ShapedText!.IsRightToLeft);
     }
 }

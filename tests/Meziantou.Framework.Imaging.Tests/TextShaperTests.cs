@@ -610,7 +610,7 @@ public sealed class TextShaperTests
         var patterns = new Dictionary<string, string>(StringComparer.Ordinal) { ["pair"] = "B C" };
         var compiled = SyllablePattern.Compile(pattern, categories, patterns);
         var info = text.Split(' ').Select(name => new GlyphInfo { SyllableCategory = (byte)(name[0] - 'A' + 1) }).ToArray();
-        Assert.Equal(expected, compiled.Match(info, 0, new int[compiled.StateCount * 2]));
+        Assert.Equal(expected, compiled.Match(info, 0));
     }
 
     [Theory]

@@ -475,6 +475,51 @@ public sealed class BenchmarkWorkloadTests
         Assert.Equal((frame.Width, frame.Height, vector.Frames.Count), (image.Width, image.Height, image.Frames.Count));
     }
 
+    [Fact]
+    public void HeicGridInputHoldsCopiesOfTheStillOfTheCorpus()
+    {
+        const int Columns = 8;
+        const int Rows = 6;
+        const int Width = 3000;
+        const int Height = 1280;
+        var corpus = GoldenCorpus.Default;
+        var vector = corpus.GetHevcVector("hevc/x265-benchmark-intra-420-384x216");
+        var stream = File.ReadAllBytes(corpus.GetHevcVectorPath(vector));
+        var data = HevcStreamContainer.WrapGrid(stream, 384, 216, chromaFormatIdc: 1, Columns, Rows, Width, Height);
+
+        // The independent reader finds a grid of coded items
+        var reader = ReferenceHeif.Parse(data);
+        var grid = reader.PrimaryItem!;
+        Assert.Equal("grid", grid.Type);
+        Assert.Equal((Rows, Columns, (long)Width, (long)Height), reader.ReadGridDescriptor(grid));
+        var tiles = reader.GetGridTiles(grid);
+        Assert.HasCount(Columns * Rows, tiles);
+        Assert.All(tiles, tile => Assert.Equal("hvc1", tile.Type));
+
+        // The library decode gives the image, whose tiles away from their edges and from the edges of the image (where the
+        // chroma of the next tile is interpolated, or the chroma is extended) are the still image
+        using var still = Image.Load<Rgb24>(HevcStreamContainer.Wrap(stream, 384, 216, bitDepth: 8, chromaFormatIdc: 1));
+        using var image = Image.Load<Rgb24>(data);
+        Assert.Equal((Width, Height), (image.Width, image.Height));
+        var expected = new Rgb24[384 * 216];
+        still.Frames[0].CopyPixelDataTo(expected);
+        var actual = new Rgb24[Width * Height];
+        image.Frames[0].CopyPixelDataTo(actual);
+        for (var y = 0; y < Height; y++)
+        {
+            var tileY = y % 216;
+            if (tileY < 2 || tileY >= 214 || y >= Height - 2)
+                continue;
+
+            for (var x = 0; x < Width; x++)
+            {
+                var tileX = x % 384;
+                if (tileX >= 2 && tileX < 382 && x < Width - 2 && actual[(y * Width) + x] != expected[(tileY * 384) + tileX])
+                    Assert.Fail($"The pixel ({x}, {y}) of the grid is not the pixel ({tileX}, {tileY}) of the still image.");
+            }
+        }
+    }
+
     private static void AssertMatchesEncoderModel(byte[] jpeg, RawPixelBuffer pixels, string context)
     {
         var reference = ReferenceJpeg.Parse(jpeg);

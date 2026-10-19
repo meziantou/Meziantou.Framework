@@ -389,10 +389,9 @@ internal sealed class HeifYuvConverter
     /// <param name="destination">The upsampled row: the width of the image.</param>
     public void UpsampleChromaRow(HeifPlanarImage image, int plane, int y, int width, int height, Span<ushort> destination)
     {
-        var chroma = image.GetPlane(plane);
         if (_subX is 0)
         {
-            chroma.GetRow(y)[..width].CopyTo(destination);
+            image.GetRow(plane, y)[..width].CopyTo(destination);
             return;
         }
 
@@ -414,7 +413,7 @@ internal sealed class HeifYuvConverter
             otherIndex = Math.Clamp((y & 1) is 0 ? nearIndex - 1 : nearIndex + 1, 0, chromaHeight - 1);
         }
 
-        UpsampleRow(chroma.GetRow(nearIndex), chroma.GetRow(otherIndex), y & 1, destination[..width]);
+        UpsampleRow(image.GetRow(plane, nearIndex), image.GetRow(plane, otherIndex), y & 1, destination[..width]);
     }
 
     /// <summary>

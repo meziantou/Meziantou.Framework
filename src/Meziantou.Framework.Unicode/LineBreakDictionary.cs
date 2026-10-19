@@ -44,12 +44,23 @@ public sealed class LineBreakDictionary
 
     private const ushort NotBoundary = ushort.MaxValue;
 
+    // A node of the first levels of the trie has a table indexed by letter when it has at least this number of
+    // children, and the table is not larger than this ratio times the number of children.
+    private const int DenseDepth = 3;
+    private const int MinDenseChildCount = 4;
+    private const int MaxDenseTableRatio = 16;
+
     // The trie of the words, by UTF-16 code unit. The node 0 is the root, and the nodes are numbered level by level:
     // the children of a node are the consecutive nodes from _firstChildren[node] to _firstChildren[node + 1],
     // excluded, sorted by letter.
     private readonly int[] _firstChildren;
     private readonly char[] _letters;
     private readonly ulong[] _isWord;
+
+    // The walks of the trie start at every boundary, so the nodes of the first levels, which have the most children,
+    // also have a table indexed by letter: the element of a letter is its child, or -1.
+    private readonly DenseChildren[] _denseChildren;
+    private readonly int[] _denseNodes;
 
     private LineBreakDictionary(List<string> words)
     {
@@ -104,6 +115,7 @@ public sealed class LineBreakDictionary
         }
 
         WordCount = wordNodes.Count;
+        (_denseChildren, _denseNodes) = CreateDenseChildren(_firstChildren, _letters);
     }
 
     /// <summary>Gets the number of distinct words.</summary>
@@ -283,10 +295,12 @@ public sealed class LineBreakDictionary
             return 0;
 
         Span<ulong> wordStarts = stackalloc ulong[PieceLength / 64];
+        Span<ulong> boundaries = stackalloc ulong[PieceLength / 64];
+        var boundaryLength = 0;
         var count = 0;
         for (var start = 0; start < text.Length;)
         {
-            var length = SegmentPiece(text[start..], wordStarts);
+            var length = SegmentPiece(text[start..], wordStarts, boundaries, ref boundaryLength);
             for (var i = 0; i < wordStarts.Length; i++)
             {
                 var bits = wordStarts[i];
@@ -315,8 +329,10 @@ public sealed class LineBreakDictionary
     /// <summary>Segments the start of a text, and finds the words of the part of it whose segmentation is final.</summary>
     /// <param name="text">The text, from the end of the previous piece to the end of the run.</param>
     /// <param name="wordStarts">A set of <see cref="PieceLength"/> bits. On return, the bit of an index is set when a word of the segmentation starts at that index of <paramref name="text"/>.</param>
+    /// <param name="boundaries">A set of <see cref="PieceLength"/> bits: the bit of an index before <paramref name="boundaryLength"/> is set when the index is a boundary. On return, the boundaries of the text that follows the part that is segmented, which the previous piece already found.</param>
+    /// <param name="boundaryLength">The length of the start of <paramref name="text"/> whose boundaries are in <paramref name="boundaries"/>, which ends at a boundary; 0 when none is known. On return, the same for the text that follows the part that is segmented.</param>
     /// <returns>The length of the part of <paramref name="text"/> that is segmented: the next piece starts after it. It is not 0 unless <paramref name="text"/> is empty.</returns>
-    internal int SegmentPiece(ReadOnlySpan<char> text, Span<ulong> wordStarts)
+    internal int SegmentPiece(ReadOnlySpan<char> text, Span<ulong> wordStarts, Span<ulong> boundaries, ref int boundaryLength)
     {
         wordStarts.Clear();
 
@@ -328,7 +344,18 @@ public sealed class LineBreakDictionary
         Span<int> costs = stackalloc int[limit + 1];
         choices.Fill(NotBoundary);
 
-        var end = 0;
+        // The pieces overlap: the clusters at the start of this one were read by the previous one.
+        var end = boundaryLength;
+        for (var i = 0; i < end; i += 64)
+        {
+            var bits = boundaries[i >> 6];
+            while (bits != 0)
+            {
+                choices[i + BitOperations.TrailingZeroCount(bits)] = 0;
+                bits &= bits - 1;
+            }
+        }
+
         while (end < limit)
         {
             var length = GetClusterLength(text[end..]);
@@ -401,6 +428,16 @@ public sealed class LineBreakDictionary
             }
         }
 
+        boundaries.Clear();
+        boundaryLength = isLastPiece ? 0 : end - position;
+        for (var i = 0; i < boundaryLength; i++)
+        {
+            if (choices[position + i] != NotBoundary)
+            {
+                boundaries[i >> 6] |= 1UL << (i & 63);
+            }
+        }
+
         return position;
     }
 
@@ -431,8 +468,61 @@ public sealed class LineBreakDictionary
 
     private bool IsWord(int node) => (_isWord[node >> 6] & (1UL << (node & 63))) != 0;
 
+    private static (DenseChildren[] Tables, int[] Nodes) CreateDenseChildren(int[] firstChildren, char[] letters)
+    {
+        // The nodes are numbered level by level: the children of the nodes before n are the nodes before firstChildren[n].
+        var denseCount = 1;
+        for (var depth = 1; depth < DenseDepth; depth++)
+        {
+            denseCount = firstChildren[denseCount];
+        }
+
+        var tables = new DenseChildren[denseCount];
+        var nodeCount = 0;
+        for (var node = 0; node < tables.Length; node++)
+        {
+            var first = firstChildren[node];
+            var count = firstChildren[node + 1] - first;
+            if (count < MinDenseChildCount)
+                continue;
+
+            var length = letters[first + count - 1] - letters[first] + 1;
+            if (length > count * MaxDenseTableRatio)
+                continue;
+
+            tables[node] = new DenseChildren(nodeCount, letters[first], length);
+            nodeCount += length;
+        }
+
+        var nodes = new int[nodeCount];
+        nodes.AsSpan().Fill(-1);
+        for (var node = 0; node < tables.Length; node++)
+        {
+            var table = tables[node];
+            if (table.Length == 0)
+                continue;
+
+            for (var child = firstChildren[node]; child < firstChildren[node + 1]; child++)
+            {
+                nodes[table.Offset + letters[child] - table.Min] = child;
+            }
+        }
+
+        return (tables, nodes);
+    }
+
     private int FindChild(int node, char letter)
     {
+        if ((uint)node < (uint)_denseChildren.Length)
+        {
+            var table = _denseChildren[node];
+            if (table.Length != 0)
+            {
+                var offset = letter - table.Min;
+                return (uint)offset < (uint)table.Length ? _denseNodes[table.Offset + offset] : -1;
+            }
+        }
+
         var low = _firstChildren[node];
         var high = _firstChildren[node + 1] - 1;
         while (low <= high)
@@ -487,4 +577,6 @@ public sealed class LineBreakDictionary
 
         return buffer.ToArray();
     }
+
+    private readonly record struct DenseChildren(int Offset, char Min, int Length);
 }

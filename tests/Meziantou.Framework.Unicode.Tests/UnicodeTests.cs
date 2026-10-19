@@ -1966,6 +1966,43 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void LineBreakDictionary_Contains_AgreesWithTheWordList()
+    {
+        // Thai consonants, without a third of them: the first levels of the trie have a table indexed by letter, with
+        // holes in it. With letters that are far apart, they have none.
+        string[] thai = [.. Enumerable.Range(0x0E01, 46).Where(codePoint => codePoint % 3 != 0).Select(codePoint => ((char)codePoint).ToString())];
+        string[] others = ["\u0E00", "\u0E01", "\u0E04", "\u0E2E", "b"];
+        var state = 2024u;
+        foreach (var alphabet in new[] { thai, [.. thai, "a", "\U00020000"] })
+        {
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < 2000; i++)
+            {
+                words.Add(RandomText(ref state, alphabet, 1 + NextRandom(ref state, 5)));
+            }
+
+            var dictionary = LineBreakDictionary.Parse(string.Join('\n', words));
+            Assert.Equal(words.Count, dictionary.WordCount);
+
+            string[] probeAlphabet = [.. alphabet, .. others];
+            var found = 0;
+            for (var i = 0; i < 20000; i++)
+            {
+                var text = RandomText(ref state, probeAlphabet, NextRandom(ref state, 4));
+                var expected = words.Contains(text);
+                if (dictionary.Contains(text) != expected)
+                {
+                    Assert.Fail($"'{Escape(text)}': expected {expected}");
+                }
+
+                found += expected ? 1 : 0;
+            }
+
+            Assert.True(found > 1000, $"Only {found} words were found");
+        }
+    }
+
+    [Fact]
     public void LineBreakDictionary_Parse_AppliesTheLimits()
     {
         var threeWords = new LineBreakDictionaryOptions { MaxWordCount = 3 };

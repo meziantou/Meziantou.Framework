@@ -30,12 +30,21 @@ public sealed class Hyphenator
     // A letter of a word that must not match the dot of a pattern.
     private const int NoLetter = -1;
 
+    // The greatest length of the table of the children of the root.
+    private const int MaxRootTableLength = 4096;
+
     // The trie of the patterns: the node 0 is the root, and the edges of a node are sorted by letter.
     private readonly int[] _edgeStarts;
     private readonly int[] _edgeLetters;
     private readonly int[] _edgeTargets;
     private readonly int[] _valueOffsets;
     private readonly byte[] _values;
+
+    // The patterns are looked up from every letter of a word, so the root also has a table indexed by letter: the
+    // element of a letter is its child, or -1. It is null when the letters of the root are too far apart.
+    private readonly int[]? _rootChildren;
+    private readonly int _rootMinLetter;
+
     private readonly FrozenDictionary<string, byte[]> _exceptions;
     private readonly FrozenDictionary<string, byte[]>.AlternateLookup<ReadOnlySpan<char>> _exceptionLookup;
     private readonly int _maxWordLength;
@@ -110,6 +119,18 @@ public sealed class Hyphenator
 
         _valueOffsets = [.. valueOffsets];
         _values = [.. values];
+
+        var rootEdgeCount = _edgeStarts[1];
+        if (rootEdgeCount > 0 && _edgeLetters[rootEdgeCount - 1] - _edgeLetters[0] < MaxRootTableLength)
+        {
+            _rootMinLetter = _edgeLetters[0];
+            _rootChildren = new int[_edgeLetters[rootEdgeCount - 1] - _rootMinLetter + 1];
+            _rootChildren.AsSpan().Fill(-1);
+            for (var edge = 0; edge < rootEdgeCount; edge++)
+            {
+                _rootChildren[_edgeLetters[edge] - _rootMinLetter] = _edgeTargets[edge];
+            }
+        }
     }
 
     /// <summary>Gets the smallest number of characters before the first break of a word.</summary>
@@ -255,10 +276,12 @@ public sealed class Hyphenator
         if (word.Length < 2 || word.Length > _maxWordLength)
             return 0;
 
-        // The lowercase letters of the word between two word boundaries, and the UTF-16 index of each letter.
+        // The lowercase letters of the word between two word boundaries, and the UTF-16 index of each letter. The
+        // lowercase word is only needed to look up the exceptions.
+        var hasExceptions = _exceptions.Count != 0;
         Span<int> letters = stackalloc int[word.Length + 2];
         Span<int> offsets = stackalloc int[word.Length + 1];
-        Span<char> lowercase = stackalloc char[word.Length * 2];
+        Span<char> lowercase = hasExceptions ? stackalloc char[word.Length * 2] : default;
         var letterCount = 0;
         var lowercaseLength = 0;
         letters[0] = WordBoundary;
@@ -267,7 +290,11 @@ public sealed class Hyphenator
             var codePoint = UnicodeProperties.ToSimpleLowercase(Unicode.DecodeAt(word, index, out var length));
             offsets[letterCount] = index;
             letters[++letterCount] = codePoint == WordBoundary ? NoLetter : codePoint;
-            lowercaseLength += Encode(codePoint, lowercase[lowercaseLength..]);
+            if (hasExceptions)
+            {
+                lowercaseLength += Encode(codePoint, lowercase[lowercaseLength..]);
+            }
+
             index += length;
         }
 
@@ -277,7 +304,7 @@ public sealed class Hyphenator
         // scores[i] is the value of a break before the letter i of the word; odd values allow the break.
         Span<byte> scores = stackalloc byte[letterCount + 1];
         scores.Clear();
-        if (_exceptionLookup.TryGetValue(lowercase[..lowercaseLength], out var exception))
+        if (hasExceptions && _exceptionLookup.TryGetValue(lowercase[..lowercaseLength], out var exception))
         {
             foreach (var position in exception)
             {
@@ -289,33 +316,32 @@ public sealed class Hyphenator
             ApplyPatterns(letters[..(letterCount + 2)], scores);
         }
 
-        // A break stays outside the grapheme clusters, and the minimums count clusters.
-        var count = 0;
-        var clustersBefore = 0;
+        // A break stays outside the grapheme clusters, and the minimums count clusters. The letters are not needed
+        // anymore: their buffer receives the start of each cluster.
+        var clusterStarts = letters;
         var clusterCount = 0;
-        foreach (var _ in Unicode.EnumerateGraphemeClusters(word))
+        for (var index = 0; index < word.Length; index += Unicode.GetGraphemeClusterLength(word[index..]))
         {
-            clusterCount++;
+            clusterStarts[clusterCount++] = index;
         }
 
+        var count = 0;
         var letter = 0;
-        foreach (var cluster in Unicode.EnumerateGraphemeClusters(word))
+        for (var cluster = LeftHyphenMin; cluster <= clusterCount - RightHyphenMin; cluster++)
         {
-            var start = cluster.Start.Value;
+            var start = clusterStarts[cluster];
             while (offsets[letter] < start)
             {
                 letter++;
             }
 
-            if (clustersBefore >= LeftHyphenMin && clusterCount - clustersBefore >= RightHyphenMin && (scores[letter] & 1) != 0)
+            if ((scores[letter] & 1) != 0)
             {
                 if (count == breakPositions.Length)
                     throw new ArgumentException("The destination is too small", nameof(breakPositions));
 
                 breakPositions[count++] = start;
             }
-
-            clustersBefore++;
         }
 
         return count;
@@ -353,6 +379,12 @@ public sealed class Hyphenator
 
     private int FindChild(int node, int letter)
     {
+        if (node == 0 && _rootChildren is not null)
+        {
+            var offset = letter - _rootMinLetter;
+            return (uint)offset < (uint)_rootChildren.Length ? _rootChildren[offset] : -1;
+        }
+
         var low = _edgeStarts[node];
         var high = _edgeStarts[node + 1] - 1;
         while (low <= high)

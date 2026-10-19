@@ -56,6 +56,10 @@ public sealed class HyphenatorTests
     // A dot of the word is not a word boundary.
     [InlineData(".a1", "x.ab", new int[0])]
     [InlineData(".a1", "ab", new[] { 1 })]
+    // Letters of the first character of the patterns that are far apart.
+    [InlineData("a1b \U0001F600" + "1c", "xaby", new[] { 2 })]
+    [InlineData("a1b \U0001F600" + "1c", "x\U0001F600cy", new[] { 3 })]
+    [InlineData("a1b \U0001F600" + "1c", "\U0001F601cab", new[] { 4 })]
     public void Hyphenate_HandlesWordBoundariesAndPriorities(string patterns, string word, int[] expected)
     {
         var hyphenator = Hyphenator.Parse(patterns, options: NoMinimum);

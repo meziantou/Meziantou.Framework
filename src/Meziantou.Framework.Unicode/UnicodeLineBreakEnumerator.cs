@@ -43,6 +43,13 @@ public ref struct UnicodeLineBreakEnumerator
     private Unit _next2;
     private int _readAhead;
 
+    // The character that ended the last unit that was read, which rule LB9 looked up: the next unit starts with it.
+    // _lookedUpIndex is -1 when there is none.
+    private int _lookedUpIndex;
+    private int _lookedUpCodePoint;
+    private int _lookedUpLength;
+    private int _lookedUpTuple;
+
     // The units before the position.
     private Unit _previous;
     private Unit _beforePrevious;
@@ -60,12 +67,15 @@ public ref struct UnicodeLineBreakEnumerator
     private int _regionalIndicators;
 
     // The run of Complex_Context characters that the dictionary segments, and the piece of it that is segmented:
-    // _wordStarts has a bit for each index of the piece where a word of the dictionary starts.
+    // _wordStarts has a bit for each index of the piece where a word of the dictionary starts, and _boundaries the
+    // boundaries after the piece that the dictionary already found.
     private int _runStart;
     private int _runEnd;
     private int _pieceStart;
     private int _pieceEnd;
-    private WordStarts _wordStarts;
+    private PieceBits _wordStarts;
+    private PieceBits _boundaries;
+    private int _boundaryLength;
 
     private int _position;
     private bool _isStarted;
@@ -83,6 +93,7 @@ public ref struct UnicodeLineBreakEnumerator
         _previous = new Unit(StartOfText, 0, 0, endsWithJoiner: false);
         _beforePrevious = _previous;
         _beforeSpaces = StartOfText;
+        _lookedUpIndex = -1;
     }
 
     /// <summary>Gets the current break.</summary>
@@ -405,6 +416,7 @@ public ref struct UnicodeLineBreakEnumerator
             _runEnd = end;
             _pieceStart = start;
             _pieceEnd = start;
+            _boundaryLength = 0;
         }
 
         if (index == _runStart)
@@ -413,7 +425,7 @@ public ref struct UnicodeLineBreakEnumerator
         while (index >= _pieceEnd)
         {
             _pieceStart = _pieceEnd;
-            _pieceEnd += _dictionary!.SegmentPiece(_text[_pieceStart.._runEnd], _wordStarts);
+            _pieceEnd += _dictionary!.SegmentPiece(_text[_pieceStart.._runEnd], _wordStarts, _boundaries, ref _boundaryLength);
         }
 
         // A cluster that is longer than a piece has no word.
@@ -528,13 +540,27 @@ public ref struct UnicodeLineBreakEnumerator
     }
 
     /// <summary>Reads a character and the combining marks and zero width joiners it carries (LB9), and resolves its class (LB1, LB10).</summary>
-    private readonly Unit ReadUnit(int index)
+    private Unit ReadUnit(int index)
     {
         if (index >= _text.Length)
             return new Unit(EndOfText, 0, _text.Length, endsWithJoiner: false);
 
-        var codePoint = Unicode.DecodeAt(_text, index, out var length);
-        var value = Resolve(UnicodeProperties.GetLineBreakTuple(codePoint), out var flags);
+        int codePoint;
+        int length;
+        int tuple;
+        if (index == _lookedUpIndex)
+        {
+            codePoint = _lookedUpCodePoint;
+            length = _lookedUpLength;
+            tuple = _lookedUpTuple;
+        }
+        else
+        {
+            codePoint = Unicode.DecodeAt(_text, index, out length);
+            tuple = UnicodeProperties.GetLineBreakTuple(codePoint);
+        }
+
+        var value = Resolve(tuple, out var flags);
         var endsWithJoiner = value is LineBreak.ZWJ;
         index += length;
 
@@ -547,9 +573,17 @@ public ref struct UnicodeLineBreakEnumerator
                 if (_text[index] is >= ' ' and <= '~')
                     break;
 
-                var mark = Resolve(UnicodeProperties.GetLineBreakTuple(Unicode.DecodeAt(_text, index, out length)), out _);
+                var markCodePoint = Unicode.DecodeAt(_text, index, out length);
+                var markTuple = UnicodeProperties.GetLineBreakTuple(markCodePoint);
+                var mark = Resolve(markTuple, out _);
                 if (mark is not (LineBreak.CombiningMark or LineBreak.ZWJ))
+                {
+                    _lookedUpIndex = index;
+                    _lookedUpCodePoint = markCodePoint;
+                    _lookedUpLength = length;
+                    _lookedUpTuple = markTuple;
                     break;
+                }
 
                 endsWithJoiner = mark is LineBreak.ZWJ;
                 index += length;
@@ -609,7 +643,7 @@ public ref struct UnicodeLineBreakEnumerator
     }
 
     [InlineArray(LineBreakDictionary.PieceLength / 64)]
-    private struct WordStarts
+    private struct PieceBits
     {
         private ulong _element;
     }

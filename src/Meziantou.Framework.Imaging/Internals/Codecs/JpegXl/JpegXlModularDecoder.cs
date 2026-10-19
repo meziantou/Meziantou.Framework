@@ -136,6 +136,7 @@ internal static class JpegXlModularDecoder
         var nodeCount = Specialize(tree.Nodes, nodes, pending, channelIndex, streamIndex);
         nodes = nodes[..nodeCount];
         var usesWeighted = false;
+        var usedProperties = 0;
         var maxProperty = FirstReferenceProperty - 1;
         foreach (ref readonly var node in nodes)
         {
@@ -147,6 +148,7 @@ internal static class JpegXlModularDecoder
             {
                 usesWeighted |= node.Property == JpegXlMaTree.WeightedProperty;
                 maxProperty = Math.Max(maxProperty, node.Property);
+                usedProperties |= node.Property < 16 ? 1 << node.Property : 0;
             }
         }
 
@@ -281,18 +283,27 @@ internal static class JpegXlModularDecoder
                 }
                 else if (!isSingleLeaf)
                 {
-                    properties[3] = x;
-                    properties[4] = (int)Math.Abs(top);
-                    properties[5] = (int)Math.Abs(left);
-                    properties[6] = (int)top;
-                    properties[7] = (int)left;
+                    // The groups of properties that no decision tests are not computed
+                    if ((usedProperties & 0b1111_1000) != 0)
+                    {
+                        properties[3] = x;
+                        properties[4] = (int)Math.Abs(top);
+                        properties[5] = (int)Math.Abs(left);
+                        properties[6] = (int)top;
+                        properties[7] = (int)left;
+                    }
+
                     properties[8] = (int)(left - properties[9]);
                     properties[9] = (int)(left + top - topLeft);
                     properties[10] = (int)(left - topLeft);
                     properties[11] = (int)(topLeft - top);
                     properties[12] = (int)(top - topRight);
-                    properties[13] = (int)(top - topTop);
-                    properties[14] = (int)(left - leftLeft);
+                    if ((usedProperties & 0b0110_0000_0000_0000) != 0)
+                    {
+                        properties[13] = (int)(top - topTop);
+                        properties[14] = (int)(left - leftLeft);
+                    }
+
                     properties[15] = weightedProperty;
                     if (referenceStride != 0)
                     {
@@ -307,7 +318,17 @@ internal static class JpegXlModularDecoder
                 }
 
                 ref readonly var leaf = ref nodes[leafIndex];
-                var guess = leaf.ValueOrOffset + JpegXlModularTransform.Predict(leaf.RightOrPredictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction);
+
+                // The predictors that most trees use (zero, the gradient and the weighted predictor) are not dispatched
+                var predictor = leaf.RightOrPredictor;
+                var prediction = predictor switch
+                {
+                    0 => 0,
+                    5 => JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft),
+                    6 => weightedPrediction,
+                    _ => JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction),
+                };
+                var guess = leaf.ValueOrOffset + prediction;
                 var sample = Sample(decoder.Read(reader, leaf.LeftOrContext, distanceMultiplier), leaf.Multiplier, guess);
                 row[x] = sample;
                 weighted?.Update(sample, x, y);

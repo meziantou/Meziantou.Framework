@@ -999,6 +999,49 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    /// <summary>
+    /// A DCT of 8x8 samples whose coefficients are zeros (of either sign) but the lowest frequency gives that value to
+    /// every sample, bit for bit, which lets the decoder fill such a block: any value but a negative zero and NaN.
+    /// </summary>
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlInverseDctOfABlockWithoutAcCoefficientIsItsLowestFrequency()
+    {
+        var random = new Random(188);
+        var scratch = new float[JpegXlInverseTransform.ScratchLength];
+        float[] specials = [0f, float.Epsilon, -float.Epsilon, 1e-30f, -1e-30f, float.MaxValue, -float.MaxValue, 1f, -1f];
+        for (var round = 0; round < 3000; round++)
+        {
+            var value = round < specials.Length ? specials[round] : (float)((random.NextDouble() - 0.5) * Math.Pow(10, random.Next(-45, 39)));
+            if (BitConverter.SingleToInt32Bits(value) == int.MinValue)
+            {
+                // A negative value too small for a float: the negative zero is left to the inverse DCT
+                value = -float.Epsilon;
+            }
+
+            Assert.True(JpegXlInverseTransform.IsConstantBlockExact(value));
+            var coefficients = new float[64];
+            for (var k = 1; k < 64; k++)
+            {
+                coefficients[k] = random.Next(2) == 0 ? 0f : -0f;
+            }
+
+            coefficients[0] = value;
+            var stride = 8 + (round % 3);
+            var expected = new float[8 * stride];
+            var expectedScalar = new float[8 * stride];
+            var actual = new float[8 * stride];
+            JpegXlInverseTransform.Apply(JpegXlVarDctTables.TransformDct8, coefficients.ToArray(), expected, stride, scratch);
+            JpegXlInverseTransform.InverseDctScalar(coefficients.ToArray(), 8, 8, expectedScalar, stride, scratch);
+            JpegXlInverseTransform.FillConstantBlock(value, actual, stride);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+            Assert.Equal(Array.ConvertAll(expectedScalar, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+
+        Assert.False(JpegXlInverseTransform.IsConstantBlockExact(-0f));
+        Assert.False(JpegXlInverseTransform.IsConstantBlockExact(float.NaN));
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlForwardDctMatchesTheScalarReferenceBitForBit()
@@ -1236,6 +1279,77 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlUpsamplingMatchesTheScalarReferenceBitForBit(int factor)
+    {
+        var random = new Random(192 + factor);
+        for (var round = 0; round < 600; round++)
+        {
+            // Every width up to 24 (the edges, the vector body and its tails), then larger ones, and targets cropped on both sides
+            var width = round < 24 ? round + 1 : random.Next(1, 70);
+            var height = random.Next(1, 7);
+            var stride = width + random.Next(3);
+            var targetWidth = round % 3 == 0 ? width * factor : random.Next(1, (width * factor) + 1);
+            var targetHeight = round % 4 == 0 ? height * factor : random.Next(1, (height * factor) + 1);
+            var source = new float[(stride * (height - 1)) + width];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = (round % 5) switch
+                {
+                    0 => random.Next(4) == 0 ? -0f : 0f,
+                    1 => (float)random.NextDouble() * 1e-38f,
+                    2 => (float)((random.NextDouble() - 0.5) * 1e30),
+                    _ => (float)(random.NextDouble() - 0.25),
+                };
+            }
+
+            var kernels = new float[factor * factor * 25];
+            for (var i = 0; i < kernels.Length; i++)
+            {
+                kernels[i] = (float)((random.NextDouble() * 0.3) - 0.05);
+            }
+
+            var expected = new float[targetWidth * targetHeight];
+            var actual = new float[targetWidth * targetHeight];
+            JpegXlUpsampler.UpsampleScalar(source, stride, width, height, factor, kernels, expected, targetWidth, targetHeight, TestContext.Current.CancellationToken);
+            JpegXlUpsampler.Upsample(source, stride, width, height, factor, kernels, actual, targetWidth, targetHeight, TestContext.Current.CancellationToken);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlNoiseHighPassMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(195);
+        for (var round = 0; round < 1000; round++)
+        {
+            // Every width up to 24 (the edges, the vector body and its tails), then larger ones
+            var width = round < 24 ? round + 1 : random.Next(1, 90);
+            var height = random.Next(1, 8);
+            var plane = new float[width * height];
+            for (var i = 0; i < plane.Length; i++)
+            {
+                plane[i] = (round % 4) switch
+                {
+                    0 => random.Next(4) == 0 ? -0f : 0f,
+                    1 => (float)((random.NextDouble() - 0.5) * 1e30),
+                    _ => 1f + (float)random.NextDouble(),
+                };
+            }
+
+            var expected = new float[plane.Length];
+            var actual = new float[plane.Length];
+            JpegXlNoise.HighPassScalar(plane, expected, width, height, TestContext.Current.CancellationToken);
+            JpegXlNoise.HighPass(plane, actual, width, height, TestContext.Current.CancellationToken);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlCanvasRowsMatchTheScalarReference()
@@ -1369,47 +1483,94 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlEdgePreservingFilterRowsMatchTheScalarReferenceBitForBit()
     {
-        const int Border = 3;
         var random = new Random(183);
-
-        // The neighbors and the patches of the three steps, as (row, column) offsets
-        sbyte[] wideNeighbors = [-2, 0, -1, -1, -1, 0, -1, 1, 0, -2, 0, -1, 0, 1, 0, 2, 1, -1, 1, 0, 1, 1, 2, 0];
-        sbyte[] crossNeighbors = [-1, 0, 0, -1, 0, 1, 1, 0];
-        sbyte[] cross = [0, 0, -1, 0, 0, -1, 1, 0, 0, 1];
         for (var round = 0; round < 1500; round++)
         {
             var width = round < 120 ? 1 + (round % 40) : random.Next(1, 200);
             var step = round % 3;
-            var paddedWidth = width + (2 * Border);
-            var neighbors = step == 0 ? wideNeighbors : crossNeighbors;
-            var patch = step == 2 ? cross[..2] : cross;
-            var neighborOffsets = new int[neighbors.Length / 2];
-            for (var i = 0; i < neighborOffsets.Length; i++)
+            var neighbors = JpegXlRestorationFilters.GetNeighbors(step);
+            var patch = JpegXlRestorationFilters.GetPatch(step);
+            var directions = JpegXlRestorationFilters.GetDirections(step);
+            var border = step switch
             {
-                neighborOffsets[i] = (neighbors[i * 2] * paddedWidth) + neighbors[(i * 2) + 1];
-            }
+                0 => 3,
+                1 => 2,
+                _ => 1,
+            };
+            var paddedWidth = width + (2 * border);
 
-            var patchOffsets = new int[patch.Length / 2];
-            for (var i = 0; i < patchOffsets.Length; i++)
-            {
-                patchOffsets[i] = (patch[i * 2] * paddedWidth) + patch[(i * 2) + 1];
-            }
+            // The rows of a ring are in any order: the ring turns, and the frame is mirrored at its top and bottom
+            var rowCount = (2 * border) + 1;
+            var order = Enumerable.Range(0, rowCount).OrderBy(_ => random.Next()).ToArray();
+            var rowOffsets = Array.ConvertAll(order, r => (r * paddedWidth) + border);
+            var channelLength = (rowCount * paddedWidth) + random.Next(3);
 
             // Smooth, noisy, flat (equal samples: zero differences) and extreme planes
-            var planes = new float[3][];
-            for (var c = 0; c < 3; c++)
+            var samples = new float[3 * channelLength];
+            for (var i = 0; i < samples.Length; i++)
             {
-                planes[c] = new float[paddedWidth * (1 + (2 * Border))];
-                for (var i = 0; i < planes[c].Length; i++)
+                samples[i] = (round % 4) switch
                 {
-                    planes[c][i] = (round % 4) switch
+                    0 => 0.25f,
+                    1 => (float)random.NextDouble() * 1e-3f,
+                    2 => (float)((random.NextDouble() - 0.5) * 1e4),
+                    _ => (float)random.NextDouble(),
+                };
+            }
+
+            // The distance of the samples of the rows a neighbor reads to their neighbor in each direction: the sum of the
+            // absolute differences over the patch, from the deepest direction above the row to the row
+            var deepest = 0;
+            for (var d = 0; d < directions.Length; d += 2)
+            {
+                deepest = Math.Max(deepest, directions[d]);
+            }
+
+            var distanceChannelLength = (deepest + 1) * paddedWidth;
+            var directionLength = 3 * distanceChannelLength;
+            var distances = new float[directions.Length / 2 * directionLength];
+            for (var d = 0; d < directions.Length / 2; d++)
+            {
+                int dy = directions[d * 2], dx = directions[(d * 2) + 1];
+                for (var y = -deepest; y <= 0; y++)
+                {
+                    for (var c = 0; c < 3; c++)
                     {
-                        0 => 0.25f,
-                        1 => (float)random.NextDouble() * 1e-3f,
-                        2 => (float)((random.NextDouble() - 0.5) * 1e4),
-                        _ => (float)random.NextDouble(),
-                    };
+                        for (var x = Math.Min(0, -dx); x <= width - 1 + Math.Max(0, -dx); x++)
+                        {
+                            var sum = 0f;
+                            for (var k = 0; k < patch.Length; k += 2)
+                            {
+                                var sample = samples[(c * channelLength) + rowOffsets[border + y + patch[k]] + x + patch[k + 1]];
+                                var neighbor = samples[(c * channelLength) + rowOffsets[border + y + patch[k] + dy] + x + patch[k + 1] + dx];
+                                sum += MathF.Abs(sample - neighbor);
+                            }
+
+                            distances[(d * directionLength) + (c * distanceChannelLength) + ((y + deepest) * paddedWidth) + border + x] = sum;
+                        }
+                    }
                 }
+            }
+
+            // A neighbor reads the distance in its direction, or the distance of the neighbor in the opposite direction
+            var distanceOffsets = new int[neighbors.Length / 2];
+            for (var i = 0; i < distanceOffsets.Length; i++)
+            {
+                int d = 0, rowShift = 0, columnShift = 0;
+                for (; d < directions.Length / 2; d++)
+                {
+                    if (directions[d * 2] == neighbors[i * 2] && directions[(d * 2) + 1] == neighbors[(i * 2) + 1])
+                        break;
+
+                    if (directions[d * 2] == -neighbors[i * 2] && directions[(d * 2) + 1] == -neighbors[(i * 2) + 1])
+                    {
+                        rowShift = -directions[d * 2];
+                        columnShift = -directions[(d * 2) + 1];
+                        break;
+                    }
+                }
+
+                distanceOffsets[i] = (d * directionLength) + ((rowShift + deepest) * paddedWidth) + border + columnShift;
             }
 
             // Inverse strengths: blocks the filter leaves, and others
@@ -1434,12 +1595,66 @@ public sealed class VectorizedKernelTests
 
             var expected = new[] { initial.ToArray(), initial.ToArray(), initial.ToArray() };
             var actual = new[] { initial.ToArray(), initial.ToArray(), initial.ToArray() };
-            var rowStart = (Border * paddedWidth) + Border;
-            JpegXlRestorationFilters.FilterRowScalar(planes[0], planes[1], planes[2], rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, expected[0], expected[1], expected[2]);
-            JpegXlRestorationFilters.FilterRow(planes[0], planes[1], planes[2], rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, actual[0], actual[1], actual[2]);
+            var row = new JpegXlRestorationFilters.EdgePreservingRow(samples, channelLength, rowOffsets, neighbors, patch, distances, distanceChannelLength, distanceOffsets, sigmaRow, isBorderRow, parameters);
+            JpegXlRestorationFilters.FilterRowScalar(row, expected[0], expected[1], expected[2]);
+            JpegXlRestorationFilters.FilterRow(row, actual[0], actual[1], actual[2]);
             for (var c = 0; c < 3; c++)
             {
                 Assert.Equal(Array.ConvertAll(expected[c], BitConverter.SingleToInt32Bits), Array.ConvertAll(actual[c], BitConverter.SingleToInt32Bits));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlEdgePreservingDistancesMatchTheScalarReferenceBitForBit()
+    {
+        var random = new Random(187);
+        for (var length = 0; length < 70; length++)
+        {
+            var first = new float[length + 3];
+            var second = new float[length + 3];
+            for (var i = 0; i < first.Length; i++)
+            {
+                first[i] = random.Next(5) == 0 ? -0f : (float)((random.NextDouble() - 0.5) * 1e3);
+                second[i] = random.Next(5) == 0 ? first[i] : (float)((random.NextDouble() - 0.5) * 1e3);
+            }
+
+            var actual = new float[length];
+            JpegXlRestorationFilters.AbsoluteDifferences(first.AsSpan(1), second.AsSpan(2), actual);
+            for (var i = 0; i < length; i++)
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits(MathF.Abs(first[i + 1] - second[i + 2])), BitConverter.SingleToInt32Bits(actual[i]));
+            }
+
+            // The sums over a patch of 1, 3 (scalar only) or 5 differences, at positions on either side of the start
+            foreach (var patchLength in new[] { 1, 3, 5 })
+            {
+                var terms = new int[patchLength];
+                for (var k = 0; k < patchLength; k++)
+                {
+                    terms[k] = random.Next(0, 6);
+                }
+
+                var differences = new float[length + 8];
+                for (var i = 0; i < differences.Length; i++)
+                {
+                    differences[i] = MathF.Abs(first[i % first.Length] - second[(i * 7) % second.Length]);
+                }
+
+                var start = random.Next(0, 3);
+                var sums = new float[length];
+                JpegXlRestorationFilters.SumPatch(differences, terms, start, sums);
+                for (var i = 0; i < length; i++)
+                {
+                    var expected = 0f;
+                    foreach (var term in terms)
+                    {
+                        expected += differences[term + start + i];
+                    }
+
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(sums[i]));
+                }
             }
         }
     }

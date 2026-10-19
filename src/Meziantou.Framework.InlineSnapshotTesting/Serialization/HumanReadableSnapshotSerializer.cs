@@ -22,7 +22,6 @@ public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
         options.AddHttpConverters(new HumanReadableHttpOptions());
         options.AddJsonFormatter(new() { WriteIndented = true });
         options.AddXmlFormatter(new() { WriteIndented = true, OrderAttributes = true });
-        options.AddHtmlFormatter(new() { AttributeQuote = HtmlAttributeQuote.DoubleQuote, OrderAttributes = true });
         return options;
     }
 

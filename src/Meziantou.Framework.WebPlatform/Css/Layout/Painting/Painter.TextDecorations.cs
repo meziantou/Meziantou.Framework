@@ -1640,7 +1640,7 @@ internal sealed partial class Painter
             {
                 // "emphasis marks are drawn for a space that combines with any combining characters"
                 var next = offset + (codePoint > 0xFFFF ? 2 : 1);
-                return next < data.Length && Unicode.UnicodeProperties.IsMark(GetCodePoint(data, next));
+                return next < data.Length && Unicode.CharacterProperties.IsMark(GetCodePoint(data, next));
             }
 
             case UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.OtherNotAssigned:

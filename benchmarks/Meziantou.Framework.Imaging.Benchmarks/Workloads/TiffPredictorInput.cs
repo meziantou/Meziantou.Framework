@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 /// <summary>
 /// Writes the TIFF inputs with the horizontal differencing predictor (<c>Predictor</c> 2), which <c>TiffEncoder</c> does
 /// not write: one uncompressed RGB or RGBA page, strips of 64 rows, every sample stored as its difference with the sample
-/// of the same channel on its left, in the byte order the caller chooses.
+/// of the same channel on its left, in the byte order the caller chooses. Without the predictor, it writes the 16-bit RGB
+/// pages (48 bits per pixel) that <c>TiffEncoder</c> does not write either.
 /// </summary>
 internal static class TiffPredictorInput
 {
@@ -18,7 +19,8 @@ internal static class TiffPredictorInput
     /// <param name="samplesPerPixel">3 (RGB) or 4 (RGBA, unassociated alpha).</param>
     /// <param name="bitsPerSample">8 or 16.</param>
     /// <param name="bigEndian">Whether the file is big-endian (<c>MM</c>).</param>
-    public static byte[] Encode(ReadOnlySpan<byte> samples, int width, int height, int samplesPerPixel, int bitsPerSample, bool bigEndian)
+    /// <param name="predictor">Whether the samples are stored as differences (<c>Predictor</c> 2) or as they are (<c>Predictor</c> 1).</param>
+    public static byte[] Encode(ReadOnlySpan<byte> samples, int width, int height, int samplesPerPixel, int bitsPerSample, bool bigEndian, bool predictor = true)
     {
         var bytesPerSample = bitsPerSample / 8;
         var rowLength = width * samplesPerPixel * bytesPerSample;
@@ -47,7 +49,7 @@ internal static class TiffPredictorInput
         WriteEntry(278, 4, 1, RowsPerStrip);
         WriteEntry(279, 4, (uint)stripCount, stripCount == 1 ? (uint)(rowLength * height) : (uint)countsOffset);
         WriteEntry(284, 3, 1, 1);
-        WriteEntry(317, 3, 1, 2);
+        WriteEntry(317, 3, 1, predictor ? 2u : 1u);
         if (samplesPerPixel == 4)
         {
             WriteEntry(338, 3, 1, 2);
@@ -73,7 +75,7 @@ internal static class TiffPredictorInput
             for (var i = count - 1; i >= 0; i--)
             {
                 var value = Read(source, i, bytesPerSample);
-                var left = i >= samplesPerPixel ? Read(source, i - samplesPerPixel, bytesPerSample) : 0;
+                var left = predictor && i >= samplesPerPixel ? Read(source, i - samplesPerPixel, bytesPerSample) : 0;
                 var difference = (value - left) & ((1 << bitsPerSample) - 1);
                 if (bytesPerSample == 1)
                 {

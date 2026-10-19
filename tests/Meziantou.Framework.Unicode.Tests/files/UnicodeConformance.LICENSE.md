@@ -1,8 +1,8 @@
 # Unicode conformance test files
 
 The `*.txt.gz` files of this directory are the conformance test files of the Unicode Character Database
-18.0.0, the version the tables of `Meziantou.Framework.Unicode` are generated from. They are
-compressed with gzip and otherwise unmodified.
+and of Unicode IDNA Compatibility Processing 18.0.0, the version the tables of
+`Meziantou.Framework.Unicode` are generated from. They are compressed with gzip and otherwise unmodified.
 
 | File | Source | Size (bytes) | SHA-256 of the decompressed content |
 | --- | --- | --- | --- |
@@ -12,6 +12,7 @@ compressed with gzip and otherwise unmodified.
 | `BidiTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/BidiTest.txt> | 7,959,988 | `9af2f882a4ab50912e388f069a673b94eacd82fa6d07d20a3ff7f3c759e905aa` |
 | `BidiCharacterTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/BidiCharacterTest.txt> | 6,880,771 | `045b24d2c8ab066951bd32fe8c6b4de34647f72b5b1c7df0265f24ab53573e01` |
 | `NormalizationTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/NormalizationTest.txt> | 2,863,708 | `25a50d816764b04abfb4a646d3eb2b2a803284c3873d9a06757b94fe4513dde3` |
+| `IdnaTestV2.txt.gz` | <https://www.unicode.org/Public/18.0.0/idna/IdnaTestV2.txt> | 776,565 | `0236b75c5b20dfd857b3b5cf75509887959d6ab00d6c7bda9b7dc3df518c1fde` |
 
 Do not edit these files or this notice by hand: they are written by
 `tools/Meziantou.Framework.Unicode.Generator`, which replaces them when the pinned version changes

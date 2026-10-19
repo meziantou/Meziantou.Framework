@@ -27,6 +27,7 @@ public class PngBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.LargePng16, BenchmarkInputs.LargeRgba64Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.PngGrayAlpha8, BenchmarkInputs.GrayAlpha8Pixels);
         WorkloadChecks.RequireLossless(BenchmarkInputs.PngRgb16, BenchmarkInputs.Rgb16Pixels);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PngBilevel, BenchmarkInputs.LargeBilevelSource);
     }
 
     [GlobalCleanup]
@@ -86,6 +87,14 @@ public class PngBenchmarks : IDisposable
     public int LoadRgb16()
     {
         using var image = Image.Load<Rgba64>(BenchmarkInputs.PngRgb16);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 gray 1-bit PNG (text page) -> Gray8")]
+    public int LoadBilevel()
+    {
+        using var image = Image.Load<Gray8>(BenchmarkInputs.PngBilevel);
         return image.Width;
     }
 

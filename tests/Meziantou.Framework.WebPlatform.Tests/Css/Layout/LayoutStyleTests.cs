@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using CssUnicodeBidi = Meziantou.Framework.WebPlatform.Css.Layout.UnicodeBidi;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
 
@@ -200,7 +201,7 @@ public sealed class LayoutStyleTests : IDisposable
         Assert.True(layout.IsVerticalWritingMode);
         Assert.Equal(Direction.Rtl, layout.Direction);
         Assert.Equal(TextOrientation.Sideways, layout.TextOrientation);
-        Assert.Equal(UnicodeBidi.Isolate, layout.UnicodeBidi);
+        Assert.Equal(CssUnicodeBidi.Isolate, layout.UnicodeBidi);
 
         // The used direction of the upright vertical text is ltr; text-orientation does not apply to the sideways writing modes
         layout = GetLayout("<div dir=rtl style='writing-mode: vertical-rl'><span id=target style='text-orientation: upright'></span></div>");

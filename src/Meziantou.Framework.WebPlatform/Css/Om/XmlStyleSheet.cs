@@ -86,7 +86,7 @@ public sealed partial class ProcessingInstruction
             oldSheet.OwnerNode = null;
             oldSheet.ImportLoadState?.Cancellation.Cancel();
             _sheet = null;
-            Css.Cascade.CssStyleVersion.Increment();
+            Css.Cascade.CssStyleVersion.Increment(NodeDocument);
         }
 
         if (!_isInProlog)
@@ -137,7 +137,7 @@ public sealed partial class ProcessingInstruction
                 if (resource is not null && CssImportFetching.TryGetStyleSheetText(document, url, resource, environmentEncoding, out var text, out var responseUrl, out var sameOrigin))
                 {
                     _sheet = new CssStyleSheet(this, text, responseUrl, media, title, alternate, sameOrigin);
-                    Css.Cascade.CssStyleVersion.Increment();
+                    Css.Cascade.CssStyleVersion.Increment(document);
                     CssImportFetching.FetchImports(_sheet);
                 }
 

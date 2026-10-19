@@ -32,7 +32,22 @@ internal sealed partial class WptTestRunner
         })();
         """;
 
-    internal static readonly TimeSpan MaxDuration = TimeSpan.FromSeconds(60);
+    /// <summary>
+    /// The longest a test may run, in wall-clock time: 60 seconds times <see cref="TimeoutMultiplier"/>. No test is expected
+    /// to reach it; it ends a test that never finishes.
+    /// </summary>
+    internal static readonly TimeSpan MaxDuration = TimeSpan.FromSeconds(60 * TimeoutMultiplier);
+
+    /// <summary>
+    /// Gets the factor of <see cref="MaxDuration"/>, as the --timeout-multiplier option of wptrunner: WPT_TIMEOUT_MULTIPLIER,
+    /// or 3 on a CI agent (CI=true). The heaviest tests (IndexedDB cloning of large values, the WebAssembly SIMD core tests,
+    /// 65 KB WebSocket messages) take 5 to 8 times longer on the macOS agents than on the Linux ones, and exceeded 60
+    /// seconds in both of their runs there, while they take a few seconds on a developer machine.
+    /// </summary>
+    private static double TimeoutMultiplier
+        => Environment.GetEnvironmentVariable("WPT_TIMEOUT_MULTIPLIER") is { Length: > 0 } value
+            ? double.Parse(value, CultureInfo.InvariantCulture)
+            : Environment.GetEnvironmentVariable("CI") is "true" ? 3 : 1;
 
     /// <summary>The WebAssembly runtime of the tests: the compiled modules are shared by the tests.</summary>
     private static readonly Wasmtime.WasmtimeRuntime WebAssemblyRuntime = new();

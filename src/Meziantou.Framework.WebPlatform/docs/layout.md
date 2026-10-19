@@ -421,7 +421,7 @@ the output that the geometry APIs, the observers and the painting read.
   nor lazy element (`LayoutEngine.RequestRenderingUpdates()` registers a document without computing its layout).
 - A geometry read during a layout pass returns the tree being computed (no re-entrancy).
 - The layout suspends the checks of the style versions while it runs (`StyleEngine.SuspendUpdates`): it reads the styles of
-  one version. Otherwise, a change of the process-wide `CssStyleVersion` by another document in the middle of the box tree
+  one version. Otherwise, a change of a version (e.g. `Document.StyleSheetsVersion`) in the middle of the box tree
   construction would start a new generation of styles and lose the styles computed so far as the before-change styles of
   the transitions.
 - The documents of the `iframe`s are laid out with the size of their viewport (the initial containing block is the
@@ -1448,10 +1448,10 @@ an atomic inline laid out while its parent collects its items rents another inst
 - **Text transformation**: `text-transform` (`TextTransformer`, shared with `innerText`) is applied to the collapsed text,
   before the line breaking and the shaping, character by character with the characters around it in its text node (a
   character may be transformed with the ones that follow it: a surrogate pair, a Greek letter with its combining accents):
-  - the full case mappings (`CaseMapping`: the invariant simple mappings, with the long s and the dotless i, which the
-    invariant culture of .NET does not map, and the unconditional mappings of SpecialCasing.txt, e.g. sharp s to `SS`, the
-    `fi` ligature to `FI`; the titlecase mappings for `capitalize`, e.g. the `fi` ligature to `Fi`, the titlecase forms of
-    the Latin digraphs, the Georgian letters unchanged);
+  - the full case mappings (`CaseMapping`, over `UnicodeProperties.GetUppercaseMapping` of Meziantou.Framework.Unicode:
+    the unconditional mappings of SpecialCasing.txt, e.g. sharp s to `SS`, the `fi` ligature to `FI`, else the simple
+    mappings; the titlecase mappings for `capitalize`, e.g. the `fi` ligature to `Fi`, the titlecase forms of the Latin
+    digraphs, the Georgian letters unchanged);
   - the conditional mappings of SpecialCasing.txt: the final sigma (after a cased letter and not before one, the
     case-ignorable characters skipped), Lithuanian (`lt`: the dot above kept on a lowercase `i`, `j` or i with ogonek under
     an accent, removed after a soft-dotted letter in uppercase and titlecase), Turkish and Azeri (`tr`, `az`: the dotted
@@ -5461,7 +5461,7 @@ element from its computed font properties:
   The lists are discarded when the font faces or the environment change (`FontSelector.Version` is
   incremented when a font face is loaded or fails to load, is added to or removed from the font face set, or when the
   descriptors of a font face created by a script change; `StyleEngine` recomputes the styles when it changes). When the DOM
-  or a style sheet changes (the version of the style sheets is process-wide: it also changes with the other documents), the
+  or a style sheet of the document changes (`Document.StyleSheetsVersion`), the
   font faces of the trees are collected again and the lists are kept when they are the same faces with the same descriptors
   and fonts (`HasCurrentFaces`, `WebFontFace.IsCurrent`): the styles keep sharing the lists, which the inline layout compares
   by reference to shape the texts of sibling inline boxes together, and the lists keep their caches of shaped texts.
@@ -5566,7 +5566,8 @@ managed port of the algorithms of [HarfBuzz](https://github.com/harfbuzz/harfbuz
   (U+2400...) when a font has it, else U+FFFD REPLACEMENT CHARACTER. A lone
   surrogate is U+FFFD.
 - The script runs (`ScriptItemizer`, as Chrome's ScriptRunIterator): the Script and Script_Extensions properties
-  (`UnicodeProperties.GetScript`, `GetScriptExtensions`, generated from `Scripts.txt` and `ScriptExtensions.txt`); the
+  (`UnicodeScripts.GetScript`, `GetScriptExtensions` of Meziantou.Framework.Unicode; a character used by several scripts
+  that excludes the current one takes the first of them by ISO 15924 code); the
   Common and Inherited characters take the script of the run unless their extensions exclude it, a closing paired bracket
   takes the script of its opening bracket, the leading Common characters take the first script, and Hiragana and Katakana
   are one run (their OpenType script is `kana`). A run is a sequence of code points of the same font, orientation and
@@ -5716,38 +5717,29 @@ measures the layout of the article.
 
 ## Text segmentation
 
-The inline layout segments the text with Unicode algorithms implemented from the generated tables of
-`src/Meziantou.Framework.WebPlatform/Unicode/` (namespace `Meziantou.Framework.WebPlatform.Unicode`), so the results do not
-depend on the OS, ICU or the globalization mode.
+The inline layout segments the text with the Unicode algorithms of `src/Meziantou.Framework.WebPlatform/Unicode/` (namespace
+`Meziantou.Framework.WebPlatform.Unicode`), tailored for CSS, over the properties of the `Meziantou.Framework.Unicode`
+package, so the results do not depend on the OS, ICU or the globalization mode.
 
 ### Data
 
-`tools/Meziantou.Framework.WebPlatform.SpecGen` (`UnicodeGenerator.GenerateTextSegmentation`) generates `TextSegmentationData.g.cs` from the files of the
-`unicode` source of `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json` (`LineBreak.txt`, `EastAsianWidth.txt`, `GraphemeBreakProperty.txt`,
-`WordBreakProperty.txt`, `emoji-data.txt`, `DerivedCoreProperties.txt` for Indic_Conjunct_Break, `DerivedGeneralCategory.txt`, `Scripts.txt`):
-
-| Table | Content |
-|---|---|
-| `LineBreakData` | Line_Break (`LineBreakClass`) |
-| `EastAsianWidthData` | East_Asian_Width (`EastAsianWidth`) |
-| `GeneralCategoryData` | General_Category, as a `System.Globalization.UnicodeCategory` |
-| `SegmentationData` | Grapheme_Cluster_Break (bits 0-3), Indic_Conjunct_Break (bits 4-5), Extended_Pictographic (bit 6), Script=Hangul (bit 7) |
-| `WordBreakData` | Word_Break (bits 0-4, `WordBreak`), Extended_Pictographic (bit 5) |
-
-Each table is a two-stage lookup table (`UnicodeGenerator.WriteTrie`: the identical blocks of code points are shared, the
-block size giving the smallest table is chosen), read by `UnicodeProperties.Get*` in constant time. The generic helpers of the
-generator (`ReadEnumeratedProperty` with the `@missing` defaults, `ReadBinaryProperty`, `WriteEnum`, `WriteTrie`) are meant
-for the other properties of the layout (e.g. the bidi tables). The conformance test files of the UCD (`LineBreakTest.txt`,
-`GraphemeBreakTest.txt`, `WordBreakTest.txt`) are part of the `unicode` source too, so they always match the version of the data; they run as
-unit tests (`tests/Meziantou.Framework.WebPlatform.Tests/Unicode/`).
+The properties of the code points come from the `Meziantou.Framework.Unicode` package (`UnicodeProperties`,
+`UnicodeScripts`, `UnicodeEmoji`), generated from the Unicode Character Database of one version of the standard and read
+in constant time. `CharacterProperties` gives the ones the layout reads in another form: the classes of UAX #9 and UAX #14
+with their short names (`BidiClass`, `LineBreakClass`, whose values are the ones of the package, so a cast converts them),
+the mirroring glyph with a -1 sentinel, and the derived properties (`IsMark`, `IsHan`, `IsHangul`...). The conformance
+test files of the UCD (`LineBreakTest.txt`, `GraphemeBreakTest.txt`, `WordBreakTest.txt`) are the ones of the package
+(`tests/Meziantou.Framework.Unicode.Tests/files`), so they always match the version of the data; they run as unit tests
+(`tests/Meziantou.Framework.WebPlatform.Tests/Unicode/`).
 
 ### Grapheme clusters
 
 `GraphemeClusters` implements the extended grapheme clusters of
 [UAX #29](https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries), the typographic character units of
 [CSS Text](https://drafts.csswg.org/css-text-4/#characters) (caret movement, `::first-letter`, `line-break: anywhere`,
-`overflow-wrap`): `GetNextBoundary`, `GetPreviousBoundary`, `Count` and `GetBoundaries`. `GraphemeClusterBreaker` is the
-incremental state of the rules (GB9c, GB11 and GB12/13 depend on the preceding code points), also used by the line breaker.
+`overflow-wrap`): `GetNextBoundary`, `GetPreviousBoundary`, `Count` and `GetBoundaries`, over
+`Unicode.GetGraphemeClusterLength` of Meziantou.Framework.Unicode. The line breaker reads the boundaries cluster by cluster
+with the same method.
 
 ### Word boundaries
 
@@ -5845,7 +5837,7 @@ The word boundaries (see [Word boundaries](#word-boundaries)) are only used by t
 
 ### Hyphenation
 
-`Hyphenator` (`Unicode/Hyphenation/`) is the automatic hyphenation of `hyphens: auto`
+`HyphenationDictionary` (`Unicode/Hyphenation/`) is the automatic hyphenation of `hyphens: auto`
 ([CSS Text 4 §5.4](https://drafts.csswg.org/css-text-4/#hyphenation)): [Liang's algorithm](https://tug.org/docs/liang/) with the
 patterns and the exceptions of [hyph-utf8](https://github.com/hyphenation/tex-hyphen) (the source of the dictionaries of Chrome
 on Android, Linux and ChromeOS and of Firefox), as Chrome does (`hyphenation.cc`, `hyphenation_minikin.cc` and the port of the
@@ -5856,8 +5848,8 @@ hyphenator of Android `hyphenator_aosp.cc`):
   of a node are consecutive; the exceptions are whole-word patterns whose values override the patterns), compressed with
   Brotli: the embedded resources `Unicode/Hyphenation/*.hyph` (about 470 KB for 46 dictionaries, see the
   [README](../Unicode/Hyphenation/README.md) for the languages and their licenses). A
-  dictionary is loaded on first use (`Hyphenator.Get`, at most about 1 ms) and is immutable.
-- **Language** (`Hyphenator.Get`): the content language of the text (`HtmlElementStates.GetLanguage` of the element of the text),
+  dictionary is loaded on first use (`HyphenationDictionary.Get`, at most about 1 ms) and is immutable.
+- **Language** (`HyphenationDictionary.Get`): the content language of the text (`HtmlElementStates.GetLanguage` of the element of the text),
   matched case-insensitively with the fallbacks of Chrome (`HyphenationMinikin::MapLocale`, from CLDR): the locale and its
   prefixes (`de-DE` is `de`, which is `de-1996`; `pt-BR` is `pt`), `en` is en-us and the other English locales en-gb (except
   the locales of the United States territories), `no` is nb, `mn` is mn-cyrl, `sr` is sr-cyrl. Without a language or a
@@ -5909,12 +5901,10 @@ hyphenator of Android `hyphenator_aosp.cc`):
 
 ### Data
 
-`UnicodeGenerator.GenerateBidi` generates `BidiData.g.cs` from the `unicode` source: Bidi_Class (`DerivedBidiClass.txt`, with
-the `@missing` defaults of the unassigned code points), Bidi_Paired_Bracket_Type and Bidi_Paired_Bracket (`BidiBrackets.txt`),
-Bidi_Mirrored (`UnicodeData.txt`) and Bidi_Mirroring_Glyph (`BidiMirroring.txt`). Bidi_Class, Bidi_Paired_Bracket_Type and
-Bidi_Mirrored share one two-stage lookup table (`BidiData`); the brackets and the mirroring glyphs are sorted tables
-(`UnicodeProperties.GetBidiPairedBracket`, `GetBidiMirroringGlyph`). `UnicodeProperties.GetBidiClass` is also used by the HTML
-directionality (`dir=auto`) and by IDNA (the Bidi rule of RFC 5893). `BidiTest.txt` and `BidiCharacterTest.txt` run as unit tests
+The bidi properties come from the `Meziantou.Framework.Unicode` package: Bidi_Class (with the defaults of the unassigned
+code points), Bidi_Paired_Bracket_Type and Bidi_Paired_Bracket, Bidi_Mirrored and Bidi_Mirroring_Glyph
+(`CharacterProperties.GetBidiClass`, `GetBidiPairedBracket`, `GetBidiMirroringGlyph`). `CharacterProperties.GetBidiClass` is
+also used by the HTML directionality (`dir=auto`). `BidiTest.txt` and `BidiCharacterTest.txt` run as unit tests
 (`BidiConformanceTests`) and pass.
 
 ### Algorithm

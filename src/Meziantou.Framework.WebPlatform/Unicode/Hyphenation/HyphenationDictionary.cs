@@ -25,7 +25,7 @@ namespace Meziantou.Framework.WebPlatform.Unicode;
 /// </para>
 /// <para>A dictionary is loaded on first use and is immutable: an instance is shared by the threads.</para>
 /// </remarks>
-internal sealed partial class Hyphenator
+internal sealed partial class HyphenationDictionary
 {
     private const string ResourcePrefix = "Meziantou.Framework.WebPlatform.Unicode.Hyphenation.";
 
@@ -94,7 +94,7 @@ internal sealed partial class Hyphenator
     private readonly ushort[] _valueOffsets;
     private readonly byte[] _values;
 
-    private Hyphenator(string locale, ReadOnlySpan<byte> data)
+    private HyphenationDictionary(string locale, ReadOnlySpan<byte> data)
     {
         // See HyphenationGenerator for the format
         Locale = locale;
@@ -149,7 +149,7 @@ internal sealed partial class Hyphenator
     /// e.g. <c>en</c> is en-us, <c>de-DE</c> is de-1996, <c>pt-BR</c> is pt), or null when the language is empty or has no
     /// dictionary.
     /// </summary>
-    public static Hyphenator? Get(string? language)
+    public static HyphenationDictionary? Get(string? language)
     {
         if (string.IsNullOrEmpty(language))
             return null;
@@ -240,7 +240,7 @@ internal sealed partial class Hyphenator
         return found;
 
         // Character::TreatAsSpace, and the opening punctuation and the quotes (Line_Break OP and QU)
-        static bool IsLeadingCharacter(int codePoint) => codePoint is ' ' or '\t' or '\n' or 0xA0 || UnicodeProperties.GetLineBreakClass(codePoint) is LineBreakClass.OP or LineBreakClass.QU;
+        static bool IsLeadingCharacter(int codePoint) => codePoint is ' ' or '\t' or '\n' or 0xA0 || CharacterProperties.GetLineBreakClass(codePoint) is LineBreakClass.OP or LineBreakClass.QU;
 
         // The space separators, the punctuation and the controls
         static bool IsTrailingCharacter(int codePoint) => UnicodeProperties.GetGeneralCategory(codePoint) is UnicodeCategory.SpaceSeparator or UnicodeCategory.Control
@@ -330,9 +330,9 @@ internal sealed partial class Hyphenator
         return -1;
     }
 
-    private static Hyphenator Load(string locale, string resource)
+    private static HyphenationDictionary Load(string locale, string resource)
     {
-        using var stream = typeof(Hyphenator).Assembly.GetManifestResourceStream(ResourcePrefix + resource + ".hyph") ?? throw new InvalidOperationException($"The hyphenation dictionary '{resource}' is missing");
+        using var stream = typeof(HyphenationDictionary).Assembly.GetManifestResourceStream(ResourcePrefix + resource + ".hyph") ?? throw new InvalidOperationException($"The hyphenation dictionary '{resource}' is missing");
         var compressed = new byte[stream.Length];
         stream.ReadExactly(compressed);
 
@@ -341,7 +341,7 @@ internal sealed partial class Hyphenator
         if (!BrotliDecoder.TryDecompress(compressed.AsSpan(4), data, out var written) || written != data.Length)
             throw new InvalidDataException($"The hyphenation dictionary '{resource}' is invalid");
 
-        return new Hyphenator(locale, data);
+        return new HyphenationDictionary(locale, data);
     }
 
     /// <summary>The dictionaries, loaded on first use (in a nested class: the tables of the generated part are initialized first).</summary>
@@ -349,6 +349,6 @@ internal sealed partial class Hyphenator
     {
         public static readonly FrozenDictionary<string, int> Indexes = DictionaryNames.Index().ToFrozenDictionary(entry => entry.Item, entry => entry.Index, StringComparer.OrdinalIgnoreCase);
 
-        public static readonly Lazy<Hyphenator>[] Dictionaries = [.. DictionaryNames.Select((name, index) => new Lazy<Hyphenator>(() => Load(name, DictionaryResources[index]), LazyThreadSafetyMode.ExecutionAndPublication))];
+        public static readonly Lazy<HyphenationDictionary>[] Dictionaries = [.. DictionaryNames.Select((name, index) => new Lazy<HyphenationDictionary>(() => Load(name, DictionaryResources[index]), LazyThreadSafetyMode.ExecutionAndPublication))];
     }
 }

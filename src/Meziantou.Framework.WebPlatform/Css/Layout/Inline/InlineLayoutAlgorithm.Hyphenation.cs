@@ -5,7 +5,7 @@ using Meziantou.Framework.WebPlatform.Unicode;
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
 // The automatic hyphenation of hyphens: auto (https://drafts.csswg.org/css-text-4/#hyphenation): the hyphenation opportunities
-// found by the dictionary of the language of the text (Hyphenator), added to the soft wrap opportunities of UAX #14.
+// found by the dictionary of the language of the text (HyphenationDictionary), added to the soft wrap opportunities of UAX #14.
 internal sealed partial class InlineLayoutAlgorithm
 {
     private const char SoftHyphen = (char)0x00AD;
@@ -19,7 +19,7 @@ internal sealed partial class InlineLayoutAlgorithm
     private bool[] _hyphenationPoints = [];
     private Dom.Element? _lastHyphenatorElement;
     private string? _lastHyphenatorLanguage;
-    private Hyphenator? _lastHyphenator;
+    private HyphenationDictionary? _lastHyphenator;
 
     /// <summary>
     /// Adds the automatic hyphenation opportunities of the words whose style has <c>hyphens: auto</c>
@@ -143,7 +143,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// the content language to determine the hyphenation rules"), or null when the language is unknown or has no dictionary (the
     /// text is not hyphenated automatically, as in Chrome).
     /// </summary>
-    private Hyphenator? GetHyphenator(ComputedStyle style)
+    private HyphenationDictionary? GetHyphenator(ComputedStyle style)
     {
         var element = style.Element ?? _block.Element;
         if (element is null)
@@ -155,7 +155,7 @@ internal sealed partial class InlineLayoutAlgorithm
         var language = HtmlElementStates.GetLanguage(element);
         if (_lastHyphenatorElement is null || !string.Equals(language, _lastHyphenatorLanguage, StringComparison.Ordinal))
         {
-            _lastHyphenator = Hyphenator.Get(language);
+            _lastHyphenator = HyphenationDictionary.Get(language);
             _lastHyphenatorLanguage = language;
         }
 

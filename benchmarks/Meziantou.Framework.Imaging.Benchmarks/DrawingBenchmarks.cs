@@ -30,8 +30,8 @@ public class DrawingBenchmarks : IDisposable
     private Brush _horizontal = null!;
     private Brush _radial = null!;
     private Brush _sweep = null!;
-    private PointD[] _dots = null!;
     private FilterGraph _turbulence = null!;
+    private PointD[] _dots = null!;
 
     [GlobalSetup]
     public void Setup()

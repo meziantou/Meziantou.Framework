@@ -91,7 +91,7 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void PngSampleExpansionsMatchTheScalarReferences()
+    public void SampleExpansionsMatchTheScalarReferences()
     {
         var random = new Random(59);
         for (var width = 0; width <= 37; width++)
@@ -99,8 +99,28 @@ public sealed class VectorizedKernelTests
             var scanline = new byte[width * 6];
             random.NextBytes(scanline);
             Check(PngSampleFormat.ExpandGrayAlpha8Scalar, PngSampleFormat.ExpandGrayAlpha8, scanline.AsSpan(0, width * 2).ToArray(), width, width * 4);
-            Check(PngSampleFormat.ExpandGrayAlpha16Scalar, PngSampleFormat.ExpandGrayAlpha16, scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
-            Check(PngSampleFormat.ExpandRgb16OpaqueScalar, PngSampleFormat.ExpandRgb16Opaque, scanline, width, width * 8);
+            foreach (var bigEndian in new[] { false, true })
+            {
+                Check((s, w, d) => SixteenBitSamples.ExpandGrayAlphaScalar(s, w, d, bigEndian), (s, w, d) => SixteenBitSamples.ExpandGrayAlpha(s, w, d, bigEndian), scanline.AsSpan(0, width * 4).ToArray(), width, width * 8);
+                Check((s, w, d) => SixteenBitSamples.ExpandRgbOpaqueScalar(s, w, d, bigEndian), (s, w, d) => SixteenBitSamples.ExpandRgbOpaque(s, w, d, bigEndian), scanline, width, width * 8);
+            }
+
+            // The two byte orders read the same samples from byte-swapped rows
+            var swapped = new byte[scanline.Length];
+            for (var i = 0; i + 1 < scanline.Length; i += 2)
+            {
+                swapped[i] = scanline[i + 1];
+                swapped[i + 1] = scanline[i];
+            }
+
+            var bigEndianPixels = new byte[width * 8];
+            var littleEndianPixels = new byte[width * 8];
+            SixteenBitSamples.ExpandRgbOpaqueScalar(scanline, width, bigEndianPixels, bigEndian: true);
+            SixteenBitSamples.ExpandRgbOpaqueScalar(swapped, width, littleEndianPixels, bigEndian: false);
+            Assert.Equal(bigEndianPixels, littleEndianPixels);
+            SixteenBitSamples.ExpandGrayAlphaScalar(scanline, width, bigEndianPixels, bigEndian: true);
+            SixteenBitSamples.ExpandGrayAlphaScalar(swapped, width, littleEndianPixels, bigEndian: false);
+            Assert.Equal(bigEndianPixels, littleEndianPixels);
         }
 
         static void Check(Expansion reference, Expansion expansion, byte[] scanline, int width, int length)
@@ -366,6 +386,53 @@ public sealed class VectorizedKernelTests
                 var actual = canvas.ToArray();
                 AnimationCompositor.BlendOverRow8Scalar(source, expected);
                 AnimationCompositor.BlendOverRow8(source, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PackedGrayRowsMatchTheScalarReference()
+    {
+        var random = new Random(61);
+        foreach (var bits in new[] { 1, 2, 4 })
+        {
+            foreach (var width in new[] { 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 33, 100, 2049 })
+            {
+                var packed = new byte[((width * bits) + 7) / 8];
+                for (var round = 0; round < 4; round++)
+                {
+                    random.NextBytes(packed);
+                    foreach (var invert in new[] { false, true })
+                    {
+                        // The bytes after the row must not be written
+                        var expected = new byte[width + 9];
+                        var actual = new byte[width + 9];
+                        PackedGraySamples.ExpandScalar(packed, bits, width, invert, expected);
+                        PackedGraySamples.Expand(packed, bits, width, invert, actual);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+
+        // Every byte value, in both orders
+        var values = new byte[256];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = (byte)i;
+        }
+
+        foreach (var bits in new[] { 1, 2, 4 })
+        {
+            foreach (var invert in new[] { false, true })
+            {
+                var width = values.Length * 8 / bits;
+                var expected = new byte[width];
+                var actual = new byte[width];
+                PackedGraySamples.ExpandScalar(values, bits, width, invert, expected);
+                PackedGraySamples.Expand(values, bits, width, invert, actual);
                 Assert.Equal(expected, actual);
             }
         }
@@ -4163,14 +4230,19 @@ public sealed class VectorizedKernelTests
         var random = new Random(32);
         var data = new byte[70_000];
         random.NextBytes(data);
-        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 255, 5535, 5536, 5537, 5552, 11_073, 70_000];
+        int[] lengths = [0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 79, 80, 81, 127, 128, 129, 191, 192, 193, 255, 5535, 5536, 5537, 5552, 11_073, 70_000];
         foreach (var length in lengths)
         {
-            foreach (var initial in new uint[] { 1, 0xFFF0FFF0, 0x12345678 % 65521 })
+            foreach (var initial in new uint[] { 1, 0xFFF0FFF0, 0x12345678 % 65521, Crc32.Initial })
             {
                 var span = data.AsSpan(0, length);
                 Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.Update(initial, span));
                 Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.UpdateTables(initial, span));
+                if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+                {
+                    Assert.Equal(Crc32.UpdateScalar(initial, span), Crc32.UpdateCarrylessMultiply(initial, span));
+                }
+
                 var adler = ((initial >> 16) % 65521 << 16) | ((initial & 0xFFFF) % 65521);
                 Assert.Equal(BoundedInflater.UpdateAdler32Scalar(adler, span), BoundedInflater.UpdateAdler32(adler, span));
             }
@@ -4182,6 +4254,10 @@ public sealed class VectorizedKernelTests
         Assert.Equal(BoundedInflater.UpdateAdler32Scalar(0xFFF0FFF0, ones), BoundedInflater.UpdateAdler32(0xFFF0FFF0, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.Update(Crc32.Initial, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateTables(Crc32.Initial, ones));
+        if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+        {
+            Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateCarrylessMultiply(Crc32.Initial, ones));
+        }
     }
 
     private static Image ImportBytes(PixelFormat format, byte[] bytes, int width, int height) => format switch

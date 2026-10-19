@@ -15,6 +15,7 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\LineBreakTest.txt.gz" LogicalName="LineBreakTest.txt.gz" Link="Seeds\LineBreakTest.txt.gz" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\NormalizationTest.txt.gz" LogicalName="NormalizationTest.txt.gz" Link="Seeds\NormalizationTest.txt.gz" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\BidiCharacterTest.txt.gz" LogicalName="BidiCharacterTest.txt.gz" Link="Seeds\BidiCharacterTest.txt.gz" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Unicode.Tests\files\IdnaTestV2.txt.gz" LogicalName="IdnaTestV2.txt.gz" Link="Seeds\IdnaTestV2.txt.gz" />
   </ItemGroup>
 
   <ItemGroup>

@@ -38,7 +38,7 @@ internal readonly record struct BidiRun(int Start, int End, byte Level)
 /// <summary>
 /// The Unicode Bidirectional Algorithm (https://www.unicode.org/reports/tr9/): resolves the embedding level of every character of a
 /// text (rules P1 to I2), then of each line (rule L1), and reorders a line (rule L2). Rules L3 (combining marks) and L4 (mirroring)
-/// belong to the rendering: <see cref="UnicodeProperties.GetBidiMirroringGlyph"/> gives the mirrored glyph of a character at an
+/// belong to the rendering: <see cref="CharacterProperties.GetBidiMirroringGlyph"/> gives the mirrored glyph of a character at an
 /// odd level.
 /// </summary>
 /// <remarks>
@@ -109,12 +109,12 @@ internal sealed class BidiResolver
         {
             if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
             {
-                classes[i] = classes[i + 1] = UnicodeProperties.GetBidiClass(char.ConvertToUtf32(text[i], text[i + 1]));
+                classes[i] = classes[i + 1] = CharacterProperties.GetBidiClass(char.ConvertToUtf32(text[i], text[i + 1]));
                 i++;
                 continue;
             }
 
-            classes[i] = UnicodeProperties.GetBidiClass(text[i]);
+            classes[i] = CharacterProperties.GetBidiClass(text[i]);
         }
     }
 
@@ -825,16 +825,16 @@ internal sealed class BidiResolver
 
             int codePoint = _text[index];
             var bracketType = UnicodeProperties.GetBidiPairedBracketType(codePoint);
-            if (bracketType == BidiPairedBracketType.Open)
+            if (bracketType == UnicodeBidiPairedBracketType.Open)
             {
                 if (depth == MaxBracketStackDepth)
                     return; // stop processing BD16 and return an empty list
 
-                stack[depth * 2] = NormalizeBracket(UnicodeProperties.GetBidiPairedBracket(codePoint));
+                stack[depth * 2] = NormalizeBracket(CharacterProperties.GetBidiPairedBracket(codePoint));
                 stack[(depth * 2) + 1] = k;
                 depth++;
             }
-            else if (bracketType == BidiPairedBracketType.Close)
+            else if (bracketType == UnicodeBidiPairedBracketType.Close)
             {
                 var closing = NormalizeBracket(codePoint);
                 for (var entry = depth - 1; entry >= 0; entry--)

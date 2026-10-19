@@ -83,22 +83,27 @@ internal sealed class ArabicShaper : OpenTypeShaper
     }
 
     /// <summary>
-    /// The joining type of a character for the state machine (0 U, 1 L, 2 R, 3 D, 4 ALAPH, 5 DALATH RISH, 6 T): the characters
-    /// that ArabicShaping.txt does not list are transparent when they are marks or format characters.
+    /// The joining type of a character for the state machine (0 U, 1 L, 2 R, 3 D, 4 ALAPH, 5 DALATH RISH, 6 T): the Joining_Type
+    /// of the character, with the joining groups of Syriac that have their own forms. The characters that ArabicShaping.txt does
+    /// not list are transparent when they are marks or format characters (DerivedJoiningType.txt).
     /// </summary>
-    public static int GetJoiningType(int codePoint, UnicodeCategory category)
+    public static int GetJoiningType(int codePoint)
     {
-        var type = (ArabicJoiningType)ArabicJoiningData.RangeValues[FindRange(ArabicJoiningData.RangeStarts, codePoint)];
-        if (type != ArabicJoiningType.X)
-            return (int)type;
+        var type = UnicodeProperties.GetJoiningType(codePoint) switch
+        {
+            UnicodeJoiningType.Transparent => ArabicJoiningType.T,
+            UnicodeJoiningType.LeftJoining => ArabicJoiningType.L,
+            UnicodeJoiningType.DualJoining or UnicodeJoiningType.JoinCausing => ArabicJoiningType.D,
+            UnicodeJoiningType.RightJoining => UnicodeProperties.GetJoiningGroup(codePoint) switch
+            {
+                UnicodeJoiningGroup.Alaph => ArabicJoiningType.Alaph,
+                UnicodeJoiningGroup.DalathRish => ArabicJoiningType.DalathRish,
+                _ => ArabicJoiningType.R,
+            },
+            _ => ArabicJoiningType.U,
+        };
 
-        return category is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark or UnicodeCategory.Format ? (int)ArabicJoiningType.T : (int)ArabicJoiningType.U;
-    }
-
-    private static int FindRange(ReadOnlySpan<int> starts, int codePoint)
-    {
-        var index = starts.BinarySearch(codePoint);
-        return index >= 0 ? index : ~index - 1;
+        return (int)type;
     }
 
     /// <summary>Whether a feature tag is one of the Syriac forms (fin2, fin3, med2), which have no fallback.</summary>
@@ -195,7 +200,7 @@ internal sealed class ArabicShaper : OpenTypeShaper
         // The context before the run: the first character that is not transparent
         foreach (var character in buffer.PreContext)
         {
-            var type = GetJoiningType(character, UnicodeProperties.GetGeneralCategory(character));
+            var type = GetJoiningType(character);
             if (type == (int)ArabicJoiningType.T)
                 continue;
 
@@ -205,7 +210,7 @@ internal sealed class ArabicShaper : OpenTypeShaper
 
         for (var i = 0; i < count; i++)
         {
-            var type = GetJoiningType(info[i].Codepoint, info[i].GeneralCategory);
+            var type = GetJoiningType(info[i].Codepoint);
             if (type == (int)ArabicJoiningType.T)
             {
                 info[i].ShaperAuxiliary = None;
@@ -229,7 +234,7 @@ internal sealed class ArabicShaper : OpenTypeShaper
         // The context after the run
         foreach (var character in buffer.PostContext)
         {
-            var type = GetJoiningType(character, UnicodeProperties.GetGeneralCategory(character));
+            var type = GetJoiningType(character);
             if (type == (int)ArabicJoiningType.T)
                 continue;
 

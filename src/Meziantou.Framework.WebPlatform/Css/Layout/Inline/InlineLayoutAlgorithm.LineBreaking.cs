@@ -904,7 +904,7 @@ internal sealed partial class InlineLayoutAlgorithm
 
         if (codePointBefore >= 0x0600)
         {
-            var script = UnicodeProperties.GetScript(codePointBefore);
+            var script = UnicodeScripts.GetScript(codePointBefore);
             if (script == UnicodeScript.CanadianAboriginal)
                 return "\U00001400";
 
@@ -928,7 +928,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// number of characters in the word / before the hyphen / after the hyphen, then the word must not be hyphenated. Nonspacing
     /// combining marks (Mn) and intra-word punctuation (P*) do not count towards the minimum". The <c>auto</c> values do not
     /// restrict the soft hyphens (the explicit hyphenation opportunities). The automatic hyphenation opportunities are limited by
-    /// <see cref="Hyphenator.FindOpportunities"/>.
+    /// <see cref="HyphenationDictionary.FindOpportunities"/>.
     /// </summary>
     private bool IsHyphenationAllowed(int position, ComputedStyle style)
     {

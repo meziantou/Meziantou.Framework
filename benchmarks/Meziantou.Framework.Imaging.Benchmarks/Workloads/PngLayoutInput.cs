@@ -4,8 +4,8 @@ using System.IO.Compression;
 namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 
 /// <summary>
-/// Writes the PNG inputs whose layouts <c>PngEncoder</c> never writes (gray with alpha, 16-bit RGB without alpha): one
-/// non-interlaced image, every scanline with the Up filter, compressed with the fastest zlib level.
+/// Writes the PNG inputs whose layouts <c>PngEncoder</c> never writes (gray with alpha, 16-bit RGB without alpha, 1-bit
+/// gray): one non-interlaced image, every scanline with the Up filter, compressed with the fastest zlib level.
 /// </summary>
 internal static class PngLayoutInput
 {
@@ -16,7 +16,7 @@ internal static class PngLayoutInput
     /// <param name="width">The width in pixels.</param>
     /// <param name="height">The height in pixels.</param>
     /// <param name="colorType">The PNG color type (0, 2, 4 or 6).</param>
-    /// <param name="bitDepth">8 or 16.</param>
+    /// <param name="bitDepth">8 or 16, or 1 for gray (the samples are then packed, the first pixel in the most significant bit).</param>
     public static byte[] Encode(ReadOnlySpan<byte> samples, int width, int height, byte colorType, byte bitDepth)
     {
         var channels = colorType switch
@@ -27,7 +27,7 @@ internal static class PngLayoutInput
             _ => 4,
         };
 
-        var rowLength = width * channels * bitDepth / 8;
+        var rowLength = ((width * channels * bitDepth) + 7) / 8;
         using var compressed = new MemoryStream();
         using (var zlib = new ZLibStream(compressed, CompressionLevel.Fastest, leaveOpen: true))
         {

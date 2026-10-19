@@ -68,7 +68,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // Most texts have no CJK character: the classes of the spacing are all below U+00B7 (or U+2E80 for the ideographs)
         var characters = _text.AsSpan(item.Start, item.End - item.Start);
         // (or the marks of its last character in the next item, see GetItemSpacing)
-        if (!MayNeedSpacing(characters) && !(autospace != TextAutospace.None && GetAdjacentCharacter(item.End - 1, index, forward: true).CodePoint is var next && (next >= 0x2E80 || (next >= 0x300 && Unicode.UnicodeProperties.IsMark(next)))))
+        if (!MayNeedSpacing(characters) && !(autospace != TextAutospace.None && GetAdjacentCharacter(item.End - 1, index, forward: true).CodePoint is var next && (next >= 0x2E80 || (next >= 0x300 && Unicode.CharacterProperties.IsMark(next)))))
             return shaped;
 
         var length = characters.Length;
@@ -177,7 +177,7 @@ internal sealed partial class InlineLayoutAlgorithm
             // this one are in the cluster of the base, whose glyphs are in this item: the spacing after them is added here
             var current = itemIndex;
             var nextPosition = next.Item == itemIndex ? -1 : Items[Math.Max(next.Item, 0)].Start;
-            while (next.CodePoint >= 0 && next.Item != itemIndex && Unicode.UnicodeProperties.IsMark(next.CodePoint))
+            while (next.CodePoint >= 0 && next.Item != itemIndex && Unicode.CharacterProperties.IsMark(next.CodePoint))
             {
                 if (next.Item != current && !CanShapeTogether(current, next.Item))
                 {
@@ -191,14 +191,14 @@ internal sealed partial class InlineLayoutAlgorithm
                 next = following;
             }
 
-            if (next.CodePoint >= 0 && !Unicode.UnicodeProperties.IsMark(next.CodePoint))
+            if (next.CodePoint >= 0 && !Unicode.CharacterProperties.IsMark(next.CodePoint))
             {
                 var vertical = layout.IsVerticalWritingMode;
                 // (the base can be in another inline box than its marks, WPT css/css-text/text-autospace/text-autospace-elements-007.html)
                 var first = codePoint;
                 var firstPosition = position;
                 var firstItem = itemIndex;
-                while (Unicode.UnicodeProperties.IsMark(first))
+                while (Unicode.CharacterProperties.IsMark(first))
                 {
                     var (previous, previousItem) = GetAdjacentCharacter(firstPosition, firstItem, forward: false);
                     if (previous < 0)
@@ -249,7 +249,7 @@ internal sealed partial class InlineLayoutAlgorithm
         bool IsLetterOrNumeral(int codePoint, ComputedStyle style)
         {
             var upright = vertical && style.Layout.IsVerticalTypographicMode && (IsCombinedUpright(style) || (style.Layout.Text.TextCombineUpright.Digits > 0 && codePoint is >= '0' and <= '9') || style.Layout.TextOrientation == TextOrientation.Upright
-                || (style.Layout.TextOrientation == TextOrientation.Mixed && Unicode.UnicodeProperties.GetVerticalOrientation(codePoint) is Unicode.VerticalOrientation.U or Unicode.VerticalOrientation.Tu));
+                || (style.Layout.TextOrientation == TextOrientation.Mixed && UnicodeProperties.GetVerticalOrientation(codePoint) is UnicodeVerticalOrientation.Upright or UnicodeVerticalOrientation.TransformedUpright));
             return (alpha && TextSpacingClasses.IsNonIdeographicLetter(codePoint, upright)) || (numeric && TextSpacingClasses.IsNonIdeographicNumeral(codePoint, upright));
         }
     }
@@ -269,7 +269,7 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             FullwidthPunctuation.Opening or FullwidthPunctuation.MiddleDot or FullwidthPunctuation.IdeographicSpace => true,
             FullwidthPunctuation.Closing => Items[previousItem].Style.Layout.FontSize >= fontSize,
-            _ => Unicode.UnicodeProperties.GetGeneralCategory(previous) == UnicodeCategory.OpenPunctuation,
+            _ => UnicodeProperties.GetGeneralCategory(previous) == UnicodeCategory.OpenPunctuation,
         };
     }
 
@@ -287,7 +287,7 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             FullwidthPunctuation.Closing or FullwidthPunctuation.MiddleDot or FullwidthPunctuation.IdeographicSpace => true,
             FullwidthPunctuation.Opening => Items[nextItem].Style.Layout.FontSize > fontSize,
-            _ => Unicode.UnicodeProperties.GetGeneralCategory(next) == UnicodeCategory.ClosePunctuation,
+            _ => UnicodeProperties.GetGeneralCategory(next) == UnicodeCategory.ClosePunctuation,
         };
     }
 
@@ -656,7 +656,7 @@ internal sealed partial class InlineLayoutAlgorithm
         for (var i = start; i < end && i < _length; i++)
         {
             // The bidi control codes and the other invisible characters are not on the line
-            if (_text[i] != ' ' && !Unicode.UnicodeProperties.IsDefaultIgnorable(_text[i]))
+            if (_text[i] != ' ' && !UnicodeProperties.IsDefaultIgnorable(_text[i]))
                 return true;
         }
 
@@ -909,7 +909,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// add space after the letters of the cursive scripts (https://drafts.csswg.org/css-text-4/#cursive-tracking: the spaces
     /// between their words are expanded), as in the browsers.
     /// </summary>
-    private static bool IsCursiveLetter(int codePoint) => codePoint >= 0x0600 && Unicode.UnicodeProperties.GetJoiningType(codePoint) != Unicode.JoiningType.U;
+    private static bool IsCursiveLetter(int codePoint) => codePoint >= 0x0600 && UnicodeProperties.GetJoiningType(codePoint) != UnicodeJoiningType.NonJoining;
 
     /// <summary>Counts the justification opportunities of the line, and expands them by <paramref name="apply"/> when it is not 0.</summary>
     private int CountJustificationOpportunities(double apply)

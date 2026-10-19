@@ -196,6 +196,14 @@ internal abstract class DecodedFrameSink : IDisposable
     }
 
     /// <summary>
+    /// Gets row <paramref name="y"/> of the current frame when the rows are stored without conversion
+    /// (<see cref="PixelConversionPlan.IsIdentity"/>), so that a decoder expands its samples there instead of into a
+    /// scratch row that <see cref="WriteRow(in PixelLease, int, ReadOnlySpan{byte})"/> would copy.
+    /// </summary>
+    /// <returns>Exactly <c>Canvas.Width</c> pixels of <see cref="SourcePixelFormat"/>, or an empty span when the rows are converted.</returns>
+    public Span<byte> GetDirectRow(scoped in PixelLease lease, int y) => Plan.IsIdentity ? lease.GetRowBytes(y) : default;
+
+    /// <summary>
     /// Leases the pixels of the current frame. When <see cref="SourcePixelFormat"/> equals <see cref="DestinationPixelFormat"/>,
     /// decoders may write destination rows directly (for example a compositor copying its canvas).
     /// </summary>

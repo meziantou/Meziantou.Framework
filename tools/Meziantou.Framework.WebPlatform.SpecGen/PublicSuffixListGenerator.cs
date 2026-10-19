@@ -7,6 +7,7 @@ namespace SpecGen;
 /// Generates the rules of the Public Suffix List (https://publicsuffix.org/list/), used by the URL Standard to obtain the
 /// public suffix and the registrable domain of a host (https://url.spec.whatwg.org/#host-public-suffix). The rules of the
 /// ICANN and private sections are both used. The labels are converted to their ASCII form (the hosts are ASCII once parsed).
+/// The same file is the source of the list of Meziantou.Framework.Uri (tools/Meziantou.Framework.Uri.PublicSuffix.Generator).
 /// </summary>
 internal static class PublicSuffixListGenerator
 {

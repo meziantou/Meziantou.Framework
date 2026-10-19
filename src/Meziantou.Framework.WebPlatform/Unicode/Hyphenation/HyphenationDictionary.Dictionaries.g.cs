@@ -6,7 +6,7 @@
 
 namespace Meziantou.Framework.WebPlatform.Unicode;
 
-internal sealed partial class Hyphenator
+internal sealed partial class HyphenationDictionary
 {
     /// <summary>The names of the dictionaries: the locales of the dictionaries of Chrome (lowercase).</summary>
     private static readonly string[] DictionaryNames = ["af", "as", "be", "bg", "bn", "cy", "da", "de-1996", "de-ch-1901", "el", "en-gb", "en-us", "es", "et", "eu", "fr", "ga", "gl", "gu", "hi", "hr", "it", "ka", "kn", "la", "lt", "ml", "mn-cyrl", "mr", "nb", "nl", "nn", "or", "pa", "pt", "ru", "sk", "sl", "sq", "sr-cyrl", "sr-latn", "sv", "ta", "te", "tk", "uk"];

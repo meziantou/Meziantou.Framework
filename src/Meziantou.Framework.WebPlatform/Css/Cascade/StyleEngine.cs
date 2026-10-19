@@ -785,8 +785,8 @@ internal sealed partial class StyleEngine
     {
         EnsureUpToDate();
 
-        // The styles are computed for one version: a change of the process-wide CssStyleVersion by another document while they
-        // are computed (e.g. when a style reads the environment) is seen by the next read, so that a style never inherits from
+        // The styles are computed for one version: a change of the versions while they are computed (e.g. when a style reads
+        // the environment) is seen by the next read, so that a style never inherits from
         // the style of its parent of another generation (see SuspendUpdates)
         _updatesSuspended++;
         try
@@ -828,7 +828,7 @@ internal sealed partial class StyleEngine
             }
 
             // (a style may be computed by the computation of another one, e.g. when the styles are computed again after a change
-            // of the process-wide CssStyleVersion: it is not computed twice, its descendants would inherit from the first one)
+            // of the style sheets: it is not computed twice, its descendants would inherit from the first one)
             for (var i = missing.Count - 1; i >= 0; i--)
             {
                 if (!_styles.ContainsKey((missing[i], null)))
@@ -1008,13 +1008,27 @@ internal sealed partial class StyleEngine
             beforeChange = TreeHasStartingStyleRules(element) ? ComputeStartingStyle(element, pseudoElement, parent, highlightParent) : null;
         }
 
-        if (_environmentOverride is null && (mayHaveTransitions || CssAnimationUpdater.MayHaveAnimations(style)))
+        var mayHaveAnimations = _environmentOverride is null && CssAnimationUpdater.MayHaveAnimations(style);
+        if (mayHaveTransitions || mayHaveAnimations)
         {
-            // The transitions started by a style that the layout may compute again with the size of its query container are
-            // canceled then (see InvalidateQueryContainerDescendants)
-            if (mayHaveTransitions && ContainerQueries.IsInSizeContainer(style))
+            // The changes of the transitions and animations by a style that the layout may compute again with the size of its
+            // query container are undone then (see InvalidateQueryContainerDescendants): they are recorded from the first
+            // computation of the style in this generation, whose before-change style the next computations use
+            TransitionChanges? transitionChanges = null;
+            AnimationChanges? animationChanges = null;
+            if (ContainerQueries.IsInSizeContainer(style))
             {
-                (_transitionGenerations ??= [])[(element, pseudoElement)] = CssTransition.LastGeneration;
+                if (mayHaveTransitions)
+                {
+                    ref var changes = ref CollectionsMarshal.GetValueRefOrAddDefault(_transitionChanges ??= [], (element, pseudoElement), out _);
+                    transitionChanges = changes ??= new TransitionChanges(CssTransition.LastGeneration);
+                }
+
+                if (mayHaveAnimations)
+                {
+                    ref var changes = ref CollectionsMarshal.GetValueRefOrAddDefault(_animationChanges ??= [], (element, pseudoElement), out _);
+                    animationChanges = changes ??= new AnimationChanges(_document.AnimationsOrNull?.GetCssAnimations(element, pseudoElement) is { } animations ? [.. animations] : null);
+                }
             }
 
             var changed = false;
@@ -1022,12 +1036,12 @@ internal sealed partial class StyleEngine
             {
                 if (mayHaveTransitions)
                 {
-                    changed = CssTransitionUpdater.Update(style, beforeChange);
+                    changed = CssTransitionUpdater.Update(style, beforeChange, transitionChanges);
                 }
 
-                if (CssAnimationUpdater.MayHaveAnimations(style))
+                if (mayHaveAnimations)
                 {
-                    changed |= CssAnimationUpdater.Update(style);
+                    changed |= CssAnimationUpdater.Update(style, animationChanges);
                 }
             }
 
@@ -1245,9 +1259,9 @@ internal sealed partial class StyleEngine
 
     /// <summary>
     /// Suspends the checks of the versions the computed styles depend on until the returned scope is disposed: the layout reads
-    /// the styles of the whole document for one version (see <see cref="Layout.LayoutEngine"/>). Without it, a change of the
-    /// process-wide <see cref="CssStyleVersion"/> by another document in the middle of the box tree construction would start a
-    /// new generation of styles, and lose the styles computed so far as the before-change styles of the transitions
+    /// the styles of the whole document for one version (see <see cref="Layout.LayoutEngine"/>). Without it, a change of a
+    /// version (e.g. <see cref="Document.StyleSheetsVersion"/>) in the middle of the box tree construction would start a new
+    /// generation of styles, and lose the styles computed so far as the before-change styles of the transitions
     /// (https://drafts.csswg.org/css-transitions-1/#before-change-style).
     /// </summary>
     internal UpdateSuspension SuspendUpdates()
@@ -1275,7 +1289,7 @@ internal sealed partial class StyleEngine
         var environment = _environmentOverride ?? CreateEnvironment(_document);
         var domVersion = _document.DomVersion;
         var elementStateVersion = _document.ElementStateVersion;
-        var styleVersion = CssStyleVersion.Current;
+        var styleVersion = _document.StyleSheetsVersion;
         var animationVersion = _document.AnimationsOrNull?.Version ?? 0;
 
         // The computed values of the font-relative units depend on the fonts (e.g. a web font was loaded)
@@ -1300,7 +1314,8 @@ internal sealed partial class StyleEngine
         _version++;
         _useInstanceStyles?.Clear();
         _usedBeforeChangeStyles?.Clear();
-        _transitionGenerations?.Clear();
+        CommitPendingCancellations();
+        _transitionChanges?.Clear();
         var domChanged = domVersion != _domVersion;
         if (domChanged)
         {
@@ -1444,10 +1459,16 @@ internal sealed partial class StyleEngine
     private Dictionary<(Element Element, string? PseudoElement), ComputedStyle>? _usedBeforeChangeStyles;
 
     /// <summary>
-    /// The last transition generation before the first computation of the styles in a size container in this generation: the
-    /// transitions started by that computation have a greater generation (see <see cref="InvalidateQueryContainerDescendants"/>).
+    /// The changes of the transitions by the computations of the styles in a size container in this generation, undone when the
+    /// styles are discarded (see <see cref="InvalidateQueryContainerDescendants"/>).
     /// </summary>
-    private Dictionary<(Element Element, string? PseudoElement), long>? _transitionGenerations;
+    private Dictionary<(Element Element, string? PseudoElement), TransitionChanges>? _transitionChanges;
+
+    /// <summary>
+    /// The changes of the CSS animations by the computations of the styles in a size container since the styles were settled,
+    /// undone when the styles are discarded (see <see cref="InvalidateQueryContainerDescendants"/>).
+    /// </summary>
+    private Dictionary<(Element Element, string? PseudoElement), AnimationChanges>? _animationChanges;
 
     /// <summary>
     /// Whether the size container queries use the sizes computed by the layout of the document (see <see cref="ContainerQueries"/>):
@@ -1527,30 +1548,14 @@ internal sealed partial class StyleEngine
                 _beforeChangeStyles[key] = discarded;
             }
 
-            // The transitions started by the discarded style are canceled: the new style starts its own (e.g. from a
-            // @starting-style rule in a @container rule). They were not sampled yet, so no event is fired
-            if (_transitionGenerations is not null && _transitionGenerations.Remove(key, out var generation)
-                && _document.AnimationsOrNull?.GetTransitions(key.Element, key.PseudoElement) is { } transitions)
+            if (_transitionChanges is not null && _transitionChanges.Remove(key, out var changes))
             {
-                List<string>? started = null;
-                foreach (var (property, transition) in transitions.Running)
-                {
-                    if (transition.TransitionGeneration > generation)
-                    {
-                        (started ??= []).Add(property);
-                    }
-                }
+                UndoTransitionChanges(key, changes);
+            }
 
-                if (started is not null)
-                {
-                    foreach (var property in started)
-                    {
-                        transitions.Running.Remove(property, out var transition);
-                        transition!.CancelByStyle();
-                    }
-
-                    _document.Animations.RemoveTransitionsIfEmpty(key.Element, key.PseudoElement);
-                }
+            if (_animationChanges is not null && _animationChanges.Remove(key, out var animationChanges))
+            {
+                UndoAnimationChanges(key, animationChanges);
             }
         }
 
@@ -1617,6 +1622,162 @@ internal sealed partial class StyleEngine
             }
 
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Undoes the changes of the transitions of an element by its discarded style (see <see cref="TransitionChanges"/>): the new
+    /// style updates the transitions as they were before its first computation.
+    /// </summary>
+    private void UndoTransitionChanges((Element Element, string? PseudoElement) key, TransitionChanges changes)
+    {
+        if (_document.AnimationsOrNull is not { } animations)
+            return;
+
+        // (the style of the element is computed again: the changes do not invalidate it)
+        using var suppression = animations.SuppressInvalidation();
+
+        // The transitions started by the discarded style are canceled: the new style starts its own (e.g. from a
+        // @starting-style rule in a @container rule). They were not sampled yet, so no event is fired
+        var transitions = animations.GetTransitions(key.Element, key.PseudoElement);
+        if (transitions is not null)
+        {
+            List<string>? started = null;
+            foreach (var (property, transition) in transitions.Running)
+            {
+                if (transition.TransitionGeneration > changes.Generation)
+                {
+                    (started ??= []).Add(property);
+                }
+            }
+
+            if (started is not null)
+            {
+                foreach (var property in started)
+                {
+                    transitions.Running.Remove(property, out var transition);
+                    transition!.Discard();
+                }
+            }
+        }
+
+        // The transitions it canceled run again (e.g. when the container was laid out with another size to measure it), except
+        // the ones started by the discarded computations
+        if (changes.PendingCancellations is { } canceled)
+        {
+            transitions ??= animations.GetOrCreateTransitions(key.Element, key.PseudoElement);
+            foreach (var transition in canceled)
+            {
+                transition.IsCancellationPending = false;
+                if (transition.TransitionGeneration > changes.Generation)
+                {
+                    transition.Discard();
+                }
+                else
+                {
+                    transitions.Running[transition.TransitionProperty] = transition;
+                }
+            }
+        }
+
+        if (changes.RemovedCompleted is { } completed)
+        {
+            transitions ??= animations.GetOrCreateTransitions(key.Element, key.PseudoElement);
+            foreach (var (property, value) in completed)
+            {
+                transitions.Completed.TryAdd(property, value);
+            }
+        }
+
+        animations.RemoveTransitionsIfEmpty(key.Element, key.PseudoElement);
+    }
+
+    /// <summary>
+    /// Undoes the changes of the CSS animations of an element by its discarded style (see <see cref="AnimationChanges"/>): the new
+    /// style updates the animations as they were before its first computation. The animations created by the discarded style were
+    /// not sampled yet, so no event is fired.
+    /// </summary>
+    private void UndoAnimationChanges((Element Element, string? PseudoElement) key, AnimationChanges changes)
+    {
+        if (_document.AnimationsOrNull is not { } animations)
+            return;
+
+        // (the style of the element is computed again: the changes do not invalidate it)
+        using var suppression = animations.SuppressInvalidation();
+        var before = changes.Animations ?? [];
+        if (animations.GetCssAnimations(key.Element, key.PseudoElement) is { } current)
+        {
+            foreach (var animation in current)
+            {
+                if (!before.Contains(animation))
+                {
+                    animation.Discard();
+                }
+            }
+        }
+
+        // The animations it canceled run again, except the ones created by the discarded computations
+        if (changes.PendingCancellations is { } canceled)
+        {
+            foreach (var animation in canceled)
+            {
+                animation.IsCancellationPending = false;
+                if (!before.Contains(animation))
+                {
+                    animation.Discard();
+                }
+            }
+        }
+
+        animations.SetCssAnimations(key.Element, key.PseudoElement, before);
+    }
+
+    /// <summary>
+    /// Cancels the transitions and animations whose cancellation is pending (see <see cref="Animation.IsCancellationPending"/>):
+    /// the styles are settled (a new generation of styles starts, or the animations are flushed, sampled or read), and the styles
+    /// that canceled them are no longer discarded by the layout. The <c>transitioncancel</c> and <c>animationcancel</c> events
+    /// are queued. The styles do not change: the transitions and animations already had no effect. The CSS animations of the
+    /// settled styles are no longer undone (e.g. an animation created by them may be sampled from now on).
+    /// </summary>
+    internal void CommitPendingCancellations()
+    {
+        if ((_transitionChanges is null && _animationChanges is null) || _document.AnimationsOrNull is not { } animations)
+            return;
+
+        using (animations.SuppressInvalidation())
+        {
+            if (_transitionChanges is not null)
+            {
+                foreach (var changes in _transitionChanges.Values)
+                {
+                    if (changes.PendingCancellations is { } canceled)
+                    {
+                        changes.PendingCancellations = null;
+                        foreach (var transition in canceled)
+                        {
+                            transition.IsCancellationPending = false;
+                            transition.CancelByStyle();
+                        }
+                    }
+                }
+            }
+
+            if (_animationChanges is not null)
+            {
+                foreach (var changes in _animationChanges.Values)
+                {
+                    if (changes.PendingCancellations is { } canceled)
+                    {
+                        foreach (var animation in canceled)
+                        {
+                            animation.IsCancellationPending = false;
+                            animation.CancelByStyle();
+                        }
+                    }
+                }
+
+                _animationChanges.Clear();
+            }
         }
     }
 

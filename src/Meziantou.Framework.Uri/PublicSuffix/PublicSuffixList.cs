@@ -24,7 +24,7 @@ public static partial class PublicSuffixList
     /// <summary>The number of rules of the embedded list.</summary>
     public static int RuleCount => RuleCountValue;
 
-    /// <summary>The date of the commit the embedded list was generated from.</summary>
+    /// <summary>The date of the version of the embedded list.</summary>
     public static DateTimeOffset LastUpdated => new(LastUpdatedTicks, TimeSpan.Zero);
 
     /// <summary>

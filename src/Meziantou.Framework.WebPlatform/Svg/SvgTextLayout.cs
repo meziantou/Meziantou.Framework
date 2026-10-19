@@ -5,6 +5,7 @@ using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Unicode;
 using static Meziantou.Framework.WebPlatform.Svg.SvgPathData;
+using CssUnicodeBidi = Meziantou.Framework.WebPlatform.Css.Layout.UnicodeBidi;
 
 namespace Meziantou.Framework.WebPlatform.Svg;
 
@@ -377,13 +378,13 @@ internal sealed class SvgTextLayout
 
                 // https://drafts.csswg.org/css-writing-modes-4/#unicode-bidi: the text content elements are inline boxes
                 var unicodeBidi = style.Layout.UnicodeBidi;
-                if (unicodeBidi != UnicodeBidi.Normal)
+                if (unicodeBidi != CssUnicodeBidi.Normal)
                 {
                     _bidiControls.Add((_items.Count, BidiControls.GetInlineStart(unicodeBidi, style.Layout.Direction == Direction.Rtl)));
                 }
 
                 Collect(child, isTextPath ? child : inTextPath);
-                if (unicodeBidi != UnicodeBidi.Normal)
+                if (unicodeBidi != CssUnicodeBidi.Normal)
                 {
                     _bidiControls.Add((_items.Count, BidiControls.GetInlineEnd(unicodeBidi)));
                 }
@@ -759,7 +760,7 @@ internal sealed class SvgTextLayout
         {
             var isRightToLeft = rootLayout.Direction == Direction.Rtl;
             var blockStart = BidiControls.GetBlockContainerStart(rootLayout.UnicodeBidi, isRightToLeft);
-            if (!isRightToLeft && blockStart.Length == 0 && _bidiControls.Count == 0 && rootLayout.UnicodeBidi != UnicodeBidi.Plaintext)
+            if (!isRightToLeft && blockStart.Length == 0 && _bidiControls.Count == 0 && rootLayout.UnicodeBidi != CssUnicodeBidi.Plaintext)
             {
                 // The right-to-left characters and the bidi control codes are after U+0590
                 var needsBidi = false;

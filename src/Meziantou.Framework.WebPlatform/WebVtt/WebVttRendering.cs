@@ -500,7 +500,7 @@ internal sealed class WebVttDisplay(HtmlVideoElement video)
                 i++;
             }
 
-            switch (UnicodeProperties.GetBidiClass(codePoint))
+            switch (CharacterProperties.GetBidiClass(codePoint))
             {
                 case BidiClass.L:
                     return true;

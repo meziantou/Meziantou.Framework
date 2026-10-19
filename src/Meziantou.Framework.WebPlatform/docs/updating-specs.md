@@ -21,9 +21,11 @@ Sources:
 - `mathml-core`: the source of [MathML Core](https://w3c.github.io/mathml-core/) (`spec.html`) and the files of its user
   agent style sheet (`user-agent-stylesheet`)
 - `webref`: curated WebIDL, parsed WebIDL, element definitions and CSS definitions from [w3c/webref](https://github.com/w3c/webref)
-- `unicode`: Unicode Character Database files, the UTS #46 IDNA mapping table, and the conformance tests of the text
-  segmentation algorithms (`LineBreakTest.txt`, `GraphemeBreakTest.txt`) and of the bidirectional algorithm (`BidiTest.txt`,
-  `BidiCharacterTest.txt`), which must match the version of the data
+- `unicode`: the Unicode Character Database files that the data of the complex-script shapers is generated from
+  (`ComplexShapingGenerator`, and the lowercase mappings of the hyphenation dictionaries). The URLs name a version
+  (`Public/18.0.0/`), the one of `tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt`: the other Unicode data
+  comes from the `Meziantou.Framework.Unicode` package, so the two move together. The conformance tests of the text
+  segmentation and of the bidirectional algorithm are the files of the package (`tests/Meziantou.Framework.Unicode.Tests/files`)
 - `harfbuzz`: files of [HarfBuzz](https://github.com/harfbuzz/harfbuzz) (MIT license), pinned to a release tag: the
   OpenType language tag table (`src/hb-ot-tag-table.hh`: the mapping of the BCP 47 language tags to the OpenType language
   system tags of the text shaping, `OpenTypeLanguageTags.g.cs`), the syllable machines of the complex-script shapers
@@ -49,6 +51,11 @@ Sources:
   breaking (see [layout.md](layout.md#line-breaking)). The break engines that use them (`SoutheastAsianWordBreaker`,
   `JapanesePhraseBreaker`) are manual ports of `dictbe.cpp` and `mlbe.cpp` of the same release: a new release needs their
   changes to be ported
+- `publicsuffix`: the [Public Suffix List](https://publicsuffix.org/list/) (`public_suffix_list.dat`, Mozilla Public
+  License 2.0), for the public suffixes and the registrable domains of the hosts (`Urls/PublicSuffixList.g.cs`). It is
+  also the source of the list of `Meziantou.Framework.Uri` (`tools/Meziantou.Framework.Uri.PublicSuffix.Generator`, whose
+  `--check` CI verifies), so both libraries embed the same version of the list. The `Update public suffix list` workflow
+  updates it weekly and regenerates both libraries; `update-specs.sh` also runs the generator of `Meziantou.Framework.Uri`
 - `fonts`: fallback fonts of the WPT runner for the scripts that have no font in the web-platform-tests (Noto fonts
   of [google/fonts](https://github.com/google/fonts), SIL Open Font License 1.1; see
   [Fonts](web-platform-tests.md#fonts)). They are test data: pinned and fetched like a test suite (`tests/Meziantou.Framework.WebPlatform.External/fonts`),
@@ -90,7 +97,7 @@ Sources:
     its last subtag (`Css/Layout/BoxTree/LanguageQuotes.g.cs`), for `quotes: auto`.
   - `HyphenationGenerator` compiles the hyphenation patterns of each language into a packed trie, the embedded resources
     `Unicode/Hyphenation/*.hyph` (Brotli-compressed binary files, compared after decompression by `--check`), with the table of
-    the dictionaries (`Hyphenator.Dictionaries.g.cs`) and the license notices of the sources (`LICENSES.txt`). See
+    the dictionaries (`HyphenationDictionary.Dictionaries.g.cs`) and the license notices of the sources (`LICENSES.txt`). See
     [layout.md](layout.md#hyphenation). To add a language, add its files to `sources.json` and to the `Dictionaries` of the
     generator after checking its license, then run `update hyphenation`.
   - `SegmentationGenerator` compiles the word lists of the `icu` source into the embedded resources
@@ -106,6 +113,7 @@ Sources:
 ./eng/webplatform/update-specs.sh                 # everything
 ./eng/webplatform/update-specs.sh encoding        # a single source
 ./eng/webplatform/update-specs.sh --except wpt    # everything but WPT
+./eng/webplatform/update-specs.sh publicsuffix     # the public suffix list (also regenerates Meziantou.Framework.Uri)
 ./eng/webplatform/update-wpt.sh                   # WPT only, with its expectations and coverage
 ```
 
@@ -124,20 +132,20 @@ does not change. The reftests of a fetched directory are run by `WptReftests` (s
 [web-platform-tests.md](web-platform-tests.md#reftests)).
 
 The `Update specifications` workflow runs weekly and opens two pull requests: `automation/update-specs`
-(`eng/webplatform/update-specs.sh --except wpt`) and `automation/update-wpt` (`eng/webplatform/update-wpt.sh`). It needs the workflow to be
+(`eng/webplatform/update-specs.sh --except wpt publicsuffix`) and `automation/update-wpt` (`eng/webplatform/update-wpt.sh`). It needs the workflow to be
 enabled, and "Allow GitHub Actions to create and approve pull requests" in the settings of the repository. The pull
 requests created with `GITHUB_TOKEN` do not trigger the CI workflow: set the `SPEC_UPDATE_TOKEN` secret (a fine-grained
 token with the contents and pull requests write permissions) to run it.
 
 ## Implementation notes
 
-- Unicode data (IDNA mapping, NFC, Joining_Type, Vertical_Orientation, Default_Ignorable_Code_Point, Script and
-  Script_Extensions, the Arabic joining types of `ArabicShaping.txt`, the categories of the complex-script shapers from
-  `IndicSyllabicCategory.txt`, `IndicPositionalCategory.txt` and `Blocks.txt` (`ComplexShapingGenerator`, a port of the
-  generators of HarfBuzz: `gen-indic-table.py`, `gen-use-table.py`, `gen-vowel-constraints.py`, `gen-arabic-table.py`), the bidi properties,
-  see [layout.md](layout.md#bidirectional-text), and the Line_Break, East_Asian_Width, Grapheme_Cluster_Break,
-  General_Category... of the text segmentation, see [layout.md](layout.md#text-segmentation)) is generated from the UCD
-  instead of using `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`, whose behavior depends on the OS, the ICU
-  version, the runtime and the globalization mode.
+- The Unicode data does not depend on the OS, the ICU version, the runtime or the globalization mode, unlike
+  `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`. The properties of the code points (the bidi properties, see
+  [layout.md](layout.md#bidirectional-text), the Line_Break, East_Asian_Width, Grapheme_Cluster_Break, General_Category...
+  of the text segmentation, see [layout.md](layout.md#text-segmentation), Script and Script_Extensions, Joining_Type,
+  Vertical_Orientation...), NFC, the case mappings and IDNA come from the `Meziantou.Framework.Unicode` package. The
+  categories of the complex-script shapers are generated from `IndicSyllabicCategory.txt`, `IndicPositionalCategory.txt`,
+  `ArabicShaping.txt` and `Blocks.txt` (`ComplexShapingGenerator`, a port of the generators of HarfBuzz:
+  `gen-indic-table.py`, `gen-use-table.py`, `gen-vowel-constraints.py`, `gen-arabic-table.py`).
 - When a test suite lags behind the specification data (for instance, IDNA tests generated from an older Unicode
   version), the affected tests are skipped with an explicit reason instead of pinning older data.

@@ -75,8 +75,7 @@ internal static class TiffPageDecoder
             var stored = reader.ReadBlock(block, rowCount);
             for (var row = 0; row < rowCount; row++)
             {
-                expander.Expand(stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
-                sink.WriteRow(lease, firstRow + row, expanded);
+                WriteRow(sink, lease, firstRow + row, expander, stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
             }
         }
     }
@@ -127,10 +126,23 @@ internal static class TiffPageDecoder
 
             for (var row = 0; row < rowCount; row++)
             {
-                expander.Expand(band.Span.Slice(row * bandRowLength, bandRowLength), expanded);
-                sink.WriteRow(lease, firstRow + row, expanded);
+                WriteRow(sink, lease, firstRow + row, expander, band.Span.Slice(row * bandRowLength, bandRowLength), expanded);
             }
         }
+    }
+
+    /// <summary>Expands a decoded row into the frame, through the scratch row only when the frame stores another pixel format.</summary>
+    private static void WriteRow(DecodedFrameSink sink, scoped in PixelLease lease, int y, TiffRowExpander expander, ReadOnlySpan<byte> stored, Span<byte> expanded)
+    {
+        var destination = sink.GetDirectRow(lease, y);
+        if (!destination.IsEmpty)
+        {
+            expander.Expand(stored, destination);
+            return;
+        }
+
+        expander.Expand(stored, expanded);
+        sink.WriteRow(lease, y, expanded);
     }
 
     /// <summary>Expands and writes the rows of a strip as its decoder produces them.</summary>
@@ -152,9 +164,8 @@ internal static class TiffPageDecoder
 
         public override void OnRow(int row, ReadOnlySpan<byte> samples)
         {
-            var expanded = _expanded.Span;
-            _expander.Expand(samples, expanded);
-            _sink.WriteRow(FirstRow + row, expanded);
+            using var lease = _sink.LeaseCurrentFrame();
+            WriteRow(_sink, lease, FirstRow + row, _expander, samples, _expanded.Span);
         }
     }
 }

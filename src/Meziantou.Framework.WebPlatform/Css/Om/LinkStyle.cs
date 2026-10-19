@@ -463,26 +463,26 @@ internal sealed class AdoptedStyleSheetList(Node owner) : System.Collections.Obj
     {
         Validate(item);
         base.InsertItem(index, item);
-        Css.Cascade.CssStyleVersion.Increment();
+        Css.Cascade.CssStyleVersion.Increment(owner.NodeDocument);
     }
 
     protected override void SetItem(int index, CssStyleSheet item)
     {
         Validate(item);
         base.SetItem(index, item);
-        Css.Cascade.CssStyleVersion.Increment();
+        Css.Cascade.CssStyleVersion.Increment(owner.NodeDocument);
     }
 
     protected override void RemoveItem(int index)
     {
         base.RemoveItem(index);
-        Css.Cascade.CssStyleVersion.Increment();
+        Css.Cascade.CssStyleVersion.Increment(owner.NodeDocument);
     }
 
     protected override void ClearItems()
     {
         base.ClearItems();
-        Css.Cascade.CssStyleVersion.Increment();
+        Css.Cascade.CssStyleVersion.Increment(owner.NodeDocument);
     }
 
     public void ReplaceAll(IEnumerable<CssStyleSheet> items)

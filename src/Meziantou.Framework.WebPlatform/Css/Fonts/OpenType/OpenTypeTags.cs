@@ -73,7 +73,9 @@ internal static class OpenTypeScriptTags
             case UnicodeScript.Vai:
                 return 0x76616920; // vai
             default:
-                return ScriptCodes.Codes[(int)script] | 0x20000000;
+                // The ISO 15924 code, with a lowercase first letter (e.g. Latn to latn)
+                var code = UnicodeScripts.GetIso15924Code(script);
+                return ((uint)code[0] << 24 | (uint)code[1] << 16 | (uint)code[2] << 8 | code[3]) | 0x20000000;
         }
     }
 }

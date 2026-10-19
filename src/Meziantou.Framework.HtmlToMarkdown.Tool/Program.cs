@@ -1,7 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Runtime.CompilerServices;
-using AngleSharp.Html.Parser;
+using Meziantou.Framework.WebPlatform;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.HtmlToMarkdown.Tool.Tests")]
 
@@ -176,7 +176,7 @@ internal static class Program
     // The converter handles HTML fragments, so extract the body content to ignore the head of complete documents
     private static string GetBodyContent(string html)
     {
-        var document = new HtmlParser().ParseDocument(html);
+        var document = HtmlDocumentParser.ParseDocument(html);
         return document.Body?.InnerHtml ?? html;
     }
 

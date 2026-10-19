@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -25,13 +26,26 @@ internal static class WorkingSamples
     /// with <see cref="WorkingAlpha.Preserved"/> they are kept straight. In both cases the alpha working sample is <c>a</c>.
     /// </summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, encoded samples are converted 4 at a time: every sample and product is an integer below
-    /// 2^32, so the conversions and the products are exact and give the doubles of <see cref="LoadScalar"/>.
+    /// With 128-bit hardware vectors, encoded samples are converted 4 at a time (one 256-bit vector with AVX2): every sample
+    /// and product is an integer below 2^32, so the conversions and the products are exact and give the doubles of
+    /// <see cref="LoadScalar"/>.
     /// </remarks>
     public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
     {
-        var done = transfer is 0 && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar ? LoadVector(samples, working, alpha) : 0;
+        var done = 0;
+        if (transfer is 0 && !Resampler.TestForceScalar)
+        {
+            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            {
+                done = LoadVector256(samples, working, alpha);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                done = LoadVector(samples, working, alpha);
+            }
+        }
+
         LoadScalar(samples[done..], working[done..], alpha, transfer);
     }
 
@@ -107,15 +121,28 @@ internal static class WorkingSamples
     /// and clamped to [0, max].
     /// </summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, encoded samples without alpha or with premultiplied alpha are rounded 4 at a time with
-    /// the same IEEE operations (division, addition, floor) as <see cref="StoreScalar"/>, so the results are identical.
-    /// Linear light is encoded to 8-bit samples with the thresholds of the encoding (<see cref="QuantizationThresholds"/>),
-    /// which give the samples of <see cref="StoreScalar"/> without evaluating the transfer function.
+    /// With 128-bit hardware vectors, encoded samples without alpha or with premultiplied alpha are rounded 4 at a time (one
+    /// 256-bit vector with AVX2) with the same IEEE operations (division, addition, floor) as <see cref="StoreScalar"/>, so
+    /// the results are identical. Linear light is encoded to 8-bit samples with the thresholds of the encoding
+    /// (<see cref="QuantizationThresholds"/>), which give the samples of <see cref="StoreScalar"/> without evaluating the
+    /// transfer function.
     /// </remarks>
     public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
     {
-        var done = transfer is 0 && alpha != WorkingAlpha.Preserved && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar ? StoreVector(values, samples, alpha == WorkingAlpha.Premultiplied, max) : 0;
+        var done = 0;
+        if (transfer is 0 && alpha != WorkingAlpha.Preserved && !Resampler.TestForceScalar)
+        {
+            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            {
+                done = StoreVector256(values, samples, alpha == WorkingAlpha.Premultiplied, max);
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                done = StoreVector(values, samples, alpha == WorkingAlpha.Premultiplied, max);
+            }
+        }
+
         var thresholds = typeof(TSample) == typeof(byte) && max == byte.MaxValue && transfer is not 0 and not CicpTransfer.Linear && transfer < Thresholds8.Length && !Resampler.TestForceScalar ? GetThresholds8(transfer) : null;
         StoreCore(values[done..], samples[done..], alpha, transfer, max, thresholds);
     }
@@ -223,6 +250,104 @@ internal static class WorkingSamples
 
         unsafe { low.StoreUnsafe(ref output, (nuint)index); }
         unsafe { high.StoreUnsafe(ref output, (nuint)(index + 2)); }
+    }
+
+    /// <summary>The 256-bit version of <see cref="LoadVector"/> (AVX2): the same samples, widened in the same way, converted to one vector of 4 doubles.</summary>
+    /// <returns>The number of samples converted, a multiple of 4.</returns>
+    private static int LoadVector256<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha)
+        where TSample : unmanaged
+    {
+        Debug.Assert(working.Length >= samples.Length);
+        ref var input = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(working));
+        var length = samples.Length;
+        var i = 0;
+        if (typeof(TSample) == typeof(byte))
+        {
+            for (; i + 16 <= length; i += 16)
+            {
+                var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)i)));
+                var (first, second) = Vector128.Widen(low);
+                var (third, fourth) = Vector128.Widen(high);
+                StoreWorking256(first, ref output, i, alpha);
+                StoreWorking256(second, ref output, i + 4, alpha);
+                StoreWorking256(third, ref output, i + 8, alpha);
+                StoreWorking256(fourth, ref output, i + 12, alpha);
+            }
+        }
+        else
+        {
+            for (; i + 8 <= length; i += 8)
+            {
+                var (first, second) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16());
+                StoreWorking256(first, ref output, i, alpha);
+                StoreWorking256(second, ref output, i + 4, alpha);
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>The 256-bit version of <see cref="StoreWorking"/>: <c>(r a, g a, b a, a)</c> when premultiplied, the samples otherwise.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreWorking256(Vector128<uint> samples, ref double output, int index, WorkingAlpha alpha)
+    {
+        // Samples up to 65535 are exact as doubles
+        var values = Avx.ConvertToVector256Double(samples.AsInt32());
+        if (alpha == WorkingAlpha.Premultiplied)
+        {
+            // (r, g, b, a) * (a, a, a, 1): exact products of integers (at most 65535 * 65535)
+            var a = Avx2.Permute4x64(values, 0b11_11_11_11);
+            values *= Vector256.ConditionalSelect(Vector256.Create(0, 0, 0, -1L).AsDouble(), Vector256<double>.One, a);
+        }
+
+        unsafe { values.StoreUnsafe(ref output, (nuint)index); }
+    }
+
+    /// <summary>
+    /// The 256-bit version of <see cref="StoreVector"/> (AVX2): one pixel per vector, one division of its colors by its
+    /// unrounded alpha, the same rounding.
+    /// </summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreVector256<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, bool premultiplied, int max)
+        where TSample : unmanaged
+    {
+        Debug.Assert(samples.Length == values.Length);
+        ref var input = ref unsafe(MemoryMarshal.GetReference(values));
+        ref var output = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        var maximum = Vector256.Create((double)max);
+        var i = 0;
+        for (; i + 4 <= samples.Length; i += 4)
+        {
+            var value = unsafe(Vector256.LoadUnsafe(ref input, (nuint)i));
+            if (premultiplied)
+            {
+                // Colors are divided by the unrounded alpha, alpha itself is rounded (a division by a zero alpha gives a
+                // meaningless value, replaced below)
+                var a = Avx2.Permute4x64(value, 0b11_11_11_11);
+                value = Vector256.ConditionalSelect(Vector256.Create(0, 0, 0, -1L).AsDouble(), value, value / a);
+            }
+
+            // The rounded samples are integers between 0 and max, exact as int32
+            var rounded = Avx.ConvertToVector128Int32WithTruncation(Vector256.Min(Vector256.Max(Vector256.Floor(value + Vector256.Create(RoundingOffset)), Vector256<double>.Zero), maximum));
+            if (premultiplied)
+            {
+                // A zero rounded alpha gives transparent black
+                rounded &= ~Vector128.Equals(Vector128.Shuffle(rounded, Vector128.Create(3)), Vector128<int>.Zero);
+            }
+
+            var narrowed = Vector128.Narrow(rounded.AsUInt32(), Vector128<uint>.Zero);
+            if (typeof(TSample) == typeof(byte))
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, i), Vector128.Narrow(narrowed, Vector128<ushort>.Zero).AsUInt32().ToScalar()); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 2 * i), narrowed.AsUInt64().ToScalar()); }
+            }
+        }
+
+        return i;
     }
 
     /// <summary>Rounds the leading encoded working samples 4 at a time (whole pixels when <paramref name="premultiplied"/>).</summary>

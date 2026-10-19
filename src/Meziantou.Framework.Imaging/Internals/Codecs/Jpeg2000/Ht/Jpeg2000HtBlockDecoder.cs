@@ -46,6 +46,11 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     // The quads of a row of the widest code-block
     private const int QuadRowLength = 1024 / 2;
 
+    // The flags of the HT SigProp pass: the samples of a code-block with a margin of one column on the left, two on the
+    // right, and one row above and below; this many for the code-blocks of the codestreams (sides of at most 1024
+    // samples)
+    private const int NeighborsLength = 4096 + (2 * 1024) + (3 * 1024) + 6;
+
     // Table 2
     private static ReadOnlySpan<byte> MelExponents => [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5];
 
@@ -53,6 +58,8 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     private readonly Av1PooledArray<byte> _states;
     private readonly Av1PooledArray<byte> _exponents;
     private readonly Av1PooledArray<uint> _quads;
+    private readonly AllocationScope _scope;
+    private Av1PooledArray<byte>? _neighbors;
 
     // The HT cleanup segment and its three bit-streams (7.1.1 to 7.1.4)
     private byte[] _data = [];
@@ -98,6 +105,7 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     public Jpeg2000HtBlockDecoder(AllocationScope scope)
     {
         // A sample has a magnitude and a state; a row of quads needs the exponents of the bottom samples of the row above
+        _scope = scope;
         Av1PooledArray<uint>? magnitudes = null;
         Av1PooledArray<byte>? states = null;
         Av1PooledArray<byte>? exponents = null;
@@ -229,6 +237,8 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         _states.Dispose();
         _exponents.Dispose();
         _quads.Dispose();
+        _neighbors?.Dispose();
+        _neighbors = null;
     }
 
     private enum MagSgnError
@@ -853,6 +863,13 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     }
 
     /// <summary>The HT SigProp decoding procedure (7.4).</summary>
+    /// <remarks>
+    /// A neighbor counts when it is significant, or, if it comes earlier in the stripe-oriented scan, when this pass made
+    /// it significant. A sample that comes later has not been visited, so that this pass has not made it significant:
+    /// a neighbor counts when it is significant or this pass made it significant, whatever its place in the scan. The
+    /// neighborhood is read from a copy of these two flags with a margin of zeros around the code-block, three bytes of
+    /// three rows.
+    /// </remarks>
     private void DecodeSignificancePropagation(Span<byte> states, int width, int height, bool isVerticallyCausal)
     {
         // initSP
@@ -860,9 +877,37 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         _sigPropBits = 0;
         _sigPropValue = 0;
         _sigPropLast = 0;
+
+        // One column of zeros on the left, two on the right (a neighborhood row is read as four bytes) and one row above
+        // and below
+        var stride = width + 3;
+        var length = stride * (height + 2);
+        if (_neighbors is null || _neighbors.Length < length)
+        {
+            _neighbors?.Dispose();
+            _neighbors = null;
+            _neighbors = Av1PooledArray<byte>.Rent(_scope, Math.Max(length, NeighborsLength), clear: false);
+        }
+
+        var neighbors = _neighbors.Span[..length];
+        neighbors.Clear();
+        for (var y = 0; y < height; y++)
+        {
+            var row = neighbors.Slice(((y + 1) * stride) + 1, width);
+            var source = states.Slice(y * width, width);
+            for (var x = 0; x < width; x++)
+            {
+                row[x] = (byte)(source[x] & Significant);
+            }
+        }
+
         for (var stripe = 0; stripe < height; stripe += 4)
         {
             var stripeEnd = Math.Min(stripe + 4, height);
+
+            // The propagation neighborhood: the eight neighbors that are in the code-block, without the next stripe when
+            // the contexts are vertically causal
+            var lastRow = isVerticallyCausal ? stripeEnd - 1 : height - 1;
             for (var group = 0; group < width; group += 4)
             {
                 var groupEnd = Math.Min(group + 4, width);
@@ -876,39 +921,19 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
                         if ((states[index] & Significant) != 0)
                             continue;
 
-                        // The propagation neighborhood: the eight neighbors that are in the code-block, without the next
-                        // stripe when the contexts are vertically causal. A neighbor counts when it is significant, or,
-                        // if it comes earlier in the scan, when this pass made it significant
-                        var lastRow = isVerticallyCausal ? stripeEnd - 1 : height - 1;
-                        var hasSignificantNeighbor = false;
-                        for (var neighborY = Math.Max(0, y - 1); neighborY <= Math.Min(lastRow, y + 1) && !hasSignificantNeighbor; neighborY++)
+                        // The bytes of the columns x - 1 to x + 1 of the rows y - 1 to y + 1
+                        var center = ((y + 1) * stride) + x + 1;
+                        var neighborhood = BinaryPrimitives.ReadUInt32LittleEndian(neighbors.Slice(center - stride - 1, 4)) | BinaryPrimitives.ReadUInt32LittleEndian(neighbors.Slice(center - 1, 4));
+                        if (y < lastRow)
                         {
-                            for (var neighborX = Math.Max(0, x - 1); neighborX <= Math.Min(width - 1, x + 1); neighborX++)
-                            {
-                                if (neighborX == x && neighborY == y)
-                                    continue;
-
-                                var neighbor = states[(neighborY * width) + neighborX];
-                                if ((neighbor & Significant) != 0)
-                                {
-                                    hasSignificantNeighbor = true;
-                                    break;
-                                }
-
-                                // Earlier in the stripe-oriented scan: a previous stripe, a previous column of this stripe,
-                                // or the samples above in this column
-                                var isEarlier = neighborY < stripe || (neighborY < stripeEnd && (neighborX < x || (neighborX == x && neighborY < y)));
-                                if (isEarlier && (neighbor & RefinementBit) != 0)
-                                {
-                                    hasSignificantNeighbor = true;
-                                    break;
-                                }
-                            }
+                            neighborhood |= BinaryPrimitives.ReadUInt32LittleEndian(neighbors.Slice(center + stride - 1, 4));
                         }
 
-                        if (hasSignificantNeighbor)
+                        if ((neighborhood & 0x00FFFFFF) != 0)
                         {
-                            states[index] |= (byte)(Refined | (ReadSigPropBit() != 0 ? RefinementBit : 0));
+                            var bit = ReadSigPropBit();
+                            states[index] |= (byte)(Refined | (bit != 0 ? RefinementBit : 0));
+                            neighbors[center] = (byte)bit;
                         }
                     }
                 }

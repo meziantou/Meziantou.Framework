@@ -94,7 +94,7 @@ internal static class ConformanceFilesWriter
             - Source: <{{Ucd.GetUrl("")}}>
             - License: <https://www.unicode.org/license.txt>
 
-            The tables of this package (`*.g.cs`, `Resources/UnicodeData.bin`) are generated from the data files of
+            The tables of this package (`*.g.cs`) are generated from the data files of
             the Unicode Character Database, of the Unicode security mechanisms and of Unicode IDNA Compatibility
             Processing by `tools/Meziantou.Framework.Unicode.Generator`. The algorithms are written from the Unicode
             Standard Annexes #9, #14, #15, #24 and #29 and the Unicode Technical Standards #39 and #46.

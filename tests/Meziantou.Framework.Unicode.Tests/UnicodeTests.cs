@@ -166,6 +166,50 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void UnicodeCharacterInfo_DefaultHasNoProperties()
+    {
+        // The fields are read from the tables on demand; a default instance must not read the entry for U+0000.
+        var info = default(UnicodeCharacterInfo);
+
+        Assert.Null(info.Name);
+        Assert.Equal(UnicodeCategory.UppercaseLetter, info.Category);
+        Assert.Equal(UnicodeBidirectionalCategory.LeftToRight, info.BidiCategory);
+        Assert.Null(info.Block);
+        Assert.Equal(0, info.CanonicalCombiningClass);
+        Assert.Null(info.DecompositionMapping);
+        Assert.Equal(0, info.DecimalDigitValue);
+        Assert.Equal(0, info.DigitValue);
+        Assert.Null(info.NumericValue);
+        Assert.False(info.IsMirrored);
+        Assert.Null(info.Unicode1Name);
+        Assert.Null(info.IsoComment);
+        Assert.Null(info.SimpleUppercaseMapping);
+        Assert.Null(info.SimpleLowercaseMapping);
+        Assert.Null(info.SimpleTitlecaseMapping);
+        Assert.False(info.IsEmoji);
+        Assert.False(info.IsExtendedPictographic);
+    }
+
+    [Fact]
+    public void TryGetCharacterInfo_DoesNotAllocate()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune(0x1F600), out _));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var sum = 0;
+        for (var codePoint = 0; codePoint < 0x3000; codePoint += 7)
+        {
+            if (Unicode.TryGetCharacterInfo(new Rune(codePoint), out var info))
+            {
+                sum += (int)info.Category + info.CanonicalCombiningClass + (info.IsMirrored ? 1 : 0) + (info.SimpleUppercaseMapping?.Value ?? 0);
+            }
+        }
+
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.NotEqual(0, sum);
+    }
+
+    [Fact]
     public void UnicodeCharacterInfo_HashCodeDistinguishesCharacters()
     {
         var seen = new Dictionary<int, Rune>();
@@ -305,6 +349,11 @@ public sealed class UnicodeTests
             }
             else if (found != info)
             {
+                failures.Add($"U+{info.Rune.Value:X4}: lookup returned a different entry");
+            }
+            else if (!string.Equals(found.Name, info.Name, StringComparison.Ordinal))
+            {
+                // The enumerator decodes the names in order rather than looking each one up.
                 failures.Add($"U+{info.Rune.Value:X4}: lookup returned {found.Name} instead of {info.Name}");
             }
         }

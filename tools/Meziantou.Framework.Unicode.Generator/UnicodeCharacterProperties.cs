@@ -2,14 +2,14 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>The properties a run of consecutive code points shares in the Unicode data resource.</summary>
+/// <summary>The properties that code points share in a property record of the Unicode data tables.</summary>
 /// <remarks>
 /// Case mappings are stored relative to the code point rather than absolute: that is what lets a
 /// whole alphabet collapse into one tuple, since every letter of it maps by the same distance.
 /// A missing mapping is recorded in <see cref="Flags"/> rather than as a sentinel delta.
 /// <para>
-/// This is a record so that the generator can deduplicate tuples by value. This file is compiled
-/// into the generator as well; see <see cref="UnicodeDataFormat"/> for the layout.
+/// This is a record so that the generator can deduplicate tuples by value. See <see cref="UnicodeDataFormat"/> for
+/// the layout.
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]

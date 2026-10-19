@@ -12,7 +12,6 @@
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBidirectionalCategory.cs" Link="UnicodeBidirectionalCategory.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/EmojiProperties.cs" Link="EmojiProperties.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeDataFormat.cs" Link="UnicodeDataFormat.cs" />
-    <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeCharacterProperties.cs" Link="UnicodeCharacterProperties.cs" />
   </ItemGroup>
 
   <ItemGroup>

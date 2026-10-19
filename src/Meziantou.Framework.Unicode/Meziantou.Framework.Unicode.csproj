@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.9</Version>
+    <Version>2.0.10</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Unicode text algorithms that do not depend on the runtime or on ICU: character properties, case mappings, grapheme, word and line segmentation, normalization, bidirectional algorithm, script runs, hyphenation, internationalized domain names (IDNA) and confusable detection.</Description>
     <PackageTags>unicode, confusables, homoglyph, normalization, text, script, bidi, line-break, grapheme, hyphenation, idna, punycode</PackageTags>
@@ -11,13 +11,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Unicode.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Resources/UnicodeData.bin">
-      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin</LogicalName>
-      <WithCulture>false</WithCulture>
-    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

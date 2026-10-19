@@ -228,18 +228,20 @@ internal sealed class GvarTable
         var y = new PackedDeltas(deltas, PackedDeltas.Skip(deltas, 0, count));
         if (points.IsAllPoints)
         {
-            for (var i = 0; i < count; i++)
+            // Only the deltas of the points of the sums are read (the phantom points alone for an advance); the others
+            // are skipped, which checks that their bytes are there as reading them does.
+            var firstRead = Math.Clamp(first, 0, count);
+            var endRead = (int)Math.Clamp((long)first + sumX.Length, firstRead, count);
+            x.Advance(firstRead);
+            y.Advance(firstRead);
+            for (var i = firstRead; i < endRead; i++)
             {
-                var dx = x.Read();
-                var dy = y.Read();
-                var target = i - first;
-                if ((uint)target < (uint)sumX.Length)
-                {
-                    sumX[target] += scalar * dx;
-                    sumY[target] += scalar * dy;
-                }
+                sumX[i - first] += scalar * x.Read();
+                sumY[i - first] += scalar * y.Read();
             }
 
+            x.Advance(count - endRead);
+            y.Advance(count - endRead);
             return;
         }
 
@@ -261,12 +263,11 @@ internal sealed class GvarTable
             return;
         }
 
-        // The deltas of the tuple variation for each point of the contours, and whether it has one.
+        // The deltas of the tuple variation for each point of the contours, and whether it has one: only the deltas of
+        // the points that have one are read.
         var tupleX = work[..contours.Length];
         var tupleY = work.Slice(contours.Length, contours.Length);
         var touched = work.Slice(contours.Length * 2, contours.Length);
-        tupleX.Clear();
-        tupleY.Clear();
         touched.Clear();
         for (var i = 0; i < count; i++)
         {
@@ -293,23 +294,20 @@ internal sealed class GvarTable
             if ((contours[i].Flags & GlyphPoint.EndOfContour) == 0 && i != contours.Length - 1)
                 continue;
 
-            InferDeltas(contours[start..(i + 1)], tupleX[start..(i + 1)], tupleY[start..(i + 1)], touched[start..(i + 1)]);
+            AddContourDeltas(contours[start..(i + 1)], tupleX[start..(i + 1)], tupleY[start..(i + 1)], touched[start..(i + 1)], scalar, start - first, sumX, sumY);
             start = i + 1;
-        }
-
-        for (var i = 0; i < contours.Length; i++)
-        {
-            var target = i - first;
-            if ((uint)target < (uint)sumX.Length)
-            {
-                sumX[target] += scalar * tupleX[i];
-                sumY[target] += scalar * tupleY[i];
-            }
         }
     }
 
-    /// <summary>Gives a delta to the points of a contour that have none, from the points before and after them that have one.</summary>
-    private static void InferDeltas(ReadOnlySpan<GlyphPoint> contour, Span<double> deltaX, Span<double> deltaY, ReadOnlySpan<double> touched)
+    /// <summary>
+    /// Adds the deltas of the points of a contour to the sums: the delta of a point that has one, or the one inferred from
+    /// the points before and after it that have one. A contour without any delta does not move, and adds nothing.
+    /// </summary>
+    /// <remarks>
+    /// Each point of a contour that moves gets one addition, as when the deltas of every point are computed first; a
+    /// sum that gets no addition instead of the addition of a zero has the same value (a sum is never -0).
+    /// </remarks>
+    private static void AddContourDeltas(ReadOnlySpan<GlyphPoint> contour, ReadOnlySpan<double> deltaX, ReadOnlySpan<double> deltaY, ReadOnlySpan<double> touched, double scalar, int target, Span<double> sumX, Span<double> sumY)
     {
         var firstTouched = -1;
         for (var i = 0; i < contour.Length; i++)
@@ -321,7 +319,6 @@ internal sealed class GvarTable
             }
         }
 
-        // A contour without any delta does not move.
         if (firstTouched < 0)
             return;
 
@@ -330,6 +327,7 @@ internal sealed class GvarTable
         var previous = firstTouched;
         do
         {
+            Add(previous, deltaX[previous], deltaY[previous], scalar, target, sumX, sumY);
             var next = previous;
             do
             {
@@ -339,13 +337,24 @@ internal sealed class GvarTable
 
             for (var i = previous + 1 == contour.Length ? 0 : previous + 1; i != next; i = i + 1 == contour.Length ? 0 : i + 1)
             {
-                deltaX[i] = Infer(contour[i].X, contour[previous].X, contour[next].X, deltaX[previous], deltaX[next]);
-                deltaY[i] = Infer(contour[i].Y, contour[previous].Y, contour[next].Y, deltaY[previous], deltaY[next]);
+                var inferredX = Infer(contour[i].X, contour[previous].X, contour[next].X, deltaX[previous], deltaX[next]);
+                var inferredY = Infer(contour[i].Y, contour[previous].Y, contour[next].Y, deltaY[previous], deltaY[next]);
+                Add(i, inferredX, inferredY, scalar, target, sumX, sumY);
             }
 
             previous = next;
         }
         while (previous != firstTouched);
+
+        static void Add(int point, double deltaX, double deltaY, double scalar, int target, Span<double> sumX, Span<double> sumY)
+        {
+            var index = target + point;
+            if ((uint)index < (uint)sumX.Length)
+            {
+                sumX[index] += scalar * deltaX;
+                sumY[index] += scalar * deltaY;
+            }
+        }
     }
 
     /// <summary>

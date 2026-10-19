@@ -999,6 +999,49 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    /// <summary>
+    /// A DCT of 8x8 samples whose coefficients are zeros (of either sign) but the lowest frequency gives that value to
+    /// every sample, bit for bit, which lets the decoder fill such a block: any value but a negative zero and NaN.
+    /// </summary>
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlInverseDctOfABlockWithoutAcCoefficientIsItsLowestFrequency()
+    {
+        var random = new Random(188);
+        var scratch = new float[JpegXlInverseTransform.ScratchLength];
+        float[] specials = [0f, float.Epsilon, -float.Epsilon, 1e-30f, -1e-30f, float.MaxValue, -float.MaxValue, 1f, -1f];
+        for (var round = 0; round < 3000; round++)
+        {
+            var value = round < specials.Length ? specials[round] : (float)((random.NextDouble() - 0.5) * Math.Pow(10, random.Next(-45, 39)));
+            if (BitConverter.SingleToInt32Bits(value) == int.MinValue)
+            {
+                // A negative value too small for a float: the negative zero is left to the inverse DCT
+                value = -float.Epsilon;
+            }
+
+            Assert.True(JpegXlInverseTransform.IsConstantBlockExact(value));
+            var coefficients = new float[64];
+            for (var k = 1; k < 64; k++)
+            {
+                coefficients[k] = random.Next(2) == 0 ? 0f : -0f;
+            }
+
+            coefficients[0] = value;
+            var stride = 8 + (round % 3);
+            var expected = new float[8 * stride];
+            var expectedScalar = new float[8 * stride];
+            var actual = new float[8 * stride];
+            JpegXlInverseTransform.Apply(JpegXlVarDctTables.TransformDct8, coefficients.ToArray(), expected, stride, scratch);
+            JpegXlInverseTransform.InverseDctScalar(coefficients.ToArray(), 8, 8, expectedScalar, stride, scratch);
+            JpegXlInverseTransform.FillConstantBlock(value, actual, stride);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+            Assert.Equal(Array.ConvertAll(expectedScalar, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+
+        Assert.False(JpegXlInverseTransform.IsConstantBlockExact(-0f));
+        Assert.False(JpegXlInverseTransform.IsConstantBlockExact(float.NaN));
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlForwardDctMatchesTheScalarReferenceBitForBit()

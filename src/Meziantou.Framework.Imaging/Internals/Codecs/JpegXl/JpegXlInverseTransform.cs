@@ -636,6 +636,26 @@ internal static class JpegXlInverseTransform
     }
 
     /// <summary>
+    /// Gets a value indicating whether the inverse DCT of 8x8 samples of a block whose only non-zero coefficient is its
+    /// lowest frequency gives that value to every sample, bit for bit (<see cref="FillConstantBlock"/>): every operation
+    /// adds or subtracts a zero to it, or multiplies a zero. It does unless the value is a negative zero (adding a
+    /// positive zero gives a positive one) or not a number.
+    /// </summary>
+    public static bool IsConstantBlockExact(float lowestFrequency) => float.IsFinite(lowestFrequency) && BitConverter.SingleToInt32Bits(lowestFrequency) != int.MinValue;
+
+    /// <summary>Sets the 8x8 samples of a block to its lowest frequency, the samples of a DCT without other coefficient.</summary>
+    /// <param name="lowestFrequency">The lowest frequency of the block, for which <see cref="IsConstantBlockExact"/> holds.</param>
+    /// <param name="output">Receives the samples.</param>
+    /// <param name="stride">The distance between two rows of <paramref name="output"/>.</param>
+    public static void FillConstantBlock(float lowestFrequency, Span<float> output, int stride)
+    {
+        for (var y = 0; y < 8; y++)
+        {
+            output.Slice(y * stride, 8).Fill(lowestFrequency);
+        }
+    }
+
+    /// <summary>
     /// Computes the lowest frequencies of a transform of several blocks from the LF samples of its blocks, one per block
     /// of 8x8 samples: the DCT of these samples, each coefficient scaled to the coefficient of the same frequency of the
     /// DCT of all the samples.

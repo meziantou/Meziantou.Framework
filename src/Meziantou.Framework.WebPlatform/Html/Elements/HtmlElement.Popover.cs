@@ -504,6 +504,18 @@ public partial class HtmlElement
         return false;
     }
 
+    /// <summary>The children of the element in the flat tree (https://drafts.csswg.org/css-scoping/#flat-tree): the shadow tree of a shadow host, the assigned nodes of a slot (or its fallback content).</summary>
+    internal static NodeEnumerable GetFlatTreeChildren(Element element)
+    {
+        if (element.AttachedShadowRoot is { } shadowRoot)
+            return shadowRoot.EnumerateChildNodes();
+
+        if (element is HtmlSlotElement slot && slot.AssignedNodesList.Count > 0)
+            return new NodeEnumerable(slot.AssignedNodesList);
+
+        return element.EnumerateChildNodes();
+    }
+
     /// <summary>The parent of a node in the flat tree (https://drafts.csswg.org/css-scoping/#flat-tree).</summary>
     internal static Node? GetFlatTreeParent(Node node)
     {

@@ -67,9 +67,36 @@ internal sealed class EventListenerEntry
 [IdlInterface("EventTarget", "https://dom.spec.whatwg.org/#eventtarget")]
 public partial class EventTarget
 {
+    /// <summary>
+    /// The event listener list of an event target that is not a node, or the rare data of a node (see <see cref="Node.RareData"/>),
+    /// which holds the event listener list of the node: most nodes have no listeners, and the field is shared to keep them small.
+    /// </summary>
+    private object? _listenersOrRareData;
+
+    /// <summary>The storage of the rare data of a node (see <see cref="Node.RareData"/>).</summary>
+    private protected object? ListenersOrRareData
+    {
+        get => _listenersOrRareData;
+        set => _listenersOrRareData = value;
+    }
+
     // Copy-on-write: dispatching an event uses the array as the clone of the event listener list
     // (https://dom.spec.whatwg.org/#concept-event-listener-invoke) without copying it
-    private EventListenerEntry[]? _eventListeners;
+    private EventListenerEntry[]? EventListeners
+    {
+        get => _listenersOrRareData is NodeRareData rareData ? rareData.EventListeners : (EventListenerEntry[]?)_listenersOrRareData;
+        set
+        {
+            if (this is not Node node)
+            {
+                _listenersOrRareData = value;
+            }
+            else if (value is not null || node.RareDataOrNull is not null)
+            {
+                node.RareData.EventListeners = value;
+            }
+        }
+    }
 
     /// <summary>Creates an event target.</summary>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget")]
@@ -95,7 +122,7 @@ public partial class EventTarget
     internal void SetRelevantGlobalCore(GlobalScope global) => RelevantGlobals.AddOrUpdate(this, global);
 
     /// <summary>The event listener list (https://dom.spec.whatwg.org/#eventtarget-event-listener-list). The array is never modified: adding or removing a listener replaces it.</summary>
-    internal EventListenerEntry[] EventListenerList => _eventListeners ?? [];
+    internal EventListenerEntry[] EventListenerList => EventListeners ?? [];
 
     /// <summary>Registers the listener for events of the given type with the given options.</summary>
     [IdlMember("addEventListener", "https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener")]
@@ -153,7 +180,7 @@ public partial class EventTarget
                 return;
         }
 
-        _eventListeners = [.. list, listener];
+        EventListeners = [.. list, listener];
         listener.Signal?.AddAbortAlgorithm(() => RemoveEventListener(listener));
         if (listener.Type is "scroll" or "scrollend" or "scrollsnapchange" or "scrollsnapchanging")
         {
@@ -287,10 +314,10 @@ public partial class EventTarget
     internal void RemoveEventListenerCore(string type, object? callback, bool capture)
     {
         ArgumentNullException.ThrowIfNull(type);
-        if (_eventListeners is null)
+        if (EventListeners is null)
             return;
 
-        foreach (var listener in _eventListeners)
+        foreach (var listener in EventListeners)
         {
             if (listener.Type == type && Equals(listener.Callback, callback) && listener.Capture == capture)
             {
@@ -308,7 +335,7 @@ public partial class EventTarget
         var index = Array.IndexOf(list, listener);
         if (index >= 0)
         {
-            _eventListeners = list.Length == 1 ? null : [.. list.AsSpan(0, index), .. list.AsSpan(index + 1)];
+            EventListeners = list.Length == 1 ? null : [.. list.AsSpan(0, index), .. list.AsSpan(index + 1)];
             OnEventListenerRemoved(listener);
         }
     }
@@ -325,9 +352,9 @@ public partial class EventTarget
         }
 
         // https://dom.spec.whatwg.org/#remove-all-event-listeners
-        if (_eventListeners is { Length: > 0 } removedListeners)
+        if (EventListeners is { Length: > 0 } removedListeners)
         {
-            _eventListeners = null;
+            EventListeners = null;
             foreach (var listener in removedListeners)
             {
                 listener.Removed = true;

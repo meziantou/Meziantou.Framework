@@ -156,7 +156,7 @@ internal static class CssomViewHelpers
         if (document.DocumentElement is not HtmlHtmlElement root)
             return null;
 
-        foreach (var child in root.ChildNodes)
+        foreach (var child in root.EnumerateChildNodes())
         {
             if (child is HtmlBodyElement body)
                 return body;

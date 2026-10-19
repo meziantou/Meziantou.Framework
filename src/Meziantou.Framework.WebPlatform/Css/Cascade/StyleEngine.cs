@@ -93,6 +93,9 @@ internal sealed partial class StyleEngine
 
     /// <summary>The styles whose computed value of a property is computed before the one of a descendant (see <see cref="ComputedStyle"/>).</summary>
     internal List<ComputedStyle> PendingAncestors { get; } = [];
+
+    /// <summary>Returns the shared cascaded values whose logical properties are mapped for each writing mode and direction (see <see cref="_logicalCascades"/>).</summary>
+    internal List<(string WritingMode, bool RightToLeft, Dictionary<string, CascadedValue> Mapped)> GetLogicalCascades(Dictionary<string, CascadedValue> cascaded) => _logicalCascades.GetOrCreateValue(cascaded);
     private readonly Dictionary<ShadowRoot, PartElementMap> _partElementMaps = new(ReferenceEqualityComparer.Instance);
     private int _domVersion = -1;
     private int _elementStateVersion = -1;
@@ -116,6 +119,13 @@ internal sealed partial class StyleEngine
     private Dictionary<string, CustomPropertyRegistration>? _registeredProperties;
     private readonly Dictionary<string, double> _randomBaseValues = new(StringComparer.Ordinal);
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Element, Dictionary<string, double>> _elementRandomBaseValues = [];
+
+    /// <summary>
+    /// The cascaded values shared by several styles whose logical properties are mapped to the physical ones, by writing mode
+    /// and direction (see <see cref="ComputedStyle"/>): the elements that share cascaded values usually have the same writing
+    /// mode, so they share the mapped values too.
+    /// </summary>
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Dictionary<string, CascadedValue>, List<(string WritingMode, bool RightToLeft, Dictionary<string, CascadedValue> Mapped)>> _logicalCascades = [];
 
     /// <param name="document">The document whose elements are styled.</param>
     /// <param name="environmentOverride">The environment to use instead of the one of the browsing context of the document.</param>

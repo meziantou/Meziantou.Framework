@@ -1595,35 +1595,58 @@ internal sealed partial class ComputedStyle
             return;
 
         _logicalPropertiesResolved = true;
-        List<(string Physical, CascadedValue Value)>? mapped = null;
-        foreach (var (name, value) in _cascaded)
-        {
-            if (LogicalProperties.GetPhysicalProperty(name, this) is { } physical)
-            {
-                mapped ??= [];
-                mapped.Add((physical, value));
-            }
-        }
-
-        if (mapped is null)
+        if (!HasFlowRelativeProperty(_cascaded))
             return;
 
-        // The mapping depends on the writing mode of the element: the cascaded values shared with other elements are copied, and
-        // so are the cascaded values the style was created with (the style engine compares them with a new cascade, see
-        // InitialCascade)
-        if (_cascadedShared || ReferenceEquals(_cascaded, InitialCascade))
+        // The mapping depends on the writing mode of the element: the cascaded values the style was created with are not modified
+        // (the style engine compares them with a new cascade, see InitialCascade). The cascaded values shared with other elements
+        // are mapped once for each writing mode and direction, and the mapped values are shared too.
+        if (!_cascadedShared)
         {
-            _cascaded = new Dictionary<string, CascadedValue>(_cascaded, StringComparer.Ordinal);
-            _cascadedShared = false;
+            _cascaded = MapLogicalProperties(_cascaded);
+            return;
         }
 
-        foreach (var (physical, value) in mapped)
+        var writingMode = GetComputedValue("writing-mode");
+        var rightToLeft = LogicalProperties.IsRightToLeft(this);
+        var mappedCascades = Engine.GetLogicalCascades(_cascaded);
+        foreach (var (mappedWritingMode, mappedRightToLeft, mapped) in mappedCascades)
         {
-            if (!_cascaded.TryGetValue(physical, out var existing) || value.WinsOver(existing))
+            if (mappedRightToLeft == rightToLeft && string.Equals(mappedWritingMode, writingMode, StringComparison.Ordinal))
             {
-                _cascaded[physical] = value;
+                _cascaded = mapped;
+                return;
             }
         }
+
+        _cascaded = MapLogicalProperties(_cascaded);
+        mappedCascades.Add((writingMode, rightToLeft, _cascaded));
+
+        static bool HasFlowRelativeProperty(Dictionary<string, CascadedValue> cascaded)
+        {
+            foreach (var name in cascaded.Keys)
+            {
+                if (LogicalProperties.IsFlowRelative(name))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>Returns a copy of the cascaded values where the logical properties are mapped to the physical properties of the element.</summary>
+    private Dictionary<string, CascadedValue> MapLogicalProperties(Dictionary<string, CascadedValue> cascaded)
+    {
+        var result = new Dictionary<string, CascadedValue>(cascaded, StringComparer.Ordinal);
+        foreach (var (name, value) in cascaded)
+        {
+            if (LogicalProperties.GetPhysicalProperty(name, this) is { } physical && (!result.TryGetValue(physical, out var existing) || value.WinsOver(existing)))
+            {
+                result[physical] = value;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>The state of the styles that use custom properties or mixins: most styles do not.</summary>
@@ -1643,36 +1666,40 @@ internal sealed partial class ComputedStyle
 
     /// <summary>
     /// The computed values of a style, by property: most styles only have a few computed values (e.g. display), which are
-    /// stored in a small array, searched linearly, then in a dictionary. The styles whose values are all computed (e.g. all
-    /// the declarations of getComputedStyle() are read) store them in an array indexed by property, which is smaller than a
-    /// dictionary of hundreds of entries, and is not resized.
+    /// stored in a small array, searched linearly. The other styles store a bitmap of the computed properties, by property
+    /// index (see <see cref="CssPropertyRegistry.GetIndex"/>), and the values of these properties in a packed array, in the
+    /// order of their index: unlike a dictionary, it has no buckets, no hash codes and no names, and unlike an array indexed
+    /// by property, it does not have a slot for each of the hundreds of properties.
     /// </summary>
     private struct ComputedValues
     {
         private const int MaxArrayLength = 8;
-        private const int MaxDictionaryCount = 64;
 
         private (string Property, string Value)[]? _array;
-        private int _count;
-        private Dictionary<string, string>? _dictionary;
 
-        /// <summary>The values by index of property (see <see cref="CssPropertyRegistry.GetIndex"/>); the other names are in <see cref="_dictionary"/>.</summary>
-        private string?[]? _byIndex;
+        /// <summary>The number of values (in <see cref="_array"/> or in <see cref="_values"/>).</summary>
+        private int _count;
+
+        /// <summary>The bit of the index of each property that has a value in <see cref="_values"/>, once there are more than <see cref="MaxArrayLength"/> values.</summary>
+        private ulong[]? _present;
+
+        /// <summary>The values of the properties of <see cref="_present"/>, in the order of their index.</summary>
+        private string[]? _values;
 
         public readonly bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
         {
-            if (_byIndex is not null)
+            if (_present is not null)
             {
                 var index = CssPropertyRegistry.GetIndex(property);
-                if (index >= 0)
+                if (index >= 0 && IsPresent(index))
                 {
-                    value = _byIndex[index];
-                    return value is not null;
+                    value = _values![GetPosition(index)];
+                    return true;
                 }
-            }
 
-            if (_dictionary is not null)
-                return _dictionary.TryGetValue(property, out value);
+                value = null;
+                return false;
+            }
 
             var array = _array;
             for (var i = 0; i < _count; i++)
@@ -1693,38 +1720,15 @@ internal sealed partial class ComputedStyle
 
         public void Set(string property, string value)
         {
-            if (_byIndex is not null)
+            if (_present is not null)
             {
+                // The values are only stored by property index: the names that are not supported properties are never computed
                 var index = CssPropertyRegistry.GetIndex(property);
                 if (index >= 0)
                 {
-                    _byIndex[index] = value;
-                }
-                else
-                {
-                    (_dictionary ??= new(StringComparer.Ordinal))[property] = value;
+                    SetByIndex(index, value);
                 }
 
-                return;
-            }
-
-            if (_dictionary is not null)
-            {
-                if (_dictionary.Count >= MaxDictionaryCount && !_dictionary.ContainsKey(property))
-                {
-                    _byIndex = new string?[CssPropertyRegistry.PropertyNameCount];
-                    var dictionary = _dictionary;
-                    _dictionary = null;
-                    foreach (var (existingProperty, existingValue) in dictionary)
-                    {
-                        Set(existingProperty, existingValue);
-                    }
-
-                    Set(property, value);
-                    return;
-                }
-
-                _dictionary[property] = value;
                 return;
             }
 
@@ -1739,16 +1743,17 @@ internal sealed partial class ComputedStyle
 
             if (_count == MaxArrayLength)
             {
-                var dictionary = new Dictionary<string, string>(MaxArrayLength * 2, StringComparer.Ordinal);
-                foreach (var (existingProperty, existingValue) in _array!)
-                {
-                    dictionary.Add(existingProperty, existingValue);
-                }
-
-                dictionary.Add(property, value);
-                _dictionary = dictionary;
+                var array = _array!;
                 _array = null;
                 _count = 0;
+                _present = new ulong[(CssPropertyRegistry.PropertyNameCount + 63) / 64];
+                _values = new string[MaxArrayLength * 2];
+                foreach (var (existingProperty, existingValue) in array)
+                {
+                    Set(existingProperty, existingValue);
+                }
+
+                Set(property, value);
                 return;
             }
 
@@ -1758,6 +1763,43 @@ internal sealed partial class ComputedStyle
             }
 
             _array[_count++] = (property, value);
+        }
+
+        private readonly bool IsPresent(int index) => (_present![index >> 6] & (1UL << index)) != 0;
+
+        /// <summary>The position of the value of the property in <see cref="_values"/>: the number of present properties whose index is lower.</summary>
+        private readonly int GetPosition(int index)
+        {
+            var present = _present!;
+            var word = index >> 6;
+            var position = System.Numerics.BitOperations.PopCount(present[word] & ((1UL << index) - 1));
+            for (var i = 0; i < word; i++)
+            {
+                position += System.Numerics.BitOperations.PopCount(present[i]);
+            }
+
+            return position;
+        }
+
+        private void SetByIndex(int index, string value)
+        {
+            var position = GetPosition(index);
+            if (IsPresent(index))
+            {
+                _values![position] = value;
+                return;
+            }
+
+            if (_count == _values!.Length)
+            {
+                // The arrays grow by half of their length, as the number of computed values is usually far from the number of properties
+                Array.Resize(ref _values, Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
+            }
+
+            Array.Copy(_values, position, _values, position + 1, _count - position);
+            _values[position] = value;
+            _present![index >> 6] |= 1UL << index;
+            _count++;
         }
     }
 }

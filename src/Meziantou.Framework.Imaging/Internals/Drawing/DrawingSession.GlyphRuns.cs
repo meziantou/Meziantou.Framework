@@ -169,8 +169,9 @@ internal sealed partial class DrawingSession
             return !ReferenceEquals(mask, GlyphMask.TooLarge);
         }
 
+        // Without a cache, the pass that prepares the run only needs the rentals: the paint pass computes the mask again
         var renderer = _glyphMasks ??= new GlyphMaskRenderer(_image.Owner.Scope);
-        if (!renderer.Render(face, glyph, size, canvas, fractionX, fractionY, deviceBold, _isAliased, scratch, _cancellationToken))
+        if (!renderer.Render(face, glyph, size, canvas, fractionX, fractionY, deviceBold, _isAliased, scratch, _cancellationToken, prepareOnly: _isPreparing && cache is null))
         {
             cache?.Add(key, GlyphMask.TooLarge, GlyphMask.TooLarge.Bytes);
             return false;

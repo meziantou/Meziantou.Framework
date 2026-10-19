@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// The same PNG decode and encode from/to memory and from/to the file system, to separate in-memory work from I/O
-/// (path loads read through a file stream; path saves publish atomically through a temporary file).
+/// (path loads read through a file stream; path saves publish atomically through a temporary file). The binary PPM load
+/// from a file is the same comparison for an uncompressed input, whose decode is mostly reading (its in-memory
+/// counterpart is <c>PnmBenchmarks.DecodePnmRgb</c>).
 /// </summary>
 [Config(typeof(WorkloadConfig))]
 public class FileIOBenchmarks : IDisposable
@@ -15,6 +17,7 @@ public class FileIOBenchmarks : IDisposable
     private readonly MemoryStream _output = new();
     private FullPath _directory;
     private FullPath _input;
+    private FullPath _pnmInput;
     private FullPath _target;
     private Image<Rgb24> _image = null!;
 
@@ -25,6 +28,8 @@ public class FileIOBenchmarks : IDisposable
         _input = _directory / "input.png";
         _target = _directory / "output.png";
         File.WriteAllBytes(_input, BenchmarkInputs.LargePng8);
+        _pnmInput = _directory / "input.ppm";
+        File.WriteAllBytes(_pnmInput, BenchmarkInputs.PnmRgb);
         _image = Image.Load<Rgb24>(BenchmarkInputs.LargePng8);
     }
 
@@ -51,6 +56,14 @@ public class FileIOBenchmarks : IDisposable
     public int LoadFromFile()
     {
         using var image = Image.Load<Rgb24>(_input);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 binary PPM from file path")]
+    public int LoadPnmFromFile()
+    {
+        using var image = Image.Load<Rgb24>(_pnmInput);
         return image.Width;
     }
 

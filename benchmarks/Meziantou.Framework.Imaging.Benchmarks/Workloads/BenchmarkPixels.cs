@@ -59,6 +59,42 @@ internal static class BenchmarkPixels
     }
 
     /// <summary>
+    /// Gets 8-bit gray samples that are only black (0) or white (255), laid out like a scanned page of text: lines of
+    /// 16-pixel glyphs separated by white space, each glyph a pattern of 2x2 dots.
+    /// </summary>
+    public static byte[] Bilevel(int width, int height, int seed)
+    {
+        var pixels = new byte[width * height];
+        pixels.AsSpan().Fill(byte.MaxValue);
+        for (var y = 0; y < height; y++)
+        {
+            var line = y / 24;
+            var lineRow = y % 24;
+            if (lineRow >= 16)
+                continue;
+
+            for (var x = 0; x < width; x++)
+            {
+                var glyph = x / 10;
+                var glyphColumn = x % 10;
+
+                // One glyph in seven is a space between words
+                if (glyphColumn >= 8 || Hash(glyph, line, seed) < 1 / 7.0)
+                    continue;
+
+                var bit = ((lineRow / 2) * 4) + (glyphColumn / 2);
+                var pattern = (uint)(Hash(glyph, line, seed + 1) * 65535) * 2654435761u;
+                if (((pattern >> bit) & 1) != 0)
+                {
+                    pixels[(y * width) + x] = 0;
+                }
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>
     /// Gets the frames of an animation: a static textured background with a few moving opaque shapes, so that consecutive
     /// frames differ in small regions (as in typical GIF/APNG content).
     /// </summary>

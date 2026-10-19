@@ -27,6 +27,7 @@ public class TgaBenchmarks : IDisposable
         // Untimed correctness gates: the format is lossless for these samples
         WorkloadChecks.RequireLossless(BenchmarkInputs.TgaRgb, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TgaRgba, BenchmarkInputs.ServiceRgba32Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TgaUncompressed, BenchmarkInputs.LargeRgb24Source);
     }
 
     [GlobalCleanup]
@@ -49,6 +50,14 @@ public class TgaBenchmarks : IDisposable
     public int DecodeTgaRgba()
     {
         using var image = Image.Load<Rgba32>(BenchmarkInputs.TgaRgba);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 uncompressed TGA -> Rgb24")]
+    public int DecodeTgaUncompressed()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.TgaUncompressed);
         return image.Width;
     }
 

@@ -57,6 +57,10 @@ jobs:
         uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
+      - name: Validate the public suffix list of Meziantou.Framework.Uri
+        run: |
+          dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator -- --check
+          if ($LASTEXITCODE -ne 0) { throw "The public suffix list of Meziantou.Framework.Uri is not generated from tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat" }
 
   run_analyzers:
     if: github.event_name != 'schedule'
@@ -80,6 +84,7 @@ jobs:
           # They compile everywhere, and this is the only job that reports the IDExxxx
           # diagnostics for them.
           properties: SkipUnsupportedPlatforms=false
+          base-commit: ${{ github.event.pull_request.base.sha }}
           run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
@@ -127,10 +132,15 @@ jobs:
 
       - name: Compute base commit
         id: base-commit
+        env:
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
-            # Let DeltaBuild compute the merge-base with the pull request base branch
-            $baseCommit = ""
+            # The commit of the base branch that the merge commit being tested was created on. It
+            # does not move, unlike the merge-base with origin/<base branch>: once the pull request
+            # is merged, the head of the pull request is in the base branch, so a job that starts
+            # (or is rerun) after the merge would find no changed file and skip all its tests.
+            $baseCommit = $env:PULL_REQUEST_BASE_SHA
           }
           else {
             # There is no base to compare with (workflow_dispatch), so use the empty tree:
@@ -735,13 +745,17 @@ jobs:
 
       - name: Detect changes
         id: changes
+        env:
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if ($env:GITHUB_EVENT_NAME -ne "pull_request") {
             "changed=true" >> $env:GITHUB_OUTPUT
             exit 0
           }
 
-          $files = @(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          # Not origin/<base branch>: it contains the changes once the pull request is merged,
+          # see the base commit of the compute_test_matrix job
+          $files = @(git diff --name-only "$env:PULL_REQUEST_BASE_SHA...HEAD")
           if ($LASTEXITCODE -ne 0) { throw "git diff failed with exit code $LASTEXITCODE" }
           $patterns = @(
             '^src/Meziantou\.Framework\.WebPlatform/'

@@ -635,10 +635,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
 - The surfaces of a filter graph (`FilterGraphContext.Bounds`) are the filtered surface when a primitive reads the
   drawing or its alpha, and otherwise only the pixels its subregions cover, so that a small subregion of a large canvas
-  stays in the buffer pool. A primitive must therefore read an input as transparent beyond its surface, and take the
-  edges of the filtered surface (those of the lighting kernels) from `SurfaceBounds`, not from an input. A primitive
-  whose result depends on where the surfaces start (the running sums of a box blur with an edge mode that is not
-  transparent) says so with `DependsOnSurfaceOrigin`, which keeps the left and top of the filtered surface.
+  stays in the buffer pool. On a layer (`FilterGraph.ApplyToLayer`), the filtered surface of such a graph is that
+  rectangle too: the layer is not read, the rectangle is written back and the rest of the layer is cleared. A primitive
+  must therefore read an input as transparent beyond its surface, and take the edges of the filtered surface (those of
+  the lighting kernels) from `SurfaceBounds`, not from an input. A primitive whose result depends on where the surfaces
+  start (the running sums of a box blur with an edge mode that is not transparent) says so with
+  `DependsOnSurfaceOrigin`, which keeps the left and top of the filtered surface.
 - A layer opacity of `LayerOpacity.Group` is the `alphaFactor` of `Paint` (the opacity of a brush) when the layer is
   drawn, with a full coverage; with source-over it stays a coverage, so that both modes draw the same pixels.
 - The tile of a `PatternBrush` is an `Rgba32` image on every canvas with `PatternTilePrecision.EightBit`: the cached

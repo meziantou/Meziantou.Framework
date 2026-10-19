@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// TIFF decoding and encoding on the 2048x1536 photo-like RGB source of the PNG workloads: LZW and Deflate strips written
-/// by <see cref="TiffEncoder"/>, and uncompressed pages with the horizontal differencing predictor (8-bit RGB, and the
-/// 1024x768 RGBA 16-bit source in big-endian order).
+/// by <see cref="TiffEncoder"/>, uncompressed pages with the horizontal differencing predictor (8-bit RGB, and the
+/// 1024x768 RGBA 16-bit source in big-endian order) and without it (8-bit RGB, 16-bit RGB), and a 2048x1536 bilevel text
+/// page, uncompressed and compressed with CCITT Group 4.
 /// </summary>
 [Config(typeof(WorkloadConfig))]
 public class TiffBenchmarks : IDisposable
@@ -27,6 +28,10 @@ public class TiffBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffDeflateRowStrips, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor8, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.TiffPredictor16, BenchmarkInputs.LargeRgba64Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffUncompressed, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffBilevel, BenchmarkInputs.LargeBilevelSource);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffCcittGroup4, BenchmarkInputs.LargeBilevelSource);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.TiffRgb16, BenchmarkInputs.Rgb16Pixels);
     }
 
     [GlobalCleanup]
@@ -77,6 +82,38 @@ public class TiffBenchmarks : IDisposable
     public int DecodeTiffPredictor16()
     {
         using var image = Image.Load<Rgba64>(BenchmarkInputs.TiffPredictor16);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 TIFF RGB, uncompressed -> Rgb24")]
+    public int DecodeTiffUncompressed()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.TiffUncompressed);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("1024x768 TIFF RGB 16-bit little-endian, uncompressed -> Rgba64")]
+    public int DecodeTiffRgb16()
+    {
+        using var image = Image.Load<Rgba64>(BenchmarkInputs.TiffRgb16);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 TIFF bilevel (text page), uncompressed -> Gray8")]
+    public int DecodeTiffBilevel()
+    {
+        using var image = Image.Load<Gray8>(BenchmarkInputs.TiffBilevel);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 TIFF bilevel (text page), CCITT Group 4 -> Gray8")]
+    public int DecodeTiffCcittGroup4()
+    {
+        using var image = Image.Load<Gray8>(BenchmarkInputs.TiffCcittGroup4);
         return image.Width;
     }
 

@@ -29,7 +29,6 @@ internal sealed class TiffRowExpander : IDisposable
     private readonly TiffPage _page;
     private readonly int _width;
     private readonly IccPipeline? _inkConversion;
-    private readonly byte[]? _grayLookup;
     private PooledBuffer? _palette;
     private PooledBuffer? _inks;
 
@@ -50,10 +49,6 @@ internal sealed class TiffRowExpander : IDisposable
         if (page.IsPalette)
         {
             _palette = CreatePalette(page, scope);
-        }
-        else if (page.IsGrayscale && page.BitsPerSample < 8)
-        {
-            _grayLookup = CreateGrayLookup(page);
         }
         else if (page.IsCmyk && page.DecodedBitsPerSample == 16)
         {
@@ -138,19 +133,6 @@ internal sealed class TiffRowExpander : IDisposable
         }
     }
 
-    private static byte[] CreateGrayLookup(TiffPage page)
-    {
-        var max = (1 << page.BitsPerSample) - 1;
-        var lookup = new byte[max + 1];
-        for (var i = 0; i <= max; i++)
-        {
-            var value = i * 255 / max;
-            lookup[i] = (byte)(page.IsWhiteIsZero ? 255 - value : value);
-        }
-
-        return lookup;
-    }
-
     /// <summary>Reads the sample of a pixel of a row of 1, 2, 4 or 8-bit samples, the first sample of a byte in its most significant bits.</summary>
     private static int ReadPackedSample(ReadOnlySpan<byte> stored, int x, int bits)
     {
@@ -178,14 +160,7 @@ internal sealed class TiffRowExpander : IDisposable
     }
 
     private void ExpandPackedGray(ReadOnlySpan<byte> stored, Span<byte> destination)
-    {
-        var bits = _page.BitsPerSample;
-        var lookup = _grayLookup!;
-        for (var x = 0; x < _width; x++)
-        {
-            destination[x] = lookup[ReadPackedSample(stored, x, bits)];
-        }
-    }
+        => PackedGraySamples.Expand(stored, _page.BitsPerSample, _width, _page.IsWhiteIsZero, destination);
 
     private void ExpandInks(ReadOnlySpan<byte> stored, Span<byte> destination)
     {
@@ -272,15 +247,14 @@ internal sealed class TiffRowExpander : IDisposable
 
                 break;
 
+            case 2 when !invert:
+                SixteenBitSamples.ExpandGrayAlpha(stored, width, destination, _page.IsBigEndian);
+                break;
+
             case 2:
                 for (var x = 0; x < width; x++)
                 {
-                    var gray = ReadWord(stored, x * 2);
-                    if (invert)
-                    {
-                        gray = (ushort)(ushort.MaxValue - gray);
-                    }
-
+                    var gray = (ushort)(ushort.MaxValue - ReadWord(stored, x * 2));
                     var offset = x * 4;
                     samples[offset] = gray;
                     samples[offset + 1] = gray;
@@ -292,15 +266,7 @@ internal sealed class TiffRowExpander : IDisposable
 
             case 3:
                 // There is no 16-bit RGB pixel format: the samples are widened to Rgba64 with an opaque alpha channel
-                for (var x = 0; x < width; x++)
-                {
-                    var offset = x * 4;
-                    samples[offset] = ReadWord(stored, x * 3);
-                    samples[offset + 1] = ReadWord(stored, (x * 3) + 1);
-                    samples[offset + 2] = ReadWord(stored, (x * 3) + 2);
-                    samples[offset + 3] = ushort.MaxValue;
-                }
-
+                SixteenBitSamples.ExpandRgbOpaque(stored, width, destination, _page.IsBigEndian);
                 break;
 
             default:

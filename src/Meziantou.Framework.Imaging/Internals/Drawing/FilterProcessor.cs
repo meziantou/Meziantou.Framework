@@ -241,6 +241,25 @@ internal sealed class FilterProcessor : IDisposable
         }
     }
 
+    /// <summary>Makes the pixels of a rectangle of the storage of a layer transparent, except those of another rectangle.</summary>
+    public static void Clear(PixelStorage storage, Rectangle area, Rectangle keep)
+    {
+        keep = Rectangle.Intersect(keep, area);
+        var bytesPerPixel = storage.BytesPerPixel;
+        for (var y = area.Top; y < area.Bottom; y++)
+        {
+            var row = storage.GetRowSpanCore(y)[(area.Left * bytesPerPixel)..(area.Right * bytesPerPixel)];
+            if (keep.IsEmpty || y < keep.Top || y >= keep.Bottom)
+            {
+                row.Clear();
+                continue;
+            }
+
+            row[..((keep.Left - area.Left) * bytesPerPixel)].Clear();
+            row[((keep.Right - area.Left) * bytesPerPixel)..].Clear();
+        }
+    }
+
     /// <summary>Blurs a surface: the rows, then the columns of the result.</summary>
     public void Blur(FilterSurface surface, double sigmaX, double sigmaY, FilterEdgeMode edgeMode)
     {

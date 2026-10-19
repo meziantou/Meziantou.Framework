@@ -9,6 +9,8 @@ cd "$root"
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -c Release -- update "$@"
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -c Release -- fetch-tests
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecGen -c Release
+# Meziantou.Framework.Uri is generated from the same public suffix list (exit code 1 means that its files changed)
+dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator || [ $? -eq 1 ]
 dotnet test --project tests/Meziantou.Framework.WebPlatform.Tests -c Release
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -c Release -- wpt-coverage
 git status --short

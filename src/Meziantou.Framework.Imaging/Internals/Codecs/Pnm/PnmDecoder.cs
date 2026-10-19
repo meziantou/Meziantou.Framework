@@ -44,6 +44,9 @@ internal sealed class PnmDecoder : IImageDecodeObserver
     /// <summary>Writes one row through a lease from <see cref="LeaseRows"/>.</summary>
     public void WriteRow(scoped in PixelLease lease, int y, ReadOnlySpan<byte> row) => _sink!.WriteRow(lease, y, row);
 
+    /// <summary>Gets the frame row to expand a row into through a lease from <see cref="LeaseRows"/>, or an empty span when rows are converted (<see cref="DecodedFrameSink.GetDirectRow"/>).</summary>
+    public Span<byte> GetDirectRow(scoped in PixelLease lease, int y) => _sink!.GetDirectRow(lease, y);
+
     public void OnEnd(PnmStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);

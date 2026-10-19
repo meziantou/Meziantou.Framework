@@ -104,6 +104,9 @@ internal sealed class ResampleWeights : IDisposable
         return unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)).Slice(windows[(3 * index) + 2], windows[(3 * index) + 1]);
     }
 
+    /// <summary>Gets the windows and weights as spans, for loops that read the window of every output pixel.</summary>
+    public WindowTable GetWindowTable() => new(Windows, unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span)));
+
     public void Dispose()
     {
         _weights.Dispose();
@@ -173,5 +176,24 @@ internal sealed class ResampleWeights : IDisposable
     {
         var distance = index - center;
         return ResamplingKernels.Evaluate(filter, scale == 1 ? distance : distance / scale);
+    }
+
+    /// <summary>The windows and weights of an axis as spans (<see cref="GetStart"/> and <see cref="GetWeights"/> without the per-call casts).</summary>
+    internal readonly ref struct WindowTable
+    {
+        private readonly ReadOnlySpan<int> _windows;
+        private readonly ReadOnlySpan<double> _weights;
+
+        public WindowTable(ReadOnlySpan<int> windows, ReadOnlySpan<double> weights)
+        {
+            _windows = windows;
+            _weights = weights;
+        }
+
+        /// <summary>Gets the first source index of the window of output pixel <paramref name="index"/>.</summary>
+        public int GetStart(int index) => _windows[3 * index];
+
+        /// <summary>Gets the weights of the window of output pixel <paramref name="index"/>, in increasing source index.</summary>
+        public ReadOnlySpan<double> GetWeights(int index) => _weights.Slice(_windows[(3 * index) + 2], _windows[(3 * index) + 1]);
     }
 }

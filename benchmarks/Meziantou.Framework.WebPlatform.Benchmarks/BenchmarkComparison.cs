@@ -6,7 +6,7 @@ namespace Meziantou.Framework.WebPlatform.Benchmarks;
 
 /// <summary>
 /// Compares two BenchmarkDotNet JSON reports (the base and the head of a pull request, run on the same machine): fails
-/// when a benchmark is slower or allocates more than the thresholds. The allocations are deterministic, so
+/// when a benchmark of the library is slower or allocates more than the thresholds. The allocations are deterministic, so
 /// their threshold is lower than the threshold of the time, which is noisy on shared machines.
 /// </summary>
 internal static class BenchmarkComparison
@@ -55,7 +55,7 @@ internal static class BenchmarkComparison
 
     private static string FormatRatio(double ratio) => double.IsInfinity(ratio) ? "new" : (ratio - 1).ToString("+0.0%;-0.0%;0.0%", CultureInfo.InvariantCulture);
 
-    /// <summary>Loads the results of the benchmarks of a report.</summary>
+    /// <summary>Loads the results of the benchmarks.</summary>
     private static Dictionary<string, (double Median, long Allocated)> Load(string directory)
     {
         var results = new Dictionary<string, (double, long)>(StringComparer.Ordinal);
@@ -64,7 +64,8 @@ internal static class BenchmarkComparison
             using var document = JsonDocument.Parse(File.ReadAllText(file));
             foreach (var benchmark in document.RootElement.GetProperty("Benchmarks").EnumerateArray())
             {
-                var name = benchmark.GetProperty("Type").GetString() + "." + benchmark.GetProperty("Method").GetString() + benchmark.GetProperty("Parameters").GetString() switch
+                var method = benchmark.GetProperty("Method").GetString();
+                var name = benchmark.GetProperty("Type").GetString() + "." + method + benchmark.GetProperty("Parameters").GetString() switch
                 {
                     { Length: > 0 } parameters => "(" + parameters + ")",
                     _ => "",

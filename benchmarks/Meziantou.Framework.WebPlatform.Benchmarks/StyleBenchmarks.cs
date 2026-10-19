@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.WebPlatform.Dom;
-using BrowsingContext = Meziantou.Framework.WebPlatform.Dom.BrowsingContext;
 
 namespace Meziantou.Framework.WebPlatform.Benchmarks;
 
@@ -26,7 +25,7 @@ public class StyleBenchmarks
     public void Setup() => _html = BenchmarkData.Get(Document);
 
     [IterationSetup]
-    public void SetupMeziantou()
+    public void SetupIteration()
     {
         _context?.Dispose();
         _context = new BrowsingContext();
@@ -36,7 +35,10 @@ public class StyleBenchmarks
     }
 
     [GlobalCleanup]
-    public void Cleanup() => _context?.Dispose();
+    public void Cleanup()
+    {
+        _context?.Dispose();
+    }
 
     [Benchmark]
     public int Meziantou()

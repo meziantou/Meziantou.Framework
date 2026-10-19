@@ -3,7 +3,6 @@ using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Unicode;
 using Meziantou.Framework.WebPlatform.Urls;
-using BrowsingContext = Meziantou.Framework.WebPlatform.Dom.BrowsingContext;
 
 namespace Meziantou.Framework.WebPlatform.Benchmarks;
 

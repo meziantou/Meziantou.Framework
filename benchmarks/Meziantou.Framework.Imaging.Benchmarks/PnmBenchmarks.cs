@@ -27,6 +27,8 @@ public class PnmBenchmarks : IDisposable
         // Untimed correctness gates: the format is lossless for these samples
         WorkloadChecks.RequireLossless(BenchmarkInputs.PnmRgb, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.PnmRgba, BenchmarkInputs.ServiceRgba32Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PnmBitmap, BenchmarkInputs.LargeBilevelSource);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.PnmRgb16, BenchmarkInputs.Rgb16Pixels);
     }
 
     [GlobalCleanup]
@@ -49,6 +51,22 @@ public class PnmBenchmarks : IDisposable
     public int DecodePnmRgba()
     {
         using var image = Image.Load<Rgba32>(BenchmarkInputs.PnmRgba);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 binary PBM (text page) -> Gray8")]
+    public int DecodePbm()
+    {
+        using var image = Image.Load<Gray8>(BenchmarkInputs.PnmBitmap);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("1024x768 binary PPM, MAXVAL 65535 -> Rgba64")]
+    public int DecodePnmRgb16()
+    {
+        using var image = Image.Load<Rgba64>(BenchmarkInputs.PnmRgb16);
         return image.Width;
     }
 

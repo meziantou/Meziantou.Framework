@@ -30,6 +30,20 @@ public abstract class Filter
     /// <summary>Applies the filter to a surface, in place.</summary>
     internal abstract void Apply(FilterProcessor processor, FilterSurface surface);
 
+    /// <summary>Applies the filter to the pixels of a layer, in place.</summary>
+    /// <param name="processor">The processor of the filters.</param>
+    /// <param name="frame">The frame of the layer.</param>
+    /// <param name="storage">The storage of the frame.</param>
+    /// <param name="bounds">The pixels to filter.</param>
+    /// <param name="row">A row of at least <paramref name="bounds"/>.Width pixels the pixels are read through.</param>
+    internal virtual void ApplyToLayer(FilterProcessor processor, ImageFrame frame, PixelStorage storage, Rectangle bounds, Span<Rgba64> row)
+    {
+        using var surface = new FilterSurface(processor.Scope, bounds);
+        FilterProcessor.Read(frame, storage, surface, row);
+        Apply(processor, surface);
+        FilterProcessor.Write(surface, storage, bounds);
+    }
+
     /// <summary>Gets how far, in the drawing, the filter moves what it filters: along x and along y.</summary>
     internal abstract (double X, double Y) GetReach();
 }

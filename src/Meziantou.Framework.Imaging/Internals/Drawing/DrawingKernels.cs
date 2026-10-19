@@ -637,7 +637,8 @@ internal static class DrawingKernels
 
     /// <summary>
     /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over: four pixels at a time
-    /// when they are all opaque or all transparent, the others with <see cref="CompositeOverScalar"/>.
+    /// when they are all opaque or all transparent, the others with <see cref="CompositeOverScalar"/>. The blocks of
+    /// four pixels without coverage are skipped, as the scalar path leaves such pixels as they are.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -672,6 +673,21 @@ internal static class DrawingKernels
         var pending = 0;
         for (var i = 0; i + 4 <= coverage.Length; i += 4)
         {
+            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
+            var blockCoverage = Vector128.Create(coverage.Slice(i, 4));
+            if (blockCoverage == Vector128<uint>.Zero)
+            {
+                if (pending < i)
+                {
+                    CompositeOverScalarRange(samples, coverage, source, pending, i);
+                }
+
+                var next = coverage[(i + 4)..].IndexOfAnyExcept(0u);
+                i += (next < 0 ? coverage.Length - i - 4 : next) & ~3;
+                pending = i + 4;
+                continue;
+            }
+
             var block = samples.Slice(i * 4, 16);
             var pixels = Vector128.Create(block);
             if ((pixels | colorMask) == Vector128<byte>.AllBitsSet)
@@ -686,7 +702,7 @@ internal static class DrawingKernels
                     LoadPaint(colors.Slice(i * 4, 16), transpose, out red, out green, out blue, out alpha);
                 }
 
-                var effective = Vector128.Create(coverage.Slice(i, 4)) * alpha;
+                var effective = blockCoverage * alpha;
                 var inverse = scale - effective;
                 var planar = Vector128.Shuffle(pixels, transpose);
                 var low = Vector128.WidenLower(planar);
@@ -711,7 +727,7 @@ internal static class DrawingKernels
                 }
 
                 // The paint with the alpha of its coverage, where that alpha is not 0
-                var resultAlpha = Vector128.ShiftRightLogical((Vector128.Create(coverage.Slice(i, 4)) * alpha) + halfCoverage, 16);
+                var resultAlpha = Vector128.ShiftRightLogical((blockCoverage * alpha) + halfCoverage, 16);
                 var painted = Vector128.Shuffle(Vector128.Narrow(Vector128.Narrow(red, green), Vector128.Narrow(blue, resultAlpha)), transpose);
                 var unchanged = Vector128.Equals(resultAlpha, Vector128<uint>.Zero);
                 var keep = Vector128.Shuffle(Vector128.Narrow(Vector128.Narrow(unchanged, unchanged), Vector128.Narrow(unchanged, unchanged)), transpose);

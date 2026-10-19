@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -10,9 +9,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// The specification reads the data one bit at a time into <c>ivlOffset</c>. The decoder reads whole bytes ahead instead:
-/// <c>_offset</c> holds <c>ivlOffset</c> followed by the <c>_extraBits</c> bits that the specification has not read yet, so
-/// that a renormalization only changes <c>_extraBits</c>. The position of the specification in the data stays known, which
-/// is where the decoding continues after a bin that terminates it (the PCM samples, the next substream).
+/// <see cref="HevcCabacEngine.Offset"/> holds <c>ivlOffset</c> followed by the <see cref="HevcCabacEngine.ExtraBits"/> bits
+/// that the specification has not read yet, so that a renormalization only changes <see cref="HevcCabacEngine.ExtraBits"/>.
+/// The position of the specification in the data stays known, which is where the decoding continues after a bin that
+/// terminates it (the PCM samples, the next substream).
 /// </para>
 /// <para>
 /// A context variable is one byte: <c>pStateIdx</c> in the bits 1 to 6, <c>valMps</c> in the bit 0. Reading past the end
@@ -25,18 +25,22 @@ internal sealed class HevcCabacDecoder
     private byte[] _data = [];
     private int _position;
     private int _end;
-    private uint _range;
-    private ulong _offset;
-    private int _extraBits;
+    private HevcCabacEngine _engine;
 
     /// <summary>Gets the context variables, in the layout of <see cref="HevcContextLayout"/>.</summary>
     public Span<byte> Contexts => _contexts;
 
     /// <summary>
+    /// Gets the registers of the arithmetic decoding engine: a loop that decodes many bins copies them to a local and stores
+    /// the local back before the decoder is used again.
+    /// </summary>
+    public ref HevcCabacEngine Engine => ref _engine;
+
+    /// <summary>
     /// Gets the position in the data of the bit that follows the last bit that the arithmetic decoder of the specification
     /// has read.
     /// </summary>
-    public long BitPosition => ((long)_position << 3) - _extraBits;
+    public long BitPosition => ((long)_position << 3) - _engine.ExtraBits;
 
     /// <summary>
     /// Initializes the context variables of a slice (clause 9.3.2.2 "Initialization process for context variables").
@@ -80,109 +84,24 @@ internal sealed class HevcCabacDecoder
         _data = data;
         _position = position;
         _end = end;
-        _range = 510;
-        _offset = 0;
+        _engine.Range = 510;
 
         // ivlOffset is read_bits( 9 )
-        _extraBits = -9;
-        Refill();
-        if ((_offset >> _extraBits) >= 510)
+        (_engine.Offset, _engine.ExtraBits) = Refill(0, -9);
+        if ((_engine.Offset >> _engine.ExtraBits) >= 510)
             throw HevcErrors.Invalid("the arithmetic codeword of a slice segment starts with a forbidden value.");
     }
 
     /// <summary>Decodes a bin with a context variable (clause 9.3.4.3.2 "Arithmetic decoding process for a binary decision").</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int DecodeDecision(int ctxIdx)
-    {
-        ref var context = ref _contexts[ctxIdx];
-        var state = (int)context;
-        var pStateIdx = state >> 1;
-        var valMps = state & 1;
-        var qRangeIdx = (int)(_range >> 6) & 3;
-        var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(pStateIdx << 2) + qRangeIdx];
-        _range -= ivlLpsRange;
-        var scaledRange = (ulong)_range << _extraBits;
-        if (_offset < scaledRange)
-        {
-            // Clause 9.3.4.3.2.2 "State transition process", then the renormalization: the range is at least 256 - 2 = 254
-            context = (byte)((HevcCabacTables.TransIdxMps[pStateIdx] << 1) | valMps);
-            if (_range < 256)
-            {
-                _range <<= 1;
-                if (--_extraBits < 0)
-                {
-                    Refill();
-                }
-            }
-
-            return valMps;
-        }
-
-        _offset -= scaledRange;
-        _range = ivlLpsRange;
-        var binVal = 1 - valMps;
-        if (pStateIdx is 0)
-        {
-            valMps = 1 - valMps;
-        }
-
-        context = (byte)((HevcCabacTables.TransIdxLps[pStateIdx] << 1) | valMps);
-
-        // Clause 9.3.4.3.3 "Renormalization process in the arithmetic decoding engine": the range is at least 2
-        var shift = int.LeadingZeroCount((int)_range) - 23;
-        _range <<= shift;
-        _extraBits -= shift;
-        if (_extraBits < 0)
-        {
-            Refill();
-        }
-
-        return binVal;
-    }
+    public int DecodeDecision(int ctxIdx) => _engine.DecodeDecision(_contexts, ctxIdx, this);
 
     /// <summary>Decodes a bin without context (clause 9.3.4.3.4 "Bypass decoding process for binary decisions").</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int DecodeBypass()
-    {
-        if (--_extraBits < 0)
-        {
-            Refill();
-        }
-
-        var scaledRange = (ulong)_range << _extraBits;
-        if (_offset >= scaledRange)
-        {
-            _offset -= scaledRange;
-            return 1;
-        }
-
-        return 0;
-    }
+    public int DecodeBypass() => _engine.DecodeBypass(this);
 
     /// <summary>Decodes <paramref name="count"/> bypass bins, the first one being the most significant bit of the result.</summary>
-    public int DecodeBypassBits(int count)
-    {
-        Debug.Assert(count is >= 0 and <= 31);
-        if (_extraBits >= count)
-        {
-            // The bins are the binary digits of ivlOffset / ivlCurrRange once the count bits are read into ivlOffset: each
-            // bypass bin doubles ivlOffset, adds a bit, and subtracts ivlCurrRange when it is not smaller. ivlOffset stays
-            // below ivlCurrRange, so the quotient has count bits.
-            var shift = _extraBits - count;
-            var quotient = (_offset >> shift) / _range;
-            _offset -= (quotient * _range) << shift;
-            _extraBits = shift;
-            return (int)quotient;
-        }
-
-        var value = 0;
-        for (var i = 0; i < count; i++)
-        {
-            value = (value << 1) | DecodeBypass();
-        }
-
-        return value;
-    }
+    public int DecodeBypassBits(int count) => _engine.DecodeBypassBits(count, this);
 
     /// <summary>
     /// Decodes a bin before termination (clause 9.3.4.3.5 "Decoding process for binary decisions before termination"):
@@ -193,9 +112,10 @@ internal sealed class HevcCabacDecoder
     /// <exception cref="InvalidImageContentException">The codeword does not end with a bit equal to 1.</exception>
     public int DecodeTerminate()
     {
-        _range -= 2;
-        var scaledRange = (ulong)_range << _extraBits;
-        if (_offset >= scaledRange)
+        ref var engine = ref _engine;
+        engine.Range -= 2;
+        var scaledRange = (ulong)engine.Range << engine.ExtraBits;
+        if (engine.Offset >= scaledRange)
         {
             // The last bit read into ivlOffset is rbsp_stop_one_bit or alignment_bit_equal_to_one, and the bit that an
             // encoder writes after pcm_flag (clause 9.3.5.6). It is checked in the data: a bypass bin may have changed it
@@ -207,12 +127,12 @@ internal sealed class HevcCabacDecoder
             return 1;
         }
 
-        if (_range < 256)
+        if (engine.Range < 256)
         {
-            _range <<= 1;
-            if (--_extraBits < 0)
+            engine.Range <<= 1;
+            if (--engine.ExtraBits < 0)
             {
-                Refill();
+                (engine.Offset, engine.ExtraBits) = Refill(engine.Offset, engine.ExtraBits);
             }
         }
 
@@ -225,23 +145,42 @@ internal sealed class HevcCabacDecoder
     /// <summary>Copies the context variables from <paramref name="source"/> (clause 9.3.2.5, the synchronization process).</summary>
     public void LoadContexts(ReadOnlySpan<byte> source) => source.CopyTo(_contexts);
 
-    // Reads the bytes that the specification is reading bits of, and the bytes that follow them while there is room
-    private void Refill()
+    /// <summary>
+    /// Reads the bytes that the specification is reading bits of, and the bytes that follow them while there is room: the
+    /// registers of the engine are passed and returned by value, so that a local copy of them stays in registers.
+    /// </summary>
+    /// <param name="offset"><see cref="HevcCabacEngine.Offset"/>.</param>
+    /// <param name="extraBits"><see cref="HevcCabacEngine.ExtraBits"/>: negative when the specification reads bits that are not in <paramref name="offset"/> yet.</param>
+    /// <exception cref="InvalidImageContentException">The data are truncated.</exception>
+    internal (ulong Offset, int ExtraBits) Refill(ulong offset, int extraBits)
     {
         do
         {
             if (_position >= _end)
                 throw HevcErrors.Truncated();
 
-            _offset = (_offset << 8) | _data[_position++];
-            _extraBits += 8;
+            offset = (offset << 8) | _data[_position++];
+            extraBits += 8;
         }
-        while (_extraBits < 0);
+        while (extraBits < 0);
 
-        while (_extraBits <= 32 && _position < _end)
+        return ReadAhead(offset, extraBits);
+    }
+
+    /// <summary>
+    /// Reads the bytes that follow the bits of <paramref name="offset"/> while there is room for them and the data do not
+    /// end: the registers of the engine are passed and returned by value, like <see cref="Refill"/>.
+    /// </summary>
+    /// <param name="offset"><see cref="HevcCabacEngine.Offset"/>.</param>
+    /// <param name="extraBits"><see cref="HevcCabacEngine.ExtraBits"/>.</param>
+    internal (ulong Offset, int ExtraBits) ReadAhead(ulong offset, int extraBits)
+    {
+        while (extraBits <= 32 && _position < _end)
         {
-            _offset = (_offset << 8) | _data[_position++];
-            _extraBits += 8;
+            offset = (offset << 8) | _data[_position++];
+            extraBits += 8;
         }
+
+        return (offset, extraBits);
     }
 }

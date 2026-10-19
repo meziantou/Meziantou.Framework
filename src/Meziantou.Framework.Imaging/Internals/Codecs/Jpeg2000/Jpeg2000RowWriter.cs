@@ -11,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <list type="bullet">
 /// <item><description>
 /// Depths: samples of 8 bits (in an image without deeper channel) and of 16 bits are stored as they are; the others are
-/// scaled exactly, <c>(v * targetMax + max / 2) / max</c>, to 8 bits when no channel has more, to 16 bits otherwise.
+/// scaled exactly, <c>(v * targetMax + max / 2) / max</c>, to 8 bits when no channel has more, to 16 bits otherwise. The
+/// scaled values of a depth are tabulated once when the image has at least as many pixels as the depth has values.
 /// </description></item>
 /// <item><description>
 /// Sub-sampling: a pixel at the column <c>x</c> of the reference grid takes the sample <c>floor(x / XRsiz)</c> of a
@@ -31,6 +32,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class Jpeg2000RowWriter : IDisposable
 {
     private const int FixedPointBits = 16;
+    private const int MaxPrecision = 16;
     private const long RedFromRedDifference = 91881;
     private const long GreenFromBlueDifference = 22553;
     private const long GreenFromRedDifference = 46802;
@@ -42,6 +44,10 @@ internal sealed class Jpeg2000RowWriter : IDisposable
     private readonly DecodedFrameSink _sink;
     private readonly Jpeg2000Channel[] _channels;
     private readonly IccPipeline? _inkConversion;
+
+    // The scaled value of every sample, by depth: null for a depth that is not scaled or not worth a table
+    private readonly Av1PooledArray<ushort>?[] _scaleTables = new Av1PooledArray<ushort>?[MaxPrecision + 1];
+    private bool _hasScaleTables;
     private Av1PooledArray<int>? _values;
     private PooledBuffer? _row;
     private PooledBuffer? _inks;
@@ -86,6 +92,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         var values = _values.Span;
         var row = _row.RawBuffer.AsSpan(0, width * sourceBytesPerPixel);
         var targetMax = _layout.IsSixteenBit ? ushort.MaxValue : byte.MaxValue;
+        EnsureScaleTables(targetMax);
         using var lease = _sink.LeaseCurrentFrame();
         for (var y = 0; y < height; y++)
         {
@@ -106,7 +113,15 @@ internal sealed class Jpeg2000RowWriter : IDisposable
 
             for (var k = 0; k < channelCount; k++)
             {
-                Scale(values.Slice(k * width, width), _channels[k].Precision, targetMax);
+                var precision = _channels[k].Precision;
+                if (_scaleTables[precision] is { } table)
+                {
+                    Scale(values.Slice(k * width, width), table.Span);
+                }
+                else
+                {
+                    Scale(values.Slice(k * width, width), precision, targetMax);
+                }
             }
 
             if (_inkConversion is { } inkConversion)
@@ -138,6 +153,11 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         _row = null;
         _inks?.Dispose();
         _inks = null;
+        for (var i = 0; i < _scaleTables.Length; i++)
+        {
+            _scaleTables[i]?.Dispose();
+            _scaleTables[i] = null;
+        }
     }
 
     /// <summary>Converts luminance and chrominance samples to red, green and blue samples of the same depth, in place.</summary>
@@ -174,6 +194,52 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         }
     }
 
+    /// <summary>Writes the scaled value of every sample of <paramref name="precision"/> bits: <c>table[v]</c> is what <see cref="Scale(Span{int}, int, int)"/> gives for <c>v</c>.</summary>
+    /// <param name="table">Receives <c>2^precision</c> values.</param>
+    /// <param name="precision">The number of bits of the samples, 1 to 16.</param>
+    /// <param name="targetMax">The largest scaled value, at most 65535.</param>
+    internal static void BuildScaleTable(Span<ushort> table, int precision, int targetMax)
+    {
+        var max = (1 << precision) - 1;
+        var half = max / 2;
+        table = table[..(max + 1)];
+        for (var value = 0; value < table.Length; value++)
+        {
+            table[value] = (ushort)((((long)value * targetMax) + half) / max);
+        }
+    }
+
+    /// <summary>Scales samples in place with the table of their depth (<see cref="BuildScaleTable"/>).</summary>
+    /// <exception cref="IndexOutOfRangeException">A sample is out of the range of the depth.</exception>
+    internal static void Scale(Span<int> values, ReadOnlySpan<ushort> table)
+    {
+        foreach (ref var value in values)
+        {
+            value = table[value];
+        }
+    }
+
+    private void EnsureScaleTables(int targetMax)
+    {
+        if (_hasScaleTables)
+            return;
+
+        // A table costs one division per value of the depth, the samples one per pixel and per channel
+        _hasScaleTables = true;
+        var pixelCount = _siz.Width * _siz.Height;
+        foreach (var channel in _channels)
+        {
+            var precision = channel.Precision;
+            var valueCount = 1 << precision;
+            if (valueCount - 1 == targetMax || valueCount > pixelCount || _scaleTables[precision] is not null)
+                continue;
+
+            var table = Av1PooledArray<ushort>.Rent(_context.Scope, valueCount, clear: false);
+            _scaleTables[precision] = table;
+            BuildScaleTable(table.Span, precision, targetMax);
+        }
+    }
+
     private void ReadChannel(Jpeg2000TileGeometry geometry, Jpeg2000Channel channel, long y, Span<int> values)
     {
         var size = _siz.Components[channel.Component];
@@ -194,11 +260,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         }
         else
         {
-            var x = geometry.X0;
-            for (var i = 0; i < values.Length; i++, x++)
-            {
-                values[i] = samples[(int)(Math.Clamp(x / size.XSubsampling, component.X0, component.X1 - 1) - component.X0)];
-            }
+            ReplicateColumns(samples, values, geometry.X0, size.XSubsampling, component.X0);
         }
 
         if (channel.PaletteColumn >= 0)
@@ -211,6 +273,36 @@ internal sealed class Jpeg2000RowWriter : IDisposable
 
                 value = column[value];
             }
+        }
+    }
+
+    /// <summary>
+    /// Gives each pixel of a row the sample of a sub-sampled component under it: the pixel at the column <c>x</c> of the
+    /// reference grid takes the sample <c>clamp(floor(x / subsampling), x0, x0 + samples.Length - 1) - x0</c>.
+    /// </summary>
+    /// <param name="samples">The samples of the row of the tile-component.</param>
+    /// <param name="values">Receives the sample of each pixel.</param>
+    /// <param name="left">The column of the first pixel on the reference grid.</param>
+    /// <param name="subsampling">The horizontal sub-sampling of the component (XRsiz).</param>
+    /// <param name="x0">The column of the first sample of the tile-component, on the grid of the component.</param>
+    internal static void ReplicateColumns(ReadOnlySpan<int> samples, Span<int> values, long left, int subsampling, long x0)
+    {
+        // The pixels are taken by runs of the same component column: the first and the last runs may be shorter
+        var column = left / subsampling;
+        var run = subsampling - (int)(left % subsampling);
+        var last = samples.Length - 1;
+        var i = 0;
+        while (i < values.Length)
+        {
+            var sample = samples[(int)Math.Clamp(column - x0, 0, last)];
+            var end = Math.Min(i + run, values.Length);
+            for (; i < end; i++)
+            {
+                values[i] = sample;
+            }
+
+            column++;
+            run = subsampling;
         }
     }
 

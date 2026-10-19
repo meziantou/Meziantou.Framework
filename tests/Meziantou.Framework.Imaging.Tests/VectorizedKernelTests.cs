@@ -1822,6 +1822,17 @@ public sealed class VectorizedKernelTests
                     };
                 }
 
+                if (round >= 32)
+                {
+                    // Runs without coverage, as outside of a clip: they are skipped up to the block of the next covered pixel
+                    for (var i = random.Next(8); i < length; i += random.Next(1, 24))
+                    {
+                        var end = Math.Min(length, i + random.Next(1, 40));
+                        coverage.AsSpan(i..end).Clear();
+                        i = end;
+                    }
+                }
+
                 var colors = new ushort[length * 4];
                 for (var i = 0; i < colors.Length; i++)
                 {
@@ -1999,6 +2010,54 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingFilterBlurColumnStripsMatchTheColumnByColumnReference()
+    {
+        // Surfaces narrower than a strip, between two strips, shorter than the windows; edges inside, around and across
+        // the surface; the weights below a deviation of 2 and the three boxes of odd and even sizes above it
+        var random = new Random(20261019);
+        var scope = AllocationScope.Create(configuration: null);
+        (int Width, int Height)[] sizes = [(1, 1), (1, 19), (19, 1), (3, 2), (7, 13), (8, 8), (9, 30), (17, 5), (33, 12)];
+        double[] sigmas = [0.4, 1, 1.7, 1.99, 2, 2.6, 3, 3.5, 5.5, 12];
+        foreach (var (width, height) in sizes)
+        {
+            foreach (var sigma in sigmas)
+            {
+                foreach (var mode in Enum.GetValues<FilterEdgeMode>())
+                {
+                    var bounds = new Rectangle(random.Next(-4, 5), random.Next(-4, 5), width, height);
+                    var edges = random.Next(3) switch
+                    {
+                        0 => bounds,
+                        1 => Rectangle.FromLTRB(bounds.Left - random.Next(4), bounds.Top - random.Next(4), bounds.Right + random.Next(4), bounds.Bottom + random.Next(4)),
+                        _ => new Rectangle(bounds.Left + random.Next(-3, 4), bounds.Top + random.Next(-3, 4), Math.Max(1, width + random.Next(-3, 4)), Math.Max(1, height + random.Next(-3, 4))),
+                    };
+                    var extent = random.Next(2) == 0 ? edges : Rectangle.FromLTRB(edges.Left - 2, edges.Top - 3, edges.Right + 1, edges.Bottom + 2);
+                    var values = Enumerable.Range(0, 4 * width * height).Select(_ => random.Next(5) == 0 ? 0f : (float)random.NextDouble()).ToArray();
+                    var sigmaX = random.Next(3) == 0 ? 0 : sigma * random.NextDouble();
+                    var expected = Blur(useColumnStrips: false);
+                    var actual = Blur(useColumnStrips: true);
+                    for (var i = 0; i < expected.Length; i++)
+                    {
+                        Assert.Equal(BitConverter.SingleToInt32Bits(expected[i]), BitConverter.SingleToInt32Bits(actual[i]));
+                    }
+
+                    float[] Blur(bool useColumnStrips)
+                    {
+                        using var processor = new FilterProcessor(scope, ImageConfiguration.Default) { UseColumnStrips = useColumnStrips };
+                        processor.Configure(edges, edgeOverride: null, 1, 1, 1, 0, 0, 1, 0, 0, CancellationToken.None);
+                        processor.Extent = extent;
+                        using var surface = new FilterSurface(scope, bounds);
+                        values.CopyTo(surface.Values);
+                        processor.Blur(surface, sigmaX, sigma, mode);
+                        return surface.Values.ToArray();
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingTurbulenceOfTheFourChannelsMatchesTheReferenceOfEachChannel()
     {
         var random = new Random(20261019);
@@ -2081,6 +2140,19 @@ public sealed class VectorizedKernelTests
                 Assert.Equal(expected, actual);
             }
         }
+    }
+
+    [Fact]
+    public void DrawingColorMatrixConversionWithBiasMatchesTheConversion()
+    {
+        // Every sample of the 8-bit and 16-bit formats, which x64 converts this way, then the largest whole numbers it takes
+        for (var i = 0; i <= ushort.MaxValue; i += 2)
+        {
+            Assert.Equal(Vector128.Create((long)i, i + 1), ColorMatrixKernel.ToInt64WithBias(Vector128.Create((double)i, i + 1)));
+        }
+
+        Assert.Equal(Vector128.Create((1L << 52) - 1, 1L << 52), ColorMatrixKernel.ToInt64WithBias(Vector128.Create((double)((1L << 52) - 1), 1L << 52)));
+        Assert.Equal(Vector128.Create((long)ushort.MaxValue, 0), ColorMatrixKernel.ToInt64(Vector128.Create((double)ushort.MaxValue, 0)));
     }
 
     [Fact]
@@ -2231,7 +2303,7 @@ public sealed class VectorizedKernelTests
         var random = new Random(90);
         foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgba64, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Gray16 })
         {
-            foreach (var (width, height) in new[] { (1, 1), (3, 5), (4, 4), (7, 9), (33, 31), (64, 40), (70, 101) })
+            foreach (var (width, height) in new[] { (1, 1), (3, 5), (4, 4), (7, 9), (1, 50), (50, 1), (16, 16), (17, 48), (33, 31), (64, 40), (70, 101), (129, 47) })
             {
                 var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
                 random.NextBytes(bytes);
@@ -3091,20 +3163,17 @@ public sealed class VectorizedKernelTests
         var maxSample = (1 << bitDepth) - 1;
         const int Stride = 160;
         var scratch = new int[1024];
+        var sizes = Enumerable.Range(0, Av1Constants.TxSizesAll).Where(txSz => Av1Tables.TxWidth[txSz] <= 32 && Av1Tables.TxHeight[txSz] <= 32).ToArray();
         for (var round = 0; round < 6000; round++)
         {
+            // Every block size with every subsampling
             var (subX, subY) = (round % 3) switch
             {
                 0 => (0, 0),
                 1 => (1, 0),
                 _ => (1, 1),
             };
-            int txSz;
-            do
-            {
-                txSz = random.Next(Av1Constants.TxSizesAll);
-            }
-            while (Av1Tables.TxWidth[txSz] > 32 || Av1Tables.TxHeight[txSz] > 32);
+            var txSz = sizes[(round / 3) % sizes.Length];
 
             int w = Av1Tables.TxWidth[txSz];
             int h = Av1Tables.TxHeight[txSz];
@@ -3515,8 +3584,9 @@ public sealed class VectorizedKernelTests
     public void HeifYuvConversionMatchesTheScalarReference(PixelFormat layout, bool monochrome, bool limitedRangeAlpha)
     {
         // Every matrix that has no transfer characteristics, both ranges, the alpha planes of both ranges, and widths around
-        // the vector sizes, with random samples and the extremes of the range
-        var bitDepths = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? new[] { 10, 12 } : [8];
+        // the vector sizes, with random samples and the extremes of the range. The 8-bit pixels of 10 and 12-bit samples are
+        // not what a decoder produces, but the matrices of their color planes have the vector path
+        var bitDepths = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? new[] { 10, 12 } : [8, 10, 12];
         int[] matrices = monochrome ? [Av1Constants.McBt601] : [Av1Constants.McIdentity, Av1Constants.McBt709, Av1Constants.McUnspecified, Av1Constants.McFcc, Av1Constants.McBt470BG, Av1Constants.McBt601, Av1Constants.McSmpte240, Av1Constants.McSmpteYcgco, Av1Constants.McBt2020Ncl, Av1Constants.McSmpte2085, Av1Constants.McChromatNcl];
         var random = new Random((int)layout + (monochrome ? 10 : 0) + (limitedRangeAlpha ? 100 : 0));
         foreach (var bitDepth in bitDepths)
@@ -3534,6 +3604,13 @@ public sealed class VectorizedKernelTests
                         var format = new HeifBitstreamFormat(bitDepth, monochrome, 0, 0, Av1Constants.CspUnknown, matrix, fullRange, ColorDescriptionPresent: true, ColorPrimaries: 1, TransferCharacteristics: 1);
                         HeifBitstreamFormat? alphaFormat = withAlpha ? new HeifBitstreamFormat(bitDepth, IsMonochrome: true, 0, 0, Av1Constants.CspUnknown, Av1Constants.McIdentity, !limitedRangeAlpha, ColorDescriptionPresent: false, 2, 2) : null;
                         var converter = new HeifYuvConverter(AvifBinding.Instance, format, matrix, fullRange, alphaFormat, layout, isPremultiplied: false, colorPrimaries: 1, transferCharacteristics: 1);
+                        if (!monochrome && matrix is not (Av1Constants.McIdentity or Av1Constants.McSmpte2085) && (layout is PixelFormat.Rgba64 ? !withAlpha : !withAlpha || bitDepth is 8))
+                        {
+                            // The matrices that the vector paths convert: Rgba64 pixels without alpha, and 8-bit pixels with an
+                            // 8-bit alpha plane
+                            Assert.True(converter.HasVectorPath, $"{layout} {bitDepth}-bit, matrix {matrix}, full range {fullRange}, alpha {withAlpha}");
+                        }
+
                         foreach (var width in new[] { 1, 7, 8, 9, 10, 11, 15, 16, 17, 18, 19, 31, 33, 64, 101 })
                         {
                             var y = new ushort[width];

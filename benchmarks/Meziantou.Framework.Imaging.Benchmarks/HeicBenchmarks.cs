@@ -11,7 +11,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// container (<see cref="HevcStreamContainer"/>): two 384x216 lossy stills with both in-loop filters (deblocking and
 /// sample adaptive offset), 4:2:0 and 4:4:4, and a 176x144 animation of 5 images coded with P and B pictures, which the
 /// decoder outputs in another order than it decodes them. These inputs are small: the workloads measure the decoder on its
-/// own corpus and say nothing about photographs.
+/// own corpus and say nothing about photographs. The corpus has no large 10-bit stream: the 10-bit still is the 512x384
+/// photo-like still of the encoder workloads, written by the encoder of the library (lossy 4:2:0, effort 0), and decoded to
+/// its 16-bit pixels.
 /// </summary>
 /// <remarks>
 /// The encoder is far slower than the decoder, and than the encoders of the other formats: its inputs are a 512x384
@@ -28,6 +30,7 @@ public class HeicBenchmarks : IDisposable
     private byte[] _still420 = null!;
     private byte[] _still444 = null!;
     private byte[] _animation = null!;
+    private byte[] _still10Bit = null!;
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _frames = null!;
 
@@ -64,6 +67,18 @@ public class HeicBenchmarks : IDisposable
         WorkloadChecks.RequireLossless(_output.ToArray(), source);
         ImageWorkloads.Encode(_frames, new HeicEncoder { Compression = HeicCompression.Lossy, Effort = 0 }, _output);
         Require(_output.ToArray(), BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, EncodedFrames);
+        using (var deep = _photo.CloneAs<Rgba64>())
+        {
+            ImageWorkloads.Encode(deep, new HeicEncoder { Compression = HeicCompression.Lossy, BitDepth = 10, Effort = 0 }, _output);
+        }
+
+        _still10Bit = _output.ToArray();
+        Require(_still10Bit, EncodedWidth, EncodedHeight, frames: 1);
+        using (var decoded = Image.Load(_still10Bit))
+        {
+            if (decoded.PixelFormat is not PixelFormat.Rgba64)
+                throw new InvalidOperationException($"Unexpected 10-bit HEIC input: {decoded.PixelFormat}.");
+        }
     }
 
     [GlobalCleanup]
@@ -95,6 +110,14 @@ public class HeicBenchmarks : IDisposable
     {
         using var image = Image.Load<Rgb24>(_animation);
         return image.Frames.Count;
+    }
+
+    [Benchmark]
+    [Workload("512x384 lossy 10-bit HEIC 4:2:0 -> Rgba64")]
+    public int DecodeStill10Bit()
+    {
+        using var image = Image.Load<Rgba64>(_still10Bit);
+        return image.Width;
     }
 
     [Benchmark]

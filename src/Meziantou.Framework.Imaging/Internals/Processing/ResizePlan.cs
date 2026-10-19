@@ -11,9 +11,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// The two vertical strategies perform exactly the same floating-point operations in the same order (every output sample
-/// is <c>0 + w0 v0 + w1 v1 + ...</c> in increasing source row), so they give bit-identical results; the plan picks the one
-/// that needs fewer row buffers (gather for upsampling and moderate downsampling, scatter for strong vertical
-/// downsampling).
+/// is <c>0 + w0 v0 + w1 v1 + ...</c> in increasing source row), so they give bit-identical results; the plan picks gather
+/// unless its ring of source rows is both larger than the accumulators of scatter and large in bytes (strong vertical
+/// downsampling of wide outputs).
 /// </para>
 /// <para>
 /// Bounded parallelism: the output rows are split into <see cref="Workers"/> contiguous bands, each processed by
@@ -25,6 +25,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class ResizePlan : IDisposable
 {
+    // The largest gather ring (per worker) picked over smaller scatter accumulators: 3x Lanczos3 to a 1920-pixel-wide
+    // 4-sample output (19 rows, 1.2 MB) was 10% faster with gather than with scatter
+    private const long MaxGatherRingBytes = 2 * 1024 * 1024;
+
     [ThreadStatic]
     private static ResizeVerticalStrategy? s_testStrategyOverride;
 
@@ -139,7 +143,7 @@ internal sealed class ResizePlan : IDisposable
 
         // The working row has one extra element for 3-sample pixels: the vectorized horizontal pass loads 4 samples per pixel
         var workingLength = (((long)XWeights.Last - XWeights.First + 1) * Channels) + (Channels == 3 ? 1 : 0);
-        Strategy = TestStrategyOverride ?? (YWeights.MaxCount <= YWeights.MaxOverlap ? ResizeVerticalStrategy.Gather : ResizeVerticalStrategy.Scatter);
+        Strategy = TestStrategyOverride ?? SelectStrategy(scope, YWeights, workingLength, rowLength);
         var rows = Strategy == ResizeVerticalStrategy.Gather ? YWeights.MaxCount : YWeights.MaxOverlap;
         _scratch = new ResizeScratch?[Workers];
         for (var worker = 0; worker < Workers; worker++)
@@ -148,6 +152,25 @@ internal sealed class ResizePlan : IDisposable
         }
 
         ScratchBytes = scope.LiveBytes - before;
+    }
+
+    /// <summary>
+    /// Picks gather when its ring is not larger than the accumulators of scatter. Otherwise gather is still faster while its
+    /// ring stays small (<see cref="MaxGatherRingBytes"/>, measured): it sums the taps of an output row by groups of rows in
+    /// registers (<see cref="Resampler.SetWeightedSum"/>) where scatter reads and writes an accumulator row per tap. Scatter
+    /// is kept when the larger ring would not fit the allocation limit.
+    /// </summary>
+    private ResizeVerticalStrategy SelectStrategy(AllocationScope scope, ResampleWeights yWeights, long workingLength, long rowLength)
+    {
+        if (yWeights.MaxCount <= yWeights.MaxOverlap)
+            return ResizeVerticalStrategy.Gather;
+
+        var ringBytes = yWeights.MaxCount * rowLength * sizeof(double);
+        if (ringBytes > MaxGatherRingBytes)
+            return ResizeVerticalStrategy.Scatter;
+
+        var workerBytes = scope.GetChargedSize(workingLength * sizeof(double)) + scope.GetChargedSize(ringBytes + (rowLength * sizeof(double)));
+        return scope.LiveBytes + (Workers * workerBytes) <= scope.Limit ? ResizeVerticalStrategy.Gather : ResizeVerticalStrategy.Scatter;
     }
 
     /// <summary>Gets the row buffers of a worker, between 0 and <see cref="Workers"/> - 1 (filtered resize).</summary>

@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -233,7 +234,7 @@ internal sealed class HeifYuvConverter
         }
 
         _vectorKind = GetVectorKind(alpha is not null);
-        if (_vectorKind is VectorKind.Matrix)
+        if (_vectorKind is VectorKind.Matrix or VectorKind.WideMatrix)
         {
             // U is Cg and V is Co for YCgCo
             (_cbR, _crR, _cbG, _crG, _cbB, _crB) = _matrix is Av1Constants.McSmpteYcgco
@@ -242,24 +243,33 @@ internal sealed class HeifYuvConverter
         }
     }
 
-    // The kinds of rows of ConvertRowVector
+    // The kinds of rows of ConvertRowVector and ConvertRowVectorWide
     private enum VectorKind
     {
         None,
         Monochrome,
         Matrix,
+        WideMatrix,
     }
 
-    // The vector path produces 8-bit pixels (Gray8, Rgb24 and Rgba32) from samples of 8 bits with the integer operations of
-    // the scalar path, when every product and every sum of the conversion fits in 32 bits
+    // The vector paths convert with the integer operations of the scalar path, when every product and every sum of the
+    // conversion fits in 32 bits: ConvertRowVector produces 8-bit pixels (Gray8, Rgb24 and Rgba32), from samples of 8 bits for
+    // a monochrome image and an alpha plane, which are copied in full range; ConvertRowVectorWide produces Rgba64 pixels of
+    // an image without alpha
     private VectorKind GetVectorKind(bool hasAlpha)
     {
-        if (_outputMax is not 255 || _max is not 255 || _isPremultiplied || _usesTransfer || (hasAlpha && _alphaMax is not 255))
+        if (_isPremultiplied || _usesTransfer)
             return VectorKind.None;
 
         // The largest magnitudes of a centered luma, chroma and alpha sample
         long lumaMagnitude = Math.Max(_yOffset, _max - _yOffset);
         long chromaMagnitude = Math.Max(_cOffset, _max - _cOffset);
+        if (_outputMax is not 255)
+            return hasAlpha ? VectorKind.None : GetWideVectorKind(lumaMagnitude, chromaMagnitude);
+
+        if ((_monochrome && _max is not 255) || (hasAlpha && _alphaMax is not 255))
+            return VectorKind.None;
+
         long alphaMagnitude = Math.Max(_alphaOffset, _alphaMax - _alphaOffset);
         const long Limit = int.MaxValue - Half;
         if (Math.Abs(_cY) * lumaMagnitude > Limit || Math.Abs(_cAlpha) * alphaMagnitude > Limit)
@@ -274,6 +284,25 @@ internal sealed class HeifYuvConverter
         // Each component adds at most two chroma products to the luma
         var chroma = _matrix is Av1Constants.McSmpteYcgco ? 2 * Math.Abs(_cC) : Math.Max(Math.Max(Math.Abs(_cRV), Math.Abs(_cBU)), Math.Abs(_cGU) + Math.Abs(_cGV));
         return (Math.Abs(_cY) * lumaMagnitude) + (chroma * chromaMagnitude) <= Limit ? VectorKind.Matrix : VectorKind.None;
+    }
+
+    // The Rgba64 pixels of a matrix: the coefficients k are split in 256 * high + low (ConvertRowVectorWide), where low is
+    // 0 to 255 and the magnitude of high is at most ( |k| >> 8 ) + 1. The coefficients, the sum of the products of the high
+    // parts, the sum of the products of the low parts and the rounding, and the final sum must fit in 32 bits
+    private VectorKind GetWideVectorKind(long lumaMagnitude, long chromaMagnitude)
+    {
+        if (_monochrome || _layout is not PixelFormat.Rgba64 || _matrix is Av1Constants.McIdentity or Av1Constants.McSmpte2085)
+            return VectorKind.None;
+
+        var (cY, cRV, cGU, cGV, cBU, cC) = (Math.Abs(_cY), Math.Abs(_cRV), Math.Abs(_cGU), Math.Abs(_cGV), Math.Abs(_cBU), Math.Abs(_cC));
+        if (Math.Max(Math.Max(cY, cC), Math.Max(Math.Max(cRV, cBU), Math.Max(cGU, cGV))) > int.MaxValue)
+            return VectorKind.None;
+
+        // Each component adds at most two chroma products to the luma
+        var chromaHigh = _matrix is Av1Constants.McSmpteYcgco ? 2 * ((cC >> 8) + 1) : Math.Max(Math.Max((cRV >> 8) + 1, (cBU >> 8) + 1), (cGU >> 8) + 1 + (cGV >> 8) + 1);
+        var high = ((cY >> 8) * lumaMagnitude) + (chromaHigh * chromaMagnitude);
+        var low = (255 * (lumaMagnitude + (2 * chromaMagnitude))) + Half;
+        return low <= int.MaxValue && high + (low >> 8) + 1 <= int.MaxValue ? VectorKind.WideMatrix : VectorKind.None;
     }
 
     /// <summary>Verifies that samples that use the matrix coefficients can be converted.</summary>
@@ -345,6 +374,9 @@ internal sealed class HeifYuvConverter
 
     /// <summary>Gets the number of bytes of a pixel of the layout.</summary>
     public int BytesPerPixel => PixelFormats.GetBytesPerPixel(_layout);
+
+    /// <summary>Gets whether <see cref="ConvertRow"/> has a vector path for the rows of the image, where the hardware accelerates it.</summary>
+    internal bool HasVectorPath => _vectorKind is not VectorKind.None;
 
     /// <summary>
     /// Produces the chroma samples of a luma row at the resolution of the luma plane.
@@ -534,7 +566,12 @@ internal sealed class HeifYuvConverter
     /// <param name="destination">The pixels: one per luma sample.</param>
     public void ConvertRow(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
     {
-        var start = _vectorKind is not VectorKind.None && Vector128.IsHardwareAccelerated ? ConvertRowVector(y, u, v, alpha, destination) : 0;
+        var start = 0;
+        if (_vectorKind is not VectorKind.None && Vector128.IsHardwareAccelerated)
+        {
+            start = _vectorKind is not VectorKind.WideMatrix ? ConvertRowVector(y, u, v, alpha, destination) : alpha.IsEmpty ? ConvertRowVectorWide(y, u, v, destination) : 0;
+        }
+
         ConvertRowScalar(y, u, v, alpha, destination, start);
     }
 
@@ -613,6 +650,57 @@ internal sealed class HeifYuvConverter
         var g = ClipToByte((luma + (cb * _cbG) + (cr * _crG)) >> 16);
         var b = ClipToByte((luma + (cb * _cbB) + (cr * _crB)) >> 16);
         return r | (g << 8) | (b << 16) | (alpha << 24);
+    }
+
+    // The conversion of 8 pixels at a time to Rgba64 pixels without alpha. The products of the coefficients (16 fractional
+    // bits) and of samples of more than 8 bits do not fit in 32 bits: each coefficient k is split in 256 * ( k >> 8 ) +
+    // ( k & 255 ), and the conversion of the scalar path, ( 256 * high + low ) >> 16, is ( high + ( low >> 8 ) ) >> 8 where
+    // high sums the products of the high parts, and low the products of the low parts and the rounding (GetWideVectorKind).
+    // Returns the number of pixels converted: the scalar path converts the others
+    private int ConvertRowVectorWide(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, Span<byte> destination)
+    {
+        var width = y.Length;
+        var coefficients = new WideCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB);
+        var x = 0;
+        for (; x <= width - 8; x += 8)
+        {
+            var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
+            var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
+            var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
+            ConvertWidePixels(yLow, uLow, vLow, coefficients, destination[(8 * x)..]);
+            ConvertWidePixels(yHigh, uHigh, vHigh, coefficients, destination[((8 * x) + 32)..]);
+        }
+
+        return x;
+    }
+
+    // Four Rgba64 pixels of ConvertRowVectorWide, opaque
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ConvertWidePixels(Vector128<uint> y, Vector128<uint> u, Vector128<uint> v, in WideCoefficients coefficients, Span<byte> destination)
+    {
+        var luma = y.AsInt32() - Vector128.Create(coefficients.YOffset);
+        var cb = u.AsInt32() - Vector128.Create(coefficients.COffset);
+        var cr = v.AsInt32() - Vector128.Create(coefficients.COffset);
+        var lumaHigh = luma * (coefficients.Y >> 8);
+        var lumaLow = (luma * (coefficients.Y & 255)) + Vector128.Create((int)Half);
+        var r = ConvertWideComponent(lumaHigh, lumaLow, cb, cr, coefficients.CbR, coefficients.CrR);
+        var g = ConvertWideComponent(lumaHigh, lumaLow, cb, cr, coefficients.CbG, coefficients.CrG);
+        var b = ConvertWideComponent(lumaHigh, lumaLow, cb, cr, coefficients.CbB, coefficients.CrB);
+
+        // R and G, then B and an opaque A, in the 32-bit lanes: a pixel is the 64-bit lane of both
+        var (redGreenFirst, redGreenSecond) = Vector128.Widen(r | (g << 16));
+        var (blueAlphaFirst, blueAlphaSecond) = Vector128.Widen(b | Vector128.Create(0xFFFF0000u));
+        (redGreenFirst | (blueAlphaFirst << 32)).AsByte().CopyTo(destination);
+        (redGreenSecond | (blueAlphaSecond << 32)).AsByte().CopyTo(destination[16..]);
+    }
+
+    // A component of 4 pixels of ConvertRowVectorWide, clipped to 16 bits
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> ConvertWideComponent(Vector128<int> lumaHigh, Vector128<int> lumaLow, Vector128<int> cb, Vector128<int> cr, int cbCoefficient, int crCoefficient)
+    {
+        var high = lumaHigh + (cb * (cbCoefficient >> 8)) + (cr * (crCoefficient >> 8));
+        var low = lumaLow + (cb * (cbCoefficient & 255)) + (cr * (crCoefficient & 255));
+        return Vector128.Min(Vector128.Max((high + (low >> 8)) >> 8, Vector128<int>.Zero), Vector128.Create(65535)).AsUInt32();
     }
 
     // ConvertUnmatrixed of 8-bit samples to 8-bit samples: the samples themselves in full range
@@ -797,4 +885,8 @@ internal sealed class HeifYuvConverter
         => alpha is 0 ? 0 : (int)Math.Min(_outputMax, (((long)color * _outputMax) + (alpha / 2)) / alpha);
 
     private int Clip(long value) => (int)Math.Clamp(value, 0, _outputMax);
+
+    // The coefficients of ConvertRowVectorWide, in locals of the loop
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct WideCoefficients(int Y, int YOffset, int COffset, int CbR, int CrR, int CbG, int CrG, int CbB, int CrB);
 }

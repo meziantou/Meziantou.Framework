@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -17,6 +18,9 @@ var root = FindRepositoryRoot();
 var specDataDirectory = Path.Combine(root, "tests", "Meziantou.Framework.WebPlatform.SpecData");
 var versionsPath = Path.Combine(specDataDirectory, "versions.json");
 var sourcesPath = Path.Combine(specDataDirectory, "sources.json");
+
+// The downloads (git and HTTP) are retried on transient errors (e.g. "Empty reply from server"), waiting 2, 4, 8 and 16 seconds
+const int MaxDownloadAttempts = 5;
 
 var command = args.Length > 0 ? args[0] : "help";
 switch (command)
@@ -97,7 +101,7 @@ async Task UpdateAsync(string[] arguments)
                 foreach (var (fileName, urlNode) in source["files"]!.AsObject())
                 {
                     var url = (string)urlNode!;
-                    var content = await http.GetByteArrayAsync(new Uri(url));
+                    var content = await RetryHttpAsync(() => http.GetByteArrayAsync(new Uri(url)));
                     var path = Path.Combine(targetDirectory, fileName);
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                     await File.WriteAllBytesAsync(path, content);
@@ -226,7 +230,7 @@ static void SyncTestSuite(string target, string repo, string commit, string[] pa
     if (commitChanged)
     {
         Console.WriteLine($"Fetching {Path.GetFileName(target)} at {commit}");
-        Git(target, $"fetch -q --depth 1 --filter=blob:none origin {commit}");
+        GitWithRetry(target, $"fetch -q --depth 1 --filter=blob:none origin {commit}");
     }
     else
     {
@@ -241,16 +245,17 @@ static void SyncTestSuite(string target, string repo, string commit, string[] pa
         Path.Combine(gitDirectory, "info", "sparse-checkout"),
         paths.Select(p => "/" + p.TrimStart('/')).Concat(additionalFiles.Select(p => "/" + EscapeSparsePattern(p))).Concat(symbolicLinks.Select(p => "!/" + EscapeSparsePattern(p))));
 
+    // The checkouts download the blobs of the files from the remote (blob-less clone)
     if (commitChanged)
     {
-        Git(target, $"checkout -q -f --detach {commit}");
+        GitWithRetry(target, $"checkout -q -f --detach {commit}");
 
         // Drop the previous commit (a shallow clone only keeps the pinned commit)
         Git(target, "reflog expire --expire=now --all");
         Git(target, "gc -q --prune=now");
     }
 
-    Git(target, "sparse-checkout reapply");
+    GitWithRetry(target, "sparse-checkout reapply");
 
     foreach (var path in paths)
     {
@@ -287,7 +292,7 @@ static async Task<string> EnsureManifestAsync(string testSuiteDirectory, string 
     {
         Console.WriteLine($"Downloading {url}");
         using var http = CreateHttpClient();
-        var content = await http.GetByteArrayAsync(new Uri(url));
+        var content = await RetryHttpAsync(() => http.GetByteArrayAsync(new Uri(url)));
         Directory.CreateDirectory(testSuiteDirectory);
         await File.WriteAllBytesAsync(path, content);
     }
@@ -391,9 +396,7 @@ static HttpClient CreateHttpClient()
 
 static async Task<(string Commit, string Manifest)> ResolveManifestReleaseAsync(HttpClient http, string repo)
 {
-    using var response = await http.GetAsync(new Uri($"https://api.github.com/repos/{repo}/releases/latest"));
-    response.EnsureSuccessStatusCode();
-    var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+    var json = JsonNode.Parse(await RetryHttpAsync(() => http.GetStringAsync(new Uri($"https://api.github.com/repos/{repo}/releases/latest"))))!;
     var commit = (string)json["target_commitish"]!;
     var assetName = $"MANIFEST-{commit}.json.gz";
     var asset = json["assets"]!.AsArray().FirstOrDefault(a => (string?)a!["name"] == assetName)
@@ -403,9 +406,7 @@ static async Task<(string Commit, string Manifest)> ResolveManifestReleaseAsync(
 
 static async Task<string> ResolveCommitAsync(HttpClient http, string repo, string reference)
 {
-    using var response = await http.GetAsync(new Uri($"https://api.github.com/repos/{repo}/commits/{reference}"));
-    response.EnsureSuccessStatusCode();
-    var json = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+    var json = JsonNode.Parse(await RetryHttpAsync(() => http.GetStringAsync(new Uri($"https://api.github.com/repos/{repo}/commits/{reference}"))))!;
     return (string)json["sha"]!;
 }
 
@@ -418,8 +419,8 @@ static void SparseCheckout(string repo, string commit, string[] paths, Action<st
         Run("git", $"init -q \"{directory}\"");
         Run("git", $"-C \"{directory}\" remote add origin https://github.com/{repo}.git");
         Run("git", $"-C \"{directory}\" sparse-checkout set --no-cone {string.Join(' ', paths.Select(p => "\"/" + p.TrimStart('/') + "\""))}");
-        Run("git", $"-C \"{directory}\" fetch -q --depth 1 --filter=blob:none origin {commit}");
-        Run("git", $"-C \"{directory}\" checkout -q FETCH_HEAD");
+        GitWithRetry(directory, $"fetch -q --depth 1 --filter=blob:none origin {commit}");
+        GitWithRetry(directory, "checkout -q FETCH_HEAD");
         action(directory);
     }
     finally
@@ -525,6 +526,46 @@ static void Run(string fileName, string arguments)
 }
 
 static void Git(string directory, string arguments) => Run("git", $"-C \"{directory}\" {arguments}");
+
+// Runs a git command that downloads objects from the remote. The commands are idempotent, so a failed attempt can be run again.
+static void GitWithRetry(string directory, string arguments)
+{
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            Git(directory, arguments);
+            return;
+        }
+        catch (InvalidOperationException ex) when (attempt < MaxDownloadAttempts)
+        {
+            Thread.Sleep(ReportRetry(attempt, ex));
+        }
+    }
+}
+
+// Runs an HTTP request, retrying the transient errors: a network error, a timeout, or a 408, 429 or 5xx response
+static async Task<T> RetryHttpAsync<T>(Func<Task<T>> request)
+{
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            return await request();
+        }
+        catch (Exception ex) when (attempt < MaxDownloadAttempts && ex is HttpRequestException { StatusCode: null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests or >= HttpStatusCode.InternalServerError } or TaskCanceledException)
+        {
+            await Task.Delay(ReportRetry(attempt, ex));
+        }
+    }
+}
+
+static TimeSpan ReportRetry(int attempt, Exception exception)
+{
+    var delay = TimeSpan.FromSeconds(1 << attempt);
+    Console.WriteLine($"warning: attempt {attempt}/{MaxDownloadAttempts} failed, retrying in {delay.TotalSeconds}s: {exception.Message.TrimEnd()}");
+    return delay;
+}
 
 static string RunWithOutput(string fileName, string arguments)
 {

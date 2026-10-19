@@ -391,10 +391,7 @@ internal sealed class PngImageDataEncoder : IDisposable
             var (x0, y0, dx, dy) = PngInterlace.GetPass(_pass);
             var row = _row!.RawBuffer.AsSpan(0, _width * bytesPerPixel);
             _layout.ToSamples(lease.GetRowBytes(y0 + (_passRow * dy)), row);
-            for (var i = 0; i < _passWidth; i++)
-            {
-                row.Slice((x0 + (i * dx)) * bytesPerPixel, bytesPerPixel).CopyTo(current[(i * bytesPerPixel)..]);
-            }
+            PngInterlace.CopyPixels(row[(x0 * bytesPerPixel)..], dx, current, 1, _passWidth, bytesPerPixel);
         }
 
         var filtered = _filtered!.RawBuffer.AsSpan(0, length + 1);

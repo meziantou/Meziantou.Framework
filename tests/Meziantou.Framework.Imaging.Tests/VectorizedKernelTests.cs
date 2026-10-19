@@ -3082,8 +3082,15 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1InterPredictionMatchesTheScalarReference(int bitDepth)
     {
-        // Blocks of every size at every sub-sample position, inside the reference and across each of its edges, with every
-        // filter type and the rounding of the bit depth and of compound prediction
+        // Blocks of every size at every sub-sample position (whole-sample positions, which skip the filters, in a third of the
+        // directions), inside the reference and across each of its edges, with every filter type and the rounding of the bit
+        // depth, of compound prediction and of test values
+        short[] wholeSampleTaps = [0, 0, 0, 128, 0, 0, 0, 0];
+        for (var filter = 0; filter < Av1Tables.SubpelFiltersLength0; filter++)
+        {
+            Assert.True(wholeSampleTaps.AsSpan().SequenceEqual(Av1Tables.SubpelFilters.Slice(filter * Av1Tables.SubpelFiltersLength1 * Av1Tables.SubpelFiltersLength2, 8)), $"Filter {filter}.");
+        }
+
         var random = new Random(bitDepth * 23);
         var maxSample = (1 << bitDepth) - 1;
         const int Stride = 96;
@@ -3101,12 +3108,17 @@ public sealed class VectorizedKernelTests
             var h = 2 << random.Next(6);
             var lastX = random.Next(8, Stride);
             var lastY = random.Next(8, Height);
-            var x = (random.Next(-24, lastX + 24) << 10) + (random.Next(16) << 6);
-            var y = (random.Next(-24, lastY + 24) << 10) + (random.Next(16) << 6);
+            var x = (random.Next(-24, lastX + 24) << 10) + ((random.Next(3) == 0 ? 0 : random.Next(16)) << 6) + random.Next(64);
+            var y = (random.Next(-24, lastY + 24) << 10) + ((random.Next(3) == 0 ? 0 : random.Next(16)) << 6) + random.Next(64);
             var horizontalFilter = random.Next(4);
             var verticalFilter = random.Next(4);
             var interRound0 = 3 + (bitDepth is 12 ? 2 : 0);
-            var interRound1 = random.Next(2) == 0 ? 7 : 11 - interRound0;
+            var interRound1 = random.Next(3) switch
+            {
+                0 => 7,
+                1 => 11 - interRound0,
+                _ => 14 - interRound0,
+            };
             var expected = new int[h * 70];
             var actual = new int[h * 70];
             Av1InterPredictor.PredictBlockScalar(reference, Stride, lastX, lastY, x, y, 1024, 1024, w, h, horizontalFilter, verticalFilter, interRound0, interRound1, intermediate, expected, 70);

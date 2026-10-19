@@ -352,10 +352,7 @@ internal sealed partial class DrawingSession
         var m22 = _hasTransform ? _transform.M22 : 1;
         var (offsetX, offsetY) = GetTranslation();
         processor.Configure(_canvasBounds, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
-        using var surface = new FilterSurface(_image.Owner.Scope, bounds);
-        FilterProcessor.Read(level.Frames![0], level.Storages![0], surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
-        level.Filter!.Apply(processor, surface);
-        FilterProcessor.Write(surface, level.Storages[0], bounds);
+        level.Filter!.ApplyToLayer(processor, level.Frames![0], level.Storages![0], bounds, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
 
         // A filter can give a color to pixels that were transparent (a flood, an image, an offset)
         level.MarkDirty(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
@@ -378,10 +375,7 @@ internal sealed partial class DrawingSession
         var canvas = new Rectangle(_canvasBounds.X - bounded.Left, _canvasBounds.Y - bounded.Top, _canvasBounds.Width, _canvasBounds.Height);
         processor.Configure(canvas, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX - bounded.Left, offsetY - bounded.Top, _cancellationToken);
         processor.Extent = area;
-        using var surface = new FilterSurface(_image.Owner.Scope, area);
-        FilterProcessor.Read(frame, storage, surface, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
-        level.Filter!.Apply(processor, surface);
-        FilterProcessor.Write(surface, storage, area);
+        level.Filter!.ApplyToLayer(processor, frame, storage, area, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
     }
 
     /// <summary>Gets the processor of the filters and the row its pixels are read through.</summary>

@@ -17,6 +17,7 @@ public partial class Animation
     /// The target is a pseudo-element or an element without <c>style</c> attribute (NoModificationAllowedError), or it is not
     /// being rendered (InvalidStateError).
     /// </exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles"/>
     [IdlMember("commitStyles", "https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles")]
     public void CommitStyles()
     {

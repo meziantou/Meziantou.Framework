@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The callback of <see cref="Scheduler.PostTask"/> (https://wicg.github.io/scheduling-apis/#callbackdef-schedulerposttaskcallback): its result fulfills the task.</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#callbackdef-schedulerposttaskcallback"/>
 [IdlInterface("SchedulerPostTaskCallback", "https://wicg.github.io/scheduling-apis/#callbackdef-schedulerposttaskcallback")]
 public delegate object? SchedulerPostTaskCallback();
 
 /// <summary>The options of <see cref="Scheduler.PostTask"/> (https://wicg.github.io/scheduling-apis/#dictdef-schedulerposttaskoptions).</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#dictdef-schedulerposttaskoptions"/>
 [IdlInterface("SchedulerPostTaskOptions", "https://wicg.github.io/scheduling-apis/#dictdef-schedulerposttaskoptions")]
 public sealed class SchedulerPostTaskOptions
 {
@@ -12,14 +14,17 @@ public sealed class SchedulerPostTaskOptions
     /// Gets the signal that aborts the task; when it is a <see cref="TaskSignal"/> and <see cref="Priority"/> is null, the
     /// task also follows the priority of the signal.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-signal"/>
     [IdlMember("signal", "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-signal")]
     public AbortSignal? Signal { get; init; }
 
     /// <summary>Gets the priority of the task, which then does not change; null for the priority of <see cref="Signal"/>, or <see cref="TaskPriority.UserVisible"/>.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-priority"/>
     [IdlMember("priority", "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-priority")]
     public TaskPriority? Priority { get; init; }
 
     /// <summary>Gets the minimum time, in milliseconds, before the task is queued.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-delay"/>
     [IdlMember("delay", "https://wicg.github.io/scheduling-apis/#dom-schedulerposttaskoptions-delay")]
     public ulong Delay { get; init; }
 }
@@ -30,6 +35,7 @@ public sealed class SchedulerPostTaskOptions
 /// event loop run in the order of their priorities (<see cref="TaskPriority"/>), then in the order they were queued; a
 /// continuation (<see cref="Yield"/>) runs before the tasks of its priority.
 /// </summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#scheduler"/>
 [IdlInterface("Scheduler", "https://wicg.github.io/scheduling-apis/#scheduler")]
 public sealed class Scheduler
 {
@@ -58,6 +64,7 @@ public sealed class Scheduler
     /// </summary>
     /// <param name="callback">The callback of the task.</param>
     /// <param name="options">The signal, the priority and the delay of the task, or null.</param>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-scheduler-posttask"/>
     [IdlMember("postTask", "https://wicg.github.io/scheduling-apis/#dom-scheduler-posttask")]
     public Task<object?> PostTask(SchedulerPostTaskCallback callback, SchedulerPostTaskOptions? options = null)
     {
@@ -130,6 +137,7 @@ public sealed class Scheduler
     /// its continuations), the continuation inherits the priority and the signal of the task: it fails with the abort reason
     /// when the signal is aborted. Otherwise its priority is <see cref="TaskPriority.UserVisible"/>.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-scheduler-yield"/>
     [IdlMember("yield", "https://wicg.github.io/scheduling-apis/#dom-scheduler-yield")]
     public Task Yield()
     {

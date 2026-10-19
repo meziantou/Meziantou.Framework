@@ -260,6 +260,7 @@ internal sealed class AnimationWorklet : Worklet
 /// The global object of an animation worklet (https://drafts.css-houdini.org/css-animation-worklet-1/#animationworkletglobalscope):
 /// the scripts added to <c>CSS.animationWorklet</c> register the animators of the <see cref="WorkletAnimation"/> objects.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#animationworkletglobalscope"/>
 [IdlInterface("AnimationWorkletGlobalScope", "https://drafts.css-houdini.org/css-animation-worklet-1/#animationworkletglobalscope")]
 public sealed class AnimationWorkletGlobalScope : WorkletGlobalScope
 {
@@ -286,6 +287,7 @@ public sealed class AnimationWorkletGlobalScope : WorkletGlobalScope
     /// <param name="animatorCtor">The class: its prototype has the <c>animate</c> callback, and a <c>state</c> function when the animator is stateful.</param>
     /// <exception cref="TypeErrorException">The name is not an identifier, the value is not a constructor, or its prototype has no <c>animate</c> function.</exception>
     /// <exception cref="DomException">A <c>NotSupportedError</c> when the name is already registered in the global scope.</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-animationworkletglobalscope-registeranimator"/>
     [IdlMember("registerAnimator", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-animationworkletglobalscope-registeranimator")]
     public void RegisterAnimator(string name, WorkletClassConstructor animatorCtor)
     {

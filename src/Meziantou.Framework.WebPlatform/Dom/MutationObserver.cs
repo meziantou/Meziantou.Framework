@@ -1,16 +1,19 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#callbackdef-mutationcallback</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#callbackdef-mutationcallback"/>
 [IdlInterface("MutationCallback", "https://dom.spec.whatwg.org/#callbackdef-mutationcallback")]
 public delegate void MutationCallback(IReadOnlyList<MutationRecord> mutations, MutationObserver observer);
 
 /// <summary>https://dom.spec.whatwg.org/#dictdef-mutationobserverinit</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-mutationobserverinit"/>
 [IdlInterface("MutationObserverInit", "https://dom.spec.whatwg.org/#dictdef-mutationobserverinit")]
 public sealed class MutationObserverInit
 {
     /// <summary>
     /// Gets or sets a value indicating whether additions and removals of the children of the target are observed.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-childlist"/>
     [IdlMember("childList", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-childlist")]
     public bool ChildList { get; set; }
 
@@ -18,6 +21,7 @@ public sealed class MutationObserverInit
     /// Gets or sets a value indicating whether the attribute changes of the target are observed (implied when
     /// <c>attributeOldValue</c> or <c>attributeFilter</c> is set).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributes"/>
     [IdlMember("attributes", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributes")]
     public bool? Attributes { get; set; }
 
@@ -25,26 +29,31 @@ public sealed class MutationObserverInit
     /// Gets or sets a value indicating whether the data changes of the target are observed (implied when
     /// <c>characterDataOldValue</c> is set).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-characterdata"/>
     [IdlMember("characterData", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-characterdata")]
     public bool? CharacterData { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the descendants of the target are observed too.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-subtree"/>
     [IdlMember("subtree", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-subtree")]
     public bool Subtree { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the previous value of the changed attribute is recorded.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributeoldvalue"/>
     [IdlMember("attributeOldValue", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributeoldvalue")]
     public bool? AttributeOldValue { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the previous data of the changed node is recorded.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-characterdataoldvalue"/>
     [IdlMember("characterDataOldValue", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-characterdataoldvalue")]
     public bool? CharacterDataOldValue { get; set; }
 
     /// <summary>
     /// Gets or sets the local names of the attributes to observe; all the attributes are observed when null.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributefilter"/>
     [IdlMember("attributeFilter", "https://dom.spec.whatwg.org/#dom-mutationobserverinit-attributefilter")]
     public IReadOnlyList<string>? AttributeFilter { get; set; }
 
@@ -66,6 +75,7 @@ internal sealed class TransientRegisteredObserver(MutationObserver observer, Mut
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-mutationobserver</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#mutationobserver"/>
 [IdlInterface("MutationObserver", "https://dom.spec.whatwg.org/#mutationobserver")]
 public sealed class MutationObserver
 {
@@ -74,6 +84,7 @@ public sealed class MutationObserver
     private readonly List<MutationRecord> _recordQueue = [];
 
     /// <summary>Creates an observer that invokes the callback with the batched mutation records.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserver-mutationobserver"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-mutationobserver-mutationobserver")]
     public MutationObserver(MutationCallback callback)
     {
@@ -82,6 +93,7 @@ public sealed class MutationObserver
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-mutationobserver-observe</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserver-observe"/>
     [IdlMember("observe", "https://dom.spec.whatwg.org/#dom-mutationobserver-observe")]
     public void Observe(Node target, MutationObserverInit? options = null)
     {
@@ -128,6 +140,7 @@ public sealed class MutationObserver
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect"/>
     [IdlMember("disconnect", "https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect")]
     public void Disconnect()
     {
@@ -141,6 +154,7 @@ public sealed class MutationObserver
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords"/>
     [IdlMember("takeRecords", "https://dom.spec.whatwg.org/#dom-mutationobserver-takerecords")]
     public IReadOnlyList<MutationRecord> TakeRecords()
     {
@@ -272,6 +286,7 @@ public sealed class MutationObserver
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-mutationrecord</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#mutationrecord"/>
 [IdlInterface("MutationRecord", "https://dom.spec.whatwg.org/#mutationrecord")]
 public sealed class MutationRecord
 {
@@ -289,40 +304,49 @@ public sealed class MutationRecord
     }
 
     /// <summary>Gets the type of the mutation: <c>attributes</c>, <c>characterData</c> or <c>childList</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-type"/>
     [IdlMember("type", "https://dom.spec.whatwg.org/#dom-mutationrecord-type")]
     public string Type { get; }
 
     /// <summary>Gets the node the mutation affected.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-target"/>
     [IdlMember("target", "https://dom.spec.whatwg.org/#dom-mutationrecord-target")]
     public Node Target { get; }
 
     /// <summary>Gets the nodes added by the mutation.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-addednodes"/>
     [IdlMember("addedNodes", "https://dom.spec.whatwg.org/#dom-mutationrecord-addednodes")]
     public NodeList AddedNodes { get; }
 
     /// <summary>Gets the nodes removed by the mutation.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-removednodes"/>
     [IdlMember("removedNodes", "https://dom.spec.whatwg.org/#dom-mutationrecord-removednodes")]
     public NodeList RemovedNodes { get; }
 
     /// <summary>Gets the previous sibling of the added or removed nodes, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-previoussibling"/>
     [IdlMember("previousSibling", "https://dom.spec.whatwg.org/#dom-mutationrecord-previoussibling")]
     public Node? PreviousSibling { get; }
 
     /// <summary>Gets the next sibling of the added or removed nodes, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-nextsibling"/>
     [IdlMember("nextSibling", "https://dom.spec.whatwg.org/#dom-mutationrecord-nextsibling")]
     public Node? NextSibling { get; }
 
     /// <summary>Gets the local name of the changed attribute, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-attributename"/>
     [IdlMember("attributeName", "https://dom.spec.whatwg.org/#dom-mutationrecord-attributename")]
     public string? AttributeName { get; }
 
     /// <summary>Gets the namespace of the changed attribute, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-attributenamespace"/>
     [IdlMember("attributeNamespace", "https://dom.spec.whatwg.org/#dom-mutationrecord-attributenamespace")]
     public string? AttributeNamespace { get; }
 
     /// <summary>
     /// Gets the previous value of the attribute or of the data when the observer requested it; otherwise null.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-mutationrecord-oldvalue"/>
     [IdlMember("oldValue", "https://dom.spec.whatwg.org/#dom-mutationrecord-oldvalue")]
     public string? OldValue { get; }
 }

@@ -1,65 +1,80 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The mode of a lock (https://w3c.github.io/web-locks/#enumdef-lockmode).</summary>
+/// <seealso href="https://w3c.github.io/web-locks/#enumdef-lockmode"/>
 [IdlInterface("LockMode", "https://w3c.github.io/web-locks/#enumdef-lockmode")]
 public enum LockMode
 {
     /// <summary>The lock can be held with the other shared locks of the resource.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmode-shared"/>
     [IdlMember("shared", "https://w3c.github.io/web-locks/#dom-lockmode-shared")]
     Shared,
 
     /// <summary>No other lock of the resource can be held.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmode-exclusive"/>
     [IdlMember("exclusive", "https://w3c.github.io/web-locks/#dom-lockmode-exclusive")]
     Exclusive,
 }
 
 /// <summary>The options of <see cref="LockManager.Request(string, LockOptions, LockGrantedCallback)"/> (https://w3c.github.io/web-locks/#dictdef-lockoptions).</summary>
+/// <seealso href="https://w3c.github.io/web-locks/#dictdef-lockoptions"/>
 [IdlInterface("LockOptions", "https://w3c.github.io/web-locks/#dictdef-lockoptions")]
 public sealed class LockOptions
 {
     /// <summary>Gets the mode of the lock.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockoptions-mode"/>
     [IdlMember("mode", "https://w3c.github.io/web-locks/#dom-lockoptions-mode")]
     public LockMode Mode { get; init; } = LockMode.Exclusive;
 
     /// <summary>Gets whether the callback is called with null, instead of waiting, when the lock cannot be granted at once.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockoptions-ifavailable"/>
     [IdlMember("ifAvailable", "https://w3c.github.io/web-locks/#dom-lockoptions-ifavailable")]
     public bool IfAvailable { get; init; }
 
     /// <summary>Gets whether the held locks of the resource are released (their requests fail with an <c>AbortError</c>) and the lock is granted before the pending requests.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockoptions-steal"/>
     [IdlMember("steal", "https://w3c.github.io/web-locks/#dom-lockoptions-steal")]
     public bool Steal { get; init; }
 
     /// <summary>Gets the signal that aborts the request while the lock is not granted.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockoptions-signal"/>
     [IdlMember("signal", "https://w3c.github.io/web-locks/#dom-lockoptions-signal")]
     public AbortSignal? Signal { get; init; }
 }
 
 /// <summary>A held lock or a pending request of <see cref="LockManagerSnapshot"/> (https://w3c.github.io/web-locks/#dictdef-lockinfo).</summary>
+/// <seealso href="https://w3c.github.io/web-locks/#dictdef-lockinfo"/>
 [IdlInterface("LockInfo", "https://w3c.github.io/web-locks/#dictdef-lockinfo")]
 public sealed class LockInfo
 {
     /// <summary>Gets the name of the resource.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockinfo-name"/>
     [IdlMember("name", "https://w3c.github.io/web-locks/#dom-lockinfo-name")]
     public string? Name { get; init; }
 
     /// <summary>Gets the mode of the lock.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockinfo-mode"/>
     [IdlMember("mode", "https://w3c.github.io/web-locks/#dom-lockinfo-mode")]
     public LockMode? Mode { get; init; }
 
     /// <summary>Gets the id of the environment (the window or the worker) that holds or requests the lock: the id of its service worker client.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockinfo-clientid"/>
     [IdlMember("clientId", "https://w3c.github.io/web-locks/#dom-lockinfo-clientid")]
     public string? ClientId { get; init; }
 }
 
 /// <summary>The state of a lock manager returned by <see cref="LockManager.Query"/> (https://w3c.github.io/web-locks/#dictdef-lockmanagersnapshot).</summary>
+/// <seealso href="https://w3c.github.io/web-locks/#dictdef-lockmanagersnapshot"/>
 [IdlInterface("LockManagerSnapshot", "https://w3c.github.io/web-locks/#dictdef-lockmanagersnapshot")]
 public sealed class LockManagerSnapshot
 {
     /// <summary>Gets the held locks.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-held"/>
     [IdlMember("held", "https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-held")]
     public IReadOnlyList<LockInfo>? Held { get; init; }
 
     /// <summary>Gets the pending requests: the requests of a resource are in the order they were made.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-pending"/>
     [IdlMember("pending", "https://w3c.github.io/web-locks/#dom-lockmanagersnapshot-pending")]
     public IReadOnlyList<LockInfo>? Pending { get; init; }
 }
@@ -69,6 +84,7 @@ public sealed class LockManagerSnapshot
 /// (https://w3c.github.io/web-locks/#callbackdef-lockgrantedcallback): the lock is held until the returned task completes.
 /// </summary>
 /// <param name="lock">The granted lock; null when the lock is not available and the <see cref="LockOptions.IfAvailable"/> option is set.</param>
+/// <seealso href="https://w3c.github.io/web-locks/#callbackdef-lockgrantedcallback"/>
 [IdlInterface("LockGrantedCallback", "https://w3c.github.io/web-locks/#callbackdef-lockgrantedcallback")]
 #pragma warning disable CA1711 // The name of the IDL callback function
 public delegate Task<object?> LockGrantedCallback(WebLock? @lock);
@@ -78,6 +94,7 @@ public delegate Task<object?> LockGrantedCallback(WebLock? @lock);
 /// A granted lock (https://w3c.github.io/web-locks/#api-lock): the <c>Lock</c> interface, named <c>WebLock</c> in .NET as
 /// <see cref="System.Threading.Lock"/> has its name.
 /// </summary>
+/// <seealso href="https://w3c.github.io/web-locks/#lock"/>
 [IdlInterface("Lock", "https://w3c.github.io/web-locks/#lock")]
 public sealed class WebLock
 {
@@ -88,10 +105,12 @@ public sealed class WebLock
     }
 
     /// <summary>Gets the name of the resource.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lock-name"/>
     [IdlMember("name", "https://w3c.github.io/web-locks/#dom-lock-name")]
     public string Name { get; }
 
     /// <summary>Gets the mode of the lock.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lock-mode"/>
     [IdlMember("mode", "https://w3c.github.io/web-locks/#dom-lock-mode")]
     public LockMode Mode { get; }
 }
@@ -101,6 +120,7 @@ public sealed class WebLock
 /// <see cref="Navigator.Locks"/>): named resources that the windows and the workers of an origin acquire to coordinate
 /// their work. The locks are shared by the browsing contexts of a browsing context group and by their workers.
 /// </summary>
+/// <seealso href="https://w3c.github.io/web-locks/#lockmanager"/>
 [IdlInterface("LockManager", "https://w3c.github.io/web-locks/#lockmanager")]
 public sealed class LockManager
 {
@@ -112,6 +132,7 @@ public sealed class LockManager
     }
 
     /// <summary>Requests an exclusive lock: see <see cref="Request(string, LockOptions, LockGrantedCallback)"/>.</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmanager-request"/>
     [IdlMember("request", "https://w3c.github.io/web-locks/#dom-lockmanager-request")]
     public Task<object?> Request(string name, LockGrantedCallback callback) => Request(name, new LockOptions(), callback);
 
@@ -126,6 +147,7 @@ public sealed class LockManager
     /// <param name="name">The name of the resource, which does not start with <c>-</c>.</param>
     /// <param name="options">The options.</param>
     /// <param name="callback">The callback, called with the lock (or null when it is not available, with the <see cref="LockOptions.IfAvailable"/> option).</param>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmanager-request-name-options-callback"/>
     [IdlMember("request", "https://w3c.github.io/web-locks/#dom-lockmanager-request-name-options-callback")]
     public Task<object?> Request(string name, LockOptions options, LockGrantedCallback callback)
     {
@@ -168,6 +190,7 @@ public sealed class LockManager
     /// Returns the held locks and the pending requests of the lock manager (https://w3c.github.io/web-locks/#dom-lockmanager-query),
     /// of all the windows and workers that share it. As <c>request()</c>, it waits for the activation of a prerendering document.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-lockmanager-query"/>
     [IdlMember("query", "https://w3c.github.io/web-locks/#dom-lockmanager-query")]
     public Task<LockManagerSnapshot> Query() => Document.DelayWhilePrerendering(_global, QueryCore);
 

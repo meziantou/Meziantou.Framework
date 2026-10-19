@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The clients of a service worker (https://w3c.github.io/ServiceWorker/#clients-interface): the windows and the workers of
 /// its origin, in the browsing context group of the service worker.
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#clients"/>
 [IdlInterface("Clients", "https://w3c.github.io/ServiceWorker/#clients")]
 public sealed class Clients
 {
@@ -50,6 +51,7 @@ public sealed class Clients
     private Task _parallelQueue = Task.CompletedTask;
 
     /// <summary>Returns the client whose id is <paramref name="id"/>, or null (https://w3c.github.io/ServiceWorker/#clients-get).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-clients-get"/>
     [IdlMember("get", "https://w3c.github.io/ServiceWorker/#dom-clients-get")]
     public Task<Client?> Get(string id)
     {
@@ -85,6 +87,7 @@ public sealed class Clients
     }
 
     /// <summary>Returns the clients of the service worker (https://w3c.github.io/ServiceWorker/#clients-matchall).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-clients-matchall"/>
     [IdlMember("matchAll", "https://w3c.github.io/ServiceWorker/#dom-clients-matchall")]
     public Task<IReadOnlyList<Client>> MatchAll(ClientQueryOptions? options = null)
     {
@@ -136,6 +139,7 @@ public sealed class Clients
     /// returns its window client, or null when its document does not have the origin of the service worker.
     /// </summary>
     /// <remarks>A window of the origin must have the transient activation (e.g. the user clicked it).</remarks>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-clients-openwindow"/>
     [IdlMember("openWindow", "https://w3c.github.io/ServiceWorker/#dom-clients-openwindow")]
     public Task<WindowClient?> OpenWindow(string url)
     {
@@ -194,6 +198,7 @@ public sealed class Clients
     /// (https://w3c.github.io/ServiceWorker/#clients-claim).
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the service worker is not the active worker of its registration.</exception>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-clients-claim"/>
     [IdlMember("claim", "https://w3c.github.io/ServiceWorker/#dom-clients-claim")]
     public Task Claim()
     {
@@ -244,6 +249,7 @@ public sealed class Clients
 }
 
 /// <summary>A client of a service worker (https://w3c.github.io/ServiceWorker/#client-interface): a window or a worker of its origin.</summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#client"/>
 [IdlInterface("Client", "https://w3c.github.io/ServiceWorker/#client")]
 public class Client
 {
@@ -259,22 +265,27 @@ public class Client
     internal ServiceWorkerClientEntry Entry { get; }
 
     /// <summary>Gets the creation URL of the client.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-url"/>
     [IdlMember("url", "https://w3c.github.io/ServiceWorker/#dom-client-url")]
     public string Url => Entry.CreationUrl;
 
     /// <summary>Gets the frame type of the client.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-frametype"/>
     [IdlMember("frameType", "https://w3c.github.io/ServiceWorker/#dom-client-frametype")]
     public FrameType FrameType { get; }
 
     /// <summary>Gets the id of the client.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-id"/>
     [IdlMember("id", "https://w3c.github.io/ServiceWorker/#dom-client-id")]
     public string Id => Entry.Id;
 
     /// <summary>Gets the type of the client.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-type"/>
     [IdlMember("type", "https://w3c.github.io/ServiceWorker/#dom-client-type")]
     public ClientType Type => Entry.Type;
 
     /// <summary>Posts a message to the client (https://w3c.github.io/ServiceWorker/#dom-client-postmessage).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-postmessage"/>
     [IdlMember("postMessage", "https://w3c.github.io/ServiceWorker/#dom-client-postmessage")]
     public void PostMessage(object? message, IReadOnlyList<object> transfer)
     {
@@ -284,6 +295,7 @@ public class Client
 
     /// <summary>Posts a message to the client: it is dispatched at its <see cref="ServiceWorkerContainer"/> (https://w3c.github.io/ServiceWorker/#dom-client-postmessage-message-options).</summary>
     /// <exception cref="DomException">A <c>DataCloneError</c> when the message cannot be serialized.</exception>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-postmessage-message-options"/>
     [IdlMember("postMessage", "https://w3c.github.io/ServiceWorker/#dom-client-postmessage-message-options")]
     public void PostMessage(object? message, StructuredSerializeOptions? options = null)
     {
@@ -293,6 +305,7 @@ public class Client
 }
 
 /// <summary>A window client of a service worker (https://w3c.github.io/ServiceWorker/#windowclient-interface).</summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#windowclient"/>
 [IdlInterface("WindowClient", "https://w3c.github.io/ServiceWorker/#windowclient")]
 public sealed class WindowClient : Client
 {
@@ -305,19 +318,23 @@ public sealed class WindowClient : Client
     }
 
     /// <summary>Gets the visibility state of the document of the client (<c>visible</c> or <c>hidden</c>).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-visibilitystate"/>
     [IdlMember("visibilityState", "https://w3c.github.io/ServiceWorker/#dom-windowclient-visibilitystate")]
     public string VisibilityState { get; }
 
     /// <summary>Gets whether the document of the client has the focus.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-focused"/>
     [IdlMember("focused", "https://w3c.github.io/ServiceWorker/#dom-windowclient-focused")]
     public bool Focused { get; }
 
     /// <summary>Gets the ancestor origins of the document of the client.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-ancestororigins"/>
     [IdlMember("ancestorOrigins", "https://w3c.github.io/ServiceWorker/#dom-windowclient-ancestororigins")]
     public IReadOnlyList<string> AncestorOrigins { get; }
 
     /// <summary>Focuses the window of the client (https://w3c.github.io/ServiceWorker/#client-focus).</summary>
     /// <remarks>A window of the origin must have the transient activation (e.g. the user clicked it).</remarks>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-focus"/>
     [IdlMember("focus", "https://w3c.github.io/ServiceWorker/#dom-windowclient-focus")]
     public Task<WindowClient> Focus()
     {
@@ -362,6 +379,7 @@ public sealed class WindowClient : Client
     /// Navigates the window of the client to <paramref name="url"/> (https://w3c.github.io/ServiceWorker/#client-navigate):
     /// returns its window client, or null when the new document does not have the origin of the service worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate"/>
     [IdlMember("navigate", "https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate")]
     public Task<WindowClient?> Navigate(string url)
     {

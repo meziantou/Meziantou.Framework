@@ -5,6 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Animations;
 /// <summary>
 /// An animation created by a change of the value of a property with a transition (https://drafts.csswg.org/css-transitions-2/#the-CSSTransition-interface).
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-transitions-2/#csstransition"/>
 [IdlInterface("CSSTransition", "https://drafts.csswg.org/css-transitions-2/#csstransition")]
 public sealed class CssTransition : Animation
 {
@@ -32,6 +33,7 @@ public sealed class CssTransition : Animation
     }
 
     /// <summary>Gets the name of the transitioned property (https://drafts.csswg.org/css-transitions-2/#dom-csstransition-transitionproperty).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-2/#dom-csstransition-transitionproperty"/>
     [IdlMember("transitionProperty", "https://drafts.csswg.org/css-transitions-2/#dom-csstransition-transitionproperty")]
     public string TransitionProperty { get; }
 

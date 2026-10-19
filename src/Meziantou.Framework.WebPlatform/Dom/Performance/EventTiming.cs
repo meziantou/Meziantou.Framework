@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// It is reported to the <c>event</c> performance observers of the window when its duration is at least their duration
 /// threshold, and the entry of the first interaction is also reported as the <c>first-input</c> entry.
 /// </summary>
+/// <seealso href="https://w3c.github.io/event-timing/#performanceeventtiming"/>
 [IdlInterface("PerformanceEventTiming", "https://w3c.github.io/event-timing/#performanceeventtiming")]
 public sealed class PerformanceEventTiming : PerformanceEntry
 {
@@ -55,14 +56,17 @@ public sealed class PerformanceEventTiming : PerformanceEntry
     internal bool HasDuration { get; private set; }
 
     /// <summary>Gets the time the dispatch of the event started (the event listeners are about to run), in milliseconds relative to the time origin of the window.</summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-processingstart"/>
     [IdlMember("processingStart", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-processingstart")]
     public double ProcessingStart { get; }
 
     /// <summary>Gets the time the dispatch of the event ended (the event listeners and the default actions ran), in milliseconds relative to the time origin of the window.</summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-processingend"/>
     [IdlMember("processingEnd", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-processingend")]
     public double ProcessingEnd { get; internal set; }
 
     /// <summary>Gets whether the event was cancelable.</summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-cancelable"/>
     [IdlMember("cancelable", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-cancelable")]
     public bool Cancelable { get; }
 
@@ -71,6 +75,7 @@ public sealed class PerformanceEventTiming : PerformanceEntry
     /// is no longer exposed (https://w3c.github.io/paint-timing/#exposed-for-paint-timing): it is not connected, it is in a
     /// shadow tree, or its document is not fully active.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-target"/>
     [IdlMember("target", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-target")]
     public Node? Target => PaintTimingHelpers.IsExposedForPaintTiming(EventTarget, document: null) ? EventTarget : null;
 
@@ -79,6 +84,7 @@ public sealed class PerformanceEventTiming : PerformanceEntry
     /// (https://w3c.github.io/event-timing/#sec-target-selectors): the name of the node, followed by its id (<c>DIV#id</c>) or
     /// else by its <c>src</c> attribute (<c>IMG[src=...]</c>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-targetselector"/>
     [IdlMember("targetSelector", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-targetselector")]
     public string TargetSelector { get; internal set; }
 
@@ -86,6 +92,7 @@ public sealed class PerformanceEventTiming : PerformanceEntry
     /// Gets the identifier of the interaction of the user the event belongs to (a press and a release of a pointer with their
     /// click, or a press and a release of a key), or 0 when it belongs to none.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceeventtiming-interactionid"/>
     [IdlMember("interactionId", "https://w3c.github.io/event-timing/#dom-performanceeventtiming-interactionid")]
     public ulong InteractionId { get; internal set; }
 
@@ -131,6 +138,7 @@ public sealed class PerformanceEventTiming : PerformanceEntry
 /// (https://w3c.github.io/event-timing/#sec-event-counts), whatever their duration. An event is counted by the rendering
 /// update that follows its dispatch.
 /// </summary>
+/// <seealso href="https://w3c.github.io/event-timing/#eventcounts"/>
 [IdlInterface("EventCounts", "https://w3c.github.io/event-timing/#eventcounts")]
 public sealed class EventCounts : IReadOnlyCollection<KeyValuePair<string, ulong>>
 {

@@ -1077,18 +1077,22 @@ public sealed class CookieJar
 /// The same-site flag of a cookie (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-the-samesite-attribute),
 /// when it is not "Default", and the <c>CookieSameSite</c> enumeration of the Cookie Store API (https://cookiestore.spec.whatwg.org/#enumdef-cookiesamesite).
 /// </summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#enumdef-cookiesamesite"/>
 [IdlInterface("CookieSameSite", "https://cookiestore.spec.whatwg.org/#enumdef-cookiesamesite")]
 public enum CookieSameSite
 {
     /// <summary>The cookie is only sent with the same-site requests (<c>SameSite=Strict</c>).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-strict"/>
     [IdlMember("strict", "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-strict")]
     Strict,
 
     /// <summary>The cookie is sent with the same-site requests and the cross-site top-level navigations with a safe method (<c>SameSite=Lax</c>).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-lax"/>
     [IdlMember("lax", "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-lax")]
     Lax,
 
     /// <summary>The cookie is sent with the cross-site requests (<c>SameSite=None</c>).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-none"/>
     [IdlMember("none", "https://cookiestore.spec.whatwg.org/#dom-cookiesamesite-none")]
     None,
 }

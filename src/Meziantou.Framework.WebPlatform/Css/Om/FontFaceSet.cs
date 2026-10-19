@@ -8,32 +8,39 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>The status of a <see cref="FontFaceSet"/> (https://drafts.csswg.org/css-font-loading/#enumdef-fontfacesetloadstatus).</summary>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#enumdef-fontfacesetloadstatus"/>
 [IdlInterface("FontFaceSetLoadStatus", "https://drafts.csswg.org/css-font-loading/#enumdef-fontfacesetloadstatus")]
 public enum FontFaceSetLoadStatus
 {
     /// <summary>The set is loading at least one font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadstatus-loading"/>
     [IdlMember("loading", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadstatus-loading")]
     Loading,
 
     /// <summary>The set has finished loading its font faces.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadstatus-loaded"/>
     [IdlMember("loaded", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadstatus-loaded")]
     Loaded,
 }
 
 /// <summary>https://drafts.csswg.org/css-font-loading/#dictdef-fontfacesetloadeventinit</summary>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#dictdef-fontfacesetloadeventinit"/>
 [IdlInterface("FontFaceSetLoadEventInit", "https://drafts.csswg.org/css-font-loading/#dictdef-fontfacesetloadeventinit")]
 public sealed class FontFaceSetLoadEventInit : EventInit
 {
     /// <summary>Gets the font faces that started or finished loading.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadeventinit-fontfaces"/>
     [IdlMember("fontfaces", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadeventinit-fontfaces")]
     public IReadOnlyList<FontFace> FontFaces { get; init; } = [];
 }
 
 /// <summary>The event fired when a <see cref="FontFaceSet"/> starts or finishes loading fonts (https://drafts.csswg.org/css-font-loading/#fontfacesetloadevent).</summary>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#fontfacesetloadevent"/>
 [IdlInterface("FontFaceSetLoadEvent", "https://drafts.csswg.org/css-font-loading/#fontfacesetloadevent")]
 public sealed class FontFaceSetLoadEvent : Event
 {
     /// <summary>Creates an event of the given type with the font faces of the initialization dictionary.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfacesetloadevent"/>
     [IdlMember("constructor", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfacesetloadevent")]
     public FontFaceSetLoadEvent(string type, FontFaceSetLoadEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -42,6 +49,7 @@ public sealed class FontFaceSetLoadEvent : Event
     }
 
     /// <summary>Gets the font faces that started or finished loading.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfaces"/>
     [IdlMember("fontfaces", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesetloadevent-fontfaces")]
     public IReadOnlyList<FontFace> FontFaces { get; }
 }
@@ -62,6 +70,7 @@ public sealed class FontFaceSetLoadEvent : Event
 /// recently-loaded fonts": <see cref="Ready"/> is fulfilled once the document is loaded, its layout is up to date and no
 /// font face is loading (<see cref="UpdateLayoutForFonts"/>).
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#fontfaceset"/>
 [IdlInterface("FontFaceSet", "https://drafts.csswg.org/css-font-loading/#fontfaceset")]
 public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
 {
@@ -147,6 +156,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Gets or sets the event handler of the <c>loading</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloading"/>
     [IdlMember("onloading", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloading")]
     public Action<Event>? OnLoading
     {
@@ -155,6 +165,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadingdone</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloadingdone"/>
     [IdlMember("onloadingdone", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloadingdone")]
     public Action<Event>? OnLoadingDone
     {
@@ -163,6 +174,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadingerror</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloadingerror"/>
     [IdlMember("onloadingerror", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-onloadingerror")]
     public Action<Event>? OnLoadingError
     {
@@ -176,6 +188,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// yet are loaded first: the set is pending on the environment while the document has pending layout operations
     /// (https://drafts.csswg.org/css-font-loading/#fontfaceset-pending-on-the-environment).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-ready"/>
     [IdlMember("ready", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-ready")]
     public Task<FontFaceSet> Ready
     {
@@ -195,6 +208,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Gets the load status of the set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-status"/>
     [IdlMember("status", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-status")]
     public FontFaceSetLoadStatus Status { get; private set; } = FontFaceSetLoadStatus.Loading;
 
@@ -208,6 +222,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Adds a font face that is not CSS-connected (https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-add).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-add"/>
     [IdlMember("add", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-add")]
     public FontFaceSet Add(FontFace font)
     {
@@ -231,6 +246,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Removes a font face that is not CSS-connected (https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-delete).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-delete"/>
     [IdlMember("delete", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-delete")]
     public bool Delete(FontFace font)
     {
@@ -250,6 +266,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     }
 
     /// <summary>Removes the font faces that are not CSS-connected (https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-clear).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-clear"/>
     [IdlMember("clear", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-clear")]
     public void Clear()
     {
@@ -278,6 +295,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// (https://drafts.csswg.org/css-font-loading/#font-face-set-load). The task completes with the matching font faces,
     /// once they are loaded, or fails when one of them cannot be loaded or when the font is invalid.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-load"/>
     [IdlMember("load", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-load")]
     public Task<IReadOnlyList<FontFace>> Load(string font, string text = " ")
     {
@@ -315,6 +333,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// Returns whether the text can be rendered with the font without loading a font face
     /// (https://drafts.csswg.org/css-font-loading/#font-face-set-check): all the matching font faces are loaded.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-check"/>
     [IdlMember("check", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-check")]
     public bool Check(string font, string text = " ")
     {

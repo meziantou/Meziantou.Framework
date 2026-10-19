@@ -1,38 +1,46 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#callbackdef-eventlistener</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#callbackdef-eventlistener"/>
 [IdlInterface("EventListener", "https://dom.spec.whatwg.org/#callbackdef-eventlistener")]
 public interface IEventListener
 {
     /// <summary>Handles the event dispatched to the listener.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventlistener-handleevent"/>
     [IdlMember("handleEvent", "https://dom.spec.whatwg.org/#dom-eventlistener-handleevent")]
     void HandleEvent(Event @event);
 }
 
 /// <summary>https://dom.spec.whatwg.org/#dictdef-eventlisteneroptions</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-eventlisteneroptions"/>
 [IdlInterface("EventListenerOptions", "https://dom.spec.whatwg.org/#dictdef-eventlisteneroptions")]
 public class EventListenerOptions
 {
     /// <summary>Gets a value indicating whether the listener is registered for the capture phase.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventlisteneroptions-capture"/>
     [IdlMember("capture", "https://dom.spec.whatwg.org/#dom-eventlisteneroptions-capture")]
     public bool Capture { get; init; }
 }
 
 /// <summary>https://dom.spec.whatwg.org/#dictdef-addeventlisteneroptions</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-addeventlisteneroptions"/>
 [IdlInterface("AddEventListenerOptions", "https://dom.spec.whatwg.org/#dictdef-addeventlisteneroptions")]
 public sealed class AddEventListenerOptions : EventListenerOptions
 {
     /// <summary>
     /// Gets a value indicating whether the listener never calls <c>preventDefault()</c>, or null to use the default.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-passive"/>
     [IdlMember("passive", "https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-passive")]
     public bool? Passive { get; init; }
 
     /// <summary>Gets a value indicating whether the listener is removed after it is invoked once.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-once"/>
     [IdlMember("once", "https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-once")]
     public bool Once { get; init; }
 
     /// <summary>Gets the signal that removes the listener when it is aborted.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-signal"/>
     [IdlMember("signal", "https://dom.spec.whatwg.org/#dom-addeventlisteneroptions-signal")]
     public AbortSignal? Signal { get; init; }
 }
@@ -64,6 +72,7 @@ internal sealed class EventListenerEntry
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-eventtarget</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#eventtarget"/>
 [IdlInterface("EventTarget", "https://dom.spec.whatwg.org/#eventtarget")]
 public partial class EventTarget
 {
@@ -72,6 +81,7 @@ public partial class EventTarget
     private EventListenerEntry[]? _eventListeners;
 
     /// <summary>Creates an event target.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-eventtarget-eventtarget")]
     public EventTarget()
     {
@@ -98,12 +108,14 @@ public partial class EventTarget
     internal EventListenerEntry[] EventListenerList => _eventListeners ?? [];
 
     /// <summary>Registers the listener for events of the given type with the given options.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener"/>
     [IdlMember("addEventListener", "https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener")]
     public void AddEventListener(string type, IEventListener? callback, AddEventListenerOptions? options = null) => AddEventListenerCore(type, callback, options);
 
     /// <summary>
     /// Registers the listener for events of the given type, in the capture phase when <c>useCapture</c> is true.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener"/>
     [IdlMember("addEventListener", "https://dom.spec.whatwg.org/#dom-eventtarget-addeventlistener")]
     public void AddEventListener(string type, IEventListener? callback, bool useCapture) => AddEventListenerCore(type, callback, new AddEventListenerOptions { Capture = useCapture });
 
@@ -265,10 +277,12 @@ public partial class EventTarget
     }
 
     /// <summary>Removes the listener registered for events of the given type and capture setting.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener"/>
     [IdlMember("removeEventListener", "https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener")]
     public void RemoveEventListener(string type, IEventListener? callback, EventListenerOptions? options = null) => RemoveEventListenerCore(type, callback, options?.Capture ?? false);
 
     /// <summary>Removes the listener registered for events of the given type and capture setting.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener"/>
     [IdlMember("removeEventListener", "https://dom.spec.whatwg.org/#dom-eventtarget-removeeventlistener")]
     public void RemoveEventListener(string type, IEventListener? callback, bool useCapture) => RemoveEventListenerCore(type, callback, useCapture);
 
@@ -337,6 +351,7 @@ public partial class EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent"/>
     [IdlMember("dispatchEvent", "https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent")]
     public bool DispatchEvent(Event @event)
     {

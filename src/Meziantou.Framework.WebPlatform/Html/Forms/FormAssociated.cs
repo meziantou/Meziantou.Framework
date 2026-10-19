@@ -298,6 +298,7 @@ public partial class HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#validitystate</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#validitystate"/>
 [IdlInterface("ValidityState", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#validitystate")]
 public sealed class ValidityState
 {
@@ -312,48 +313,59 @@ public sealed class ValidityState
     private bool Has(ValidityFlags flag) => (_element.GetValidityFlags() & flag) != ValidityFlags.None;
 
     /// <summary>Gets a value indicating whether the control is required but has no value.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-valuemissing"/>
     [IdlMember("valueMissing", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-valuemissing")]
     public bool ValueMissing => Has(ValidityFlags.ValueMissing);
 
     /// <summary>
     /// Gets a value indicating whether the value is not in the required syntax (such as an e-mail address or a URL).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-typemismatch"/>
     [IdlMember("typeMismatch", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-typemismatch")]
     public bool TypeMismatch => Has(ValidityFlags.TypeMismatch);
 
     /// <summary>Gets a value indicating whether the value does not match the required pattern.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-patternmismatch"/>
     [IdlMember("patternMismatch", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-patternmismatch")]
     public bool PatternMismatch => Has(ValidityFlags.PatternMismatch);
 
     /// <summary>Gets a value indicating whether the value is longer than the maximum length.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-toolong"/>
     [IdlMember("tooLong", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-toolong")]
     public bool TooLong => Has(ValidityFlags.TooLong);
 
     /// <summary>Gets a value indicating whether the value is shorter than the minimum length.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-tooshort"/>
     [IdlMember("tooShort", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-tooshort")]
     public bool TooShort => Has(ValidityFlags.TooShort);
 
     /// <summary>Gets a value indicating whether the value is lower than the minimum.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-rangeunderflow"/>
     [IdlMember("rangeUnderflow", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-rangeunderflow")]
     public bool RangeUnderflow => Has(ValidityFlags.RangeUnderflow);
 
     /// <summary>Gets a value indicating whether the value is greater than the maximum.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-rangeoverflow"/>
     [IdlMember("rangeOverflow", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-rangeoverflow")]
     public bool RangeOverflow => Has(ValidityFlags.RangeOverflow);
 
     /// <summary>Gets a value indicating whether the value does not fit the allowed step.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-stepmismatch"/>
     [IdlMember("stepMismatch", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-stepmismatch")]
     public bool StepMismatch => Has(ValidityFlags.StepMismatch);
 
     /// <summary>Gets a value indicating whether the user provided input that cannot be converted to a value.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-badinput"/>
     [IdlMember("badInput", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-badinput")]
     public bool BadInput => Has(ValidityFlags.BadInput);
 
     /// <summary>Gets a value indicating whether a custom validity error message is set.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-customerror"/>
     [IdlMember("customError", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-customerror")]
     public bool CustomError => Has(ValidityFlags.CustomError);
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-valid</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-valid"/>
     [IdlMember("valid", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-validitystate-valid")]
     public bool Valid => _element.SatisfiesConstraints;
 }

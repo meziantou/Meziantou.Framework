@@ -11,6 +11,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class Element
 {
     /// <summary>Gets or sets the event handler of the <c>fullscreenchange</c> event (the <c>onfullscreenchange</c> event handler attribute).</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenchange"/>
     [IdlMember("onfullscreenchange", "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenchange")]
     public Action<Event>? OnFullscreenChange
     {
@@ -19,6 +20,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the event handler of the <c>fullscreenerror</c> event (the <c>onfullscreenerror</c> event handler attribute).</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenerror"/>
     [IdlMember("onfullscreenerror", "https://fullscreen.spec.whatwg.org/#handler-document-onfullscreenerror")]
     public Action<Event>? OnFullscreenError
     {
@@ -27,6 +29,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>role</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-role"/>
     [IdlMember("role", "https://w3c.github.io/aria/#dom-ariamixin-role")]
     public string? Role
     {
@@ -35,6 +38,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the element whose ID is the value of the <c>aria-activedescendant</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaactivedescendantelement"/>
     [IdlMember("ariaActiveDescendantElement", "https://w3c.github.io/aria/#dom-ariamixin-ariaactivedescendantelement")]
     public Element? AriaActiveDescendantElement
     {
@@ -43,6 +47,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-atomic</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaatomic"/>
     [IdlMember("ariaAtomic", "https://w3c.github.io/aria/#dom-ariamixin-ariaatomic")]
     public string? AriaAtomic
     {
@@ -51,6 +56,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-autocomplete</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaautocomplete"/>
     [IdlMember("ariaAutoComplete", "https://w3c.github.io/aria/#dom-ariamixin-ariaautocomplete")]
     public string? AriaAutoComplete
     {
@@ -59,6 +65,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-braillelabel</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabraillelabel"/>
     [IdlMember("ariaBrailleLabel", "https://w3c.github.io/aria/#dom-ariamixin-ariabraillelabel")]
     public string? AriaBrailleLabel
     {
@@ -67,6 +74,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-brailleroledescription</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabrailleroledescription"/>
     [IdlMember("ariaBrailleRoleDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariabrailleroledescription")]
     public string? AriaBrailleRoleDescription
     {
@@ -75,6 +83,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-busy</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabusy"/>
     [IdlMember("ariaBusy", "https://w3c.github.io/aria/#dom-ariamixin-ariabusy")]
     public string? AriaBusy
     {
@@ -83,6 +92,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-checked</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariachecked"/>
     [IdlMember("ariaChecked", "https://w3c.github.io/aria/#dom-ariamixin-ariachecked")]
     public string? AriaChecked
     {
@@ -91,6 +101,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-colcount</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolcount"/>
     [IdlMember("ariaColCount", "https://w3c.github.io/aria/#dom-ariamixin-ariacolcount")]
     public string? AriaColCount
     {
@@ -99,6 +110,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-colindex</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolindex"/>
     [IdlMember("ariaColIndex", "https://w3c.github.io/aria/#dom-ariamixin-ariacolindex")]
     public string? AriaColIndex
     {
@@ -107,6 +119,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-colindextext</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolindextext"/>
     [IdlMember("ariaColIndexText", "https://w3c.github.io/aria/#dom-ariamixin-ariacolindextext")]
     public string? AriaColIndexText
     {
@@ -115,6 +128,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-colspan</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolspan"/>
     [IdlMember("ariaColSpan", "https://w3c.github.io/aria/#dom-ariamixin-ariacolspan")]
     public string? AriaColSpan
     {
@@ -123,6 +137,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-controls</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacontrolselements"/>
     [IdlMember("ariaControlsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariacontrolselements")]
     public IReadOnlyList<Element>? AriaControlsElements
     {
@@ -131,6 +146,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-current</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacurrent"/>
     [IdlMember("ariaCurrent", "https://w3c.github.io/aria/#dom-ariamixin-ariacurrent")]
     public string? AriaCurrent
     {
@@ -139,6 +155,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-describedby</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadescribedbyelements"/>
     [IdlMember("ariaDescribedByElements", "https://w3c.github.io/aria/#dom-ariamixin-ariadescribedbyelements")]
     public IReadOnlyList<Element>? AriaDescribedByElements
     {
@@ -147,6 +164,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-description</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadescription"/>
     [IdlMember("ariaDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariadescription")]
     public string? AriaDescription
     {
@@ -155,6 +173,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-details</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadetailselements"/>
     [IdlMember("ariaDetailsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariadetailselements")]
     public IReadOnlyList<Element>? AriaDetailsElements
     {
@@ -163,6 +182,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-disabled</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadisabled"/>
     [IdlMember("ariaDisabled", "https://w3c.github.io/aria/#dom-ariamixin-ariadisabled")]
     public string? AriaDisabled
     {
@@ -171,6 +191,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-errormessage</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaerrormessageelements"/>
     [IdlMember("ariaErrorMessageElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaerrormessageelements")]
     public IReadOnlyList<Element>? AriaErrorMessageElements
     {
@@ -179,6 +200,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-expanded</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaexpanded"/>
     [IdlMember("ariaExpanded", "https://w3c.github.io/aria/#dom-ariamixin-ariaexpanded")]
     public string? AriaExpanded
     {
@@ -187,6 +209,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-flowto</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaflowtoelements"/>
     [IdlMember("ariaFlowToElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaflowtoelements")]
     public IReadOnlyList<Element>? AriaFlowToElements
     {
@@ -195,6 +218,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-haspopup</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariahaspopup"/>
     [IdlMember("ariaHasPopup", "https://w3c.github.io/aria/#dom-ariamixin-ariahaspopup")]
     public string? AriaHasPopup
     {
@@ -203,6 +227,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-hidden</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariahidden"/>
     [IdlMember("ariaHidden", "https://w3c.github.io/aria/#dom-ariamixin-ariahidden")]
     public string? AriaHidden
     {
@@ -211,6 +236,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-invalid</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariainvalid"/>
     [IdlMember("ariaInvalid", "https://w3c.github.io/aria/#dom-ariamixin-ariainvalid")]
     public string? AriaInvalid
     {
@@ -219,6 +245,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-keyshortcuts</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariakeyshortcuts"/>
     [IdlMember("ariaKeyShortcuts", "https://w3c.github.io/aria/#dom-ariamixin-ariakeyshortcuts")]
     public string? AriaKeyShortcuts
     {
@@ -227,6 +254,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-label</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialabel"/>
     [IdlMember("ariaLabel", "https://w3c.github.io/aria/#dom-ariamixin-arialabel")]
     public string? AriaLabel
     {
@@ -235,6 +263,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-labelledby</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialabelledbyelements"/>
     [IdlMember("ariaLabelledByElements", "https://w3c.github.io/aria/#dom-ariamixin-arialabelledbyelements")]
     public IReadOnlyList<Element>? AriaLabelledByElements
     {
@@ -243,6 +272,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-level</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialevel"/>
     [IdlMember("ariaLevel", "https://w3c.github.io/aria/#dom-ariamixin-arialevel")]
     public string? AriaLevel
     {
@@ -251,6 +281,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-live</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialive"/>
     [IdlMember("ariaLive", "https://w3c.github.io/aria/#dom-ariamixin-arialive")]
     public string? AriaLive
     {
@@ -259,6 +290,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-modal</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamodal"/>
     [IdlMember("ariaModal", "https://w3c.github.io/aria/#dom-ariamixin-ariamodal")]
     public string? AriaModal
     {
@@ -267,6 +299,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-multiline</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamultiline"/>
     [IdlMember("ariaMultiLine", "https://w3c.github.io/aria/#dom-ariamixin-ariamultiline")]
     public string? AriaMultiLine
     {
@@ -275,6 +308,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-multiselectable</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamultiselectable"/>
     [IdlMember("ariaMultiSelectable", "https://w3c.github.io/aria/#dom-ariamixin-ariamultiselectable")]
     public string? AriaMultiSelectable
     {
@@ -283,6 +317,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-orientation</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaorientation"/>
     [IdlMember("ariaOrientation", "https://w3c.github.io/aria/#dom-ariamixin-ariaorientation")]
     public string? AriaOrientation
     {
@@ -291,6 +326,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the elements whose IDs are the values of the <c>aria-owns</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaownselements"/>
     [IdlMember("ariaOwnsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaownselements")]
     public IReadOnlyList<Element>? AriaOwnsElements
     {
@@ -299,6 +335,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-placeholder</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaplaceholder"/>
     [IdlMember("ariaPlaceholder", "https://w3c.github.io/aria/#dom-ariamixin-ariaplaceholder")]
     public string? AriaPlaceholder
     {
@@ -307,6 +344,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-posinset</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaposinset"/>
     [IdlMember("ariaPosInSet", "https://w3c.github.io/aria/#dom-ariamixin-ariaposinset")]
     public string? AriaPosInSet
     {
@@ -315,6 +353,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-pressed</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariapressed"/>
     [IdlMember("ariaPressed", "https://w3c.github.io/aria/#dom-ariamixin-ariapressed")]
     public string? AriaPressed
     {
@@ -323,6 +362,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-readonly</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariareadonly"/>
     [IdlMember("ariaReadOnly", "https://w3c.github.io/aria/#dom-ariamixin-ariareadonly")]
     public string? AriaReadOnly
     {
@@ -331,6 +371,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-relevant</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarelevant"/>
     [IdlMember("ariaRelevant", "https://w3c.github.io/aria/#dom-ariamixin-ariarelevant")]
     public string? AriaRelevant
     {
@@ -339,6 +380,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-required</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarequired"/>
     [IdlMember("ariaRequired", "https://w3c.github.io/aria/#dom-ariamixin-ariarequired")]
     public string? AriaRequired
     {
@@ -347,6 +389,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-roledescription</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaroledescription"/>
     [IdlMember("ariaRoleDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariaroledescription")]
     public string? AriaRoleDescription
     {
@@ -355,6 +398,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-rowcount</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowcount"/>
     [IdlMember("ariaRowCount", "https://w3c.github.io/aria/#dom-ariamixin-ariarowcount")]
     public string? AriaRowCount
     {
@@ -363,6 +407,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-rowindex</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowindex"/>
     [IdlMember("ariaRowIndex", "https://w3c.github.io/aria/#dom-ariamixin-ariarowindex")]
     public string? AriaRowIndex
     {
@@ -371,6 +416,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-rowindextext</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowindextext"/>
     [IdlMember("ariaRowIndexText", "https://w3c.github.io/aria/#dom-ariamixin-ariarowindextext")]
     public string? AriaRowIndexText
     {
@@ -379,6 +425,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-rowspan</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowspan"/>
     [IdlMember("ariaRowSpan", "https://w3c.github.io/aria/#dom-ariamixin-ariarowspan")]
     public string? AriaRowSpan
     {
@@ -387,6 +434,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-selected</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaselected"/>
     [IdlMember("ariaSelected", "https://w3c.github.io/aria/#dom-ariamixin-ariaselected")]
     public string? AriaSelected
     {
@@ -395,6 +443,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-setsize</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariasetsize"/>
     [IdlMember("ariaSetSize", "https://w3c.github.io/aria/#dom-ariamixin-ariasetsize")]
     public string? AriaSetSize
     {
@@ -403,6 +452,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-sort</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariasort"/>
     [IdlMember("ariaSort", "https://w3c.github.io/aria/#dom-ariamixin-ariasort")]
     public string? AriaSort
     {
@@ -411,6 +461,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-valuemax</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluemax"/>
     [IdlMember("ariaValueMax", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemax")]
     public string? AriaValueMax
     {
@@ -419,6 +470,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-valuemin</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluemin"/>
     [IdlMember("ariaValueMin", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemin")]
     public string? AriaValueMin
     {
@@ -427,6 +479,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-valuenow</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluenow"/>
     [IdlMember("ariaValueNow", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluenow")]
     public string? AriaValueNow
     {
@@ -435,6 +488,7 @@ public partial class Element
     }
 
     /// <summary>Gets or sets the value of the <c>aria-valuetext</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluetext"/>
     [IdlMember("ariaValueText", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluetext")]
     public string? AriaValueText
     {

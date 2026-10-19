@@ -16,6 +16,7 @@ internal enum CanvasGradientKind
 /// <c>createLinearGradient()</c>, <c>createRadialGradient()</c> and <c>createConicGradient()</c>, it is a fill or stroke style
 /// whose geometry is in the coordinates of the drawing operations that use it.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#canvasgradient"/>
 [IdlInterface("CanvasGradient", "https://html.spec.whatwg.org/multipage/canvas.html#canvasgradient")]
 public sealed class CanvasGradient
 {
@@ -40,6 +41,7 @@ public sealed class CanvasGradient
     /// <param name="offset">The offset of the stop, from 0 to 1.</param>
     /// <param name="color">A CSS color (<c>currentcolor</c> is opaque black).</param>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the offset is out of range, a <c>SyntaxError</c> when the color cannot be parsed.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvasgradient-addcolorstop"/>
     [IdlMember("addColorStop", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvasgradient-addcolorstop")]
     public void AddColorStop(double offset, string color)
     {

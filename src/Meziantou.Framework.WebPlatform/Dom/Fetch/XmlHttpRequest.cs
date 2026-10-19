@@ -18,6 +18,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// synchronous request blocks the event loop until the loader completes. An object created without window (e.g. from .NET
 /// without script engine) cannot send requests: they are network errors.
 /// </remarks>
+/// <seealso href="https://xhr.spec.whatwg.org/#interface-xmlhttprequest"/>
 [IdlInterface("XMLHttpRequest", "https://xhr.spec.whatwg.org/#interface-xmlhttprequest")]
 public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 {
@@ -28,22 +29,27 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private Document? RelevantEnvironment => RelevantGlobal?.EnvironmentDocument;
 
     /// <summary>The state of a request that is created but not opened yet (<c>UNSENT</c>).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-unsent"/>
     [IdlMember("UNSENT", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-unsent")]
     public const ushort Unsent = 0;
 
     /// <summary>The state of a request whose <c>open()</c> method has been called (<c>OPENED</c>).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-opened"/>
     [IdlMember("OPENED", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-opened")]
     public const ushort Opened = 1;
 
     /// <summary>The state of a request whose response headers have been received (<c>HEADERS_RECEIVED</c>).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-headers_received"/>
     [IdlMember("HEADERS_RECEIVED", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-headers_received")]
     public const ushort HeadersReceived = 2;
 
     /// <summary>The state of a request whose response body is being received (<c>LOADING</c>).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-loading"/>
     [IdlMember("LOADING", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-loading")]
     public const ushort Loading = 3;
 
     /// <summary>The state of a request whose operation is complete (<c>DONE</c>).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-done"/>
     [IdlMember("DONE", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-done")]
     public const ushort Done = 4;
 
@@ -74,6 +80,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private long _lastProgressLoaded = -1;
 
     /// <summary>Creates a request object in the <see cref="Unsent"/> state.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest"/>
     [IdlMember("constructor", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest")]
     public XmlHttpRequest()
     {
@@ -81,6 +88,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>readystatechange</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onreadystatechange"/>
     [IdlMember("onreadystatechange", "https://xhr.spec.whatwg.org/#handler-xhr-onreadystatechange")]
     public Action<Event>? OnReadyStateChange
     {
@@ -89,14 +97,17 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets the state of the request: <see cref="Unsent"/>, <see cref="Opened"/>, <see cref="HeadersReceived"/>, <see cref="Loading"/> or <see cref="Done"/>.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-readystate"/>
     [IdlMember("readyState", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-readystate")]
     public ushort ReadyState { get; private set; }
 
     /// <summary>Gets the target of the progress events of the request body.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-upload"/>
     [IdlMember("upload", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-upload")]
     public XmlHttpRequestUpload Upload { get; }
 
     /// <summary>Gets or sets the timeout of the request, in milliseconds (0 for no timeout).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-timeout"/>
     [IdlMember("timeout", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-timeout")]
     public uint Timeout
     {
@@ -117,6 +128,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets or sets whether the credentials are included in a cross-origin request.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-withcredentials"/>
     [IdlMember("withCredentials", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-withcredentials")]
     public bool WithCredentials
     {
@@ -131,10 +143,12 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Initializes an asynchronous request (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open"/>
     [IdlMember("open", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open")]
     public void Open(string method, string url) => OpenCore(method, url, async: true, username: null, password: null, setCredentials: false);
 
     /// <summary>Initializes a request (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open"/>
     [IdlMember("open", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-open")]
     public void Open(string method, string url, bool async, string? username = null, string? password = null) => OpenCore(method, url, async, username, password, setCredentials: true);
 
@@ -195,6 +209,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Adds a header to the request (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader"/>
     [IdlMember("setRequestHeader", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader")]
     public void SetRequestHeader(string name, string value)
     {
@@ -221,6 +236,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     /// a string, a <see cref="Blob"/>, a <see cref="FormData"/>, a <see cref="UrlSearchParams"/>, or bytes (a
     /// <see cref="byte"/> array or a <see cref="ReadOnlyMemory{T}"/> of bytes).
     /// </summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send"/>
     [IdlMember("send", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send")]
     public void Send(object? body = null)
     {
@@ -541,6 +557,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Cancels the request (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-abort).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-abort"/>
     [IdlMember("abort", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-abort")]
     public void Abort()
     {
@@ -558,18 +575,22 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets the URL of the response, without its fragment, or the empty string.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responseurl"/>
     [IdlMember("responseURL", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responseurl")]
     public string ResponseUrl => _response.Url?.Serialize(excludeFragment: true) ?? "";
 
     /// <summary>Gets the status of the response (0 before the response is received, and for a network error).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-status"/>
     [IdlMember("status", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-status")]
     public ushort Status => (ushort)_response.Status;
 
     /// <summary>Gets the status message of the response.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-statustext"/>
     [IdlMember("statusText", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-statustext")]
     public string StatusText => _response.StatusMessage;
 
     /// <summary>Returns the values of the response headers with the name, separated by <c>", "</c>, or null.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getresponseheader"/>
     [IdlMember("getResponseHeader", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getresponseheader")]
     public string? GetResponseHeader(string name)
     {
@@ -578,6 +599,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Returns the response headers, sorted by name (lowercase), one per line (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getallresponseheaders).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getallresponseheaders"/>
     [IdlMember("getAllResponseHeaders", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-getallresponseheaders")]
     public string GetAllResponseHeaders()
     {
@@ -593,6 +615,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Overrides the MIME type of the response (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-overridemimetype).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-overridemimetype"/>
     [IdlMember("overrideMimeType", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-overridemimetype")]
     public void OverrideMimeType(string mime)
     {
@@ -604,6 +627,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets or sets the type of <see cref="Response"/>.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetype"/>
     [IdlMember("responseType", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetype")]
     public XmlHttpRequestResponseType ResponseType
     {
@@ -629,6 +653,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     /// null until the response is received, then a <see cref="byte"/> array (an <c>ArrayBuffer</c> in JavaScript), a
     /// <see cref="Blob"/>, a <see cref="Dom.Document"/> or the JSON value (parsed by the script engine).
     /// </summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-response"/>
     [IdlMember("response", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-response")]
     public object? Response
     {
@@ -667,6 +692,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets the text of the response (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetext).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetext"/>
     [IdlMember("responseText", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsetext")]
     public string ResponseText
     {
@@ -680,6 +706,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>Gets the document of the response, or null (https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsexml).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsexml"/>
     [IdlMember("responseXML", "https://xhr.spec.whatwg.org/#dom-xmlhttprequest-responsexml")]
     public Document? ResponseXml
     {

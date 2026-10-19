@@ -139,6 +139,7 @@ public partial class HtmlImageElement
     /// <param name="width">The value of the width attribute, or null.</param>
     /// <param name="height">The value of the height attribute, or null.</param>
     /// <returns>The new element.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-image"/>
     [IdlMember("Image", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-image")]
     public static HtmlImageElement Create(Document document, uint? width = null, uint? height = null)
     {
@@ -161,10 +162,12 @@ public partial class HtmlImageElement
     /// Gets the natural width of the image (https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-naturalwidth):
     /// the width of the image data divided by the pixel density of the selected source, or 0 when the image is not available.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-naturalwidth"/>
     [IdlMember("naturalWidth", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-naturalwidth")]
     public uint NaturalWidth => GetNaturalDimension(horizontal: true);
 
     /// <summary>Gets the intrinsic height of the image in CSS pixels (0 when the image is not available).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-naturalheight"/>
     [IdlMember("naturalHeight", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-naturalheight")]
     public uint NaturalHeight => GetNaturalDimension(horizontal: false);
 
@@ -249,6 +252,7 @@ public partial class HtmlImageElement
     private partial uint ComputeHeight() => GetDimensions().Height;
 
     /// <summary>https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-complete</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-complete"/>
     [IdlMember("complete", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-complete")]
     public bool Complete
     {
@@ -272,6 +276,7 @@ public partial class HtmlImageElement
     }
 
     /// <summary>Gets the URL of the current request (https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-currentsrc).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-currentsrc"/>
     [IdlMember("currentSrc", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-currentsrc")]
     public string CurrentSrc => _currentRequest.CurrentUrl;
 
@@ -281,6 +286,7 @@ public partial class HtmlImageElement
     /// document is not fully active. The pixels are decoded by the rendering backend of the browsing context
     /// (<see cref="BrowsingContextOptions.RenderingBackend"/>); without backend, nothing is decoded and an available image succeeds.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-decode"/>
     [IdlMember("decode", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-decode")]
     public Task Decode()
     {

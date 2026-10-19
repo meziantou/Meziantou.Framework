@@ -3,6 +3,7 @@ using System.Collections;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#domstringlist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#domstringlist"/>
 [IdlInterface("DOMStringList", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#domstringlist")]
 public sealed class DomStringList : IReadOnlyList<string>
 {
@@ -17,6 +18,7 @@ public sealed class DomStringList : IReadOnlyList<string>
     }
 
     /// <summary>Gets the number of strings in the list.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-length")]
     public uint Length => (uint)_items.Length;
 
@@ -25,10 +27,12 @@ public sealed class DomStringList : IReadOnlyList<string>
     public int Count => _items.Length;
 
     /// <summary>Returns the string at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-item"/>
     [IdlMember("item", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-item")]
     public string? Item(uint index) => index < (uint)_items.Length ? _items[index] : null;
 
     /// <summary>Gets the string at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-item"/>
     [IdlMember("item", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public string? this[uint index] => Item(index);
@@ -39,6 +43,7 @@ public sealed class DomStringList : IReadOnlyList<string>
     public string this[int index] => _items[index];
 
     /// <summary>Returns whether the list contains the given string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-contains"/>
     [IdlMember("contains", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-domstringlist-contains")]
     public bool Contains(string value) => Array.IndexOf(_items, value) >= 0;
 

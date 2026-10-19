@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-documenttype</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#documenttype"/>
 [IdlInterface("DocumentType", "https://dom.spec.whatwg.org/#documenttype")]
 public sealed partial class DocumentType : Node
 {
@@ -19,14 +20,17 @@ public sealed partial class DocumentType : Node
     public override string NodeName => Name;
 
     /// <summary>Gets the name of the document type.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-documenttype-name"/>
     [IdlMember("name", "https://dom.spec.whatwg.org/#dom-documenttype-name")]
     public string Name { get; }
 
     /// <summary>Gets the public identifier of the document type.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-documenttype-publicid"/>
     [IdlMember("publicId", "https://dom.spec.whatwg.org/#dom-documenttype-publicid")]
     public string PublicId { get; }
 
     /// <summary>Gets the system identifier of the document type.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-documenttype-systemid"/>
     [IdlMember("systemId", "https://dom.spec.whatwg.org/#dom-documenttype-systemid")]
     public string SystemId { get; }
 

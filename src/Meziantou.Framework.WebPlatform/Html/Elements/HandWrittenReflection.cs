@@ -8,6 +8,7 @@ public partial class HtmlCanvasElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-width</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is the placeholder of an <see cref="OffscreenCanvas"/>.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-width")]
     public uint Width
     {
@@ -21,6 +22,7 @@ public partial class HtmlCanvasElement
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-height</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is the placeholder of an <see cref="OffscreenCanvas"/>.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-height")]
     public uint Height
     {
@@ -44,6 +46,7 @@ public partial class HtmlIFrameElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc"/>
     [IdlMember("srcdoc", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc")]
     public string Srcdoc
     {
@@ -56,6 +59,7 @@ public partial class HtmlIFrameElement
     }
 
     /// <summary>The srcdoc setter with a <see cref="TrustedHtml"/> value (https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc"/>
     [IdlMember("srcdoc", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-srcdoc")]
     public void SetSrcdoc(TrustedHtml value)
     {
@@ -67,6 +71,7 @@ public partial class HtmlIFrameElement
     /// https://wicg.github.io/anonymous-iframe/#dom-htmliframeelement-credentialless: the documents of a credentialless
     /// iframe are loaded without credentials and are not subject to the embedder policy of the parent document.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/anonymous-iframe/#dom-htmliframeelement-credentialless"/>
     [IdlMember("credentialless", "https://wicg.github.io/anonymous-iframe/#dom-htmliframeelement-credentialless")]
     public bool Credentialless
     {
@@ -80,6 +85,7 @@ public partial class HtmlIFrameElement
     /// the document of the iframe and to its <c>allow</c>, <c>allowfullscreen</c>, <c>src</c>, <c>srcdoc</c> and
     /// <c>sandbox</c> attributes.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-htmliframeelement-permissionspolicy"/>
     [IdlMember("permissionsPolicy", "https://w3c.github.io/webappsec-permissions-policy/#dom-htmliframeelement-permissionspolicy")]
     public PermissionsPolicy PermissionsPolicy => field ??= new PermissionsPolicy(this);
 }
@@ -87,6 +93,7 @@ public partial class HtmlIFrameElement
 public partial class Document
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir"/>
     [IdlMember("dir", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-dir")]
     public string Dir
     {
@@ -101,6 +108,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-fgcolor</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-fgcolor"/>
     [IdlMember("fgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-fgcolor")]
     public string FgColor
     {
@@ -109,6 +117,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-linkcolor</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-linkcolor"/>
     [IdlMember("linkColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-linkcolor")]
     public string LinkColor
     {
@@ -117,6 +126,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-vlinkcolor</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-vlinkcolor"/>
     [IdlMember("vlinkColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-vlinkcolor")]
     public string VlinkColor
     {
@@ -125,6 +135,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-alinkcolor</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-alinkcolor"/>
     [IdlMember("alinkColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-alinkcolor")]
     public string AlinkColor
     {
@@ -133,6 +144,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-bgcolor</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-bgcolor")]
     public string BgColor
     {

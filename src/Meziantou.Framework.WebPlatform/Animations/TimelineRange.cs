@@ -317,14 +317,17 @@ internal sealed class TimelineRangeBoundary : IEquatable<TimelineRangeBoundary>
 }
 
 /// <summary>A point of a timeline given by a named timeline range and an offset (https://drafts.csswg.org/web-animations-2/#dictdef-timelinerangeoffset).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-2/#dictdef-timelinerangeoffset"/>
 [IdlInterface("TimelineRangeOffset", "https://drafts.csswg.org/web-animations-2/#dictdef-timelinerangeoffset")]
 public sealed class TimelineRangeOffset
 {
     /// <summary>Gets the named timeline range (e.g. <c>cover</c>, <c>entry</c>), or null for the whole timeline.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-timelinerangeoffset-rangename"/>
     [IdlMember("rangeName", "https://drafts.csswg.org/web-animations-2/#dom-timelinerangeoffset-rangename")]
     public string? RangeName { get; init; }
 
     /// <summary>Gets the offset in the range: a length or a percentage of the range.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-timelinerangeoffset-offset"/>
     [IdlMember("offset", "https://drafts.csswg.org/web-animations-2/#dom-timelinerangeoffset-offset")]
     public CssNumericValue? Offset { get; init; }
 }

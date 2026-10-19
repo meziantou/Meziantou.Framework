@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-domtokenlist</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#domtokenlist"/>
 [IdlInterface("DOMTokenList", "https://dom.spec.whatwg.org/#domtokenlist")]
 public sealed class DomTokenList : IReadOnlyList<string>
 {
@@ -40,6 +41,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>Gets the number of tokens in the list.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-domtokenlist-length")]
     public uint Length => (uint)TokenSet.Count;
 
@@ -48,10 +50,12 @@ public sealed class DomTokenList : IReadOnlyList<string>
     public int Count => TokenSet.Count;
 
     /// <summary>Returns the token at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-domtokenlist-item")]
     public string? Item(uint index) => index < (uint)TokenSet.Count ? TokenSet[(int)index] : null;
 
     /// <summary>Gets the token at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-domtokenlist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public string? this[uint index] => Item(index);
@@ -62,6 +66,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     public string this[int index] => TokenSet[index];
 
     /// <summary>Returns whether the list contains the given token.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-contains"/>
     [IdlMember("contains", "https://dom.spec.whatwg.org/#dom-domtokenlist-contains")]
     public bool Contains(string token) => TokenSet.Contains(token);
 
@@ -79,6 +84,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>Adds the given tokens to the list, ignoring those already present.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-add"/>
     [IdlMember("add", "https://dom.spec.whatwg.org/#dom-domtokenlist-add")]
     public void Add(params IReadOnlyList<string> tokens)
     {
@@ -101,6 +107,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>Removes the given tokens from the list.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-remove"/>
     [IdlMember("remove", "https://dom.spec.whatwg.org/#dom-domtokenlist-remove")]
     public void Remove(params IReadOnlyList<string> tokens)
     {
@@ -120,6 +127,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domtokenlist-toggle</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-toggle"/>
     [IdlMember("toggle", "https://dom.spec.whatwg.org/#dom-domtokenlist-toggle")]
     public bool Toggle(string token, bool? force = null)
     {
@@ -148,6 +156,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domtokenlist-replace</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-replace"/>
     [IdlMember("replace", "https://dom.spec.whatwg.org/#dom-domtokenlist-replace")]
     public bool Replace(string token, string newToken)
     {
@@ -188,6 +197,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domtokenlist-supports</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-supports"/>
     [IdlMember("supports", "https://dom.spec.whatwg.org/#dom-domtokenlist-supports")]
     public bool Supports(string token)
     {
@@ -199,6 +209,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     }
 
     /// <summary>Gets or sets the value of the associated attribute, as a string.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domtokenlist-value"/>
     [IdlMember("value", "https://dom.spec.whatwg.org/#dom-domtokenlist-value")]
     public string Value
     {
@@ -222,6 +233,7 @@ public sealed class DomTokenList : IReadOnlyList<string>
     public override string ToString() => Value;
 
     /// <inheritdoc/>
+    /// <seealso href="https://dom.spec.whatwg.org/#domtokenlist"/>
     [IdlMember("iterable", "https://dom.spec.whatwg.org/#domtokenlist")]
     public IEnumerator<string> GetEnumerator()
     {

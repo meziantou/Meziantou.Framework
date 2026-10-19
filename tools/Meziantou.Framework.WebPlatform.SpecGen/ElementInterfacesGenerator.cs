@@ -149,6 +149,7 @@ internal static class ElementInterfacesGenerator
 
                 first = false;
                 writer.Summary($"Gets or sets the default value of the <c>{CodeWriter.XmlText(member.Name)}</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).");
+                writer.SeeAlso(member.Href ?? "https://w3c.github.io/aria/#ARIAMixin");
                 writer.Line($"[IdlMember({CodeWriter.Literal(member.Name)}, {CodeWriter.Literal(member.Href ?? "https://w3c.github.io/aria/#ARIAMixin")})]");
                 using (writer.Block($"public {clrType} {ToPascalCase(member.Name)}"))
                 {
@@ -254,6 +255,7 @@ internal static class ElementInterfacesGenerator
 
             writer.Line();
             writer.Line($"/// <summary>{GetHref(definition)}</summary>");
+            writer.SeeAlso(GetHref(definition));
             writer.Line($"[IdlInterface({CodeWriter.Literal(definition.Name)}, {CodeWriter.Literal(GetHref(definition))})]");
             using (writer.Block($"public {modifiers}partial class {ClrNames.ToClrName(definition.Name)}" + (isBase ? "" : " : " + ClrNames.ToClrName(definition.Inheritance!))))
             {
@@ -445,6 +447,7 @@ internal static class ElementInterfacesGenerator
 
                 writer.Line();
                 writer.Summary($"The <c>{CodeWriter.XmlText(member.Name)}</c> constant ({CodeWriter.XmlText(constValue.GetProperty("value").GetString() ?? "")}).");
+                writer.SeeAlso(member.Href ?? GetHref(definition));
                 writer.Line($"[IdlMember({CodeWriter.Literal(member.Name)}, {CodeWriter.Literal(member.Href ?? GetHref(definition))})]");
                 writer.Line($"public const {clrType} {ToConstantName(member.Name)} = {constValue.GetProperty("value").GetString()};");
             }
@@ -464,6 +467,7 @@ internal static class ElementInterfacesGenerator
                 var eventType = member.Name[2..];
                 writer.Line();
                 writer.Summary($"Gets or sets the event handler of the <c>{CodeWriter.XmlText(eventType)}</c> event (the <c>{CodeWriter.XmlText(member.Name)}</c> event handler attribute).");
+                writer.SeeAlso(href);
                 writer.Line($"[IdlMember({CodeWriter.Literal(member.Name)}, {CodeWriter.Literal(href)})]");
                 if (member.ExperimentalApi is not null)
                 {
@@ -486,6 +490,7 @@ internal static class ElementInterfacesGenerator
             {
                 writer.Line();
                 writer.Summary($"Gets the <c>{CodeWriter.XmlText(member.Name)}</c> attribute as a <c>{CodeWriter.XmlText(svgType)}</c> object.");
+                writer.SeeAlso(href);
                 writer.Line($"[IdlMember({CodeWriter.Literal(member.Name)}, {CodeWriter.Literal(href)})]");
                 var modifier = member.Name == "className" ? "new " : "";
                 var key = member.DeclaringDefinition + "." + member.Name;
@@ -525,6 +530,7 @@ internal static class ElementInterfacesGenerator
             var clrType = GetClrType(type);
             writer.Line();
             writer.Summary(GetReflectedAttributeSummary(member, type, reflect, contentAttribute, enumerated is not null));
+            writer.SeeAlso(href);
             writer.Line($"[IdlMember({CodeWriter.Literal(member.Name)}, {CodeWriter.Literal(href)})]");
             if (enumerated is not null)
             {

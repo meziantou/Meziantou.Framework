@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A cursor over the records of an object store or an index (https://w3c.github.io/IndexedDB/#idbcursor).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbcursor"/>
 [IdlInterface("IDBCursor", "https://w3c.github.io/IndexedDB/#idbcursor")]
 public class IdbCursor : IRealmBoundPlatformObject
 {
@@ -51,26 +52,32 @@ public class IdbCursor : IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => TransactionObject.Global as Window;
 
     /// <summary>Gets the object store or the index of the cursor.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-source"/>
     [IdlMember("source", "https://w3c.github.io/IndexedDB/#dom-idbcursor-source")]
     public object Source => (object?)IndexHandle ?? ObjectStoreHandle;
 
     /// <summary>Gets the direction of the cursor.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-direction"/>
     [IdlMember("direction", "https://w3c.github.io/IndexedDB/#dom-idbcursor-direction")]
     public IdbCursorDirection Direction { get; }
 
     /// <summary>Gets the key of the cursor (the same value until the cursor moves), or null (undefined).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-key"/>
     [IdlMember("key", "https://w3c.github.io/IndexedDB/#dom-idbcursor-key")]
     public object? Key => CurrentKey is null ? null : _keyValue ??= Operations.ConvertToValue(CurrentKey);
 
     /// <summary>Gets the effective key of the cursor (the same value until the cursor moves), or null (undefined).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-primarykey"/>
     [IdlMember("primaryKey", "https://w3c.github.io/IndexedDB/#dom-idbcursor-primarykey")]
     public object? PrimaryKey => EffectiveKey is not { } key ? null : _primaryKeyValue ??= Operations.ConvertToValue(key);
 
     /// <summary>Gets the request of the cursor.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-request"/>
     [IdlMember("request", "https://w3c.github.io/IndexedDB/#dom-idbcursor-request")]
     public IdbRequest Request => RequestObject;
 
     /// <summary>Advances the cursor by a number of records (https://w3c.github.io/IndexedDB/#dom-idbcursor-advance).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-advance"/>
     [IdlMember("advance", "https://w3c.github.io/IndexedDB/#dom-idbcursor-advance")]
     public void Advance(uint count)
     {
@@ -84,6 +91,7 @@ public class IdbCursor : IRealmBoundPlatformObject
     }
 
     /// <summary>Advances the cursor to the next record, or to the next record at or after a key (https://w3c.github.io/IndexedDB/#dom-idbcursor-continue).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-continue"/>
     [IdlMember("continue", "https://w3c.github.io/IndexedDB/#dom-idbcursor-continue")]
     public void Continue(object? key = null)
     {
@@ -106,6 +114,7 @@ public class IdbCursor : IRealmBoundPlatformObject
     }
 
     /// <summary>Advances the cursor of an index to a key and a primary key (https://w3c.github.io/IndexedDB/#dom-idbcursor-continueprimarykey).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-continueprimarykey"/>
     [IdlMember("continuePrimaryKey", "https://w3c.github.io/IndexedDB/#dom-idbcursor-continueprimarykey")]
     public void ContinuePrimaryKey(object? key, object? primaryKey)
     {
@@ -138,6 +147,7 @@ public class IdbCursor : IRealmBoundPlatformObject
     }
 
     /// <summary>Replaces the value of the record of the cursor (https://w3c.github.io/IndexedDB/#dom-idbcursor-update).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-update"/>
     [IdlMember("update", "https://w3c.github.io/IndexedDB/#dom-idbcursor-update")]
     public IdbRequest Update(object? value)
     {
@@ -166,6 +176,7 @@ public class IdbCursor : IRealmBoundPlatformObject
     }
 
     /// <summary>Deletes the record of the cursor (https://w3c.github.io/IndexedDB/#dom-idbcursor-delete).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursor-delete"/>
     [IdlMember("delete", "https://w3c.github.io/IndexedDB/#dom-idbcursor-delete")]
     public IdbRequest Delete()
     {
@@ -353,6 +364,7 @@ public class IdbCursor : IRealmBoundPlatformObject
 }
 
 /// <summary>A cursor that exposes the values of the records (https://w3c.github.io/IndexedDB/#idbcursorwithvalue).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbcursorwithvalue"/>
 [IdlInterface("IDBCursorWithValue", "https://w3c.github.io/IndexedDB/#idbcursorwithvalue")]
 public sealed class IdbCursorWithValue : IdbCursor
 {
@@ -362,6 +374,7 @@ public sealed class IdbCursorWithValue : IdbCursor
     }
 
     /// <summary>Gets the value of the record of the cursor, or null (undefined).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbcursorwithvalue-value"/>
     [IdlMember("value", "https://w3c.github.io/IndexedDB/#dom-idbcursorwithvalue-value")]
     public object? Value => CurrentValue;
 }

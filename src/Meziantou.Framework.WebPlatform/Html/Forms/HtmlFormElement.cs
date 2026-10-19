@@ -8,6 +8,7 @@ using File = Meziantou.Framework.WebPlatform.Dom.FileApi.File;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The <c>(RadioNodeList or Element)</c> union returned by the named getters of forms.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlformcontrolscollection"/>
 [IdlInterface("(RadioNodeList or Element)", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlformcontrolscollection")]
 public readonly struct RadioNodeListOrElement : IUnionValue, IEquatable<RadioNodeListOrElement>
 {
@@ -63,6 +64,7 @@ public readonly struct RadioNodeListOrElement : IUnionValue, IEquatable<RadioNod
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlformcontrolscollection</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlformcontrolscollection"/>
 [IdlInterface("HTMLFormControlsCollection", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlformcontrolscollection")]
 public sealed class HtmlFormControlsCollection : HtmlCollection
 {
@@ -75,6 +77,7 @@ public sealed class HtmlFormControlsCollection : HtmlCollection
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlformcontrolscollection-nameditem</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlformcontrolscollection-nameditem"/>
     [IdlMember("namedItem", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlformcontrolscollection-nameditem")]
     public new RadioNodeListOrElement? NamedItem(string name)
     {
@@ -106,6 +109,7 @@ public sealed class HtmlFormControlsCollection : HtmlCollection
     /// Gets the element or the list of elements whose <c>id</c> or <c>name</c> matches the given name, or null when
     /// none matches.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlformcontrolscollection-nameditem"/>
     [IdlMember("namedItem", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlformcontrolscollection-nameditem")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public new RadioNodeListOrElement? this[string name] => NamedItem(name);
@@ -114,6 +118,7 @@ public sealed class HtmlFormControlsCollection : HtmlCollection
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#radionodelist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#radionodelist"/>
 [IdlInterface("RadioNodeList", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#radionodelist")]
 public sealed class RadioNodeList : NodeList
 {
@@ -146,6 +151,7 @@ public sealed class RadioNodeList : NodeList
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-radionodelist-value</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-radionodelist-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-radionodelist-value")]
     public string Value
     {
@@ -191,6 +197,7 @@ public partial class HtmlFormElement
     /// https://html.spec.whatwg.org/multipage/forms.html#dom-form-elements: the listed elements whose form owner is the
     /// form, except image buttons, in tree order.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-elements"/>
     [IdlMember("elements", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-elements")]
     public HtmlFormControlsCollection Elements => _elements ??= new HtmlFormControlsCollection(this, list => PopulateElements(list, includeImageButtons: false));
 
@@ -207,14 +214,17 @@ public partial class HtmlFormElement
     }
 
     /// <summary>Gets the number of listed form controls of the form.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-length")]
     public uint Length => Elements.Length;
 
     /// <summary>Gets the listed form control at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-item")]
     public Element? this[uint index] => Elements.Item(index);
 
     /// <summary>The named getter (https://html.spec.whatwg.org/multipage/forms.html#dom-form-nameditem).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-nameditem"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-nameditem")]
     public RadioNodeListOrElement? this[string name] => GetNamedItem(name);
 
@@ -314,10 +324,12 @@ public partial class HtmlFormElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-form-submit</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-submit"/>
     [IdlMember("submit", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-submit")]
     public void Submit() => SubmitForm(this, submittedFromSubmitMethod: true);
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-form-requestsubmit</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-requestsubmit"/>
     [IdlMember("requestSubmit", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-requestsubmit")]
     public void RequestSubmit(HtmlElement? submitter = null)
     {
@@ -334,6 +346,7 @@ public partial class HtmlFormElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-form-reset</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-reset"/>
     [IdlMember("reset", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-reset")]
     public void Reset()
     {
@@ -376,6 +389,7 @@ public partial class HtmlFormElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-form-checkvalidity</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-checkvalidity"/>
     [IdlMember("checkValidity", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-checkvalidity")]
     public bool CheckValidity() => StaticallyValidate(fireInvalidEvents: true);
 
@@ -383,6 +397,7 @@ public partial class HtmlFormElement
     /// Checks the validity of the form controls, fires an <c>invalid</c> event on each invalid control and returns
     /// whether all of them are valid.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-reportvalidity"/>
     [IdlMember("reportValidity", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-reportvalidity")]
     public bool ReportValidity() => StaticallyValidate(fireInvalidEvents: true);
 

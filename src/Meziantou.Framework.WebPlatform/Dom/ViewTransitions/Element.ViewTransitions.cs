@@ -8,6 +8,7 @@ public partial class Element
     /// Gets the active view transition of the element, or null (https://drafts.csswg.org/css-view-transitions-2/#dom-element-activeviewtransition):
     /// the scoped view transition started on the element, or the view transition of the document for the document element.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-element-activeviewtransition"/>
     [IdlMember("activeViewTransition", "https://drafts.csswg.org/css-view-transitions-2/#dom-element-activeviewtransition")]
     public ViewTransition? ActiveViewTransition => NodeDocument.GetActiveViewTransition(this);
 
@@ -19,6 +20,7 @@ public partial class Element
     /// document element, it is the same as <see cref="Document.StartViewTransition(ViewTransitionUpdateCallback)"/>.
     /// </summary>
     /// <param name="callback">The callback that updates the document. It is always called, even when the transition cannot happen.</param>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-element-startviewtransition"/>
     [IdlMember("startViewTransition", "https://drafts.csswg.org/css-view-transitions-2/#dom-element-startviewtransition")]
     public ViewTransition StartViewTransition(ViewTransitionUpdateCallback callback) => NodeDocument.StartViewTransitionCore(this, callback, types: null);
 
@@ -26,6 +28,7 @@ public partial class Element
     /// Starts a view transition whose root element is the element, with options (https://drafts.csswg.org/css-view-transitions-2/#dom-element-startviewtransition):
     /// the update callback and the types of the transition.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-element-startviewtransition"/>
     [IdlMember("startViewTransition", "https://drafts.csswg.org/css-view-transitions-2/#dom-element-startviewtransition")]
     public ViewTransition StartViewTransition(StartViewTransitionOptions? options = null) => NodeDocument.StartViewTransitionCore(this, options?.Update, options?.Types);
 }

@@ -5,6 +5,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The custom data attributes of an element (https://html.spec.whatwg.org/multipage/dom.html#domstringmap).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#domstringmap"/>
 [IdlInterface("DOMStringMap", "https://html.spec.whatwg.org/multipage/dom.html#domstringmap")]
 public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, ISupportedPropertyNames
 {
@@ -16,6 +17,8 @@ public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, IS
     }
 
     /// <summary>Gets or sets the value of the data-* attribute corresponding to the name (e.g. "fooBar" for data-foo-bar).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-nameditem"/>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-nameditem")]
     [IdlMember("setter", "https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-setitem")]
     public string? this[string name]
@@ -46,6 +49,7 @@ public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, IS
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-removeitem</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-removeitem"/>
     [IdlMember("deleter", "https://html.spec.whatwg.org/multipage/dom.html#dom-domstringmap-removeitem")]
     public void Remove(string name)
     {

@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The global object of a paint worklet (https://drafts.css-houdini.org/css-paint-api-1/#paintworkletglobalscope): the
 /// scripts added to <c>CSS.paintWorklet</c> register the classes that paint the <c>paint()</c> images.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-paint-api-1/#paintworkletglobalscope"/>
 [IdlInterface("PaintWorkletGlobalScope", "https://drafts.css-houdini.org/css-paint-api-1/#paintworkletglobalscope")]
 public sealed class PaintWorkletGlobalScope : WorkletGlobalScope
 {
@@ -38,6 +39,7 @@ public sealed class PaintWorkletGlobalScope : WorkletGlobalScope
     /// <param name="paintCtor">The class: its static <c>inputProperties</c>, <c>inputArguments</c> and <c>contextOptions</c> properties are read once, and its prototype has the <c>paint</c> callback.</param>
     /// <exception cref="TypeErrorException">The name is empty, an input argument is not a syntax definition, the value is not a constructor, or its prototype has no <c>paint</c> function.</exception>
     /// <exception cref="DomException">An <c>InvalidModificationError</c> when the name is already registered in the global scope.</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-registerpaint"/>
     [IdlMember("registerPaint", "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-registerpaint")]
     public void RegisterPaint(string name, WorkletClassConstructor paintCtor)
     {
@@ -91,6 +93,7 @@ public sealed class PaintWorkletGlobalScope : WorkletGlobalScope
     /// Gets the number of device pixels per CSS pixel of the document
     /// (https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-devicepixelratio), as <c>window.devicePixelRatio</c>.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-devicepixelratio"/>
     [IdlMember("devicePixelRatio", "https://drafts.css-houdini.org/css-paint-api-1/#dom-paintworkletglobalscope-devicepixelratio")]
     public double DevicePixelRatio => Worklet.Document.RelevantWindow?.DevicePixelRatio ?? 1;
 }

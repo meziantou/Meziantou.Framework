@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// scoped registry (<c>new CustomElementRegistry()</c>) and <see cref="Initialize(Node)"/>, or
 /// <see cref="HtmlParserOptions.CustomElementRegistry"/>.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#customelementregistry"/>
 [IdlInterface("CustomElementRegistry", "https://html.spec.whatwg.org/multipage/custom-elements.html#customelementregistry")]
 public sealed class CustomElementRegistry
 {
@@ -28,6 +29,7 @@ public sealed class CustomElementRegistry
     private bool _elementDefinitionIsRunning;
 
     /// <summary>Creates a scoped registry (https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry")]
     public CustomElementRegistry()
     {
@@ -97,6 +99,7 @@ public sealed class CustomElementRegistry
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-define</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-define"/>
     [IdlMember("define", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-define")]
     public void Define(string name, CustomElementConstructor constructor, ElementDefinitionOptions? options = null)
     {
@@ -199,6 +202,7 @@ public sealed class CustomElementRegistry
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-get</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-get"/>
     [IdlMember("get", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-get")]
     public CustomElementConstructor? Get(string name)
     {
@@ -207,6 +211,7 @@ public sealed class CustomElementRegistry
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-getname</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-getname"/>
     [IdlMember("getName", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-getname")]
     public string? GetName(CustomElementConstructor constructor)
     {
@@ -218,6 +223,7 @@ public sealed class CustomElementRegistry
     /// https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-whendefined. The task completes
     /// synchronously when the element is defined, like the promise is resolved by <c>define()</c>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-whendefined"/>
     [IdlMember("whenDefined", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-whendefined")]
     public Task<CustomElementConstructor> WhenDefined(string name)
     {
@@ -238,6 +244,7 @@ public sealed class CustomElementRegistry
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-upgrade</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-upgrade"/>
     [IdlMember("upgrade", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-upgrade")]
     public void Upgrade(Node root)
     {
@@ -253,6 +260,7 @@ public sealed class CustomElementRegistry
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-initialize</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-initialize"/>
     [IdlMember("initialize", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-initialize")]
     public void Initialize(Node root)
     {

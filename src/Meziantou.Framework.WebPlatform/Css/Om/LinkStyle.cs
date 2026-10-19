@@ -290,6 +290,7 @@ public partial class HtmlStyleElement
     internal bool CreatedByParser { get; set; }
 
     /// <summary>Gets the style sheet created by the <c>style</c> element, or null when there is none.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-linkstyle-sheet"/>
     [IdlMember("sheet", "https://drafts.csswg.org/cssom/#dom-linkstyle-sheet")]
     public CssStyleSheet? Sheet => GetLinkStyleSheet();
 
@@ -342,6 +343,7 @@ public partial class HtmlStyleElement
 public partial class SvgStyleElement
 {
     /// <summary>Gets the style sheet created by the <c>style</c> element, or null when there is none.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-linkstyle-sheet"/>
     [IdlMember("sheet", "https://drafts.csswg.org/cssom/#dom-linkstyle-sheet")]
     public CssStyleSheet? Sheet => GetLinkStyleSheet();
 
@@ -383,6 +385,7 @@ public partial class HtmlLinkElement
     /// https://drafts.csswg.org/cssom/#dom-linkstyle-sheet: the style sheet fetched by the <see cref="BrowsingContextOptions.DocumentLoader"/>
     /// when the element links to a style sheet (null until it is fetched, or when the document has no browsing context).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-linkstyle-sheet"/>
     [IdlMember("sheet", "https://drafts.csswg.org/cssom/#dom-linkstyle-sheet")]
     public CssStyleSheet? Sheet => GetLinkStyleSheet();
 }
@@ -396,10 +399,12 @@ public partial class Document
     private AdoptedStyleSheetList? _adoptedStyleSheets;
 
     /// <summary>Gets the list of the style sheets of the document.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets"/>
     [IdlMember("styleSheets", "https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets")]
     public StyleSheetList StyleSheets => _styleSheets ??= new StyleSheetList(this);
 
     /// <summary>Gets the list of the constructed style sheets adopted by the document.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets"/>
     [IdlMember("adoptedStyleSheets", "https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets")]
     public IList<CssStyleSheet> AdoptedStyleSheets
     {
@@ -429,10 +434,12 @@ public partial class ShadowRoot
     }
 
     /// <summary>Gets the list of the style sheets of the shadow root.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets"/>
     [IdlMember("styleSheets", "https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets")]
     public StyleSheetList StyleSheets => _styleSheets ??= new StyleSheetList(this);
 
     /// <summary>Gets the list of the constructed style sheets adopted by the shadow root.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets"/>
     [IdlMember("adoptedStyleSheets", "https://drafts.csswg.org/cssom/#dom-documentorshadowroot-adoptedstylesheets")]
     public IList<CssStyleSheet> AdoptedStyleSheets
     {

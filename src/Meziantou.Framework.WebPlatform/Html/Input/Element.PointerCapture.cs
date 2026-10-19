@@ -9,14 +9,17 @@ public partial class Element
     /// its subsequent events are fired at the element until the capture is released. The pointer must be in the active buttons
     /// state.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-element-setpointercapture"/>
     [IdlMember("setPointerCapture", "https://w3c.github.io/pointerevents/#dom-element-setpointercapture")]
     public void SetPointerCapture(int pointerId) => UserInput.SetPointerCapture(this, pointerId);
 
     /// <summary>Releases the pointer capture of a pointer when the element captures it (https://w3c.github.io/pointerevents/#dom-element-releasepointercapture).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-element-releasepointercapture"/>
     [IdlMember("releasePointerCapture", "https://w3c.github.io/pointerevents/#dom-element-releasepointercapture")]
     public void ReleasePointerCapture(int pointerId) => UserInput.ReleasePointerCapture(this, pointerId);
 
     /// <summary>Returns whether the element captures (or is about to capture) a pointer (https://w3c.github.io/pointerevents/#dom-element-haspointercapture).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-element-haspointercapture"/>
     [IdlMember("hasPointerCapture", "https://w3c.github.io/pointerevents/#dom-element-haspointercapture")]
     public bool HasPointerCapture(int pointerId) => UserInput.HasPointerCapture(this, pointerId);
 }

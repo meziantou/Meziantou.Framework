@@ -4,6 +4,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The entry point of IndexedDB of a window or a worker (https://w3c.github.io/IndexedDB/#idbfactory): opens and deletes
 /// the databases of its origin, stored by <see cref="BrowsingContextOptions.IndexedDB"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbfactory"/>
 [IdlInterface("IDBFactory", "https://w3c.github.io/IndexedDB/#idbfactory")]
 public sealed class IdbFactory
 {
@@ -24,6 +25,7 @@ public sealed class IdbFactory
     /// <param name="version">The version of the database, or null for the current version (1 for a new database).</param>
     /// <exception cref="TypeErrorException">The version is 0.</exception>
     /// <exception cref="DomException">A <c>SecurityError</c> when the origin is opaque.</exception>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbfactory-open"/>
     [IdlMember("open", "https://w3c.github.io/IndexedDB/#dom-idbfactory-open")]
     public IdbOpenDBRequest Open(string name, ulong? version = null)
     {
@@ -43,6 +45,7 @@ public sealed class IdbFactory
     /// <summary>Deletes a database (https://w3c.github.io/IndexedDB/#dom-idbfactory-deletedatabase).</summary>
     /// <param name="name">The name of the database.</param>
     /// <exception cref="DomException">A <c>SecurityError</c> when the origin is opaque.</exception>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbfactory-deletedatabase"/>
     [IdlMember("deleteDatabase", "https://w3c.github.io/IndexedDB/#dom-idbfactory-deletedatabase")]
     public IdbOpenDBRequest DeleteDatabase(string name)
     {
@@ -57,6 +60,7 @@ public sealed class IdbFactory
     }
 
     /// <summary>Returns the names and the versions of the databases of the origin (https://w3c.github.io/IndexedDB/#dom-idbfactory-databases).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbfactory-databases"/>
     [IdlMember("databases", "https://w3c.github.io/IndexedDB/#dom-idbfactory-databases")]
     public Task<IReadOnlyList<IdbDatabaseInfo>> Databases()
     {
@@ -93,6 +97,7 @@ public sealed class IdbFactory
 
     /// <summary>Compares two keys (https://w3c.github.io/IndexedDB/#dom-idbfactory-cmp): -1, 0 or 1.</summary>
     /// <exception cref="DomException">A <c>DataError</c> when a value is not a valid key.</exception>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbfactory-cmp"/>
     [IdlMember("cmp", "https://w3c.github.io/IndexedDB/#dom-idbfactory-cmp")]
     public short Cmp(object? first, object? second)
     {

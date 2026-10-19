@@ -1,44 +1,54 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://fullscreen.spec.whatwg.org/#enumdef-fullscreennavigationui</summary>
+/// <seealso href="https://fullscreen.spec.whatwg.org/#enumdef-fullscreennavigationui"/>
 [IdlInterface("FullscreenNavigationUI", "https://fullscreen.spec.whatwg.org/#enumdef-fullscreennavigationui")]
 public enum FullscreenNavigationUI
 {
     /// <summary>The application has no preference.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-auto"/>
     [IdlMember("auto", "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-auto")]
     Auto,
 
     /// <summary>The navigation controls of the user agent are preferred over the screen space.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-show"/>
     [IdlMember("show", "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-show")]
     Show,
 
     /// <summary>More screen space is preferred.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-hide"/>
     [IdlMember("hide", "https://fullscreen.spec.whatwg.org/#dom-fullscreennavigationui-hide")]
     Hide,
 }
 
 /// <summary>https://fullscreen.spec.whatwg.org/#enumdef-fullscreenkeyboardlock</summary>
+/// <seealso href="https://fullscreen.spec.whatwg.org/#enumdef-fullscreenkeyboardlock"/>
 [IdlInterface("FullscreenKeyboardLock", "https://fullscreen.spec.whatwg.org/#enumdef-fullscreenkeyboardlock")]
 public enum FullscreenKeyboardLock
 {
     /// <summary>The keys that the user agent handles while fullscreen (e.g. Escape) are given to the page.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-browser"/>
     [IdlMember("browser", "https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-browser")]
     Browser,
 
     /// <summary>No keyboard lock.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-none"/>
     [IdlMember("none", "https://fullscreen.spec.whatwg.org/#dom-fullscreenkeyboardlock-none")]
     None,
 }
 
 /// <summary>The options of <see cref="Element.RequestFullscreen"/> (https://fullscreen.spec.whatwg.org/#dictdef-fullscreenoptions).</summary>
+/// <seealso href="https://fullscreen.spec.whatwg.org/#dictdef-fullscreenoptions"/>
 [IdlInterface("FullscreenOptions", "https://fullscreen.spec.whatwg.org/#dictdef-fullscreenoptions")]
 public sealed class FullscreenOptions
 {
     /// <summary>Gets whether the keys that exit fullscreen are given to the page instead (see <see cref="FullscreenKeyboardLock"/>).</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-keyboardlock"/>
     [IdlMember("keyboardLock", "https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-keyboardlock")]
     public FullscreenKeyboardLock KeyboardLock { get; init; } = FullscreenKeyboardLock.None;
 
     /// <summary>Gets whether the navigation controls of the user agent are preferred while fullscreen.</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-navigationui"/>
     [IdlMember("navigationUI", "https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-navigationui")]
     public FullscreenNavigationUI NavigationUI { get; init; } = FullscreenNavigationUI.Auto;
 }
@@ -70,6 +80,7 @@ public partial class Element
     /// <see cref="TypeErrorException"/> when the element cannot be displayed fullscreen (<c>fullscreenerror</c> is fired).
     /// </summary>
     /// <param name="options">The options, or null for the default options.</param>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen"/>
     [IdlMember("requestFullscreen", "https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen")]
     public Task RequestFullscreen(FullscreenOptions? options = null) => FullscreenModel.Request(this, options ?? new FullscreenOptions());
 }
@@ -115,10 +126,12 @@ public partial class Document
     /// Gets whether the document is allowed to display elements fullscreen (https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled):
     /// its permissions policy allows the <c>fullscreen</c> feature.
     /// </summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled"/>
     [IdlMember("fullscreenEnabled", "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled")]
     public bool FullscreenEnabled => PermissionsPolicyAlgorithms.IsAllowedToUse(this, PolicyControlledFeature.Fullscreen, report: false);
 
     /// <summary>Gets whether the document has a fullscreen element (https://fullscreen.spec.whatwg.org/#dom-document-fullscreen, historical: use <see cref="FullscreenElement"/>).</summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreen"/>
     [IdlMember("fullscreen", "https://fullscreen.spec.whatwg.org/#dom-document-fullscreen")]
     public bool Fullscreen => FullscreenElementInternal is not null;
 
@@ -126,6 +139,7 @@ public partial class Document
     /// Gets the fullscreen element of the document (https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement): the
     /// host of the shadow tree of the element when it is in a shadow tree.
     /// </summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement"/>
     [IdlMember("fullscreenElement", "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement")]
     public Element? FullscreenElement => FullscreenModel.GetFullscreenElement(this, this);
 
@@ -134,6 +148,7 @@ public partial class Document
     /// <c>fullscreenchange</c> is fired by the next rendering update. The task fails with a <see cref="TypeErrorException"/>
     /// when the document has no fullscreen element.
     /// </summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-exitfullscreen"/>
     [IdlMember("exitFullscreen", "https://fullscreen.spec.whatwg.org/#dom-document-exitfullscreen")]
     public Task ExitFullscreen() => FullscreenModel.Exit(this);
 
@@ -158,6 +173,7 @@ public partial class ShadowRoot
     /// Gets the fullscreen element of the shadow tree (https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement):
     /// the fullscreen element of the document retargeted against the shadow root, when it is in the shadow tree.
     /// </summary>
+    /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement"/>
     [IdlMember("fullscreenElement", "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenelement")]
     public Element? FullscreenElement => Host.IsConnected ? FullscreenModel.GetFullscreenElement(NodeDocument, this) : null;
 }

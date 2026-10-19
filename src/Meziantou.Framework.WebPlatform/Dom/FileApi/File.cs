@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom.FileApi;
 
 /// <summary>https://w3c.github.io/FileAPI/#file-section</summary>
+/// <seealso href="https://w3c.github.io/FileAPI/#file-section"/>
 [IdlInterface("File", "https://w3c.github.io/FileAPI/#file-section")]
 public sealed class File : Blob
 {
     /// <summary>Creates a file from the given parts, name and options.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#file-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/FileAPI/#file-constructor")]
     public File(IReadOnlyList<object> fileBits, string fileName, FilePropertyBag? options = null)
         : base(ProcessParts(fileBits, options?.Endings), NormalizeType(options?.Type ?? ""))
@@ -47,10 +49,12 @@ public sealed class File : Blob
     internal Func<bool>? IsSnapshotReadable { get; set; }
 
     /// <summary>Gets the name of the file.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-name"/>
     [IdlMember("name", "https://w3c.github.io/FileAPI/#dfn-name")]
     public string Name { get; }
 
     /// <summary>Gets the last modification date of the file, in milliseconds since the Unix epoch.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-lastModified"/>
     [IdlMember("lastModified", "https://w3c.github.io/FileAPI/#dfn-lastModified")]
     public long LastModified { get; }
 }

@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#closewatcheroptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#closewatcheroptions"/>
 [IdlInterface("CloseWatcherOptions", "https://html.spec.whatwg.org/multipage/interaction.html#closewatcheroptions")]
 public sealed class CloseWatcherOptions
 {
     /// <summary>Gets the signal that destroys the close watcher when it is aborted.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcheroptions-signal"/>
     [IdlMember("signal", "https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcheroptions-signal")]
     public AbortSignal? Signal { get; init; }
 }
@@ -16,6 +18,7 @@ public sealed class CloseWatcherOptions
 /// of the window: the close watchers created without user activation are grouped with the previous one, so that a page
 /// cannot trap the close requests of the user.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#closewatcher"/>
 [IdlInterface("CloseWatcher", "https://html.spec.whatwg.org/multipage/interaction.html#closewatcher")]
 public sealed class CloseWatcher : EventTarget
 {
@@ -25,6 +28,7 @@ public sealed class CloseWatcher : EventTarget
     /// <summary>Creates a close watcher of the window of the current global object (https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher).</summary>
     /// <param name="options">The options, or null.</param>
     /// <exception cref="DomException">There is no current window, or its document is not fully active (<c>InvalidStateError</c>).</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher")]
     public CloseWatcher(CloseWatcherOptions? options = null)
         : this(GlobalScope.Current as Window ?? throw DomException.InvalidState("There is no window to watch the close requests of"), options)
@@ -66,18 +70,22 @@ public sealed class CloseWatcher : EventTarget
     /// Acts as if the user sent a close request to this close watcher: fires <c>cancel</c> (it can always be canceled),
     /// then closes the watcher (https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-requestclose).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-requestclose"/>
     [IdlMember("requestClose", "https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-requestclose")]
     public void RequestClose() => _closeWatcher.RequestClose(requireHistoryActionActivation: false);
 
     /// <summary>Closes the watcher: fires <c>close</c>, without <c>cancel</c>, and destroys it (https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-close).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-close")]
     public void Close() => _closeWatcher.Close();
 
     /// <summary>Destroys the watcher: it no longer receives the close requests and fires no event (https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-destroy).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-destroy"/>
     [IdlMember("destroy", "https://html.spec.whatwg.org/multipage/interaction.html#dom-closewatcher-destroy")]
     public void Destroy() => _closeWatcher.Destroy();
 
     /// <summary>Gets or sets the event handler of the <c>cancel</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#handler-closewatcher-oncancel"/>
     [IdlMember("oncancel", "https://html.spec.whatwg.org/multipage/interaction.html#handler-closewatcher-oncancel")]
     public Action<Event>? OnCancel
     {
@@ -86,6 +94,7 @@ public sealed class CloseWatcher : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#handler-closewatcher-onclose"/>
     [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/interaction.html#handler-closewatcher-onclose")]
     public Action<Event>? OnClose
     {

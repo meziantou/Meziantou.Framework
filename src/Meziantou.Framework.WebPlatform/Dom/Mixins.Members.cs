@@ -5,44 +5,54 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class Element : IParentNode, IChildNode, INonDocumentTypeChildNode
 {
     /// <summary>Gets the live collection of the child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-children"/>
     [IdlMember("children", "https://dom.spec.whatwg.org/#dom-parentnode-children")]
     public HtmlCollection Children => RareData.Children ??= new HtmlCollection(this, static _ => true, childrenOnly: true, structural: true);
 
     /// <summary>Gets the first child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild"/>
     [IdlMember("firstElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild")]
     public Element? FirstElementChild => FirstElementChildCore();
 
     /// <summary>Gets the last child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild"/>
     [IdlMember("lastElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild")]
     public Element? LastElementChild => LastElementChildCore();
 
     /// <summary>Gets the number of child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-childelementcount"/>
     [IdlMember("childElementCount", "https://dom.spec.whatwg.org/#dom-parentnode-childelementcount")]
     public uint ChildElementCount => ChildElementCountCore();
 
     /// <summary>Inserts the nodes before the first child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-prepend"/>
     [IdlMember("prepend", "https://dom.spec.whatwg.org/#dom-parentnode-prepend")]
     public void Prepend(params ReadOnlySpan<NodeOrString> nodes) => PrependCore(nodes);
 
     /// <summary>Inserts the nodes after the last child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-append"/>
     [IdlMember("append", "https://dom.spec.whatwg.org/#dom-parentnode-append")]
     public void Append(params ReadOnlySpan<NodeOrString> nodes) => AppendCore(nodes);
 
     /// <summary>Replaces all the children with the given nodes, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-replacechildren"/>
     [IdlMember("replaceChildren", "https://dom.spec.whatwg.org/#dom-parentnode-replacechildren")]
     public void ReplaceChildren(params ReadOnlySpan<NodeOrString> nodes) => ReplaceChildrenCore(nodes);
 
     /// <summary>
     /// Moves the node, preserving its state, before the given child (or to the end when the child is null).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-movebefore"/>
     [IdlMember("moveBefore", "https://dom.spec.whatwg.org/#dom-parentnode-movebefore")]
     public void MoveBefore(Node node, Node? child) => MoveBeforeCore(node, child);
 
     /// <summary>Returns the first descendant element, in tree order, that matches the selectors, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselector"/>
     [IdlMember("querySelector", "https://dom.spec.whatwg.org/#dom-parentnode-queryselector")]
     public Element? QuerySelector(string selectors) => QuerySelectorCore(selectors);
 
     /// <summary>Returns the descendant elements, in tree order, that match the selectors.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall"/>
     [IdlMember("querySelectorAll", "https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall")]
     public NodeList QuerySelectorAll(string selectors) => QuerySelectorAllCore(selectors);
 
@@ -73,28 +83,34 @@ public partial class Element : IParentNode, IChildNode, INonDocumentTypeChildNod
     public IReadOnlyList<T> QuerySelectorAll<T>(Css.Selectors.SelectorList selectors) where T : Element => QuerySelectorAllCore<T>(selectors);
 
     /// <summary>Inserts the nodes just before this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-before"/>
     [IdlMember("before", "https://dom.spec.whatwg.org/#dom-childnode-before")]
     public void Before(params ReadOnlySpan<NodeOrString> nodes) => BeforeCore(nodes);
 
     /// <summary>Inserts the nodes just after this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-after"/>
     [IdlMember("after", "https://dom.spec.whatwg.org/#dom-childnode-after")]
     public void After(params ReadOnlySpan<NodeOrString> nodes) => AfterCore(nodes);
 
     /// <summary>
     /// Replaces this node with the given nodes in its parent, converting the strings into text nodes.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-replacewith"/>
     [IdlMember("replaceWith", "https://dom.spec.whatwg.org/#dom-childnode-replacewith")]
     public void ReplaceWith(params ReadOnlySpan<NodeOrString> nodes) => ReplaceWithCore(nodes);
 
     /// <summary>Removes this node from its parent, if any.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-remove"/>
     [IdlMember("remove", "https://dom.spec.whatwg.org/#dom-childnode-remove")]
     public void Remove() => RemoveFromParent();
 
     /// <summary>Gets the closest preceding sibling that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-previouselementsibling"/>
     [IdlMember("previousElementSibling", "https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-previouselementsibling")]
     public Element? PreviousElementSibling => PreviousElementSiblingCore();
 
     /// <summary>Gets the closest following sibling that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-nextelementsibling"/>
     [IdlMember("nextElementSibling", "https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-nextelementsibling")]
     public Element? NextElementSibling => NextElementSiblingCore();
 }
@@ -102,44 +118,54 @@ public partial class Element : IParentNode, IChildNode, INonDocumentTypeChildNod
 public partial class Document : IParentNode, INonElementParentNode
 {
     /// <summary>Gets the live collection of the child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-children"/>
     [IdlMember("children", "https://dom.spec.whatwg.org/#dom-parentnode-children")]
     public HtmlCollection Children => RareData.Children ??= new HtmlCollection(this, static _ => true, childrenOnly: true, structural: true);
 
     /// <summary>Gets the first child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild"/>
     [IdlMember("firstElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild")]
     public Element? FirstElementChild => FirstElementChildCore();
 
     /// <summary>Gets the last child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild"/>
     [IdlMember("lastElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild")]
     public Element? LastElementChild => LastElementChildCore();
 
     /// <summary>Gets the number of child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-childelementcount"/>
     [IdlMember("childElementCount", "https://dom.spec.whatwg.org/#dom-parentnode-childelementcount")]
     public uint ChildElementCount => ChildElementCountCore();
 
     /// <summary>Inserts the nodes before the first child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-prepend"/>
     [IdlMember("prepend", "https://dom.spec.whatwg.org/#dom-parentnode-prepend")]
     public void Prepend(params ReadOnlySpan<NodeOrString> nodes) => PrependCore(nodes);
 
     /// <summary>Inserts the nodes after the last child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-append"/>
     [IdlMember("append", "https://dom.spec.whatwg.org/#dom-parentnode-append")]
     public void Append(params ReadOnlySpan<NodeOrString> nodes) => AppendCore(nodes);
 
     /// <summary>Replaces all the children with the given nodes, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-replacechildren"/>
     [IdlMember("replaceChildren", "https://dom.spec.whatwg.org/#dom-parentnode-replacechildren")]
     public void ReplaceChildren(params ReadOnlySpan<NodeOrString> nodes) => ReplaceChildrenCore(nodes);
 
     /// <summary>
     /// Moves the node, preserving its state, before the given child (or to the end when the child is null).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-movebefore"/>
     [IdlMember("moveBefore", "https://dom.spec.whatwg.org/#dom-parentnode-movebefore")]
     public void MoveBefore(Node node, Node? child) => MoveBeforeCore(node, child);
 
     /// <summary>Returns the first descendant element, in tree order, that matches the selectors, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselector"/>
     [IdlMember("querySelector", "https://dom.spec.whatwg.org/#dom-parentnode-queryselector")]
     public Element? QuerySelector(string selectors) => QuerySelectorCore(selectors);
 
     /// <summary>Returns the descendant elements, in tree order, that match the selectors.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall"/>
     [IdlMember("querySelectorAll", "https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall")]
     public NodeList QuerySelectorAll(string selectors) => QuerySelectorAllCore(selectors);
 
@@ -173,44 +199,54 @@ public partial class Document : IParentNode, INonElementParentNode
 public partial class DocumentFragment : IParentNode, INonElementParentNode
 {
     /// <summary>Gets the live collection of the child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-children"/>
     [IdlMember("children", "https://dom.spec.whatwg.org/#dom-parentnode-children")]
     public HtmlCollection Children => RareData.Children ??= new HtmlCollection(this, static _ => true, childrenOnly: true, structural: true);
 
     /// <summary>Gets the first child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild"/>
     [IdlMember("firstElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-firstelementchild")]
     public Element? FirstElementChild => FirstElementChildCore();
 
     /// <summary>Gets the last child that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild"/>
     [IdlMember("lastElementChild", "https://dom.spec.whatwg.org/#dom-parentnode-lastelementchild")]
     public Element? LastElementChild => LastElementChildCore();
 
     /// <summary>Gets the number of child elements.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-childelementcount"/>
     [IdlMember("childElementCount", "https://dom.spec.whatwg.org/#dom-parentnode-childelementcount")]
     public uint ChildElementCount => ChildElementCountCore();
 
     /// <summary>Inserts the nodes before the first child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-prepend"/>
     [IdlMember("prepend", "https://dom.spec.whatwg.org/#dom-parentnode-prepend")]
     public void Prepend(params ReadOnlySpan<NodeOrString> nodes) => PrependCore(nodes);
 
     /// <summary>Inserts the nodes after the last child, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-append"/>
     [IdlMember("append", "https://dom.spec.whatwg.org/#dom-parentnode-append")]
     public void Append(params ReadOnlySpan<NodeOrString> nodes) => AppendCore(nodes);
 
     /// <summary>Replaces all the children with the given nodes, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-replacechildren"/>
     [IdlMember("replaceChildren", "https://dom.spec.whatwg.org/#dom-parentnode-replacechildren")]
     public void ReplaceChildren(params ReadOnlySpan<NodeOrString> nodes) => ReplaceChildrenCore(nodes);
 
     /// <summary>
     /// Moves the node, preserving its state, before the given child (or to the end when the child is null).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-movebefore"/>
     [IdlMember("moveBefore", "https://dom.spec.whatwg.org/#dom-parentnode-movebefore")]
     public void MoveBefore(Node node, Node? child) => MoveBeforeCore(node, child);
 
     /// <summary>Returns the first descendant element, in tree order, that matches the selectors, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselector"/>
     [IdlMember("querySelector", "https://dom.spec.whatwg.org/#dom-parentnode-queryselector")]
     public Element? QuerySelector(string selectors) => QuerySelectorCore(selectors);
 
     /// <summary>Returns the descendant elements, in tree order, that match the selectors.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall"/>
     [IdlMember("querySelectorAll", "https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall")]
     public NodeList QuerySelectorAll(string selectors) => QuerySelectorAllCore(selectors);
 
@@ -241,6 +277,7 @@ public partial class DocumentFragment : IParentNode, INonElementParentNode
     public IReadOnlyList<T> QuerySelectorAll<T>(Css.Selectors.SelectorList selectors) where T : Element => QuerySelectorAllCore<T>(selectors);
 
     /// <summary>Returns the first descendant element, in tree order, whose ID is the given value, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid"/>
     [IdlMember("getElementById", "https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid")]
     public Element? GetElementById(string elementId) => GetElementByIdCore(elementId);
 }
@@ -248,28 +285,34 @@ public partial class DocumentFragment : IParentNode, INonElementParentNode
 public abstract partial class CharacterData : IChildNode, INonDocumentTypeChildNode
 {
     /// <summary>Inserts the nodes just before this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-before"/>
     [IdlMember("before", "https://dom.spec.whatwg.org/#dom-childnode-before")]
     public void Before(params ReadOnlySpan<NodeOrString> nodes) => BeforeCore(nodes);
 
     /// <summary>Inserts the nodes just after this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-after"/>
     [IdlMember("after", "https://dom.spec.whatwg.org/#dom-childnode-after")]
     public void After(params ReadOnlySpan<NodeOrString> nodes) => AfterCore(nodes);
 
     /// <summary>
     /// Replaces this node with the given nodes in its parent, converting the strings into text nodes.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-replacewith"/>
     [IdlMember("replaceWith", "https://dom.spec.whatwg.org/#dom-childnode-replacewith")]
     public void ReplaceWith(params ReadOnlySpan<NodeOrString> nodes) => ReplaceWithCore(nodes);
 
     /// <summary>Removes this node from its parent, if any.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-remove"/>
     [IdlMember("remove", "https://dom.spec.whatwg.org/#dom-childnode-remove")]
     public void Remove() => RemoveFromParent();
 
     /// <summary>Gets the closest preceding sibling that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-previouselementsibling"/>
     [IdlMember("previousElementSibling", "https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-previouselementsibling")]
     public Element? PreviousElementSibling => PreviousElementSiblingCore();
 
     /// <summary>Gets the closest following sibling that is an element, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-nextelementsibling"/>
     [IdlMember("nextElementSibling", "https://dom.spec.whatwg.org/#dom-nondocumenttypechildnode-nextelementsibling")]
     public Element? NextElementSibling => NextElementSiblingCore();
 }
@@ -277,20 +320,24 @@ public abstract partial class CharacterData : IChildNode, INonDocumentTypeChildN
 public sealed partial class DocumentType : IChildNode
 {
     /// <summary>Inserts the nodes just before this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-before"/>
     [IdlMember("before", "https://dom.spec.whatwg.org/#dom-childnode-before")]
     public void Before(params ReadOnlySpan<NodeOrString> nodes) => BeforeCore(nodes);
 
     /// <summary>Inserts the nodes just after this node, converting the strings into text nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-after"/>
     [IdlMember("after", "https://dom.spec.whatwg.org/#dom-childnode-after")]
     public void After(params ReadOnlySpan<NodeOrString> nodes) => AfterCore(nodes);
 
     /// <summary>
     /// Replaces this node with the given nodes in its parent, converting the strings into text nodes.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-replacewith"/>
     [IdlMember("replaceWith", "https://dom.spec.whatwg.org/#dom-childnode-replacewith")]
     public void ReplaceWith(params ReadOnlySpan<NodeOrString> nodes) => ReplaceWithCore(nodes);
 
     /// <summary>Removes this node from its parent, if any.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-childnode-remove"/>
     [IdlMember("remove", "https://dom.spec.whatwg.org/#dom-childnode-remove")]
     public void Remove() => RemoveFromParent();
 }

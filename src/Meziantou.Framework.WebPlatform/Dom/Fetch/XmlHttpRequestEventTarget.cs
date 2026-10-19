@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The event handlers of <see cref="XmlHttpRequest"/> and <see cref="XmlHttpRequestUpload"/> (https://xhr.spec.whatwg.org/#xmlhttprequesteventtarget).</summary>
+/// <seealso href="https://xhr.spec.whatwg.org/#xmlhttprequesteventtarget"/>
 [IdlInterface("XMLHttpRequestEventTarget", "https://xhr.spec.whatwg.org/#xmlhttprequesteventtarget")]
 public abstract class XmlHttpRequestEventTarget : EventTarget
 {
@@ -9,6 +10,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadstart</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onloadstart"/>
     [IdlMember("onloadstart", "https://xhr.spec.whatwg.org/#handler-xhr-onloadstart")]
     public Action<Event>? OnLoadStart
     {
@@ -17,6 +19,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>progress</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onprogress"/>
     [IdlMember("onprogress", "https://xhr.spec.whatwg.org/#handler-xhr-onprogress")]
     public Action<Event>? OnProgress
     {
@@ -25,6 +28,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onabort"/>
     [IdlMember("onabort", "https://xhr.spec.whatwg.org/#handler-xhr-onabort")]
     public Action<Event>? OnAbort
     {
@@ -33,6 +37,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onerror"/>
     [IdlMember("onerror", "https://xhr.spec.whatwg.org/#handler-xhr-onerror")]
     public Action<Event>? OnError
     {
@@ -41,6 +46,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>load</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onload"/>
     [IdlMember("onload", "https://xhr.spec.whatwg.org/#handler-xhr-onload")]
     public Action<Event>? OnLoad
     {
@@ -49,6 +55,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>timeout</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-ontimeout"/>
     [IdlMember("ontimeout", "https://xhr.spec.whatwg.org/#handler-xhr-ontimeout")]
     public Action<Event>? OnTimeout
     {
@@ -57,6 +64,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadend</c> event.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#handler-xhr-onloadend"/>
     [IdlMember("onloadend", "https://xhr.spec.whatwg.org/#handler-xhr-onloadend")]
     public Action<Event>? OnLoadEnd
     {
@@ -70,6 +78,7 @@ public abstract class XmlHttpRequestEventTarget : EventTarget
 }
 
 /// <summary>The upload of an <see cref="XmlHttpRequest"/>: the target of the progress events of the request body (https://xhr.spec.whatwg.org/#xmlhttprequestupload).</summary>
+/// <seealso href="https://xhr.spec.whatwg.org/#xmlhttprequestupload"/>
 [IdlInterface("XMLHttpRequestUpload", "https://xhr.spec.whatwg.org/#xmlhttprequestupload")]
 public sealed class XmlHttpRequestUpload : XmlHttpRequestEventTarget
 {
@@ -82,30 +91,37 @@ public sealed class XmlHttpRequestUpload : XmlHttpRequestEventTarget
 }
 
 /// <summary>The type of the response of an <see cref="XmlHttpRequest"/> (https://xhr.spec.whatwg.org/#xmlhttprequestresponsetype).</summary>
+/// <seealso href="https://xhr.spec.whatwg.org/#xmlhttprequestresponsetype"/>
 [IdlInterface("XMLHttpRequestResponseType", "https://xhr.spec.whatwg.org/#xmlhttprequestresponsetype")]
 public enum XmlHttpRequestResponseType
 {
     /// <summary>The text of the response (the default).</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype"/>
     [IdlMember("", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype")]
     Default,
 
     /// <summary>The response is returned as an <c>ArrayBuffer</c>.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-arraybuffer"/>
     [IdlMember("arraybuffer", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-arraybuffer")]
     ArrayBuffer,
 
     /// <summary>The response is returned as a <c>Blob</c>.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-blob"/>
     [IdlMember("blob", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-blob")]
     Blob,
 
     /// <summary>The response is returned as a parsed <c>Document</c>.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-document"/>
     [IdlMember("document", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-document")]
     Document,
 
     /// <summary>The response is returned as a value parsed from JSON.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-json"/>
     [IdlMember("json", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-json")]
     Json,
 
     /// <summary>The response is returned as a string.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-text"/>
     [IdlMember("text", "https://xhr.spec.whatwg.org/#dom-xmlhttprequestresponsetype-text")]
     Text,
 }

@@ -35,18 +35,22 @@ internal sealed class CssFunctionParameterDefinition(string name, CssSyntaxDefin
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#dictdef-functionparameter</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#dictdef-functionparameter"/>
 [IdlInterface("FunctionParameter", "https://drafts.csswg.org/css-mixins-1/#dictdef-functionparameter")]
 public sealed class CssFunctionParameter
 {
     /// <summary>Gets the name of the parameter, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-name")]
     public required string Name { get; init; }
 
     /// <summary>The type of the parameter as a syntax string, or "*" when it has no type.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-type"/>
     [IdlMember("type", "https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-type")]
     public required string Type { get; init; }
 
     /// <summary>The default value of the parameter, or null when it has no default value.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-defaultvalue"/>
     [IdlMember("defaultValue", "https://drafts.csswg.org/css-mixins-1/#dom-functionparameter-defaultvalue")]
     public string? DefaultValue { get; init; }
 }
@@ -55,6 +59,7 @@ public sealed class CssFunctionParameter
 /// https://drafts.csswg.org/css-mixins-1/#the-function-rule: a custom function. Its child rules are the runs of declarations
 /// of its body (<see cref="CssFunctionDeclarations"/>) and its conditional group rules.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssfunctionrule"/>
 [IdlInterface("CSSFunctionRule", "https://drafts.csswg.org/css-mixins-1/#cssfunctionrule")]
 public sealed class CssFunctionRule : CssGroupingRule
 {
@@ -66,6 +71,7 @@ public sealed class CssFunctionRule : CssGroupingRule
     }
 
     /// <summary>Gets the name of the function, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-name")]
     public string Name { get; }
 
@@ -77,10 +83,12 @@ public sealed class CssFunctionRule : CssGroupingRule
     /// <summary>
     /// Gets the return type of the function as a syntax string, or <c>*</c> when the function has no return type.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-returntype"/>
     [IdlMember("returnType", "https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-returntype")]
     public string ReturnType => ReturnSyntax.Text;
 
     /// <summary>Returns the parameters of the function.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-getparameters"/>
     [IdlMember("getParameters", "https://drafts.csswg.org/css-mixins-1/#dom-cssfunctionrule-getparameters")]
     public IReadOnlyList<CssFunctionParameter> GetParameters() => [.. Parameters.Select(p => new CssFunctionParameter { Name = p.Name, Type = p.Type.Text, DefaultValue = p.DefaultValue })];
 
@@ -104,6 +112,7 @@ public sealed class CssFunctionRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#cssfunctiondeclarations: a run of consecutive declarations of a @function rule.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssfunctiondeclarations"/>
 [IdlInterface("CSSFunctionDeclarations", "https://drafts.csswg.org/css-mixins-1/#cssfunctiondeclarations")]
 public sealed class CssFunctionDeclarations : CssRule
 {
@@ -113,6 +122,7 @@ public sealed class CssFunctionDeclarations : CssRule
     }
 
     /// <summary>Gets the declarations of the run.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssfunctiondeclarations-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-mixins-1/#dom-cssfunctiondeclarations-style")]
     public CssFunctionDescriptors Style { get; }
 
@@ -123,6 +133,7 @@ public sealed class CssFunctionDeclarations : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#cssfunctiondescriptors: the local variables (custom properties) and the result descriptor of a @function rule.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssfunctiondescriptors"/>
 [IdlInterface("CSSFunctionDescriptors", "https://drafts.csswg.org/css-mixins-1/#cssfunctiondescriptors")]
 public sealed class CssFunctionDescriptors : CssStyleDeclaration
 {
@@ -132,6 +143,7 @@ public sealed class CssFunctionDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>result</c> descriptor of the function body.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssfunctiondescriptors-result"/>
     [IdlMember("result", "https://drafts.csswg.org/css-mixins-1/#dom-cssfunctiondescriptors-result")]
     public string Result
     {

@@ -25,6 +25,7 @@ public partial class Document
     internal Document? OriginDocument { get; set; }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__Document__rootElement</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__Document__rootElement"/>
     [IdlMember("rootElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__Document__rootElement")]
     public SvgSvgElement? RootElement => DocumentElement as SvgSvgElement;
 
@@ -33,6 +34,7 @@ public partial class Document
     /// relaxes the same-origin restriction: the origin's domain is set to a registrable domain suffix of the effective domain
     /// (it does nothing in an origin-keyed agent cluster).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-document-domain"/>
     [IdlMember("domain", "https://html.spec.whatwg.org/multipage/browsers.html#dom-document-domain")]
     public string Domain
     {
@@ -90,6 +92,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-document-referrer: the URL of the document that created or navigated to this document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-referrer"/>
     [IdlMember("referrer", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-referrer")]
     public string Referrer { get; internal set; } = "";
 
@@ -114,6 +117,7 @@ public partial class Document
     /// without browsing context or cookie jar, or whose URL is not an http(s) URL, is cookie-averse: it has no cookies.
     /// </summary>
     /// <exception cref="DomException">The origin of the document is opaque (e.g. a sandboxed document).</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie"/>
     [IdlMember("cookie", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie")]
     public string Cookie
     {
@@ -158,6 +162,7 @@ public partial class Document
     /// header of the response of the document, in the local time zone, or the current date and time when it is unknown (measured
     /// with <see cref="BrowsingContextOptions.TimeProvider"/>).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-lastmodified"/>
     [IdlMember("lastModified", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-lastmodified")]
     public string LastModified
     {
@@ -183,14 +188,17 @@ public partial class Document
     internal string? ProtocolLanguage { get; set; }
 
     /// <summary>Gets a live collection of the <c>img</c> elements of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-images"/>
     [IdlMember("images", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-images")]
     public HtmlCollection Images => _images ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Img));
 
     /// <summary>Gets a live collection of the <c>embed</c> elements of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-embeds"/>
     [IdlMember("embeds", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-embeds")]
     public HtmlCollection Embeds => _embeds ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Embed));
 
     /// <summary>Gets a live collection of the <c>embed</c> elements of the document (alias of <c>embeds</c>).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-plugins"/>
     [IdlMember("plugins", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-plugins")]
     public HtmlCollection Plugins => Embeds;
 
@@ -198,32 +206,39 @@ public partial class Document
     /// Gets a live collection of the <c>a</c> and <c>area</c> elements of the document that have an <c>href</c>
     /// attribute.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-links"/>
     [IdlMember("links", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-links")]
     public HtmlCollection Links => _links ??= new HtmlCollection(this, static e => (e.IsHtml(TagId.A) || e.IsHtml(TagId.Area)) && e.HasAttributeWithLocalName("href"));
 
     /// <summary>Gets a live collection of the <c>form</c> elements of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-forms"/>
     [IdlMember("forms", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-forms")]
     public HtmlCollection Forms => _forms ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Form));
 
     /// <summary>Gets a live collection of the <c>script</c> elements of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-scripts"/>
     [IdlMember("scripts", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-scripts")]
     public HtmlCollection Scripts => _scripts ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Script));
 
     /// <summary>
     /// Gets a live collection of the <c>a</c> elements of the document that have a <c>name</c> attribute.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-anchors"/>
     [IdlMember("anchors", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-anchors")]
     public HtmlCollection Anchors => _anchors ??= new HtmlCollection(this, static e => e.IsHtml(TagId.A) && e.HasAttributeWithLocalName("name"));
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-all</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-all"/>
     [IdlMember("all", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-all")]
     public HtmlAllCollection All => _all ??= new HtmlAllCollection(this);
 
     /// <summary>Gets an always empty collection, as applets are no longer supported.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-applets"/>
     [IdlMember("applets", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-applets")]
     public HtmlCollection Applets => _applets ??= new HtmlCollection(this, static _ => false);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#designMode</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-document-designmode"/>
     [IdlMember("designMode", "https://html.spec.whatwg.org/multipage/interaction.html#dom-document-designmode")]
     public string DesignMode
     {
@@ -262,6 +277,7 @@ public partial class Document
     /// document, and returns false when the command is not supported or not enabled, or when its value is not valid.
     /// </summary>
     /// <exception cref="TypeErrorException">The command is <c>insertHTML</c>, Trusted Types are required and the default policy did not convert the value.</exception>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#execcommand()"/>
     [IdlMember("execCommand", "https://w3c.github.io/editing/docs/execCommand/#execcommand()")]
     public bool ExecCommand(string commandId, bool showUI = false, string value = "") => ExecCommandCore(commandId, showUI, value ?? "");
 
@@ -269,6 +285,7 @@ public partial class Document
     /// https://w3c.github.io/editing/docs/execCommand/#execcommand(): runs an editing command whose value was created by a
     /// Trusted Types policy (the HTML of the <c>insertHTML</c> command).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#execcommand()"/>
     [IdlMember("execCommand", "https://w3c.github.io/editing/docs/execCommand/#execcommand()")]
     public bool ExecCommand(string commandId, bool showUI, TrustedHtml value)
     {
@@ -300,6 +317,7 @@ public partial class Document
     }
 
     /// <summary>Returns a value indicating whether the editing command can currently be executed.</summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#querycommandenabled()"/>
     [IdlMember("queryCommandEnabled", "https://w3c.github.io/editing/docs/execCommand/#querycommandenabled()")]
     public bool QueryCommandEnabled(string commandId)
     {
@@ -309,6 +327,7 @@ public partial class Document
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#querycommandindeterm(): whether the command is indeterminate (e.g. a part of the selection is bold).</summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#querycommandindeterm()"/>
     [IdlMember("queryCommandIndeterm", "https://w3c.github.io/editing/docs/execCommand/#querycommandindeterm()")]
     public bool QueryCommandIndeterm(string commandId)
     {
@@ -318,6 +337,7 @@ public partial class Document
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#querycommandstate(): the state of the command (e.g. whether the selection is bold).</summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#querycommandstate()"/>
     [IdlMember("queryCommandState", "https://w3c.github.io/editing/docs/execCommand/#querycommandstate()")]
     public bool QueryCommandState(string commandId)
     {
@@ -327,6 +347,7 @@ public partial class Document
     }
 
     /// <summary>Returns a value indicating whether the editing command is supported.</summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#querycommandsupported()"/>
     [IdlMember("queryCommandSupported", "https://w3c.github.io/editing/docs/execCommand/#querycommandsupported()")]
     public bool QueryCommandSupported(string commandId)
     {
@@ -336,6 +357,7 @@ public partial class Document
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#querycommandvalue(): the value of the command (e.g. the font name of the selection).</summary>
+    /// <seealso href="https://w3c.github.io/editing/docs/execCommand/#querycommandvalue()"/>
     [IdlMember("queryCommandValue", "https://w3c.github.io/editing/docs/execCommand/#querycommandvalue()")]
     public string QueryCommandValue(string commandId)
     {
@@ -358,6 +380,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden"/>
     [IdlMember("hidden", "https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden")]
     public bool Hidden => !IsVisible;
 
@@ -366,6 +389,7 @@ public partial class Document
     /// document of a browsing context whose top-level browsing context is visible (see <see cref="BrowsingContext.IsVisible"/>),
     /// else <c>hidden</c>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-document-visibilitystate"/>
     [IdlMember("visibilityState", "https://html.spec.whatwg.org/multipage/interaction.html#dom-document-visibilitystate")]
     public string VisibilityState => IsVisible ? "visible" : "hidden";
 
@@ -410,18 +434,21 @@ public partial class Document
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-clear"/>
     [IdlMember("clear", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-clear")]
     public void Clear()
     {
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-captureevents"/>
     [IdlMember("captureEvents", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-captureevents")]
     public void CaptureEvents()
     {
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-releaseevents"/>
     [IdlMember("releaseEvents", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-releaseevents")]
     public void ReleaseEvents()
     {

@@ -8,6 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // the player of the media backend reports (MediaPlayer.AudioTracks, MediaPlayer.VideoTracks).
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#audiotrack</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#audiotrack"/>
 [IdlInterface("AudioTrack", "https://html.spec.whatwg.org/multipage/media.html#audiotrack")]
 public sealed class AudioTrack
 {
@@ -31,22 +32,27 @@ public sealed class AudioTrack
     /// null: the track was not created by a source buffer, the source buffer was removed from its media source, or the media
     /// source was constructed in a dedicated worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-audiotrack-sourcebuffer"/>
     [IdlMember("sourceBuffer", "https://w3c.github.io/media-source/#dom-audiotrack-sourcebuffer")]
     public SourceBuffer? SourceBuffer { get; internal set; }
 
     /// <summary>Gets the identifier of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-id")]
     public string Id => Info.Id;
 
     /// <summary>Gets the category of the track (e.g. <c>main</c>), or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-kind"/>
     [IdlMember("kind", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-kind")]
     public string Kind => Info.Kind;
 
     /// <summary>Gets the label of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-label")]
     public string Label => Info.Label;
 
     /// <summary>Gets the BCP 47 language tag of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-language")]
     public string Language => Info.Language;
 
@@ -54,6 +60,7 @@ public sealed class AudioTrack
     /// Gets or sets a value indicating whether the track is enabled (https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-enabled).
     /// A <c>change</c> event is fired at the list of the track when the value changes.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-enabled"/>
     [IdlMember("enabled", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotrack-enabled")]
     public bool Enabled
     {
@@ -80,6 +87,7 @@ public sealed class AudioTrack
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#audiotracklist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#audiotracklist"/>
 [IdlInterface("AudioTrackList", "https://html.spec.whatwg.org/multipage/media.html#audiotracklist")]
 public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
 {
@@ -144,10 +152,12 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
     }
 
     /// <summary>Gets the number of tracks in the list.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-length")]
     public uint Length => (uint)_tracks.Count;
 
     /// <summary>Gets the track at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-tracklist-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/media.html#dom-tracklist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public AudioTrack? this[uint index] => index < (uint)_tracks.Count ? _tracks[(int)index] : null;
@@ -162,6 +172,7 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
     public int Count => _tracks.Count;
 
     /// <summary>Returns the first track of the list with the given identifier, or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-gettrackbyid"/>
     [IdlMember("getTrackById", "https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-gettrackbyid")]
     public AudioTrack? GetTrackById(string id)
     {
@@ -170,6 +181,7 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onchange")]
     public Action<Event>? OnChange
     {
@@ -178,6 +190,7 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>addtrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onaddtrack"/>
     [IdlMember("onaddtrack", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onaddtrack")]
     public Action<Event>? OnAddTrack
     {
@@ -186,6 +199,7 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>removetrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onremovetrack"/>
     [IdlMember("onremovetrack", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onremovetrack")]
     public Action<Event>? OnRemoveTrack
     {
@@ -228,6 +242,7 @@ public sealed class AudioTrackList : EventTarget, IReadOnlyList<AudioTrack>
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#videotrack</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#videotrack"/>
 [IdlInterface("VideoTrack", "https://html.spec.whatwg.org/multipage/media.html#videotrack")]
 public sealed class VideoTrack
 {
@@ -251,22 +266,27 @@ public sealed class VideoTrack
     /// null: the track was not created by a source buffer, the source buffer was removed from its media source, or the media
     /// source was constructed in a dedicated worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-videotrack-sourcebuffer"/>
     [IdlMember("sourceBuffer", "https://w3c.github.io/media-source/#dom-videotrack-sourcebuffer")]
     public SourceBuffer? SourceBuffer { get; internal set; }
 
     /// <summary>Gets the identifier of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-id")]
     public string Id => Info.Id;
 
     /// <summary>Gets the category of the track (e.g. <c>main</c>), or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-kind"/>
     [IdlMember("kind", "https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-kind")]
     public string Kind => Info.Kind;
 
     /// <summary>Gets the label of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-label")]
     public string Label => Info.Label;
 
     /// <summary>Gets the BCP 47 language tag of the track, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-language")]
     public string Language => Info.Language;
 
@@ -275,6 +295,7 @@ public sealed class VideoTrack
     /// Selecting a track unselects the other tracks of its list; a <c>change</c> event is fired at the list when a track is
     /// selected, or when the selected track is unselected.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-selected"/>
     [IdlMember("selected", "https://html.spec.whatwg.org/multipage/media.html#dom-videotrack-selected")]
     public bool Selected
     {
@@ -314,6 +335,7 @@ public sealed class VideoTrack
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#videotracklist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#videotracklist"/>
 [IdlInterface("VideoTrackList", "https://html.spec.whatwg.org/multipage/media.html#videotracklist")]
 public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
 {
@@ -392,10 +414,12 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
     }
 
     /// <summary>Gets the number of tracks in the list.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-length")]
     public uint Length => (uint)_tracks.Count;
 
     /// <summary>Gets the track at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-tracklist-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/media.html#dom-tracklist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public VideoTrack? this[uint index] => index < (uint)_tracks.Count ? _tracks[(int)index] : null;
@@ -410,6 +434,7 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
     public int Count => _tracks.Count;
 
     /// <summary>Returns the first track of the list with the given identifier, or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-gettrackbyid"/>
     [IdlMember("getTrackById", "https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-gettrackbyid")]
     public VideoTrack? GetTrackById(string id)
     {
@@ -418,10 +443,12 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
     }
 
     /// <summary>Gets the index of the selected track, or -1 when no track is selected.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-selectedindex"/>
     [IdlMember("selectedIndex", "https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-selectedindex")]
     public int SelectedIndex => _tracks.FindIndex(static track => track.Selected);
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onchange")]
     public Action<Event>? OnChange
     {
@@ -430,6 +457,7 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>addtrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onaddtrack"/>
     [IdlMember("onaddtrack", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onaddtrack")]
     public Action<Event>? OnAddTrack
     {
@@ -438,6 +466,7 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>removetrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onremovetrack"/>
     [IdlMember("onremovetrack", "https://html.spec.whatwg.org/multipage/media.html#handler-tracklist-onremovetrack")]
     public Action<Event>? OnRemoveTrack
     {
@@ -480,19 +509,23 @@ public sealed class VideoTrackList : EventTarget, IReadOnlyList<VideoTrack>
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#trackeventinit</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#trackeventinit"/>
 [IdlInterface("TrackEventInit", "https://html.spec.whatwg.org/multipage/media.html#trackeventinit")]
 public sealed class TrackEventInit : EventInit
 {
     /// <summary>Gets the track of the event: an <see cref="AudioTrack"/> or a <see cref="VideoTrack"/> (the text tracks are not implemented), or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-trackeventinit-track"/>
     [IdlMember("track", "https://html.spec.whatwg.org/multipage/media.html#dom-trackeventinit-track")]
     public object? Track { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#trackevent</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#trackevent"/>
 [IdlInterface("TrackEvent", "https://html.spec.whatwg.org/multipage/media.html#trackevent")]
 public sealed class TrackEvent : Event
 {
     /// <summary>Creates a track event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-trackevent"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/media.html#dom-trackevent")]
     public TrackEvent(string type, TrackEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -501,6 +534,7 @@ public sealed class TrackEvent : Event
     }
 
     /// <summary>Gets the track of the event: an <see cref="AudioTrack"/> or a <see cref="VideoTrack"/>, or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-trackevent-track"/>
     [IdlMember("track", "https://html.spec.whatwg.org/multipage/media.html#dom-trackevent-track")]
     public object? Track { get; }
 }

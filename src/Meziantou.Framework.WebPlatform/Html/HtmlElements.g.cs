@@ -9,6 +9,7 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlanchorelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlanchorelement"/>
 [IdlInterface("HTMLAnchorElement", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlanchorelement")]
 public sealed partial class HtmlAnchorElement : HtmlElement
 {
@@ -22,6 +23,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>download</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-download"/>
     [IdlMember("download", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-download")]
     public string Download
     {
@@ -30,6 +32,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>ping</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-ping"/>
     [IdlMember("ping", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-ping")]
     public string Ping
     {
@@ -38,6 +41,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-rel"/>
     [IdlMember("rel", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-rel")]
     public string Rel
     {
@@ -46,6 +50,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-rellist"/>
     [IdlMember("relList", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-rellist")]
     public DomTokenList RelList
     {
@@ -53,6 +58,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -61,6 +67,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>coords</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-coords"/>
     [IdlMember("coords", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-coords")]
     public string Coords
     {
@@ -69,6 +76,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-charset"/>
     [IdlMember("charset", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-charset")]
     public string Charset
     {
@@ -77,6 +85,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-name")]
     public string Name
     {
@@ -85,6 +94,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rev</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-rev"/>
     [IdlMember("rev", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-rev")]
     public string Rev
     {
@@ -93,6 +103,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>shape</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-shape"/>
     [IdlMember("shape", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-a-shape")]
     public string Shape
     {
@@ -101,6 +112,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hreflang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang"/>
     [IdlMember("hreflang", "https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang")]
     public string Hreflang
     {
@@ -109,6 +121,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/links.html#dom-a-type")]
     public string Type
     {
@@ -117,6 +130,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>href</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlanchorelement"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlanchorelement")]
     public string Href
     {
@@ -127,6 +141,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
     private partial string ComputeHref();
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/links.html#dom-a-target")]
     public string Target
     {
@@ -136,6 +151,7 @@ public sealed partial class HtmlAnchorElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/image-maps.html#htmlareaelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#htmlareaelement"/>
 [IdlInterface("HTMLAreaElement", "https://html.spec.whatwg.org/multipage/image-maps.html#htmlareaelement")]
 public sealed partial class HtmlAreaElement : HtmlElement
 {
@@ -149,6 +165,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>alt</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-alt"/>
     [IdlMember("alt", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-alt")]
     public string Alt
     {
@@ -157,6 +174,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>coords</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-coords"/>
     [IdlMember("coords", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-coords")]
     public string Coords
     {
@@ -165,6 +183,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>shape</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-shape"/>
     [IdlMember("shape", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-shape")]
     public string Shape
     {
@@ -173,6 +192,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>download</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-download"/>
     [IdlMember("download", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-download")]
     public string Download
     {
@@ -181,6 +201,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>ping</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-ping"/>
     [IdlMember("ping", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-ping")]
     public string Ping
     {
@@ -189,6 +210,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-rel"/>
     [IdlMember("rel", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-rel")]
     public string Rel
     {
@@ -197,6 +219,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-rellist"/>
     [IdlMember("relList", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-rellist")]
     public DomTokenList RelList
     {
@@ -204,6 +227,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-area-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -212,6 +236,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>nohref</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-area-nohref"/>
     [IdlMember("noHref", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-area-nohref")]
     public bool NoHref
     {
@@ -220,6 +245,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hreflang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang"/>
     [IdlMember("hreflang", "https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang")]
     public string Hreflang
     {
@@ -228,6 +254,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/links.html#dom-a-type")]
     public string Type
     {
@@ -236,6 +263,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>href</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#htmlareaelement"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/image-maps.html#htmlareaelement")]
     public string Href
     {
@@ -246,6 +274,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
     private partial string ComputeHref();
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/links.html#dom-a-target")]
     public string Target
     {
@@ -255,6 +284,7 @@ public sealed partial class HtmlAreaElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#htmlaudioelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#htmlaudioelement"/>
 [IdlInterface("HTMLAudioElement", "https://html.spec.whatwg.org/multipage/media.html#htmlaudioelement")]
 public sealed partial class HtmlAudioElement : HtmlMediaElement
 {
@@ -269,6 +299,7 @@ public sealed partial class HtmlAudioElement : HtmlMediaElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlbrelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlbrelement"/>
 [IdlInterface("HTMLBRElement", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlbrelement")]
 public sealed partial class HtmlBRElement : HtmlElement
 {
@@ -282,6 +313,7 @@ public sealed partial class HtmlBRElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>clear</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-br-clear"/>
     [IdlMember("clear", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-br-clear")]
     public string Clear
     {
@@ -291,6 +323,7 @@ public sealed partial class HtmlBRElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmlbaseelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmlbaseelement"/>
 [IdlInterface("HTMLBaseElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmlbaseelement")]
 public sealed partial class HtmlBaseElement : HtmlElement
 {
@@ -304,6 +337,7 @@ public sealed partial class HtmlBaseElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>href</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href")]
     public string Href
     {
@@ -314,6 +348,7 @@ public sealed partial class HtmlBaseElement : HtmlElement
     private partial string ComputeHref();
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-base-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/semantics.html#dom-base-target")]
     public string Target
     {
@@ -323,6 +358,7 @@ public sealed partial class HtmlBaseElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/sections.html#htmlbodyelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/sections.html#htmlbodyelement"/>
 [IdlInterface("HTMLBodyElement", "https://html.spec.whatwg.org/multipage/sections.html#htmlbodyelement")]
 public sealed partial class HtmlBodyElement : HtmlElement
 {
@@ -336,6 +372,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>text</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-text"/>
     [IdlMember("text", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-text")]
     public string Text
     {
@@ -344,6 +381,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>link</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-link"/>
     [IdlMember("link", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-link")]
     public string Link
     {
@@ -352,6 +390,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>vlink</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-vlink"/>
     [IdlMember("vLink", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-vlink")]
     public string VLink
     {
@@ -360,6 +399,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>alink</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-alink"/>
     [IdlMember("aLink", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-alink")]
     public string ALink
     {
@@ -368,6 +408,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>bgcolor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-bgcolor")]
     public string BgColor
     {
@@ -376,6 +417,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>background</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-background"/>
     [IdlMember("background", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-body-background")]
     public string Background
     {
@@ -384,6 +426,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>afterprint</c> event (the <c>onafterprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint"/>
     [IdlMember("onafterprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint")]
     public Action<Event>? OnAfterPrint
     {
@@ -392,6 +435,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeprint</c> event (the <c>onbeforeprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint"/>
     [IdlMember("onbeforeprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint")]
     public Action<Event>? OnBeforePrint
     {
@@ -400,6 +444,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeunload</c> event (the <c>onbeforeunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload"/>
     [IdlMember("onbeforeunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload")]
     public Action<Event>? OnBeforeUnload
     {
@@ -408,6 +453,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>hashchange</c> event (the <c>onhashchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange"/>
     [IdlMember("onhashchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange")]
     public Action<Event>? OnHashChange
     {
@@ -416,6 +462,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>languagechange</c> event (the <c>onlanguagechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange"/>
     [IdlMember("onlanguagechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange")]
     public Action<Event>? OnLanguageChange
     {
@@ -424,6 +471,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event (the <c>onmessage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -432,6 +480,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event (the <c>onmessageerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -440,6 +489,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>offline</c> event (the <c>onoffline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline"/>
     [IdlMember("onoffline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline")]
     public Action<Event>? OnOffline
     {
@@ -448,6 +498,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>online</c> event (the <c>ononline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline"/>
     [IdlMember("ononline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline")]
     public Action<Event>? OnOnline
     {
@@ -456,6 +507,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagehide</c> event (the <c>onpagehide</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide"/>
     [IdlMember("onpagehide", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide")]
     public Action<Event>? OnPageHide
     {
@@ -464,6 +516,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagereveal</c> event (the <c>onpagereveal</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal"/>
     [IdlMember("onpagereveal", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal")]
     public Action<Event>? OnPageReveal
     {
@@ -472,6 +525,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageshow</c> event (the <c>onpageshow</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow"/>
     [IdlMember("onpageshow", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow")]
     public Action<Event>? OnPageShow
     {
@@ -480,6 +534,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageswap</c> event (the <c>onpageswap</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap"/>
     [IdlMember("onpageswap", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap")]
     public Action<Event>? OnPageSwap
     {
@@ -488,6 +543,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>popstate</c> event (the <c>onpopstate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate"/>
     [IdlMember("onpopstate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate")]
     public Action<Event>? OnPopState
     {
@@ -496,6 +552,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>rejectionhandled</c> event (the <c>onrejectionhandled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled"/>
     [IdlMember("onrejectionhandled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled")]
     public Action<Event>? OnRejectionHandled
     {
@@ -504,6 +561,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>storage</c> event (the <c>onstorage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage"/>
     [IdlMember("onstorage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage")]
     public Action<Event>? OnStorage
     {
@@ -512,6 +570,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unhandledrejection</c> event (the <c>onunhandledrejection</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection"/>
     [IdlMember("onunhandledrejection", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection")]
     public Action<Event>? OnUnhandledRejection
     {
@@ -520,6 +579,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unload</c> event (the <c>onunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload"/>
     [IdlMember("onunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload")]
     public Action<Event>? OnUnload
     {
@@ -529,6 +589,7 @@ public sealed partial class HtmlBodyElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement"/>
 [IdlInterface("HTMLButtonElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement")]
 public sealed partial class HtmlButtonElement : HtmlElement
 {
@@ -542,6 +603,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>command</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-command"/>
     [IdlMember("command", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-command")]
     public string Command
     {
@@ -552,6 +614,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     private partial string ComputeCommand();
 
     /// <summary>Gets or sets the element whose ID is the value of the <c>commandfor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-commandforelement"/>
     [IdlMember("commandForElement", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-commandforelement")]
     public Element? CommandForElement
     {
@@ -560,6 +623,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-disabled")]
     public bool Disabled
     {
@@ -568,6 +632,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formaction</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formaction"/>
     [IdlMember("formAction", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formaction")]
     public string FormAction
     {
@@ -578,6 +643,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     private partial string ComputeFormAction();
 
     /// <summary>Gets or sets the value of the <c>formenctype</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formenctype"/>
     [IdlMember("formEnctype", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formenctype")]
     public string FormEnctype
     {
@@ -586,6 +652,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formmethod</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formmethod"/>
     [IdlMember("formMethod", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formmethod")]
     public string FormMethod
     {
@@ -594,6 +661,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>formnovalidate</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-formnovalidate"/>
     [IdlMember("formNoValidate", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-formnovalidate")]
     public bool FormNoValidate
     {
@@ -602,6 +670,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formtarget</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-formtarget"/>
     [IdlMember("formTarget", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-formtarget")]
     public string FormTarget
     {
@@ -610,6 +679,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-name")]
     public string Name
     {
@@ -618,6 +688,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-type")]
     public string Type
     {
@@ -628,6 +699,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     private partial string ComputeType();
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-button-value")]
     public string Value
     {
@@ -636,6 +708,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the element whose ID is the value of the <c>popovertarget</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement"/>
     [IdlMember("popoverTargetElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement")]
     public Element? PopoverTargetElement
     {
@@ -644,6 +717,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>popovertargetaction</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement"/>
     [IdlMember("popoverTargetAction", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement")]
     public string PopoverTargetAction
     {
@@ -653,6 +727,7 @@ public sealed partial class HtmlButtonElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#htmlcanvaselement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#htmlcanvaselement"/>
 [IdlInterface("HTMLCanvasElement", "https://html.spec.whatwg.org/multipage/canvas.html#htmlcanvaselement")]
 public sealed partial class HtmlCanvasElement : HtmlElement
 {
@@ -667,6 +742,7 @@ public sealed partial class HtmlCanvasElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmldlistelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmldlistelement"/>
 [IdlInterface("HTMLDListElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmldlistelement")]
 public sealed partial class HtmlDListElement : HtmlElement
 {
@@ -680,6 +756,7 @@ public sealed partial class HtmlDListElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>compact</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-dl-compact"/>
     [IdlMember("compact", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-dl-compact")]
     public bool Compact
     {
@@ -689,6 +766,7 @@ public sealed partial class HtmlDListElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmldataelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmldataelement"/>
 [IdlInterface("HTMLDataElement", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmldataelement")]
 public sealed partial class HtmlDataElement : HtmlElement
 {
@@ -702,6 +780,7 @@ public sealed partial class HtmlDataElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-data-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-data-value")]
     public string Value
     {
@@ -711,6 +790,7 @@ public sealed partial class HtmlDataElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmldatalistelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmldatalistelement"/>
 [IdlInterface("HTMLDataListElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmldatalistelement")]
 public sealed partial class HtmlDataListElement : HtmlElement
 {
@@ -725,6 +805,7 @@ public sealed partial class HtmlDataListElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldetailselement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldetailselement"/>
 [IdlInterface("HTMLDetailsElement", "https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldetailselement")]
 public sealed partial class HtmlDetailsElement : HtmlElement
 {
@@ -738,6 +819,7 @@ public sealed partial class HtmlDetailsElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-details-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-details-name")]
     public string Name
     {
@@ -746,6 +828,7 @@ public sealed partial class HtmlDetailsElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>open</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-details-open"/>
     [IdlMember("open", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-details-open")]
     public bool Open
     {
@@ -755,6 +838,7 @@ public sealed partial class HtmlDetailsElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldialogelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldialogelement"/>
 [IdlInterface("HTMLDialogElement", "https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldialogelement")]
 public sealed partial class HtmlDialogElement : HtmlElement
 {
@@ -768,6 +852,7 @@ public sealed partial class HtmlDialogElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>open</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-open"/>
     [IdlMember("open", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-open")]
     public bool Open
     {
@@ -776,6 +861,7 @@ public sealed partial class HtmlDialogElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>closedby</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-closedby"/>
     [IdlMember("closedBy", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-closedby")]
     public string ClosedBy
     {
@@ -787,6 +873,7 @@ public sealed partial class HtmlDialogElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmldirectoryelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmldirectoryelement"/>
 [IdlInterface("HTMLDirectoryElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmldirectoryelement")]
 public sealed partial class HtmlDirectoryElement : HtmlElement
 {
@@ -800,6 +887,7 @@ public sealed partial class HtmlDirectoryElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>compact</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-dir-compact"/>
     [IdlMember("compact", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-dir-compact")]
     public bool Compact
     {
@@ -809,6 +897,7 @@ public sealed partial class HtmlDirectoryElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmldivelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmldivelement"/>
 [IdlInterface("HTMLDivElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmldivelement")]
 public sealed partial class HtmlDivElement : HtmlElement
 {
@@ -822,6 +911,7 @@ public sealed partial class HtmlDivElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-div-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-div-align")]
     public string Align
     {
@@ -831,10 +921,12 @@ public sealed partial class HtmlDivElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dom.html#htmlelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#htmlelement"/>
 [IdlInterface("HTMLElement", "https://html.spec.whatwg.org/multipage/dom.html#htmlelement")]
 public partial class HtmlElement
 {
     /// <summary>Gets or sets the value of the <c>title</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-title"/>
     [IdlMember("title", "https://html.spec.whatwg.org/multipage/dom.html#dom-title")]
     public string Title
     {
@@ -843,6 +935,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>lang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-lang"/>
     [IdlMember("lang", "https://html.spec.whatwg.org/multipage/dom.html#dom-lang")]
     public string Lang
     {
@@ -851,6 +944,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>dir</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-dir"/>
     [IdlMember("dir", "https://html.spec.whatwg.org/multipage/dom.html#dom-dir")]
     public string Dir
     {
@@ -859,6 +953,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>inert</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-inert"/>
     [IdlMember("inert", "https://html.spec.whatwg.org/multipage/dom.html#dom-inert")]
     public bool Inert
     {
@@ -867,6 +962,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>accesskey</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-accesskey"/>
     [IdlMember("accessKey", "https://html.spec.whatwg.org/multipage/dom.html#dom-accesskey")]
     public string AccessKey
     {
@@ -875,6 +971,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>writingsuggestions</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-writingsuggestions"/>
     [IdlMember("writingSuggestions", "https://html.spec.whatwg.org/multipage/interaction.html#dom-writingsuggestions")]
     public string WritingSuggestions
     {
@@ -885,6 +982,7 @@ public partial class HtmlElement
     private partial string ComputeWritingSuggestions();
 
     /// <summary>Gets or sets the value of the <c>autocapitalize</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-autocapitalize"/>
     [IdlMember("autocapitalize", "https://html.spec.whatwg.org/multipage/interaction.html#dom-autocapitalize")]
     public string Autocapitalize
     {
@@ -895,6 +993,7 @@ public partial class HtmlElement
     private partial string ComputeAutocapitalize();
 
     /// <summary>Gets or sets the value of the <c>popover</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/popover.html#dom-popover"/>
     [IdlMember("popover", "https://html.spec.whatwg.org/multipage/popover.html#dom-popover")]
     public string? Popover
     {
@@ -903,6 +1002,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>headingoffset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-headingoffset"/>
     [IdlMember("headingOffset", "https://html.spec.whatwg.org/multipage/dom.html#dom-headingoffset")]
     public uint HeadingOffset
     {
@@ -911,6 +1011,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>headingreset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-headingreset"/>
     [IdlMember("headingReset", "https://html.spec.whatwg.org/multipage/dom.html#dom-headingreset")]
     public bool HeadingReset
     {
@@ -919,6 +1020,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event (the <c>onabort</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort"/>
     [IdlMember("onabort", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort")]
     public Action<Event>? OnAbort
     {
@@ -927,6 +1029,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>auxclick</c> event (the <c>onauxclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick"/>
     [IdlMember("onauxclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick")]
     public Action<Event>? OnAuxClick
     {
@@ -935,6 +1038,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeinput</c> event (the <c>onbeforeinput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput"/>
     [IdlMember("onbeforeinput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput")]
     public Action<Event>? OnBeforeInput
     {
@@ -943,6 +1047,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforematch</c> event (the <c>onbeforematch</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch"/>
     [IdlMember("onbeforematch", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch")]
     public Action<Event>? OnBeforeMatch
     {
@@ -951,6 +1056,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforetoggle</c> event (the <c>onbeforetoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle"/>
     [IdlMember("onbeforetoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle")]
     public Action<Event>? OnBeforeToggle
     {
@@ -959,6 +1065,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>blur</c> event (the <c>onblur</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur"/>
     [IdlMember("onblur", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur")]
     public Action<Event>? OnBlur
     {
@@ -967,6 +1074,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cancel</c> event (the <c>oncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel"/>
     [IdlMember("oncancel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel")]
     public Action<Event>? OnCancel
     {
@@ -975,6 +1083,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplay</c> event (the <c>oncanplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay"/>
     [IdlMember("oncanplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay")]
     public Action<Event>? OnCanPlay
     {
@@ -983,6 +1092,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplaythrough</c> event (the <c>oncanplaythrough</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough"/>
     [IdlMember("oncanplaythrough", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough")]
     public Action<Event>? OnCanPlayThrough
     {
@@ -991,6 +1101,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event (the <c>onchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange")]
     public Action<Event>? OnChange
     {
@@ -999,6 +1110,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>click</c> event (the <c>onclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick"/>
     [IdlMember("onclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick")]
     public Action<Event>? OnClick
     {
@@ -1007,6 +1119,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event (the <c>onclose</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose"/>
     [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose")]
     public Action<Event>? OnClose
     {
@@ -1015,6 +1128,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>command</c> event (the <c>oncommand</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand"/>
     [IdlMember("oncommand", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand")]
     public Action<Event>? OnCommand
     {
@@ -1023,6 +1137,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextlost</c> event (the <c>oncontextlost</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost"/>
     [IdlMember("oncontextlost", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost")]
     public Action<Event>? OnContextlost
     {
@@ -1031,6 +1146,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextmenu</c> event (the <c>oncontextmenu</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu"/>
     [IdlMember("oncontextmenu", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu")]
     public Action<Event>? OnContextMenu
     {
@@ -1039,6 +1155,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextrestored</c> event (the <c>oncontextrestored</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored"/>
     [IdlMember("oncontextrestored", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored")]
     public Action<Event>? OnContextRestored
     {
@@ -1047,6 +1164,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>copy</c> event (the <c>oncopy</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy"/>
     [IdlMember("oncopy", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy")]
     public Action<Event>? OnCopy
     {
@@ -1055,6 +1173,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cuechange</c> event (the <c>oncuechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange"/>
     [IdlMember("oncuechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange")]
     public Action<Event>? OnCueChange
     {
@@ -1063,6 +1182,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cut</c> event (the <c>oncut</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut"/>
     [IdlMember("oncut", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut")]
     public Action<Event>? OnCut
     {
@@ -1071,6 +1191,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dblclick</c> event (the <c>ondblclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick"/>
     [IdlMember("ondblclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick")]
     public Action<Event>? OnDblClick
     {
@@ -1079,6 +1200,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drag</c> event (the <c>ondrag</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag"/>
     [IdlMember("ondrag", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag")]
     public Action<Event>? OnDrag
     {
@@ -1087,6 +1209,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragend</c> event (the <c>ondragend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend"/>
     [IdlMember("ondragend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend")]
     public Action<Event>? OnDragEnd
     {
@@ -1095,6 +1218,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragenter</c> event (the <c>ondragenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter"/>
     [IdlMember("ondragenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter")]
     public Action<Event>? OnDragEnter
     {
@@ -1103,6 +1227,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragleave</c> event (the <c>ondragleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave"/>
     [IdlMember("ondragleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave")]
     public Action<Event>? OnDragLeave
     {
@@ -1111,6 +1236,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragover</c> event (the <c>ondragover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover"/>
     [IdlMember("ondragover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover")]
     public Action<Event>? OnDragOver
     {
@@ -1119,6 +1245,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragstart</c> event (the <c>ondragstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart"/>
     [IdlMember("ondragstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart")]
     public Action<Event>? OnDragStart
     {
@@ -1127,6 +1254,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drop</c> event (the <c>ondrop</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop"/>
     [IdlMember("ondrop", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop")]
     public Action<Event>? OnDrop
     {
@@ -1135,6 +1263,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>durationchange</c> event (the <c>ondurationchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange"/>
     [IdlMember("ondurationchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange")]
     public Action<Event>? OnDurationChange
     {
@@ -1143,6 +1272,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>emptied</c> event (the <c>onemptied</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied"/>
     [IdlMember("onemptied", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied")]
     public Action<Event>? OnEmptied
     {
@@ -1151,6 +1281,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ended</c> event (the <c>onended</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended"/>
     [IdlMember("onended", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended")]
     public Action<Event>? OnEnded
     {
@@ -1159,6 +1290,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event (the <c>onerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror")]
     public Action<Event>? OnError
     {
@@ -1167,6 +1299,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>focus</c> event (the <c>onfocus</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus"/>
     [IdlMember("onfocus", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus")]
     public Action<Event>? OnFocus
     {
@@ -1175,6 +1308,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>formdata</c> event (the <c>onformdata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata"/>
     [IdlMember("onformdata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata")]
     public Action<Event>? OnFormData
     {
@@ -1183,6 +1317,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>input</c> event (the <c>oninput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput"/>
     [IdlMember("oninput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput")]
     public Action<Event>? OnInput
     {
@@ -1191,6 +1326,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>invalid</c> event (the <c>oninvalid</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid"/>
     [IdlMember("oninvalid", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid")]
     public Action<Event>? OnInvalid
     {
@@ -1199,6 +1335,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keydown</c> event (the <c>onkeydown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown"/>
     [IdlMember("onkeydown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown")]
     public Action<Event>? OnKeyDown
     {
@@ -1207,6 +1344,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keypress</c> event (the <c>onkeypress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress"/>
     [IdlMember("onkeypress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress")]
     public Action<Event>? OnKeyPress
     {
@@ -1215,6 +1353,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keyup</c> event (the <c>onkeyup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup"/>
     [IdlMember("onkeyup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup")]
     public Action<Event>? OnKeyUp
     {
@@ -1223,6 +1362,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>load</c> event (the <c>onload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload"/>
     [IdlMember("onload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload")]
     public Action<Event>? OnLoad
     {
@@ -1231,6 +1371,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadeddata</c> event (the <c>onloadeddata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata"/>
     [IdlMember("onloadeddata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata")]
     public Action<Event>? OnLoadedData
     {
@@ -1239,6 +1380,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadedmetadata</c> event (the <c>onloadedmetadata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata"/>
     [IdlMember("onloadedmetadata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata")]
     public Action<Event>? OnLoadedMetadata
     {
@@ -1247,6 +1389,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadstart</c> event (the <c>onloadstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart"/>
     [IdlMember("onloadstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart")]
     public Action<Event>? OnLoadStart
     {
@@ -1255,6 +1398,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousedown</c> event (the <c>onmousedown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown"/>
     [IdlMember("onmousedown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown")]
     public Action<Event>? OnMouseDown
     {
@@ -1263,6 +1407,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseenter</c> event (the <c>onmouseenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter"/>
     [IdlMember("onmouseenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter")]
     public Action<Event>? OnMouseEnter
     {
@@ -1271,6 +1416,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseleave</c> event (the <c>onmouseleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave"/>
     [IdlMember("onmouseleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave")]
     public Action<Event>? OnMouseLeave
     {
@@ -1279,6 +1425,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousemove</c> event (the <c>onmousemove</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove"/>
     [IdlMember("onmousemove", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove")]
     public Action<Event>? OnMouseMove
     {
@@ -1287,6 +1434,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseout</c> event (the <c>onmouseout</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout"/>
     [IdlMember("onmouseout", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout")]
     public Action<Event>? OnMouseOut
     {
@@ -1295,6 +1443,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseover</c> event (the <c>onmouseover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover"/>
     [IdlMember("onmouseover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover")]
     public Action<Event>? OnMouseOver
     {
@@ -1303,6 +1452,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseup</c> event (the <c>onmouseup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup"/>
     [IdlMember("onmouseup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup")]
     public Action<Event>? OnMouseUp
     {
@@ -1311,6 +1461,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>paste</c> event (the <c>onpaste</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste"/>
     [IdlMember("onpaste", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste")]
     public Action<Event>? OnPaste
     {
@@ -1319,6 +1470,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pause</c> event (the <c>onpause</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause"/>
     [IdlMember("onpause", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause")]
     public Action<Event>? OnPause
     {
@@ -1327,6 +1479,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>play</c> event (the <c>onplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay"/>
     [IdlMember("onplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay")]
     public Action<Event>? OnPlay
     {
@@ -1335,6 +1488,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>playing</c> event (the <c>onplaying</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying"/>
     [IdlMember("onplaying", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying")]
     public Action<Event>? OnPlaying
     {
@@ -1343,6 +1497,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>progress</c> event (the <c>onprogress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress"/>
     [IdlMember("onprogress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress")]
     public Action<Event>? OnProgress
     {
@@ -1351,6 +1506,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ratechange</c> event (the <c>onratechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange"/>
     [IdlMember("onratechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange")]
     public Action<Event>? OnRateChange
     {
@@ -1359,6 +1515,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>reset</c> event (the <c>onreset</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset"/>
     [IdlMember("onreset", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset")]
     public Action<Event>? OnReset
     {
@@ -1367,6 +1524,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>resize</c> event (the <c>onresize</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize"/>
     [IdlMember("onresize", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize")]
     public Action<Event>? OnResize
     {
@@ -1375,6 +1533,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scroll</c> event (the <c>onscroll</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll"/>
     [IdlMember("onscroll", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll")]
     public Action<Event>? OnScroll
     {
@@ -1383,6 +1542,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollend</c> event (the <c>onscrollend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend"/>
     [IdlMember("onscrollend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend")]
     public Action<Event>? OnScrollEnd
     {
@@ -1391,6 +1551,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>securitypolicyviolation</c> event (the <c>onsecuritypolicyviolation</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation"/>
     [IdlMember("onsecuritypolicyviolation", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation")]
     public Action<Event>? OnSecurityPolicyViolation
     {
@@ -1399,6 +1560,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeked</c> event (the <c>onseeked</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked"/>
     [IdlMember("onseeked", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked")]
     public Action<Event>? OnSeeked
     {
@@ -1407,6 +1569,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeking</c> event (the <c>onseeking</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking"/>
     [IdlMember("onseeking", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking")]
     public Action<Event>? OnSeeking
     {
@@ -1415,6 +1578,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>select</c> event (the <c>onselect</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect"/>
     [IdlMember("onselect", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect")]
     public Action<Event>? OnSelect
     {
@@ -1423,6 +1587,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>slotchange</c> event (the <c>onslotchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange"/>
     [IdlMember("onslotchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange")]
     public Action<Event>? OnSlotChange
     {
@@ -1431,6 +1596,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>stalled</c> event (the <c>onstalled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled"/>
     [IdlMember("onstalled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled")]
     public Action<Event>? OnStalled
     {
@@ -1439,6 +1605,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>submit</c> event (the <c>onsubmit</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit"/>
     [IdlMember("onsubmit", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit")]
     public Action<Event>? OnSubmit
     {
@@ -1447,6 +1614,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>suspend</c> event (the <c>onsuspend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend"/>
     [IdlMember("onsuspend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend")]
     public Action<Event>? OnSuspend
     {
@@ -1455,6 +1623,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>timeupdate</c> event (the <c>ontimeupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate"/>
     [IdlMember("ontimeupdate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate")]
     public Action<Event>? OnTimeUpdate
     {
@@ -1463,6 +1632,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>toggle</c> event (the <c>ontoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle"/>
     [IdlMember("ontoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle")]
     public Action<Event>? OnToggle
     {
@@ -1471,6 +1641,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>volumechange</c> event (the <c>onvolumechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange"/>
     [IdlMember("onvolumechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange")]
     public Action<Event>? OnVolumeChange
     {
@@ -1479,6 +1650,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>waiting</c> event (the <c>onwaiting</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting"/>
     [IdlMember("onwaiting", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting")]
     public Action<Event>? OnWaiting
     {
@@ -1487,6 +1659,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationend</c> event (the <c>onwebkitanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend"/>
     [IdlMember("onwebkitanimationend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend")]
     public Action<Event>? OnWebkitAnimationEnd
     {
@@ -1495,6 +1668,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationiteration</c> event (the <c>onwebkitanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration"/>
     [IdlMember("onwebkitanimationiteration", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration")]
     public Action<Event>? OnWebkitAnimationIteration
     {
@@ -1503,6 +1677,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationstart</c> event (the <c>onwebkitanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart"/>
     [IdlMember("onwebkitanimationstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart")]
     public Action<Event>? OnWebkitAnimationStart
     {
@@ -1511,6 +1686,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkittransitionend</c> event (the <c>onwebkittransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend"/>
     [IdlMember("onwebkittransitionend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend")]
     public Action<Event>? OnWebkitTransitionEnd
     {
@@ -1519,6 +1695,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>wheel</c> event (the <c>onwheel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel"/>
     [IdlMember("onwheel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel")]
     public Action<Event>? OnWheel
     {
@@ -1527,6 +1704,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationstart</c> event (the <c>onanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart"/>
     [IdlMember("onanimationstart", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart")]
     public Action<Event>? OnAnimationStart
     {
@@ -1535,6 +1713,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationiteration</c> event (the <c>onanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration"/>
     [IdlMember("onanimationiteration", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration")]
     public Action<Event>? OnAnimationIteration
     {
@@ -1543,6 +1722,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationend</c> event (the <c>onanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend"/>
     [IdlMember("onanimationend", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend")]
     public Action<Event>? OnAnimationEnd
     {
@@ -1551,6 +1731,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationcancel</c> event (the <c>onanimationcancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel"/>
     [IdlMember("onanimationcancel", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel")]
     public Action<Event>? OnAnimationCancel
     {
@@ -1559,6 +1740,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchange</c> event (the <c>onscrollsnapchange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange"/>
     [IdlMember("onscrollsnapchange", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange")]
     public Action<Event>? OnScrollSnapChange
     {
@@ -1567,6 +1749,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchanging</c> event (the <c>onscrollsnapchanging</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging"/>
     [IdlMember("onscrollsnapchanging", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging")]
     public Action<Event>? OnScrollSnapChanging
     {
@@ -1575,6 +1758,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionrun</c> event (the <c>ontransitionrun</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun"/>
     [IdlMember("ontransitionrun", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun")]
     public Action<Event>? OnTransitionRun
     {
@@ -1583,6 +1767,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionstart</c> event (the <c>ontransitionstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart"/>
     [IdlMember("ontransitionstart", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart")]
     public Action<Event>? OnTransitionStart
     {
@@ -1591,6 +1776,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionend</c> event (the <c>ontransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend"/>
     [IdlMember("ontransitionend", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend")]
     public Action<Event>? OnTransitionEnd
     {
@@ -1599,6 +1785,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitioncancel</c> event (the <c>ontransitioncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel"/>
     [IdlMember("ontransitioncancel", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel")]
     public Action<Event>? OnTransitionCancel
     {
@@ -1607,6 +1794,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerover</c> event (the <c>onpointerover</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover"/>
     [IdlMember("onpointerover", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover")]
     public Action<Event>? OnPointerOver
     {
@@ -1615,6 +1803,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerenter</c> event (the <c>onpointerenter</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter"/>
     [IdlMember("onpointerenter", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter")]
     public Action<Event>? OnPointerEnter
     {
@@ -1623,6 +1812,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerdown</c> event (the <c>onpointerdown</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown"/>
     [IdlMember("onpointerdown", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown")]
     public Action<Event>? OnPointerDown
     {
@@ -1631,6 +1821,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointermove</c> event (the <c>onpointermove</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove"/>
     [IdlMember("onpointermove", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove")]
     public Action<Event>? OnPointerMove
     {
@@ -1639,6 +1830,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerrawupdate</c> event (the <c>onpointerrawupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate"/>
     [IdlMember("onpointerrawupdate", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate")]
     public Action<Event>? OnPointerRawUpdate
     {
@@ -1647,6 +1839,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerup</c> event (the <c>onpointerup</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup"/>
     [IdlMember("onpointerup", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup")]
     public Action<Event>? OnPointerUp
     {
@@ -1655,6 +1848,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointercancel</c> event (the <c>onpointercancel</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel"/>
     [IdlMember("onpointercancel", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel")]
     public Action<Event>? OnPointerCancel
     {
@@ -1663,6 +1857,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerout</c> event (the <c>onpointerout</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout"/>
     [IdlMember("onpointerout", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout")]
     public Action<Event>? OnPointerOut
     {
@@ -1671,6 +1866,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerleave</c> event (the <c>onpointerleave</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave"/>
     [IdlMember("onpointerleave", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave")]
     public Action<Event>? OnPointerLeave
     {
@@ -1679,6 +1875,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>gotpointercapture</c> event (the <c>ongotpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture"/>
     [IdlMember("ongotpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture")]
     public Action<Event>? OnGotPointerCapture
     {
@@ -1687,6 +1884,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>lostpointercapture</c> event (the <c>onlostpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture"/>
     [IdlMember("onlostpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture")]
     public Action<Event>? OnLostPointerCapture
     {
@@ -1695,6 +1893,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectstart</c> event (the <c>onselectstart</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart"/>
     [IdlMember("onselectstart", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart")]
     public Action<Event>? OnSelectStart
     {
@@ -1703,6 +1902,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectionchange</c> event (the <c>onselectionchange</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange"/>
     [IdlMember("onselectionchange", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange")]
     public Action<Event>? OnSelectionChange
     {
@@ -1711,6 +1911,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>enterkeyhint</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-enterkeyhint"/>
     [IdlMember("enterKeyHint", "https://html.spec.whatwg.org/multipage/interaction.html#dom-enterkeyhint")]
     public string EnterKeyHint
     {
@@ -1719,6 +1920,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>inputmode</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-inputmode"/>
     [IdlMember("inputMode", "https://html.spec.whatwg.org/multipage/interaction.html#dom-inputmode")]
     public string InputMode
     {
@@ -1727,6 +1929,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>autofocus</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus"/>
     [IdlMember("autofocus", "https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus")]
     public bool Autofocus
     {
@@ -1735,6 +1938,7 @@ public partial class HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>tabindex</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex"/>
     [IdlMember("tabIndex", "https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex")]
     public int TabIndex
     {
@@ -1745,6 +1949,7 @@ public partial class HtmlElement
     private partial int ComputeTabIndex();
 
     /// <summary>Gets or sets the event handler of the <c>contentvisibilityautostatechange</c> event (the <c>oncontentvisibilityautostatechange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change"/>
     [IdlMember("oncontentvisibilityautostatechange", "https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change")]
     [Experimental(ExperimentalApis.ContentVisibilityAutoStateChangeEventHandler, UrlFormat = ExperimentalApis.UrlFormat)]
     public Action<Event>? OnContentVisibilityAutoStateChange
@@ -1755,6 +1960,7 @@ public partial class HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlembedelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlembedelement"/>
 [IdlInterface("HTMLEmbedElement", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlembedelement")]
 public sealed partial class HtmlEmbedElement : HtmlElement
 {
@@ -1768,6 +1974,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-src")]
     public string Src
     {
@@ -1776,6 +1983,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-type")]
     public string Type
     {
@@ -1784,6 +1992,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-width")]
     public string Width
     {
@@ -1792,6 +2001,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-height")]
     public string Height
     {
@@ -1800,6 +2010,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-align")]
     public string Align
     {
@@ -1808,6 +2019,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-name")]
     public string Name
     {
@@ -1817,6 +2029,7 @@ public sealed partial class HtmlEmbedElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlfieldsetelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlfieldsetelement"/>
 [IdlInterface("HTMLFieldSetElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlfieldsetelement")]
 public sealed partial class HtmlFieldSetElement : HtmlElement
 {
@@ -1830,6 +2043,7 @@ public sealed partial class HtmlFieldSetElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-disabled")]
     public bool Disabled
     {
@@ -1838,6 +2052,7 @@ public sealed partial class HtmlFieldSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-name")]
     public string Name
     {
@@ -1847,6 +2062,7 @@ public sealed partial class HtmlFieldSetElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmlfontelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmlfontelement"/>
 [IdlInterface("HTMLFontElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmlfontelement")]
 public sealed partial class HtmlFontElement : HtmlElement
 {
@@ -1860,6 +2076,7 @@ public sealed partial class HtmlFontElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>color</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-color"/>
     [IdlMember("color", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-color")]
     public string Color
     {
@@ -1868,6 +2085,7 @@ public sealed partial class HtmlFontElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>face</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-face"/>
     [IdlMember("face", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-face")]
     public string Face
     {
@@ -1876,6 +2094,7 @@ public sealed partial class HtmlFontElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>size</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-size"/>
     [IdlMember("size", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-font-size")]
     public string Size
     {
@@ -1885,6 +2104,7 @@ public sealed partial class HtmlFontElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/forms.html#htmlformelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#htmlformelement"/>
 [IdlInterface("HTMLFormElement", "https://html.spec.whatwg.org/multipage/forms.html#htmlformelement")]
 public sealed partial class HtmlFormElement : HtmlElement
 {
@@ -1898,6 +2118,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>accept-charset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-acceptcharset"/>
     [IdlMember("acceptCharset", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-acceptcharset")]
     public string AcceptCharset
     {
@@ -1906,6 +2127,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>action</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-action"/>
     [IdlMember("action", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-action")]
     public string Action
     {
@@ -1916,6 +2138,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     private partial string ComputeAction();
 
     /// <summary>Gets or sets the value of the <c>autocomplete</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-autocomplete"/>
     [IdlMember("autocomplete", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-autocomplete")]
     public string Autocomplete
     {
@@ -1924,6 +2147,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>enctype</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-enctype"/>
     [IdlMember("enctype", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-enctype")]
     public string Enctype
     {
@@ -1932,6 +2156,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>enctype</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-encoding"/>
     [IdlMember("encoding", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-encoding")]
     public string Encoding
     {
@@ -1940,6 +2165,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>method</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-method"/>
     [IdlMember("method", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-method")]
     public string Method
     {
@@ -1948,6 +2174,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-name")]
     public string Name
     {
@@ -1956,6 +2183,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>novalidate</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-fs-novalidate"/>
     [IdlMember("noValidate", "https://html.spec.whatwg.org/multipage/forms.html#dom-fs-novalidate")]
     public bool NoValidate
     {
@@ -1964,6 +2192,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-fs-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/forms.html#dom-fs-target")]
     public string Target
     {
@@ -1972,6 +2201,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-rel"/>
     [IdlMember("rel", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-rel")]
     public string Rel
     {
@@ -1980,6 +2210,7 @@ public sealed partial class HtmlFormElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-form-rellist"/>
     [IdlMember("relList", "https://html.spec.whatwg.org/multipage/forms.html#dom-form-rellist")]
     public DomTokenList RelList
     {
@@ -1988,6 +2219,7 @@ public sealed partial class HtmlFormElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmlframeelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmlframeelement"/>
 [IdlInterface("HTMLFrameElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmlframeelement")]
 public sealed partial class HtmlFrameElement : HtmlElement
 {
@@ -2001,6 +2233,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-name")]
     public string Name
     {
@@ -2009,6 +2242,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scrolling</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-scrolling"/>
     [IdlMember("scrolling", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-scrolling")]
     public string Scrolling
     {
@@ -2017,6 +2251,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-src")]
     public string Src
     {
@@ -2025,6 +2260,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>frameborder</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-frameborder"/>
     [IdlMember("frameBorder", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-frameborder")]
     public string FrameBorder
     {
@@ -2033,6 +2269,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>longdesc</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-longdesc"/>
     [IdlMember("longDesc", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-longdesc")]
     public string LongDesc
     {
@@ -2041,6 +2278,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>noresize</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-noresize"/>
     [IdlMember("noResize", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-noresize")]
     public bool NoResize
     {
@@ -2049,6 +2287,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>marginheight</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-marginheight"/>
     [IdlMember("marginHeight", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-marginheight")]
     public string MarginHeight
     {
@@ -2057,6 +2296,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>marginwidth</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-marginwidth"/>
     [IdlMember("marginWidth", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-marginwidth")]
     public string MarginWidth
     {
@@ -2066,6 +2306,7 @@ public sealed partial class HtmlFrameElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmlframesetelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmlframesetelement"/>
 [IdlInterface("HTMLFrameSetElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmlframesetelement")]
 public sealed partial class HtmlFrameSetElement : HtmlElement
 {
@@ -2079,6 +2320,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>cols</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frameset-cols"/>
     [IdlMember("cols", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frameset-cols")]
     public string Cols
     {
@@ -2087,6 +2329,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rows</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frameset-rows"/>
     [IdlMember("rows", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frameset-rows")]
     public string Rows
     {
@@ -2095,6 +2338,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>afterprint</c> event (the <c>onafterprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint"/>
     [IdlMember("onafterprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint")]
     public Action<Event>? OnAfterPrint
     {
@@ -2103,6 +2347,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeprint</c> event (the <c>onbeforeprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint"/>
     [IdlMember("onbeforeprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint")]
     public Action<Event>? OnBeforePrint
     {
@@ -2111,6 +2356,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeunload</c> event (the <c>onbeforeunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload"/>
     [IdlMember("onbeforeunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload")]
     public Action<Event>? OnBeforeUnload
     {
@@ -2119,6 +2365,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>hashchange</c> event (the <c>onhashchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange"/>
     [IdlMember("onhashchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange")]
     public Action<Event>? OnHashChange
     {
@@ -2127,6 +2374,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>languagechange</c> event (the <c>onlanguagechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange"/>
     [IdlMember("onlanguagechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange")]
     public Action<Event>? OnLanguageChange
     {
@@ -2135,6 +2383,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event (the <c>onmessage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -2143,6 +2392,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event (the <c>onmessageerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -2151,6 +2401,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>offline</c> event (the <c>onoffline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline"/>
     [IdlMember("onoffline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline")]
     public Action<Event>? OnOffline
     {
@@ -2159,6 +2410,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>online</c> event (the <c>ononline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline"/>
     [IdlMember("ononline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline")]
     public Action<Event>? OnOnline
     {
@@ -2167,6 +2419,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagehide</c> event (the <c>onpagehide</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide"/>
     [IdlMember("onpagehide", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide")]
     public Action<Event>? OnPageHide
     {
@@ -2175,6 +2428,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagereveal</c> event (the <c>onpagereveal</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal"/>
     [IdlMember("onpagereveal", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal")]
     public Action<Event>? OnPageReveal
     {
@@ -2183,6 +2437,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageshow</c> event (the <c>onpageshow</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow"/>
     [IdlMember("onpageshow", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow")]
     public Action<Event>? OnPageShow
     {
@@ -2191,6 +2446,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageswap</c> event (the <c>onpageswap</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap"/>
     [IdlMember("onpageswap", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap")]
     public Action<Event>? OnPageSwap
     {
@@ -2199,6 +2455,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>popstate</c> event (the <c>onpopstate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate"/>
     [IdlMember("onpopstate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate")]
     public Action<Event>? OnPopState
     {
@@ -2207,6 +2464,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>rejectionhandled</c> event (the <c>onrejectionhandled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled"/>
     [IdlMember("onrejectionhandled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled")]
     public Action<Event>? OnRejectionHandled
     {
@@ -2215,6 +2473,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>storage</c> event (the <c>onstorage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage"/>
     [IdlMember("onstorage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage")]
     public Action<Event>? OnStorage
     {
@@ -2223,6 +2482,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unhandledrejection</c> event (the <c>onunhandledrejection</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection"/>
     [IdlMember("onunhandledrejection", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection")]
     public Action<Event>? OnUnhandledRejection
     {
@@ -2231,6 +2491,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unload</c> event (the <c>onunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload"/>
     [IdlMember("onunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload")]
     public Action<Event>? OnUnload
     {
@@ -2240,6 +2501,7 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlhrelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlhrelement"/>
 [IdlInterface("HTMLHRElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlhrelement")]
 public sealed partial class HtmlHRElement : HtmlElement
 {
@@ -2253,6 +2515,7 @@ public sealed partial class HtmlHRElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-align")]
     public string Align
     {
@@ -2261,6 +2524,7 @@ public sealed partial class HtmlHRElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>color</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-color"/>
     [IdlMember("color", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-color")]
     public string Color
     {
@@ -2269,6 +2533,7 @@ public sealed partial class HtmlHRElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>noshade</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-noshade"/>
     [IdlMember("noShade", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-noshade")]
     public bool NoShade
     {
@@ -2277,6 +2542,7 @@ public sealed partial class HtmlHRElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>size</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-size"/>
     [IdlMember("size", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-size")]
     public string Size
     {
@@ -2285,6 +2551,7 @@ public sealed partial class HtmlHRElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hr-width")]
     public string Width
     {
@@ -2294,6 +2561,7 @@ public sealed partial class HtmlHRElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmlheadelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmlheadelement"/>
 [IdlInterface("HTMLHeadElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmlheadelement")]
 public sealed partial class HtmlHeadElement : HtmlElement
 {
@@ -2308,6 +2576,7 @@ public sealed partial class HtmlHeadElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/sections.html#htmlheadingelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/sections.html#htmlheadingelement"/>
 [IdlInterface("HTMLHeadingElement", "https://html.spec.whatwg.org/multipage/sections.html#htmlheadingelement")]
 public sealed partial class HtmlHeadingElement : HtmlElement
 {
@@ -2321,6 +2590,7 @@ public sealed partial class HtmlHeadingElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-hx-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-hx-align")]
     public string Align
     {
@@ -2330,6 +2600,7 @@ public sealed partial class HtmlHeadingElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmlhtmlelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmlhtmlelement"/>
 [IdlInterface("HTMLHtmlElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmlhtmlelement")]
 public sealed partial class HtmlHtmlElement : HtmlElement
 {
@@ -2343,6 +2614,7 @@ public sealed partial class HtmlHtmlElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>version</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-html-version"/>
     [IdlMember("version", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-html-version")]
     public string Version
     {
@@ -2352,6 +2624,7 @@ public sealed partial class HtmlHtmlElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmliframeelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmliframeelement"/>
 [IdlInterface("HTMLIFrameElement", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmliframeelement")]
 public sealed partial class HtmlIFrameElement : HtmlElement
 {
@@ -2365,6 +2638,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-src")]
     public string Src
     {
@@ -2373,6 +2647,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-name")]
     public string Name
     {
@@ -2381,6 +2656,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>sandbox</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-sandbox"/>
     [IdlMember("sandbox", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-sandbox")]
     public DomTokenList Sandbox
     {
@@ -2388,6 +2664,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>allow</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-allow"/>
     [IdlMember("allow", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-allow")]
     public string Allow
     {
@@ -2396,6 +2673,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>allowfullscreen</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-allowfullscreen"/>
     [IdlMember("allowFullscreen", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-allowfullscreen")]
     public bool AllowFullscreen
     {
@@ -2404,6 +2682,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-dim-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-dim-width")]
     public string Width
     {
@@ -2412,6 +2691,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-dim-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-dim-height")]
     public string Height
     {
@@ -2420,6 +2700,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -2428,6 +2709,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>loading</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-loading"/>
     [IdlMember("loading", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-loading")]
     public string Loading
     {
@@ -2436,6 +2718,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-align")]
     public string Align
     {
@@ -2444,6 +2727,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scrolling</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-scrolling"/>
     [IdlMember("scrolling", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-scrolling")]
     public string Scrolling
     {
@@ -2452,6 +2736,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>frameborder</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-frameborder"/>
     [IdlMember("frameBorder", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-frameborder")]
     public string FrameBorder
     {
@@ -2460,6 +2745,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>longdesc</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-longdesc"/>
     [IdlMember("longDesc", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-longdesc")]
     public string LongDesc
     {
@@ -2468,6 +2754,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>marginheight</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-marginheight"/>
     [IdlMember("marginHeight", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-marginheight")]
     public string MarginHeight
     {
@@ -2476,6 +2763,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>marginwidth</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-marginwidth"/>
     [IdlMember("marginWidth", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-iframe-marginwidth")]
     public string MarginWidth
     {
@@ -2485,6 +2773,7 @@ public sealed partial class HtmlIFrameElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/embedded-content.html#htmlimageelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#htmlimageelement"/>
 [IdlInterface("HTMLImageElement", "https://html.spec.whatwg.org/multipage/embedded-content.html#htmlimageelement")]
 public sealed partial class HtmlImageElement : HtmlElement
 {
@@ -2498,6 +2787,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>alt</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-alt"/>
     [IdlMember("alt", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-alt")]
     public string Alt
     {
@@ -2506,6 +2796,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-src")]
     public string Src
     {
@@ -2514,6 +2805,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>srcset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-srcset"/>
     [IdlMember("srcset", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-srcset")]
     public string Srcset
     {
@@ -2522,6 +2814,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>sizes</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-sizes"/>
     [IdlMember("sizes", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-sizes")]
     public string Sizes
     {
@@ -2530,6 +2823,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>crossorigin</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-crossorigin"/>
     [IdlMember("crossOrigin", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-crossorigin")]
     public string? CrossOrigin
     {
@@ -2538,6 +2832,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>usemap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-usemap"/>
     [IdlMember("useMap", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-usemap")]
     public string UseMap
     {
@@ -2546,6 +2841,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>ismap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-ismap"/>
     [IdlMember("isMap", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-ismap")]
     public bool IsMap
     {
@@ -2554,6 +2850,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>controls</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-controls"/>
     [IdlMember("controls", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-controls")]
     public bool Controls
     {
@@ -2562,6 +2859,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-width")]
     public uint Width
     {
@@ -2572,6 +2870,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     private partial uint ComputeWidth();
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-height")]
     public uint Height
     {
@@ -2582,6 +2881,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     private partial uint ComputeHeight();
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -2590,6 +2890,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>decoding</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-decoding"/>
     [IdlMember("decoding", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-decoding")]
     public string Decoding
     {
@@ -2598,6 +2899,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>loading</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-loading"/>
     [IdlMember("loading", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-loading")]
     public string Loading
     {
@@ -2606,6 +2908,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>fetchpriority</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-fetchpriority"/>
     [IdlMember("fetchPriority", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-fetchpriority")]
     public string FetchPriority
     {
@@ -2614,6 +2917,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-name")]
     public string Name
     {
@@ -2622,6 +2926,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>lowsrc</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-lowsrc"/>
     [IdlMember("lowsrc", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-lowsrc")]
     public string Lowsrc
     {
@@ -2630,6 +2935,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-align")]
     public string Align
     {
@@ -2638,6 +2944,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-hspace"/>
     [IdlMember("hspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-hspace")]
     public uint Hspace
     {
@@ -2646,6 +2953,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>vspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-vspace"/>
     [IdlMember("vspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-vspace")]
     public uint Vspace
     {
@@ -2654,6 +2962,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>longdesc</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-longdesc"/>
     [IdlMember("longDesc", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-longdesc")]
     public string LongDesc
     {
@@ -2662,6 +2971,7 @@ public sealed partial class HtmlImageElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>border</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-border"/>
     [IdlMember("border", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-img-border")]
     public string Border
     {
@@ -2671,6 +2981,7 @@ public sealed partial class HtmlImageElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/input.html#htmlinputelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/input.html#htmlinputelement"/>
 [IdlInterface("HTMLInputElement", "https://html.spec.whatwg.org/multipage/input.html#htmlinputelement")]
 public sealed partial class HtmlInputElement : HtmlElement
 {
@@ -2684,6 +2995,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>accept</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-accept"/>
     [IdlMember("accept", "https://html.spec.whatwg.org/multipage/input.html#dom-input-accept")]
     public string Accept
     {
@@ -2692,6 +3004,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>alpha</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-alpha"/>
     [IdlMember("alpha", "https://html.spec.whatwg.org/multipage/input.html#dom-input-alpha")]
     public bool Alpha
     {
@@ -2700,6 +3013,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>alt</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-alt"/>
     [IdlMember("alt", "https://html.spec.whatwg.org/multipage/input.html#dom-input-alt")]
     public string Alt
     {
@@ -2708,6 +3022,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>autocomplete</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete"/>
     [IdlMember("autocomplete", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete")]
     public string Autocomplete
     {
@@ -2718,6 +3033,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     private partial string ComputeAutocomplete();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>checked</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-defaultchecked"/>
     [IdlMember("defaultChecked", "https://html.spec.whatwg.org/multipage/input.html#dom-input-defaultchecked")]
     public bool DefaultChecked
     {
@@ -2726,6 +3042,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>colorspace</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-colorspace"/>
     [IdlMember("colorSpace", "https://html.spec.whatwg.org/multipage/input.html#dom-input-colorspace")]
     public string ColorSpace
     {
@@ -2734,6 +3051,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>dirname</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-dirname"/>
     [IdlMember("dirName", "https://html.spec.whatwg.org/multipage/input.html#dom-input-dirname")]
     public string DirName
     {
@@ -2742,6 +3060,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-fe-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/input.html#dom-fe-disabled")]
     public bool Disabled
     {
@@ -2750,6 +3069,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formaction</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formaction"/>
     [IdlMember("formAction", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formaction")]
     public string FormAction
     {
@@ -2760,6 +3080,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     private partial string ComputeFormAction();
 
     /// <summary>Gets or sets the value of the <c>formenctype</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formenctype"/>
     [IdlMember("formEnctype", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formenctype")]
     public string FormEnctype
     {
@@ -2768,6 +3089,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formmethod</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formmethod"/>
     [IdlMember("formMethod", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fs-formmethod")]
     public string FormMethod
     {
@@ -2776,6 +3098,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>formnovalidate</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-fs-formnovalidate"/>
     [IdlMember("formNoValidate", "https://html.spec.whatwg.org/multipage/input.html#dom-fs-formnovalidate")]
     public bool FormNoValidate
     {
@@ -2784,6 +3107,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>formtarget</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-fs-formtarget"/>
     [IdlMember("formTarget", "https://html.spec.whatwg.org/multipage/input.html#dom-fs-formtarget")]
     public string FormTarget
     {
@@ -2792,6 +3116,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/input.html#dom-input-height")]
     public uint Height
     {
@@ -2802,6 +3127,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     private partial uint ComputeHeight();
 
     /// <summary>Gets or sets the value of the <c>max</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-max"/>
     [IdlMember("max", "https://html.spec.whatwg.org/multipage/input.html#dom-input-max")]
     public string Max
     {
@@ -2810,6 +3136,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>maxlength</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-maxlength"/>
     [IdlMember("maxLength", "https://html.spec.whatwg.org/multipage/input.html#dom-input-maxlength")]
     public int MaxLength
     {
@@ -2818,6 +3145,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>min</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-min"/>
     [IdlMember("min", "https://html.spec.whatwg.org/multipage/input.html#dom-input-min")]
     public string Min
     {
@@ -2826,6 +3154,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>minlength</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-minlength"/>
     [IdlMember("minLength", "https://html.spec.whatwg.org/multipage/input.html#dom-input-minlength")]
     public int MinLength
     {
@@ -2834,6 +3163,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>multiple</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-multiple"/>
     [IdlMember("multiple", "https://html.spec.whatwg.org/multipage/input.html#dom-input-multiple")]
     public bool Multiple
     {
@@ -2842,6 +3172,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-fe-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/input.html#dom-fe-name")]
     public string Name
     {
@@ -2850,6 +3181,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>pattern</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-pattern"/>
     [IdlMember("pattern", "https://html.spec.whatwg.org/multipage/input.html#dom-input-pattern")]
     public string Pattern
     {
@@ -2858,6 +3190,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>placeholder</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-placeholder"/>
     [IdlMember("placeholder", "https://html.spec.whatwg.org/multipage/input.html#dom-input-placeholder")]
     public string Placeholder
     {
@@ -2866,6 +3199,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>readonly</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-readonly"/>
     [IdlMember("readOnly", "https://html.spec.whatwg.org/multipage/input.html#dom-input-readonly")]
     public bool ReadOnly
     {
@@ -2874,6 +3208,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>required</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-required"/>
     [IdlMember("required", "https://html.spec.whatwg.org/multipage/input.html#dom-input-required")]
     public bool Required
     {
@@ -2882,6 +3217,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>size</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-size"/>
     [IdlMember("size", "https://html.spec.whatwg.org/multipage/input.html#dom-input-size")]
     public uint Size
     {
@@ -2890,6 +3226,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/input.html#dom-input-src")]
     public string Src
     {
@@ -2898,6 +3235,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>step</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-step"/>
     [IdlMember("step", "https://html.spec.whatwg.org/multipage/input.html#dom-input-step")]
     public string Step
     {
@@ -2906,6 +3244,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/input.html#dom-input-type")]
     public string Type
     {
@@ -2914,6 +3253,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-defaultvalue"/>
     [IdlMember("defaultValue", "https://html.spec.whatwg.org/multipage/input.html#dom-input-defaultvalue")]
     public string DefaultValue
     {
@@ -2922,6 +3262,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/input.html#dom-input-width")]
     public uint Width
     {
@@ -2932,6 +3273,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     private partial uint ComputeWidth();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-align")]
     public string Align
     {
@@ -2940,6 +3282,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>usemap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-usemap"/>
     [IdlMember("useMap", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-usemap")]
     public string UseMap
     {
@@ -2948,6 +3291,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the element whose ID is the value of the <c>popovertarget</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#htmlinputelement"/>
     [IdlMember("popoverTargetElement", "https://html.spec.whatwg.org/multipage/input.html#htmlinputelement")]
     public Element? PopoverTargetElement
     {
@@ -2956,6 +3300,7 @@ public sealed partial class HtmlInputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>popovertargetaction</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#htmlinputelement"/>
     [IdlMember("popoverTargetAction", "https://html.spec.whatwg.org/multipage/input.html#htmlinputelement")]
     public string PopoverTargetAction
     {
@@ -2965,6 +3310,7 @@ public sealed partial class HtmlInputElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmllielement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmllielement"/>
 [IdlInterface("HTMLLIElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmllielement")]
 public sealed partial class HtmlLIElement : HtmlElement
 {
@@ -2978,6 +3324,7 @@ public sealed partial class HtmlLIElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#dom-li-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/grouping-content.html#dom-li-value")]
     public int Value
     {
@@ -2986,6 +3333,7 @@ public sealed partial class HtmlLIElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-li-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-li-type")]
     public string Type
     {
@@ -2995,6 +3343,7 @@ public sealed partial class HtmlLIElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/forms.html#htmllabelelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#htmllabelelement"/>
 [IdlInterface("HTMLLabelElement", "https://html.spec.whatwg.org/multipage/forms.html#htmllabelelement")]
 public sealed partial class HtmlLabelElement : HtmlElement
 {
@@ -3008,6 +3357,7 @@ public sealed partial class HtmlLabelElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>for</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-label-htmlfor"/>
     [IdlMember("htmlFor", "https://html.spec.whatwg.org/multipage/forms.html#dom-label-htmlfor")]
     public string HtmlFor
     {
@@ -3017,6 +3367,7 @@ public sealed partial class HtmlLabelElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmllegendelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmllegendelement"/>
 [IdlInterface("HTMLLegendElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmllegendelement")]
 public sealed partial class HtmlLegendElement : HtmlElement
 {
@@ -3030,6 +3381,7 @@ public sealed partial class HtmlLegendElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-legend-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-legend-align")]
     public string Align
     {
@@ -3039,6 +3391,7 @@ public sealed partial class HtmlLegendElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmllinkelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmllinkelement"/>
 [IdlInterface("HTMLLinkElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmllinkelement")]
 public sealed partial class HtmlLinkElement : HtmlElement
 {
@@ -3052,6 +3405,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>href</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-href"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-href")]
     public string Href
     {
@@ -3060,6 +3414,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>crossorigin</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-crossorigin"/>
     [IdlMember("crossOrigin", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-crossorigin")]
     public string? CrossOrigin
     {
@@ -3068,6 +3423,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-rel"/>
     [IdlMember("rel", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-rel")]
     public string Rel
     {
@@ -3076,6 +3432,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>as</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-as"/>
     [IdlMember("as", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-as")]
     public string As
     {
@@ -3084,6 +3441,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-rellist"/>
     [IdlMember("relList", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-rellist")]
     public DomTokenList RelList
     {
@@ -3091,6 +3449,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-media"/>
     [IdlMember("media", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-media")]
     public string Media
     {
@@ -3099,6 +3458,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>integrity</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-integrity"/>
     [IdlMember("integrity", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-integrity")]
     public string Integrity
     {
@@ -3107,6 +3467,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hreflang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-hreflang"/>
     [IdlMember("hreflang", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-hreflang")]
     public string Hreflang
     {
@@ -3115,6 +3476,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-type")]
     public string Type
     {
@@ -3123,6 +3485,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>sizes</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-sizes"/>
     [IdlMember("sizes", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-sizes")]
     public DomTokenList Sizes
     {
@@ -3130,6 +3493,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>imagesrcset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-imagesrcset"/>
     [IdlMember("imageSrcset", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-imagesrcset")]
     public string ImageSrcset
     {
@@ -3138,6 +3502,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>imagesizes</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-imagesizes"/>
     [IdlMember("imageSizes", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-imagesizes")]
     public string ImageSizes
     {
@@ -3146,6 +3511,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -3154,6 +3520,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>blocking</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-blocking"/>
     [IdlMember("blocking", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-blocking")]
     public DomTokenList Blocking
     {
@@ -3161,6 +3528,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-disabled")]
     public bool Disabled
     {
@@ -3169,6 +3537,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>fetchpriority</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-link-fetchpriority"/>
     [IdlMember("fetchPriority", "https://html.spec.whatwg.org/multipage/semantics.html#dom-link-fetchpriority")]
     public string FetchPriority
     {
@@ -3177,6 +3546,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-charset"/>
     [IdlMember("charset", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-charset")]
     public string Charset
     {
@@ -3185,6 +3555,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rev</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-rev"/>
     [IdlMember("rev", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-rev")]
     public string Rev
     {
@@ -3193,6 +3564,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-link-target")]
     public string Target
     {
@@ -3202,6 +3574,7 @@ public sealed partial class HtmlLinkElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/image-maps.html#htmlmapelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#htmlmapelement"/>
 [IdlInterface("HTMLMapElement", "https://html.spec.whatwg.org/multipage/image-maps.html#htmlmapelement")]
 public sealed partial class HtmlMapElement : HtmlElement
 {
@@ -3215,6 +3588,7 @@ public sealed partial class HtmlMapElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-map-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-map-name")]
     public string Name
     {
@@ -3224,6 +3598,7 @@ public sealed partial class HtmlMapElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmlmarqueeelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmlmarqueeelement"/>
 [IdlInterface("HTMLMarqueeElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmlmarqueeelement")]
 public sealed partial class HtmlMarqueeElement : HtmlElement
 {
@@ -3237,6 +3612,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>behavior</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-behavior"/>
     [IdlMember("behavior", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-behavior")]
     public string Behavior
     {
@@ -3245,6 +3621,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>bgcolor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-bgcolor")]
     public string BgColor
     {
@@ -3253,6 +3630,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>direction</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-direction"/>
     [IdlMember("direction", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-direction")]
     public string Direction
     {
@@ -3261,6 +3639,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-height")]
     public string Height
     {
@@ -3269,6 +3648,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-hspace"/>
     [IdlMember("hspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-hspace")]
     public uint Hspace
     {
@@ -3277,6 +3657,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scrollamount</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-scrollamount"/>
     [IdlMember("scrollAmount", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-scrollamount")]
     public uint ScrollAmount
     {
@@ -3285,6 +3666,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scrolldelay</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-scrolldelay"/>
     [IdlMember("scrollDelay", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-scrolldelay")]
     public uint ScrollDelay
     {
@@ -3293,6 +3675,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>truespeed</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-truespeed"/>
     [IdlMember("trueSpeed", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-truespeed")]
     public bool TrueSpeed
     {
@@ -3301,6 +3684,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>vspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-vspace"/>
     [IdlMember("vspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-vspace")]
     public uint Vspace
     {
@@ -3309,6 +3693,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-width")]
     public string Width
     {
@@ -3318,6 +3703,7 @@ public sealed partial class HtmlMarqueeElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#htmlmediaelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#htmlmediaelement"/>
 [IdlInterface("HTMLMediaElement", "https://html.spec.whatwg.org/multipage/media.html#htmlmediaelement")]
 public abstract partial class HtmlMediaElement : HtmlElement
 {
@@ -3331,42 +3717,52 @@ public abstract partial class HtmlMediaElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>The <c>NETWORK_EMPTY</c> constant (0).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-network_empty"/>
     [IdlMember("NETWORK_EMPTY", "https://html.spec.whatwg.org/multipage/media.html#dom-media-network_empty")]
     public const ushort NetworkEmpty = 0;
 
     /// <summary>The <c>NETWORK_IDLE</c> constant (1).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-network_idle"/>
     [IdlMember("NETWORK_IDLE", "https://html.spec.whatwg.org/multipage/media.html#dom-media-network_idle")]
     public const ushort NetworkIdle = 1;
 
     /// <summary>The <c>NETWORK_LOADING</c> constant (2).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-network_loading"/>
     [IdlMember("NETWORK_LOADING", "https://html.spec.whatwg.org/multipage/media.html#dom-media-network_loading")]
     public const ushort NetworkLoading = 2;
 
     /// <summary>The <c>NETWORK_NO_SOURCE</c> constant (3).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-network_no_source"/>
     [IdlMember("NETWORK_NO_SOURCE", "https://html.spec.whatwg.org/multipage/media.html#dom-media-network_no_source")]
     public const ushort NetworkNoSource = 3;
 
     /// <summary>The <c>HAVE_NOTHING</c> constant (0).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-have_nothing"/>
     [IdlMember("HAVE_NOTHING", "https://html.spec.whatwg.org/multipage/media.html#dom-media-have_nothing")]
     public const ushort HaveNothing = 0;
 
     /// <summary>The <c>HAVE_METADATA</c> constant (1).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-have_metadata"/>
     [IdlMember("HAVE_METADATA", "https://html.spec.whatwg.org/multipage/media.html#dom-media-have_metadata")]
     public const ushort HaveMetadata = 1;
 
     /// <summary>The <c>HAVE_CURRENT_DATA</c> constant (2).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-have_current_data"/>
     [IdlMember("HAVE_CURRENT_DATA", "https://html.spec.whatwg.org/multipage/media.html#dom-media-have_current_data")]
     public const ushort HaveCurrentData = 2;
 
     /// <summary>The <c>HAVE_FUTURE_DATA</c> constant (3).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-have_future_data"/>
     [IdlMember("HAVE_FUTURE_DATA", "https://html.spec.whatwg.org/multipage/media.html#dom-media-have_future_data")]
     public const ushort HaveFutureData = 3;
 
     /// <summary>The <c>HAVE_ENOUGH_DATA</c> constant (4).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-have_enough_data"/>
     [IdlMember("HAVE_ENOUGH_DATA", "https://html.spec.whatwg.org/multipage/media.html#dom-media-have_enough_data")]
     public const ushort HaveEnoughData = 4;
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/media.html#dom-media-src")]
     public string Src
     {
@@ -3375,6 +3771,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>crossorigin</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-crossorigin"/>
     [IdlMember("crossOrigin", "https://html.spec.whatwg.org/multipage/media.html#dom-media-crossorigin")]
     public string? CrossOrigin
     {
@@ -3383,6 +3780,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>preload</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-preload"/>
     [IdlMember("preload", "https://html.spec.whatwg.org/multipage/media.html#dom-media-preload")]
     public string Preload
     {
@@ -3391,6 +3789,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>autoplay</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-autoplay"/>
     [IdlMember("autoplay", "https://html.spec.whatwg.org/multipage/media.html#dom-media-autoplay")]
     public bool Autoplay
     {
@@ -3399,6 +3798,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>loop</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-loop"/>
     [IdlMember("loop", "https://html.spec.whatwg.org/multipage/media.html#dom-media-loop")]
     public bool Loop
     {
@@ -3407,6 +3807,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>controls</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-controls"/>
     [IdlMember("controls", "https://html.spec.whatwg.org/multipage/media.html#dom-media-controls")]
     public bool Controls
     {
@@ -3415,6 +3816,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>muted</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultmuted"/>
     [IdlMember("defaultMuted", "https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultmuted")]
     public bool DefaultMuted
     {
@@ -3423,6 +3825,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>loading</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-loading"/>
     [IdlMember("loading", "https://html.spec.whatwg.org/multipage/media.html#dom-media-loading")]
     public string Loading
     {
@@ -3432,6 +3835,7 @@ public abstract partial class HtmlMediaElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlmenuelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlmenuelement"/>
 [IdlInterface("HTMLMenuElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlmenuelement")]
 public sealed partial class HtmlMenuElement : HtmlElement
 {
@@ -3445,6 +3849,7 @@ public sealed partial class HtmlMenuElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>compact</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-menu-compact"/>
     [IdlMember("compact", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-menu-compact")]
     public bool Compact
     {
@@ -3454,6 +3859,7 @@ public sealed partial class HtmlMenuElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmlmetaelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmlmetaelement"/>
 [IdlInterface("HTMLMetaElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmlmetaelement")]
 public sealed partial class HtmlMetaElement : HtmlElement
 {
@@ -3467,6 +3873,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-name")]
     public string Name
     {
@@ -3475,6 +3882,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>http-equiv</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-httpequiv"/>
     [IdlMember("httpEquiv", "https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-httpequiv")]
     public string HttpEquiv
     {
@@ -3483,6 +3891,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>content</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-content"/>
     [IdlMember("content", "https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-content")]
     public string Content
     {
@@ -3491,6 +3900,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-media"/>
     [IdlMember("media", "https://html.spec.whatwg.org/multipage/semantics.html#dom-meta-media")]
     public string Media
     {
@@ -3499,6 +3909,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scheme</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-meta-scheme"/>
     [IdlMember("scheme", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-meta-scheme")]
     public string Scheme
     {
@@ -3508,6 +3919,7 @@ public sealed partial class HtmlMetaElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlmeterelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlmeterelement"/>
 [IdlInterface("HTMLMeterElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlmeterelement")]
 public sealed partial class HtmlMeterElement : HtmlElement
 {
@@ -3521,6 +3933,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-value")]
     public double Value
     {
@@ -3531,6 +3944,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     private partial double ComputeValue();
 
     /// <summary>Gets or sets the value of the <c>min</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-min"/>
     [IdlMember("min", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-min")]
     public double Min
     {
@@ -3541,6 +3955,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     private partial double ComputeMin();
 
     /// <summary>Gets or sets the value of the <c>max</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-max"/>
     [IdlMember("max", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-max")]
     public double Max
     {
@@ -3551,6 +3966,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     private partial double ComputeMax();
 
     /// <summary>Gets or sets the value of the <c>low</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-low"/>
     [IdlMember("low", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-low")]
     public double Low
     {
@@ -3561,6 +3977,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     private partial double ComputeLow();
 
     /// <summary>Gets or sets the value of the <c>high</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-high"/>
     [IdlMember("high", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-high")]
     public double High
     {
@@ -3571,6 +3988,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
     private partial double ComputeHigh();
 
     /// <summary>Gets or sets the value of the <c>optimum</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-optimum"/>
     [IdlMember("optimum", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-meter-optimum")]
     public double Optimum
     {
@@ -3582,6 +4000,7 @@ public sealed partial class HtmlMeterElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/edits.html#htmlmodelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/edits.html#htmlmodelement"/>
 [IdlInterface("HTMLModElement", "https://html.spec.whatwg.org/multipage/edits.html#htmlmodelement")]
 public sealed partial class HtmlModElement : HtmlElement
 {
@@ -3595,6 +4014,7 @@ public sealed partial class HtmlModElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>cite</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/edits.html#dom-mod-cite"/>
     [IdlMember("cite", "https://html.spec.whatwg.org/multipage/edits.html#dom-mod-cite")]
     public string Cite
     {
@@ -3603,6 +4023,7 @@ public sealed partial class HtmlModElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>datetime</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/edits.html#dom-mod-datetime"/>
     [IdlMember("dateTime", "https://html.spec.whatwg.org/multipage/edits.html#dom-mod-datetime")]
     public string DateTime
     {
@@ -3612,6 +4033,7 @@ public sealed partial class HtmlModElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlolistelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlolistelement"/>
 [IdlInterface("HTMLOListElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlolistelement")]
 public sealed partial class HtmlOListElement : HtmlElement
 {
@@ -3625,6 +4047,7 @@ public sealed partial class HtmlOListElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>reversed</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-reversed"/>
     [IdlMember("reversed", "https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-reversed")]
     public bool Reversed
     {
@@ -3633,6 +4056,7 @@ public sealed partial class HtmlOListElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>start</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-start"/>
     [IdlMember("start", "https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-start")]
     public int Start
     {
@@ -3641,6 +4065,7 @@ public sealed partial class HtmlOListElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/grouping-content.html#dom-ol-type")]
     public string Type
     {
@@ -3649,6 +4074,7 @@ public sealed partial class HtmlOListElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>compact</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-ol-compact"/>
     [IdlMember("compact", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-ol-compact")]
     public bool Compact
     {
@@ -3658,6 +4084,7 @@ public sealed partial class HtmlOListElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlobjectelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlobjectelement"/>
 [IdlInterface("HTMLObjectElement", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#htmlobjectelement")]
 public sealed partial class HtmlObjectElement : HtmlElement
 {
@@ -3671,6 +4098,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>data</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-data"/>
     [IdlMember("data", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-data")]
     public string Data
     {
@@ -3679,6 +4107,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-type")]
     public string Type
     {
@@ -3687,6 +4116,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-name")]
     public string Name
     {
@@ -3695,6 +4125,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-width")]
     public string Width
     {
@@ -3703,6 +4134,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-height")]
     public string Height
     {
@@ -3711,6 +4143,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-align")]
     public string Align
     {
@@ -3719,6 +4152,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>archive</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-archive"/>
     [IdlMember("archive", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-archive")]
     public string Archive
     {
@@ -3727,6 +4161,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>code</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-code"/>
     [IdlMember("code", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-code")]
     public string Code
     {
@@ -3735,6 +4170,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>declare</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-declare"/>
     [IdlMember("declare", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-declare")]
     public bool Declare
     {
@@ -3743,6 +4179,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>hspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-hspace"/>
     [IdlMember("hspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-hspace")]
     public uint Hspace
     {
@@ -3751,6 +4188,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>standby</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-standby"/>
     [IdlMember("standby", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-standby")]
     public string Standby
     {
@@ -3759,6 +4197,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>vspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-vspace"/>
     [IdlMember("vspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-vspace")]
     public uint Vspace
     {
@@ -3767,6 +4206,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>codebase</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-codebase"/>
     [IdlMember("codeBase", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-codebase")]
     public string CodeBase
     {
@@ -3775,6 +4215,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>codetype</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-codetype"/>
     [IdlMember("codeType", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-codetype")]
     public string CodeType
     {
@@ -3783,6 +4224,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>usemap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-usemap"/>
     [IdlMember("useMap", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-usemap")]
     public string UseMap
     {
@@ -3791,6 +4233,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>border</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-border"/>
     [IdlMember("border", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-object-border")]
     public string Border
     {
@@ -3800,6 +4243,7 @@ public sealed partial class HtmlObjectElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmloptgroupelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmloptgroupelement"/>
 [IdlInterface("HTMLOptGroupElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmloptgroupelement")]
 public sealed partial class HtmlOptGroupElement : HtmlElement
 {
@@ -3813,6 +4257,7 @@ public sealed partial class HtmlOptGroupElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-optgroup-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-optgroup-disabled")]
     public bool Disabled
     {
@@ -3821,6 +4266,7 @@ public sealed partial class HtmlOptGroupElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>label</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-optgroup-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-optgroup-label")]
     public string Label
     {
@@ -3830,6 +4276,7 @@ public sealed partial class HtmlOptGroupElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmloptionelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmloptionelement"/>
 [IdlInterface("HTMLOptionElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmloptionelement")]
 public sealed partial class HtmlOptionElement : HtmlElement
 {
@@ -3843,6 +4290,7 @@ public sealed partial class HtmlOptionElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-disabled")]
     public bool Disabled
     {
@@ -3851,6 +4299,7 @@ public sealed partial class HtmlOptionElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>label</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-label")]
     public string Label
     {
@@ -3861,6 +4310,7 @@ public sealed partial class HtmlOptionElement : HtmlElement
     private partial string ComputeLabel();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>selected</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-defaultselected"/>
     [IdlMember("defaultSelected", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-defaultselected")]
     public bool DefaultSelected
     {
@@ -3869,6 +4319,7 @@ public sealed partial class HtmlOptionElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-value")]
     public string Value
     {
@@ -3880,6 +4331,7 @@ public sealed partial class HtmlOptionElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmloutputelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmloutputelement"/>
 [IdlInterface("HTMLOutputElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmloutputelement")]
 public sealed partial class HtmlOutputElement : HtmlElement
 {
@@ -3893,6 +4345,7 @@ public sealed partial class HtmlOutputElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets the tokens of the <c>for</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-htmlfor"/>
     [IdlMember("htmlFor", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-htmlfor")]
     public DomTokenList HtmlFor
     {
@@ -3900,6 +4353,7 @@ public sealed partial class HtmlOutputElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-name")]
     public string Name
     {
@@ -3909,6 +4363,7 @@ public sealed partial class HtmlOutputElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlparagraphelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlparagraphelement"/>
 [IdlInterface("HTMLParagraphElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlparagraphelement")]
 public sealed partial class HtmlParagraphElement : HtmlElement
 {
@@ -3922,6 +4377,7 @@ public sealed partial class HtmlParagraphElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-p-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-p-align")]
     public string Align
     {
@@ -3931,6 +4387,7 @@ public sealed partial class HtmlParagraphElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#htmlparamelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#htmlparamelement"/>
 [IdlInterface("HTMLParamElement", "https://html.spec.whatwg.org/multipage/obsolete.html#htmlparamelement")]
 public sealed partial class HtmlParamElement : HtmlElement
 {
@@ -3944,6 +4401,7 @@ public sealed partial class HtmlParamElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-name")]
     public string Name
     {
@@ -3952,6 +4410,7 @@ public sealed partial class HtmlParamElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-value")]
     public string Value
     {
@@ -3960,6 +4419,7 @@ public sealed partial class HtmlParamElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-type")]
     public string Type
     {
@@ -3968,6 +4428,7 @@ public sealed partial class HtmlParamElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>valuetype</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-valuetype"/>
     [IdlMember("valueType", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-param-valuetype")]
     public string ValueType
     {
@@ -3977,6 +4438,7 @@ public sealed partial class HtmlParamElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/embedded-content.html#htmlpictureelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#htmlpictureelement"/>
 [IdlInterface("HTMLPictureElement", "https://html.spec.whatwg.org/multipage/embedded-content.html#htmlpictureelement")]
 public sealed partial class HtmlPictureElement : HtmlElement
 {
@@ -3991,6 +4453,7 @@ public sealed partial class HtmlPictureElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlpreelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlpreelement"/>
 [IdlInterface("HTMLPreElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlpreelement")]
 public sealed partial class HtmlPreElement : HtmlElement
 {
@@ -4004,6 +4467,7 @@ public sealed partial class HtmlPreElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-pre-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-pre-width")]
     public int Width
     {
@@ -4013,6 +4477,7 @@ public sealed partial class HtmlPreElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlprogresselement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlprogresselement"/>
 [IdlInterface("HTMLProgressElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlprogresselement")]
 public sealed partial class HtmlProgressElement : HtmlElement
 {
@@ -4026,6 +4491,7 @@ public sealed partial class HtmlProgressElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>value</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-progress-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-progress-value")]
     public double Value
     {
@@ -4036,6 +4502,7 @@ public sealed partial class HtmlProgressElement : HtmlElement
     private partial double ComputeValue();
 
     /// <summary>Gets or sets the value of the <c>max</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlprogresselement"/>
     [IdlMember("max", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlprogresselement")]
     public double Max
     {
@@ -4045,6 +4512,7 @@ public sealed partial class HtmlProgressElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlquoteelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlquoteelement"/>
 [IdlInterface("HTMLQuoteElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlquoteelement")]
 public sealed partial class HtmlQuoteElement : HtmlElement
 {
@@ -4058,6 +4526,7 @@ public sealed partial class HtmlQuoteElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>cite</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#dom-quote-cite"/>
     [IdlMember("cite", "https://html.spec.whatwg.org/multipage/grouping-content.html#dom-quote-cite")]
     public string Cite
     {
@@ -4067,6 +4536,7 @@ public sealed partial class HtmlQuoteElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement"/>
 [IdlInterface("HTMLScriptElement", "https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement")]
 public sealed partial class HtmlScriptElement : HtmlElement
 {
@@ -4080,6 +4550,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-type")]
     public string Type
     {
@@ -4088,6 +4559,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>nomodule</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-nomodule"/>
     [IdlMember("noModule", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-nomodule")]
     public bool NoModule
     {
@@ -4096,6 +4568,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>defer</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-defer"/>
     [IdlMember("defer", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-defer")]
     public bool Defer
     {
@@ -4104,6 +4577,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>blocking</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-blocking"/>
     [IdlMember("blocking", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-blocking")]
     public DomTokenList Blocking
     {
@@ -4111,6 +4585,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>crossorigin</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-crossorigin"/>
     [IdlMember("crossOrigin", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-crossorigin")]
     public string? CrossOrigin
     {
@@ -4119,6 +4594,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>referrerpolicy</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-referrerpolicy"/>
     [IdlMember("referrerPolicy", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-referrerpolicy")]
     public string ReferrerPolicy
     {
@@ -4127,6 +4603,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>integrity</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-integrity"/>
     [IdlMember("integrity", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-integrity")]
     public string Integrity
     {
@@ -4135,6 +4612,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>fetchpriority</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-fetchpriority"/>
     [IdlMember("fetchPriority", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-fetchpriority")]
     public string FetchPriority
     {
@@ -4143,6 +4621,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-charset"/>
     [IdlMember("charset", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-charset")]
     public string Charset
     {
@@ -4151,6 +4630,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>event</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-event"/>
     [IdlMember("event", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-event")]
     public string Event
     {
@@ -4159,6 +4639,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>for</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-htmlfor"/>
     [IdlMember("htmlFor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-script-htmlfor")]
     public string HtmlFor
     {
@@ -4168,6 +4649,7 @@ public sealed partial class HtmlScriptElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectelement"/>
 [IdlInterface("HTMLSelectElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectelement")]
 public sealed partial class HtmlSelectElement : HtmlElement
 {
@@ -4181,6 +4663,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>autocomplete</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete"/>
     [IdlMember("autocomplete", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete")]
     public string Autocomplete
     {
@@ -4191,6 +4674,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     private partial string ComputeAutocomplete();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-disabled")]
     public bool Disabled
     {
@@ -4199,6 +4683,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>multiple</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-multiple"/>
     [IdlMember("multiple", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-multiple")]
     public bool Multiple
     {
@@ -4207,6 +4692,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-name")]
     public string Name
     {
@@ -4215,6 +4701,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>required</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-required"/>
     [IdlMember("required", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-required")]
     public bool Required
     {
@@ -4223,6 +4710,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>size</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-size"/>
     [IdlMember("size", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-size")]
     public uint Size
     {
@@ -4232,6 +4720,7 @@ public sealed partial class HtmlSelectElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectedcontentelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectedcontentelement"/>
 [IdlInterface("HTMLSelectedContentElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmlselectedcontentelement")]
 public sealed partial class HtmlSelectedContentElement : HtmlElement
 {
@@ -4246,6 +4735,7 @@ public sealed partial class HtmlSelectedContentElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#htmlslotelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#htmlslotelement"/>
 [IdlInterface("HTMLSlotElement", "https://html.spec.whatwg.org/multipage/scripting.html#htmlslotelement")]
 public sealed partial class HtmlSlotElement : HtmlElement
 {
@@ -4259,6 +4749,7 @@ public sealed partial class HtmlSlotElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-name")]
     public string Name
     {
@@ -4268,6 +4759,7 @@ public sealed partial class HtmlSlotElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/embedded-content.html#htmlsourceelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#htmlsourceelement"/>
 [IdlInterface("HTMLSourceElement", "https://html.spec.whatwg.org/multipage/embedded-content.html#htmlsourceelement")]
 public sealed partial class HtmlSourceElement : HtmlElement
 {
@@ -4281,6 +4773,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-src")]
     public string Src
     {
@@ -4289,6 +4782,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-type")]
     public string Type
     {
@@ -4297,6 +4791,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>srcset</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-srcset"/>
     [IdlMember("srcset", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-srcset")]
     public string Srcset
     {
@@ -4305,6 +4800,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>sizes</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-sizes"/>
     [IdlMember("sizes", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-sizes")]
     public string Sizes
     {
@@ -4313,6 +4809,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-media"/>
     [IdlMember("media", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-media")]
     public string Media
     {
@@ -4321,6 +4818,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-width")]
     public uint Width
     {
@@ -4329,6 +4827,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-source-height")]
     public uint Height
     {
@@ -4338,6 +4837,7 @@ public sealed partial class HtmlSourceElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlspanelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlspanelement"/>
 [IdlInterface("HTMLSpanElement", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmlspanelement")]
 public sealed partial class HtmlSpanElement : HtmlElement
 {
@@ -4352,6 +4852,7 @@ public sealed partial class HtmlSpanElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmlstyleelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmlstyleelement"/>
 [IdlInterface("HTMLStyleElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmlstyleelement")]
 public sealed partial class HtmlStyleElement : HtmlElement
 {
@@ -4365,6 +4866,7 @@ public sealed partial class HtmlStyleElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-style-media"/>
     [IdlMember("media", "https://html.spec.whatwg.org/multipage/semantics.html#dom-style-media")]
     public string Media
     {
@@ -4373,6 +4875,7 @@ public sealed partial class HtmlStyleElement : HtmlElement
     }
 
     /// <summary>Gets the tokens of the <c>blocking</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-style-blocking"/>
     [IdlMember("blocking", "https://html.spec.whatwg.org/multipage/semantics.html#dom-style-blocking")]
     public DomTokenList Blocking
     {
@@ -4380,6 +4883,7 @@ public sealed partial class HtmlStyleElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-style-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-style-type")]
     public string Type
     {
@@ -4389,6 +4893,7 @@ public sealed partial class HtmlStyleElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltablecaptionelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablecaptionelement"/>
 [IdlInterface("HTMLTableCaptionElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltablecaptionelement")]
 public sealed partial class HtmlTableCaptionElement : HtmlElement
 {
@@ -4402,6 +4907,7 @@ public sealed partial class HtmlTableCaptionElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-caption-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-caption-align")]
     public string Align
     {
@@ -4411,6 +4917,7 @@ public sealed partial class HtmlTableCaptionElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltablecellelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablecellelement"/>
 [IdlInterface("HTMLTableCellElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltablecellelement")]
 public sealed partial class HtmlTableCellElement : HtmlElement
 {
@@ -4424,6 +4931,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>colspan</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-colspan"/>
     [IdlMember("colSpan", "https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-colspan")]
     public uint ColSpan
     {
@@ -4432,6 +4940,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rowspan</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-rowspan"/>
     [IdlMember("rowSpan", "https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-rowspan")]
     public uint RowSpan
     {
@@ -4440,6 +4949,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>headers</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablecellelement"/>
     [IdlMember("headers", "https://html.spec.whatwg.org/multipage/tables.html#htmltablecellelement")]
     public string Headers
     {
@@ -4448,6 +4958,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>scope</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-th-scope"/>
     [IdlMember("scope", "https://html.spec.whatwg.org/multipage/tables.html#dom-th-scope")]
     public string Scope
     {
@@ -4456,6 +4967,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>abbr</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-th-abbr"/>
     [IdlMember("abbr", "https://html.spec.whatwg.org/multipage/tables.html#dom-th-abbr")]
     public string Abbr
     {
@@ -4464,6 +4976,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-align")]
     public string Align
     {
@@ -4472,6 +4985,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>axis</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-axis"/>
     [IdlMember("axis", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-axis")]
     public string Axis
     {
@@ -4480,6 +4994,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-height")]
     public string Height
     {
@@ -4488,6 +5003,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-width")]
     public string Width
     {
@@ -4496,6 +5012,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>char</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-ch"/>
     [IdlMember("ch", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-ch")]
     public string Ch
     {
@@ -4504,6 +5021,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charoff</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-choff"/>
     [IdlMember("chOff", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-choff")]
     public string ChOff
     {
@@ -4512,6 +5030,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>nowrap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-nowrap"/>
     [IdlMember("noWrap", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-nowrap")]
     public bool NoWrap
     {
@@ -4520,6 +5039,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>valign</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-valign"/>
     [IdlMember("vAlign", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-valign")]
     public string VAlign
     {
@@ -4528,6 +5048,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>bgcolor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tdth-bgcolor")]
     public string BgColor
     {
@@ -4537,6 +5058,7 @@ public sealed partial class HtmlTableCellElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltablecolelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablecolelement"/>
 [IdlInterface("HTMLTableColElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltablecolelement")]
 public sealed partial class HtmlTableColElement : HtmlElement
 {
@@ -4550,6 +5072,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>span</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-colgroup-span"/>
     [IdlMember("span", "https://html.spec.whatwg.org/multipage/tables.html#dom-colgroup-span")]
     public uint Span
     {
@@ -4558,6 +5081,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-align")]
     public string Align
     {
@@ -4566,6 +5090,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>char</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-ch"/>
     [IdlMember("ch", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-ch")]
     public string Ch
     {
@@ -4574,6 +5099,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charoff</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-choff"/>
     [IdlMember("chOff", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-choff")]
     public string ChOff
     {
@@ -4582,6 +5108,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>valign</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-valign"/>
     [IdlMember("vAlign", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-valign")]
     public string VAlign
     {
@@ -4590,6 +5117,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-col-width")]
     public string Width
     {
@@ -4599,6 +5127,7 @@ public sealed partial class HtmlTableColElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltableelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltableelement"/>
 [IdlInterface("HTMLTableElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltableelement")]
 public sealed partial class HtmlTableElement : HtmlElement
 {
@@ -4612,6 +5141,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-align")]
     public string Align
     {
@@ -4620,6 +5150,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>border</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-border"/>
     [IdlMember("border", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-border")]
     public string Border
     {
@@ -4628,6 +5159,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>frame</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-frame"/>
     [IdlMember("frame", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-frame")]
     public string Frame
     {
@@ -4636,6 +5168,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rules</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-rules"/>
     [IdlMember("rules", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-rules")]
     public string Rules
     {
@@ -4644,6 +5177,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>summary</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-summary"/>
     [IdlMember("summary", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-summary")]
     public string Summary
     {
@@ -4652,6 +5186,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-width")]
     public string Width
     {
@@ -4660,6 +5195,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>bgcolor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-bgcolor")]
     public string BgColor
     {
@@ -4668,6 +5204,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>cellpadding</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-cellpadding"/>
     [IdlMember("cellPadding", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-cellpadding")]
     public string CellPadding
     {
@@ -4676,6 +5213,7 @@ public sealed partial class HtmlTableElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>cellspacing</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-cellspacing"/>
     [IdlMember("cellSpacing", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-table-cellspacing")]
     public string CellSpacing
     {
@@ -4685,6 +5223,7 @@ public sealed partial class HtmlTableElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltablerowelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablerowelement"/>
 [IdlInterface("HTMLTableRowElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltablerowelement")]
 public sealed partial class HtmlTableRowElement : HtmlElement
 {
@@ -4698,6 +5237,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-align")]
     public string Align
     {
@@ -4706,6 +5246,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>char</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-ch"/>
     [IdlMember("ch", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-ch")]
     public string Ch
     {
@@ -4714,6 +5255,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charoff</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-choff"/>
     [IdlMember("chOff", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-choff")]
     public string ChOff
     {
@@ -4722,6 +5264,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>valign</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-valign"/>
     [IdlMember("vAlign", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-valign")]
     public string VAlign
     {
@@ -4730,6 +5273,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>bgcolor</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-bgcolor"/>
     [IdlMember("bgColor", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tr-bgcolor")]
     public string BgColor
     {
@@ -4739,6 +5283,7 @@ public sealed partial class HtmlTableRowElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/tables.html#htmltablesectionelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#htmltablesectionelement"/>
 [IdlInterface("HTMLTableSectionElement", "https://html.spec.whatwg.org/multipage/tables.html#htmltablesectionelement")]
 public sealed partial class HtmlTableSectionElement : HtmlElement
 {
@@ -4752,6 +5297,7 @@ public sealed partial class HtmlTableSectionElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>align</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-align"/>
     [IdlMember("align", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-align")]
     public string Align
     {
@@ -4760,6 +5306,7 @@ public sealed partial class HtmlTableSectionElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>char</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-ch"/>
     [IdlMember("ch", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-ch")]
     public string Ch
     {
@@ -4768,6 +5315,7 @@ public sealed partial class HtmlTableSectionElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>charoff</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-choff"/>
     [IdlMember("chOff", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-choff")]
     public string ChOff
     {
@@ -4776,6 +5324,7 @@ public sealed partial class HtmlTableSectionElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>valign</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-valign"/>
     [IdlMember("vAlign", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-tbody-valign")]
     public string VAlign
     {
@@ -4785,6 +5334,7 @@ public sealed partial class HtmlTableSectionElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#htmltemplateelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#htmltemplateelement"/>
 [IdlInterface("HTMLTemplateElement", "https://html.spec.whatwg.org/multipage/scripting.html#htmltemplateelement")]
 public sealed partial class HtmlTemplateElement : HtmlElement
 {
@@ -4798,6 +5348,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>for</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-htmlfor"/>
     [IdlMember("htmlFor", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-htmlfor")]
     public string HtmlFor
     {
@@ -4806,6 +5357,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>shadowrootmode</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootmode"/>
     [IdlMember("shadowRootMode", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootmode")]
     public string ShadowRootMode
     {
@@ -4814,6 +5366,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>shadowrootdelegatesfocus</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootdelegatesfocus"/>
     [IdlMember("shadowRootDelegatesFocus", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootdelegatesfocus")]
     public bool ShadowRootDelegatesFocus
     {
@@ -4822,6 +5375,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>shadowrootserializable</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootserializable"/>
     [IdlMember("shadowRootSerializable", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootserializable")]
     public bool ShadowRootSerializable
     {
@@ -4830,6 +5384,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>shadowrootslotassignment</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootslotassignment"/>
     [IdlMember("shadowRootSlotAssignment", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootslotassignment")]
     public string ShadowRootSlotAssignment
     {
@@ -4838,6 +5393,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>shadowrootclonable</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootclonable"/>
     [IdlMember("shadowRootClonable", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootclonable")]
     public bool ShadowRootClonable
     {
@@ -4846,6 +5402,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>shadowrootcustomelementregistry</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootcustomelementregistry"/>
     [IdlMember("shadowRootCustomElementRegistry", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-shadowrootcustomelementregistry")]
     public string ShadowRootCustomElementRegistry
     {
@@ -4855,6 +5412,7 @@ public sealed partial class HtmlTemplateElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmltextareaelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#htmltextareaelement"/>
 [IdlInterface("HTMLTextAreaElement", "https://html.spec.whatwg.org/multipage/form-elements.html#htmltextareaelement")]
 public sealed partial class HtmlTextAreaElement : HtmlElement
 {
@@ -4868,6 +5426,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>autocomplete</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete"/>
     [IdlMember("autocomplete", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete")]
     public string Autocomplete
     {
@@ -4878,6 +5437,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     private partial string ComputeAutocomplete();
 
     /// <summary>Gets or sets the value of the <c>cols</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-cols"/>
     [IdlMember("cols", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-cols")]
     public uint Cols
     {
@@ -4886,6 +5446,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>dirname</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-dirname"/>
     [IdlMember("dirName", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-dirname")]
     public string DirName
     {
@@ -4894,6 +5455,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>disabled</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-disabled")]
     public bool Disabled
     {
@@ -4902,6 +5464,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>maxlength</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-maxlength"/>
     [IdlMember("maxLength", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-maxlength")]
     public int MaxLength
     {
@@ -4910,6 +5473,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>minlength</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-minlength"/>
     [IdlMember("minLength", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-minlength")]
     public int MinLength
     {
@@ -4918,6 +5482,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>name</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-name")]
     public string Name
     {
@@ -4926,6 +5491,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>placeholder</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-placeholder"/>
     [IdlMember("placeholder", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-placeholder")]
     public string Placeholder
     {
@@ -4934,6 +5500,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>readonly</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-readonly"/>
     [IdlMember("readOnly", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-readonly")]
     public bool ReadOnly
     {
@@ -4942,6 +5509,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>required</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-required"/>
     [IdlMember("required", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-required")]
     public bool Required
     {
@@ -4950,6 +5518,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>rows</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-rows"/>
     [IdlMember("rows", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-rows")]
     public uint Rows
     {
@@ -4958,6 +5527,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>wrap</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-wrap"/>
     [IdlMember("wrap", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-wrap")]
     public string Wrap
     {
@@ -4967,6 +5537,7 @@ public sealed partial class HtmlTextAreaElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmltimeelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmltimeelement"/>
 [IdlInterface("HTMLTimeElement", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#htmltimeelement")]
 public sealed partial class HtmlTimeElement : HtmlElement
 {
@@ -4980,6 +5551,7 @@ public sealed partial class HtmlTimeElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>datetime</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-time-datetime"/>
     [IdlMember("dateTime", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-time-datetime")]
     public string DateTime
     {
@@ -4989,6 +5561,7 @@ public sealed partial class HtmlTimeElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#htmltitleelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#htmltitleelement"/>
 [IdlInterface("HTMLTitleElement", "https://html.spec.whatwg.org/multipage/semantics.html#htmltitleelement")]
 public sealed partial class HtmlTitleElement : HtmlElement
 {
@@ -5003,6 +5576,7 @@ public sealed partial class HtmlTitleElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#htmltrackelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#htmltrackelement"/>
 [IdlInterface("HTMLTrackElement", "https://html.spec.whatwg.org/multipage/media.html#htmltrackelement")]
 public sealed partial class HtmlTrackElement : HtmlElement
 {
@@ -5016,22 +5590,27 @@ public sealed partial class HtmlTrackElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>The <c>NONE</c> constant (0).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-none"/>
     [IdlMember("NONE", "https://html.spec.whatwg.org/multipage/media.html#dom-track-none")]
     public const ushort None = 0;
 
     /// <summary>The <c>LOADING</c> constant (1).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-loading"/>
     [IdlMember("LOADING", "https://html.spec.whatwg.org/multipage/media.html#dom-track-loading")]
     public const ushort Loading = 1;
 
     /// <summary>The <c>LOADED</c> constant (2).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-loaded"/>
     [IdlMember("LOADED", "https://html.spec.whatwg.org/multipage/media.html#dom-track-loaded")]
     public const ushort Loaded = 2;
 
     /// <summary>The <c>ERROR</c> constant (3).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-error"/>
     [IdlMember("ERROR", "https://html.spec.whatwg.org/multipage/media.html#dom-track-error")]
     public const ushort Error = 3;
 
     /// <summary>Gets or sets the value of the <c>kind</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-kind"/>
     [IdlMember("kind", "https://html.spec.whatwg.org/multipage/media.html#dom-track-kind")]
     public string Kind
     {
@@ -5040,6 +5619,7 @@ public sealed partial class HtmlTrackElement : HtmlElement
     }
 
     /// <summary>Gets or sets the <c>src</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/media.html#dom-track-src")]
     public string Src
     {
@@ -5048,6 +5628,7 @@ public sealed partial class HtmlTrackElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>srclang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-srclang"/>
     [IdlMember("srclang", "https://html.spec.whatwg.org/multipage/media.html#dom-track-srclang")]
     public string Srclang
     {
@@ -5056,6 +5637,7 @@ public sealed partial class HtmlTrackElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>label</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/media.html#dom-track-label")]
     public string Label
     {
@@ -5064,6 +5646,7 @@ public sealed partial class HtmlTrackElement : HtmlElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>default</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-default"/>
     [IdlMember("default", "https://html.spec.whatwg.org/multipage/media.html#dom-track-default")]
     public bool Default
     {
@@ -5073,6 +5656,7 @@ public sealed partial class HtmlTrackElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmlulistelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/grouping-content.html#htmlulistelement"/>
 [IdlInterface("HTMLUListElement", "https://html.spec.whatwg.org/multipage/grouping-content.html#htmlulistelement")]
 public sealed partial class HtmlUListElement : HtmlElement
 {
@@ -5086,6 +5670,7 @@ public sealed partial class HtmlUListElement : HtmlElement
     partial void OnCreated();
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>compact</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-ul-compact"/>
     [IdlMember("compact", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-ul-compact")]
     public bool Compact
     {
@@ -5094,6 +5679,7 @@ public sealed partial class HtmlUListElement : HtmlElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-ul-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-ul-type")]
     public string Type
     {
@@ -5103,6 +5689,7 @@ public sealed partial class HtmlUListElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dom.html#htmlunknownelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#htmlunknownelement"/>
 [IdlInterface("HTMLUnknownElement", "https://html.spec.whatwg.org/multipage/dom.html#htmlunknownelement")]
 public sealed partial class HtmlUnknownElement : HtmlElement
 {
@@ -5117,6 +5704,7 @@ public sealed partial class HtmlUnknownElement : HtmlElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#htmlvideoelement</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#htmlvideoelement"/>
 [IdlInterface("HTMLVideoElement", "https://html.spec.whatwg.org/multipage/media.html#htmlvideoelement")]
 public sealed partial class HtmlVideoElement : HtmlMediaElement
 {
@@ -5130,6 +5718,7 @@ public sealed partial class HtmlVideoElement : HtmlMediaElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>width</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/media.html#dom-video-width")]
     public uint Width
     {
@@ -5138,6 +5727,7 @@ public sealed partial class HtmlVideoElement : HtmlMediaElement
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/media.html#dom-video-height")]
     public uint Height
     {
@@ -5146,6 +5736,7 @@ public sealed partial class HtmlVideoElement : HtmlMediaElement
     }
 
     /// <summary>Gets or sets the <c>poster</c> content attribute, as a URL resolved against the base URL of the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-poster"/>
     [IdlMember("poster", "https://html.spec.whatwg.org/multipage/media.html#dom-video-poster")]
     public string Poster
     {
@@ -5154,6 +5745,7 @@ public sealed partial class HtmlVideoElement : HtmlMediaElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>playsinline</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-playsinline"/>
     [IdlMember("playsInline", "https://html.spec.whatwg.org/multipage/media.html#dom-video-playsinline")]
     public bool PlaysInline
     {

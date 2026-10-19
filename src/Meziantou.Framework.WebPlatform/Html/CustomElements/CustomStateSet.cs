@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// the <c>:state()</c> pseudo-class. It is a <c>setlike&lt;DOMString&gt;</c>: the items are enumerated in insertion order,
 /// and, as for a JavaScript <c>Set</c>, an enumeration sees the changes made while it is in progress.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#customstateset"/>
 [IdlInterface("CustomStateSet", "https://html.spec.whatwg.org/multipage/custom-elements.html#customstateset")]
 public sealed class CustomStateSet : IReadOnlyCollection<string>
 {

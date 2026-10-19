@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <c>:active-view-transition-type()</c> pseudo-class. It is a <c>setlike&lt;DOMString&gt;</c>: the items are enumerated in
 /// insertion order, and, as for a JavaScript <c>Set</c>, an enumeration sees the changes made while it is in progress.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#viewtransitiontypeset"/>
 [IdlInterface("ViewTransitionTypeSet", "https://drafts.csswg.org/css-view-transitions-2/#viewtransitiontypeset")]
 public sealed class ViewTransitionTypeSet : IReadOnlyCollection<string>
 {

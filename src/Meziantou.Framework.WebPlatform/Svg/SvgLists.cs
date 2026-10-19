@@ -49,6 +49,7 @@ internal sealed class SvgAttributeBinding(Element element, string localName, boo
 }
 
 /// <summary>The list interfaces of SVG (https://svgwg.org/svg2-draft/types.html#ListInterfaces).</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNameList"/>
 [IdlInterface("SVGNameList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNameList")]
 public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     where T : notnull
@@ -64,10 +65,12 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     bool ISvgValueOwner.IsReadOnly => _binding?.IsReadOnly ?? false;
 
     /// <summary>Gets the number of items of the list.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__length"/>
     [IdlMember("length", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__length")]
     public uint Length => NumberOfItems;
 
     /// <summary>Gets the number of items of the list.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__numberOfItems"/>
     [IdlMember("numberOfItems", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__numberOfItems")]
     public uint NumberOfItems
     {
@@ -83,6 +86,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     public int Count => (int)NumberOfItems;
 
     /// <summary>Gets or sets the item at the given index; setting an item replaces the existing one.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__setter"/>
     [IdlMember("setter", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__setter")]
     public T this[uint index]
     {
@@ -95,6 +99,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     public T this[int index] => GetItem(checked((uint)index));
 
     /// <summary>Removes all the items of the list.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"/>
     [IdlMember("clear", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear")]
     public void Clear()
     {
@@ -105,6 +110,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     }
 
     /// <summary>Clears the list, then inserts the given item as its only item and returns it.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"/>
     [IdlMember("initialize", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize")]
     public T Initialize(T newItem)
     {
@@ -121,6 +127,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     /// <summary>
     /// Returns the item at the given index, or throws an <c>IndexSizeError</c> when the index is out of range.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__getItem"/>
     [IdlMember("getItem", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__getItem")]
     public T GetItem(uint index)
     {
@@ -134,6 +141,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     /// <summary>
     /// Inserts the item before the item at the given index (at the end if the index is too large) and returns it.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"/>
     [IdlMember("insertItemBefore", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore")]
     public T InsertItemBefore(T newItem, uint index)
     {
@@ -146,6 +154,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     }
 
     /// <summary>Replaces the item at the given index with the given item and returns the new item.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"/>
     [IdlMember("replaceItem", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem")]
     public T ReplaceItem(T newItem, uint index)
     {
@@ -162,6 +171,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     }
 
     /// <summary>Removes the item at the given index from the list and returns it.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"/>
     [IdlMember("removeItem", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem")]
     public T RemoveItem(uint index)
     {
@@ -177,6 +187,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
     }
 
     /// <summary>Appends the item to the list and returns it.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"/>
     [IdlMember("appendItem", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem")]
     public T AppendItem(T newItem)
     {
@@ -290,6 +301,7 @@ public abstract class SvgListBase<T> : IReadOnlyList<T>, ISvgValueOwner
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGNumberList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumberList"/>
 [IdlInterface("SVGNumberList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumberList")]
 public sealed class SvgNumberList : SvgListBase<SvgNumber>
 {
@@ -324,6 +336,7 @@ public sealed class SvgNumberList : SvgListBase<SvgNumber>
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGLengthList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLengthList"/>
 [IdlInterface("SVGLengthList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLengthList")]
 public sealed class SvgLengthList : SvgListBase<SvgLength>
 {
@@ -382,6 +395,7 @@ public sealed class SvgLengthList : SvgListBase<SvgLength>
 }
 
 /// <summary>https://svgwg.org/svg2-draft/shapes.html#InterfaceSVGPointList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPointList"/>
 [IdlInterface("SVGPointList", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPointList")]
 public sealed class SvgPointList : SvgListBase<DomPoint>
 {
@@ -492,6 +506,7 @@ internal sealed class SvgListPoint(double x, double y) : DomPoint(x, y)
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGStringList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGStringList"/>
 [IdlInterface("SVGStringList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGStringList")]
 public sealed class SvgStringList : SvgListBase<string>
 {
@@ -521,6 +536,7 @@ public sealed class SvgStringList : SvgListBase<string>
 }
 
 /// <summary>https://svgwg.org/svg2-draft/coords.html#InterfaceSVGTransformList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransformList"/>
 [IdlInterface("SVGTransformList", "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransformList")]
 public sealed class SvgTransformList : SvgListBase<SvgTransform>
 {
@@ -532,6 +548,7 @@ public sealed class SvgTransformList : SvgListBase<SvgTransform>
     /// <summary>
     /// Creates a transform of type <c>SVG_TRANSFORM_MATRIX</c> from the given matrix, without adding it to the list.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__createSVGTransformFromMatrix"/>
     [IdlMember("createSVGTransformFromMatrix", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__createSVGTransformFromMatrix")]
     public SvgTransform CreateSvgTransformFromMatrix(DomMatrix2DInit? matrix = null)
     {
@@ -541,6 +558,7 @@ public sealed class SvgTransformList : SvgListBase<SvgTransform>
     }
 
     /// <summary>https://svgwg.org/svg2-draft/coords.html#__svg__SVGTransformList__consolidate</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__consolidate"/>
     [IdlMember("consolidate", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__consolidate")]
     public SvgTransform? Consolidate()
     {

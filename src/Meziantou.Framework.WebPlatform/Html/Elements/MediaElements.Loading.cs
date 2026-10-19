@@ -77,6 +77,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/media.html#dom-media-load</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-load"/>
     [IdlMember("load", "https://html.spec.whatwg.org/multipage/media.html#dom-media-load")]
     public void Load()
     {

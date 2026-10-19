@@ -27,6 +27,7 @@ internal static class TrustedTypeNameExtensions
 /// <see cref="TrustedHtml"/>, a <see cref="TrustedScript"/> or a <see cref="TrustedScriptUrl"/>. The trusted types are
 /// immutable wrappers around a string, created by the policies of a <see cref="TrustedTypePolicyFactory"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#typedefdef-trustedtype"/>
 [IdlInterface("TrustedType", "https://w3c.github.io/trusted-types/dist/spec/#typedefdef-trustedtype")]
 public abstract class TrustedType
 {
@@ -52,6 +53,7 @@ public abstract class TrustedType
 }
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#trusted-html</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedhtml"/>
 [IdlInterface("TrustedHTML", "https://w3c.github.io/trusted-types/dist/spec/#trustedhtml")]
 public sealed class TrustedHtml : TrustedType
 {
@@ -63,11 +65,13 @@ public sealed class TrustedHtml : TrustedType
     internal override TrustedTypeName Name => TrustedTypeName.TrustedHtml;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedhtml-tojson</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedhtml-tojson"/>
     [IdlMember("toJSON", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedhtml-tojson")]
     public string ToJson() => Data;
 }
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#trusted-script</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedscript"/>
 [IdlInterface("TrustedScript", "https://w3c.github.io/trusted-types/dist/spec/#trustedscript")]
 public sealed class TrustedScript : TrustedType
 {
@@ -79,11 +83,13 @@ public sealed class TrustedScript : TrustedType
     internal override TrustedTypeName Name => TrustedTypeName.TrustedScript;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscript-tojson</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscript-tojson"/>
     [IdlMember("toJSON", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscript-tojson")]
     public string ToJson() => Data;
 }
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#trustedscripturl</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedscripturl"/>
 [IdlInterface("TrustedScriptURL", "https://w3c.github.io/trusted-types/dist/spec/#trustedscripturl")]
 public sealed class TrustedScriptUrl : TrustedType
 {
@@ -95,6 +101,7 @@ public sealed class TrustedScriptUrl : TrustedType
     internal override TrustedTypeName Name => TrustedTypeName.TrustedScriptUrl;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscripturl-tojson</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscripturl-tojson"/>
     [IdlMember("toJSON", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedscripturl-tojson")]
     public string ToJson() => Data;
 }
@@ -105,6 +112,7 @@ public sealed class TrustedScriptUrl : TrustedType
 /// <see cref="TrustedTypePolicy.CreateParserOptions"/>. They satisfy the Trusted Types enforcement of these sinks without a
 /// <see cref="TrustedHtml"/> value. The object is immutable and opaque: it has no member.
 /// </summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedhtmlparseroptions"/>
 [IdlInterface("TrustedHTMLParserOptions", "https://w3c.github.io/trusted-types/dist/spec/#trustedhtmlparseroptions")]
 public sealed class TrustedHtmlParserOptions
 {
@@ -122,14 +130,17 @@ public sealed class TrustedHtmlParserOptions
 }
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createhtmlcallback</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createhtmlcallback"/>
 [IdlInterface("CreateHTMLCallback", "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createhtmlcallback")]
 public delegate string? CreateHtmlCallback(string input, params object?[] arguments);
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscriptcallback</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscriptcallback"/>
 [IdlInterface("CreateScriptCallback", "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscriptcallback")]
 public delegate string? CreateScriptCallback(string input, params object?[] arguments);
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscripturlcallback</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscripturlcallback"/>
 [IdlInterface("CreateScriptURLCallback", "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscripturlcallback")]
 public delegate string? CreateScriptUrlCallback(string input, params object?[] arguments);
 
@@ -138,26 +149,32 @@ public delegate string? CreateScriptUrlCallback(string input, params object?[] a
 /// null to reject the operation. The options received by the callback have a <see cref="SetHtmlUnsafeOptions.Sanitizer"/>
 /// only when the options given to the sink have one (a new <see cref="Sanitizer"/>).
 /// </summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createparseroptionscallback"/>
 [IdlInterface("CreateParserOptionsCallback", "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createparseroptionscallback")]
 public delegate SetHtmlUnsafeOptions? CreateParserOptionsCallback(SetHtmlUnsafeOptions options, params object?[] arguments);
 
 /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dictdef-trustedtypepolicyoptions</summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dictdef-trustedtypepolicyoptions"/>
 [IdlInterface("TrustedTypePolicyOptions", "https://w3c.github.io/trusted-types/dist/spec/#dictdef-trustedtypepolicyoptions")]
 public sealed class TrustedTypePolicyOptions
 {
     /// <summary>Gets the callback used to create <c>TrustedHTML</c> values.</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createhtml"/>
     [IdlMember("createHTML", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createhtml")]
     public CreateHtmlCallback? CreateHtml { get; init; }
 
     /// <summary>Gets the callback used to create <c>TrustedScript</c> values.</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscript"/>
     [IdlMember("createScript", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscript")]
     public CreateScriptCallback? CreateScript { get; init; }
 
     /// <summary>Gets the callback used to create <c>TrustedScriptURL</c> values.</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscripturl"/>
     [IdlMember("createScriptURL", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscripturl")]
     public CreateScriptUrlCallback? CreateScriptUrl { get; init; }
 
     /// <summary>Gets the callback used to create <c>TrustedHTMLParserOptions</c> values.</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createparseroptions"/>
     [IdlMember("createParserOptions", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createparseroptions")]
     public CreateParserOptionsCallback? CreateParserOptions { get; init; }
 }
@@ -166,6 +183,7 @@ public sealed class TrustedTypePolicyOptions
 /// https://w3c.github.io/trusted-types/dist/spec/#trusted-type-policy: creates trusted types by applying the rules of the
 /// callbacks given to <see cref="TrustedTypePolicyFactory.CreatePolicy"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicy"/>
 [IdlInterface("TrustedTypePolicy", "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicy")]
 public sealed class TrustedTypePolicy
 {
@@ -188,21 +206,25 @@ public sealed class TrustedTypePolicy
     internal bool HasCreateParserOptions => _createParserOptions is not null;
 
     /// <summary>Gets the name of the policy.</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-name"/>
     [IdlMember("name", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-name")]
     public string Name { get; }
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createhtml</summary>
     /// <exception cref="TypeErrorException">The policy has no <c>createHTML</c> callback.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createhtml"/>
     [IdlMember("createHTML", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createhtml")]
     public TrustedHtml CreateHtml(string input, params object?[] arguments) => (TrustedHtml)CreateTrustedType(TrustedTypeName.TrustedHtml, input, arguments);
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscript</summary>
     /// <exception cref="TypeErrorException">The policy has no <c>createScript</c> callback.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscript"/>
     [IdlMember("createScript", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscript")]
     public TrustedScript CreateScript(string input, params object?[] arguments) => (TrustedScript)CreateTrustedType(TrustedTypeName.TrustedScript, input, arguments);
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscripturl</summary>
     /// <exception cref="TypeErrorException">The policy has no <c>createScriptURL</c> callback.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscripturl"/>
     [IdlMember("createScriptURL", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscripturl")]
     public TrustedScriptUrl CreateScriptUrl(string input, params object?[] arguments) => (TrustedScriptUrl)CreateTrustedType(TrustedTypeName.TrustedScriptUrl, input, arguments);
 
@@ -211,6 +233,7 @@ public sealed class TrustedTypePolicy
     /// <see cref="TrustedHtmlParserOptions"/> created from the options returned by the <c>createParserOptions</c> callback.
     /// </summary>
     /// <exception cref="TypeErrorException">The policy has no <c>createParserOptions</c> callback, or the callback returned null.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createparseroptions"/>
     [IdlMember("createParserOptions", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createparseroptions")]
     public TrustedHtmlParserOptions CreateParserOptions(SetHtmlUnsafeOptions? options = null, params object?[] arguments)
     {

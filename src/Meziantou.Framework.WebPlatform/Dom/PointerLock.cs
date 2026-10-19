@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The options of <see cref="Element.RequestPointerLock"/> (https://w3c.github.io/pointerlock/#pointerlockoptions-dictionary).</summary>
+/// <seealso href="https://w3c.github.io/pointerlock/#pointerlockoptions-dictionary"/>
 [IdlInterface("PointerLockOptions", "https://w3c.github.io/pointerlock/#pointerlockoptions-dictionary")]
 public sealed class PointerLockOptions
 {
     /// <summary>Gets whether the movements of the pointer must not be adjusted by the platform (e.g. by the acceleration of the mouse).</summary>
+    /// <seealso href="https://w3c.github.io/pointerlock/#dom-pointerlockoptions-unadjustedmovement"/>
     [IdlMember("unadjustedMovement", "https://w3c.github.io/pointerlock/#dom-pointerlockoptions-unadjustedmovement")]
     public bool UnadjustedMovement { get; init; }
 }
@@ -21,6 +23,7 @@ public partial class Element
     /// is fired).
     /// </summary>
     /// <param name="options">The options, or null for the default options.</param>
+    /// <seealso href="https://w3c.github.io/pointerlock/#dom-element-requestpointerlock"/>
     [IdlMember("requestPointerLock", "https://w3c.github.io/pointerlock/#dom-element-requestpointerlock")]
     public Task RequestPointerLock(PointerLockOptions? options = null) => PointerLockModel.Request(this, options ?? new PointerLockOptions());
 }
@@ -38,6 +41,7 @@ public partial class Document
     /// Gets the element the pointer is locked to when it is in the document (https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement):
     /// the host of the shadow tree of the element when it is in a shadow tree. Null while a request is pending.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement"/>
     [IdlMember("pointerLockElement", "https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement")]
     public Element? PointerLockElement => PointerLockModel.GetPointerLockElement(this, this);
 
@@ -45,6 +49,7 @@ public partial class Document
     /// Exits the pointer lock when the pointer is locked to an element of the document
     /// (https://w3c.github.io/pointerlock/#dom-document-exitpointerlock); <c>pointerlockchange</c> is fired by a task.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerlock/#dom-document-exitpointerlock"/>
     [IdlMember("exitPointerLock", "https://w3c.github.io/pointerlock/#dom-document-exitpointerlock")]
     public void ExitPointerLock() => PointerLockModel.Exit(this);
 }
@@ -55,6 +60,7 @@ public partial class ShadowRoot
     /// Gets the element the pointer is locked to when it is in the shadow tree (https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement):
     /// the pointer-lock target retargeted against the shadow root.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement"/>
     [IdlMember("pointerLockElement", "https://w3c.github.io/pointerlock/#dom-documentorshadowroot-pointerlockelement")]
     public Element? PointerLockElement => Host.IsConnected ? PointerLockModel.GetPointerLockElement(NodeDocument, this) : null;
 }

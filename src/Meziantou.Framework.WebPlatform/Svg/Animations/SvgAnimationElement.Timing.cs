@@ -1089,6 +1089,7 @@ public partial class SvgAnimationElement
     }
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getStartTime: the begin time, in seconds, of the current interval.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getStartTime"/>
     [IdlMember("getStartTime", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getStartTime")]
     public float GetStartTime()
     {
@@ -1100,10 +1101,12 @@ public partial class SvgAnimationElement
     }
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getCurrentTime: the current time, in seconds, of the timeline of the document fragment.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getCurrentTime"/>
     [IdlMember("getCurrentTime", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getCurrentTime")]
     public float GetCurrentTime() => GetUpToDateContainer() is { } container ? (float)container.Elapsed.Seconds : 0;
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getSimpleDuration: the simple duration, in seconds.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getSimpleDuration"/>
     [IdlMember("getSimpleDuration", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__getSimpleDuration")]
     public float GetSimpleDuration()
     {
@@ -1115,18 +1118,22 @@ public partial class SvgAnimationElement
     }
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElement: begins the element at the current time.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElement"/>
     [IdlMember("beginElement", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElement")]
     public void BeginElement() => BeginElementAt(0);
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElementAt: begins the element at an offset, in seconds, from the current time.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElementAt"/>
     [IdlMember("beginElementAt", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__beginElementAt")]
     public void BeginElementAt(float offset) => AddInstanceTimeAndUpdate(isBegin: true, SmilTime.FromSeconds(offset), InstanceOrigin.Script);
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElement: ends the element at the current time.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElement"/>
     [IdlMember("endElement", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElement")]
     public void EndElement() => EndElementAt(0);
 
     /// <summary>https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElementAt: ends the element at an offset, in seconds, from the current time.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElementAt"/>
     [IdlMember("endElementAt", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__endElementAt")]
     public void EndElementAt(float offset) => AddInstanceTimeAndUpdate(isBegin: false, SmilTime.FromSeconds(offset), InstanceOrigin.Script);
 }

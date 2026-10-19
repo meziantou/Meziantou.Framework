@@ -3,23 +3,27 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/dom.html#showpopoveroptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#showpopoveroptions"/>
 [IdlInterface("ShowPopoverOptions", "https://html.spec.whatwg.org/multipage/dom.html#showpopoveroptions")]
 public class ShowPopoverOptions
 {
     /// <summary>
     /// Gets the element that invokes the popover, used for the invoker relationship and the anchor positioning.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-showpopoveroptions-source"/>
     [IdlMember("source", "https://html.spec.whatwg.org/multipage/dom.html#dom-showpopoveroptions-source")]
     public HtmlElement? Source { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dom.html#togglepopoveroptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#togglepopoveroptions"/>
 [IdlInterface("TogglePopoverOptions", "https://html.spec.whatwg.org/multipage/dom.html#togglepopoveroptions")]
 public sealed class TogglePopoverOptions : ShowPopoverOptions
 {
     /// <summary>
     /// Gets whether to force the popover to be shown (true) or hidden (false); when null the popover is toggled.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-togglepopoveroptions-force"/>
     [IdlMember("force", "https://html.spec.whatwg.org/multipage/dom.html#dom-togglepopoveroptions-force")]
     public bool? Force { get; init; }
 }
@@ -137,18 +141,22 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/popover.html#dom-showpopover</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/popover.html#dom-showpopover"/>
     [IdlMember("showPopover", "https://html.spec.whatwg.org/multipage/popover.html#dom-showpopover")]
     public void ShowPopover(ShowPopoverOptions? options = null) => ShowPopover(throwExceptions: true, options?.Source);
 
     /// <summary>https://html.spec.whatwg.org/multipage/popover.html#dom-hidepopover</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/popover.html#dom-hidepopover"/>
     [IdlMember("hidePopover", "https://html.spec.whatwg.org/multipage/popover.html#dom-hidepopover")]
     public void HidePopover() => HidePopover(focusPreviousElement: true, fireEvents: true, throwExceptions: true, source: null);
 
     /// <summary>https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover"/>
     [IdlMember("togglePopover", "https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover")]
     public bool TogglePopover(TogglePopoverOptions? options = null) => TogglePopover(options?.Force, options?.Source);
 
     /// <summary>https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover"/>
     [IdlMember("togglePopover", "https://html.spec.whatwg.org/multipage/popover.html#dom-togglepopover")]
     public bool TogglePopover(bool force) => TogglePopover((bool?)force, source: null);
 

@@ -6,6 +6,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class HtmlElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-translate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-translate"/>
     [IdlMember("translate", "https://html.spec.whatwg.org/multipage/dom.html#dom-translate")]
     public bool Translate
     {
@@ -32,6 +33,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-draggable</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-draggable"/>
     [IdlMember("draggable", "https://html.spec.whatwg.org/multipage/dnd.html#dom-draggable")]
     public bool Draggable
     {
@@ -55,6 +57,7 @@ public partial class HtmlElement
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-spellcheck: the default behavior of elements is to
     /// inherit the state of the nearest ancestor, and to check the spelling when no ancestor specifies it.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-spellcheck"/>
     [IdlMember("spellcheck", "https://html.spec.whatwg.org/multipage/interaction.html#dom-spellcheck")]
     public bool Spellcheck
     {
@@ -77,6 +80,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-autocorrect</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-autocorrect"/>
     [IdlMember("autocorrect", "https://html.spec.whatwg.org/multipage/interaction.html#dom-autocorrect")]
     public bool Autocorrect
     {
@@ -99,6 +103,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-contenteditable</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-contenteditable"/>
     [IdlMember("contentEditable", "https://html.spec.whatwg.org/multipage/interaction.html#dom-contenteditable")]
     public string ContentEditable
     {
@@ -127,6 +132,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-iscontenteditable</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-iscontenteditable"/>
     [IdlMember("isContentEditable", "https://html.spec.whatwg.org/multipage/interaction.html#dom-iscontenteditable")]
     public bool IsContentEditable => Css.Selectors.HtmlElementStates.IsEditingHostOrEditable(this);
 
@@ -134,6 +140,7 @@ public partial class HtmlElement
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-accesskeylabel: the key combination of the assigned access
     /// key of the element (e.g. <c>Alt+Shift+B</c>), or the empty string.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-accesskeylabel"/>
     [IdlMember("accessKeyLabel", "https://html.spec.whatwg.org/multipage/interaction.html#dom-accesskeylabel")]
     public string AccessKeyLabel => AccessKeys.GetLabel(this);
 
@@ -141,6 +148,7 @@ public partial class HtmlElement
     /// https://html.spec.whatwg.org/multipage/dom.html#dom-innertext: the rendered text of the element (see
     /// <see cref="RenderedText"/>), or its descendant text content when it is not being rendered.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-innertext"/>
     [IdlMember("innerText", "https://html.spec.whatwg.org/multipage/dom.html#dom-innertext")]
     public string InnerText
     {
@@ -153,6 +161,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-outertext</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-outertext"/>
     [IdlMember("outerText", "https://html.spec.whatwg.org/multipage/dom.html#dom-outertext")]
     public string OuterText
     {

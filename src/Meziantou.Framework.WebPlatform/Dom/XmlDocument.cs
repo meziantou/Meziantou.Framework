@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#xmldocument</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#xmldocument"/>
 [IdlInterface("XMLDocument", "https://dom.spec.whatwg.org/#xmldocument")]
 public sealed class XmlDocument : Document
 {

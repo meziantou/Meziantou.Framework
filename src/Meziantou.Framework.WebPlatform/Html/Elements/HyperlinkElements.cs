@@ -7,10 +7,12 @@ public partial class HtmlAnchorElement
     /// <summary>
     /// Gets the serialization of the origin of the URL of the hyperlink, or an empty string when there is no URL.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin")]
     public string Origin => HyperlinkElementUtils.Get(this, static url => url.Origin, "");
 
     /// <summary>Gets or sets the scheme of the URL of the hyperlink, followed by a colon.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol")]
     public string Protocol
     {
@@ -19,6 +21,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the username of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username"/>
     [IdlMember("username", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username")]
     public string Username
     {
@@ -27,6 +30,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the password of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password"/>
     [IdlMember("password", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password")]
     public string Password
     {
@@ -35,6 +39,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the host and the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host")]
     public string Host
     {
@@ -43,6 +48,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the host of the URL of the hyperlink, without the port.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname")]
     public string Hostname
     {
@@ -51,6 +57,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port")]
     public string Port
     {
@@ -59,6 +66,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the path of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname")]
     public string Pathname
     {
@@ -67,6 +75,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the query of the URL of the hyperlink, including the leading question mark.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search")]
     public string Search
     {
@@ -75,6 +84,7 @@ public partial class HtmlAnchorElement
     }
 
     /// <summary>Gets or sets the fragment of the URL of the hyperlink, including the leading number sign.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash")]
     public string Hash
     {
@@ -104,10 +114,12 @@ public partial class HtmlAreaElement
     /// <summary>
     /// Gets the serialization of the origin of the URL of the hyperlink, or an empty string when there is no URL.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin")]
     public string Origin => HyperlinkElementUtils.Get(this, static url => url.Origin, "");
 
     /// <summary>Gets or sets the scheme of the URL of the hyperlink, followed by a colon.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol")]
     public string Protocol
     {
@@ -116,6 +128,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the username of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username"/>
     [IdlMember("username", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username")]
     public string Username
     {
@@ -124,6 +137,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the password of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password"/>
     [IdlMember("password", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password")]
     public string Password
     {
@@ -132,6 +146,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the host and the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host")]
     public string Host
     {
@@ -140,6 +155,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the host of the URL of the hyperlink, without the port.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname")]
     public string Hostname
     {
@@ -148,6 +164,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port")]
     public string Port
     {
@@ -156,6 +173,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the path of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname")]
     public string Pathname
     {
@@ -164,6 +182,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the query of the URL of the hyperlink, including the leading question mark.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search")]
     public string Search
     {
@@ -172,6 +191,7 @@ public partial class HtmlAreaElement
     }
 
     /// <summary>Gets or sets the fragment of the URL of the hyperlink, including the leading number sign.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash")]
     public string Hash
     {
@@ -192,6 +212,7 @@ public partial class HtmlAreaElement
 public partial class HtmlAnchorElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-text</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-text"/>
     [IdlMember("text", "https://html.spec.whatwg.org/multipage/text-level-semantics.html#dom-a-text")]
     public string Text
     {
@@ -205,10 +226,12 @@ public partial class SvgAElement
     /// <summary>
     /// Gets the serialization of the origin of the URL of the hyperlink, or an empty string when there is no URL.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin")]
     public string Origin => HyperlinkElementUtils.Get(this, static url => url.Origin, "");
 
     /// <summary>Gets or sets the scheme of the URL of the hyperlink, followed by a colon.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol")]
     public string Protocol
     {
@@ -217,6 +240,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the username of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username"/>
     [IdlMember("username", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username")]
     public string Username
     {
@@ -225,6 +249,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the password of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password"/>
     [IdlMember("password", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password")]
     public string Password
     {
@@ -233,6 +258,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the host and the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host")]
     public string Host
     {
@@ -241,6 +267,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the host of the URL of the hyperlink, without the port.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname")]
     public string Hostname
     {
@@ -249,6 +276,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port")]
     public string Port
     {
@@ -257,6 +285,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the path of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname")]
     public string Pathname
     {
@@ -265,6 +294,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the query of the URL of the hyperlink, including the leading question mark.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search")]
     public string Search
     {
@@ -273,6 +303,7 @@ public partial class SvgAElement
     }
 
     /// <summary>Gets or sets the fragment of the URL of the hyperlink, including the leading number sign.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash")]
     public string Hash
     {
@@ -292,10 +323,12 @@ public partial class MathMLAnchorElement
     /// <summary>
     /// Gets the serialization of the origin of the URL of the hyperlink, or an empty string when there is no URL.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin")]
     public string Origin => HyperlinkElementUtils.Get(this, static url => url.Origin, "");
 
     /// <summary>Gets or sets the scheme of the URL of the hyperlink, followed by a colon.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-protocol")]
     public string Protocol
     {
@@ -304,6 +337,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the username of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username"/>
     [IdlMember("username", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-username")]
     public string Username
     {
@@ -312,6 +346,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the password of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password"/>
     [IdlMember("password", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-password")]
     public string Password
     {
@@ -320,6 +355,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the host and the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-host")]
     public string Host
     {
@@ -328,6 +364,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the host of the URL of the hyperlink, without the port.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hostname")]
     public string Hostname
     {
@@ -336,6 +373,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the port of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-port")]
     public string Port
     {
@@ -344,6 +382,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the path of the URL of the hyperlink.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-pathname")]
     public string Pathname
     {
@@ -352,6 +391,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the query of the URL of the hyperlink, including the leading question mark.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-search")]
     public string Search
     {
@@ -360,6 +400,7 @@ public partial class MathMLAnchorElement
     }
 
     /// <summary>Gets or sets the fragment of the URL of the hyperlink, including the leading number sign.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-hash")]
     public string Hash
     {
@@ -377,6 +418,7 @@ public partial class SvgAElement
     internal override void ActivationBehavior(Event @event) => HyperlinkElementUtils.ActivationBehavior(this);
 
     /// <summary>https://svgwg.org/svg2-draft/linking.html#__svg__SVGAElement__referrerPolicy</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#__svg__SVGAElement__referrerPolicy"/>
     [IdlMember("referrerPolicy", "https://w3c.github.io/svgwg/svg2-draft/linking.html#__svg__SVGAElement__referrerPolicy")]
     public string ReferrerPolicy
     {

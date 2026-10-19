@@ -5,10 +5,12 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The initialization dictionary of an <see cref="EventSource"/> (https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsourceinit).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsourceinit"/>
 [IdlInterface("EventSourceInit", "https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsourceinit")]
 public sealed class EventSourceInit
 {
     /// <summary>Gets whether the credentials mode of the requests is "include" (the cookies are sent to another origin). The default is false.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsourceinit-withcredentials"/>
     [IdlMember("withCredentials", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsourceinit-withcredentials")]
     public bool WithCredentials { get; init; }
 }
@@ -32,6 +34,7 @@ public sealed class EventSourceInit
 /// when the document is unloaded or destroyed, and the ones of a worker when it ends.
 /// </para>
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsource"/>
 [IdlInterface("EventSource", "https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsource")]
 #pragma warning disable CA1001 // The fetch controller is disposed when the connection is closed
 public sealed class EventSource : EventTarget
@@ -44,14 +47,17 @@ public sealed class EventSource : EventTarget
     private static readonly ConditionalWeakTable<GlobalScope, List<EventSource>> ActiveEventSources = [];
 
     /// <summary>The state of an event source whose connection has not yet been established, or was closed and is being reestablished.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-connecting"/>
     [IdlMember("CONNECTING", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-connecting")]
     public const ushort Connecting = 0;
 
     /// <summary>The state of an event source whose connection is open: the events are dispatched as they are received.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-open"/>
     [IdlMember("OPEN", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-open")]
     public const ushort Open = 1;
 
     /// <summary>The state of an event source whose connection is not open and is not reestablished: it failed, or <see cref="Close"/> was called.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-closed"/>
     [IdlMember("CLOSED", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-closed")]
     public const ushort Closed = 2;
 
@@ -72,6 +78,7 @@ public sealed class EventSource : EventTarget
     /// <param name="url">The URL of the event stream, possibly relative to the API base URL of the relevant global object.</param>
     /// <param name="eventSourceInitDict">The options, or null.</param>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the URL is not valid.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource")]
     public EventSource(string url, EventSourceInit? eventSourceInitDict = null)
     {
@@ -95,10 +102,12 @@ public sealed class EventSource : EventTarget
     }
 
     /// <summary>Gets the URL of the event stream, serialized (https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-url).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-url"/>
     [IdlMember("url", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-url")]
     public string Url => _url.Serialize();
 
     /// <summary>Gets whether the credentials mode of the requests is "include": the cookies are also sent to another origin.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-withcredentials"/>
     [IdlMember("withCredentials", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-withcredentials")]
     public bool WithCredentials { get; }
 
@@ -106,10 +115,12 @@ public sealed class EventSource : EventTarget
     /// Gets the state of the connection (https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-readystate):
     /// <see cref="Connecting"/>, <see cref="Open"/> or <see cref="Closed"/>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-readystate"/>
     [IdlMember("readyState", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-readystate")]
     public ushort ReadyState { get; private set; }
 
     /// <summary>Gets or sets the event handler of the <c>open</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onopen"/>
     [IdlMember("onopen", "https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onopen")]
     public Action<Event>? OnOpen
     {
@@ -118,6 +129,7 @@ public sealed class EventSource : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -126,6 +138,7 @@ public sealed class EventSource : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/server-sent-events.html#handler-eventsource-onerror")]
     public Action<Event>? OnError
     {
@@ -137,6 +150,7 @@ public sealed class EventSource : EventTarget
     /// Closes the connection (https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-close): the fetch
     /// is aborted, the events that were received and not yet dispatched are dropped, and the connection is not reestablished.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/server-sent-events.html#dom-eventsource-close")]
     public void Close()
     {

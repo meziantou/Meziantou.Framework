@@ -9,6 +9,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 public sealed partial class CssStyleProperties
 {
     /// <summary>Gets or sets the value of the <c>accent-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("accentColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("accent-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AccentColor
@@ -18,6 +20,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>align-content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("alignContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("align-content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AlignContent
@@ -27,6 +31,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>align-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("alignItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("align-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AlignItems
@@ -36,6 +42,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>align-self</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("alignSelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("align-self", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AlignSelf
@@ -45,6 +53,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>alignment-baseline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("alignmentBaseline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("alignment-baseline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AlignmentBaseline
@@ -54,6 +64,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>all</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("all", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string All
     {
@@ -62,6 +73,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>anchor-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("anchorName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("anchor-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnchorName
@@ -71,6 +84,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>anchor-scope</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("anchorScope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("anchor-scope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnchorScope
@@ -80,6 +95,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("animation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Animation
     {
@@ -88,6 +104,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-composition</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationComposition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-composition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationComposition
@@ -97,6 +115,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-delay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-delay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationDelay
@@ -106,6 +126,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-delay-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationDelayEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-delay-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationDelayEnd
@@ -115,6 +137,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-delay-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationDelayStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-delay-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationDelayStart
@@ -124,6 +148,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-direction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationDirection
@@ -133,6 +159,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-duration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-duration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationDuration
@@ -142,6 +170,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-fill-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationFillMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-fill-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationFillMode
@@ -151,6 +181,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-iteration-count</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationIterationCount", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-iteration-count", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationIterationCount
@@ -160,6 +192,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationName
@@ -169,6 +203,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-play-state</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationPlayState", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-play-state", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationPlayState
@@ -178,6 +214,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-range</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationRange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-range", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationRange
@@ -187,6 +225,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-range-center</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationRangeCenter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-range-center", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationRangeCenter
@@ -196,6 +236,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-range-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationRangeEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-range-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationRangeEnd
@@ -205,6 +247,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-range-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationRangeStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-range-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationRangeStart
@@ -214,6 +258,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-timeline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationTimeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-timeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationTimeline
@@ -223,6 +269,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-timing-function</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-timing-function", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationTimingFunction
@@ -232,6 +280,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>animation-trigger</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("animationTrigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("animation-trigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AnimationTrigger
@@ -241,6 +291,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>appearance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("appearance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Appearance
     {
@@ -249,6 +300,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>aspect-ratio</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("aspectRatio", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("aspect-ratio", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string AspectRatio
@@ -258,6 +311,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>backdrop-filter</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backdropFilter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("backdrop-filter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackdropFilter
@@ -267,6 +322,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>backface-visibility</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backfaceVisibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("backface-visibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackfaceVisibility
@@ -276,6 +333,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("background", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Background
     {
@@ -284,6 +342,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-attachment</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundAttachment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-attachment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundAttachment
@@ -293,6 +353,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-blend-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundBlendMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-blend-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundBlendMode
@@ -302,6 +364,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundClip
@@ -311,6 +375,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundColor
@@ -320,6 +386,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundImage
@@ -329,6 +397,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundOrigin
@@ -338,6 +408,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundPosition
@@ -347,6 +419,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-position-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundPositionBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-position-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundPositionBlock
@@ -356,6 +430,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-position-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundPositionInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-position-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundPositionInline
@@ -365,6 +441,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-position-x</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundPositionX", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-position-x", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundPositionX
@@ -374,6 +452,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-position-y</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundPositionY", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-position-y", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundPositionY
@@ -383,6 +463,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundRepeat
@@ -392,6 +474,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-repeat-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundRepeatBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-repeat-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundRepeatBlock
@@ -401,6 +485,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-repeat-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundRepeatInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-repeat-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundRepeatInline
@@ -410,6 +496,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-repeat-x</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundRepeatX", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-repeat-x", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundRepeatX
@@ -419,6 +507,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-repeat-y</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundRepeatY", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-repeat-y", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundRepeatY
@@ -428,6 +518,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundSize
@@ -437,6 +529,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>background-tbd</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("backgroundTbd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("background-tbd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BackgroundTbd
@@ -446,6 +540,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>baseline-shift</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("baselineShift", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("baseline-shift", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BaselineShift
@@ -455,6 +551,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>baseline-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("baselineSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("baseline-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BaselineSource
@@ -464,6 +562,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-ellipsis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockEllipsis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-ellipsis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockEllipsis
@@ -473,6 +573,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockSize
@@ -482,6 +584,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-step</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockStep", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-step", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockStep
@@ -491,6 +595,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-step-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockStepAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-step-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockStepAlign
@@ -500,6 +606,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-step-insert</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockStepInsert", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-step-insert", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockStepInsert
@@ -509,6 +617,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-step-round</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockStepRound", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-step-round", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockStepRound
@@ -518,6 +628,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>block-step-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("blockStepSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("block-step-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BlockStepSize
@@ -527,6 +639,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>bookmark-label</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("bookmarkLabel", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("bookmark-label", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BookmarkLabel
@@ -536,6 +650,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>bookmark-level</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("bookmarkLevel", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("bookmark-level", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BookmarkLevel
@@ -545,6 +661,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>bookmark-state</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("bookmarkState", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("bookmark-state", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BookmarkState
@@ -554,6 +672,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("border", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Border
     {
@@ -562,6 +681,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlock
@@ -571,6 +692,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockClip
@@ -580,6 +703,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockColor
@@ -589,6 +714,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEnd
@@ -598,6 +725,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEndClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEndClip
@@ -607,6 +736,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEndColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEndColor
@@ -616,6 +747,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEndRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEndRadius
@@ -625,6 +758,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEndStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEndStyle
@@ -634,6 +769,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-end-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockEndWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-end-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockEndWidth
@@ -643,6 +780,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStart
@@ -652,6 +791,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStartClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStartClip
@@ -661,6 +802,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStartColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStartColor
@@ -670,6 +813,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStartRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStartRadius
@@ -679,6 +824,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStartStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStartStyle
@@ -688,6 +835,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-start-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStartWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-start-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStartWidth
@@ -697,6 +846,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockStyle
@@ -706,6 +857,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-block-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBlockWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-block-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBlockWidth
@@ -715,6 +868,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottom
@@ -724,6 +879,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomClip
@@ -733,6 +890,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomColor
@@ -742,6 +901,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-left-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-left-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomLeftRadius
@@ -751,6 +912,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomRadius
@@ -760,6 +923,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-right-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-right-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomRightRadius
@@ -769,6 +934,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomStyle
@@ -778,6 +945,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-bottom-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBottomWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-bottom-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBottomWidth
@@ -787,6 +956,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-boundary</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderBoundary", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-boundary", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderBoundary
@@ -796,6 +967,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderClip
@@ -805,6 +978,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-collapse</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderCollapse", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-collapse", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderCollapse
@@ -814,6 +989,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderColor
@@ -823,6 +1000,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-end-end-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderEndEndRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-end-end-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderEndEndRadius
@@ -832,6 +1011,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-end-start-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderEndStartRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-end-start-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderEndStartRadius
@@ -841,6 +1022,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImage
@@ -850,6 +1033,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image-outset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImageOutset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image-outset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImageOutset
@@ -859,6 +1044,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImageRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImageRepeat
@@ -868,6 +1055,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image-slice</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImageSlice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image-slice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImageSlice
@@ -877,6 +1066,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImageSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImageSource
@@ -886,6 +1077,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-image-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderImageWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-image-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderImageWidth
@@ -895,6 +1088,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInline
@@ -904,6 +1099,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineClip
@@ -913,6 +1110,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineColor
@@ -922,6 +1121,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEnd
@@ -931,6 +1132,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEndClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEndClip
@@ -940,6 +1143,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEndColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEndColor
@@ -949,6 +1154,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEndRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEndRadius
@@ -958,6 +1165,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEndStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEndStyle
@@ -967,6 +1176,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-end-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineEndWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-end-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineEndWidth
@@ -976,6 +1187,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStart
@@ -985,6 +1198,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStartClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStartClip
@@ -994,6 +1209,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStartColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStartColor
@@ -1003,6 +1220,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStartRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStartRadius
@@ -1012,6 +1231,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStartStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStartStyle
@@ -1021,6 +1242,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-start-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStartWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-start-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStartWidth
@@ -1030,6 +1253,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineStyle
@@ -1039,6 +1264,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-inline-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderInlineWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-inline-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderInlineWidth
@@ -1048,6 +1275,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeft
@@ -1057,6 +1286,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeftClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeftClip
@@ -1066,6 +1297,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeftColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeftColor
@@ -1075,6 +1308,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeftRadius
@@ -1084,6 +1319,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeftStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeftStyle
@@ -1093,6 +1330,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-left-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLeftWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-left-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLeftWidth
@@ -1102,6 +1341,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-limit</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderLimit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-limit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderLimit
@@ -1111,6 +1352,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRadius
@@ -1120,6 +1363,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRight
@@ -1129,6 +1374,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRightClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRightClip
@@ -1138,6 +1385,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRightColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRightColor
@@ -1147,6 +1396,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRightRadius
@@ -1156,6 +1407,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRightStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRightStyle
@@ -1165,6 +1418,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-right-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderRightWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-right-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderRightWidth
@@ -1174,6 +1429,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderShape
@@ -1183,6 +1440,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-spacing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderSpacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-spacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderSpacing
@@ -1192,6 +1451,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-start-end-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderStartEndRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-start-end-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderStartEndRadius
@@ -1201,6 +1462,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-start-start-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderStartStartRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-start-start-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderStartStartRadius
@@ -1210,6 +1473,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderStyle
@@ -1219,6 +1484,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTop
@@ -1228,6 +1495,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopClip
@@ -1237,6 +1506,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopColor
@@ -1246,6 +1517,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-left-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-left-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopLeftRadius
@@ -1255,6 +1528,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopRadius
@@ -1264,6 +1539,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-right-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-right-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopRightRadius
@@ -1273,6 +1550,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopStyle
@@ -1282,6 +1561,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-top-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderTopWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-top-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderTopWidth
@@ -1291,6 +1572,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>border-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("borderWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("border-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BorderWidth
@@ -1300,6 +1583,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Bottom
     {
@@ -1308,6 +1592,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-decoration-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxDecorationBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-decoration-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxDecorationBreak
@@ -1317,6 +1603,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadow
@@ -1326,6 +1614,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow-blur</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadowBlur", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow-blur", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadowBlur
@@ -1335,6 +1625,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadowColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadowColor
@@ -1344,6 +1636,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow-offset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadowOffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow-offset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadowOffset
@@ -1353,6 +1647,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadowPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadowPosition
@@ -1362,6 +1658,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-shadow-spread</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxShadowSpread", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-shadow-spread", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxShadowSpread
@@ -1371,6 +1669,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxSizing
@@ -1380,6 +1680,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>box-snap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("boxSnap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("box-snap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BoxSnap
@@ -1389,6 +1691,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>break-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("breakAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("break-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BreakAfter
@@ -1398,6 +1702,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>break-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("breakBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("break-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BreakBefore
@@ -1407,6 +1713,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>break-inside</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("breakInside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("break-inside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string BreakInside
@@ -1416,6 +1724,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>caption-side</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("captionSide", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("caption-side", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CaptionSide
@@ -1425,6 +1735,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>caret</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("caret", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Caret
     {
@@ -1433,6 +1744,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>caret-animation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("caretAnimation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("caret-animation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CaretAnimation
@@ -1442,6 +1755,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>caret-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("caretColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("caret-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CaretColor
@@ -1451,6 +1766,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>caret-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("caretShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("caret-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CaretShape
@@ -1460,6 +1777,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>clear</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("clear", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Clear
     {
@@ -1468,6 +1786,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Clip
     {
@@ -1476,6 +1795,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>clip-path</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("clipPath", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("clip-path", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ClipPath
@@ -1485,6 +1806,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>clip-rule</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("clipRule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("clip-rule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ClipRule
@@ -1494,6 +1817,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Color
     {
@@ -1502,6 +1826,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>color-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("colorAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("color-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColorAdjust
@@ -1511,6 +1837,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>color-interpolation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("colorInterpolation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("color-interpolation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColorInterpolation
@@ -1520,6 +1848,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>color-interpolation-filters</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("colorInterpolationFilters", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("color-interpolation-filters", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColorInterpolationFilters
@@ -1529,6 +1859,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>color-scheme</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("colorScheme", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("color-scheme", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColorScheme
@@ -1538,6 +1870,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-count</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnCount", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-count", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnCount
@@ -1547,6 +1881,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-fill</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnFill", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-fill", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnFill
@@ -1556,6 +1892,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnGap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnGap
@@ -1565,6 +1903,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnHeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnHeight
@@ -1574,6 +1914,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRule
@@ -1583,6 +1925,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleBreak
@@ -1592,6 +1936,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleColor
@@ -1601,6 +1947,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInset
@@ -1610,6 +1958,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-cap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetCap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-cap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetCap
@@ -1619,6 +1969,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-cap-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetCapEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-cap-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetCapEnd
@@ -1628,6 +1980,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-cap-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetCapStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-cap-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetCapStart
@@ -1637,6 +1991,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetEnd
@@ -1646,6 +2002,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-junction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetJunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-junction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetJunction
@@ -1655,6 +2013,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-junction-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetJunctionEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-junction-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetJunctionEnd
@@ -1664,6 +2024,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-junction-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetJunctionStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-junction-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetJunctionStart
@@ -1673,6 +2035,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-inset-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleInsetStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-inset-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleInsetStart
@@ -1682,6 +2046,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleStyle
@@ -1691,6 +2057,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-visibility-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleVisibilityItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-visibility-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleVisibilityItems
@@ -1700,6 +2068,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-rule-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnRuleWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-rule-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnRuleWidth
@@ -1709,6 +2079,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-span</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnSpan", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-span", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnSpan
@@ -1718,6 +2090,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnWidth
@@ -1727,6 +2101,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>column-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("columnWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("column-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ColumnWrap
@@ -1736,6 +2112,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>columns</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("columns", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Columns
     {
@@ -1744,6 +2121,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("contain", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Contain
     {
@@ -1752,6 +2130,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain-intrinsic-block-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containIntrinsicBlockSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("contain-intrinsic-block-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainIntrinsicBlockSize
@@ -1761,6 +2141,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain-intrinsic-height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containIntrinsicHeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("contain-intrinsic-height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainIntrinsicHeight
@@ -1770,6 +2152,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain-intrinsic-inline-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containIntrinsicInlineSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("contain-intrinsic-inline-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainIntrinsicInlineSize
@@ -1779,6 +2163,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain-intrinsic-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containIntrinsicSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("contain-intrinsic-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainIntrinsicSize
@@ -1788,6 +2174,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>contain-intrinsic-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containIntrinsicWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("contain-intrinsic-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainIntrinsicWidth
@@ -1797,6 +2185,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>container</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("container", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Container
     {
@@ -1805,6 +2194,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>container-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containerName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("container-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainerName
@@ -1814,6 +2205,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>container-type</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("containerType", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("container-type", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContainerType
@@ -1823,6 +2216,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Content
     {
@@ -1831,6 +2225,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>content-visibility</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("contentVisibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("content-visibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ContentVisibility
@@ -1840,6 +2236,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>continue</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("continue", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Continue
     {
@@ -1848,6 +2245,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>copy-into</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("copyInto", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("copy-into", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CopyInto
@@ -1857,6 +2256,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("corner", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Corner
     {
@@ -1865,6 +2265,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBlockEnd
@@ -1874,6 +2276,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-block-end-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBlockEndShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-block-end-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBlockEndShape
@@ -1883,6 +2287,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBlockStart
@@ -1892,6 +2298,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-block-start-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBlockStartShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-block-start-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBlockStartShape
@@ -1901,6 +2309,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottom
@@ -1910,6 +2320,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottomLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottomLeft
@@ -1919,6 +2331,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom-left-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottomLeftShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom-left-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottomLeftShape
@@ -1928,6 +2342,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottomRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottomRight
@@ -1937,6 +2353,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom-right-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottomRightShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom-right-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottomRightShape
@@ -1946,6 +2364,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-bottom-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerBottomShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-bottom-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerBottomShape
@@ -1955,6 +2375,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-end-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerEndEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-end-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerEndEnd
@@ -1964,6 +2386,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-end-end-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerEndEndShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-end-end-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerEndEndShape
@@ -1973,6 +2397,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-end-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerEndStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-end-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerEndStart
@@ -1982,6 +2408,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-end-start-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerEndStartShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-end-start-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerEndStartShape
@@ -1991,6 +2419,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerInlineEnd
@@ -2000,6 +2430,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-inline-end-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerInlineEndShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-inline-end-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerInlineEndShape
@@ -2009,6 +2441,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerInlineStart
@@ -2018,6 +2452,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-inline-start-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerInlineStartShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-inline-start-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerInlineStartShape
@@ -2027,6 +2463,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerLeft
@@ -2036,6 +2474,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-left-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerLeftShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-left-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerLeftShape
@@ -2045,6 +2485,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerRight
@@ -2054,6 +2496,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-right-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerRightShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-right-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerRightShape
@@ -2063,6 +2507,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerShape
@@ -2072,6 +2518,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-start-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerStartEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-start-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerStartEnd
@@ -2081,6 +2529,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-start-end-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerStartEndShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-start-end-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerStartEndShape
@@ -2090,6 +2540,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-start-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerStartStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-start-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerStartStart
@@ -2099,6 +2551,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-start-start-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerStartStartShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-start-start-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerStartStartShape
@@ -2108,6 +2562,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTop
@@ -2117,6 +2573,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTopLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTopLeft
@@ -2126,6 +2584,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top-left-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTopLeftShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top-left-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTopLeftShape
@@ -2135,6 +2595,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTopRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTopRight
@@ -2144,6 +2606,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top-right-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTopRightShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top-right-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTopRightShape
@@ -2153,6 +2617,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>corner-top-shape</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cornerTopShape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("corner-top-shape", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CornerTopShape
@@ -2162,6 +2628,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>counter-increment</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("counterIncrement", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("counter-increment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CounterIncrement
@@ -2171,6 +2639,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>counter-reset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("counterReset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("counter-reset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CounterReset
@@ -2180,6 +2650,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>counter-set</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("counterSet", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("counter-set", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CounterSet
@@ -2189,6 +2661,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cue</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("cue", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Cue
     {
@@ -2197,6 +2670,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cue-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cueAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("cue-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CueAfter
@@ -2206,6 +2681,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cue-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("cueBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("cue-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string CueBefore
@@ -2215,6 +2692,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cursor</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("cursor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Cursor
     {
@@ -2223,6 +2701,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cx</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("cx", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Cx
     {
@@ -2231,6 +2710,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>cy</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("cy", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Cy
     {
@@ -2239,6 +2719,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>d</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("d", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string D
     {
@@ -2247,6 +2728,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>direction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Direction
     {
@@ -2255,6 +2737,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>display</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("display", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Display
     {
@@ -2263,6 +2746,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>dominant-baseline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("dominantBaseline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("dominant-baseline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string DominantBaseline
@@ -2272,6 +2757,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>dynamic-range-limit</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("dynamicRangeLimit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("dynamic-range-limit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string DynamicRangeLimit
@@ -2281,6 +2768,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>empty-cells</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("emptyCells", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("empty-cells", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string EmptyCells
@@ -2290,6 +2779,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>event-trigger</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("eventTrigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("event-trigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string EventTrigger
@@ -2299,6 +2790,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>event-trigger-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("eventTriggerName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("event-trigger-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string EventTriggerName
@@ -2308,6 +2801,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>event-trigger-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("eventTriggerSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("event-trigger-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string EventTriggerSource
@@ -2317,6 +2812,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>field-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fieldSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("field-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FieldSizing
@@ -2326,6 +2823,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("fill", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Fill
     {
@@ -2334,6 +2832,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillBreak
@@ -2343,6 +2843,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillColor
@@ -2352,6 +2854,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillImage
@@ -2361,6 +2865,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-opacity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillOpacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-opacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillOpacity
@@ -2370,6 +2876,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillOrigin
@@ -2379,6 +2887,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillPosition
@@ -2388,6 +2898,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillRepeat
@@ -2397,6 +2909,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-rule</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillRule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-rule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillRule
@@ -2406,6 +2920,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>fill-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fillSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("fill-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FillSize
@@ -2415,6 +2931,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>filter</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("filter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Filter
     {
@@ -2423,6 +2940,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("flex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Flex
     {
@@ -2431,6 +2949,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-basis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexBasis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-basis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexBasis
@@ -2440,6 +2960,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-direction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexDirection
@@ -2449,6 +2971,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-flow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-flow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexFlow
@@ -2458,6 +2982,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-grow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexGrow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-grow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexGrow
@@ -2467,6 +2993,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-line-count</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexLineCount", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-line-count", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexLineCount
@@ -2476,6 +3004,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-shrink</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexShrink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-shrink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexShrink
@@ -2485,6 +3015,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flex-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flexWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flex-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlexWrap
@@ -2494,6 +3026,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>float</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("float", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Float
     {
@@ -2502,6 +3035,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>float-defer</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("floatDefer", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("float-defer", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FloatDefer
@@ -2511,6 +3046,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>float-offset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("floatOffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("float-offset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FloatOffset
@@ -2520,6 +3057,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>float-reference</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("floatReference", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("float-reference", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FloatReference
@@ -2529,6 +3068,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flood-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("floodColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flood-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FloodColor
@@ -2538,6 +3079,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flood-opacity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("floodOpacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flood-opacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FloodOpacity
@@ -2547,6 +3090,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flow-from</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flowFrom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flow-from", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlowFrom
@@ -2556,6 +3101,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flow-into</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flowInto", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flow-into", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlowInto
@@ -2565,6 +3112,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>flow-tolerance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flowTolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flow-tolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FlowTolerance
@@ -2574,6 +3123,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("font", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Font
     {
@@ -2582,6 +3132,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-family</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontFamily", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-family", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontFamily
@@ -2591,6 +3143,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-feature-settings</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontFeatureSettings", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-feature-settings", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontFeatureSettings
@@ -2600,6 +3154,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-kerning</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontKerning", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-kerning", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontKerning
@@ -2609,6 +3165,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-language-override</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontLanguageOverride", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-language-override", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontLanguageOverride
@@ -2618,6 +3176,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-optical-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontOpticalSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-optical-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontOpticalSizing
@@ -2627,6 +3187,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-palette</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontPalette", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-palette", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontPalette
@@ -2636,6 +3198,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSize
@@ -2645,6 +3209,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-size-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSizeAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-size-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSizeAdjust
@@ -2654,6 +3220,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-stretch</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontStretch", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-stretch", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontStretch
@@ -2663,6 +3231,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontStyle
@@ -2672,6 +3242,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-synthesis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSynthesis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-synthesis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSynthesis
@@ -2681,6 +3253,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-synthesis-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSynthesisPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-synthesis-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSynthesisPosition
@@ -2690,6 +3264,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-synthesis-small-caps</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSynthesisSmallCaps", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-synthesis-small-caps", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSynthesisSmallCaps
@@ -2699,6 +3275,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-synthesis-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSynthesisStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-synthesis-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSynthesisStyle
@@ -2708,6 +3286,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-synthesis-weight</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontSynthesisWeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-synthesis-weight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontSynthesisWeight
@@ -2717,6 +3297,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariant", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariant
@@ -2726,6 +3308,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-alternates</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantAlternates", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-alternates", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantAlternates
@@ -2735,6 +3319,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-caps</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantCaps", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-caps", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantCaps
@@ -2744,6 +3330,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-east-asian</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantEastAsian", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-east-asian", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantEastAsian
@@ -2753,6 +3341,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-emoji</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantEmoji", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-emoji", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantEmoji
@@ -2762,6 +3352,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-ligatures</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantLigatures", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-ligatures", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantLigatures
@@ -2771,6 +3363,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-numeric</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantNumeric", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-numeric", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantNumeric
@@ -2780,6 +3374,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variant-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariantPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variant-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariantPosition
@@ -2789,6 +3385,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-variation-settings</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontVariationSettings", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-variation-settings", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontVariationSettings
@@ -2798,6 +3396,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-weight</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontWeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-weight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontWeight
@@ -2807,6 +3407,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>font-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("fontWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("font-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FontWidth
@@ -2816,6 +3418,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>footnote-display</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("footnoteDisplay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("footnote-display", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FootnoteDisplay
@@ -2825,6 +3429,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>footnote-policy</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("footnotePolicy", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("footnote-policy", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FootnotePolicy
@@ -2834,6 +3440,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>forced-color-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("forcedColorAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("forced-color-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ForcedColorAdjust
@@ -2843,6 +3451,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>frame-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("frameSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("frame-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string FrameSizing
@@ -2852,6 +3462,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Gap
     {
@@ -2860,6 +3471,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>glyph-orientation-vertical</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("glyphOrientationVertical", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("glyph-orientation-vertical", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GlyphOrientationVertical
@@ -2869,6 +3482,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("grid", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Grid
     {
@@ -2877,6 +3491,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-area</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridArea", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-area", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridArea
@@ -2886,6 +3502,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-auto-columns</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridAutoColumns", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-auto-columns", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridAutoColumns
@@ -2895,6 +3513,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-auto-flow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridAutoFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-auto-flow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridAutoFlow
@@ -2904,6 +3524,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-auto-rows</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridAutoRows", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-auto-rows", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridAutoRows
@@ -2913,6 +3535,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-column</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridColumn", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-column", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridColumn
@@ -2922,6 +3546,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-column-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridColumnEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-column-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridColumnEnd
@@ -2931,6 +3557,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-column-gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridColumnGap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-column-gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridColumnGap
@@ -2940,6 +3568,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-column-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridColumnStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-column-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridColumnStart
@@ -2949,6 +3579,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridGap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridGap
@@ -2958,6 +3590,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-row</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridRow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-row", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridRow
@@ -2967,6 +3601,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-row-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridRowEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-row-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridRowEnd
@@ -2976,6 +3612,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-row-gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridRowGap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-row-gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridRowGap
@@ -2985,6 +3623,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-row-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridRowStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-row-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridRowStart
@@ -2994,6 +3634,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-template</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridTemplate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-template", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridTemplate
@@ -3003,6 +3645,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-template-areas</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridTemplateAreas", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-template-areas", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridTemplateAreas
@@ -3012,6 +3656,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-template-columns</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridTemplateColumns", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-template-columns", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridTemplateColumns
@@ -3021,6 +3667,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>grid-template-rows</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridTemplateRows", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-template-rows", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridTemplateRows
@@ -3030,6 +3678,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hanging-punctuation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hangingPunctuation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hanging-punctuation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HangingPunctuation
@@ -3039,6 +3689,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Height
     {
@@ -3047,6 +3698,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphenate-character</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hyphenateCharacter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hyphenate-character", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HyphenateCharacter
@@ -3056,6 +3709,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphenate-limit-chars</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hyphenateLimitChars", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hyphenate-limit-chars", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HyphenateLimitChars
@@ -3065,6 +3720,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphenate-limit-last</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hyphenateLimitLast", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hyphenate-limit-last", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HyphenateLimitLast
@@ -3074,6 +3731,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphenate-limit-lines</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hyphenateLimitLines", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hyphenate-limit-lines", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HyphenateLimitLines
@@ -3083,6 +3742,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphenate-limit-zone</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("hyphenateLimitZone", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("hyphenate-limit-zone", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string HyphenateLimitZone
@@ -3092,6 +3753,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>hyphens</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("hyphens", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Hyphens
     {
@@ -3100,6 +3762,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>image-animation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("imageAnimation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("image-animation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ImageAnimation
@@ -3109,6 +3773,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>image-orientation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("imageOrientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("image-orientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ImageOrientation
@@ -3118,6 +3784,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>image-rendering</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("imageRendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("image-rendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ImageRendering
@@ -3127,6 +3795,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>image-resolution</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("imageResolution", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("image-resolution", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ImageResolution
@@ -3136,6 +3806,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>initial-letter</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("initialLetter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("initial-letter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InitialLetter
@@ -3145,6 +3817,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>initial-letter-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("initialLetterAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("initial-letter-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InitialLetterAlign
@@ -3154,6 +3828,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>initial-letter-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("initialLetterWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("initial-letter-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InitialLetterWrap
@@ -3163,6 +3839,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inline-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("inlineSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inline-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InlineSize
@@ -3172,6 +3850,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inline-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("inlineSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inline-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InlineSizing
@@ -3181,6 +3861,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>input-security</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("inputSecurity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("input-security", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InputSecurity
@@ -3190,6 +3872,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Inset
     {
@@ -3198,6 +3881,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetBlock
@@ -3207,6 +3892,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetBlockEnd
@@ -3216,6 +3903,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetBlockStart
@@ -3225,6 +3914,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetInline
@@ -3234,6 +3925,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetInlineEnd
@@ -3243,6 +3936,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>inset-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("insetInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("inset-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InsetInlineStart
@@ -3252,6 +3947,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>interactivity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("interactivity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Interactivity
     {
@@ -3260,6 +3956,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>interest-delay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("interestDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("interest-delay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InterestDelay
@@ -3269,6 +3967,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>interest-delay-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("interestDelayEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("interest-delay-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InterestDelayEnd
@@ -3278,6 +3978,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>interest-delay-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("interestDelayStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("interest-delay-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InterestDelayStart
@@ -3287,6 +3989,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>interpolate-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("interpolateSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("interpolate-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string InterpolateSize
@@ -3296,6 +4000,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>isolation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("isolation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Isolation
     {
@@ -3304,6 +4009,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>justify-content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("justifyContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("justify-content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string JustifyContent
@@ -3313,6 +4020,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>justify-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("justifyItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("justify-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string JustifyItems
@@ -3322,6 +4031,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>justify-self</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("justifySelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("justify-self", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string JustifySelf
@@ -3331,6 +4042,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Left
     {
@@ -3339,6 +4051,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>letter-spacing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("letterSpacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("letter-spacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LetterSpacing
@@ -3348,6 +4062,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>lighting-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lightingColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("lighting-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LightingColor
@@ -3357,6 +4073,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineBreak
@@ -3366,6 +4084,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-clamp</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineClamp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-clamp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineClamp
@@ -3375,6 +4095,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-fit-edge</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineFitEdge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-fit-edge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineFitEdge
@@ -3384,6 +4106,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-grid</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineGrid", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-grid", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineGrid
@@ -3393,6 +4117,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineHeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineHeight
@@ -3402,6 +4128,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-height-step</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineHeightStep", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-height-step", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineHeightStep
@@ -3411,6 +4139,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-padding</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("linePadding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-padding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LinePadding
@@ -3420,6 +4150,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>line-snap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("lineSnap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("line-snap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LineSnap
@@ -3429,6 +4161,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>link-parameters</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("linkParameters", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("link-parameters", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string LinkParameters
@@ -3438,6 +4172,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>list-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("listStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("list-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ListStyle
@@ -3447,6 +4183,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>list-style-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("listStyleImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("list-style-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ListStyleImage
@@ -3456,6 +4194,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>list-style-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("listStylePosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("list-style-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ListStylePosition
@@ -3465,6 +4205,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>list-style-type</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("listStyleType", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("list-style-type", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ListStyleType
@@ -3474,6 +4216,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("margin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Margin
     {
@@ -3482,6 +4225,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginBlock
@@ -3491,6 +4236,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginBlockEnd
@@ -3500,6 +4247,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginBlockStart
@@ -3509,6 +4258,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginBottom
@@ -3518,6 +4269,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginBreak
@@ -3527,6 +4280,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginInline
@@ -3536,6 +4291,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginInlineEnd
@@ -3545,6 +4302,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginInlineStart
@@ -3554,6 +4313,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginLeft
@@ -3563,6 +4324,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginRight
@@ -3572,6 +4335,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginTop
@@ -3581,6 +4346,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>margin-trim</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("marginTrim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("margin-trim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarginTrim
@@ -3590,6 +4357,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>marker</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("marker", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Marker
     {
@@ -3598,6 +4366,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>marker-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("markerEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("marker-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarkerEnd
@@ -3607,6 +4377,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>marker-mid</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("markerMid", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("marker-mid", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarkerMid
@@ -3616,6 +4388,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>marker-side</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("markerSide", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("marker-side", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarkerSide
@@ -3625,6 +4399,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>marker-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("markerStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("marker-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MarkerStart
@@ -3634,6 +4410,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("mask", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Mask
     {
@@ -3642,6 +4419,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorder
@@ -3651,6 +4430,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderMode
@@ -3660,6 +4441,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-outset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderOutset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-outset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderOutset
@@ -3669,6 +4452,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderRepeat
@@ -3678,6 +4463,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-slice</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderSlice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-slice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderSlice
@@ -3687,6 +4474,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderSource
@@ -3696,6 +4485,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-border-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskBorderWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-border-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskBorderWidth
@@ -3705,6 +4496,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskClip
@@ -3714,6 +4507,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-composite</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskComposite", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-composite", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskComposite
@@ -3723,6 +4518,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskImage
@@ -3732,6 +4529,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskMode
@@ -3741,6 +4540,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskOrigin
@@ -3750,6 +4551,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskPosition
@@ -3759,6 +4562,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskRepeat
@@ -3768,6 +4573,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskSize
@@ -3777,6 +4584,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mask-type</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maskType", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mask-type", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaskType
@@ -3786,6 +4595,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>math-depth</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("mathDepth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("math-depth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MathDepth
@@ -3795,6 +4606,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>math-shift</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("mathShift", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("math-shift", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MathShift
@@ -3804,6 +4617,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>math-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("mathStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("math-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MathStyle
@@ -3813,6 +4628,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-block-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxBlockSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-block-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxBlockSize
@@ -3822,6 +4639,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxHeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxHeight
@@ -3831,6 +4650,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-inline-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxInlineSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-inline-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxInlineSize
@@ -3840,6 +4661,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-lines</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxLines", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-lines", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxLines
@@ -3849,6 +4672,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxSize
@@ -3858,6 +4683,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>max-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("maxWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("max-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MaxWidth
@@ -3867,6 +4694,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-block-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minBlockSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-block-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinBlockSize
@@ -3876,6 +4705,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-height</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minHeight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-height", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinHeight
@@ -3885,6 +4716,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-inline-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minInlineSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-inline-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinInlineSize
@@ -3894,6 +4727,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-intrinsic-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minIntrinsicSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-intrinsic-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinIntrinsicSizing
@@ -3903,6 +4738,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinSize
@@ -3912,6 +4749,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>min-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("minWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("min-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MinWidth
@@ -3921,6 +4760,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>mix-blend-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("mixBlendMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("mix-blend-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string MixBlendMode
@@ -3930,6 +4771,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>nav-down</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("navDown", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("nav-down", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string NavDown
@@ -3939,6 +4782,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>nav-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("navLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("nav-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string NavLeft
@@ -3948,6 +4793,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>nav-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("navRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("nav-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string NavRight
@@ -3957,6 +4804,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>nav-up</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("navUp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("nav-up", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string NavUp
@@ -3966,6 +4815,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>object-fit</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("objectFit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("object-fit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ObjectFit
@@ -3975,6 +4826,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>object-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("objectPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("object-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ObjectPosition
@@ -3984,6 +4837,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>object-view-box</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("objectViewBox", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("object-view-box", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ObjectViewBox
@@ -3993,6 +4848,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("offset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Offset
     {
@@ -4001,6 +4857,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset-anchor</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("offsetAnchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("offset-anchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OffsetAnchor
@@ -4010,6 +4868,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset-distance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("offsetDistance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("offset-distance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OffsetDistance
@@ -4019,6 +4879,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset-path</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("offsetPath", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("offset-path", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OffsetPath
@@ -4028,6 +4890,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("offsetPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("offset-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OffsetPosition
@@ -4037,6 +4901,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>offset-rotate</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("offsetRotate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("offset-rotate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OffsetRotate
@@ -4046,6 +4912,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>opacity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("opacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Opacity
     {
@@ -4054,6 +4921,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>order</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("order", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Order
     {
@@ -4062,6 +4930,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>orphans</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("orphans", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Orphans
     {
@@ -4070,6 +4939,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>outline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("outline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Outline
     {
@@ -4078,6 +4948,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>outline-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("outlineColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("outline-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OutlineColor
@@ -4087,6 +4959,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>outline-offset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("outlineOffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("outline-offset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OutlineOffset
@@ -4096,6 +4970,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>outline-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("outlineStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("outline-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OutlineStyle
@@ -4105,6 +4981,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>outline-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("outlineWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("outline-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OutlineWidth
@@ -4114,6 +4992,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("overflow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Overflow
     {
@@ -4122,6 +5001,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-anchor</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowAnchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-anchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowAnchor
@@ -4131,6 +5012,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowBlock
@@ -4140,6 +5023,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMargin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMargin
@@ -4149,6 +5034,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginBlock
@@ -4158,6 +5045,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginBlockEnd
@@ -4167,6 +5056,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginBlockStart
@@ -4176,6 +5067,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginBottom
@@ -4185,6 +5078,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginInline
@@ -4194,6 +5089,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginInlineEnd
@@ -4203,6 +5100,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginInlineStart
@@ -4212,6 +5111,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginLeft
@@ -4221,6 +5122,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginRight
@@ -4230,6 +5133,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-clip-margin-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowClipMarginTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-clip-margin-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowClipMarginTop
@@ -4239,6 +5144,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowInline
@@ -4248,6 +5155,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowWrap
@@ -4257,6 +5166,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-x</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowX", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-x", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowX
@@ -4266,6 +5177,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overflow-y</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overflowY", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overflow-y", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverflowY
@@ -4275,6 +5188,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overlay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("overlay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Overlay
     {
@@ -4283,6 +5197,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overscroll-behavior</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overscrollBehavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overscroll-behavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverscrollBehavior
@@ -4292,6 +5208,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overscroll-behavior-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overscrollBehaviorBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overscroll-behavior-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverscrollBehaviorBlock
@@ -4301,6 +5219,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overscroll-behavior-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overscrollBehaviorInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overscroll-behavior-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverscrollBehaviorInline
@@ -4310,6 +5230,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overscroll-behavior-x</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overscrollBehaviorX", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overscroll-behavior-x", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverscrollBehaviorX
@@ -4319,6 +5241,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>overscroll-behavior-y</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("overscrollBehaviorY", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("overscroll-behavior-y", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string OverscrollBehaviorY
@@ -4328,6 +5252,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("padding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Padding
     {
@@ -4336,6 +5261,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingBlock
@@ -4345,6 +5272,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingBlockEnd
@@ -4354,6 +5283,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingBlockStart
@@ -4363,6 +5294,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingBottom
@@ -4372,6 +5305,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingInline
@@ -4381,6 +5316,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingInlineEnd
@@ -4390,6 +5327,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingInlineStart
@@ -4399,6 +5338,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingLeft
@@ -4408,6 +5349,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingRight
@@ -4417,6 +5360,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>padding-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paddingTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("padding-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaddingTop
@@ -4426,6 +5371,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>page</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("page", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Page
     {
@@ -4434,6 +5380,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>page-break-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pageBreakAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("page-break-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PageBreakAfter
@@ -4443,6 +5391,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>page-break-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pageBreakBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("page-break-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PageBreakBefore
@@ -4452,6 +5402,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>page-break-inside</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pageBreakInside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("page-break-inside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PageBreakInside
@@ -4461,6 +5413,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>paint-order</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("paintOrder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("paint-order", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PaintOrder
@@ -4470,6 +5424,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>path-length</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pathLength", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("path-length", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PathLength
@@ -4479,6 +5435,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pause</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("pause", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Pause
     {
@@ -4487,6 +5444,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pause-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pauseAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pause-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PauseAfter
@@ -4496,6 +5455,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pause-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pauseBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pause-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PauseBefore
@@ -4505,6 +5466,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>perspective</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("perspective", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Perspective
     {
@@ -4513,6 +5475,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>perspective-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("perspectiveOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("perspective-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PerspectiveOrigin
@@ -4522,6 +5486,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>place-content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("placeContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("place-content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PlaceContent
@@ -4531,6 +5497,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>place-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("placeItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("place-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PlaceItems
@@ -4540,6 +5508,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>place-self</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("placeSelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("place-self", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PlaceSelf
@@ -4549,6 +5519,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pointer-events</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pointerEvents", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pointer-events", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PointerEvents
@@ -4558,6 +5530,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pointer-timeline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pointerTimeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pointer-timeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PointerTimeline
@@ -4567,6 +5541,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pointer-timeline-axis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pointerTimelineAxis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pointer-timeline-axis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PointerTimelineAxis
@@ -4576,6 +5552,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>pointer-timeline-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("pointerTimelineName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("pointer-timeline-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PointerTimelineName
@@ -4585,6 +5563,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Position
     {
@@ -4593,6 +5572,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-anchor</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionAnchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-anchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionAnchor
@@ -4602,6 +5583,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-area</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionArea", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-area", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionArea
@@ -4611,6 +5594,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-try</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionTry", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-try", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionTry
@@ -4620,6 +5605,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-try-fallbacks</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionTryFallbacks", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-try-fallbacks", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionTryFallbacks
@@ -4629,6 +5616,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-try-order</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionTryOrder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-try-order", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionTryOrder
@@ -4638,6 +5627,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>position-visibility</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("positionVisibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("position-visibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PositionVisibility
@@ -4647,6 +5638,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>print-color-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("printColorAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("print-color-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string PrintColorAdjust
@@ -4656,6 +5649,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>quotes</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("quotes", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Quotes
     {
@@ -4664,6 +5658,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>r</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("r", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string R
     {
@@ -4672,6 +5667,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>reading-flow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("readingFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("reading-flow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ReadingFlow
@@ -4681,6 +5678,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>reading-order</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("readingOrder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("reading-order", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ReadingOrder
@@ -4690,6 +5689,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>region-fragment</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("regionFragment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("region-fragment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RegionFragment
@@ -4699,6 +5700,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>resize</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("resize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Resize
     {
@@ -4707,6 +5709,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rest</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("rest", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Rest
     {
@@ -4715,6 +5718,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rest-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("restAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rest-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RestAfter
@@ -4724,6 +5729,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rest-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("restBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rest-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RestBefore
@@ -4733,6 +5740,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Right
     {
@@ -4741,6 +5749,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rotate</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("rotate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Rotate
     {
@@ -4749,6 +5758,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-gap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowGap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-gap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowGap
@@ -4758,6 +5769,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRule
@@ -4767,6 +5780,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleBreak
@@ -4776,6 +5791,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleColor
@@ -4785,6 +5802,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInset
@@ -4794,6 +5813,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-cap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetCap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-cap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetCap
@@ -4803,6 +5824,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-cap-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetCapEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-cap-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetCapEnd
@@ -4812,6 +5835,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-cap-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetCapStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-cap-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetCapStart
@@ -4821,6 +5846,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetEnd
@@ -4830,6 +5857,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-junction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetJunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-junction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetJunction
@@ -4839,6 +5868,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-junction-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetJunctionEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-junction-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetJunctionEnd
@@ -4848,6 +5879,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-junction-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetJunctionStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-junction-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetJunctionStart
@@ -4857,6 +5890,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-inset-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleInsetStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-inset-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleInsetStart
@@ -4866,6 +5901,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleStyle
@@ -4875,6 +5912,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-visibility-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleVisibilityItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-visibility-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleVisibilityItems
@@ -4884,6 +5923,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>row-rule-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rowRuleWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("row-rule-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RowRuleWidth
@@ -4893,6 +5934,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>ruby-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rubyAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("ruby-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RubyAlign
@@ -4902,6 +5945,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>ruby-merge</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rubyMerge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("ruby-merge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RubyMerge
@@ -4911,6 +5956,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>ruby-overhang</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rubyOverhang", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("ruby-overhang", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RubyOverhang
@@ -4920,6 +5967,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>ruby-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("rubyPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("ruby-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RubyPosition
@@ -4929,6 +5978,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("rule", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Rule
     {
@@ -4937,6 +5987,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleBreak
@@ -4946,6 +5998,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleColor
@@ -4955,6 +6009,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleInset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleInset
@@ -4964,6 +6020,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-inset-cap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleInsetCap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-inset-cap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleInsetCap
@@ -4973,6 +6031,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-inset-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleInsetEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-inset-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleInsetEnd
@@ -4982,6 +6042,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-inset-junction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleInsetJunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-inset-junction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleInsetJunction
@@ -4991,6 +6053,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-inset-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleInsetStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-inset-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleInsetStart
@@ -5000,6 +6064,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-overlap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleOverlap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-overlap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleOverlap
@@ -5009,6 +6075,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleStyle
@@ -5018,6 +6086,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-visibility-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleVisibilityItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-visibility-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleVisibilityItems
@@ -5027,6 +6097,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rule-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("ruleWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("rule-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string RuleWidth
@@ -5036,6 +6108,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>rx</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("rx", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Rx
     {
@@ -5044,6 +6117,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>ry</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("ry", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Ry
     {
@@ -5052,6 +6126,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scale</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("scale", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Scale
     {
@@ -5060,6 +6135,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-axis-lock</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollAxisLock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-axis-lock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollAxisLock
@@ -5069,6 +6146,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-behavior</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollBehavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-behavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollBehavior
@@ -5078,6 +6157,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-initial-target</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollInitialTarget", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-initial-target", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollInitialTarget
@@ -5087,6 +6168,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMargin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMargin
@@ -5096,6 +6179,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginBlock
@@ -5105,6 +6190,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginBlockEnd
@@ -5114,6 +6201,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginBlockStart
@@ -5123,6 +6212,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginBottom
@@ -5132,6 +6223,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginInline
@@ -5141,6 +6234,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginInlineEnd
@@ -5150,6 +6245,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginInlineStart
@@ -5159,6 +6256,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginLeft
@@ -5168,6 +6267,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginRight
@@ -5177,6 +6278,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-margin-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarginTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-margin-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarginTop
@@ -5186,6 +6289,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-marker-group</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollMarkerGroup", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-marker-group", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollMarkerGroup
@@ -5195,6 +6300,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPadding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPadding
@@ -5204,6 +6311,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-block</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingBlock", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-block", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingBlock
@@ -5213,6 +6322,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-block-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingBlockEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-block-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingBlockEnd
@@ -5222,6 +6333,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-block-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingBlockStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-block-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingBlockStart
@@ -5231,6 +6344,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-bottom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingBottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-bottom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingBottom
@@ -5240,6 +6355,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-inline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingInline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-inline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingInline
@@ -5249,6 +6366,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-inline-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingInlineEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-inline-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingInlineEnd
@@ -5258,6 +6377,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-inline-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingInlineStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-inline-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingInlineStart
@@ -5267,6 +6388,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-left</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingLeft", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-left", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingLeft
@@ -5276,6 +6399,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-right</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingRight", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-right", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingRight
@@ -5285,6 +6410,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-padding-top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollPaddingTop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-padding-top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollPaddingTop
@@ -5294,6 +6421,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-snap-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollSnapAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-snap-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollSnapAlign
@@ -5303,6 +6432,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-snap-stop</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollSnapStop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-snap-stop", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollSnapStop
@@ -5312,6 +6443,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-snap-type</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollSnapType", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-snap-type", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollSnapType
@@ -5321,6 +6454,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-target-group</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollTargetGroup", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-target-group", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollTargetGroup
@@ -5330,6 +6465,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-timeline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollTimeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-timeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollTimeline
@@ -5339,6 +6476,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-timeline-axis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollTimelineAxis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-timeline-axis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollTimelineAxis
@@ -5348,6 +6487,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scroll-timeline-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollTimelineName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scroll-timeline-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollTimelineName
@@ -5357,6 +6498,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scrollbar-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollbarColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scrollbar-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollbarColor
@@ -5366,6 +6509,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scrollbar-gutter</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollbarGutter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scrollbar-gutter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollbarGutter
@@ -5375,6 +6520,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>scrollbar-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("scrollbarWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("scrollbar-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ScrollbarWidth
@@ -5384,6 +6531,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-image-threshold</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapeImageThreshold", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-image-threshold", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapeImageThreshold
@@ -5393,6 +6542,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-inside</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapeInside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-inside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapeInside
@@ -5402,6 +6553,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-margin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapeMargin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-margin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapeMargin
@@ -5411,6 +6564,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-outside</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapeOutside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-outside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapeOutside
@@ -5420,6 +6575,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-padding</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapePadding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-padding", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapePadding
@@ -5429,6 +6586,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>shape-rendering</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("shapeRendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("shape-rendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ShapeRendering
@@ -5438,6 +6597,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Size
     {
@@ -5446,6 +6606,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>slider-orientation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("sliderOrientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("slider-orientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string SliderOrientation
@@ -5455,6 +6617,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>spatial-navigation-action</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("spatialNavigationAction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("spatial-navigation-action", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string SpatialNavigationAction
@@ -5464,6 +6628,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>spatial-navigation-contain</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("spatialNavigationContain", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("spatial-navigation-contain", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string SpatialNavigationContain
@@ -5473,6 +6639,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>spatial-navigation-function</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("spatialNavigationFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("spatial-navigation-function", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string SpatialNavigationFunction
@@ -5482,6 +6650,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>speak</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("speak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Speak
     {
@@ -5490,6 +6659,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>speak-as</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("speakAs", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("speak-as", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string SpeakAs
@@ -5499,6 +6670,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stop-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("stopColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stop-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StopColor
@@ -5508,6 +6681,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stop-opacity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("stopOpacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stop-opacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StopOpacity
@@ -5517,6 +6692,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>string-set</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("stringSet", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("string-set", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StringSet
@@ -5526,6 +6703,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("stroke", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Stroke
     {
@@ -5534,6 +6712,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeAlign
@@ -5543,6 +6723,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-alignment</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeAlignment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-alignment", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeAlignment
@@ -5552,6 +6734,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeBreak
@@ -5561,6 +6745,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeColor
@@ -5570,6 +6756,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dash-corner</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDashCorner", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dash-corner", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDashCorner
@@ -5579,6 +6767,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dash-justify</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDashJustify", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dash-justify", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDashJustify
@@ -5588,6 +6778,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dashadjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDashadjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dashadjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDashadjust
@@ -5597,6 +6789,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dasharray</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDasharray", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dasharray", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDasharray
@@ -5606,6 +6800,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dashcorner</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDashcorner", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dashcorner", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDashcorner
@@ -5615,6 +6811,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-dashoffset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeDashoffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-dashoffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeDashoffset
@@ -5624,6 +6822,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeImage
@@ -5633,6 +6833,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-linecap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeLinecap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-linecap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeLinecap
@@ -5642,6 +6844,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-linejoin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeLinejoin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-linejoin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeLinejoin
@@ -5651,6 +6855,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-miterlimit</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeMiterlimit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-miterlimit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeMiterlimit
@@ -5660,6 +6866,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-opacity</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeOpacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-opacity", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeOpacity
@@ -5669,6 +6877,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeOrigin
@@ -5678,6 +6888,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokePosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokePosition
@@ -5687,6 +6899,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeRepeat
@@ -5696,6 +6910,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeSize
@@ -5705,6 +6921,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>stroke-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("strokeWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("stroke-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string StrokeWidth
@@ -5714,6 +6932,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>tab-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("tabSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("tab-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TabSize
@@ -5723,6 +6943,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>table-layout</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("tableLayout", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("table-layout", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TableLayout
@@ -5732,6 +6954,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextAlign
@@ -5741,6 +6965,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-align-all</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textAlignAll", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-align-all", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextAlignAll
@@ -5750,6 +6976,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-align-last</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textAlignLast", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-align-last", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextAlignLast
@@ -5759,6 +6987,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-anchor</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textAnchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-anchor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextAnchor
@@ -5768,6 +6998,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-autospace</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textAutospace", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-autospace", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextAutospace
@@ -5777,6 +7009,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-box</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textBox", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-box", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextBox
@@ -5786,6 +7020,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-box-edge</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textBoxEdge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-box-edge", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextBoxEdge
@@ -5795,6 +7031,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-box-trim</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textBoxTrim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-box-trim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextBoxTrim
@@ -5804,6 +7042,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-combine-upright</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textCombineUpright", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-combine-upright", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextCombineUpright
@@ -5813,6 +7053,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecoration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecoration
@@ -5822,6 +7064,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationColor
@@ -5831,6 +7075,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationInset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationInset
@@ -5840,6 +7086,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-line</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationLine", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-line", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationLine
@@ -5849,6 +7097,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-skip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationSkip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-skip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationSkip
@@ -5858,6 +7108,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-skip-box</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationSkipBox", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-skip-box", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationSkipBox
@@ -5867,6 +7119,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-skip-ink</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationSkipInk", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-skip-ink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationSkipInk
@@ -5876,6 +7130,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-skip-self</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationSkipSelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-skip-self", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationSkipSelf
@@ -5885,6 +7141,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-skip-spaces</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationSkipSpaces", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-skip-spaces", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationSkipSpaces
@@ -5894,6 +7152,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationStyle
@@ -5903,6 +7163,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-decoration-thickness</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textDecorationThickness", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-decoration-thickness", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextDecorationThickness
@@ -5912,6 +7174,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-emphasis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textEmphasis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-emphasis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextEmphasis
@@ -5921,6 +7185,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-emphasis-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textEmphasisColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-emphasis-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextEmphasisColor
@@ -5930,6 +7196,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-emphasis-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textEmphasisPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-emphasis-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextEmphasisPosition
@@ -5939,6 +7207,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-emphasis-skip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textEmphasisSkip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-emphasis-skip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextEmphasisSkip
@@ -5948,6 +7218,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-emphasis-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textEmphasisStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-emphasis-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextEmphasisStyle
@@ -5957,6 +7229,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-fit</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textFit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-fit", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextFit
@@ -5966,6 +7240,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-group-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textGroupAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-group-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextGroupAlign
@@ -5975,6 +7251,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-indent</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textIndent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-indent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextIndent
@@ -5984,6 +7262,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-justify</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textJustify", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-justify", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextJustify
@@ -5993,6 +7273,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-orientation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textOrientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-orientation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextOrientation
@@ -6002,6 +7284,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-overflow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textOverflow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-overflow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextOverflow
@@ -6011,6 +7295,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-rendering</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textRendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-rendering", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextRendering
@@ -6020,6 +7306,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-shadow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textShadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-shadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextShadow
@@ -6029,6 +7317,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-size-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textSizeAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-size-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextSizeAdjust
@@ -6038,6 +7328,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-spacing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textSpacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-spacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextSpacing
@@ -6047,6 +7339,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-spacing-trim</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textSpacingTrim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-spacing-trim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextSpacingTrim
@@ -6056,6 +7350,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-transform</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textTransform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-transform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextTransform
@@ -6065,6 +7361,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-underline-offset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textUnderlineOffset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-underline-offset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextUnderlineOffset
@@ -6074,6 +7372,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-underline-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textUnderlinePosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-underline-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextUnderlinePosition
@@ -6083,6 +7383,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextWrap
@@ -6092,6 +7394,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-wrap-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textWrapMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-wrap-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextWrapMode
@@ -6101,6 +7405,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>text-wrap-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("textWrapStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("text-wrap-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TextWrapStyle
@@ -6110,6 +7416,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-scope</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineScope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-scope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineScope
@@ -6119,6 +7427,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTrigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTrigger
@@ -6128,6 +7438,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-activation-range</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActivationRange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-activation-range", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActivationRange
@@ -6137,6 +7449,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-activation-range-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActivationRangeEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-activation-range-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActivationRangeEnd
@@ -6146,6 +7460,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-activation-range-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActivationRangeStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-activation-range-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActivationRangeStart
@@ -6155,6 +7471,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-active-range</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActiveRange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-active-range", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActiveRange
@@ -6164,6 +7482,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-active-range-end</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActiveRangeEnd", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-active-range-end", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActiveRangeEnd
@@ -6173,6 +7493,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-active-range-start</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerActiveRangeStart", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-active-range-start", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerActiveRangeStart
@@ -6182,6 +7504,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerName
@@ -6191,6 +7515,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("timelineTriggerSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("timeline-trigger-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TimelineTriggerSource
@@ -6200,6 +7526,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>top</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("top", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Top
     {
@@ -6208,6 +7535,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>touch-action</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("touchAction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("touch-action", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TouchAction
@@ -6217,6 +7546,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transform</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("transform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Transform
     {
@@ -6225,6 +7555,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transform-box</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transformBox", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transform-box", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransformBox
@@ -6234,6 +7566,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transform-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transformOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transform-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransformOrigin
@@ -6243,6 +7577,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transform-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transformStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transform-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransformStyle
@@ -6252,6 +7588,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("transition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Transition
     {
@@ -6260,6 +7597,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition-behavior</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transitionBehavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transition-behavior", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransitionBehavior
@@ -6269,6 +7608,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition-delay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transitionDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transition-delay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransitionDelay
@@ -6278,6 +7619,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition-duration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transitionDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transition-duration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransitionDuration
@@ -6287,6 +7630,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition-property</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transitionProperty", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transition-property", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransitionProperty
@@ -6296,6 +7641,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>transition-timing-function</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("transitionTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("transition-timing-function", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TransitionTimingFunction
@@ -6305,6 +7652,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>translate</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("translate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Translate
     {
@@ -6313,6 +7661,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>trigger-scope</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("triggerScope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("trigger-scope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string TriggerScope
@@ -6322,6 +7672,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>unicode-bidi</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("unicodeBidi", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("unicode-bidi", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string UnicodeBidi
@@ -6331,6 +7683,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>user-select</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("userSelect", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("user-select", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string UserSelect
@@ -6340,6 +7694,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>vector-effect</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("vectorEffect", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("vector-effect", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VectorEffect
@@ -6349,6 +7705,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>vertical-align</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("verticalAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("vertical-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VerticalAlign
@@ -6358,6 +7716,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-timeline</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTimeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-timeline", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTimeline
@@ -6367,6 +7727,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-timeline-axis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTimelineAxis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-timeline-axis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTimelineAxis
@@ -6376,6 +7738,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-timeline-inset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTimelineInset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-timeline-inset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTimelineInset
@@ -6385,6 +7749,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-timeline-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTimelineName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-timeline-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTimelineName
@@ -6394,6 +7760,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-transition-class</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTransitionClass", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-transition-class", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTransitionClass
@@ -6403,6 +7771,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-transition-group</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTransitionGroup", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-transition-group", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTransitionGroup
@@ -6412,6 +7782,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-transition-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTransitionName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-transition-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTransitionName
@@ -6421,6 +7793,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>view-transition-scope</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("viewTransitionScope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("view-transition-scope", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ViewTransitionScope
@@ -6430,6 +7804,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>visibility</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("visibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Visibility
     {
@@ -6438,6 +7813,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-balance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceBalance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-balance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceBalance
@@ -6447,6 +7824,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-duration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-duration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceDuration
@@ -6456,6 +7835,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-family</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceFamily", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-family", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceFamily
@@ -6465,6 +7846,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-pitch</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voicePitch", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-pitch", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoicePitch
@@ -6474,6 +7857,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-range</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceRange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-range", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceRange
@@ -6483,6 +7868,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-rate</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceRate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-rate", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceRate
@@ -6492,6 +7879,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-stress</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceStress", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-stress", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceStress
@@ -6501,6 +7890,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>voice-volume</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("voiceVolume", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("voice-volume", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string VoiceVolume
@@ -6510,6 +7901,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-align-content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAlignContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAlignContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-align-content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6520,6 +7914,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-align-items</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAlignItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAlignItems", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-align-items", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6530,6 +7927,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-align-self</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAlignSelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAlignSelf", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-align-self", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6540,6 +7940,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6550,6 +7953,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-delay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-delay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6560,6 +7966,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-direction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6570,6 +7979,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-duration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-duration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6580,6 +7992,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-fill-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationFillMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationFillMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-fill-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6590,6 +8005,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-iteration-count</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationIterationCount", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationIterationCount", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-iteration-count", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6600,6 +8018,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-name</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationName", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-name", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6610,6 +8031,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-play-state</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationPlayState", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationPlayState", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-play-state", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6620,6 +8044,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-animation-timing-function</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAnimationTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAnimationTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-animation-timing-function", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6630,6 +8057,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-appearance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitAppearance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitAppearance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-appearance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6640,6 +8070,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-backface-visibility</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBackfaceVisibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBackfaceVisibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-backface-visibility", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6650,6 +8083,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-background-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBackgroundClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBackgroundClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-background-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6660,6 +8096,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-background-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBackgroundOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBackgroundOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-background-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6670,6 +8109,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-background-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBackgroundSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBackgroundSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-background-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6680,6 +8122,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-border-bottom-left-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBorderBottomLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBorderBottomLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-border-bottom-left-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6690,6 +8135,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-border-bottom-right-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBorderBottomRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBorderBottomRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-border-bottom-right-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6700,6 +8148,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-border-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBorderRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBorderRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-border-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6710,6 +8161,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-border-top-left-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBorderTopLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBorderTopLeftRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-border-top-left-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6720,6 +8174,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-border-top-right-radius</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBorderTopRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBorderTopRightRadius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-border-top-right-radius", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6730,6 +8187,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-box-shadow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxShadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxShadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-shadow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6740,6 +8200,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-box-sizing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxSizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-sizing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6750,6 +8213,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-filter</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFilter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFilter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-filter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6760,6 +8226,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6770,6 +8239,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-basis</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexBasis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexBasis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-basis", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6780,6 +8252,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-direction</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6790,6 +8265,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-flow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-flow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6800,6 +8278,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-grow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexGrow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexGrow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-grow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6810,6 +8291,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-shrink</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexShrink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexShrink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-shrink", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6820,6 +8304,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-flex-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitFlexWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitFlexWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-flex-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6830,6 +8317,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-justify-content</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitJustifyContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitJustifyContent", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-justify-content", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6840,6 +8330,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-line-clamp</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitLineClamp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitLineClamp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-line-clamp", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6850,6 +8343,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMask", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMask", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6860,6 +8356,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6870,6 +8369,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image-outset</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImageOutset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImageOutset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image-outset", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6880,6 +8382,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImageRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImageRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6890,6 +8395,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image-slice</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImageSlice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImageSlice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image-slice", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6900,6 +8408,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image-source</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImageSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImageSource", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image-source", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6910,6 +8421,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-box-image-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskBoxImageWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskBoxImageWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-box-image-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6920,6 +8434,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-clip</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskClip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-clip", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6930,6 +8447,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-composite</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskComposite", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskComposite", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-composite", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6940,6 +8460,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-image</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskImage", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-image", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6950,6 +8473,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6960,6 +8486,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-position</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskPosition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-position", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6970,6 +8499,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-repeat</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskRepeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-repeat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6980,6 +8512,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-mask-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitMaskSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitMaskSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-mask-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -6990,6 +8525,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-order</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitOrder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitOrder", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-order", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7000,6 +8538,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-perspective</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitPerspective", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitPerspective", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-perspective", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7010,6 +8551,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-perspective-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitPerspectiveOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitPerspectiveOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-perspective-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7020,6 +8564,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-text-fill-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTextFillColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTextFillColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-text-fill-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7030,6 +8577,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-text-size-adjust</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTextSizeAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTextSizeAdjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-text-size-adjust", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7040,6 +8590,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-text-stroke</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTextStroke", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTextStroke", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-text-stroke", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7050,6 +8603,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-text-stroke-color</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTextStrokeColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTextStrokeColor", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-text-stroke-color", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7060,6 +8616,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-text-stroke-width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTextStrokeWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTextStrokeWidth", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-text-stroke-width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7070,6 +8629,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transform</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7080,6 +8642,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transform-origin</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransformOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransformOrigin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transform-origin", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7090,6 +8655,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transform-style</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransformStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransformStyle", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transform-style", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7100,6 +8668,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transition</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transition", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7110,6 +8681,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transition-delay</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransitionDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransitionDelay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transition-delay", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7120,6 +8694,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transition-duration</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransitionDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransitionDuration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transition-duration", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7130,6 +8707,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transition-property</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransitionProperty", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransitionProperty", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transition-property", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7140,6 +8720,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-transition-timing-function</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitTransitionTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitTransitionTimingFunction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-transition-timing-function", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7150,6 +8733,9 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>-webkit-user-select</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitUserSelect", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitUserSelect", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-user-select", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -7160,6 +8746,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>white-space</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("whiteSpace", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("white-space", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WhiteSpace
@@ -7169,6 +8757,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>white-space-collapse</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("whiteSpaceCollapse", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("white-space-collapse", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WhiteSpaceCollapse
@@ -7178,6 +8768,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>white-space-trim</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("whiteSpaceTrim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("white-space-trim", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WhiteSpaceTrim
@@ -7187,6 +8779,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>widows</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("widows", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Widows
     {
@@ -7195,6 +8788,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>width</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("width", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Width
     {
@@ -7203,6 +8797,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>will-change</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("willChange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("will-change", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WillChange
@@ -7212,6 +8808,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>window-drag</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("windowDrag", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("window-drag", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WindowDrag
@@ -7221,6 +8819,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>word-break</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wordBreak", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("word-break", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WordBreak
@@ -7230,6 +8830,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>word-space-transform</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wordSpaceTransform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("word-space-transform", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WordSpaceTransform
@@ -7239,6 +8841,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>word-spacing</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wordSpacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("word-spacing", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WordSpacing
@@ -7248,6 +8852,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>word-wrap</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wordWrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("word-wrap", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WordWrap
@@ -7257,6 +8863,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>wrap-after</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wrapAfter", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("wrap-after", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WrapAfter
@@ -7266,6 +8874,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>wrap-before</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wrapBefore", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("wrap-before", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WrapBefore
@@ -7275,6 +8885,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>wrap-flow</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wrapFlow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("wrap-flow", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WrapFlow
@@ -7284,6 +8896,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>wrap-inside</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wrapInside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("wrap-inside", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WrapInside
@@ -7293,6 +8907,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>wrap-through</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("wrapThrough", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("wrap-through", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WrapThrough
@@ -7302,6 +8918,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>writing-mode</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("writingMode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("writing-mode", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string WritingMode
@@ -7311,6 +8929,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>x</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("x", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string X
     {
@@ -7319,6 +8938,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>y</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("y", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Y
     {
@@ -7327,6 +8947,8 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>z-index</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("zIndex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("z-index", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string ZIndex
@@ -7336,6 +8958,7 @@ public sealed partial class CssStyleProperties
     }
 
     /// <summary>Gets or sets the value of the <c>zoom</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("zoom", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     public string Zoom
     {

@@ -3,27 +3,33 @@ using System.Collections;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://drafts.fxtf.org/geometry/#dictdef-domquadinit</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dictdef-domquadinit"/>
 [IdlInterface("DOMQuadInit", "https://drafts.fxtf.org/geometry/#dictdef-domquadinit")]
 public sealed class DomQuadInit
 {
     /// <summary>Gets the first point of the quad as a point dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquadinit-p1"/>
     [IdlMember("p1", "https://drafts.fxtf.org/geometry/#dom-domquadinit-p1")]
     public DomPointInit? P1 { get; init; }
 
     /// <summary>Gets the second point of the quad as a point dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquadinit-p2"/>
     [IdlMember("p2", "https://drafts.fxtf.org/geometry/#dom-domquadinit-p2")]
     public DomPointInit? P2 { get; init; }
 
     /// <summary>Gets the third point of the quad as a point dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquadinit-p3"/>
     [IdlMember("p3", "https://drafts.fxtf.org/geometry/#dom-domquadinit-p3")]
     public DomPointInit? P3 { get; init; }
 
     /// <summary>Gets the fourth point of the quad as a point dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquadinit-p4"/>
     [IdlMember("p4", "https://drafts.fxtf.org/geometry/#dom-domquadinit-p4")]
     public DomPointInit? P4 { get; init; }
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#domquad</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#domquad"/>
 [IdlInterface("DOMQuad", "https://drafts.fxtf.org/geometry/#domquad")]
 public sealed class DomQuad : Scripting.IStructuredSerializable
 {
@@ -31,6 +37,7 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
     object Scripting.IStructuredSerializable.CloneForStructuredSerialization() => new DomQuad(P1.ToJson(), P2.ToJson(), P3.ToJson(), P4.ToJson());
 
     /// <summary>https://drafts.fxtf.org/geometry/#dom-domquad-domquad</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-domquad"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-domquad-domquad")]
     public DomQuad(DomPointInit? p1 = null, DomPointInit? p2 = null, DomPointInit? p3 = null, DomPointInit? p4 = null)
     {
@@ -41,6 +48,7 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
     }
 
     /// <summary>https://drafts.fxtf.org/geometry/#create-a-domquad-from-the-domrectinit-dictionary</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-fromrect"/>
     [IdlMember("fromRect", "https://drafts.fxtf.org/geometry/#dom-domquad-fromrect")]
     public static DomQuad FromRect(DomRectInit? other = null)
     {
@@ -57,6 +65,7 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
     }
 
     /// <summary>https://drafts.fxtf.org/geometry/#create-a-domquad-from-the-domquadinit-dictionary</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-fromquad"/>
     [IdlMember("fromQuad", "https://drafts.fxtf.org/geometry/#dom-domquad-fromquad")]
     public static DomQuad FromQuad(DomQuadInit? other = null)
     {
@@ -65,22 +74,27 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
     }
 
     /// <summary>Gets the first corner point of the quadrilateral.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-p1"/>
     [IdlMember("p1", "https://drafts.fxtf.org/geometry/#dom-domquad-p1")]
     public DomPoint P1 { get; }
 
     /// <summary>Gets the second corner point of the quadrilateral.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-p2"/>
     [IdlMember("p2", "https://drafts.fxtf.org/geometry/#dom-domquad-p2")]
     public DomPoint P2 { get; }
 
     /// <summary>Gets the third corner point of the quadrilateral.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-p3"/>
     [IdlMember("p3", "https://drafts.fxtf.org/geometry/#dom-domquad-p3")]
     public DomPoint P3 { get; }
 
     /// <summary>Gets the fourth corner point of the quadrilateral.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-p4"/>
     [IdlMember("p4", "https://drafts.fxtf.org/geometry/#dom-domquad-p4")]
     public DomPoint P4 { get; }
 
     /// <summary>https://drafts.fxtf.org/geometry/#dom-domquad-getbounds</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-getbounds"/>
     [IdlMember("getBounds", "https://drafts.fxtf.org/geometry/#dom-domquad-getbounds")]
     public DomRect GetBounds()
     {
@@ -94,6 +108,7 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
     /// <summary>
     /// Returns a dictionary that represents the quadrilateral, with its four points converted to point dictionaries.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domquad-tojson"/>
     [IdlMember("toJSON", "https://drafts.fxtf.org/geometry/#dom-domquad-tojson")]
     public DomQuadInit ToJson() => new() { P1 = P1.ToJson(), P2 = P2.ToJson(), P3 = P3.ToJson(), P4 = P4.ToJson() };
 
@@ -104,6 +119,7 @@ public sealed class DomQuad : Scripting.IStructuredSerializable
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#domrectlist</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#domrectlist"/>
 [IdlInterface("DOMRectList", "https://drafts.fxtf.org/geometry/#domrectlist")]
 public sealed class DomRectList : IReadOnlyList<DomRect>
 {
@@ -118,6 +134,7 @@ public sealed class DomRectList : IReadOnlyList<DomRect>
     }
 
     /// <summary>Gets the number of rectangles in the list.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectlist-length"/>
     [IdlMember("length", "https://drafts.fxtf.org/geometry/#dom-domrectlist-length")]
     public uint Length => (uint)_items.Length;
 
@@ -126,10 +143,12 @@ public sealed class DomRectList : IReadOnlyList<DomRect>
     public int Count => _items.Length;
 
     /// <summary>Returns the rectangle at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectlist-item"/>
     [IdlMember("item", "https://drafts.fxtf.org/geometry/#dom-domrectlist-item")]
     public DomRect? Item(uint index) => index < (uint)_items.Length ? _items[index] : null;
 
     /// <summary>Gets the rectangle at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectlist-item"/>
     [IdlMember("item", "https://drafts.fxtf.org/geometry/#dom-domrectlist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public DomRect? this[uint index] => Item(index);

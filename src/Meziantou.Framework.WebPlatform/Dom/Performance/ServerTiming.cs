@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A metric of the <c>Server-Timing</c> headers of the response of a resource (https://w3c.github.io/server-timing/#the-performanceservertiming-interface),
 /// exposed by <see cref="PerformanceResourceTiming.ServerTiming"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/server-timing/#dom-performanceservertiming"/>
 [IdlInterface("PerformanceServerTiming", "https://w3c.github.io/server-timing/#dom-performanceservertiming")]
 public sealed class PerformanceServerTiming
 {
@@ -18,14 +19,17 @@ public sealed class PerformanceServerTiming
     }
 
     /// <summary>Gets the name of the metric.</summary>
+    /// <seealso href="https://w3c.github.io/server-timing/#dom-performanceservertiming-name"/>
     [IdlMember("name", "https://w3c.github.io/server-timing/#dom-performanceservertiming-name")]
     public string Name { get; }
 
     /// <summary>Gets the duration of the metric (its <c>dur</c> parameter), or 0.</summary>
+    /// <seealso href="https://w3c.github.io/server-timing/#dom-performanceservertiming-duration"/>
     [IdlMember("duration", "https://w3c.github.io/server-timing/#dom-performanceservertiming-duration")]
     public double Duration { get; }
 
     /// <summary>Gets the description of the metric (its <c>desc</c> parameter), or the empty string.</summary>
+    /// <seealso href="https://w3c.github.io/server-timing/#dom-performanceservertiming-description"/>
     [IdlMember("description", "https://w3c.github.io/server-timing/#dom-performanceservertiming-description")]
     public string Description { get; }
 

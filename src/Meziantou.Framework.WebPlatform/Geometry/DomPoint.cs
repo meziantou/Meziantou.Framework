@@ -1,27 +1,33 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://drafts.fxtf.org/geometry/#dictdef-dompointinit</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dictdef-dompointinit"/>
 [IdlInterface("DOMPointInit", "https://drafts.fxtf.org/geometry/#dictdef-dompointinit")]
 public sealed class DomPointInit
 {
     /// <summary>Gets or sets the X coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointinit-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-dompointinit-x")]
     public double X { get; init; }
 
     /// <summary>Gets or sets the Y coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointinit-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-dompointinit-y")]
     public double Y { get; init; }
 
     /// <summary>Gets or sets the Z coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointinit-z"/>
     [IdlMember("z", "https://drafts.fxtf.org/geometry/#dom-dompointinit-z")]
     public double Z { get; init; }
 
     /// <summary>Gets or sets the W coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointinit-w"/>
     [IdlMember("w", "https://drafts.fxtf.org/geometry/#dom-dompointinit-w")]
     public double W { get; init; } = 1;
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dompointreadonly</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dompointreadonly"/>
 [IdlInterface("DOMPointReadOnly", "https://drafts.fxtf.org/geometry/#dompointreadonly")]
 public class DomPointReadOnly : Scripting.IStructuredSerializable
 {
@@ -29,6 +35,7 @@ public class DomPointReadOnly : Scripting.IStructuredSerializable
     object Scripting.IStructuredSerializable.CloneForStructuredSerialization() => this is DomPoint ? new DomPoint(XValue, YValue, ZValue, WValue) : new DomPointReadOnly(XValue, YValue, ZValue, WValue);
 
     /// <summary>Creates a point with the given coordinates.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-dompointreadonly"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-dompointreadonly")]
     public DomPointReadOnly(double x = 0, double y = 0, double z = 0, double w = 1)
     {
@@ -47,6 +54,7 @@ public class DomPointReadOnly : Scripting.IStructuredSerializable
     private protected double WValue { get; set; }
 
     /// <summary>Creates a read-only point from the coordinates of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-frompoint"/>
     [IdlMember("fromPoint", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-frompoint")]
     public static DomPointReadOnly FromPoint(DomPointInit? other = null)
     {
@@ -55,22 +63,27 @@ public class DomPointReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Gets the X coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-x")]
     public double X => XValue;
 
     /// <summary>Gets the Y coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-y")]
     public double Y => YValue;
 
     /// <summary>Gets the Z coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-z"/>
     [IdlMember("z", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-z")]
     public double Z => ZValue;
 
     /// <summary>Gets the W coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-w"/>
     [IdlMember("w", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-w")]
     public double W => WValue;
 
     /// <summary>https://drafts.fxtf.org/geometry/#dom-dompointreadonly-matrixtransform</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-matrixtransform"/>
     [IdlMember("matrixTransform", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-matrixtransform")]
     public DomPoint MatrixTransform(DomMatrixInit? matrix = null)
     {
@@ -79,15 +92,18 @@ public class DomPointReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns a dictionary representation of the point, as used by <c>JSON.stringify()</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompointreadonly-tojson"/>
     [IdlMember("toJSON", "https://drafts.fxtf.org/geometry/#dom-dompointreadonly-tojson")]
     public DomPointInit ToJson() => new() { X = XValue, Y = YValue, Z = ZValue, W = WValue };
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dompoint</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dompoint"/>
 [IdlInterface("DOMPoint", "https://drafts.fxtf.org/geometry/#dompoint")]
 public class DomPoint : DomPointReadOnly
 {
     /// <summary>Creates a mutable point with the given coordinates.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-dompoint"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dompoint-dompoint")]
     public DomPoint(double x = 0, double y = 0, double z = 0, double w = 1)
         : base(x, y, z, w)
@@ -95,6 +111,7 @@ public class DomPoint : DomPointReadOnly
     }
 
     /// <summary>Creates a mutable point from the coordinates of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-frompoint"/>
     [IdlMember("fromPoint", "https://drafts.fxtf.org/geometry/#dom-dompoint-frompoint")]
     public static new DomPoint FromPoint(DomPointInit? other = null)
     {
@@ -103,6 +120,7 @@ public class DomPoint : DomPointReadOnly
     }
 
     /// <summary>Gets or sets the X coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-dompoint-x")]
     public new virtual double X
     {
@@ -111,6 +129,7 @@ public class DomPoint : DomPointReadOnly
     }
 
     /// <summary>Gets or sets the Y coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-dompoint-y")]
     public new virtual double Y
     {
@@ -119,6 +138,7 @@ public class DomPoint : DomPointReadOnly
     }
 
     /// <summary>Gets or sets the Z coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-z"/>
     [IdlMember("z", "https://drafts.fxtf.org/geometry/#dom-dompoint-z")]
     public new double Z
     {
@@ -127,6 +147,7 @@ public class DomPoint : DomPointReadOnly
     }
 
     /// <summary>Gets or sets the W coordinate of the point.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dompoint-w"/>
     [IdlMember("w", "https://drafts.fxtf.org/geometry/#dom-dompoint-w")]
     public new double W
     {
@@ -136,27 +157,33 @@ public class DomPoint : DomPointReadOnly
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dictdef-domrectinit</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dictdef-domrectinit"/>
 [IdlInterface("DOMRectInit", "https://drafts.fxtf.org/geometry/#dictdef-domrectinit")]
 public sealed class DomRectInit
 {
     /// <summary>Gets or sets the X coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectinit-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-domrectinit-x")]
     public double X { get; init; }
 
     /// <summary>Gets or sets the Y coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectinit-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-domrectinit-y")]
     public double Y { get; init; }
 
     /// <summary>Gets or sets the width of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectinit-width"/>
     [IdlMember("width", "https://drafts.fxtf.org/geometry/#dom-domrectinit-width")]
     public double Width { get; init; }
 
     /// <summary>Gets or sets the height of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectinit-height"/>
     [IdlMember("height", "https://drafts.fxtf.org/geometry/#dom-domrectinit-height")]
     public double Height { get; init; }
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#domrectreadonly</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#domrectreadonly"/>
 [IdlInterface("DOMRectReadOnly", "https://drafts.fxtf.org/geometry/#domrectreadonly")]
 public class DomRectReadOnly : Scripting.IStructuredSerializable
 {
@@ -164,6 +191,7 @@ public class DomRectReadOnly : Scripting.IStructuredSerializable
     object Scripting.IStructuredSerializable.CloneForStructuredSerialization() => this is DomRect ? new DomRect(XValue, YValue, WidthValue, HeightValue) : new DomRectReadOnly(XValue, YValue, WidthValue, HeightValue);
 
     /// <summary>Creates a rectangle with the given origin and size.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-domrectreadonly"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-domrectreadonly")]
     public DomRectReadOnly(double x = 0, double y = 0, double width = 0, double height = 0)
     {
@@ -182,6 +210,7 @@ public class DomRectReadOnly : Scripting.IStructuredSerializable
     private protected double HeightValue { get; set; }
 
     /// <summary>Creates a read-only rectangle from the origin and size of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-fromrect"/>
     [IdlMember("fromRect", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-fromrect")]
     public static DomRectReadOnly FromRect(DomRectInit? other = null)
     {
@@ -190,38 +219,47 @@ public class DomRectReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Gets the X coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-x")]
     public double X => XValue;
 
     /// <summary>Gets the Y coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-y")]
     public double Y => YValue;
 
     /// <summary>Gets the width of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-width"/>
     [IdlMember("width", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-width")]
     public double Width => WidthValue;
 
     /// <summary>Gets the height of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-height"/>
     [IdlMember("height", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-height")]
     public double Height => HeightValue;
 
     /// <summary>Gets the Y coordinate of the top edge of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-top"/>
     [IdlMember("top", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-top")]
     public double Top => Min(YValue, YValue + HeightValue);
 
     /// <summary>Gets the X coordinate of the right edge of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-right"/>
     [IdlMember("right", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-right")]
     public double Right => Max(XValue, XValue + WidthValue);
 
     /// <summary>Gets the Y coordinate of the bottom edge of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-bottom"/>
     [IdlMember("bottom", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-bottom")]
     public double Bottom => Max(YValue, YValue + HeightValue);
 
     /// <summary>Gets the X coordinate of the left edge of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-left"/>
     [IdlMember("left", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-left")]
     public double Left => Min(XValue, XValue + WidthValue);
 
     /// <summary>Returns a dictionary representation of the rectangle, as used by <c>JSON.stringify()</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrectreadonly-tojson"/>
     [IdlMember("toJSON", "https://drafts.fxtf.org/geometry/#dom-domrectreadonly-tojson")]
     public DomRectInit ToJson() => new() { X = XValue, Y = YValue, Width = WidthValue, Height = HeightValue };
 
@@ -232,10 +270,12 @@ public class DomRectReadOnly : Scripting.IStructuredSerializable
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#domrect</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#domrect"/>
 [IdlInterface("DOMRect", "https://drafts.fxtf.org/geometry/#domrect")]
 public class DomRect : DomRectReadOnly
 {
     /// <summary>Creates a mutable rectangle with the given origin and size.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-domrect"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-domrect-domrect")]
     public DomRect(double x = 0, double y = 0, double width = 0, double height = 0)
         : base(x, y, width, height)
@@ -243,6 +283,7 @@ public class DomRect : DomRectReadOnly
     }
 
     /// <summary>Creates a mutable rectangle from the origin and size of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-fromrect"/>
     [IdlMember("fromRect", "https://drafts.fxtf.org/geometry/#dom-domrect-fromrect")]
     public static new DomRect FromRect(DomRectInit? other = null)
     {
@@ -251,6 +292,7 @@ public class DomRect : DomRectReadOnly
     }
 
     /// <summary>Gets or sets the X coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-x"/>
     [IdlMember("x", "https://drafts.fxtf.org/geometry/#dom-domrect-x")]
     public new virtual double X
     {
@@ -259,6 +301,7 @@ public class DomRect : DomRectReadOnly
     }
 
     /// <summary>Gets or sets the Y coordinate of the origin of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-y"/>
     [IdlMember("y", "https://drafts.fxtf.org/geometry/#dom-domrect-y")]
     public new virtual double Y
     {
@@ -267,6 +310,7 @@ public class DomRect : DomRectReadOnly
     }
 
     /// <summary>Gets or sets the width of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-width"/>
     [IdlMember("width", "https://drafts.fxtf.org/geometry/#dom-domrect-width")]
     public new virtual double Width
     {
@@ -275,6 +319,7 @@ public class DomRect : DomRectReadOnly
     }
 
     /// <summary>Gets or sets the height of the rectangle.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-domrect-height"/>
     [IdlMember("height", "https://drafts.fxtf.org/geometry/#dom-domrect-height")]
     public new virtual double Height
     {

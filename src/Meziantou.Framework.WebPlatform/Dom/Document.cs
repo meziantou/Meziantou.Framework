@@ -13,6 +13,7 @@ internal enum DocumentMode : byte
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-document</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#document"/>
 [IdlInterface("Document", "https://dom.spec.whatwg.org/#document")]
 public partial class Document : Node
 {
@@ -39,6 +40,7 @@ public partial class Document : Node
     private int _domVersion;
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-document</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-document"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-document-document")]
     public Document()
         : this(isHtmlDocument: false, contentType: "application/xml")
@@ -397,6 +399,7 @@ public partial class Document : Node
     internal CustomElementRegistry? CustomElementRegistryStorage { get; set; }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-documentorshadowroot-customelementregistry</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-documentorshadowroot-customelementregistry"/>
     [IdlMember("customElementRegistry", "https://dom.spec.whatwg.org/#dom-documentorshadowroot-customelementregistry")]
     public CustomElementRegistry? CustomElementRegistry => CustomElementRegistryStorage;
 
@@ -404,38 +407,47 @@ public partial class Document : Node
     internal bool HasSlots { get; set; }
 
     /// <summary>Gets the <c>DOMImplementation</c> object associated with the document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-implementation"/>
     [IdlMember("implementation", "https://dom.spec.whatwg.org/#dom-document-implementation")]
     public DomImplementation Implementation => _implementation ??= new DomImplementation(this);
 
     /// <summary>Gets the serialized URL of the document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-url"/>
     [IdlMember("URL", "https://dom.spec.whatwg.org/#dom-document-url")]
     public string Url => UrlRecord.Serialize();
 
     /// <summary>Gets the serialized URL of the document (alias of <c>URL</c>).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-documenturi"/>
     [IdlMember("documentURI", "https://dom.spec.whatwg.org/#dom-document-documenturi")]
     public string DocumentUri => UrlRecord.Serialize();
 
     /// <summary>Gets <c>BackCompat</c> when the document is in quirks mode, otherwise <c>CSS1Compat</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-compatmode"/>
     [IdlMember("compatMode", "https://dom.spec.whatwg.org/#dom-document-compatmode")]
     public string CompatMode => Mode == DocumentMode.Quirks ? "BackCompat" : "CSS1Compat";
 
     /// <summary>Gets the name of the character encoding of the document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-characterset"/>
     [IdlMember("characterSet", "https://dom.spec.whatwg.org/#dom-document-characterset")]
     public string CharacterSet => WebEncodingRegistry.GetName(Encoding);
 
     /// <summary>Gets the name of the character encoding of the document (alias of <c>characterSet</c>).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-charset"/>
     [IdlMember("charset", "https://dom.spec.whatwg.org/#dom-document-charset")]
     public string Charset => CharacterSet;
 
     /// <summary>Gets the name of the character encoding of the document (alias of <c>characterSet</c>).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-inputencoding"/>
     [IdlMember("inputEncoding", "https://dom.spec.whatwg.org/#dom-document-inputencoding")]
     public string InputEncoding => CharacterSet;
 
     /// <summary>Gets the content type (MIME type) of the document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-contenttype"/>
     [IdlMember("contentType", "https://dom.spec.whatwg.org/#dom-document-contenttype")]
     public string ContentType { get; internal set; }
 
     /// <summary>Gets the document type node that is a child of the document, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-doctype"/>
     [IdlMember("doctype", "https://dom.spec.whatwg.org/#dom-document-doctype")]
     public DocumentType? Doctype
     {
@@ -452,6 +464,7 @@ public partial class Document : Node
     }
 
     /// <summary>Gets the root element of the document, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-documentelement"/>
     [IdlMember("documentElement", "https://dom.spec.whatwg.org/#dom-document-documentelement")]
     public Element? DocumentElement
     {
@@ -468,6 +481,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createelement</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createelement"/>
     [IdlMember("createElement", "https://dom.spec.whatwg.org/#dom-document-createelement")]
     public Element CreateElement(string localName, ElementCreationOptions? options = null)
     {
@@ -538,6 +552,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createelementns</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createelementns"/>
     [IdlMember("createElementNS", "https://dom.spec.whatwg.org/#dom-document-createelementns")]
     public Element CreateElementNS(string? @namespace, string qualifiedName, ElementCreationOptions? options = null)
     {
@@ -549,10 +564,12 @@ public partial class Document : Node
     }
 
     /// <summary>Creates an empty document fragment owned by the document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createdocumentfragment"/>
     [IdlMember("createDocumentFragment", "https://dom.spec.whatwg.org/#dom-document-createdocumentfragment")]
     public DocumentFragment CreateDocumentFragment() => new(this);
 
     /// <summary>Creates a text node with the given data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createtextnode"/>
     [IdlMember("createTextNode", "https://dom.spec.whatwg.org/#dom-document-createtextnode")]
     public Text CreateTextNode(string data)
     {
@@ -561,6 +578,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createcdatasection</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createcdatasection"/>
     [IdlMember("createCDATASection", "https://dom.spec.whatwg.org/#dom-document-createcdatasection")]
     public CDataSection CreateCDataSection(string data)
     {
@@ -575,6 +593,7 @@ public partial class Document : Node
     }
 
     /// <summary>Creates a comment node with the given data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createcomment"/>
     [IdlMember("createComment", "https://dom.spec.whatwg.org/#dom-document-createcomment")]
     public Comment CreateComment(string data)
     {
@@ -583,14 +602,17 @@ public partial class Document : Node
     }
 
     /// <summary>Creates a processing instruction with the given target and data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction"/>
     [IdlMember("createProcessingInstruction", "https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction")]
     public ProcessingInstruction CreateProcessingInstruction(string target, string data) => new(this, target, data, validate: true);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-importnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-importnode"/>
     [IdlMember("importNode", "https://dom.spec.whatwg.org/#dom-document-importnode")]
     public Node ImportNode(Node node, bool subtree = false) => ImportNodeCore(node, subtree, registry: null);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-importnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-importnode"/>
     [IdlMember("importNode", "https://dom.spec.whatwg.org/#dom-document-importnode")]
     public Node ImportNode(Node node, ImportNodeOptions options)
     {
@@ -613,6 +635,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-adoptnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-adoptnode"/>
     [IdlMember("adoptNode", "https://dom.spec.whatwg.org/#dom-document-adoptnode")]
     public Node AdoptNode(Node node)
     {
@@ -629,6 +652,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createattribute</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createattribute"/>
     [IdlMember("createAttribute", "https://dom.spec.whatwg.org/#dom-document-createattribute")]
     public Attr CreateAttribute(string localName)
     {
@@ -645,6 +669,7 @@ public partial class Document : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createattributens</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createattributens"/>
     [IdlMember("createAttributeNS", "https://dom.spec.whatwg.org/#dom-document-createattributens")]
     public Attr CreateAttributeNS(string? @namespace, string qualifiedName)
     {
@@ -656,6 +681,7 @@ public partial class Document : Node
     /// <summary>
     /// Returns the first element of the document, in tree order, with the given ID, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid"/>
     [IdlMember("getElementById", "https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid")]
     public Element? GetElementById(string elementId) => GetElementByIdCore(elementId);
 
@@ -825,10 +851,12 @@ public partial class Document : Node
 }
 
 /// <summary>Represents the options of <c>createElement()</c> and <c>createElementNS()</c>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-elementcreationoptions"/>
 [IdlInterface("ElementCreationOptions", "https://dom.spec.whatwg.org/#dictdef-elementcreationoptions")]
 public sealed class ElementCreationOptions
 {
     /// <summary>Gets the custom element registry used to look up the definition of the created element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-elementcreationoptions-customelementregistry"/>
     [IdlMember("customElementRegistry", "https://dom.spec.whatwg.org/#dom-elementcreationoptions-customelementregistry")]
     public CustomElementRegistry? CustomElementRegistry
     {
@@ -844,15 +872,18 @@ public sealed class ElementCreationOptions
     internal bool HasCustomElementRegistry { get; private init; }
 
     /// <summary>Gets the name of the customized built-in element to create.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-elementcreationoptions-is"/>
     [IdlMember("is", "https://dom.spec.whatwg.org/#dom-elementcreationoptions-is")]
     public string? Is { get; init; }
 }
 
 /// <summary>Represents the options of <c>importNode()</c>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-importnodeoptions"/>
 [IdlInterface("ImportNodeOptions", "https://dom.spec.whatwg.org/#dictdef-importnodeoptions")]
 public sealed class ImportNodeOptions
 {
     /// <summary>Gets the custom element registry associated with the imported nodes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-importnodeoptions-customelementregistry"/>
     [IdlMember("customElementRegistry", "https://dom.spec.whatwg.org/#dom-importnodeoptions-customelementregistry")]
     public CustomElementRegistry? CustomElementRegistry
     {
@@ -868,6 +899,7 @@ public sealed class ImportNodeOptions
     internal bool HasCustomElementRegistry { get; private init; }
 
     /// <summary>Gets a value indicating whether only the node itself is imported, without its descendants.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-importnodeoptions-selfonly"/>
     [IdlMember("selfOnly", "https://dom.spec.whatwg.org/#dom-importnodeoptions-selfonly")]
     public bool SelfOnly { get; init; }
 }

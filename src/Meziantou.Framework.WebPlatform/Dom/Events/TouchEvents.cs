@@ -3,88 +3,109 @@ using System.Collections;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/touch-events/#dom-touchtype</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#dom-touchtype"/>
 [IdlInterface("TouchType", "https://w3c.github.io/touch-events/#dom-touchtype")]
 public enum TouchType
 {
     /// <summary>A direct touch from a finger on the screen.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchtype-direct"/>
     [IdlMember("direct", "https://w3c.github.io/touch-events/#dom-touchtype-direct")]
     Direct,
 
     /// <summary>A touch from a stylus or pen device.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchtype-stylus"/>
     [IdlMember("stylus", "https://w3c.github.io/touch-events/#dom-touchtype-stylus")]
     Stylus,
 }
 
 /// <summary>https://w3c.github.io/touch-events/#dom-touchinit</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit"/>
 [IdlInterface("TouchInit", "https://w3c.github.io/touch-events/#dom-touchinit")]
 public sealed class TouchInit
 {
     /// <summary>Gets the identification number of the touch point.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-identifier"/>
     [IdlMember("identifier", "https://w3c.github.io/touch-events/#dom-touchinit-identifier")]
     public required int Identifier { get; init; }
 
     /// <summary>Gets the target of the touch point.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-target"/>
     [IdlMember("target", "https://w3c.github.io/touch-events/#dom-touchinit-target")]
     public required EventTarget Target { get; init; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the viewport.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-clientx"/>
     [IdlMember("clientX", "https://w3c.github.io/touch-events/#dom-touchinit-clientx")]
     public double ClientX { get; init; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the viewport.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-clienty"/>
     [IdlMember("clientY", "https://w3c.github.io/touch-events/#dom-touchinit-clienty")]
     public double ClientY { get; init; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the screen.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-screenx"/>
     [IdlMember("screenX", "https://w3c.github.io/touch-events/#dom-touchinit-screenx")]
     public double ScreenX { get; init; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the screen.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-screeny"/>
     [IdlMember("screenY", "https://w3c.github.io/touch-events/#dom-touchinit-screeny")]
     public double ScreenY { get; init; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the page.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-pagex"/>
     [IdlMember("pageX", "https://w3c.github.io/touch-events/#dom-touchinit-pagex")]
     public double PageX { get; init; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the page.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-pagey"/>
     [IdlMember("pageY", "https://w3c.github.io/touch-events/#dom-touchinit-pagey")]
     public double PageY { get; init; }
 
     /// <summary>Gets the radius of the ellipse of the contact along its major axis.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-radiusx"/>
     [IdlMember("radiusX", "https://w3c.github.io/touch-events/#dom-touchinit-radiusx")]
     public float RadiusX { get; init; }
 
     /// <summary>Gets the radius of the ellipse of the contact along its minor axis.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-radiusy"/>
     [IdlMember("radiusY", "https://w3c.github.io/touch-events/#dom-touchinit-radiusy")]
     public float RadiusY { get; init; }
 
     /// <summary>Gets the angle, in degrees, of the ellipse of the contact.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-rotationangle"/>
     [IdlMember("rotationAngle", "https://w3c.github.io/touch-events/#dom-touchinit-rotationangle")]
     public float RotationAngle { get; init; }
 
     /// <summary>Gets the relative force of the contact, between 0 and 1.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-force"/>
     [IdlMember("force", "https://w3c.github.io/touch-events/#dom-touchinit-force")]
     public float Force { get; init; }
 
     /// <summary>Gets the altitude, in radians, of the transducer.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-altitudeangle"/>
     [IdlMember("altitudeAngle", "https://w3c.github.io/touch-events/#dom-touchinit-altitudeangle")]
     public double AltitudeAngle { get; init; }
 
     /// <summary>Gets the azimuth angle, in radians, of the transducer.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-azimuthangle"/>
     [IdlMember("azimuthAngle", "https://w3c.github.io/touch-events/#dom-touchinit-azimuthangle")]
     public double AzimuthAngle { get; init; }
 
     /// <summary>Gets the type of the device that produced the touch.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchinit-touchtype"/>
     [IdlMember("touchType", "https://w3c.github.io/touch-events/#dom-touchinit-touchtype")]
     public TouchType TouchType { get; init; }
 }
 
 /// <summary>https://w3c.github.io/touch-events/#touch-interface</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#touch-interface"/>
 [IdlInterface("Touch", "https://w3c.github.io/touch-events/#touch-interface")]
 public sealed class Touch
 {
     /// <summary>Creates a touch point from the given initialization dictionary.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/touch-events/#dom-touch-constructor")]
     public Touch(TouchInit touchInitDict)
     {
@@ -129,67 +150,83 @@ public sealed class Touch
     internal Touch WithTarget(EventTarget target) => new(this, target);
 
     /// <summary>Gets the identification number of the touch point, the same for all the events of the contact.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-identifier"/>
     [IdlMember("identifier", "https://w3c.github.io/touch-events/#dom-touch-identifier")]
     public int Identifier { get; }
 
     /// <summary>Gets the target the touch point started on (even when it moved outside of it).</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-target"/>
     [IdlMember("target", "https://w3c.github.io/touch-events/#dom-touch-target")]
     public EventTarget Target { get; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the screen.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-screenx"/>
     [IdlMember("screenX", "https://w3c.github.io/touch-events/#dom-touch-screenx")]
     public double ScreenX { get; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the screen.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-screeny"/>
     [IdlMember("screenY", "https://w3c.github.io/touch-events/#dom-touch-screeny")]
     public double ScreenY { get; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the viewport.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-clientx"/>
     [IdlMember("clientX", "https://w3c.github.io/touch-events/#dom-touch-clientx")]
     public double ClientX { get; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the viewport.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-clienty"/>
     [IdlMember("clientY", "https://w3c.github.io/touch-events/#dom-touch-clienty")]
     public double ClientY { get; }
 
     /// <summary>Gets the horizontal coordinate of the point relative to the page.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-pagex"/>
     [IdlMember("pageX", "https://w3c.github.io/touch-events/#dom-touch-pagex")]
     public double PageX { get; }
 
     /// <summary>Gets the vertical coordinate of the point relative to the page.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-pagey"/>
     [IdlMember("pageY", "https://w3c.github.io/touch-events/#dom-touch-pagey")]
     public double PageY { get; }
 
     /// <summary>Gets the radius of the ellipse of the contact along its major axis.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-radiusx"/>
     [IdlMember("radiusX", "https://w3c.github.io/touch-events/#dom-touch-radiusx")]
     public float RadiusX { get; }
 
     /// <summary>Gets the radius of the ellipse of the contact along its minor axis.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-radiusy"/>
     [IdlMember("radiusY", "https://w3c.github.io/touch-events/#dom-touch-radiusy")]
     public float RadiusY { get; }
 
     /// <summary>Gets the angle, in degrees, of the ellipse of the contact.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-rotationangle"/>
     [IdlMember("rotationAngle", "https://w3c.github.io/touch-events/#dom-touch-rotationangle")]
     public float RotationAngle { get; }
 
     /// <summary>Gets the relative force of the contact, between 0 and 1.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-force"/>
     [IdlMember("force", "https://w3c.github.io/touch-events/#dom-touch-force")]
     public float Force { get; }
 
     /// <summary>Gets the altitude, in radians, of the transducer.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-altitudeangle"/>
     [IdlMember("altitudeAngle", "https://w3c.github.io/touch-events/#dom-touch-altitudeangle")]
     public float AltitudeAngle { get; }
 
     /// <summary>Gets the azimuth angle, in radians, of the transducer.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-azimuthangle"/>
     [IdlMember("azimuthAngle", "https://w3c.github.io/touch-events/#dom-touch-azimuthangle")]
     public float AzimuthAngle { get; }
 
     /// <summary>Gets the type of the device that produced the touch.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touch-touchtype"/>
     [IdlMember("touchType", "https://w3c.github.io/touch-events/#dom-touch-touchtype")]
     public TouchType TouchType { get; }
 }
 
 /// <summary>https://w3c.github.io/touch-events/#touchlist-interface</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#touchlist-interface"/>
 [IdlInterface("TouchList", "https://w3c.github.io/touch-events/#touchlist-interface")]
 public sealed class TouchList : IReadOnlyList<Touch>
 {
@@ -204,6 +241,7 @@ public sealed class TouchList : IReadOnlyList<Touch>
     }
 
     /// <summary>Gets the number of touch points in the list.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchlist-length"/>
     [IdlMember("length", "https://w3c.github.io/touch-events/#dom-touchlist-length")]
     public uint Length => (uint)_items.Length;
 
@@ -212,6 +250,7 @@ public sealed class TouchList : IReadOnlyList<Touch>
     public int Count => _items.Length;
 
     /// <summary>Returns the touch point at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchlist-item"/>
     [IdlMember("item", "https://w3c.github.io/touch-events/#dom-touchlist-item")]
     public Touch? Item(uint index) => index < (uint)_items.Length ? _items[index] : null;
 
@@ -228,29 +267,35 @@ public sealed class TouchList : IReadOnlyList<Touch>
 }
 
 /// <summary>https://w3c.github.io/touch-events/#dom-toucheventinit</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#dom-toucheventinit"/>
 [IdlInterface("TouchEventInit", "https://w3c.github.io/touch-events/#dom-toucheventinit")]
 public sealed class TouchEventInit : EventModifierInit
 {
     /// <summary>Gets the touch points that are in contact with the surface.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-toucheventinit-touches"/>
     [IdlMember("touches", "https://w3c.github.io/touch-events/#dom-toucheventinit-touches")]
     public IReadOnlyList<Touch> Touches { get; init; } = [];
 
     /// <summary>Gets the touch points that are in contact with the surface and started on the target of the event.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-toucheventinit-targettouches"/>
     [IdlMember("targetTouches", "https://w3c.github.io/touch-events/#dom-toucheventinit-targettouches")]
     public IReadOnlyList<Touch> TargetTouches { get; init; } = [];
 
     /// <summary>Gets the touch points that changed.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-toucheventinit-changedtouches"/>
     [IdlMember("changedTouches", "https://w3c.github.io/touch-events/#dom-toucheventinit-changedtouches")]
     public IReadOnlyList<Touch> ChangedTouches { get; init; } = [];
 }
 
 /// <summary>https://w3c.github.io/touch-events/#touchevent-interface</summary>
+/// <seealso href="https://w3c.github.io/touch-events/#touchevent-interface"/>
 [IdlInterface("TouchEvent", "https://w3c.github.io/touch-events/#touchevent-interface")]
 public sealed class TouchEvent : UIEvent
 {
     private readonly ModifierState _modifiers;
 
     /// <summary>Creates a touch event of the given type with the given initialization dictionary.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/touch-events/#dom-touchevent-constructor")]
     public TouchEvent(string type, TouchEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -275,14 +320,17 @@ public sealed class TouchEvent : UIEvent
     /// as the target of the event is: a listener outside of a shadow tree does not see the nodes of the shadow tree (the
     /// touch points whose target changes are copies, the same ones for the listeners of a tree).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-touches"/>
     [IdlMember("touches", "https://w3c.github.io/touch-events/#dom-touchevent-touches")]
     public TouchList Touches => GetRetargetedList(_touches);
 
     /// <summary>Gets the touch points that are in contact with the surface and started on the target of the event (retargeted, see <see cref="Touches"/>).</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-targettouches"/>
     [IdlMember("targetTouches", "https://w3c.github.io/touch-events/#dom-touchevent-targettouches")]
     public TouchList TargetTouches => GetRetargetedList(_targetTouches);
 
     /// <summary>Gets the touch points that changed: the ones that started, moved or ended (retargeted, see <see cref="Touches"/>).</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-changedtouches"/>
     [IdlMember("changedTouches", "https://w3c.github.io/touch-events/#dom-touchevent-changedtouches")]
     public TouchList ChangedTouches => GetRetargetedList(_changedTouches);
 
@@ -332,22 +380,27 @@ public sealed class TouchEvent : UIEvent
     }
 
     /// <summary>Gets a value indicating whether the Alt key was active.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-altkey"/>
     [IdlMember("altKey", "https://w3c.github.io/touch-events/#dom-touchevent-altkey")]
     public bool AltKey => _modifiers.Alt;
 
     /// <summary>Gets a value indicating whether the Meta key was active.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-metakey"/>
     [IdlMember("metaKey", "https://w3c.github.io/touch-events/#dom-touchevent-metakey")]
     public bool MetaKey => _modifiers.Meta;
 
     /// <summary>Gets a value indicating whether the Control key was active.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-ctrlkey"/>
     [IdlMember("ctrlKey", "https://w3c.github.io/touch-events/#dom-touchevent-ctrlkey")]
     public bool CtrlKey => _modifiers.Ctrl;
 
     /// <summary>Gets a value indicating whether the Shift key was active.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-shiftkey"/>
     [IdlMember("shiftKey", "https://w3c.github.io/touch-events/#dom-touchevent-shiftkey")]
     public bool ShiftKey => _modifiers.Shift;
 
     /// <summary>Returns whether the given modifier key was active when the event occurred.</summary>
+    /// <seealso href="https://w3c.github.io/touch-events/#dom-touchevent-getmodifierstate"/>
     [IdlMember("getModifierState", "https://w3c.github.io/touch-events/#dom-touchevent-getmodifierstate")]
     public bool GetModifierState(string keyArg)
     {

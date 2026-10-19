@@ -4,6 +4,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A service worker (https://w3c.github.io/ServiceWorker/#serviceworker-interface), as seen by a window or a worker: its
 /// script URL, its state, and the messages posted to it. Each global object has its own object per service worker.
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworker"/>
 [IdlInterface("ServiceWorker", "https://w3c.github.io/ServiceWorker/#serviceworker")]
 public sealed class ServiceWorker : EventTarget
 {
@@ -17,16 +18,19 @@ public sealed class ServiceWorker : EventTarget
     internal ServiceWorkerRecord Record { get; }
 
     /// <summary>Gets the URL of the script of the service worker.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworker-scripturl"/>
     [IdlMember("scriptURL", "https://w3c.github.io/ServiceWorker/#dom-serviceworker-scripturl")]
     public string ScriptUrl => Record.ScriptUrl.Serialize();
 
     /// <summary>Gets the state of the service worker, as last set by a <c>statechange</c> task.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworker-state"/>
     [IdlMember("state", "https://w3c.github.io/ServiceWorker/#dom-serviceworker-state")]
     public ServiceWorkerState State { get; private set; }
 
     internal void SetState(ServiceWorkerState state) => State = state;
 
     /// <summary>Posts a message to the service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage"/>
     [IdlMember("postMessage", "https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage")]
     public void PostMessage(object? message, IReadOnlyList<object> transfer)
     {
@@ -36,6 +40,7 @@ public sealed class ServiceWorker : EventTarget
 
     /// <summary>Posts a message to the service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage-message-options).</summary>
     /// <exception cref="DomException">A <c>DataCloneError</c> when the message cannot be serialized, or an <c>InvalidStateError</c> when the document of the window of the object is not fully active (e.g. its iframe was removed).</exception>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage-message-options"/>
     [IdlMember("postMessage", "https://w3c.github.io/ServiceWorker/#dom-serviceworker-postmessage-message-options")]
     public void PostMessage(object? message, StructuredSerializeOptions? options = null)
     {
@@ -57,6 +62,7 @@ public sealed class ServiceWorker : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>statechange</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworker-onstatechange"/>
     [IdlMember("onstatechange", "https://w3c.github.io/ServiceWorker/#dom-serviceworker-onstatechange")]
     public Action<Event>? OnStateChange
     {
@@ -65,6 +71,7 @@ public sealed class ServiceWorker : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror")]
     public Action<Event>? OnError
     {
@@ -78,6 +85,7 @@ public sealed class ServiceWorker : EventTarget
 /// window or a worker. Its <see cref="Installing"/>, <see cref="Waiting"/> and <see cref="Active"/> workers are updated by
 /// tasks queued by the algorithms of the registration.
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworkerregistration"/>
 [IdlInterface("ServiceWorkerRegistration", "https://w3c.github.io/ServiceWorker/#serviceworkerregistration")]
 public sealed class ServiceWorkerRegistration : EventTarget
 {
@@ -101,26 +109,32 @@ public sealed class ServiceWorkerRegistration : EventTarget
     internal long StateVersion { get; set; }
 
     /// <summary>Gets the installing worker, or null.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-installing"/>
     [IdlMember("installing", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-installing")]
     public ServiceWorker? Installing { get; private set; }
 
     /// <summary>Gets the waiting worker, or null.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-waiting"/>
     [IdlMember("waiting", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-waiting")]
     public ServiceWorker? Waiting { get; private set; }
 
     /// <summary>Gets the active worker, or null.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-active"/>
     [IdlMember("active", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-active")]
     public ServiceWorker? Active { get; private set; }
 
     /// <summary>Gets the navigation preload manager of the registration.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-navigationpreload"/>
     [IdlMember("navigationPreload", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-navigationpreload")]
     public NavigationPreloadManager NavigationPreload => _navigationPreload ??= new NavigationPreloadManager(this);
 
     /// <summary>Gets the serialized scope URL.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-scope"/>
     [IdlMember("scope", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-scope")]
     public string Scope => Record.Scope;
 
     /// <summary>Gets the update via cache mode.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-updateviacache"/>
     [IdlMember("updateViaCache", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-updateviacache")]
     public ServiceWorkerUpdateViaCache UpdateViaCache
     {
@@ -150,6 +164,7 @@ public sealed class ServiceWorkerRegistration : EventTarget
     }
 
     /// <summary>Checks whether the script of the service worker changed (https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-update).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-update"/>
     [IdlMember("update", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-update")]
     public Task<ServiceWorkerRegistration> Update() => Document.DelayWhilePrerendering(Global, UpdateCore);
 
@@ -185,6 +200,7 @@ public sealed class ServiceWorkerRegistration : EventTarget
     }
 
     /// <summary>Unregisters the registration (https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-unregister).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-unregister"/>
     [IdlMember("unregister", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-unregister")]
     public Task<bool> Unregister() => Document.DelayWhilePrerendering(Global, UnregisterCore);
 
@@ -204,6 +220,7 @@ public sealed class ServiceWorkerRegistration : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>updatefound</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-onupdatefound"/>
     [IdlMember("onupdatefound", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerregistration-onupdatefound")]
     public Action<Event>? OnUpdateFound
     {
@@ -213,6 +230,7 @@ public sealed class ServiceWorkerRegistration : EventTarget
 }
 
 /// <summary>The navigation preload of a registration (https://w3c.github.io/ServiceWorker/#navigationpreloadmanager).</summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#navigationpreloadmanager"/>
 [IdlInterface("NavigationPreloadManager", "https://w3c.github.io/ServiceWorker/#navigationpreloadmanager")]
 public sealed class NavigationPreloadManager
 {
@@ -224,14 +242,17 @@ public sealed class NavigationPreloadManager
     }
 
     /// <summary>Enables the navigation preload (https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-enable).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-enable"/>
     [IdlMember("enable", "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-enable")]
     public Task Enable() => Update(registration => registration.NavigationPreloadEnabled = true);
 
     /// <summary>Disables the navigation preload (https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-disable).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-disable"/>
     [IdlMember("disable", "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-disable")]
     public Task Disable() => Update(registration => registration.NavigationPreloadEnabled = false);
 
     /// <summary>Sets the value of the <c>Service-Worker-Navigation-Preload</c> header (https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-setheadervalue).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-setheadervalue"/>
     [IdlMember("setHeaderValue", "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-setheadervalue")]
     public Task SetHeaderValue(string value)
     {
@@ -244,6 +265,7 @@ public sealed class NavigationPreloadManager
     }
 
     /// <summary>Returns the navigation preload state (https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-getstate).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-getstate"/>
     [IdlMember("getState", "https://w3c.github.io/ServiceWorker/#dom-navigationpreloadmanager-getstate")]
     public Task<NavigationPreloadState> GetState()
     {

@@ -4,34 +4,42 @@ using Meziantou.Framework.WebPlatform.Svg;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://svgwg.org/svg2-draft/coords.html#InterfaceSVGTransform</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransform"/>
 [IdlInterface("SVGTransform", "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransform")]
 public sealed class SvgTransform
 {
     /// <summary>The type of a transform that is not one of the other types.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_UNKNOWN"/>
     [IdlMember("SVG_TRANSFORM_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_UNKNOWN")]
     public const ushort SvgTransformUnknown = 0;
 
     /// <summary>The type of a transform defined by a matrix.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_MATRIX"/>
     [IdlMember("SVG_TRANSFORM_MATRIX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_MATRIX")]
     public const ushort SvgTransformMatrix = 1;
 
     /// <summary>The type of a translation.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_TRANSLATE"/>
     [IdlMember("SVG_TRANSFORM_TRANSLATE", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_TRANSLATE")]
     public const ushort SvgTransformTranslate = 2;
 
     /// <summary>The type of a scale.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SCALE"/>
     [IdlMember("SVG_TRANSFORM_SCALE", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SCALE")]
     public const ushort SvgTransformScale = 3;
 
     /// <summary>The type of a rotation.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_ROTATE"/>
     [IdlMember("SVG_TRANSFORM_ROTATE", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_ROTATE")]
     public const ushort SvgTransformRotate = 4;
 
     /// <summary>The type of a skew along the x axis.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SKEWX"/>
     [IdlMember("SVG_TRANSFORM_SKEWX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SKEWX")]
     public const ushort SvgTransformSkewX = 5;
 
     /// <summary>The type of a skew along the y axis.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SKEWY"/>
     [IdlMember("SVG_TRANSFORM_SKEWY", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__SVG_TRANSFORM_SKEWY")]
     public const ushort SvgTransformSkewY = 6;
 
@@ -50,6 +58,7 @@ public sealed class SvgTransform
     internal ISvgValueOwner? Owner { get; set; }
 
     /// <summary>Gets the type of the transform, one of the <c>SVG_TRANSFORM_*</c> constants.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__type"/>
     [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__type")]
     public ushort Type
     {
@@ -61,6 +70,7 @@ public sealed class SvgTransform
     }
 
     /// <summary>The matrix of the transform (https://svgwg.org/svg2-draft/coords.html#__svg__SVGTransform__matrix); modifying it changes the type to SVG_TRANSFORM_MATRIX.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__matrix"/>
     [IdlMember("matrix", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__matrix")]
     public DomMatrix Matrix
     {
@@ -72,6 +82,7 @@ public sealed class SvgTransform
     }
 
     /// <summary>Gets the angle, in degrees, of a rotation or skew transform, and 0 for the other types.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__angle"/>
     [IdlMember("angle", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__angle")]
     public float Angle
     {
@@ -83,6 +94,7 @@ public sealed class SvgTransform
     }
 
     /// <summary>Sets the transform to the given matrix and its type to <c>SVG_TRANSFORM_MATRIX</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setMatrix"/>
     [IdlMember("setMatrix", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setMatrix")]
     public void SetMatrix(DomMatrix2DInit? matrix = null)
     {
@@ -96,22 +108,27 @@ public sealed class SvgTransform
     }
 
     /// <summary>Sets the transform to a translation by the given offsets.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setTranslate"/>
     [IdlMember("setTranslate", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setTranslate")]
     public void SetTranslate(float tx, float ty) => Change(() => SetTranslateRaw(tx, ty));
 
     /// <summary>Sets the transform to a scale by the given factors.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setScale"/>
     [IdlMember("setScale", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setScale")]
     public void SetScale(float sx, float sy) => Change(() => SetScaleRaw(sx, sy));
 
     /// <summary>Sets the transform to a rotation by the given angle, in degrees, around the given center.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setRotate"/>
     [IdlMember("setRotate", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setRotate")]
     public void SetRotate(float angle, float cx, float cy) => Change(() => SetRotateRaw(angle, cx, cy));
 
     /// <summary>Sets the transform to a skew along the x axis by the given angle, in degrees.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewX"/>
     [IdlMember("setSkewX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewX")]
     public void SetSkewX(float angle) => Change(() => SetSkewRaw(SvgTransformSkewX, angle));
 
     /// <summary>Sets the transform to a skew along the y axis by the given angle, in degrees.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewY"/>
     [IdlMember("setSkewY", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewY")]
     public void SetSkewY(float angle) => Change(() => SetSkewRaw(SvgTransformSkewY, angle));
 

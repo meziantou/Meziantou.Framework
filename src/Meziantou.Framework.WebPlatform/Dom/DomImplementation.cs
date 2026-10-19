@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-domimplementation</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#domimplementation"/>
 [IdlInterface("DOMImplementation", "https://dom.spec.whatwg.org/#domimplementation")]
 public sealed class DomImplementation
 {
@@ -14,6 +15,7 @@ public sealed class DomImplementation
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype"/>
     [IdlMember("createDocumentType", "https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype")]
     public DocumentType CreateDocumentType(string name, string publicId, string systemId)
     {
@@ -27,6 +29,7 @@ public sealed class DomImplementation
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domimplementation-createdocument</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domimplementation-createdocument"/>
     [IdlMember("createDocument", "https://dom.spec.whatwg.org/#dom-domimplementation-createdocument")]
     public XmlDocument CreateDocument(string? @namespace, string qualifiedName, DocumentType? doctype = null)
     {
@@ -59,6 +62,7 @@ public sealed class DomImplementation
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-domimplementation-createhtmldocument</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domimplementation-createhtmldocument"/>
     [IdlMember("createHTMLDocument", "https://dom.spec.whatwg.org/#dom-domimplementation-createhtmldocument")]
     public Document CreateHtmlDocument(string? title = null)
     {
@@ -82,6 +86,7 @@ public sealed class DomImplementation
     }
 
     /// <summary>Useless; always returns true (https://dom.spec.whatwg.org/#dom-domimplementation-hasfeature).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-domimplementation-hasfeature"/>
     [IdlMember("hasFeature", "https://dom.spec.whatwg.org/#dom-domimplementation-hasfeature")]
     public bool HasFeature() => true;
 }

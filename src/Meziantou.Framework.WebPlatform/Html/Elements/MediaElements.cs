@@ -15,6 +15,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // Without a media backend, the elements have no media resource: nothing is fetched and no media event is fired.
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#timeranges</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#timeranges"/>
 [IdlInterface("TimeRanges", "https://html.spec.whatwg.org/multipage/media.html#timeranges")]
 public sealed class TimeRanges
 {
@@ -60,39 +61,47 @@ public sealed class TimeRanges
     internal ReadOnlySpan<MediaTimeRange> Ranges => _ranges;
 
     /// <summary>Gets the number of ranges in the object.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-length")]
     public uint Length => (uint)_ranges.Length;
 
     /// <summary>
     /// Returns the start time, in seconds, of the range at the given index; throws when the index is out of range.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-start"/>
     [IdlMember("start", "https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-start")]
     public double Start(uint index) => index < (uint)_ranges.Length ? _ranges[index].Start : throw DomException.IndexSize($"The index {index} is out of range");
 
     /// <summary>
     /// Returns the end time, in seconds, of the range at the given index; throws when the index is out of range.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-end"/>
     [IdlMember("end", "https://html.spec.whatwg.org/multipage/media.html#dom-timeranges-end")]
     public double End(uint index) => index < (uint)_ranges.Length ? _ranges[index].End : throw DomException.IndexSize($"The index {index} is out of range");
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#mediaerror</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#mediaerror"/>
 [IdlInterface("MediaError", "https://html.spec.whatwg.org/multipage/media.html#mediaerror")]
 public sealed class MediaError
 {
     /// <summary>The fetching of the media resource was aborted by the user.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_aborted"/>
     [IdlMember("MEDIA_ERR_ABORTED", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_aborted")]
     public const ushort MediaErrAborted = 1;
 
     /// <summary>A network error occurred while fetching the media resource.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_network"/>
     [IdlMember("MEDIA_ERR_NETWORK", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_network")]
     public const ushort MediaErrNetwork = 2;
 
     /// <summary>An error occurred while decoding the media resource.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_decode"/>
     [IdlMember("MEDIA_ERR_DECODE", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_decode")]
     public const ushort MediaErrDecode = 3;
 
     /// <summary>The media resource is not supported.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_src_not_supported"/>
     [IdlMember("MEDIA_ERR_SRC_NOT_SUPPORTED", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-media_err_src_not_supported")]
     public const ushort MediaErrSrcNotSupported = 4;
 
@@ -103,10 +112,12 @@ public sealed class MediaError
     }
 
     /// <summary>Gets the code of the error.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-code"/>
     [IdlMember("code", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-code")]
     public ushort Code { get; }
 
     /// <summary>Gets a message that describes the error.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-message"/>
     [IdlMember("message", "https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-message")]
     public string Message { get; }
 }
@@ -220,6 +231,7 @@ public partial class HtmlMediaElement
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets the last error of the element since its resource selection algorithm was last invoked, or null (https://html.spec.whatwg.org/multipage/media.html#dom-media-error).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-error"/>
     [IdlMember("error", "https://html.spec.whatwg.org/multipage/media.html#dom-media-error")]
     public MediaError? Error => _error;
 
@@ -227,6 +239,7 @@ public partial class HtmlMediaElement
     /// Gets the absolute URL of the current media resource (https://html.spec.whatwg.org/multipage/media.html#dom-media-currentsrc),
     /// or an empty string when there is none, or when it is a media provider object.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-currentsrc"/>
     [IdlMember("currentSrc", "https://html.spec.whatwg.org/multipage/media.html#dom-media-currentsrc")]
     public string CurrentSrc => _currentSrc;
 
@@ -238,6 +251,7 @@ public partial class HtmlMediaElement
     /// media element load algorithm.
     /// </summary>
     /// <exception cref="ArgumentException">The value is not a media provider object.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject"/>
     [IdlMember("srcObject", "https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject")]
     public object? SrcObject
     {
@@ -262,6 +276,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>Gets the current state of the network activity of the element (https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate"/>
     [IdlMember("networkState", "https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate")]
     public ushort NetworkState => _networkState;
 
@@ -281,6 +296,7 @@ public partial class HtmlMediaElement
     /// (<see cref="MediaBackend.CanPlayType"/>) for a valid MIME type other than <c>application/octet-stream</c>, else the
     /// empty string. Without a media backend, no media type can be played.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-navigator-canplaytype"/>
     [IdlMember("canPlayType", "https://html.spec.whatwg.org/multipage/media.html#dom-navigator-canplaytype")]
     public string CanPlayType(string type)
     {
@@ -335,6 +351,7 @@ public partial class HtmlMediaElement
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets or sets the default playback rate of the media (https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultplaybackrate).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultplaybackrate"/>
     [IdlMember("defaultPlaybackRate", "https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultplaybackrate")]
     public double DefaultPlaybackRate
     {
@@ -354,6 +371,7 @@ public partial class HtmlMediaElement
     /// The setter throws a <c>NotSupportedError</c> when the player does not support the rate
     /// (<see cref="MediaPlayer.SupportsPlaybackRate"/>).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-playbackrate"/>
     [IdlMember("playbackRate", "https://html.spec.whatwg.org/multipage/media.html#dom-media-playbackrate")]
     public double PlaybackRate
     {
@@ -398,6 +416,7 @@ public partial class HtmlMediaElement
     /// <summary>
     /// Gets or sets a value indicating whether the pitch of the audio is preserved when the playback rate changes.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-preservespitch"/>
     [IdlMember("preservesPitch", "https://html.spec.whatwg.org/multipage/media.html#dom-media-preservespitch")]
     public bool PreservesPitch
     {
@@ -410,6 +429,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/media.html#dom-media-volume</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-volume"/>
     [IdlMember("volume", "https://html.spec.whatwg.org/multipage/media.html#dom-media-volume")]
     public double Volume
     {
@@ -432,6 +452,7 @@ public partial class HtmlMediaElement
     /// https://html.spec.whatwg.org/multipage/media.html#dom-media-muted: whether the element is muted (see <see cref="IsMuted"/>).
     /// The setter sets the muted state (initially "default": the muted content attribute).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-muted"/>
     [IdlMember("muted", "https://html.spec.whatwg.org/multipage/media.html#dom-media-muted")]
     public bool Muted
     {
@@ -472,10 +493,12 @@ public partial class HtmlMediaElement
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets the audio tracks of the media resource (https://html.spec.whatwg.org/multipage/media.html#dom-media-audiotracks).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-audiotracks"/>
     [IdlMember("audioTracks", "https://html.spec.whatwg.org/multipage/media.html#dom-media-audiotracks")]
     public AudioTrackList AudioTracks => field ??= new AudioTrackList(this);
 
     /// <summary>Gets the video tracks of the media resource (https://html.spec.whatwg.org/multipage/media.html#dom-media-videotracks).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-videotracks"/>
     [IdlMember("videoTracks", "https://html.spec.whatwg.org/multipage/media.html#dom-media-videotracks")]
     public VideoTrackList VideoTracks => field ??= new VideoTrackList(this);
 

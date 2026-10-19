@@ -13,6 +13,9 @@ internal sealed class IccPipeline
     /// <summary>The largest number of components a stage reads or writes.</summary>
     public const int MaxChannels = 4;
 
+    /// <summary>The number of colors that the kernels convert together, stored by component (<see cref="IccStage.ApplyBatch"/>).</summary>
+    public const int BatchSize = 64;
+
     /// <summary>
     /// The colors whose output curves are evaluated before <see cref="GetByteOutputTables"/> builds the tables: building
     /// the table of a curve costs about 40,000 evaluations of the curve (0.3 to 1 ms), which saves 4 to 45 ns per sample
@@ -96,6 +99,9 @@ internal sealed class IccPipeline
 
     /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
     internal IccInverseCurve[]? OutputCurves => _outputCurves;
+
+    /// <summary>Gets the number of stages.</summary>
+    internal int StageCount => _stages.Length;
 
     /// <summary>Gets the number of device channels of the source profile.</summary>
     public int SourceChannelCount { get; }
@@ -276,7 +282,15 @@ internal sealed class IccPipeline
         var tables = new QuantizationThresholds[curves.Length];
         for (var channel = 0; channel < tables.Length; channel++)
         {
+            // The channels whose curve is the same curve (the same tag of the profile) share its table
             var curve = curves[channel];
+            var shared = Array.FindIndex(curves, 0, channel, other => ReferenceEquals(other, curve));
+            if (shared >= 0)
+            {
+                tables[channel] = tables[shared];
+                continue;
+            }
+
             if (QuantizationThresholds.Create(value => IccByteSample.Store(curve.Evaluate(value)), byte.MaxValue) is not { } table)
                 return NoByteOutputTables;
 
@@ -284,6 +298,18 @@ internal sealed class IccPipeline
         }
 
         return tables;
+    }
+
+    /// <summary>
+    /// Applies the stages from <paramref name="first"/> to <paramref name="end"/> (excluded) to colors stored by component
+    /// (<see cref="IccStage.ApplyBatch"/>), with the results of <see cref="Apply"/> for each color.
+    /// </summary>
+    public void ApplyBatch(Span<double> components, int count, int first, int end)
+    {
+        for (var i = first; i < end; i++)
+        {
+            _stages[i].ApplyBatch(components, count);
+        }
     }
 
     /// <summary>Converts one color in place, starting after the first stage: the values come from <see cref="ByteInputTables"/>.</summary>

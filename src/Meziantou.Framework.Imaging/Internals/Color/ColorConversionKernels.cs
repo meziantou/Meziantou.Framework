@@ -76,72 +76,116 @@ internal static class ColorConversionKernels
         where T : unmanaged
         where TSample : struct, IIccSample<T>
     {
-        if (typeof(T) == typeof(byte) && pipeline.ByteInputTables is { } tables)
+        if (pipeline.IsIdentity)
         {
-            if (pipeline.HasLookupTable)
-            {
-                ConvertBytesCached(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
-            }
-            else
-            {
-                ConvertBytes(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
-            }
-
+            ConvertScalar<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder);
             return;
         }
 
-        ConvertScalar<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder);
+        if (typeof(T) == typeof(byte) && pipeline.HasLookupTable && pipeline.ByteInputTables is { } tables)
+        {
+            ConvertBytesCached(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
+            return;
+        }
+
+        ConvertBatches<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder);
     }
 
     /// <summary>
-    /// Converts interleaved 8-bit colors like <see cref="ConvertScalar"/>, reading the first stage (one curve per source
-    /// channel) from the tables of the pipeline instead of evaluating the curves for each sample, and, once the pipeline
-    /// has them, the 8-bit samples of the last stage (one curve per destination channel) from its threshold tables.
+    /// Converts interleaved colors like <see cref="ConvertScalar"/>, <see cref="IccPipeline.BatchSize"/> colors at a time
+    /// stored by component (<see cref="IccPipeline.ApplyBatch"/>), so that each stage loops over the colors instead of
+    /// being called for each of them. The first stage of 8-bit colors (one curve per source channel) is read from the
+    /// tables of the pipeline, and once the pipeline has them, the 8-bit samples of the last stage (one curve per
+    /// destination channel) are read from its threshold tables: every color gets the samples of <see cref="ConvertScalar"/>.
     /// </summary>
-    private static void ConvertBytes(IccPipeline pipeline, double[][] tables, ReadOnlySpan<byte> source, Span<byte> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
+    private static void ConvertBatches<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
+        where T : unmanaged
+        where TSample : struct, IIccSample<T>
     {
         var sourceChannels = pipeline.SourceChannelCount;
         var destinationChannels = pipeline.DestinationChannelCount;
         var copied = sourceStride - sourceChannels;
-        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
-        Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels];
-        kept = kept[..copied];
+        Debug.Assert(copied is >= 0 and <= IccPipeline.MaxChannels && copied == destinationStride - destinationChannels);
+        Debug.Assert(!reverseColorOrder || (sourceChannels == 3 && destinationChannels == 3));
         var count = source.Length / sourceStride;
-        var outputTables = pipeline.GetByteOutputTables(count);
-        for (var i = 0; i < count; i++)
+        var byteTables = typeof(T) == typeof(byte) ? pipeline.ByteInputTables : null;
+        var outputTables = byteTables is not null ? pipeline.GetByteOutputTables(count) : null;
+        var firstStage = byteTables is not null ? 1 : 0;
+        var endStage = outputTables is not null ? pipeline.StageCount - 1 : pipeline.StageCount;
+
+        // Component c of color i of the batch is at c * BatchSize + i; the samples copied unchanged are kept apart, so that
+        // the whole batch is read before anything is written (the spans may be the same)
+        Span<double> components = stackalloc double[IccPipeline.MaxChannels * IccPipeline.BatchSize];
+        Span<T> kept = stackalloc T[IccPipeline.MaxChannels * IccPipeline.BatchSize];
+        for (var start = 0; start < count; start += IccPipeline.BatchSize)
         {
-            // The whole source color is read before the destination is written: the spans may be the same
-            var input = source.Slice(i * sourceStride, sourceStride);
+            var batch = Math.Min(IccPipeline.BatchSize, count - start);
+            var input = source.Slice(start * sourceStride, batch * sourceStride);
             for (var channel = 0; channel < sourceChannels; channel++)
             {
-                values[channel] = tables[channel][input[reverseColorOrder ? 2 - channel : channel]];
-            }
-
-            input[sourceChannels..].CopyTo(kept);
-            var output = destination.Slice(i * destinationStride, destinationStride);
-            if (outputTables is null)
-            {
-                pipeline.ApplyAfterInputCurves(values);
-                for (var channel = 0; channel < destinationChannels; channel++)
+                var values = components.Slice(channel * IccPipeline.BatchSize, batch);
+                var offset = reverseColorOrder ? 2 - channel : channel;
+                if (byteTables is not null)
                 {
-                    output[reverseColorOrder ? 2 - channel : channel] = IccByteSample.Store(values[channel]);
+                    LoadFromTable(byteTables[channel], unsafe(MemoryMarshal.Cast<T, byte>(input)), offset, sourceStride, values);
                 }
-            }
-            else
-            {
-                pipeline.ApplyBetweenCurves(values);
-                for (var channel = 0; channel < destinationChannels; channel++)
+                else
                 {
-                    output[reverseColorOrder ? 2 - channel : channel] = (byte)outputTables[channel].Quantize(values[channel]);
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        values[i] = TSample.Load(input[(i * sourceStride) + offset]);
+                    }
                 }
             }
 
-            kept.CopyTo(output[destinationChannels..]);
+            for (var i = 0; i < batch && copied > 0; i++)
+            {
+                input.Slice((i * sourceStride) + sourceChannels, copied).CopyTo(kept[(i * copied)..]);
+            }
+
+            pipeline.ApplyBatch(components, batch, firstStage, endStage);
+
+            var output = destination.Slice(start * destinationStride, batch * destinationStride);
+            for (var channel = 0; channel < destinationChannels; channel++)
+            {
+                var values = components.Slice(channel * IccPipeline.BatchSize, batch);
+                var offset = reverseColorOrder ? 2 - channel : channel;
+                if (outputTables is not null)
+                {
+                    var table = outputTables[channel];
+                    var bytes = unsafe(MemoryMarshal.Cast<T, byte>(output));
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        bytes[(i * destinationStride) + offset] = (byte)table.Quantize(values[i]);
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        output[(i * destinationStride) + offset] = TSample.Store(values[i]);
+                    }
+                }
+            }
+
+            for (var i = 0; i < batch && copied > 0; i++)
+            {
+                kept.Slice(i * copied, copied).CopyTo(output[((i * destinationStride) + destinationChannels)..]);
+            }
+        }
+    }
+
+    // Reads the first stage of one channel of a batch from its table
+    private static void LoadFromTable(ReadOnlySpan<double> table, ReadOnlySpan<byte> input, int offset, int stride, Span<double> values)
+    {
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = table[input[(i * stride) + offset]];
         }
     }
 
     /// <summary>
-    /// Converts interleaved 8-bit colors like <see cref="ConvertBytes"/>, for the conversions that interpolate a color lookup
+    /// Converts interleaved 8-bit colors like <see cref="ConvertBatches"/>, for the conversions that interpolate a color lookup
     /// table (<see cref="IccPipeline.HasLookupTable"/>, hundreds of operations per color). The conversion of a color depends
     /// only on its samples, and photographs repeat colors within a row (flat or smooth areas): the colors of the call are
     /// remembered in a small direct-mapped cache (<see cref="CacheSize"/> entries, keyed by the packed source samples), and

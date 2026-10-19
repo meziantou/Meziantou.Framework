@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -220,5 +222,6 @@ internal sealed class IccCurve
     }
 
     /// <summary>Clips a value to [0, 1]; a value that is not a number becomes 0.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static double Clip(double value) => value >= 1 ? 1 : value > 0 ? value : 0;
 }

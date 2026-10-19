@@ -464,7 +464,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`ColorProfileFuzzTests`).
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
-  proven so in `VectorizedKernelTests`.
+  proven so in `VectorizedKernelTests`. `ColorConversionKernels.Convert` converts 64 colors at a time stored by
+  component (`IccStage.ApplyBatch`): the stages of matrix-based conversions loop over the colors (the matrix in vectors,
+  each lane with the products and sums of the scalar stage, in the same order, without fused multiply-add), the others
+  apply their scalar stage to each color.
 - The source of `ConvertColorProfile` may be the CICP color description of an image without profile, or the `cicp`
   tag of an ICC profile of PQ or HLG samples (`IccProfile.Cicp`, whose curves only approximate the functions)
   (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of

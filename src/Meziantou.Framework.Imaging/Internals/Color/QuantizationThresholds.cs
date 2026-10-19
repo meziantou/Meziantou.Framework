@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -147,6 +148,7 @@ internal sealed class QuantizationThresholds
     }
 
     /// <summary>Gets the sample of an input: the sample of the function the table was created from.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Quantize(double value)
     {
         // Values up to 0 and values that are not a number have the sample of 0

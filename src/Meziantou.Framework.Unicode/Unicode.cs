@@ -1,8 +1,12 @@
+using System.Buffers;
+
 namespace Meziantou.Framework;
 
 /// <summary>Provides Unicode helper methods.</summary>
 public static partial class Unicode
 {
+    private static string?[]? s_confusableReplacements;
+
     /// <summary>Replaces confusable Unicode characters using the Unicode confusables table.</summary>
     /// <param name="str">The text to normalize.</param>
     /// <returns>The text with confusable characters replaced.</returns>
@@ -11,60 +15,7 @@ public static partial class Unicode
     {
         ArgumentNullException.ThrowIfNull(str);
 
-        var start = IndexOfFirstConfusable(str);
-        if (start < 0)
-            return str;
-
-        // Some replacements are longer than their source, so leave a little room to grow.
-        var sb = new StringBuilder(str.Length + 16);
-        sb.Append(str, 0, start);
-
-        var index = start;
-        while (index < str.Length)
-        {
-            if (!Rune.TryGetRuneAt(str, index, out var rune))
-            {
-                sb.Append(str[index]);
-                index++;
-                continue;
-            }
-
-            if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
-            {
-                sb.Append(replacement);
-            }
-            else
-            {
-                // Append from the source string rather than the Rune: there is no
-                // StringBuilder.Append(Rune) overload before .NET 11, so appending the Rune
-                // would box it and allocate a string for every character on net10.0.
-                sb.Append(str, index, rune.Utf16SequenceLength);
-            }
-
-            index += rune.Utf16SequenceLength;
-        }
-
-        return sb.ToString();
-    }
-
-    private static int IndexOfFirstConfusable(string str)
-    {
-        var index = 0;
-        while (index < str.Length)
-        {
-            if (!Rune.TryGetRuneAt(str, index, out var rune))
-            {
-                index++;
-                continue;
-            }
-
-            if (UnicodeConfusablesData.TryGetReplacement(rune, out _))
-                return index;
-
-            index += rune.Utf16SequenceLength;
-        }
-
-        return -1;
+        return MapConfusableCharacters(str);
     }
 
     /// <summary>Replaces a confusable Unicode character using the Unicode confusables table.</summary>
@@ -73,10 +24,13 @@ public static partial class Unicode
     /// <seealso href="https://unicode.org/reports/tr39/" />
     public static string ReplaceConfusablesCharacters(Rune rune)
     {
-        if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
-            return replacement ?? rune.ToString();
+        var mapping = UnicodeConfusablesData.FindMapping(rune.Value);
+        if (mapping < 0)
+            return rune.ToString();
 
-        return rune.ToString();
+        // The replacements are cached: a caller that maps characters one by one does not allocate a string for each.
+        var replacements = s_confusableReplacements ??= new string?[UnicodeConfusablesData.Count];
+        return replacements[mapping] ??= UnicodeConfusablesData.GetReplacement(mapping).ToString();
     }
 
     /// <summary>Replaces a confusable Unicode character using the Unicode confusables table.</summary>
@@ -88,10 +42,7 @@ public static partial class Unicode
         if (!Rune.TryCreate(value, out var rune))
             return value.ToString();
 
-        if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
-            return replacement ?? rune.ToString();
-
-        return rune.ToString();
+        return ReplaceConfusablesCharacters(rune);
     }
 
     /// <summary>Determines whether a Unicode character has a confusable replacement.</summary>
@@ -100,7 +51,7 @@ public static partial class Unicode
     /// <seealso href="https://unicode.org/reports/tr39/" />
     public static bool IsConfusableCharacter(Rune rune)
     {
-        return UnicodeConfusablesData.TryGetReplacement(rune, out _);
+        return UnicodeConfusablesData.IsConfusable(rune.Value);
     }
 
     public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters => UnicodeCharacterInfos.AllCharacters;
@@ -208,31 +159,64 @@ public static partial class Unicode
 
     private static string MapConfusableCharacters(string value)
     {
-        StringBuilder? sb = null;
-        var index = 0;
+        var index = IndexOfFirstConfusable(value);
+        if (index < 0)
+            return value;
+
+        // Some replacements are longer than their source, so leave a little room to grow.
+        var sb = new StringBuilder(value.Length + 16);
+        sb.Append(value, 0, index);
         while (index < value.Length)
         {
             if (!Rune.TryGetRuneAt(value, index, out var rune))
             {
-                sb?.Append(value[index]);
+                sb.Append(value[index]);
                 index++;
                 continue;
             }
 
-            if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
+            if (UnicodeConfusablesData.TryGetReplacement(rune.Value, out var replacement))
             {
-                sb ??= new StringBuilder(value.Length + 16).Append(value, 0, index);
                 sb.Append(replacement);
-            }
-            else
-            {
-                sb?.Append(value, index, rune.Utf16SequenceLength);
+                index += rune.Utf16SequenceLength;
+                continue;
             }
 
+            // Copy the run of characters that are not confusable at once: most of a text is not.
+            var start = index;
             index += rune.Utf16SequenceLength;
+            var next = IndexOfFirstConfusable(value.AsSpan(index));
+            index = next < 0 ? value.Length : index + next;
+            sb.Append(value, start, index - start);
         }
 
-        return sb?.ToString() ?? value;
+        return sb.ToString();
+    }
+
+    private static int IndexOfFirstConfusable(ReadOnlySpan<char> value)
+    {
+        var index = 0;
+        while (index < value.Length)
+        {
+            // Most ASCII characters are not confusable: skip them with a vectorized search.
+            if (value[index] < 0x80)
+            {
+                var next = value[index..].IndexOfAnyExcept(ConfusableSearch.AsciiNonConfusables);
+                if (next < 0)
+                    return -1;
+
+                index += next;
+            }
+
+            // An unpaired surrogate is not confusable: it decodes as U+FFFD, which is not either, and is skipped.
+            _ = Rune.DecodeFromUtf16(value[index..], out var rune, out var charsConsumed);
+            if (UnicodeConfusablesData.IsConfusable(rune.Value))
+                return index;
+
+            index += charsConsumed;
+        }
+
+        return -1;
     }
 
     private static void ThrowIfNotWellFormed(string value, string parameterName)
@@ -250,6 +234,27 @@ public static partial class Unicode
             }
 
             throw new ArgumentException("The string contains an unpaired surrogate", parameterName);
+        }
+    }
+
+    /// <summary>Holds the search values of <see cref="IndexOfFirstConfusable(ReadOnlySpan{char})"/>, created on first use only.</summary>
+    private static class ConfusableSearch
+    {
+        public static readonly SearchValues<char> AsciiNonConfusables = Create();
+
+        private static SearchValues<char> Create()
+        {
+            Span<char> values = stackalloc char[128];
+            var count = 0;
+            for (var c = '\0'; c < 128; c++)
+            {
+                if (!UnicodeConfusablesData.IsConfusable(c))
+                {
+                    values[count++] = c;
+                }
+            }
+
+            return SearchValues.Create(values[..count]);
         }
     }
 }

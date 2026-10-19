@@ -39,7 +39,8 @@ internal static partial class UnicodeCharacterInfos
         private readonly int[] _namedCodePoints;
         private readonly int[] _nameBucketOffsets;
         private readonly int _nameTextStart;
-        private string?[]? _names;
+        // The decoded names, by bucket: a program that reads a few names does not allocate a slot for every one.
+        private readonly string?[]?[] _names;
 
         private readonly string[] _rangeNames;
         private readonly int[] _rangeNameStarts;
@@ -118,6 +119,7 @@ internal static partial class UnicodeCharacterInfos
             var namedCount = ReadVarInt(span, ref position);
             _namedCodePoints = ReadCodePoints(span, ref position, namedCount);
             _nameBucketOffsets = new int[(namedCount + NameBucketSize - 1) / NameBucketSize];
+            _names = new string?[]?[_nameBucketOffsets.Length];
             var offset = 0;
             for (var i = 0; i < _nameBucketOffsets.Length; i++)
             {
@@ -235,13 +237,14 @@ internal static partial class UnicodeCharacterInfos
         {
             // Caching keeps a code point looked up more than once from decoding and allocating its
             // name again, which the eagerly expanded table this replaced did for free.
-            var names = _names ?? CreateCache(ref _names, _namedCodePoints.Length);
-            var name = names[index];
+            var bucket = index / NameBucketSize;
+            var names = _names[bucket] ?? CreateCache(ref _names[bucket], NameBucketSize);
+            var name = names[index % NameBucketSize];
             if (name is not null)
                 return name;
 
             var span = _data.AsSpan();
-            var position = _nameTextStart + _nameBucketOffsets[index / NameBucketSize];
+            var position = _nameTextStart + _nameBucketOffsets[bucket];
             Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
             var length = 0;
             for (var i = index - (index % NameBucketSize); i <= index; i++)
@@ -250,7 +253,7 @@ internal static partial class UnicodeCharacterInfos
             }
 
             name = Encoding.UTF8.GetString(buffer[..length]);
-            names[index] = name;
+            names[index % NameBucketSize] = name;
             return name;
         }
 

@@ -111,6 +111,11 @@ public ref struct UnicodeLineBreakEnumerator
 
         while (true)
         {
+            if (_previous.Class is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric && _wordBreak is not UnicodeWordBreakBehavior.BreakAll)
+            {
+                SkipAsciiLettersAndDigits();
+            }
+
             var next = Peek(0);
             if (next.Class is EndOfText)
             {
@@ -416,6 +421,40 @@ public ref struct UnicodeLineBreakEnumerator
         return offset < LineBreakDictionary.PieceLength && (_wordStarts[offset >> 6] & (1UL << (offset & 63))) != 0;
     }
 
+    /// <summary>Moves the position over the ASCII letters and digits that follow a letter or a digit, but the last one.</summary>
+    /// <remarks>
+    /// There is no break between a letter or a digit and an ASCII letter or digit (rules LB23, LB25 and LB28), and
+    /// what the rules remember after them only depends on the last two. The last one is read as usual: a combining
+    /// mark can follow it (LB9).
+    /// </remarks>
+    private void SkipAsciiLettersAndDigits()
+    {
+        // The runs are words: a loop is faster than a vectorized search for them.
+        var end = _position;
+        while (end < _text.Length && char.IsAsciiLetterOrDigit(_text[end]))
+        {
+            end++;
+        }
+
+        var skipped = end - _position - 1;
+        if (skipped <= 0)
+            return;
+
+        end = _position + skipped;
+        _beforePrevious = skipped >= 2 ? CreateAsciiUnit(end - 2) : _previous;
+        _previous = CreateAsciiUnit(end - 1);
+        _beforeSpaces = _previous.Class;
+        _isAfterOpeningQuote = false;
+        _number = _previous.Class is LineBreak.Numeric ? 1 : 0;
+        _regionalIndicators = 0;
+        _position = end;
+
+        // The units read ahead start at the old position: they are read again.
+        _readAhead = 0;
+    }
+
+    private readonly Unit CreateAsciiUnit(int index) => new(char.IsAsciiDigit(_text[index]) ? LineBreak.Numeric : LineBreak.Alphabetic, 0, index + 1, endsWithJoiner: false);
+
     /// <summary>Moves the position after the next unit and updates what the rules remember of the text before it.</summary>
     private void Consume()
     {
@@ -504,6 +543,10 @@ public ref struct UnicodeLineBreakEnumerator
             // LB9
             while (index < _text.Length)
             {
+                // The printable ASCII characters are not combining marks: most text does not need the lookup.
+                if (_text[index] is >= ' ' and <= '~')
+                    break;
+
                 var mark = Resolve(UnicodeProperties.GetLineBreakTuple(Unicode.DecodeAt(_text, index, out length)), out _);
                 if (mark is not (LineBreak.CombiningMark or LineBreak.ZWJ))
                     break;

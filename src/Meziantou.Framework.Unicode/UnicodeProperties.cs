@@ -290,7 +290,7 @@ public static class UnicodeProperties
     {
         // 6-byte entries: the code point, the offset of its mappings in the pool, then the lengths of the mappings.
         var records = UnicodeTables.SpecialCasingMappings;
-        var offset = UnicodeTableReader.FindRecord(records, 6, codePoint);
+        var offset = UnicodeTables.MayHaveSpecialCasing(codePoint) ? UnicodeTableReader.FindRecord(records, 6, codePoint) : -1;
         if (offset < 0)
         {
             if (destination.IsEmpty)

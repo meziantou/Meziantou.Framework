@@ -16,6 +16,10 @@ public static class UnicodeIdna
 {
     private const string AcePrefix = "xn--";
 
+    // The longest label, in code points, that can be encoded within the 63 characters of a DNS label: Punycode writes
+    // at least one character per code point, after the ACE prefix.
+    private const int MaxEncodableLabelLength = 63 - 4;
+
     /// <summary>Converts a domain name to its ASCII form (ToASCII), with the default options.</summary>
     /// <param name="domainName">The domain name, such as <c>Bücher.example</c>.</param>
     /// <param name="result">The ASCII form, such as <c>xn--bcher-kva.example</c>, when the method returns <see langword="true"/>.</param>
@@ -35,6 +39,15 @@ public static class UnicodeIdna
         options ??= UnicodeIdnaOptions.Default;
 
         result = null;
+        if (TryProcessAscii(domainName, options, out var asciiResult, out var asciiHasErrors))
+        {
+            if (asciiHasErrors || (options.VerifyDnsLength && !HasValidDnsLength(asciiResult)))
+                return false;
+
+            result = asciiResult;
+            return true;
+        }
+
         var labels = Process(domainName, options, out var hasErrors);
         if (hasErrors)
             return false;
@@ -44,6 +57,10 @@ public static class UnicodeIdna
             var label = labels[i];
             if (!Ascii.IsValid(label))
             {
+                // Encoding is quadratic in the length of the label: do not encode a label that cannot fit anyway.
+                if (options.VerifyDnsLength && GetCodePointCount(label) > MaxEncodableLabelLength)
+                    return false;
+
                 if (!TryEncodePunycode(label, out var encoded))
                     return false;
 
@@ -87,7 +104,19 @@ public static class UnicodeIdna
     public static string ToUnicode(string domainName, UnicodeIdnaOptions? options, out bool hasErrors)
     {
         ArgumentNullException.ThrowIfNull(domainName);
-        var labels = Process(domainName, options ?? UnicodeIdnaOptions.Default, out hasErrors);
+        options ??= UnicodeIdnaOptions.Default;
+        if (TryProcessAscii(domainName, options, out var asciiResult, out hasErrors))
+        {
+            // X4_2: an empty label is an error, except the root label after a trailing dot
+            if (asciiResult.Length == 0 || asciiResult[0] == '.' || asciiResult.Contains("..", StringComparison.Ordinal))
+            {
+                hasErrors = true;
+            }
+
+            return asciiResult;
+        }
+
+        var labels = Process(domainName, options, out hasErrors);
 
         // X4_2: an empty label is an error, except the root label after a trailing dot
         for (var i = 0; i < labels.Length; i++)
@@ -123,6 +152,78 @@ public static class UnicodeIdna
         return result is not null;
     }
 
+    /// <summary>Processes a domain name made of ASCII letters, digits, hyphens and dots only, which is the common case.</summary>
+    /// <returns><see langword="false"/> when the domain name has other characters, or a label that needs the full processing.</returns>
+    /// <remarks>
+    /// Such a domain name maps to its lowercase form, is normalized, has no bidi character and no joiner, and every
+    /// one of its characters is valid with the STD3 rules: only the hyphens of its labels remain to be checked.
+    /// </remarks>
+    private static bool TryProcessAscii(string domainName, UnicodeIdnaOptions options, [NotNullWhen(true)] out string? result, out bool hasErrors)
+    {
+        result = null;
+        hasErrors = false;
+
+        // A label with "--" can be an ACE label to decode, or is invalid because of its hyphens: leave it to the full
+        // processing.
+        foreach (var c in domainName)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('-' or '.'))
+                return false;
+        }
+
+        if (domainName.Contains("--", StringComparison.Ordinal))
+            return false;
+
+        result = domainName.AsSpan().ContainsAnyInRange('A', 'Z')
+            ? string.Create(domainName.Length, domainName, (destination, value) => Ascii.ToLower(value, destination, out _))
+            : domainName;
+
+        if (options.CheckHyphens)
+        {
+            foreach (var range in result.AsSpan().Split('.'))
+            {
+                var label = result.AsSpan(range);
+                if (label.Length > 0 && (label[0] == '-' || label[^1] == '-'))
+                {
+                    hasErrors = true;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Checks the lengths of the labels and of an ASCII domain name (VerifyDnsLength).</summary>
+    private static bool HasValidDnsLength(string domainName)
+    {
+        // A4_1 and A4_2: an empty label, including the root label after a trailing dot, is an error
+        if (domainName.Length > 253)
+            return false;
+
+        foreach (var range in domainName.AsSpan().Split('.'))
+        {
+            if (range.GetOffsetAndLength(domainName.Length).Length is < 1 or > 63)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static int GetCodePointCount(string value)
+    {
+        var count = value.Length;
+        for (var i = 0; i < value.Length - 1; i++)
+        {
+            if (char.IsHighSurrogate(value[i]) && char.IsLowSurrogate(value[i + 1]))
+            {
+                count--;
+                i++;
+            }
+        }
+
+        return count;
+    }
+
     /// <summary>https://www.unicode.org/reports/tr46/#Processing</summary>
     private static string[] Process(string domainName, UnicodeIdnaOptions options, out bool hasErrors)
     {
@@ -130,6 +231,7 @@ public static class UnicodeIdna
 
         // 1. Map
         var mapped = new StringBuilder(domainName.Length);
+        Span<char> encodedRune = stackalloc char[2];
         foreach (var rune in domainName.EnumerateRunes())
         {
             switch (GetStatus(rune.Value))
@@ -154,7 +256,8 @@ public static class UnicodeIdna
                     break;
 
                 default:
-                    mapped.Append(rune);
+                    // There is no StringBuilder.Append(Rune) before .NET 11: appending the Rune would box it.
+                    mapped.Append(encodedRune[..rune.EncodeToUtf16(encodedRune)]);
                     break;
             }
         }
@@ -486,9 +589,11 @@ public static class UnicodeIdna
             }
 
             var builder = new StringBuilder(output.Count);
+            Span<char> encodedRune = stackalloc char[2];
             foreach (var codePoint in output)
             {
-                builder.Append(new Rune(codePoint));
+                // There is no StringBuilder.Append(Rune) before .NET 11: appending the Rune would box it.
+                builder.Append(encodedRune[..new Rune(codePoint).EncodeToUtf16(encodedRune)]);
             }
 
             return builder.ToString();

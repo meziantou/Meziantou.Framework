@@ -27,15 +27,38 @@ public static partial class Unicode
     {
         ArgumentNullException.ThrowIfNull(value);
 
+        // The ASCII letters are Latin and the other ASCII characters are Common, and none has Script_Extensions: an
+        // ASCII string has a single script.
+        var index = value.AsSpan().IndexOfAnyExceptInRange('\0', '\u007F');
+        if (index < 0)
+            return true;
+
         Span<ulong> resolved = stackalloc ulong[ScriptWordCount];
         Span<ulong> current = stackalloc ulong[ScriptWordCount];
         resolved.Fill(ulong.MaxValue);
 
-        foreach (var rune in value.EnumerateRunes())
+        // The resolved set is {Latin} after the ASCII prefix when it has a letter.
+        var asciiPrefix = value.AsSpan(0, index);
+        if (asciiPrefix.ContainsAnyInRange('A', 'Z') || asciiPrefix.ContainsAnyInRange('a', 'z'))
+        {
+            resolved.Clear();
+            SetScript(resolved, (int)UnicodeScript.Latin);
+        }
+
+        foreach (var rune in value.AsSpan(index).EnumerateRunes())
         {
             current.Clear();
-            if (!TryGetAugmentedScriptSet(rune, current))
+            if (rune.IsAscii)
+            {
+                if (!char.IsAsciiLetter((char)rune.Value))
+                    continue;
+
+                SetScript(current, (int)UnicodeScript.Latin);
+            }
+            else if (!TryGetAugmentedScriptSet(rune, current))
+            {
                 continue;
+            }
 
             var empty = true;
             for (var i = 0; i < resolved.Length; i++)

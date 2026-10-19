@@ -66,6 +66,15 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void ReplaceConfusablesCharacters_RuneOverload_ReusesTheReplacement()
+    {
+        var replacement = Unicode.ReplaceConfusablesCharacters(new Rune(0x00BD));
+        Assert.Equal("l/2", replacement);
+        Assert.Same(replacement, Unicode.ReplaceConfusablesCharacters(new Rune(0x00BD)));
+        Assert.Equal("A", Unicode.ReplaceConfusablesCharacters('A'));
+    }
+
+    [Fact]
     public void IsConfusableCharacter_ReturnsExpectedValue()
     {
         Assert.True(Unicode.IsConfusableCharacter(new Rune('\u0410')));
@@ -1082,6 +1091,65 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void AsciiCharacters_HaveThePropertiesOfTheAsciiFastPaths()
+    {
+        // The ASCII fast paths of the segmentation, the script runs, IsSingleScript and IDNA rely on these values.
+        var buffer = new UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+        for (var codePoint = 0; codePoint < 0x80; codePoint++)
+        {
+            var c = (char)codePoint;
+            var expectedScript = char.IsAsciiLetter(c) ? UnicodeScript.Latin : UnicodeScript.Common;
+            Assert.Equal(1, UnicodeScripts.GetScriptExtensions(codePoint, buffer));
+            Assert.Equal(expectedScript, buffer[0]);
+
+            if (char.IsAsciiLetter(c))
+            {
+                Assert.Equal(UnicodeLineBreakClass.Alphabetic, UnicodeProperties.GetLineBreakClass(codePoint));
+                Assert.Equal(UnicodeWordBreak.ALetter, UnicodeProperties.GetWordBreak(codePoint));
+                Assert.Equal(UnicodeEastAsianWidth.Narrow, UnicodeProperties.GetEastAsianWidth(codePoint));
+            }
+            else if (char.IsAsciiDigit(c))
+            {
+                Assert.Equal(UnicodeLineBreakClass.Numeric, UnicodeProperties.GetLineBreakClass(codePoint));
+                Assert.Equal(UnicodeWordBreak.Numeric, UnicodeProperties.GetWordBreak(codePoint));
+                Assert.Equal(UnicodeEastAsianWidth.Narrow, UnicodeProperties.GetEastAsianWidth(codePoint));
+            }
+
+            if (c is >= ' ' and <= '~')
+            {
+                Assert.False(UnicodeProperties.GetLineBreakClass(codePoint) is UnicodeLineBreakClass.CombiningMark or UnicodeLineBreakClass.ZWJ);
+            }
+        }
+
+        Assert.Equal(UnicodeWordBreak.ExtendNumLet, UnicodeProperties.GetWordBreak('_'));
+    }
+
+    [Fact]
+    public void CodePointsBelowU0300_NeverExtendAGraphemeCluster()
+    {
+        // GetGraphemeClusterLength breaks between two of them without looking them up.
+        for (var codePoint = 0; codePoint < 0x300; codePoint++)
+        {
+            Assert.True(UnicodeProperties.GetGraphemeClusterBreak(codePoint) is UnicodeGraphemeClusterBreak.Other or UnicodeGraphemeClusterBreak.Control
+                or UnicodeGraphemeClusterBreak.CR or UnicodeGraphemeClusterBreak.LF);
+            Assert.Equal(UnicodeIndicConjunctBreak.None, UnicodeProperties.GetIndicConjunctBreak(codePoint));
+        }
+    }
+
+    [Fact]
+    public void CodePointsBelowU0590_AreNotRightToLeft()
+    {
+        // MayRequireBidi, and the shortcut of ResolveLevels for left-to-right text, skip them.
+        for (var codePoint = 0; codePoint < 0x590; codePoint++)
+        {
+            Assert.False(UnicodeProperties.GetBidiClass(codePoint) is UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic
+                or UnicodeBidirectionalCategory.ArabicNumber or UnicodeBidirectionalCategory.LeftToRightEmbedding or UnicodeBidirectionalCategory.LeftToRightOverride
+                or UnicodeBidirectionalCategory.RightToLeftEmbedding or UnicodeBidirectionalCategory.RightToLeftOverride
+                or UnicodeBidirectionalCategory.LeftToRightIsolate or UnicodeBidirectionalCategory.RightToLeftIsolate or UnicodeBidirectionalCategory.FirstStrongIsolate);
+        }
+    }
+
+    [Fact]
     public void GetScriptExtensions_ThrowsWhenTheDestinationIsTooSmall()
     {
         Assert.Throws<ArgumentException>("destination", () => UnicodeScripts.GetScriptExtensions(0x0041, []));
@@ -1151,6 +1219,10 @@ public sealed class UnicodeTests
     [InlineData("\u1100\u1161\u11A8\uAC00", new[] { 3, 1 })]
     // A Devanagari conjunct: consonant, virama, consonant.
     [InlineData("\u0915\u094D\u0937\u093F", new[] { 4 })]
+    // The last ASCII letter takes the mark that follows it.
+    [InlineData("ab\u0301", new[] { 1, 2 })]
+    [InlineData("a\r\n", new[] { 1, 2 })]
+    [InlineData("\u00E9\u0301x", new[] { 2, 1 })]
     public void EnumerateGraphemeClusters_ReturnsTheClusters(string text, int[] expectedLengths)
     {
         var lengths = new List<int>();
@@ -1216,6 +1288,12 @@ public sealed class UnicodeTests
     // Ideographs are not grouped into words: there is no dictionary.
     [InlineData("\u65E5\u672C", new[] { "\u65E5", "\u672C" })]
     [InlineData("a\r\nb", new[] { "a", "\r\n", "b" })]
+    // A mark after an ASCII word is ignored, and the word goes on after it.
+    [InlineData("hello\u0301world", new[] { "hello\u0301world" })]
+    [InlineData("abc.def", new[] { "abc.def" })]
+    [InlineData("a1_b-c", new[] { "a1_b", "-", "c" })]
+    [InlineData("x\u05D0y", new[] { "x\u05D0y" })]
+    [InlineData("\u00E9t\u00E9", new[] { "\u00E9t\u00E9" })]
     public void EnumerateWordBoundaries_ReturnsTheSegments(string text, string[] expected)
     {
         var segments = new List<string>();
@@ -1241,6 +1319,11 @@ public sealed class UnicodeTests
     [InlineData("\u65E5\u672C\u8A9E", new[] { 1, 2, 3 }, new[] { 3 })]
     // A zero width space is an opportunity that takes no room.
     [InlineData("ab\u200Bcd", new[] { 3, 5 }, new[] { 5 })]
+    // The last letter of an ASCII word takes the mark that follows it.
+    [InlineData("abc\u0301 def", new[] { 5, 8 }, new[] { 8 })]
+    [InlineData("word123 abc", new[] { 8, 11 }, new[] { 11 })]
+    [InlineData("abc(def) gh", new[] { 9, 11 }, new[] { 11 })]
+    [InlineData("abc\u65E5def", new[] { 3, 4, 7 }, new[] { 7 })]
     public void EnumerateLineBreaks_ReturnsTheBreaks(string text, int[] expectedIndexes, int[] expectedMandatory)
     {
         var indexes = new List<int>();
@@ -2292,6 +2375,15 @@ public sealed class UnicodeTests
     // A composition exclusion stays decomposed.
     [InlineData("\u0958", NormalizationForm.FormC, "\u0915\u093C")]
     [InlineData("", NormalizationForm.FormC, "")]
+    // The text before the first character that changes is copied: the starter before it still composes with it.
+    [InlineData("abcdefe\u0301", NormalizationForm.FormC, "abcdef\u00E9")]
+    [InlineData("abc\u0301\u0323", NormalizationForm.FormD, "abc\u0323\u0301")]
+    [InlineData("abc\u0301\u0323", NormalizationForm.FormC, "ab\u0107\u0323")]
+    [InlineData("abc\uFB01", NormalizationForm.FormKC, "abcfi")]
+    [InlineData("\u00E9\u00E9e\u0301", NormalizationForm.FormD, "e\u0301e\u0301e\u0301")]
+    [InlineData("\u00E9x\u0301\u00E9\uFB01", NormalizationForm.FormKC, "\u00E9x\u0301\u00E9fi")]
+    [InlineData("\u1100\u1161", NormalizationForm.FormC, "\uAC00")]
+    [InlineData("\uAC00\u11A8", NormalizationForm.FormC, "\uAC01")]
     public void Normalize_ReturnsTheNormalizedText(string text, NormalizationForm form, string expected)
     {
         var actual = UnicodeNormalization.Normalize(text, form);
@@ -2558,6 +2650,11 @@ public sealed class UnicodeTests
     [InlineData("\u3042\u30FC\u30AB", new[] { 2, 1 }, new[] { UnicodeScript.Hiragana, UnicodeScript.Katakana })]
     // Private use characters have no script: they are a run of their own.
     [InlineData("a\uE000b", new[] { 1, 1, 1 }, new[] { UnicodeScript.Latin, UnicodeScript.Unknown, UnicodeScript.Latin })]
+    // The space after a Cyrillic word stays with it, and the Latin letters start the next run.
+    [InlineData("\u0430\u0431 abc", new[] { 3, 3 }, new[] { UnicodeScript.Cyrillic, UnicodeScript.Latin })]
+    // The last ASCII letter takes the mark that follows it.
+    [InlineData("abc\u0301\u0430", new[] { 4, 1 }, new[] { UnicodeScript.Latin, UnicodeScript.Cyrillic })]
+    [InlineData("(abc) \u0430", new[] { 6, 1 }, new[] { UnicodeScript.Latin, UnicodeScript.Cyrillic })]
     public void EnumerateScriptRuns_ReturnsTheRuns(string text, int[] expectedLengths, UnicodeScript[] expectedScripts)
     {
         var lengths = new List<int>();
@@ -2777,6 +2874,8 @@ public sealed class UnicodeTests
     [InlineData("\u2163.example", "iv.example")] // Mapped (ROMAN NUMERAL FOUR)
     [InlineData("a\u00AD.example", "a.example")] // Ignored (SOFT HYPHEN)
     [InlineData("\uFF21\uFF22\u3002com", "ab.com")] // Fullwidth letters and ideographic full stop
+    [InlineData("WWW.Example.COM", "www.example.com")]
+    [InlineData("a-b.c-d", "a-b.c-d")]
     public void TryToAscii_ConvertsValidNames(string domainName, string expected)
     {
         Assert.True(UnicodeIdna.TryToAscii(domainName, out var result));
@@ -2796,6 +2895,8 @@ public sealed class UnicodeTests
     [InlineData("a\u200Db.com")] // ZWJ without a virama
     [InlineData("\u05D0a.com")] // Bidi rule
     [InlineData("\uFFFD.com")]
+    [InlineData("a-.com")]
+    [InlineData(".com")]
     public void TryToAscii_RejectsInvalidNames(string domainName)
     {
         Assert.False(UnicodeIdna.TryToAscii(domainName, out var result));
@@ -2843,6 +2944,10 @@ public sealed class UnicodeTests
     [InlineData("example.com.", "example.com.", false)]
     [InlineData("a..b", "a..b", true)]
     [InlineData("", "", true)]
+    [InlineData("Example.COM", "example.com", false)]
+    [InlineData("-a.com", "-a.com", true)]
+    [InlineData(".a", ".a", true)]
+    [InlineData(".", ".", true)]
     public void ToUnicode(string domainName, string expected, bool expectedErrors)
     {
         Assert.Equal(expected, UnicodeIdna.ToUnicode(domainName, out var hasErrors));

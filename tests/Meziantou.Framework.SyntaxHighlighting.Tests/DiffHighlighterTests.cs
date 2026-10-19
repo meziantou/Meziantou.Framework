@@ -1,3 +1,4 @@
+#pragma warning disable MA0243 // Tab characters in raw string literals are part of the test input
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class DiffHighlighterTests

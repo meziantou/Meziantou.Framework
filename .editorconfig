@@ -171,10 +171,6 @@ dotnet_diagnostic.MFAS0054.severity = none
 # MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
 dotnet_diagnostic.MFAS0055.severity = none
 
-[tests/Meziantou.Framework.SyntaxHighlighting.Tests/**.cs]
-# MA0243: The raw string literals contain tab characters that are part of the highlighted input and of the expected output.
-dotnet_diagnostic.MA0243.severity = none
-
 [tests/Meziantou.Framework.Imaging.Tests.Shared/Helpers/**.cs]
 # MA0182: Avoid unused internal types
 # These helpers are compiled into every Meziantou.Framework.Imaging.*Tests project, and each project uses only some of them.

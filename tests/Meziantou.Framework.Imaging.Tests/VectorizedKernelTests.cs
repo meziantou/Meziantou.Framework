@@ -3139,20 +3139,17 @@ public sealed class VectorizedKernelTests
         var maxSample = (1 << bitDepth) - 1;
         const int Stride = 160;
         var scratch = new int[1024];
+        var sizes = Enumerable.Range(0, Av1Constants.TxSizesAll).Where(txSz => Av1Tables.TxWidth[txSz] <= 32 && Av1Tables.TxHeight[txSz] <= 32).ToArray();
         for (var round = 0; round < 6000; round++)
         {
+            // Every block size with every subsampling
             var (subX, subY) = (round % 3) switch
             {
                 0 => (0, 0),
                 1 => (1, 0),
                 _ => (1, 1),
             };
-            int txSz;
-            do
-            {
-                txSz = random.Next(Av1Constants.TxSizesAll);
-            }
-            while (Av1Tables.TxWidth[txSz] > 32 || Av1Tables.TxHeight[txSz] > 32);
+            var txSz = sizes[(round / 3) % sizes.Length];
 
             int w = Av1Tables.TxWidth[txSz];
             int h = Av1Tables.TxHeight[txSz];

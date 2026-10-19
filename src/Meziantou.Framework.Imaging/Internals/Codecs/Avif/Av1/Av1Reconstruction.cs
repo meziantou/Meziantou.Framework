@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -236,9 +235,9 @@ internal static class Av1Reconstruction
     /// <param name="scratch">Scratch for the subsampled luma samples (1024 entries).</param>
     public static void PredictChromaFromLuma(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
     {
-        if (AdvSimd.IsSupported)
+        if (Av1Simd.IsSupported)
         {
-            PredictChromaFromLumaAdvSimd(luma, lumaStride, chroma, chromaStride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
+            PredictChromaFromLumaVector(luma, lumaStride, chroma, chromaStride, startX, startY, txSz, alpha, subX, subY, maxLumaW, maxLumaH, bitDepth, scratch);
         }
         else
         {
@@ -250,7 +249,7 @@ internal static class Av1Reconstruction
     // up to the last one inside MaxLumaW, then they are all the clamped column: the samples up to it are subsampled 4 at a
     // time (pairwise additions for a horizontal subsampling), the others take the value of the clamped column. The
     // integer expressions are the scalar ones
-    private static void PredictChromaFromLumaAdvSimd(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
+    private static void PredictChromaFromLumaVector(ReadOnlySpan<ushort> luma, int lumaStride, Span<ushort> chroma, int chromaStride, int startX, int startY, int txSz, int alpha, int subX, int subY, int maxLumaW, int maxLumaH, int bitDepth, Span<int> scratch)
     {
         var w = Av1Tables.TxWidth[txSz];
         var h = Av1Tables.TxHeight[txSz];
@@ -282,7 +281,7 @@ internal static class Av1Reconstruction
                     if (subY is not 0)
                         samples += Vector128.Create(row1.Slice(x, 8));
 
-                    sum = AdvSimd.AddPairwiseWidening(samples).AsInt32();
+                    sum = Av1Simd.AddPairwiseWidening(samples);
                 }
 
                 var v = sum << scale;

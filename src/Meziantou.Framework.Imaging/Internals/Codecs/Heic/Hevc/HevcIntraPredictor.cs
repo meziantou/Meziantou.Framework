@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -341,21 +342,59 @@ internal static class HevcIntraPredictor
             return;
         }
 
-        for (var y = 0; y < nTbS; y++)
-        {
-            var row = destination.Slice(y * stride, nTbS);
-            for (var x = 0; x < nTbS; x++)
-            {
-                row[x] = transposed[(x * nTbS) + y];
-            }
-        }
-
+        Transpose(transposed, destination, stride, nTbS);
         if (predModeIntra is HevcConstants.IntraAngular10 && edgeFilter)
         {
             // Equation 8-68
             for (var x = 0; x < nTbS; x++)
             {
                 destination[x] = (ushort)Math.Clamp(p[corner - 1] + ((p[corner + 1 + x] - p[corner]) >> 1), 0, maxValue);
+            }
+        }
+    }
+
+    // Writes the transposed rows of nTbS samples (a multiple of 8) into the rows of the block, by blocks of 8x8 samples
+    private static void Transpose(ReadOnlySpan<ushort> transposed, Span<ushort> destination, int stride, int nTbS)
+    {
+        if (!HevcSimd.IsSupported)
+        {
+            for (var y = 0; y < nTbS; y++)
+            {
+                var row = destination.Slice(y * stride, nTbS);
+                for (var x = 0; x < nTbS; x++)
+                {
+                    row[x] = transposed[(x * nTbS) + y];
+                }
+            }
+
+            return;
+        }
+
+        var source = unsafe(MemoryMarshal.Cast<ushort, short>(transposed));
+        for (var x = 0; x < nTbS; x += 8)
+        {
+            for (var y = 0; y < nTbS; y += 8)
+            {
+                // The rows x to x + 7 of the transposed block, columns y to y + 7, are the columns x to x + 7 of the rows y to y + 7
+                var first = (x * nTbS) + y;
+                var r0 = Vector128.Create(source[first..]);
+                var r1 = Vector128.Create(source[(first + nTbS)..]);
+                var r2 = Vector128.Create(source[(first + (2 * nTbS))..]);
+                var r3 = Vector128.Create(source[(first + (3 * nTbS))..]);
+                var r4 = Vector128.Create(source[(first + (4 * nTbS))..]);
+                var r5 = Vector128.Create(source[(first + (5 * nTbS))..]);
+                var r6 = Vector128.Create(source[(first + (6 * nTbS))..]);
+                var r7 = Vector128.Create(source[(first + (7 * nTbS))..]);
+                HevcSimd.Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                var output = destination[((y * stride) + x)..];
+                r0.AsUInt16().CopyTo(output);
+                r1.AsUInt16().CopyTo(output[stride..]);
+                r2.AsUInt16().CopyTo(output[(2 * stride)..]);
+                r3.AsUInt16().CopyTo(output[(3 * stride)..]);
+                r4.AsUInt16().CopyTo(output[(4 * stride)..]);
+                r5.AsUInt16().CopyTo(output[(5 * stride)..]);
+                r6.AsUInt16().CopyTo(output[(6 * stride)..]);
+                r7.AsUInt16().CopyTo(output[(7 * stride)..]);
             }
         }
     }

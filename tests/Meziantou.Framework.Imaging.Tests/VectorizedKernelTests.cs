@@ -2231,7 +2231,7 @@ public sealed class VectorizedKernelTests
         var random = new Random(90);
         foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgba64, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Gray16 })
         {
-            foreach (var (width, height) in new[] { (1, 1), (3, 5), (4, 4), (7, 9), (33, 31), (64, 40), (70, 101) })
+            foreach (var (width, height) in new[] { (1, 1), (3, 5), (4, 4), (7, 9), (1, 50), (50, 1), (16, 16), (17, 48), (33, 31), (64, 40), (70, 101), (129, 47) })
             {
                 var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
                 random.NextBytes(bytes);

@@ -862,17 +862,53 @@ public sealed class ResizeTests
     }
 
     [Fact]
-    public void ThePlanPicksTheSmallerVerticalStrategy()
+    public void ThePlanPicksGatherUnlessItsRingIsLarge()
     {
         using var image = new Image<Rgba32>(4, 4);
         using (var down = new ResizePlan(ResizeGeometry.Compute(new Size(4, 400), new ResizeOptions(4, 4) { Mode = ResizeMode.Stretch }), ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32))
         {
             down.Prepare(image.Owner.Scope);
-            // Each output row reads up to 2 * 3 * 100 source rows (all 400 here once clamped) while the 4 output rows overlap
-            Assert.Equal(ResizeVerticalStrategy.Scatter, down.Strategy);
+            // Each output row reads up to 2 * 3 * 100 source rows (all 400 here once clamped): a ring of 400 narrow rows is small
+            Assert.Equal(ResizeVerticalStrategy.Gather, down.Strategy);
             Assert.Equal(400, down.YWeights!.MaxCount);
-            Assert.Equal(4, down.RowCount);
+            Assert.Equal(400, down.RowCount);
         }
+
+        using (var wide = new ResizePlan(ResizeGeometry.Compute(new Size(2000, 400), new ResizeOptions(2000, 4) { Mode = ResizeMode.Stretch }), ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32))
+        {
+            wide.Prepare(image.Owner.Scope);
+            // 400 rows of 2000 pixels would be 25.6 MB, while the 4 output rows overlap
+            Assert.Equal(ResizeVerticalStrategy.Scatter, wide.Strategy);
+            Assert.Equal(4, wide.RowCount);
+        }
+
+        // The ring of gather is not picked when only the accumulators of scatter fit the allocation limit
+        var geometry = ResizeGeometry.Compute(new Size(4, 400), new ResizeOptions(4, 4) { Mode = ResizeMode.Stretch });
+        long scatterBytes;
+        using (var scatter = new ResizePlan(geometry, ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32))
+        {
+            ResizePlan.TestStrategyOverride = ResizeVerticalStrategy.Scatter;
+            try
+            {
+                scatter.Prepare(image.Owner.Scope);
+            }
+            finally
+            {
+                ResizePlan.TestStrategyOverride = null;
+            }
+
+            scatterBytes = scatter.ScratchBytes;
+        }
+
+        var limited = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = scatterBytes });
+        using (var tight = new ResizePlan(geometry, ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32))
+        {
+            tight.Prepare(limited);
+            Assert.Equal(ResizeVerticalStrategy.Scatter, tight.Strategy);
+            Assert.Equal(scatterBytes, tight.ScratchBytes);
+        }
+
+        Assert.Equal(0, limited.LiveBytes);
 
         using var up = new ResizePlan(ResizeGeometry.Compute(new Size(4, 4), new ResizeOptions(4, 400) { Mode = ResizeMode.Stretch }), ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32);
         up.Prepare(image.Owner.Scope);

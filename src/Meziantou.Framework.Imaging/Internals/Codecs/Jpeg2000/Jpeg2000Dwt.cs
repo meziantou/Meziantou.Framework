@@ -1,5 +1,9 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -32,6 +36,10 @@ internal static class Jpeg2000Dwt
 {
     /// <summary>The largest number of columns that are filtered together.</summary>
     public const int ColumnStrip = 64;
+
+    // The rows of a strip the vector paths gather ahead of the lifting steps: a short loop of copies keeps several rows
+    // of the plane in flight, and the rows are still in the cache when the steps read them
+    private const int GatheredRows = 16;
 
     // Table F.4
     private const float Alpha = -1.586134342059924f;
@@ -94,8 +102,16 @@ internal static class Jpeg2000Dwt
             for (var x = 0; x < width; x += strip)
             {
                 var count = Math.Min(strip, width - x);
-                GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                LiftReversibleColumns(columns, count, height, parityY, strip, useVectors);
+                if (useVectors && height > 1)
+                {
+                    LiftReversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                }
+                else
+                {
+                    GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                    LiftReversibleColumns(columns, count, height, parityY, strip, useVectors);
+                }
+
                 ScatterColumns(plane, stride, x, count, height, columns, strip);
             }
         }
@@ -151,8 +167,16 @@ internal static class Jpeg2000Dwt
             for (var x = 0; x < width; x += strip)
             {
                 var count = Math.Min(strip, width - x);
-                GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                LiftIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
+                if (useVectors && height > 1)
+                {
+                    LiftIrreversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                }
+                else
+                {
+                    GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                    LiftIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
+                }
+
                 ScatterColumns(plane, stride, x, count, height, columns, strip);
             }
         }
@@ -428,7 +452,38 @@ internal static class Jpeg2000Dwt
         var low = row[..lowCount];
         var high = row[lowCount..];
         var i = 0;
-        if (useVectors && BitConverter.IsLittleEndian && Vector<T>.Count == Vector<uint>.Count)
+        if (useVectors && Unsafe.SizeOf<T>() == sizeof(uint) && (AdvSimd.Arm64.IsSupported || Sse2.IsSupported))
+        {
+            // The samples of "first" and "second" alternate (zip, unpack). The row starts with a sample of "first", which
+            // has as many samples as "second" or one more
+            var first = parity == 0 ? low : high;
+            var second = parity == 0 ? high : low;
+            line = line[..row.Length];
+            ref var firstStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(first)));
+            ref var secondStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(second)));
+            ref var lineStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(line)));
+            for (; i <= second.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+            {
+                var firstValues = unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)i));
+                var secondValues = unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)i));
+                Vector128<uint> start;
+                Vector128<uint> end;
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    start = AdvSimd.Arm64.ZipLow(firstValues, secondValues);
+                    end = AdvSimd.Arm64.ZipHigh(firstValues, secondValues);
+                }
+                else
+                {
+                    start = Sse2.UnpackLow(firstValues, secondValues);
+                    end = Sse2.UnpackHigh(firstValues, secondValues);
+                }
+
+                unsafe { start.StoreUnsafe(ref lineStart, (nuint)(2 * i)); }
+                unsafe { end.StoreUnsafe(ref lineStart, (nuint)((2 * i) + Vector128<uint>.Count)); }
+            }
+        }
+        else if (useVectors && BitConverter.IsLittleEndian && Vector<T>.Count == Vector<uint>.Count)
         {
             // Two samples of 32 bits that follow each other are the two halves of a 64-bit element, the first one in its low
             // half. The row starts with a sample of "first", which has as many samples as "second" or one more
@@ -456,12 +511,30 @@ internal static class Jpeg2000Dwt
 
     /// <summary>Copies a strip of columns, row by row, with the rows interleaved.</summary>
     private static void GatherColumns<T>(ReadOnlySpan<T> plane, int stride, int x, int count, int height, int lowCount, int parity, Span<T> columns, int strip)
+        => GatherColumnRows(plane, stride, x, count, 0, height, lowCount, parity, columns, strip);
+
+    /// <summary>Copies the rows <paramref name="start"/> to <paramref name="end"/> (excluded) of a strip of columns, with the rows interleaved.</summary>
+    private static void GatherColumnRows<T>(ReadOnlySpan<T> plane, int stride, int x, int count, int start, int end, int lowCount, int parity, Span<T> columns, int strip)
     {
-        for (var y = 0; y < height; y++)
+        for (var y = start; y < end; y++)
         {
             var isLow = ((y + parity) & 1) == 0;
             var source = isLow ? y >> 1 : lowCount + (y >> 1);
             plane.Slice((source * stride) + x, count).CopyTo(columns.Slice(y * strip, count));
+        }
+    }
+
+    /// <summary>
+    /// Copies the rows <paramref name="start"/> to <paramref name="end"/> (excluded) of a strip of columns, with the rows
+    /// interleaved and multiplied by the scaling factor of their parity (F.3.8.2).
+    /// </summary>
+    private static void GatherScaledColumnRows(ReadOnlySpan<float> plane, int stride, int x, int count, int start, int end, int lowCount, int parity, Span<float> columns, int strip)
+    {
+        for (var y = start; y < end; y++)
+        {
+            var isLow = ((y + parity) & 1) == 0;
+            var source = isLow ? y >> 1 : lowCount + (y >> 1);
+            Scale(columns.Slice(y * strip, count), plane.Slice((source * stride) + x, count), isLow ? K : InverseK, useVectors: true);
         }
     }
 
@@ -479,7 +552,37 @@ internal static class Jpeg2000Dwt
         var low = row[..lowCount];
         var high = row[lowCount..];
         var i = 0;
-        if (useVectors && BitConverter.IsLittleEndian && Vector<T>.Count == Vector<uint>.Count)
+        if (useVectors && Unsafe.SizeOf<T>() == sizeof(uint) && (AdvSimd.Arm64.IsSupported || Sse.IsSupported))
+        {
+            // The reverse of Interleave: the samples at even positions of the line go to "first" (unzip, shuffle)
+            var first = parity == 0 ? low : high;
+            var second = parity == 0 ? high : low;
+            line = line[..row.Length];
+            ref var firstStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(first)));
+            ref var secondStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(second)));
+            ref var lineStart = ref unsafe(Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(line)));
+            for (; i <= second.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+            {
+                var start = unsafe(Vector128.LoadUnsafe(ref lineStart, (nuint)(2 * i)));
+                var end = unsafe(Vector128.LoadUnsafe(ref lineStart, (nuint)((2 * i) + Vector128<uint>.Count)));
+                Vector128<uint> firstValues;
+                Vector128<uint> secondValues;
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    firstValues = AdvSimd.Arm64.UnzipEven(start, end);
+                    secondValues = AdvSimd.Arm64.UnzipOdd(start, end);
+                }
+                else
+                {
+                    firstValues = Sse.Shuffle(start.AsSingle(), end.AsSingle(), 0b10_00_10_00).AsUInt32();
+                    secondValues = Sse.Shuffle(start.AsSingle(), end.AsSingle(), 0b11_01_11_01).AsUInt32();
+                }
+
+                unsafe { firstValues.StoreUnsafe(ref firstStart, (nuint)i); }
+                unsafe { secondValues.StoreUnsafe(ref secondStart, (nuint)i); }
+            }
+        }
+        else if (useVectors && BitConverter.IsLittleEndian && Vector<T>.Count == Vector<uint>.Count)
         {
             // The reverse of Interleave: the low halves of the 64-bit elements are the samples of "first"
             var first = parity == 0 ? low : high;
@@ -659,40 +762,221 @@ internal static class Jpeg2000Dwt
         }
     }
 
+    /// <summary>
+    /// The vector path of <see cref="GatherColumns"/> then <see cref="LiftReversibleColumns"/>, in one pass down the strip:
+    /// the row of odd positions above a row of even positions is lifted (F-6) right after that row (F-5), and the rows are
+    /// gathered a few at a time just before, so that the rows a step reads are still in the cache. The two steps of the
+    /// rows away from the ends are applied in one loop.
+    /// </summary>
+    private static void LiftReversibleColumnsPipelined(ReadOnlySpan<int> plane, int stride, int x, int count, int height, int lowCount, int parity, Span<int> columns, int strip)
+    {
+        var gathered = 0;
+        for (var y = 0; y <= height; y++)
+        {
+            if (((y + parity) & 1) != 0)
+                continue;
+
+            // F-5 on the row y reads the row y + 1
+            if (gathered < height && gathered <= y + 1)
+            {
+                var end = Math.Min(height, y + 2 + GatheredRows);
+                GatherColumnRows(plane, stride, x, count, gathered, end, lowCount, parity, columns, strip);
+                gathered = end;
+            }
+
+            // F-5 on the row y, then F-6 on the row y - 1, which has the rows y - 2 and y around it
+            if (y >= 2 && y <= height - 2)
+            {
+                LiftReversibleRows(columns.Slice((y - 2) * strip, (3 * strip) + count), count, strip);
+                continue;
+            }
+
+            if (y < height)
+            {
+                LiftColumnRow(columns, count, height, strip, y, bias: 2, shift: 2, subtract: true);
+            }
+
+            if (y >= 1)
+            {
+                LiftColumnRow(columns, count, height, strip, y - 1, bias: 0, shift: 1, subtract: false);
+            }
+        }
+
+        static void LiftColumnRow(Span<int> columns, int count, int height, int strip, int y, int bias, int shift, bool subtract)
+        {
+            var previous = columns.Slice(Mirror(y - 1, height) * strip, count);
+            var next = columns.Slice(Mirror(y + 1, height) * strip, count);
+            Lift(columns.Slice(y * strip, count), previous, next, bias, shift, subtract, useVectors: true);
+        }
+    }
+
+    /// <summary>
+    /// F-5 on the third of four rows of a strip, then F-6 on the second one, in one loop: <paramref name="rows"/> starts with
+    /// the first row and holds the four of them.
+    /// </summary>
+    private static void LiftReversibleRows(Span<int> rows, int count, int strip)
+    {
+        var i = 0;
+        ref var row0 = ref unsafe(MemoryMarshal.GetReference(rows));
+        ref var row1 = ref unsafe(Unsafe.Add(ref row0, strip));
+        ref var row2 = ref unsafe(Unsafe.Add(ref row1, strip));
+        ref var row3 = ref unsafe(Unsafe.Add(ref row2, strip));
+        var two = new Vector<int>(2);
+        for (; i <= count - Vector<int>.Count; i += Vector<int>.Count)
+        {
+            var index = (nuint)i;
+            var above = unsafe(Vector.LoadUnsafe(ref row0, index));
+            var odd = unsafe(Vector.LoadUnsafe(ref row1, index));
+            var even = unsafe(Vector.LoadUnsafe(ref row2, index));
+            var below = unsafe(Vector.LoadUnsafe(ref row3, index));
+            even -= (odd + below + two) >> 2;
+            odd += (above + even) >> 1;
+            unsafe { even.StoreUnsafe(ref row2, index); }
+            unsafe { odd.StoreUnsafe(ref row1, index); }
+        }
+
+        for (; i < count; i++)
+        {
+            var even = rows[(2 * strip) + i] - ((rows[strip + i] + rows[(3 * strip) + i] + 2) >> 2);
+            rows[(2 * strip) + i] = even;
+            rows[strip + i] += (rows[i] + even) >> 1;
+        }
+    }
+
+    /// <summary>
+    /// The vector path of <see cref="GatherColumns"/> then <see cref="LiftIrreversibleColumns"/>, in one pass down the
+    /// strip: the rows are gathered and scaled a few at a time, and each lifting step runs one row behind the step before
+    /// it, so that the rows it reads have been through that step and not through the next one. The four steps of the rows
+    /// away from the ends are applied in one loop.
+    /// </summary>
+    private static void LiftIrreversibleColumnsPipelined(ReadOnlySpan<float> plane, int stride, int x, int count, int height, int lowCount, int parity, Span<float> columns, int strip)
+    {
+        var gathered = 0;
+        for (var y = 0; y < height + 3; y++)
+        {
+            if (((y + parity) & 1) != 0)
+                continue;
+
+            // The step delta on the row y reads the row y + 1
+            if (gathered < height && gathered <= y + 1)
+            {
+                var end = Math.Min(height, y + 2 + GatheredRows);
+                GatherScaledColumnRows(plane, stride, x, count, gathered, end, lowCount, parity, columns, strip);
+                gathered = end;
+            }
+
+            if (y >= 4 && y <= height - 2)
+            {
+                LiftIrreversibleRows(columns.Slice((y - 4) * strip, (5 * strip) + count), count, strip);
+                continue;
+            }
+
+            LiftColumnRow(columns, count, height, strip, y, Delta);
+            LiftColumnRow(columns, count, height, strip, y - 1, Gamma);
+            LiftColumnRow(columns, count, height, strip, y - 2, Beta);
+            LiftColumnRow(columns, count, height, strip, y - 3, Alpha);
+        }
+
+        static void LiftColumnRow(Span<float> columns, int count, int height, int strip, int y, float factor)
+        {
+            if (y < 0 || y >= height)
+                return;
+
+            var previous = columns.Slice(Mirror(y - 1, height) * strip, count);
+            var next = columns.Slice(Mirror(y + 1, height) * strip, count);
+            Lift(columns.Slice(y * strip, count), previous, next, factor, subtract: true, useVectors: true);
+        }
+    }
+
+    /// <summary>
+    /// The four lifting steps of the inverse irreversible filter on six rows of a strip, in one loop: the step delta on the
+    /// fifth row, gamma on the fourth, beta on the third and alpha on the second, each one reading the row the step before
+    /// it has just changed. <paramref name="rows"/> starts with the first row and holds the six of them.
+    /// </summary>
+    private static void LiftIrreversibleRows(Span<float> rows, int count, int strip)
+    {
+        // The sum, the product and the difference are three operations, like the scalar ones: nothing is fused
+        var i = 0;
+        ref var row0 = ref unsafe(MemoryMarshal.GetReference(rows));
+        ref var row1 = ref unsafe(Unsafe.Add(ref row0, strip));
+        ref var row2 = ref unsafe(Unsafe.Add(ref row1, strip));
+        ref var row3 = ref unsafe(Unsafe.Add(ref row2, strip));
+        ref var row4 = ref unsafe(Unsafe.Add(ref row3, strip));
+        ref var row5 = ref unsafe(Unsafe.Add(ref row4, strip));
+        var alpha = new Vector<float>(Alpha);
+        var beta = new Vector<float>(Beta);
+        var gamma = new Vector<float>(Gamma);
+        var delta = new Vector<float>(Delta);
+        for (; i <= count - Vector<float>.Count; i += Vector<float>.Count)
+        {
+            var index = (nuint)i;
+            var value0 = unsafe(Vector.LoadUnsafe(ref row0, index));
+            var value1 = unsafe(Vector.LoadUnsafe(ref row1, index));
+            var value2 = unsafe(Vector.LoadUnsafe(ref row2, index));
+            var value3 = unsafe(Vector.LoadUnsafe(ref row3, index));
+            var value4 = unsafe(Vector.LoadUnsafe(ref row4, index));
+            var value5 = unsafe(Vector.LoadUnsafe(ref row5, index));
+            value4 -= delta * (value3 + value5);
+            value3 -= gamma * (value2 + value4);
+            value2 -= beta * (value1 + value3);
+            value1 -= alpha * (value0 + value2);
+            unsafe { value4.StoreUnsafe(ref row4, index); }
+            unsafe { value3.StoreUnsafe(ref row3, index); }
+            unsafe { value2.StoreUnsafe(ref row2, index); }
+            unsafe { value1.StoreUnsafe(ref row1, index); }
+        }
+
+        for (; i < count; i++)
+        {
+            var value4 = rows[(4 * strip) + i] - (Delta * (rows[(3 * strip) + i] + rows[(5 * strip) + i]));
+            var value3 = rows[(3 * strip) + i] - (Gamma * (rows[(2 * strip) + i] + value4));
+            var value2 = rows[(2 * strip) + i] - (Beta * (rows[strip + i] + value3));
+            rows[(4 * strip) + i] = value4;
+            rows[(3 * strip) + i] = value3;
+            rows[(2 * strip) + i] = value2;
+            rows[strip + i] -= Alpha * (rows[i] + value2);
+        }
+    }
+
     /// <summary>The reversible filter on a row whose halves are not interleaved yet: what <see cref="LiftReversible"/> does to the interleaved row.</summary>
     private static void LiftReversibleSeparated(Span<int> low, Span<int> high, int parity)
     {
-        LiftHalf(low, high, parity, bias: 2, shift: 2, subtract: true);
-        LiftHalf(high, low, 1 - parity, bias: 0, shift: 1, subtract: false);
+        LiftHalf<Set>(low, high, parity, bias: 2, shift: 2);
+        LiftHalf<NotSet>(high, low, 1 - parity, bias: 0, shift: 1);
     }
 
     /// <summary>The forward reversible filter on a row whose halves are separated already: what <see cref="LiftForwardReversible"/> does to the row.</summary>
     private static void LiftForwardReversibleSeparated(Span<int> low, Span<int> high, int parity)
     {
-        LiftHalf(high, low, 1 - parity, bias: 0, shift: 1, subtract: true);
-        LiftHalf(low, high, parity, bias: 2, shift: 2, subtract: false);
+        LiftHalf<Set>(high, low, 1 - parity, bias: 0, shift: 1);
+        LiftHalf<NotSet>(low, high, parity, bias: 2, shift: 2);
     }
 
-    /// <summary>The irreversible filter on a row whose halves are not interleaved yet: what <see cref="LiftIrreversible"/> does to the interleaved row.</summary>
+    /// <summary>
+    /// The irreversible filter on a row whose halves are not interleaved yet: what <see cref="LiftIrreversible"/> does to the
+    /// interleaved row. The first two lifting steps apply the scaling: delta multiplies the low-pass samples it changes by
+    /// K and the high-pass samples it reads by 1/K, then gamma multiplies the high-pass samples it changes by 1/K, so that
+    /// a step reads each sample multiplied by its factor, as it does after the scaling step.
+    /// </summary>
     private static void LiftIrreversibleSeparated(Span<float> low, Span<float> high, int parity)
     {
-        Scale(low, K, useVectors: true);
-        Scale(high, InverseK, useVectors: true);
-        LiftHalf(low, high, parity, Delta, subtract: true);
-        LiftHalf(high, low, 1 - parity, Gamma, subtract: true);
-        LiftHalf(low, high, parity, Beta, subtract: true);
-        LiftHalf(high, low, 1 - parity, Alpha, subtract: true);
+        LiftHalf<Set, Set, Set, NotSet>(low, high, parity, Delta, K, InverseK, resultScale: 1);
+        LiftHalf<Set, Set, NotSet, NotSet>(high, low, 1 - parity, Gamma, InverseK, sourceScale: 1, resultScale: 1);
+        LiftHalf<Set, NotSet, NotSet, NotSet>(low, high, parity, Beta, targetScale: 1, sourceScale: 1, resultScale: 1);
+        LiftHalf<Set, NotSet, NotSet, NotSet>(high, low, 1 - parity, Alpha, targetScale: 1, sourceScale: 1, resultScale: 1);
     }
 
-    /// <summary>The forward irreversible filter on a row whose halves are separated already: what <see cref="LiftForwardIrreversible"/> does to the row.</summary>
+    /// <summary>
+    /// The forward irreversible filter on a row whose halves are separated already: what <see cref="LiftForwardIrreversible"/>
+    /// does to the row. The last lifting step multiplies the low-pass samples by 1/K as it writes them.
+    /// </summary>
     private static void LiftForwardIrreversibleSeparated(Span<float> low, Span<float> high, int parity)
     {
-        LiftHalf(high, low, 1 - parity, Alpha, subtract: false);
-        LiftHalf(low, high, parity, Beta, subtract: false);
-        LiftHalf(high, low, 1 - parity, Gamma, subtract: false);
-        LiftHalf(low, high, parity, Delta, subtract: false);
+        LiftHalf<NotSet, NotSet, NotSet, NotSet>(high, low, 1 - parity, Alpha, targetScale: 1, sourceScale: 1, resultScale: 1);
+        LiftHalf<NotSet, NotSet, NotSet, NotSet>(low, high, parity, Beta, targetScale: 1, sourceScale: 1, resultScale: 1);
+        LiftHalf<NotSet, NotSet, NotSet, NotSet>(high, low, 1 - parity, Gamma, targetScale: 1, sourceScale: 1, resultScale: 1);
+        LiftHalf<NotSet, NotSet, NotSet, Set>(low, high, parity, Delta, targetScale: 1, sourceScale: 1, InverseK);
         Scale(high, K, useVectors: true);
-        Scale(low, InverseK, useVectors: true);
     }
 
     /// <summary>
@@ -700,54 +984,79 @@ internal static class Jpeg2000Dwt
     /// <c>target[i]</c> lies between <c>source[i + offset - 1]</c> and <c>source[i + offset]</c>; at an end of the row, the
     /// neighbor that does not exist is the other one (the symmetric extension of F.3.7).
     /// </summary>
+    /// <typeparam name="TSubtract">Whether the term is subtracted from the samples rather than added to them.</typeparam>
     /// <param name="target">The half that changes.</param>
     /// <param name="source">The other half.</param>
     /// <param name="offset">1 when the row starts with a sample of <paramref name="source"/>; otherwise, 0.</param>
     /// <param name="bias">The rounding term of the step.</param>
     /// <param name="shift">The shift of the step.</param>
-    /// <param name="subtract"><see langword="true"/> to subtract the term from the samples; <see langword="false"/> to add it.</param>
-    private static void LiftHalf(Span<int> target, ReadOnlySpan<int> source, int offset, int bias, int shift, bool subtract)
+    private static void LiftHalf<TSubtract>(Span<int> target, ReadOnlySpan<int> source, int offset, int bias, int shift)
+        where TSubtract : struct, IFlag
     {
         var start = 1 - offset;
         var end = Math.Min(target.Length, source.Length - offset);
         if (start > 0)
         {
-            Lift(target[..1], source[..1], source[..1], bias, shift, subtract, useVectors: false);
+            Lift<TSubtract>(target[..1], source[..1], source[..1], bias, shift, useVectors: false);
         }
 
-        Lift(target[start..end], source[..(end - start)], source.Slice(1, end - start), bias, shift, subtract, useVectors: true);
+        Lift<TSubtract>(target[start..end], source[..(end - start)], source.Slice(1, end - start), bias, shift, useVectors: true);
         if (end < target.Length)
         {
             var last = source.Slice(end + offset - 1, 1);
-            Lift(target.Slice(end, 1), last, last, bias, shift, subtract, useVectors: false);
+            Lift<TSubtract>(target.Slice(end, 1), last, last, bias, shift, useVectors: false);
         }
     }
 
-    /// <summary>A lifting step of the irreversible filter on one half of a row of at least two samples.</summary>
+    /// <summary>A lifting step of the irreversible filter on one half of a row of at least two samples, with the scaling factors that are applied with it.</summary>
+    /// <typeparam name="TSubtract">Whether the term is subtracted from the samples rather than added to them.</typeparam>
+    /// <typeparam name="TScaleTarget">Whether the samples that change are multiplied by <paramref name="targetScale"/> first.</typeparam>
+    /// <typeparam name="TScaleSource">Whether the samples of the other half are multiplied by <paramref name="sourceScale"/> as they are read.</typeparam>
+    /// <typeparam name="TScaleResult">Whether the results are multiplied by <paramref name="resultScale"/>.</typeparam>
     /// <param name="target">The half that changes.</param>
     /// <param name="source">The other half.</param>
     /// <param name="offset">1 when the row starts with a sample of <paramref name="source"/>; otherwise, 0.</param>
     /// <param name="factor">The lifting parameter of the step.</param>
-    /// <param name="subtract"><see langword="true"/> to subtract the term from the samples; <see langword="false"/> to add it.</param>
-    private static void LiftHalf(Span<float> target, ReadOnlySpan<float> source, int offset, float factor, bool subtract)
+    /// <param name="targetScale">The factor of the samples that change.</param>
+    /// <param name="sourceScale">The factor of the samples that are read.</param>
+    /// <param name="resultScale">The factor of the results.</param>
+    private static void LiftHalf<TSubtract, TScaleTarget, TScaleSource, TScaleResult>(Span<float> target, ReadOnlySpan<float> source, int offset, float factor, float targetScale, float sourceScale, float resultScale)
+        where TSubtract : struct, IFlag
+        where TScaleTarget : struct, IFlag
+        where TScaleSource : struct, IFlag
+        where TScaleResult : struct, IFlag
     {
         var start = 1 - offset;
         var end = Math.Min(target.Length, source.Length - offset);
         if (start > 0)
         {
-            Lift(target[..1], source[..1], source[..1], factor, subtract, useVectors: false);
+            Lift<TSubtract, TScaleTarget, TScaleSource, TScaleResult>(target[..1], source[..1], source[..1], factor, targetScale, sourceScale, resultScale, useVectors: false);
         }
 
-        Lift(target[start..end], source[..(end - start)], source.Slice(1, end - start), factor, subtract, useVectors: true);
+        Lift<TSubtract, TScaleTarget, TScaleSource, TScaleResult>(target[start..end], source[..(end - start)], source.Slice(1, end - start), factor, targetScale, sourceScale, resultScale, useVectors: true);
         if (end < target.Length)
         {
             var last = source.Slice(end + offset - 1, 1);
-            Lift(target.Slice(end, 1), last, last, factor, subtract, useVectors: false);
+            Lift<TSubtract, TScaleTarget, TScaleSource, TScaleResult>(target.Slice(end, 1), last, last, factor, targetScale, sourceScale, resultScale, useVectors: false);
         }
     }
 
     /// <summary>A lifting step of the reversible filter: <c>target[i] -= (first[i] + second[i] + bias) >> shift</c>, or the addition.</summary>
     private static void Lift(Span<int> target, ReadOnlySpan<int> first, ReadOnlySpan<int> second, int bias, int shift, bool subtract, bool useVectors)
+    {
+        if (subtract)
+        {
+            Lift<Set>(target, first, second, bias, shift, useVectors);
+        }
+        else
+        {
+            Lift<NotSet>(target, first, second, bias, shift, useVectors);
+        }
+    }
+
+    /// <summary>A lifting step of the reversible filter: <c>target[i] -= (first[i] + second[i] + bias) >> shift</c>, or the addition.</summary>
+    private static void Lift<TSubtract>(Span<int> target, ReadOnlySpan<int> first, ReadOnlySpan<int> second, int bias, int shift, bool useVectors)
+        where TSubtract : struct, IFlag
     {
         // The vectors are read without a bound check: the three spans have the length of the target
         first = first[..target.Length];
@@ -763,19 +1072,40 @@ internal static class Jpeg2000Dwt
             {
                 var term = (unsafe(Vector.LoadUnsafe(ref firstStart, (nuint)i)) + unsafe(Vector.LoadUnsafe(ref secondStart, (nuint)i)) + biases) >> shift;
                 var value = unsafe(Vector.LoadUnsafe(ref targetStart, (nuint)i));
-                unsafe { (subtract ? value - term : value + term).StoreUnsafe(ref targetStart, (nuint)i); }
+                unsafe { (TSubtract.IsSet ? value - term : value + term).StoreUnsafe(ref targetStart, (nuint)i); }
             }
         }
 
         for (; i < target.Length; i++)
         {
             var term = (first[i] + second[i] + bias) >> shift;
-            target[i] = subtract ? target[i] - term : target[i] + term;
+            target[i] = TSubtract.IsSet ? target[i] - term : target[i] + term;
         }
     }
 
     /// <summary>A lifting step of the irreversible filter: <c>target[i] -= factor * (first[i] + second[i])</c>, or the addition.</summary>
     private static void Lift(Span<float> target, ReadOnlySpan<float> first, ReadOnlySpan<float> second, float factor, bool subtract, bool useVectors)
+    {
+        if (subtract)
+        {
+            Lift<Set, NotSet, NotSet, NotSet>(target, first, second, factor, targetScale: 1, sourceScale: 1, resultScale: 1, useVectors);
+        }
+        else
+        {
+            Lift<NotSet, NotSet, NotSet, NotSet>(target, first, second, factor, targetScale: 1, sourceScale: 1, resultScale: 1, useVectors);
+        }
+    }
+
+    /// <summary>
+    /// A lifting step of the irreversible filter: <c>target[i] -= factor * (first[i] + second[i])</c>, or the addition,
+    /// with the samples that change, the samples that are read and the results multiplied by their scaling factors when
+    /// the corresponding type argument is <see cref="Set"/>. Each multiplication is the one the scaling step would make.
+    /// </summary>
+    private static void Lift<TSubtract, TScaleTarget, TScaleSource, TScaleResult>(Span<float> target, ReadOnlySpan<float> first, ReadOnlySpan<float> second, float factor, float targetScale, float sourceScale, float resultScale, bool useVectors)
+        where TSubtract : struct, IFlag
+        where TScaleTarget : struct, IFlag
+        where TScaleSource : struct, IFlag
+        where TScaleResult : struct, IFlag
     {
         // The vectors are read without a bound check: the three spans have the length of the target
         first = first[..target.Length];
@@ -788,39 +1118,103 @@ internal static class Jpeg2000Dwt
             ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
             ref var secondStart = ref unsafe(MemoryMarshal.GetReference(second));
             var factors = new Vector<float>(factor);
+            var targetScales = new Vector<float>(targetScale);
+            var sourceScales = new Vector<float>(sourceScale);
+            var resultScales = new Vector<float>(resultScale);
             for (; i <= target.Length - Vector<float>.Count; i += Vector<float>.Count)
             {
-                var sum = unsafe(Vector.LoadUnsafe(ref firstStart, (nuint)i)) + unsafe(Vector.LoadUnsafe(ref secondStart, (nuint)i));
-                var product = factors * sum;
+                var previous = unsafe(Vector.LoadUnsafe(ref firstStart, (nuint)i));
+                var next = unsafe(Vector.LoadUnsafe(ref secondStart, (nuint)i));
+                if (TScaleSource.IsSet)
+                {
+                    previous *= sourceScales;
+                    next *= sourceScales;
+                }
+
+                var product = factors * (previous + next);
                 var value = unsafe(Vector.LoadUnsafe(ref targetStart, (nuint)i));
-                unsafe { (subtract ? value - product : value + product).StoreUnsafe(ref targetStart, (nuint)i); }
+                if (TScaleTarget.IsSet)
+                {
+                    value *= targetScales;
+                }
+
+                var result = TSubtract.IsSet ? value - product : value + product;
+                if (TScaleResult.IsSet)
+                {
+                    result *= resultScales;
+                }
+
+                unsafe { result.StoreUnsafe(ref targetStart, (nuint)i); }
             }
         }
 
         for (; i < target.Length; i++)
         {
-            var sum = first[i] + second[i];
+            var previous = first[i];
+            var next = second[i];
+            if (TScaleSource.IsSet)
+            {
+                previous *= sourceScale;
+                next *= sourceScale;
+            }
+
+            var sum = previous + next;
             var product = factor * sum;
-            target[i] = subtract ? target[i] - product : target[i] + product;
+            var value = target[i];
+            if (TScaleTarget.IsSet)
+            {
+                value *= targetScale;
+            }
+
+            var result = TSubtract.IsSet ? value - product : value + product;
+            if (TScaleResult.IsSet)
+            {
+                result *= resultScale;
+            }
+
+            target[i] = result;
         }
     }
 
     /// <summary>The scaling step of the irreversible filter: <c>values[i] *= factor</c>.</summary>
-    private static void Scale(Span<float> values, float factor, bool useVectors)
+    private static void Scale(Span<float> values, float factor, bool useVectors) => Scale(values, values, factor, useVectors);
+
+    /// <summary>The scaling step of the irreversible filter: <c>destination[i] = source[i] * factor</c>.</summary>
+    private static void Scale(Span<float> destination, ReadOnlySpan<float> source, float factor, bool useVectors)
     {
+        // The vectors are read without a bound check: the source has the length of the destination
+        source = source[..destination.Length];
         var i = 0;
         if (useVectors)
         {
+            ref var destinationStart = ref unsafe(MemoryMarshal.GetReference(destination));
+            ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
             var factors = new Vector<float>(factor);
-            for (; i <= values.Length - Vector<float>.Count; i += Vector<float>.Count)
+            for (; i <= destination.Length - Vector<float>.Count; i += Vector<float>.Count)
             {
-                (new Vector<float>(values[i..]) * factors).CopyTo(values[i..]);
+                unsafe { (Vector.LoadUnsafe(ref sourceStart, (nuint)i) * factors).StoreUnsafe(ref destinationStart, (nuint)i); }
             }
         }
 
-        for (; i < values.Length; i++)
+        for (; i < destination.Length; i++)
         {
-            values[i] *= factor;
+            destination[i] = source[i] * factor;
         }
+    }
+
+    /// <summary>A choice that is made when a generic method is compiled, so that its loops do not test it.</summary>
+    private interface IFlag
+    {
+        static abstract bool IsSet { get; }
+    }
+
+    private readonly struct Set : IFlag
+    {
+        public static bool IsSet => true;
+    }
+
+    private readonly struct NotSet : IFlag
+    {
+        public static bool IsSet => false;
     }
 }

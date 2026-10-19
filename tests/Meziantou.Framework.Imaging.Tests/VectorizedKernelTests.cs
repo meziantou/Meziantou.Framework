@@ -2906,6 +2906,62 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1LoopFilterLinePairsMatchTheScalarReference(int bitDepth)
+    {
+        // Two consecutive vertical or horizontal edges of every filter size, each with its own levels over their whole range,
+        // on samples that are flat (every mask passes), smooth steps, ramps, random and extreme
+        var random = new Random((bitDepth * 13) + 1);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 32;
+        for (var round = 0; round < 20000; round++)
+        {
+            var plane = random.Next(2);
+            var filterSize = plane is 0 ? (4 << random.Next(3)) : (4 << random.Next(2));
+            var levels = new (int Limit, int Blimit, int Thresh)[2];
+            for (var edge = 0; edge < 2; edge++)
+            {
+                var level = random.Next(1, 64);
+                var sharpness = random.Next(8);
+                var shift = sharpness > 4 ? 2 : sharpness > 0 ? 1 : 0;
+                var limit = sharpness > 0 ? Math.Clamp(level >> shift, 1, 9 - sharpness) : Math.Max(1, level >> shift);
+                levels[edge] = (limit, (2 * (level + 2)) + limit, level >> 4);
+            }
+
+            var expected = new ushort[Stride * Stride];
+            var baseValue = random.Next(maxSample + 1);
+            var stepValue = random.Next(-24, 25) << (bitDepth - 8);
+            for (var y = 0; y < Stride; y++)
+            {
+                for (var x = 0; x < Stride; x++)
+                {
+                    var along = random.Next(2) == 0 ? x : y;
+                    expected[(y * Stride) + x] = (ushort)Math.Clamp((round % 5) switch
+                    {
+                        0 => baseValue + random.Next(-1, 2),
+                        1 => baseValue + (along >= 16 ? stepValue : 0) + random.Next(-2, 3),
+                        2 => baseValue + ((along - 16) * random.Next(0, 3)),
+                        3 => random.Next(maxSample + 1),
+                        _ => random.Next(2) * maxSample,
+                    }, 0, maxSample);
+                }
+            }
+
+            var actual = expected.ToArray();
+            var vertical = random.Next(2) == 0;
+            var position = vertical ? (random.Next(8, 17) * Stride) + 16 : (16 * Stride) + random.Next(8, 17);
+            var (step, lineStep) = vertical ? (1, Stride) : (Stride, 1);
+            Av1LoopFilter.FilterLinesScalar(expected, position, step, lineStep, plane, filterSize, bitDepth, levels[0].Limit, levels[0].Blimit, levels[0].Thresh);
+            Av1LoopFilter.FilterLinesScalar(expected, position + (4 * lineStep), step, lineStep, plane, filterSize, bitDepth, levels[1].Limit, levels[1].Blimit, levels[1].Thresh);
+            Av1LoopFilter.FilterLinePairs(actual, position, step, lineStep, plane, filterSize, bitDepth, levels[0].Limit, levels[0].Blimit, levels[0].Thresh, levels[1].Limit, levels[1].Blimit, levels[1].Thresh);
+            Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: plane {plane}, filter size {filterSize}, levels {levels[0]} {levels[1]}, vertical {vertical}.");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1CdefDirectionMatchesTheScalarReference(int bitDepth)
     {
         // Blocks of random, extreme, flat and directional samples (lines of every direction), at every column of a row

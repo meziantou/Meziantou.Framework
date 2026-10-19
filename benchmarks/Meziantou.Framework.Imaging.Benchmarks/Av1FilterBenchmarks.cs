@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// <summary>
 /// The AV1 post-processing filters on their own, at sizes that the decoded corpus of <see cref="AvifBenchmarks"/> is too small
 /// to weigh: the self-guided loop restoration of 64x64 blocks with every parameter set, the film grain synthesis of a
-/// 640x480 4:2:0 frame (the grain templates, then the grain of every stripe), and the CDEF of the 4x4 chroma blocks of
-/// 4:2:0 frames. Inputs are seeded random data;
+/// 640x480 4:2:0 frame (the grain templates, then the grain of every stripe), the CDEF of the 4x4 chroma blocks of 4:2:0
+/// frames, and the deblocking of pairs of consecutive edges, together and one edge at a time. Inputs are seeded random data;
 /// <c>VectorizedKernelTests</c> checks the vector paths against their scalar references.
 /// </summary>
 [MemoryDiagnoser]
@@ -17,6 +17,8 @@ public sealed class Av1FilterBenchmarks : IDisposable
     private const int GrainHeight = 480;
     private const int CdefBlocks = 1024;
     private const int CdefStride = 4 + 4;
+    private const int DeblockStride = 64;
+    private const int DeblockEdges = 256;
     private const int BlockSize = Av1LoopRestoration.MaxBlockWidth;
     private const int SetCount = 16;
     private const int SourceStride = BlockSize + (2 * Av1LoopRestoration.Padding);
@@ -33,6 +35,8 @@ public sealed class Av1FilterBenchmarks : IDisposable
     private readonly ushort[] _cdefWindows = new ushort[CdefBlocks * (4 + 4) * CdefStride];
     private readonly ushort[] _cdefOutput = new ushort[CdefBlocks * 4 * CdefStride];
     private readonly int[][] _cdefOffsets = new int[8][];
+    private readonly ushort[] _deblockSource = new ushort[DeblockStride * DeblockStride];
+    private readonly ushort[] _deblockSamples = new ushort[DeblockStride * DeblockStride];
 
     [GlobalSetup]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded benchmark inputs.")]
@@ -63,6 +67,15 @@ public sealed class Av1FilterBenchmarks : IDisposable
         for (var direction = 0; direction < 8; direction++)
         {
             _cdefOffsets[direction] = GetCdefTapOffsets(direction);
+        }
+
+        // Smooth areas with steps: most lines are filtered, by every filter
+        for (var y = 0; y < DeblockStride; y++)
+        {
+            for (var x = 0; x < DeblockStride; x++)
+            {
+                _deblockSource[(y * DeblockStride) + x] = (ushort)Math.Clamp(100 + (((x / 8) + (y / 8)) % 3 * 6) + random.Next(-1, 2), 0, 255);
+            }
         }
 
         // Grain on the 3 planes, with the largest auto-regression lag and overlapping blocks: the parameters of a typical
@@ -136,7 +149,37 @@ public sealed class Av1FilterBenchmarks : IDisposable
         }
     }
 
+    [Benchmark(OperationsPerInvoke = DeblockEdges)]
+    public void DeblockEdgePairs() => Deblock(paired: true);
+
+    [Benchmark(OperationsPerInvoke = DeblockEdges)]
+    public void DeblockEdgesOneByOne() => Deblock(paired: false);
+
     public void Dispose() => Cleanup();
+
+    // Pairs of vertical and horizontal luma edges of the 3 filter sizes, inside the area (8 samples from its sides), level 32
+    private void Deblock(bool paired)
+    {
+        _deblockSource.CopyTo(_deblockSamples, 0);
+        for (var edge = 0; edge < DeblockEdges; edge++)
+        {
+            var vertical = (edge & 1) is 0;
+            var filterSize = 4 << ((edge >> 1) % 3);
+            var along = 8 + ((edge >> 3) % 6 * 8);
+            var across = 8 + ((edge >> 2) % 6 * 8);
+            var position = vertical ? (along * DeblockStride) + across : (across * DeblockStride) + along;
+            var (step, lineStep) = vertical ? (1, DeblockStride) : (DeblockStride, 1);
+            if (paired)
+            {
+                Av1LoopFilter.FilterLinePairs(_deblockSamples, position, step, lineStep, 0, filterSize, 8, 8, 76, 2, 8, 76, 2);
+            }
+            else
+            {
+                Av1LoopFilter.FilterLines(_deblockSamples, position, step, lineStep, 0, filterSize, 8, 8, 76, 2);
+                Av1LoopFilter.FilterLines(_deblockSamples, position + (4 * lineStep), step, lineStep, 0, filterSize, 8, 8, 76, 2);
+            }
+        }
+    }
 
     // The offsets of the taps of a direction in the window (section 7.15.3): 4 primary taps, then 8 secondary taps
     private static int[] GetCdefTapOffsets(int direction)

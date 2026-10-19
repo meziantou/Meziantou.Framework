@@ -419,4 +419,108 @@ internal static class Av1Simd
         Vector128.Narrow(low2.AsUInt32(), high2.AsUInt32()).CopyTo(samples.Slice(first + (2 * lineStep), 8));
         Vector128.Narrow(low3.AsUInt32(), high3.AsUInt32()).CopyTo(samples.Slice(first + (3 * lineStep), 8));
     }
+
+    /// <summary>
+    /// Loads 8 consecutive samples of 8 rows, from <paramref name="first"/>, as 8 vectors of 8 lanes (one per row): the
+    /// lane i of <c>columns[j]</c> is the sample <c>first + (i * lineStep) + j</c>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void LoadTransposed8(ReadOnlySpan<ushort> samples, int first, int lineStep, Span<Vector128<short>> columns)
+    {
+        Transpose(
+            Vector128.Create(samples.Slice(first, 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + lineStep, 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (2 * lineStep), 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (3 * lineStep), 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (4 * lineStep), 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (5 * lineStep), 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (6 * lineStep), 8)).AsInt16(),
+            Vector128.Create(samples.Slice(first + (7 * lineStep), 8)).AsInt16(),
+            out columns[0],
+            out columns[1],
+            out columns[2],
+            out columns[3],
+            out columns[4],
+            out columns[5],
+            out columns[6],
+            out columns[7]);
+    }
+
+    /// <summary>The inverse of <see cref="LoadTransposed8"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void StoreTransposed8(Span<ushort> samples, int first, int lineStep, ReadOnlySpan<Vector128<short>> columns)
+    {
+        Transpose(columns[0], columns[1], columns[2], columns[3], columns[4], columns[5], columns[6], columns[7], out var r0, out var r1, out var r2, out var r3, out var r4, out var r5, out var r6, out var r7);
+        r0.AsUInt16().CopyTo(samples.Slice(first, 8));
+        r1.AsUInt16().CopyTo(samples.Slice(first + lineStep, 8));
+        r2.AsUInt16().CopyTo(samples.Slice(first + (2 * lineStep), 8));
+        r3.AsUInt16().CopyTo(samples.Slice(first + (3 * lineStep), 8));
+        r4.AsUInt16().CopyTo(samples.Slice(first + (4 * lineStep), 8));
+        r5.AsUInt16().CopyTo(samples.Slice(first + (5 * lineStep), 8));
+        r6.AsUInt16().CopyTo(samples.Slice(first + (6 * lineStep), 8));
+        r7.AsUInt16().CopyTo(samples.Slice(first + (7 * lineStep), 8));
+    }
+
+    /// <summary>An 8x8 transposition: the lane i of the output j is the lane j of the input i.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Transpose(Vector128<short> v0, Vector128<short> v1, Vector128<short> v2, Vector128<short> v3, Vector128<short> v4, Vector128<short> v5, Vector128<short> v6, Vector128<short> v7, out Vector128<short> r0, out Vector128<short> r1, out Vector128<short> r2, out Vector128<short> r3, out Vector128<short> r4, out Vector128<short> r5, out Vector128<short> r6, out Vector128<short> r7)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // The pairs of rows, then the pairs of pairs, then the halves: t0 holds the even lanes of rows 0 and 1, u0 the
+            // lanes 0 and 4 of rows 0 to 3
+            var t0 = AdvSimd.Arm64.TransposeEven(v0, v1).AsInt32();
+            var t1 = AdvSimd.Arm64.TransposeOdd(v0, v1).AsInt32();
+            var t2 = AdvSimd.Arm64.TransposeEven(v2, v3).AsInt32();
+            var t3 = AdvSimd.Arm64.TransposeOdd(v2, v3).AsInt32();
+            var t4 = AdvSimd.Arm64.TransposeEven(v4, v5).AsInt32();
+            var t5 = AdvSimd.Arm64.TransposeOdd(v4, v5).AsInt32();
+            var t6 = AdvSimd.Arm64.TransposeEven(v6, v7).AsInt32();
+            var t7 = AdvSimd.Arm64.TransposeOdd(v6, v7).AsInt32();
+            var u0 = AdvSimd.Arm64.TransposeEven(t0, t2).AsInt64();
+            var u2 = AdvSimd.Arm64.TransposeOdd(t0, t2).AsInt64();
+            var u1 = AdvSimd.Arm64.TransposeEven(t1, t3).AsInt64();
+            var u3 = AdvSimd.Arm64.TransposeOdd(t1, t3).AsInt64();
+            var u4 = AdvSimd.Arm64.TransposeEven(t4, t6).AsInt64();
+            var u6 = AdvSimd.Arm64.TransposeOdd(t4, t6).AsInt64();
+            var u5 = AdvSimd.Arm64.TransposeEven(t5, t7).AsInt64();
+            var u7 = AdvSimd.Arm64.TransposeOdd(t5, t7).AsInt64();
+            r0 = AdvSimd.Arm64.TransposeEven(u0, u4).AsInt16();
+            r4 = AdvSimd.Arm64.TransposeOdd(u0, u4).AsInt16();
+            r1 = AdvSimd.Arm64.TransposeEven(u1, u5).AsInt16();
+            r5 = AdvSimd.Arm64.TransposeOdd(u1, u5).AsInt16();
+            r2 = AdvSimd.Arm64.TransposeEven(u2, u6).AsInt16();
+            r6 = AdvSimd.Arm64.TransposeOdd(u2, u6).AsInt16();
+            r3 = AdvSimd.Arm64.TransposeEven(u3, u7).AsInt16();
+            r7 = AdvSimd.Arm64.TransposeOdd(u3, u7).AsInt16();
+            return;
+        }
+
+        // The lanes 0 to 3 and 4 to 7 of the pairs of rows, then the pairs of pairs, then the halves: a0 holds the lanes 0 to 3
+        // of rows 0 and 1, b0 the lanes 0 and 1 of rows 0 to 3
+        var a0 = Sse2.UnpackLow(v0, v1).AsInt32();
+        var a1 = Sse2.UnpackHigh(v0, v1).AsInt32();
+        var a2 = Sse2.UnpackLow(v2, v3).AsInt32();
+        var a3 = Sse2.UnpackHigh(v2, v3).AsInt32();
+        var a4 = Sse2.UnpackLow(v4, v5).AsInt32();
+        var a5 = Sse2.UnpackHigh(v4, v5).AsInt32();
+        var a6 = Sse2.UnpackLow(v6, v7).AsInt32();
+        var a7 = Sse2.UnpackHigh(v6, v7).AsInt32();
+        var b0 = Sse2.UnpackLow(a0, a2).AsInt64();
+        var b1 = Sse2.UnpackHigh(a0, a2).AsInt64();
+        var b2 = Sse2.UnpackLow(a1, a3).AsInt64();
+        var b3 = Sse2.UnpackHigh(a1, a3).AsInt64();
+        var b4 = Sse2.UnpackLow(a4, a6).AsInt64();
+        var b5 = Sse2.UnpackHigh(a4, a6).AsInt64();
+        var b6 = Sse2.UnpackLow(a5, a7).AsInt64();
+        var b7 = Sse2.UnpackHigh(a5, a7).AsInt64();
+        r0 = Sse2.UnpackLow(b0, b4).AsInt16();
+        r1 = Sse2.UnpackHigh(b0, b4).AsInt16();
+        r2 = Sse2.UnpackLow(b1, b5).AsInt16();
+        r3 = Sse2.UnpackHigh(b1, b5).AsInt16();
+        r4 = Sse2.UnpackLow(b2, b6).AsInt16();
+        r5 = Sse2.UnpackHigh(b2, b6).AsInt16();
+        r6 = Sse2.UnpackLow(b3, b7).AsInt16();
+        r7 = Sse2.UnpackHigh(b3, b7).AsInt16();
+    }
 }

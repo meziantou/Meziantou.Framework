@@ -20,6 +20,10 @@ public class DrawingBenchmarks : IDisposable
 
     private static readonly GradientStop[] Stops = [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 32768)), new(1, new Rgba64(65535, 65535, 0, 65535))];
 
+    private static readonly BlurFilter BoxBlurFilter = new(6);
+    private static readonly BlurFilter WeightedBlurFilter = new(1.5);
+    private static readonly DropShadowFilter ShadowFilter = new(new Rgba64(0, 0, 0, 40000), new PointD(6, 8), 8);
+
     private Image<Rgba32> _image = null!;
     private Image<Rgba64> _image64 = null!;
     private Image<Rgba32> _source = null!;
@@ -269,6 +273,30 @@ public class DrawingBenchmarks : IDisposable
     public int FilterBackdrop()
     {
         _image.Draw(static canvas => canvas.FilterBackdrop(ColorMatrix.CreateSepia(0.4)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Blur filter 6 of a circle of radius 150: three box blurs per axis")]
+    public int FilterBlurBoxes()
+    {
+        _image.Draw(static canvas => canvas.Filter(BoxBlurFilter, static canvas => canvas.FillCircle(new Rgba32(250, 120, 0), new PointD(600, 400), 150)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Blur filter 1.5 of a circle of radius 150: Gaussian weights")]
+    public int FilterBlurWeights()
+    {
+        _image.Draw(static canvas => canvas.Filter(WeightedBlurFilter, static canvas => canvas.FillCircle(new Rgba32(250, 120, 0), new PointD(600, 400), 150)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Drop shadow filter, blur 8, of a rounded rectangle of 300x200")]
+    public int FilterDropShadow()
+    {
+        _image.Draw(static canvas => canvas.Filter(ShadowFilter, static canvas => canvas.FillRoundedRectangle(new Rgba32(250, 250, 250), new RectangleD(100, 100, 300, 200), 16)));
         return _image.Width;
     }
 

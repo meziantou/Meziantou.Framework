@@ -4278,19 +4278,62 @@ public sealed class VectorizedKernelTests
                 }
 
                 var adler = ((initial >> 16) % 65521 << 16) | ((initial & 0xFFFF) % 65521);
-                Assert.Equal(Adler32.UpdateScalar(adler, span), Adler32.Update(adler, span));
+                AssertAdler32PathsMatchTheReference(adler, span);
             }
         }
 
         // Extreme bytes (all 0xFF) maximize every partial sum
         var ones = new byte[200_000];
         Array.Fill(ones, (byte)0xFF);
-        Assert.Equal(Adler32.UpdateScalar(0xFFF0FFF0, ones), Adler32.Update(0xFFF0FFF0, ones));
+        AssertAdler32PathsMatchTheReference(0xFFF0FFF0, ones);
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.Update(Crc32.Initial, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateTables(Crc32.Initial, ones));
         if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
         {
             Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateCarrylessMultiply(Crc32.Initial, ones));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Adler32PathsMatchTheByteAtATimeReferenceForEveryShortLength()
+    {
+        // Every length up to 3000 covers every tail of the 16-byte and 32-byte steps; an odd start makes the loads unaligned
+        var random = new Random(33);
+        var data = new byte[3001];
+        random.NextBytes(data);
+        var ones = new byte[3001];
+        Array.Fill(ones, (byte)0xFF);
+        for (var length = 0; length <= 3000; length++)
+        {
+            AssertAdler32PathsMatchTheReference(Adler32.Initial, data.AsSpan(1, length));
+            AssertAdler32PathsMatchTheReference(0x12345678 % 65521, data.AsSpan(0, length));
+            AssertAdler32PathsMatchTheReference(0xFFF0FFF0, ones.AsSpan(0, length));
+        }
+    }
+
+    private static void AssertAdler32PathsMatchTheReference(uint adler, ReadOnlySpan<byte> data)
+    {
+        var expected = Adler32.UpdateScalar(adler, data);
+        Assert.Equal(expected, Adler32.Update(adler, data));
+        if (Vector128.IsHardwareAccelerated)
+        {
+            Assert.Equal(expected, Adler32.UpdateVector128(adler, data));
+        }
+
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported)
+        {
+            Assert.Equal(expected, Adler32.UpdateAdvSimd(adler, data));
+        }
+
+        if (Ssse3.IsSupported)
+        {
+            Assert.Equal(expected, Adler32.UpdateSsse3(adler, data));
+        }
+
+        if (Avx2.IsSupported)
+        {
+            Assert.Equal(expected, Adler32.UpdateAvx2(adler, data));
         }
     }
 

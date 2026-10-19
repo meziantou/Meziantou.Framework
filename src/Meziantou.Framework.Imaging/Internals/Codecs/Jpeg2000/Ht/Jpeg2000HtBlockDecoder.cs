@@ -149,20 +149,26 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         var count = width * height;
         var magnitudes = _magnitudes.Span[..count];
         var states = _states.Span[..count];
-        states.Clear();
-        DecodeCleanup(magnitudes, states, width, height, skippedBitPlanes);
         var tools = Jpeg2000Tools.HighThroughput;
-        if (passCount > 1)
+        if (passCount == 1)
         {
-            _refinementOffset = refinementOffset;
-            _refinementLength = refinementLength;
-            DecodeSignificancePropagation(states, width, height, isVerticallyCausal);
-            tools |= Jpeg2000Tools.HighThroughputSignificancePropagation;
-            if (passCount > 2)
-            {
-                DecodeMagnitudeRefinement(states, width, height);
-                tools |= Jpeg2000Tools.HighThroughputMagnitudeRefinement;
-            }
+            // Without refinement pass, the HT cleanup pass writes the coefficients of the significant samples itself
+            samples = samples[..count];
+            samples.Clear();
+            DecodeCleanup(magnitudes, states, samples, lowestPlane, width, height, skippedBitPlanes);
+            return tools;
+        }
+
+        states.Clear();
+        DecodeCleanup(magnitudes, states, samples: default, lowestPlane, width, height, skippedBitPlanes);
+        _refinementOffset = refinementOffset;
+        _refinementLength = refinementLength;
+        DecodeSignificancePropagation(states, width, height, isVerticallyCausal);
+        tools |= Jpeg2000Tools.HighThroughputSignificancePropagation;
+        if (passCount > 2)
+        {
+            DecodeMagnitudeRefinement(states, width, height);
+            tools |= Jpeg2000Tools.HighThroughputMagnitudeRefinement;
         }
 
         // 7.6, with the half of the range of the bit-planes that are not decoded
@@ -210,8 +216,19 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
     private static InvalidImageContentException Invalid(string message) => Jpeg2000Format.Invalid("a code-block of the high-throughput block coder is malformed: " + message);
 
     /// <summary>The HT cleanup decoding algorithm (7.3).</summary>
-    private void DecodeCleanup(Span<uint> magnitudes, Span<byte> states, int width, int height, int skippedBitPlanes)
+    /// <param name="magnitudes">Receives the magnitudes of the significant samples, when <paramref name="samples"/> is empty.</param>
+    /// <param name="states">Receives the states of the significant samples, when <paramref name="samples"/> is empty; cleared by the caller.</param>
+    /// <param name="samples">
+    /// Empty, or receives the coefficients of the significant samples when no refinement pass follows (7.6): the sign in
+    /// the most significant bit, and <c>(2 * magnitude + 1) &lt;&lt; lowestPlane</c>; cleared by the caller.
+    /// </param>
+    /// <param name="lowestPlane">The lowest bit-plane the pass codes, from the least significant bit-plane.</param>
+    /// <param name="width">The width of the code-block.</param>
+    /// <param name="height">The height of the code-block.</param>
+    /// <param name="skippedBitPlanes">The number of skipped magnitude bit-planes (S_blk).</param>
+    private void DecodeCleanup(Span<uint> magnitudes, Span<byte> states, Span<int> samples, int lowestPlane, int width, int height, int skippedBitPlanes)
     {
+        var writesCoefficients = !samples.IsEmpty;
         var quadsWide = (width + 1) / 2;
         var quadsHigh = (height + 1) / 2;
 
@@ -348,8 +365,16 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
                             throw Invalid("a sample outside of the code-block is significant.");
 
                         var index = (sampleY * width) + sampleX;
-                        magnitudes[index] = magnitude;
-                        states[index] = (byte)(Significant | ((value & 1) != 0 ? Negative : 0));
+                        if (writesCoefficients)
+                        {
+                            var coefficient = ((2 * magnitude) + 1) << lowestPlane;
+                            samples[index] = (int)((value & 1) != 0 ? coefficient | SignBit : coefficient);
+                        }
+                        else
+                        {
+                            magnitudes[index] = magnitude;
+                            states[index] = (byte)(Significant | ((value & 1) != 0 ? Negative : 0));
+                        }
                     }
 
                     nextExponents[(2 * x) + 2] = (byte)bottomLeft;

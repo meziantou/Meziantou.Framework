@@ -3878,6 +3878,37 @@ public sealed class VectorizedKernelTests
                 Assert.Equal(expected, row);
             }
         }
+
+        // The 4x4 blocks, two rows per vector, in a plane whose rows are longer: the samples around the block are unchanged
+        const int Stride = 7;
+        for (var round = 0; round < 200; round++)
+        {
+            var samples = new ushort[Stride * 6];
+            var residual = new int[16];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = (ushort)random.Next(maxValue + 1);
+            }
+
+            for (var i = 0; i < residual.Length; i++)
+            {
+                residual[i] = (round % 3) switch
+                {
+                    0 => random.Next(-maxValue - 1, maxValue + 2),
+                    1 => random.Next(2) is 0 ? int.MinValue / 2 : int.MaxValue / 2,
+                    _ => random.Next(-8, 9),
+                };
+            }
+
+            var expected = (ushort[])samples.Clone();
+            for (var y = 0; y < 4; y++)
+            {
+                HevcSliceCoder.AddResidualRowScalar(expected.AsSpan(((y + 1) * Stride) + 2, 4), residual.AsSpan(y * 4, 4), maxValue);
+            }
+
+            HevcSliceCoder.AddResidual4x4(samples.AsSpan(Stride + 2), Stride, residual, maxValue);
+            Assert.Equal(expected, samples);
+        }
     }
 
     [Theory]

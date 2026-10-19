@@ -77,6 +77,30 @@ internal static class HevcSimd
         }
     }
 
+    /// <summary>
+    /// A 4x4 transposition of 16-bit lanes, in place, two rows per vector: <paramref name="rows01"/> has the rows 0 and 1 in
+    /// its lanes 0 to 3 and 4 to 7, <paramref name="rows23"/> the rows 2 and 3.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Transpose4x4(ref Vector128<short> rows01, ref Vector128<short> rows23)
+    {
+        // The lanes of the rows 0 and 2, then 1 and 3, interleaved; then those of both halves
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            var t0 = AdvSimd.Arm64.ZipLow(rows01, rows23);
+            var t1 = AdvSimd.Arm64.ZipHigh(rows01, rows23);
+            rows01 = AdvSimd.Arm64.ZipLow(t0, t1);
+            rows23 = AdvSimd.Arm64.ZipHigh(t0, t1);
+        }
+        else
+        {
+            var t0 = Sse2.UnpackLow(rows01, rows23);
+            var t1 = Sse2.UnpackHigh(rows01, rows23);
+            rows01 = Sse2.UnpackLow(t0, t1);
+            rows23 = Sse2.UnpackHigh(t0, t1);
+        }
+    }
+
     /// <summary>A 4x4 transposition of 32-bit lanes, in place: the lane i of the vector j becomes the lane j of the vector i.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Transpose4x4(ref Vector128<int> r0, ref Vector128<int> r1, ref Vector128<int> r2, ref Vector128<int> r3)

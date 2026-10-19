@@ -159,6 +159,12 @@ internal static class HevcIntraPredictor
     /// <param name="bitDepth">The bit depth of the samples.</param>
     public static void PredictPlanar(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS, int bitDepth)
     {
+        if (Vector128.IsHardwareAccelerated && nTbS is 4 && bitDepth <= 12)
+        {
+            PredictPlanar4x4(p, destination, stride);
+            return;
+        }
+
         if (!Vector128.IsHardwareAccelerated || nTbS < 8 || bitDepth > 10)
         {
             PredictPlanarScalar(p, destination, stride, nTbS);
@@ -186,6 +192,30 @@ internal static class HevcIntraPredictor
                 var sum = ((Vector128.Create((ushort)nTbS) - right) * left) + (right * topRight) + (vertical * Vector128.Create(top[x..])) + bottom + rounding;
                 (sum >>> shift).CopyTo(row[x..]);
             }
+        }
+    }
+
+    // Equation 8-46 for a 4x4 block, two rows per vector: the weights of each pair of products sum to 4, so that the sum with
+    // the rounding is at most 2 * 4 * ( 2^12 - 1 ) + 4 = 32764, which fits in 16 bits
+    private static void PredictPlanar4x4(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride)
+    {
+        const int Corner = 8;
+        var topRight = Vector128.Create(p[Corner + 5]);
+        var bottomLeft = Vector128.Create(p[Corner - 5]);
+        var top = Vector64.Create(p.Slice(Corner + 1, 4));
+        var tops = Vector128.Create(top, top);
+        var right = Vector128.Create((ushort)1, 2, 3, 4, 1, 2, 3, 4);
+        var left = Vector128.Create((ushort)4) - right;
+        var rounding = Vector128.Create((ushort)4);
+        for (var y = 0; y < 4; y += 2)
+        {
+            var leftSamples = Vector128.Create(Vector64.Create(p[Corner - 1 - y]), Vector64.Create(p[Corner - 2 - y]));
+            var vertical = Vector128.Create(Vector64.Create((ushort)(3 - y)), Vector64.Create((ushort)(2 - y)));
+            var bottom = Vector128.Create(Vector64.Create((ushort)(y + 1)), Vector64.Create((ushort)(y + 2)));
+            var sum = (left * leftSamples) + (right * topRight) + (vertical * tops) + (bottom * bottomLeft) + rounding;
+            var rows = sum >>> 3;
+            rows.GetLower().CopyTo(destination.Slice(y * stride, 4));
+            rows.GetUpper().CopyTo(destination.Slice((y + 1) * stride, 4));
         }
     }
 
@@ -260,7 +290,7 @@ internal static class HevcIntraPredictor
     [SkipLocalsInit]
     public static void PredictAngular(ReadOnlySpan<ushort> p, Span<ushort> destination, int stride, int nTbS, int predModeIntra, bool edgeFilter, int bitDepth)
     {
-        if (!Vector128.IsHardwareAccelerated || nTbS < 8 || bitDepth > 11)
+        if (!Vector128.IsHardwareAccelerated || bitDepth > 11 || (nTbS is 4 ? !HevcSimd.IsSupported : nTbS < 8))
         {
             PredictAngularScalar(p, destination, stride, nTbS, predModeIntra, edgeFilter, bitDepth);
             return;
@@ -303,27 +333,39 @@ internal static class HevcIntraPredictor
             }
         }
 
-        // Equations 8-56 to 8-59 and 8-64 to 8-67: the rows of a vertical mode, or the columns of a horizontal mode, which
-        // are rows of the transposed block, 8 samples at a time. 32 * ( 2^11 - 1 ) + 16 fits in 16 bits
-        Span<ushort> transposed = unsafe(stackalloc ushort[vertical ? 0 : nTbS * nTbS]);
-        var round = Vector128.Create((ushort)16);
-        for (var y = 0; y < nTbS; y++)
+        if (nTbS is 4)
         {
-            var iIdx = ((y + 1) * intraPredAngle) >> 5;
-            var iFact = ((y + 1) * intraPredAngle) & 31;
-            var row = vertical ? destination.Slice(y * stride, nTbS) : transposed.Slice(y * nTbS, nTbS);
-            var source = reference.Slice(nTbS + iIdx + 1, nTbS + 1);
-            if (iFact is 0)
+            Interpolate4x4(reference, intraPredAngle, vertical, destination, stride);
+        }
+        else
+        {
+            // Equations 8-56 to 8-59 and 8-64 to 8-67: the rows of a vertical mode, or the columns of a horizontal mode, which
+            // are rows of the transposed block, 8 samples at a time. 32 * ( 2^11 - 1 ) + 16 fits in 16 bits
+            Span<ushort> transposed = unsafe(stackalloc ushort[vertical ? 0 : nTbS * nTbS]);
+            var round = Vector128.Create((ushort)16);
+            for (var y = 0; y < nTbS; y++)
             {
-                source[..nTbS].CopyTo(row);
-                continue;
+                var iIdx = ((y + 1) * intraPredAngle) >> 5;
+                var iFact = ((y + 1) * intraPredAngle) & 31;
+                var row = vertical ? destination.Slice(y * stride, nTbS) : transposed.Slice(y * nTbS, nTbS);
+                var source = reference.Slice(nTbS + iIdx + 1, nTbS + 1);
+                if (iFact is 0)
+                {
+                    source[..nTbS].CopyTo(row);
+                    continue;
+                }
+
+                var weight = Vector128.Create((ushort)iFact);
+                var otherWeight = Vector128.Create((ushort)(32 - iFact));
+                for (var x = 0; x < nTbS; x += 8)
+                {
+                    (((otherWeight * Vector128.Create(source[x..])) + (weight * Vector128.Create(source[(x + 1)..])) + round) >>> 5).CopyTo(row[x..]);
+                }
             }
 
-            var weight = Vector128.Create((ushort)iFact);
-            var otherWeight = Vector128.Create((ushort)(32 - iFact));
-            for (var x = 0; x < nTbS; x += 8)
+            if (!vertical)
             {
-                (((otherWeight * Vector128.Create(source[x..])) + (weight * Vector128.Create(source[(x + 1)..])) + round) >>> 5).CopyTo(row[x..]);
+                Transpose(transposed, destination, stride, nTbS);
             }
         }
 
@@ -342,7 +384,6 @@ internal static class HevcIntraPredictor
             return;
         }
 
-        Transpose(transposed, destination, stride, nTbS);
         if (predModeIntra is HevcConstants.IntraAngular10 && edgeFilter)
         {
             // Equation 8-68
@@ -351,6 +392,36 @@ internal static class HevcIntraPredictor
                 destination[x] = (ushort)Math.Clamp(p[corner - 1] + ((p[corner + 1 + x] - p[corner]) >> 1), 0, maxValue);
             }
         }
+    }
+
+    // Equations 8-56 to 8-59 and 8-64 to 8-67 for a 4x4 block, two rows (or two columns of a horizontal mode, which are
+    // transposed) per vector: ref[ x ] is reference[ 4 + x ]. A weight of 0 copies the samples
+    private static void Interpolate4x4(ReadOnlySpan<ushort> reference, int intraPredAngle, bool vertical, Span<ushort> destination, int stride)
+    {
+        var rows01 = Interpolate2Rows(reference, intraPredAngle, 0).AsInt16();
+        var rows23 = Interpolate2Rows(reference, intraPredAngle, 2).AsInt16();
+        if (!vertical)
+        {
+            HevcSimd.Transpose4x4(ref rows01, ref rows23);
+        }
+
+        rows01.AsUInt16().GetLower().CopyTo(destination[..4]);
+        rows01.AsUInt16().GetUpper().CopyTo(destination.Slice(stride, 4));
+        rows23.AsUInt16().GetLower().CopyTo(destination.Slice(2 * stride, 4));
+        rows23.AsUInt16().GetUpper().CopyTo(destination.Slice(3 * stride, 4));
+    }
+
+    // The rows y and y + 1 of Interpolate4x4: 32 * ( 2^11 - 1 ) + 16 fits in 16 bits
+    private static Vector128<ushort> Interpolate2Rows(ReadOnlySpan<ushort> reference, int intraPredAngle, int y)
+    {
+        var position0 = (y + 1) * intraPredAngle;
+        var position1 = (y + 2) * intraPredAngle;
+        var source0 = reference.Slice(4 + (position0 >> 5) + 1, 5);
+        var source1 = reference.Slice(4 + (position1 >> 5) + 1, 5);
+        var first = Vector128.Create(Vector64.Create(source0), Vector64.Create(source1));
+        var second = Vector128.Create(Vector64.Create(source0[1..]), Vector64.Create(source1[1..]));
+        var weight = Vector128.Create(Vector64.Create((ushort)(position0 & 31)), Vector64.Create((ushort)(position1 & 31)));
+        return (((Vector128.Create((ushort)32) - weight) * first) + (weight * second) + Vector128.Create((ushort)16)) >>> 5;
     }
 
     // Writes the transposed rows of nTbS samples (a multiple of 8) into the rows of the block, by blocks of 8x8 samples

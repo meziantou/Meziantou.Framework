@@ -1852,12 +1852,24 @@ public sealed class VectorizedKernelTests
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(color));
                 DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(color));
                 Assert.Equal(expected, actual);
+                if (Avx2.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx2(actual, coverage, new DrawingSource(color));
+                    Assert.Equal(expected, actual);
+                }
 
                 expected = (byte[])pixels.Clone();
                 actual = (byte[])pixels.Clone();
                 DrawingKernels.CompositeOverScalar<byte>(expected, 4, coverage, new DrawingSource(colors));
                 DrawingKernels.CompositeOver8(actual, coverage, new DrawingSource(colors));
                 Assert.Equal(expected, actual);
+                if (Avx2.IsSupported)
+                {
+                    actual = (byte[])pixels.Clone();
+                    DrawingKernels.CompositeOver8Avx2(actual, coverage, new DrawingSource(colors));
+                    Assert.Equal(expected, actual);
+                }
             }
         }
     }

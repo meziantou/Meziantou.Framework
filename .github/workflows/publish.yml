@@ -46,7 +46,7 @@ jobs:
         with:
           input-project: eng/packages.proj
           output-project: eng/packages.delta.proj
-          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
+          base-commit: ${{ case(github.event_name == 'push', github.event.before, github.event.pull_request.base.sha) }}
           # A manual run packs every package, so it can recover from a partial publish
           run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |

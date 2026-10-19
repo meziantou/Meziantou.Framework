@@ -1822,6 +1822,17 @@ public sealed class VectorizedKernelTests
                     };
                 }
 
+                if (round >= 32)
+                {
+                    // Runs without coverage, as outside of a clip: they are skipped up to the block of the next covered pixel
+                    for (var i = random.Next(8); i < length; i += random.Next(1, 24))
+                    {
+                        var end = Math.Min(length, i + random.Next(1, 40));
+                        coverage.AsSpan(i..end).Clear();
+                        i = end;
+                    }
+                }
+
                 var colors = new ushort[length * 4];
                 for (var i = 0; i < colors.Length; i++)
                 {

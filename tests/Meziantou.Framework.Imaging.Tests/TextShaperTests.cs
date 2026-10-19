@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Typography;
@@ -1252,6 +1253,46 @@ public sealed class TextShaperTests
         // Two of them are within what a font can have.
         font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 2, subtableCount: 30000));
         Assert.Equal(1, Shape(font, "A").Length);
+    }
+
+    [Theory]
+    [InlineData(new int[] { 1, 0 })]
+    [InlineData(new int[] { 1, 5, 3, 7, 255, 256, 600 })]
+    [InlineData(new int[] { 1, 3, 9, 4, 12 })]
+    [InlineData(new int[] { 1, 3, 9, 9, 12 })]
+    [InlineData(new int[] { 2, 3, 0, 4, 0, 250, 300, 5, 1000, 1000, 65534 })]
+    [InlineData(new int[] { 2, 2, 10, 20, 0, 15, 30, 11 })]
+    [InlineData(new int[] { 2, 2, 20, 10, 0, 40, 50, 11 })]
+    [InlineData(new int[] { 2, 2, 40, 50, 0, 10, 20, 11 })]
+    [InlineData(new int[] { 1, 4, 3, 7 })]
+    [InlineData(new int[] { 2, 2, 10, 20, 0 })]
+    [InlineData(new int[] { 3, 1, 5 })]
+    public void TheCoverageCacheGivesTheIndexesOfTheSearch(int[] words)
+    {
+        // The table: its format, its count, then glyphs or ranges, some out of order or overlapping, some truncated
+        var table = new byte[(words.Length * 2) + 2];
+        for (var i = 0; i < words.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(2 + (i * 2)), (ushort)words[i]);
+        }
+
+        var cache = new CoverageCache(offset: 2);
+        for (var glyph = 0; glyph < 1100; glyph++)
+        {
+            Assert.Equal(Find(() => LayoutCommon.GetCoverage(table, 2, glyph)), Find(() => cache.Get(table, glyph)));
+        }
+
+        static string Find(Func<int> lookup)
+        {
+            try
+            {
+                return lookup().ToString(CultureInfo.InvariantCulture);
+            }
+            catch (InvalidFontException)
+            {
+                return "invalid";
+            }
+        }
     }
 
     /// <summary>

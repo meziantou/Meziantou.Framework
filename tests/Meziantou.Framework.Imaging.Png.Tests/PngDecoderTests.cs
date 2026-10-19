@@ -612,6 +612,51 @@ public sealed class PngDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(8)]
+    [InlineData(16)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Adam7PixelCopiesMatchTheScalarReference(int bytesPerPixel)
+    {
+        // The typed copies of the usual pixel sizes scatter and gather exactly the pixels of the reference, and nothing else
+        var random = new Random(bytesPerPixel);
+        foreach (var (sourceStep, destinationStep) in new[] { (1, 1), (1, 2), (1, 8), (2, 1), (4, 1), (8, 1), (3, 5) })
+        {
+            for (var count = 0; count <= 19; count++)
+            {
+                var sourceLength = (Math.Max(count - 1, 0) * sourceStep * bytesPerPixel) + bytesPerPixel + 3;
+                var destinationLength = (Math.Max(count - 1, 0) * destinationStep * bytesPerPixel) + bytesPerPixel + 3;
+                var source = new byte[sourceLength];
+                random.NextBytes(source);
+                var expected = new byte[destinationLength];
+                random.NextBytes(expected);
+                var actual = expected.ToArray();
+                PngInterlace.CopyPixelsScalar(source, sourceStep, expected, destinationStep, count, bytesPerPixel);
+                PngInterlace.CopyPixels(source, sourceStep, actual, destinationStep, count, bytesPerPixel);
+                Assert.True(expected.AsSpan().SequenceEqual(actual), $"steps {sourceStep}/{destinationStep}, {count} pixels");
+            }
+        }
+
+        // One pixel
+        var pixel = new byte[bytesPerPixel + 2];
+        random.NextBytes(pixel);
+        var copy = new byte[bytesPerPixel + 2];
+        PngInterlace.CopyPixel(pixel.AsSpan(1), copy.AsSpan(1), bytesPerPixel);
+        Assert.True(pixel.AsSpan(1, bytesPerPixel).SequenceEqual(copy.AsSpan(1, bytesPerPixel)));
+        Assert.Equal(0, copy[0]);
+        Assert.Equal(0, copy[^1]);
+
+        // The last pixel of each sequence must be in its span
+        Assert.Throws<ArgumentOutOfRangeException>(() => PngInterlace.CopyPixels(new byte[(2 * bytesPerPixel) - 1], 1, new byte[64], 1, 2, bytesPerPixel));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PngInterlace.CopyPixels(new byte[64], 1, new byte[(7 * bytesPerPixel) - 1], 3, 3, bytesPerPixel));
+    }
+
     [Fact]
     public void FilterReconstructionMatchesTheSpecificationPredictors()
     {

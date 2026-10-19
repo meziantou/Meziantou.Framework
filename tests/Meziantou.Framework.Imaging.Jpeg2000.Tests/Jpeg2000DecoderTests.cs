@@ -166,6 +166,68 @@ public sealed class Jpeg2000DecoderTests
     }
 
     [Fact]
+    public void ScaleTablesGiveTheScaledValueOfEverySample()
+    {
+        // The row writer scales through a table when the image has enough pixels: every depth below the 8-bit and 16-bit
+        // targets, every value of the depth
+        foreach (var targetMax in new[] { (int)byte.MaxValue, ushort.MaxValue })
+        {
+            for (var precision = 1; precision < (targetMax == byte.MaxValue ? 8 : 16); precision++)
+            {
+                var count = 1 << precision;
+                var expected = new int[count];
+                for (var value = 0; value < count; value++)
+                {
+                    expected[value] = (int)((((long)value * targetMax) + ((count - 1) / 2)) / (count - 1));
+                }
+
+                var divided = Enumerable.Range(0, count).ToArray();
+                Jpeg2000RowWriter.Scale(divided, precision, targetMax);
+                var table = new ushort[count];
+                Jpeg2000RowWriter.BuildScaleTable(table, precision, targetMax);
+                var tabulated = Enumerable.Range(0, count).ToArray();
+                Jpeg2000RowWriter.Scale(tabulated, table);
+                Assert.Equal(expected, divided, message: $"{precision} bits to {targetMax}, division");
+                Assert.Equal(expected, tabulated, message: $"{precision} bits to {targetMax}, table");
+            }
+        }
+    }
+
+    [Fact]
+    public void SubsampledColumnsTakeTheSampleUnderEachPixel()
+    {
+        // The pixel at the column x of the reference grid takes the sample floor(x / XRsiz) of the tile-component, clamped
+        // to its first and last samples
+        for (var subsampling = 1; subsampling <= 5; subsampling++)
+        {
+            for (var left = 0L; left <= 13; left++)
+            {
+                for (var width = 1; width <= 23; width++)
+                {
+                    var first = (left + subsampling - 1) / subsampling;
+                    var end = (left + width + subsampling - 1) / subsampling;
+                    for (var x0 = Math.Max(0, first - 1); x0 <= first + 1; x0++)
+                    {
+                        for (var sampleCount = 1; sampleCount <= end - first + 1; sampleCount++)
+                        {
+                            var samples = Enumerable.Range(100, sampleCount).ToArray();
+                            var expected = new int[width];
+                            for (var i = 0; i < width; i++)
+                            {
+                                expected[i] = samples[(int)(Math.Clamp((left + i) / subsampling, x0, x0 + sampleCount - 1) - x0)];
+                            }
+
+                            var actual = new int[width];
+                            Jpeg2000RowWriter.ReplicateColumns(samples, actual, left, subsampling, x0);
+                            Assert.Equal(expected, actual, message: $"XRsiz {subsampling}, left {left}, width {width}, x0 {x0}, {sampleCount} samples");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void IrreversibleFilesDecodeToTheSamplesOfTheReferenceDecoders()
     {
         // The file is coded at its full rate with the 9-7 filter: what it lost is at most two levels. The expectation is

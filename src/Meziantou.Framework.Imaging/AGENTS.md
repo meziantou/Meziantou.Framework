@@ -594,7 +594,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
-  of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
+  of the canvas stay rows of the image, it converts each row of the image once; otherwise it converts the pixels it reads
+  one by one by segments of a row, kept for the lease (a direct table, or a hashed one of 8,192 segments for a large
+  region; the pixels are read one by one when the scope has no room for it). An image moved by whole pixels reads one
+  period of its wrap mode run by run and copies it over the rest of the run. `DrawImage` is a fill of the rectangle
   with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
   is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
   columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.

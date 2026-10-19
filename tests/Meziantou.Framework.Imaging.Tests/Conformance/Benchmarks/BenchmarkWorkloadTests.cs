@@ -30,6 +30,7 @@ public sealed class BenchmarkWorkloadTests
     {
         AssertLossless(BenchmarkInputs.SmallPng, Image.ImportPixelData<Rgba32>(BenchmarkInputs.SmallPngSource, 64, 64));
         AssertLossless(BenchmarkInputs.LargePng8, Image.ImportPixelData<Rgb24>(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight));
+        AssertLossless(BenchmarkInputs.InterlacedPng8, Image.ImportPixelData<Rgb24>(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight));
         AssertLossless(BenchmarkInputs.LargePng16, Image.ImportPixelData<Rgba64>(BenchmarkInputs.LargeRgba64Source, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height));
 
         static void AssertLossless(byte[] png, Image source)

@@ -24,6 +24,7 @@ public class PngBenchmarks : IDisposable
         // Untimed correctness gate: PNG is lossless, so decoding must give back the independent synthetic source exactly
         WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, BenchmarkInputs.SmallPngSource);
         WorkloadChecks.RequireLossless(BenchmarkInputs.LargePng8, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.InterlacedPng8, BenchmarkInputs.LargeRgb24Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.LargePng16, BenchmarkInputs.LargeRgba64Source);
         WorkloadChecks.RequireLossless(BenchmarkInputs.PngGrayAlpha8, BenchmarkInputs.GrayAlpha8Pixels);
         WorkloadChecks.RequireLossless(BenchmarkInputs.PngRgb16, BenchmarkInputs.Rgb16Pixels);
@@ -65,6 +66,18 @@ public class PngBenchmarks : IDisposable
     [Benchmark]
     [Workload("2048x1536 Rgb24 -> PNG (adaptive filters, fastest zlib)", ReturnsOutputBytes = true)]
     public long SaveLarge8Fastest() => ImageWorkloads.Encode(_large8, new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 RGB8 Adam7-interlaced PNG -> Rgb24")]
+    public int LoadInterlaced8()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.InterlacedPng8);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> Adam7-interlaced PNG (adaptive filters, fastest zlib)", ReturnsOutputBytes = true)]
+    public long SaveInterlaced8() => ImageWorkloads.Encode(_large8, new PngEncoder { Interlaced = true, CompressionLevel = System.IO.Compression.CompressionLevel.Fastest }, _output);
 
     [Benchmark]
     [Workload("1024x768 RGBA16 PNG -> Rgba64")]

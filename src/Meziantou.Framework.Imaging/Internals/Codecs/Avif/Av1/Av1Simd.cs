@@ -214,6 +214,21 @@ internal static class Av1Simd
     }
 
     /// <summary>
+    /// The sums of the pairs of lanes 2i and 2i + 1 in the lanes 0 to 3, for lanes of at most 32767 (the sums of two
+    /// samples of at most 12 bits).
+    /// </summary>
+    // pmaddwd multiplies the signed 16-bit lanes by ones and adds the pairs of products: the lanes are not negative as
+    // signed values, so the products are the lanes
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<int> AddPairwiseWidening(Vector128<ushort> value)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.AddPairwiseWidening(value).AsInt32();
+
+        return Sse2.MultiplyAddAdjacent(value.AsInt16(), Vector128<short>.One);
+    }
+
+    /// <summary>
     /// The lanes <paramref name="index"/> to 7 of <paramref name="upper"/>, then the lanes 0 to <paramref name="index"/> - 1
     /// of <paramref name="lower"/> (the operand order of <see cref="AdvSimd.ExtractVector128(Vector128{short}, Vector128{short}, byte)"/>).
     /// </summary>

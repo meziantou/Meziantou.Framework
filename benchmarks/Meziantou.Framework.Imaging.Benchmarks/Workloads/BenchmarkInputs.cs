@@ -16,6 +16,7 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> LargeRgb24Bytes = new(() => BenchmarkPixels.Rgb24(LargeWidth, LargeHeight, seed: 1));
     private static readonly Lazy<byte[]> SmallPngData = new(() => EncodeRgba32(SmallPngSource, 64, 64, new PngEncoder()));
     private static readonly Lazy<byte[]> LargePng8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PngEncoder()));
+    private static readonly Lazy<byte[]> InterlacedPng8Data = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new PngEncoder { Interlaced = true }));
     private static readonly Lazy<byte[]> PngGrayAlpha8Data = new(() => PngLayoutInput.Encode(GrayAlpha8Samples(ServiceRgba32Source), ServiceWidth, ServiceHeight, colorType: 4, bitDepth: 8));
     private static readonly Lazy<byte[]> PngRgb16Data = new(() => PngLayoutInput.Encode(Rgb16Samples(LargeRgba64Source, bigEndian: true), Large16Width, Large16Height, colorType: 2, bitDepth: 16));
     private static readonly Lazy<byte[]> LargePng16Data = new(() => EncodeRgba64(LargeRgba64Source, Large16Width, Large16Height, new PngEncoder()));
@@ -97,6 +98,9 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets a 2048x1536 RGB 8-bit PNG (default <see cref="PngEncoder"/>).</summary>
     public static byte[] LargePng8 => LargePng8Data.Value;
+
+    /// <summary>Gets the same pixels as an Adam7-interlaced RGB 8-bit PNG (<see cref="PngEncoder"/> with <see cref="PngEncoder.Interlaced"/>).</summary>
+    public static byte[] InterlacedPng8 => InterlacedPng8Data.Value;
 
     /// <summary>Gets the 1024x768 RGBA source as a gray+alpha 8-bit PNG (gray <c>(r + 2g + b) / 4</c>), written by <see cref="PngLayoutInput"/>.</summary>
     public static byte[] PngGrayAlpha8 => PngGrayAlpha8Data.Value;

@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
+    <Description>Formats the HTML values (text/html) serialized by Meziantou.Framework.HumanReadableSerializer, using the spec-compliant HTML parser of Meziantou.Framework.WebPlatform</Description>
+    <PackageTags>serializer, human-readable, snapshot-testing, html</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+
+</Project>

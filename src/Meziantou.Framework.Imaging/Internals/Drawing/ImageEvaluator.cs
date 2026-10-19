@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
@@ -59,7 +60,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// exactly (half-integers below 2^30), which is the center of the pixel <c>(x + tx, y + ty)</c> for every sampling, so
 /// that pixel is converted as it is. When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
 /// around a row of the canvas are converted once and kept until another row needs their place: the image is read row
-/// by row. Otherwise each pixel is read on its own. A reduced image is read the same two ways, one row of the image at
+/// by row. Otherwise each pixel is read on its own, from segments of 32 pixels of a row of the image converted once
+/// during the lease (when the scope has room for them). A reduced image is read the same two ways, one row of the image at
 /// a time for every pixel of a run, with the same operations in the same order.
 /// </para>
 /// </remarks>
@@ -78,6 +80,17 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>The most columns of the image kept with their weights for the pixels of a run of a reduced image, unless a single pixel reads more.</summary>
     private const int MaxColumnTaps = 1 << 16;
+
+    /// <summary>The columns of a segment of the pixels read one by one, as a power of two: a segment is the 16-bit colors of 32 pixels of a row of the region.</summary>
+    private const int SegmentShift = 5;
+
+    private const int SegmentLength = 1 << SegmentShift;
+
+    /// <summary>The bits of a slot of the segments of a region that has more of them than are kept.</summary>
+    private const int MaxSegmentBits = 13;
+
+    /// <summary>The most segments kept of the pixels read one by one: 2 MiB of colors.</summary>
+    private const int MaxSegments = 1 << MaxSegmentBits;
 
     private readonly AllocationScope _scope;
     private PooledBuffer? _colors;
@@ -141,6 +154,22 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private PooledBuffer? _tapWeights;
     private PooledBuffer? _tapColumns;
     private long _tapCapacity;
+
+    // The pixels read one by one, converted once per lease by segments of a row of the region: the segment of the key
+    // k = row * _segmentsPerRow + column / SegmentLength is in the slot k, or, for a region with more segments than are
+    // kept, in the slot its hash gives. A slot holds the key and the generation (one per lease) of its segment.
+    private PooledBuffer? _segmentColors;
+    private PooledBuffer? _segmentKeys;
+    private byte[]? _segmentColorBytes;
+    private byte[]? _segmentKeyBytes;
+    private int _segmentCapacity;
+    private int _segmentSlots;
+    private int _segmentsPerRow;
+    private bool _isSegmentHashed;
+    private uint _segmentGeneration;
+
+    // 0 until a pixel is read one by one during the lease, then 1 when the segments are used, -1 when they cannot be
+    private int _segmentState;
 
     public ImageEvaluator(AllocationScope scope)
     {
@@ -208,6 +237,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _hasDomain = false;
         _isProjective = false;
         _isEmpty = area.IsEmpty || !new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse);
+
+        // The segments of the pixels read one by one: every segment of the region when they fit, otherwise a table indexed by a hash of the key
+        _segmentsPerRow = (int)(((long)_regionWidth + SegmentLength - 1) >> SegmentShift);
+        var segments = (long)_segmentsPerRow * _regionHeight;
+        _isSegmentHashed = segments > MaxSegments;
+        _segmentSlots = _isEmpty || segments > uint.MaxValue ? 0 : (int)Math.Min(segments, MaxSegments);
 
         // The row of the image a pixel reads does not depend on its column
         _keepsRows = _inverse.B == 0;
@@ -368,6 +403,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <exception cref="ObjectDisposedException">The frame no longer belongs to a live image.</exception>
     public override void Begin()
     {
+        _segmentState = 0;
         if (_isEmpty)
             return;
 
@@ -443,8 +479,12 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _tapCounts?.Dispose();
         _tapWeights?.Dispose();
         _tapColumns?.Dispose();
-        _colors = _samples = _rows = _sums = _tapCounts = _tapWeights = _tapColumns = null;
+        _segmentColors?.Dispose();
+        _segmentKeys?.Dispose();
+        _colors = _samples = _rows = _sums = _tapCounts = _tapWeights = _tapColumns = _segmentColors = _segmentKeys = null;
+        _segmentColorBytes = _segmentKeyBytes = null;
         _width = 0;
+        _segmentCapacity = 0;
         _rowCapacity = 0;
         _sumCapacity = 0;
         _tapCapacity = 0;
@@ -471,38 +511,96 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return true;
         }
 
-        // The pixels of the run in the region are read at once; the others one by one, by the wrap mode
+        // The pixels of the run in the region are read at once; the others by the wrap mode, on each side
         var frameRow = _top + regionRow;
         var start = (int)Math.Clamp(_left - first, 0, count);
         var end = (int)Math.Clamp(_left + _regionWidth - first, start, count);
-        for (var i = 0; i < start; i++)
-        {
-            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
-        }
-
+        ReadOutside(frameRow, first, colors[..(start * 4)]);
         if (end > start)
         {
             ReadColors(frameRow, (int)(first + start), colors[(start * 4)..(end * 4)]);
         }
 
-        for (var i = end; i < count; i++)
-        {
-            ReadShifted(frameRow, (int)(first + i), colors.Slice(i * 4, 4));
-        }
-
+        ReadOutside(frameRow, first + end, colors[(end * 4)..]);
         return true;
     }
 
-    /// <summary>Reads a pixel of a row of the frame outside the region, by the wrap mode along x.</summary>
-    private void ReadShifted(int frameRow, int column, Span<ushort> color)
+    /// <summary>
+    /// Reads pixels of a row of the frame that are all on the same side of the region, by the wrap mode along x: they
+    /// repeat with a period (one pixel for the nearest pixel of the region, its width or twice its width when it is
+    /// repeated or mirrored), so the pixels of one period are read, run by run of the region, and copied over the others.
+    /// </summary>
+    /// <param name="frameRow">The row of the frame.</param>
+    /// <param name="first">The column of the first pixel, in the coordinates of the frame.</param>
+    /// <param name="colors">The colors of the pixels.</param>
+    private void ReadOutside(int frameRow, long first, Span<ushort> colors)
     {
-        if (TryWrap(column, _left, _regionWidth, _wrapModeX, out var regionColumn))
+        var count = colors.Length / 4;
+        if (count == 0)
+            return;
+
+        if (_wrapModeX is not (ImageWrapMode.Pad or ImageWrapMode.Repeat or ImageWrapMode.Reflect))
         {
-            ReadColors(frameRow, _left + regionColumn, color);
+            colors.Clear();
+            return;
         }
-        else
+
+        var period = _wrapModeX switch
         {
-            color.Clear();
+            ImageWrapMode.Pad => 1,
+            ImageWrapMode.Repeat => _regionWidth,
+            _ => 2L * _regionWidth,
+        };
+        var read = (int)Math.Min(count, period);
+        for (var i = 0; i < read;)
+        {
+            // The run of the region the pixel i starts, forward or mirrored: the column of TryWrap for every pixel of it
+            var offset = (first + i - _left) % period;
+            if (offset < 0)
+            {
+                offset += period;
+            }
+
+            int column;
+            int length;
+            var isMirrored = false;
+            if (_wrapModeX == ImageWrapMode.Pad)
+            {
+                column = first < _left ? 0 : _regionWidth - 1;
+                length = 1;
+            }
+            else if (offset < _regionWidth)
+            {
+                column = (int)offset;
+                length = Math.Min(read - i, _regionWidth - column);
+            }
+            else
+            {
+                // Mirrored: the columns go down from 2 w - 1 - offset
+                var last = (int)(period - 1 - offset);
+                length = Math.Min(read - i, last + 1);
+                column = last - length + 1;
+                isMirrored = true;
+            }
+
+            var run = colors.Slice(i * 4, length * 4);
+            ReadColors(frameRow, _left + column, run);
+            if (isMirrored)
+            {
+                var pixels = unsafe(MemoryMarshal.Cast<ushort, ulong>(run));
+                pixels.Reverse();
+            }
+
+            i += length;
+        }
+
+        // The pixel i is the pixel i - k period: the pixels already written are copied, as many as are a whole number of periods
+        for (var i = read; i < count;)
+        {
+            var copied = (int)(i / period * period);
+            var length = Math.Min(count - i, copied);
+            colors.Slice((i - copied) * 4, length * 4).CopyTo(colors[(i * 4)..]);
+            i += length;
         }
     }
 
@@ -1108,7 +1206,78 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         if (!TryWrap(column, _left, _regionWidth, _wrapModeX, out var x) || !TryWrap(row, _top, _regionHeight, _wrapModeY, out var y))
             return false;
 
+        if (_segmentState > 0 || (_segmentState == 0 && StartSegments()))
+        {
+            color = ReadSegment(x, y);
+            return true;
+        }
+
         _source!.ReadRgba64(_storage!, _top + y, _left + x, new Span<Rgba64>(ref color));
+        return true;
+    }
+
+    /// <summary>Gets a pixel of the region from its segment, which is converted first when it is not kept yet.</summary>
+    /// <param name="x">The column, from the first one of the region.</param>
+    /// <param name="y">The row, from the first one of the region.</param>
+    private Rgba64 ReadSegment(int x, int y)
+    {
+        var segment = x >> SegmentShift;
+        var key = ((long)y * _segmentsPerRow) + segment;
+        var slot = _isSegmentHashed ? (int)(((ulong)key * 0x9E3779B97F4A7C15UL) >> (64 - MaxSegmentBits)) : (int)key;
+        var tag = ((ulong)_segmentGeneration << 32) | (uint)key;
+
+        // The slot is below the number of slots: the key is below the number of segments, or the hash below MaxSegments
+        ref var keyEntry = ref unsafe(Unsafe.Add(ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetArrayDataReference(_segmentKeyBytes!)), slot));
+        ref var colors = ref unsafe(Unsafe.Add(ref Unsafe.As<byte, Rgba64>(ref MemoryMarshal.GetArrayDataReference(_segmentColorBytes!)), slot << SegmentShift));
+        if (keyEntry != tag)
+        {
+            var start = segment << SegmentShift;
+            _source!.ReadRgba64(_storage!, _top + y, _left + start, unsafe(MemoryMarshal.CreateSpan(ref colors, Math.Min(SegmentLength, _regionWidth - start))));
+            keyEntry = tag;
+        }
+
+        return unsafe(Unsafe.Add(ref colors, x & (SegmentLength - 1)));
+    }
+
+    /// <summary>Rents the segments for the image of the lease, and forgets those of the previous ones.</summary>
+    /// <returns><see langword="false"/> when the pixels are read one by one without segments: they would exceed the allocation limit.</returns>
+    private bool StartSegments()
+    {
+        _segmentState = -1;
+        if (_segmentSlots == 0)
+            return false;
+
+        if (_segmentSlots > _segmentCapacity)
+        {
+            // The segments only save time: without room for them, the pixels are read one by one
+            var colorBytes = (long)_segmentSlots * SegmentLength * 8;
+            var keyBytes = (long)_segmentSlots * sizeof(ulong);
+            var previous = _segmentColors is null ? 0 : _scope.GetChargedSize(_segmentColors.Length) + _scope.GetChargedSize(_segmentKeys!.Length);
+            if (_scope.LiveBytes - previous + _scope.GetChargedSize(colorBytes) + _scope.GetChargedSize(keyBytes) > _scope.Limit)
+                return false;
+
+            _segmentColors?.Dispose();
+            _segmentKeys?.Dispose();
+            _segmentColors = _segmentKeys = null;
+            _segmentColorBytes = _segmentKeyBytes = null;
+            _segmentCapacity = 0;
+            _segmentColors = _scope.Rent((int)colorBytes, AllocationKind.Temporary, clear: false);
+            _segmentKeys = _scope.Rent((int)keyBytes, AllocationKind.Temporary, clear: true);
+            _segmentCapacity = _segmentSlots;
+            _segmentColorBytes = _segmentColors.RawBuffer;
+            _segmentKeyBytes = _segmentKeys.RawBuffer;
+            _segmentGeneration = 0;
+        }
+
+        // A new generation for the lease: the keys of the previous ones no longer match, and the cleared keys never do
+        _segmentGeneration++;
+        if (_segmentGeneration == 0)
+        {
+            _segmentKeys!.Span.Clear();
+            _segmentGeneration = 1;
+        }
+
+        _segmentState = 1;
         return true;
     }
 

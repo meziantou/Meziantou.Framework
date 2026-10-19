@@ -20,6 +20,11 @@ internal sealed class TextShapeCache
     private readonly Dictionary<TextShapingOptions, Entries> _entries = [];
     private ShapingWorkspace? _workspace;
 
+    // The entries of the last options looked up: the texts of a run of lines share their options, and comparing the options
+    // is cheaper than hashing them
+    private TextShapingOptions _lastOptions;
+    private Entries? _lastEntries;
+
     /// <summary>Returns what the shaping needs (the one of the last shaping when no other shaping uses it).</summary>
     public ShapingWorkspace RentWorkspace() => Interlocked.Exchange(ref _workspace, null) ?? new ShapingWorkspace();
 
@@ -41,7 +46,7 @@ internal sealed class TextShapeCache
 
     public bool TryGetShapedText(ReadOnlySpan<char> text, in TextShapingOptions options, [NotNullWhen(true)] out ShapedText? result)
     {
-        if (_entries.TryGetValue(options, out var entries) && entries.Shaped is { } shaped)
+        if (FindEntries(options) is { Shaped: { } shaped })
             return shaped.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(text, out result);
 
         result = null;
@@ -50,7 +55,7 @@ internal sealed class TextShapeCache
 
     public bool TryGetWidth(ReadOnlySpan<char> text, in TextShapingOptions options, out double width)
     {
-        if (_entries.TryGetValue(options, out var entries))
+        if (FindEntries(options) is { } entries)
         {
             if (entries.Widths is { } widths && widths.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(text, out width))
                 return true;
@@ -88,18 +93,33 @@ internal sealed class TextShapeCache
     public void Clear()
     {
         _entries.Clear();
+        _lastEntries = null;
         _count = 0;
         _characters = 0;
     }
 
+    private Entries? FindEntries(in TextShapingOptions options)
+    {
+        if (_lastEntries is { } last && _lastOptions == options)
+            return last;
+
+        if (!_entries.TryGetValue(options, out var entries))
+            return null;
+
+        _lastOptions = options;
+        _lastEntries = entries;
+        return entries;
+    }
+
     private Entries GetEntries(in TextShapingOptions options)
     {
-        if (!_entries.TryGetValue(options, out var entries))
-        {
-            entries = new Entries();
-            _entries[options] = entries;
-        }
+        if (FindEntries(options) is { } entries)
+            return entries;
 
+        entries = new Entries();
+        _entries[options] = entries;
+        _lastOptions = options;
+        _lastEntries = entries;
         return entries;
     }
 

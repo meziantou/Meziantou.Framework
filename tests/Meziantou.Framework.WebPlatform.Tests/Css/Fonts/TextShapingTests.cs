@@ -95,6 +95,40 @@ public sealed class TextShapingTests : IDisposable
         Assert.Equal(unkerned.Width + expected, kerned.Width, 9);
     }
 
+    [Fact]
+    public void FontsAndShapingOptions_InheritedFromTheParent()
+    {
+        var document = Load("""
+            <div id=parent lang=en style="font: 20px Ahem; letter-spacing: 2px">
+              <span id=child><span id=nested></span></span>
+              <b id=bold></b>
+              <span id=lang lang=fr></span>
+              <span id=family style="font-family: monospace"></span>
+              <span id=size style="font-size: 10px"></span>
+            </div>
+            <div id=host lang=fr><template shadowrootmode=open><div id=inner lang=de><slot></slot></div></template><span id=slotted></span></div>
+            """);
+        var engine = document.GetStyleEngine();
+        ComputedStyle Get(string id) => engine.GetStyle(document.GetElementById(id)!);
+        ComputedStyle GetInShadowTree(string id) => engine.GetStyle(document.GetElementById("host")!.ShadowRoot!.GetElementById(id)!);
+
+        var parent = Get("parent");
+        Assert.Same(parent.Fonts, Get("nested").Fonts);
+        Assert.Same(parent.Fonts, Get("child").Fonts);
+        Assert.Equal(parent.ShapingOptions, Get("nested").ShapingOptions);
+        Assert.Equal((20d, 2d, "en"), (Get("nested").ShapingOptions.FontSize, Get("nested").ShapingOptions.LetterSpacing, Get("nested").ShapingOptions.Language));
+
+        Assert.NotSame(parent.Fonts, Get("bold").Fonts);
+        Assert.Equal(parent.ShapingOptions, Get("bold").ShapingOptions);
+        Assert.Equal(parent.ShapingOptions with { Language = "fr" }, Get("lang").ShapingOptions);
+        Assert.NotSame(parent.Fonts, Get("family").Fonts);
+        Assert.Equal(parent.ShapingOptions with { FontSize = 10 }, Get("size").ShapingOptions);
+
+        // The language of a slotted element comes from its parent in the DOM, not from the slot it inherits its style from
+        Assert.Equal("de", GetInShadowTree("inner").ShapingOptions.Language);
+        Assert.Equal("fr", Get("slotted").ShapingOptions.Language);
+    }
+
     [Theory]
     [InlineData("", true)]
     [InlineData("font-kerning: auto", true)]

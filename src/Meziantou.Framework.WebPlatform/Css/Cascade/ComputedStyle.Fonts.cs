@@ -1,4 +1,6 @@
+using System.Collections.Frozen;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
+using Meziantou.Framework.WebPlatform.Css.Selectors;
 
 namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 
@@ -20,14 +22,100 @@ internal enum FontRelativeUnit
 
 internal sealed partial class ComputedStyle
 {
+    /// <summary>The properties read by <see cref="FontDescription.FromStyle"/> (all inherited).</summary>
+    private static readonly FrozenSet<string> FontDescriptionProperties = new[]
+    {
+        "font-family", "font-weight", "font-style", "font-width", "font-size-adjust", "font-synthesis-weight", "font-synthesis-style",
+        "font-variation-settings", "font-optical-sizing", "all",
+    }.ToFrozenSet(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The properties read by <see cref="TextShapingOptions.FromStyle"/> (all inherited), and the ones the computed font size
+    /// depends on when it is inherited (the generic family of <c>font-family</c>, see <see cref="AdjustFontSizeToGenericFamily"/>).
+    /// </summary>
+    private static readonly FrozenSet<string> ShapingOptionsProperties = new[]
+    {
+        "font-size", "font-family", "zoom", "direction", "writing-mode", "text-orientation", "letter-spacing", "word-spacing", "font-kerning",
+        "text-rendering", "font-feature-settings", "font-variant-ligatures", "font-variant-caps", "font-variant-numeric", "font-variant-east-asian",
+        "font-variant-position", "font-variant-alternates", "font-language-override", "font-synthesis-small-caps", "font-synthesis-position",
+        "font-variant-emoji", "text-justify", "text-align-all", "text-align-last", "all",
+    }.ToFrozenSet(StringComparer.Ordinal);
+
     private FontFallbackList? _fonts;
     private TextShapingOptions? _shapingOptions;
 
-    /// <summary>The fonts of the element (https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm), from its computed font properties.</summary>
-    public FontFallbackList Fonts => _fonts ??= Engine.Document.FontSelector.GetFonts(FontDescription.FromStyle(this));
+    /// <summary>
+    /// The fonts of the element (https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm), from its computed font properties:
+    /// the fonts of the parent when the element inherits all of them.
+    /// </summary>
+    public FontFallbackList Fonts => _fonts ?? ComputeFonts();
 
-    /// <summary>The options of the text shaping of the text of the element (<see cref="TextShapingOptions.FromStyle"/>): the font size, the direction, the orientation, the spacing and the kerning.</summary>
-    public TextShapingOptions ShapingOptions => _shapingOptions ??= TextShapingOptions.FromStyle(this);
+    /// <summary>
+    /// The options of the text shaping of the text of the element (<see cref="TextShapingOptions.FromStyle"/>): the font size, the
+    /// direction, the orientation, the spacing and the kerning; the options of the parent when the element inherits all of them
+    /// and its language.
+    /// </summary>
+    public TextShapingOptions ShapingOptions => _shapingOptions ?? ComputeShapingOptions();
+
+    private FontFallbackList ComputeFonts()
+    {
+        // The ancestors are walked iteratively (the tree may be deep)
+        var source = this;
+        while (source._fonts is null && source.Parent is { } parent && source.InheritsAll(FontDescriptionProperties))
+        {
+            source = parent;
+        }
+
+        var fonts = source._fonts ??= Engine.Document.FontSelector.GetFonts(FontDescription.FromStyle(source));
+        for (var style = this; !ReferenceEquals(style, source); style = style.Parent!)
+        {
+            style._fonts = fonts;
+        }
+
+        return fonts;
+    }
+
+    private TextShapingOptions ComputeShapingOptions()
+    {
+        var source = this;
+        while (source._shapingOptions is null && source.Parent is { } parent && source.InheritsAll(ShapingOptionsProperties) && source.InheritsLanguageOf(parent))
+        {
+            source = parent;
+        }
+
+        var options = source._shapingOptions ??= TextShapingOptions.FromStyle(source);
+        for (var style = this; !ReferenceEquals(style, source); style = style.Parent!)
+        {
+            style._shapingOptions = options;
+        }
+
+        return options;
+    }
+
+    /// <summary>Whether the computed values of the given inherited properties are the ones of the parent: no declaration or animation sets them.</summary>
+    private bool InheritsAll(FrozenSet<string> properties)
+    {
+        if (_effects is not null || _smilAnimations is not null || IsHighlight)
+            return false;
+
+        foreach (var property in _cascaded.Keys)
+        {
+            if (properties.Contains(property))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Whether the language of the element (<see cref="HtmlElementStates.GetLanguage"/>) is the one of the element of the parent style.</summary>
+    private bool InheritsLanguageOf(ComputedStyle parent)
+    {
+        // A pseudo-element has the language of its originating element
+        if (PseudoElement is not null)
+            return ReferenceEquals(parent.Element, Element);
+
+        return !HtmlElementStates.TryGetOwnLanguage(Element, out _) && ReferenceEquals(HtmlElementStates.GetLanguageParent(Element), parent.Element);
+    }
 
     /// <summary>
     /// Returns the advance in CSS px of a text rendered with the style of the element on a single line (with its fonts, its

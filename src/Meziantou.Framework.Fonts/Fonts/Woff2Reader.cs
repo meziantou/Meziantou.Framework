@@ -28,10 +28,9 @@ internal static class Woff2Reader
     private static ReadOnlySpan<byte> KnownTags =>
         "cmapheadhheahmtxmaxpnameOS/2postcvt fpgmglyflocaprepCFF VORGEBDTEBLCgasphdmxkernLTSHPCLTVDMXvheavmtxBASEGDEFGPOSGSUBEBSCJSTFMATHCBDTCBLCCOLRCPALSVG sbixacntavarbdatblocbslncvarfdscfeatfmtxfvargvarhstyjustlcarmortmorxopbdproptrakZapfSilfGlatGlocFeatSill"u8;
 
-    public static byte[] Decode(byte[] file, FontEnvironment environment)
+    public static byte[] Decode(ReadOnlySpan<byte> data, FontEnvironment environment)
     {
         var limits = environment.Limits;
-        ReadOnlySpan<byte> data = file;
         var header = FontBinary.Slice(data, 0, HeaderLength);
         var flavor = FontBinary.UInt32(header, 4);
         var tableCount = FontBinary.UInt16(header, 12);

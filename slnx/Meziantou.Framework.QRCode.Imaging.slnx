@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.QRCode.Imaging/Meziantou.Framework.QRCode.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />

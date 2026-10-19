@@ -51,6 +51,14 @@ internal static class CharacterProperties
     /// </summary>
     public static bool IsEmojiPresentationParticipating(int codePoint) => UnicodeEmoji.IsEmoji(codePoint);
 
+    /// <summary>
+    /// Whether a script has joining characters (a Joining_Type other than Non_Joining and Transparent, ArabicShaping.txt):
+    /// the letters of these cursive scripts connect, and the shapers apply the joining features to them.
+    /// </summary>
+    public static bool IsJoiningScript(UnicodeScript script) => script is UnicodeScript.Adlam or UnicodeScript.Arabic or UnicodeScript.Chorasmian or UnicodeScript.HanifiRohingya
+        or UnicodeScript.Mandaic or UnicodeScript.Manichaean or UnicodeScript.Mongolian or UnicodeScript.Nko or UnicodeScript.OldUyghur or UnicodeScript.PhagsPa
+        or UnicodeScript.PsalterPahlavi or UnicodeScript.Sogdian or UnicodeScript.Syriac;
+
     /// <summary>Whether a code point is a variation selector (https://www.unicode.org/versions/latest/core-spec/chapter-23/#G19053): VS1 to VS256.</summary>
     public static bool IsVariationSelector(int codePoint) => codePoint is (>= 0xFE00 and <= 0xFE0F) or (>= 0xE0100 and <= 0xE01EF) or (>= 0x180B and <= 0x180D) or 0x180F;
 }

@@ -27,7 +27,7 @@ internal static class FontFeatureValues
             switch (component)
             {
                 case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.Value.Equals("historical-forms", StringComparison.OrdinalIgnoreCase):
-                    features.Add(new FontFeature(ShapePlanBuilder.Tag("hist"), 1));
+                    features.Add(new FontFeature(OpenTypeTag.FromString("hist"), 1));
                     break;
 
                 case CssFunction function:
@@ -73,7 +73,7 @@ internal static class FontFeatureValues
         switch (type)
         {
             case CssFontFeatureType.Stylistic:
-                features.Add(new FontFeature(ShapePlanBuilder.Tag("salt"), values[0]));
+                features.Add(new FontFeature(OpenTypeTag.FromString("salt"), values[0]));
                 break;
             case CssFontFeatureType.Styleset:
                 // Each value is a style set (1 to 20)
@@ -81,7 +81,7 @@ internal static class FontFeatureValues
                 {
                     if (set is >= 1 and <= 99)
                     {
-                        features.Add(new FontFeature(ShapePlanBuilder.Tag(string.Create(CultureInfo.InvariantCulture, $"ss{set:00}")), 1));
+                        features.Add(new FontFeature(OpenTypeTag.FromString(string.Create(CultureInfo.InvariantCulture, $"ss{set:00}")), 1));
                     }
                 }
 
@@ -90,19 +90,19 @@ internal static class FontFeatureValues
                 // The character variant, then its value (1 by default)
                 if (values[0] is >= 1 and <= 99)
                 {
-                    features.Add(new FontFeature(ShapePlanBuilder.Tag(string.Create(CultureInfo.InvariantCulture, $"cv{values[0]:00}")), values.Count > 1 ? values[1] : 1));
+                    features.Add(new FontFeature(OpenTypeTag.FromString(string.Create(CultureInfo.InvariantCulture, $"cv{values[0]:00}")), values.Count > 1 ? values[1] : 1));
                 }
 
                 break;
             case CssFontFeatureType.Swash:
-                features.Add(new FontFeature(ShapePlanBuilder.Tag("swsh"), values[0]));
-                features.Add(new FontFeature(ShapePlanBuilder.Tag("cswh"), values[0]));
+                features.Add(new FontFeature(OpenTypeTag.FromString("swsh"), values[0]));
+                features.Add(new FontFeature(OpenTypeTag.FromString("cswh"), values[0]));
                 break;
             case CssFontFeatureType.Ornaments:
-                features.Add(new FontFeature(ShapePlanBuilder.Tag("ornm"), values[0]));
+                features.Add(new FontFeature(OpenTypeTag.FromString("ornm"), values[0]));
                 break;
             case CssFontFeatureType.Annotation:
-                features.Add(new FontFeature(ShapePlanBuilder.Tag("nalt"), values[0]));
+                features.Add(new FontFeature(OpenTypeTag.FromString("nalt"), values[0]));
                 break;
         }
     }

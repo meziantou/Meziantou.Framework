@@ -458,10 +458,34 @@ public sealed class FontTests
         Assert.Equal(16, font.Face.GetLegacyKerning(2, 3));
         Assert.False(Load(Subtable(Horizontal | Minimum, (2, 3, 2))).Face.HasLegacyKerning);
 
-        // The version 1.0 of the table, which Apple defines, and a table too short for its header are not read.
+        // The version 1.0 of the table, which Apple defines: a 32-bit header, then subtables with a 32-bit length, a
+        // coverage (bit 15: vertical, the format in the low byte) and a tuple index. The pairs of format 0 are the ones
+        // of version 0; a vertical subtable and a subtable of another format are skipped.
+        static byte[] AppleSubtable(int coverage, params (int Left, int Right, int Value)[] pairs)
+        {
+            var writer = new FontWriter();
+            writer.UInt32((uint)(16 + (pairs.Length * 6)));
+            writer.UInt16(coverage);
+            writer.UInt16(0);
+            writer.UInt16(pairs.Length);
+            writer.Zeros(6);
+            foreach (var (left, right, value) in pairs)
+            {
+                writer.UInt16(left);
+                writer.UInt16(right);
+                writer.Int16(value);
+            }
+
+            return writer.ToArray();
+        }
+
         var builder = FontSamples.Boxes();
+        builder.RawTables["kern"] = [0, 1, 0, 0, 0, 0, 0, 3, .. AppleSubtable(0x8000, (2, 3, 1)), .. AppleSubtable(0x0002, (2, 3, 2)), .. AppleSubtable(0, (2, 3, 5))];
+        Assert.Equal(5, FontTestSupport.Load(builder).Face.GetLegacyKerning(2, 3));
         builder.RawTables["kern"] = [0, 1, 0, 0, 0, 0, 0, 1, .. Subtable(Horizontal, (2, 3, 5))];
         Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
+
+        // A table too short for its header is not read.
         builder.RawTables["kern"] = [0, 0];
         Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
 
@@ -487,6 +511,46 @@ public sealed class FontTests
         Assert.Equal(-88, font.Face.GetLegacyKerning(0, 12));
         Assert.Equal((10999 % 200) - 100, font.Face.GetLegacyKerning(97, 38));
         Assert.Equal(0, font.Face.GetLegacyKerning(97, 39));
+    }
+
+    [Fact]
+    public void TheCaretsOfALigatureAreReadFromTheGlyphDefinitionTable()
+    {
+        // A GDEF header (version 1.0) whose list of ligature carets covers two glyphs: the box A with two carets of
+        // format 1 (a coordinate), the box B with a caret of format 2 (a point of the outline), which is not read.
+        ushort[] gdef =
+        [
+            1, 0, 0, 0, 12, 0,
+
+            // The list: the coverage, the number of ligatures and their offsets.
+            30, 2, 8, 22,
+
+            // The box A: two carets, then the carets.
+            2, 6, 10, 1, 100, 1, 300,
+
+            // The box B.
+            1, 4, 2, 5,
+
+            // The coverage, format 1.
+            1, 2, FontSamples.BoxA, FontSamples.BoxB,
+        ];
+        var builder = FontSamples.Boxes();
+        builder.RawTables["GDEF"] = [.. gdef.SelectMany(value => new[] { (byte)(value >> 8), (byte)value })];
+        var face = FontTestSupport.Load(builder).Face;
+
+        Span<int> carets = stackalloc int[4];
+        Assert.Equal(2, face.GetLigatureCarets(FontSamples.BoxA, carets));
+        Assert.Equal([100, 300], carets[..2].ToArray());
+        Assert.Equal(0, face.GetLigatureCarets(FontSamples.BoxB, carets));
+        Assert.Equal(0, face.GetLigatureCarets(FontSamples.BoxC, carets));
+        Assert.Equal(0, face.GetLigatureCarets(10_000, carets));
+
+        // The carets beyond the room given are left out.
+        Assert.Equal(1, face.GetLigatureCarets(FontSamples.BoxA, carets[..1]));
+        Assert.Equal(100, carets[0]);
+
+        // A font without the table has no carets.
+        Assert.Equal(0, FontTestSupport.Load(FontSamples.Boxes()).Face.GetLigatureCarets(FontSamples.BoxA, carets));
     }
 
     [Theory]
@@ -1364,7 +1428,7 @@ public sealed class FontTests
                     Assert.True(double.IsFinite(layout.Width) && double.IsFinite(layout.Height));
                     usable++;
                 }
-                catch (Exception exception) when (exception is ImageException)
+                catch (Exception exception) when (exception is ImageException or FontException)
                 {
                 }
             }
@@ -1659,10 +1723,20 @@ public sealed class FontTests
         AssertInvalid(Edit(valid, data => data[49] = 97), "WOFF2");
 
         // A length with a leading zero, or of more than 32 bits.
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x80, 96, .. valid.AsSpan(50)], "malformed length");
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x9F, 0xFF, 0xFF, 0xFF, 0x7F, .. valid.AsSpan(50)], "malformed length");
-        AssertInvalid([.. valid.AsSpan(0, 49), 0x81, 0x80, 0x80, 0x80, 0x80, 0x00, .. valid.AsSpan(50)], "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x80, 96, .. valid.AsSpan(50)]), "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x9F, 0xFF, 0xFF, 0xFF, 0x7F, .. valid.AsSpan(50)]), "malformed length");
+        AssertInvalid(WithFileLength([.. valid.AsSpan(0, 49), 0x81, 0x80, 0x80, 0x80, 0x80, 0x00, .. valid.AsSpan(50)]), "malformed length");
         Assert.Throws<InvalidImageContentException>(() => Font.Load(valid.AsSpan(0, 30)));
+
+        // The header gives the size of the file, and the file ends with its last block.
+        AssertInvalid(Edit(valid, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), (uint)data.Length - 4)), "another length than its size");
+        AssertInvalid(WithFileLength([.. valid, 0, 0, 0, 0]), "after its last block");
+
+        static byte[] WithFileLength(byte[] data)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), (uint)data.Length);
+            return data;
+        }
 
         static byte[] Edit(byte[] data, Action<byte[]> edit)
         {
@@ -1701,6 +1775,264 @@ public sealed class FontTests
     }
 
     /// <summary>Asserts that two fonts have the same tables, or the same glyphs when the glyph tables were written again.</summary>
+    [Fact]
+    public void AFontExposesTheFieldsOfItsHeaderTables()
+    {
+        var builder = FontSamples.Boxes();
+        builder.WidthClass = 3;
+        builder.SubscriptYOffset = 150;
+        builder.SuperscriptYOffset = 350;
+        builder.ItalicAngle = -12.5;
+        builder.IsItalic = true;
+        var face = FontTestSupport.Load(builder).Face;
+
+        Assert.Equal(3, face.HeadFlags);
+        Assert.Equal(2, face.MacStyle);
+        Assert.Equal((-640, -192, 1024, 960), (face.XMin, face.YMin, face.XMax, face.YMax));
+        Assert.Equal(4, face.Os2Version);
+        Assert.Equal(670, face.AverageCharWidth);
+        Assert.Equal(3, face.WidthClass);
+        Assert.Equal(0x0001, face.Selection);
+        Assert.Equal(150, face.SubscriptYOffset);
+        Assert.Equal(350, face.SuperscriptYOffset);
+        Assert.Equal(-12.5, face.ItalicAngle);
+        Assert.False(face.HasVerticalMetrics);
+        Assert.Equal((0, 0, 0), (face.VerticalAscender, face.VerticalDescender, face.VerticalLineGap));
+
+        // A font without OS/2 table has the default width class.
+        builder = FontSamples.Boxes();
+        builder.OmitOs2 = true;
+        face = FontTestSupport.Load(builder).Face;
+        Assert.Equal((0, 5, 0, 0), (face.Os2Version, face.WidthClass, face.Selection, face.SubscriptYOffset));
+    }
+
+    [Fact]
+    public void TheSideBearingsOfTheGlyphsAreThoseOfTheMetricsTables()
+    {
+        var face = FontTestSupport.Load(FontSamples.Boxes()).Face;
+        Assert.Equal(128, face.GetLeftSideBearing(FontSamples.BoxA));
+        Assert.Equal(64, face.GetLeftSideBearing(FontSamples.BoxB));
+        Assert.Equal(0, face.GetLeftSideBearing(FontSamples.BoxC));
+        Assert.Equal(0, face.GetLeftSideBearing(-1));
+        Assert.Equal(0, face.GetLeftSideBearing(face.GlyphCount));
+        Assert.Equal(0, face.GetTopSideBearing(FontSamples.BoxA));
+
+        // The glyphs after the last metric have their bearing alone.
+        var compact = FontSamples.Boxes();
+        compact.CompactHorizontalMetrics = true;
+        face = FontTestSupport.Load(compact).Face;
+        Assert.Equal(64, face.GetLeftSideBearing(FontSamples.HyphenGlyph));
+        Assert.Equal(128, face.GetLeftSideBearing(FontSamples.BoxA));
+    }
+
+    [Fact]
+    public void TheBoxOfAGlyphIsTheOneTheFontDeclaresOrTheOneOfItsOutline()
+    {
+        var face = FontTestSupport.Load(FontSamples.Boxes()).Face;
+        using var scratch = new GlyphScratch(AllocationScope.Create(configuration: null, "FontTests"));
+        Assert.True(face.TryGetGlyphBounds(FontSamples.BoxA, scratch, out var bounds));
+        Assert.Equal(new GlyphBox(128, 0, 896, 768), bounds);
+        Assert.True(face.TryGetGlyphBounds(11, scratch, out bounds));
+        Assert.Equal(new GlyphBox(160, 0, 736, 768), bounds);
+        Assert.False(face.TryGetGlyphBounds(FontSamples.SpaceGlyph, scratch, out _));
+        Assert.False(face.TryGetGlyphBounds(face.GlyphCount, scratch, out _));
+
+        // A CFF outline has no declared box: the box of its points, rounded outward.
+        var cff = new FontCffWriter();
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.RMoveTo, 10, 20).Op(FontCharstring.RLineTo, 30, 0).Op(FontCharstring.RLineTo, 0, 40).Op(FontCharstring.EndChar).ToArray());
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.EndChar).ToArray());
+        face = LoadCff(cff).Face;
+        Assert.True(face.TryGetGlyphBounds(0, scratch, out bounds));
+        Assert.Equal(new GlyphBox(10, 20, 40, 60), bounds);
+        Assert.False(face.TryGetGlyphBounds(1, scratch, out _));
+    }
+
+    [Fact]
+    public void TheLayersOfAColorGlyphOfVersion0AreItsRecords()
+    {
+        var face = FontTestSupport.Load(FontSamples.ColorBoxes()).Face;
+        Assert.Equal([new ColorLayer(3, 0), new ColorLayer(4, 1), new ColorLayer(5, CpalTable.Foreground)], face.GetColorLayers(FontSamples.ColorA));
+        Assert.Equal([new ColorLayer(7, 2), new ColorLayer(8, 3)], face.GetColorLayers(FontSamples.ColorB));
+        Assert.Null(face.GetColorLayers(FontSamples.SpaceGlyph));
+        Assert.Null(face.GetColorLayers(-1));
+        Assert.Null(FontTestSupport.Load(FontSamples.Boxes()).Face.GetColorLayers(FontSamples.BoxA));
+    }
+
+    [Fact]
+    public void TheMathTableGivesTheConstantsAndTheGlyphsOfMathematicalLayout()
+    {
+        var builder = FontSamples.Boxes();
+        builder.RawTables["MATH"] = CreateMathTable(deviceTable: false);
+        var face = FontTestSupport.Load(builder).Face;
+
+        Assert.True(face.HasMathTable);
+        Assert.Equal(70, face.GetMathConstant(MathConstant.ScriptPercentScaleDown));
+        Assert.Equal(50, face.GetMathConstant(MathConstant.ScriptScriptPercentScaleDown));
+        Assert.Equal(1500, face.GetMathConstant(MathConstant.DelimitedSubFormulaMinHeight));
+        Assert.Equal(1200, face.GetMathConstant(MathConstant.DisplayOperatorMinHeight));
+        Assert.Equal(100, face.GetMathConstant(MathConstant.MathLeading));
+        Assert.Equal(250, face.GetMathConstant(MathConstant.AxisHeight));
+        Assert.Equal(150, face.GetMathConstant(MathConstant.RadicalKernAfterDegree));
+        Assert.Equal(60, face.GetMathConstant(MathConstant.RadicalDegreeBottomRaisePercent));
+
+        Assert.True(face.TryGetMathItalicsCorrection(FontSamples.BoxA, out var italicsCorrection));
+        Assert.Equal(40, italicsCorrection);
+        Assert.False(face.TryGetMathItalicsCorrection(FontSamples.BoxB, out _));
+        Assert.True(face.TryGetMathTopAccentAttachment(FontSamples.BoxA, out var accent));
+        Assert.Equal(300, accent);
+        Assert.True(face.IsMathExtendedShape(FontSamples.BoxC));
+        Assert.False(face.IsMathExtendedShape(FontSamples.BoxA));
+        Assert.Equal(20, face.MathMinConnectorOverlap);
+
+        var construction = face.GetMathGlyphConstruction(FontSamples.BoxB, isVertical: true);
+        Assert.NotNull(construction);
+        Assert.Equal([new MathGlyphVariant(3, 512), new MathGlyphVariant(4, 1024)], construction.Variants);
+        Assert.Equal([new MathGlyphPart(5, 0, 50, 300, IsExtender: false), new MathGlyphPart(6, 50, 50, 400, IsExtender: true)], construction.AssemblyParts);
+        Assert.Equal(7, construction.AssemblyItalicsCorrection);
+        Assert.Null(face.GetMathGlyphConstruction(FontSamples.BoxB, isVertical: false));
+        Assert.Null(face.GetMathGlyphConstruction(FontSamples.BoxA, isVertical: true));
+
+        // A font without the table, and a table of an unknown version, have no mathematical data.
+        face = FontTestSupport.Load(FontSamples.Boxes()).Face;
+        Assert.False(face.HasMathTable);
+        Assert.Equal(0, face.GetMathConstant(MathConstant.AxisHeight));
+        Assert.Null(face.GetMathGlyphConstruction(FontSamples.BoxB, isVertical: true));
+        builder = FontSamples.Boxes();
+        var unknown = CreateMathTable(deviceTable: false);
+        unknown[1] = 2;
+        builder.RawTables["MATH"] = unknown;
+        Assert.False(FontTestSupport.Load(builder).Face.HasMathTable);
+    }
+
+    [Fact]
+    public void TheValuesOfTheMathTableVaryWithTheInstance()
+    {
+        // A variation index device table on the axis height, whose delta is in the store of the GDEF table.
+        var builder = FontSamples.Variable();
+        builder.RawTables["MATH"] = CreateMathTable(deviceTable: true);
+        var store = new FontVariationStore();
+        store.Regions.Add(new FontVariationRegion((0, 1, 1), (0, 0, 0)));
+        var items = new FontVariationSubtable { Regions = [0] };
+        items.Items.Add([100]);
+        store.Subtables.Add(items);
+        var gdef = new FontWriter();
+        gdef.UInt16(1);
+        gdef.UInt16(3);
+        gdef.Zeros(10);
+        gdef.UInt32(18);
+        var gdefHeader = gdef.ToArray();
+        builder.RawTables["GDEF"] = [.. gdefHeader, .. FontVariationWriter.WriteStore(store, builder.Axes.Count)];
+        var font = FontTestSupport.Load(builder);
+
+        Assert.Equal(250, font.Face.GetMathConstant(MathConstant.AxisHeight));
+        Assert.Equal(350, FontTestSupport.WithVariations(font, "wght=900").Face.GetMathConstant(MathConstant.AxisHeight));
+    }
+
+    [Fact]
+    public void TheSubscriptAndSuperscriptOffsetsVaryWithTheInstance()
+    {
+        var builder = FontSamples.Variable();
+        builder.SubscriptYOffset = 150;
+        builder.SuperscriptYOffset = 350;
+        builder.WidthClass = 5;
+        var items = builder.MetricVariations!.Subtables[0].Items;
+        builder.MetricVariationItems["sbyo"] = (0, items.Count);
+        items.Add([30, -10]);
+        builder.MetricVariationItems["spyo"] = (0, items.Count);
+        items.Add([-40, 0]);
+        var font = FontTestSupport.Load(builder);
+
+        Assert.Equal((150, 350), (font.Face.SubscriptYOffset, font.Face.SuperscriptYOffset));
+        var bold = FontTestSupport.WithVariations(font, "wght=900").Face;
+        Assert.Equal((180, 310), (bold.SubscriptYOffset, bold.SuperscriptYOffset));
+    }
+
+    /// <summary>
+    /// Creates a MATH table: constants (the value records are 100 and more, the axis height 250), an italics correction
+    /// and a top accent attachment for A, C as an extended shape, and the vertical construction of B (two variants and
+    /// an assembly of two parts).
+    /// </summary>
+    private static byte[] CreateMathTable(bool deviceTable)
+    {
+        var table = new byte[deviceTable ? 328 : 322];
+        void Write(int position, int value) => BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(position), (ushort)value);
+
+        // Header: version 1.0, MathConstants at 10, MathGlyphInfo at 224, MathVariants at 266.
+        Write(0, 1);
+        Write(4, 10);
+        Write(6, 224);
+        Write(8, 266);
+
+        // MathConstants: the four scalars, 51 value records, then the raise of the degree of a radical.
+        Write(10, 70);
+        Write(12, 50);
+        Write(14, 1500);
+        Write(16, 1200);
+        for (var i = 0; i < 51; i++)
+        {
+            Write(18 + (i * 4), i == 1 ? 250 : 100 + i);
+        }
+
+        Write(222, 60);
+        if (deviceTable)
+        {
+            // The device table of the axis height, from the start of MathConstants: a variation index (0, 0).
+            Write(24, 322 - 10);
+            Write(322, 0);
+            Write(324, 0);
+            Write(326, 0x8000);
+        }
+
+        // MathGlyphInfo: italics corrections at +8, top accent attachments at +22, extended shapes at +36.
+        Write(224, 8);
+        Write(226, 22);
+        Write(228, 36);
+        Write(232, 8);
+        Write(234, 1);
+        Write(236, 40);
+        WriteCoverage(240, FontSamples.BoxA);
+        Write(246, 8);
+        Write(248, 1);
+        Write(250, 300);
+        WriteCoverage(254, FontSamples.BoxA);
+        WriteCoverage(260, FontSamples.BoxC);
+
+        // MathVariants: the minimum overlap, the vertical coverage (B), one vertical construction.
+        Write(266, 20);
+        Write(268, 12);
+        Write(272, 1);
+        Write(276, 18);
+        WriteCoverage(278, FontSamples.BoxB);
+
+        // MathGlyphConstruction: the assembly at +12, two variants.
+        Write(284, 12);
+        Write(286, 2);
+        Write(288, 3);
+        Write(290, 512);
+        Write(292, 4);
+        Write(294, 1024);
+
+        // GlyphAssembly: the italics correction, two parts.
+        Write(296, 7);
+        Write(300, 2);
+        Write(302, 5);
+        Write(306, 50);
+        Write(308, 300);
+        Write(312, 6);
+        Write(314, 50);
+        Write(316, 50);
+        Write(318, 400);
+        Write(320, 1);
+        return table;
+
+        void WriteCoverage(int position, int glyph)
+        {
+            Write(position, 1);
+            Write(position + 2, 1);
+            Write(position + 4, glyph);
+        }
+    }
+
     private static void AssertSameFont(Font expected, Font actual, bool sameGlyphBytes)
     {
         Assert.Equal(expected.Face.TableTags.ToArray(), actual.Face.TableTags.ToArray());

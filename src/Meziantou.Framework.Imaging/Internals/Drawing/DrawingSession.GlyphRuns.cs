@@ -285,7 +285,7 @@ internal sealed partial class DrawingSession
         }
         else if (face.TryGetBitmapGlyph(glyph, size, out var bitmap))
         {
-            colorGlyph = ColorImage.CreateGlyph(face, bitmap, size);
+            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, size);
         }
 
         cache?.Add(key, colorGlyph, GetBytes(colorGlyph));
@@ -293,7 +293,7 @@ internal sealed partial class DrawingSession
 
         static long GetBytes(ColorGlyph? glyph) => glyph is null
             ? 64
-            : 256 + (32L * glyph.Ops.Length) + (64L * glyph.Paints.Length) + (32L * glyph.Stops.Length) + (8L * glyph.Numbers.Length) + (4L * (glyph.Image?.Pixels.Length ?? 0));
+            : 256 + (32L * glyph.Ops.Length) + (64L * glyph.Paints.Length) + (32L * glyph.Stops.Length) + (8L * glyph.Numbers.Length) + (glyph.Image?.Pixels.Length ?? 0);
     }
 
     /// <summary>Draws a color glyph of a run: in the pixels of the canvas, or on an image of the plane under a projective transformation.</summary>

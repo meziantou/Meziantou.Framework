@@ -17,23 +17,22 @@ internal sealed class TextShapeCache
     /// <summary>The maximum number of UTF-16 code units of the cached texts.</summary>
     internal const int MaxCharacters = 1 << 20;
 
-    /// <summary>The largest buffer of the shaping kept for the next texts (a larger one is returned to the array pool).</summary>
-    private const int MaxKeptBufferCapacity = 4096;
-
     private readonly Dictionary<TextShapingOptions, Entries> _entries = [];
-    private ShapingBuffer? _buffer;
+    private ShapingWorkspace? _workspace;
 
-    /// <summary>Returns a buffer for the shaping (the one of the last shaping when no other shaping uses it).</summary>
-    public ShapingBuffer RentBuffer() => Interlocked.Exchange(ref _buffer, null) ?? new ShapingBuffer();
+    /// <summary>Returns what the shaping needs (the one of the last shaping when no other shaping uses it).</summary>
+    public ShapingWorkspace RentWorkspace() => Interlocked.Exchange(ref _workspace, null) ?? new ShapingWorkspace();
 
-    /// <summary>Returns a buffer after a shaping: it is kept for the next one when it is not too large.</summary>
-    public void ReturnBuffer(ShapingBuffer buffer)
+    /// <summary>Returns what a shaping used: it is kept for the next one (without the glyphs of a long run).</summary>
+    public void ReturnWorkspace(ShapingWorkspace workspace)
     {
-        if (buffer.Capacity > MaxKeptBufferCapacity || Interlocked.CompareExchange(ref _buffer, buffer, null) is not null)
+        workspace.TrimBuffer();
+        if (Interlocked.CompareExchange(ref _workspace, workspace, null) is not null)
         {
-            buffer.Dispose();
+            workspace.Dispose();
         }
     }
+
     private int _count;
     private int _characters;
 

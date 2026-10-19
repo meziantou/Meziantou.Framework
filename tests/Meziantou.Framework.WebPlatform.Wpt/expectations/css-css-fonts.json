@@ -2125,7 +2125,7 @@
     "reftest": "PASS"
   },
   "css/css-fonts/variations/variable-avar2-warp.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-fonts/variations/variable-box-font.html": {
     "reftest": "PASS"

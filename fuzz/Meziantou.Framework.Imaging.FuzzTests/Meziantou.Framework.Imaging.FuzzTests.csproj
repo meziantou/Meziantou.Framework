@@ -33,4 +33,8 @@
     <!-- Minimized fuzz regressions (FuzzRegressionTests), kept apart from the golden corpus -->
     <None Update="FuzzRegressions\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The internal API of the font reader and the shaper -->
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
 </Project>

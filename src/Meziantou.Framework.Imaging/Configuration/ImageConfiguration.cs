@@ -22,6 +22,9 @@ public sealed class ImageConfiguration
         }
     } = ImageResourceLimits.Default;
 
+    /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
+    internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
+
     /// <summary>
     /// Gets the maximum number of workers an internal operation may use concurrently. Defaults to 1, meaning operations run on
     /// the calling thread only.

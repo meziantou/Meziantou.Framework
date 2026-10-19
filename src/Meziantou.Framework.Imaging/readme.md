@@ -151,7 +151,7 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
 | `net10.0`, `net11.0` | Supported targets, built and tested on both runtimes |
 | x64, arm64 (Windows, Linux, macOS) | Tested on Linux and Windows x64, macOS arm64, and Linux and Windows arm64 where hosted runners are available |
 | Older .NET, .NET Standard, .NET Framework | Not supported (no assets) |
-| Dependencies | One package, `Meziantou.Framework.Unicode` (the Unicode algorithms of text layout, fully managed, no ICU); no native dependency |
+| Dependencies | Two packages of the same repository: `Meziantou.Framework.Unicode` (the Unicode algorithms of text layout, fully managed, no ICU) and `Meziantou.Framework.Fonts` (the font reader and the shaper, shared with `Meziantou.Framework.WebPlatform`); no native dependency |
 | Trimming / NativeAOT | Supported: the library is marked trimmable and AOT-compatible (analyzers on every build), and a NativeAOT smoke app (every format, streaming, processing, errors; trim/AOT warnings as errors) is published and run for both frameworks |
 
 ## Supported formats

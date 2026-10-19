@@ -219,7 +219,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   and the SVG layout. The wheel, a panning touch, the keys and the scrollbars scroll (`BrowsingContext.Input`). Not implemented: the selection with the
   pointer, the layout of the pages whose inline size differs from the first page, the repetition of a hyphen at the start of the next line, the spelling changes at a hyphenation break of the languages other than Dutch, Hungarian and Pinyin and the hyphenation
   dictionaries under copyleft licenses (cs, hu, hy, lv), the
-  scrolling of a `::scroll-marker-group` that is a scroll container, pinch zoom, and, in the shaping of the complex scripts (a port of all the shapers of HarfBuzz), the Myanmar Zawgyi encoding and
+  scrolling of a `::scroll-marker-group` that is a scroll container, pinch zoom, and, in the shaping of the complex scripts (the shaper of Meziantou.Framework.Fonts), the Myanmar Zawgyi encoding and
   the Arabic fallback shaping of the Windows-1256 fonts.
 - **No rasterizer in the core library.** The documents are painted into a backend-agnostic display list (the painting
   order of CSS, the stacking contexts, the clips, the transforms and effects, the backgrounds, the borders, the outlines, the

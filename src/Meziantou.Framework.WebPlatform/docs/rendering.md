@@ -190,7 +190,8 @@ sample is published with Native AOT on CI), and the same document gives the same
   is a hairline. A rectangle stroked without width or without height is the stroke of a line with its joins, and nothing is
   drawn for one that has neither (`strokeRect()`).
 - **Text**: the backend does no layout and no shaping. A glyph run is drawn by id at the positions of the layout
-  (`FillGlyphs`, `StrokeGlyphs`), with a font of Meziantou.Framework.Imaging read from the same font file, per face and
+  (`FillGlyphs`, `StrokeGlyphs`), with a font of Meziantou.Framework.Imaging made from the face the layout measured the text
+  with (the two libraries share the font reader of Meziantou.Framework.Fonts, so a font file is read once), per face and
   instance of the variation axes (`FontCache`), and the coverages of the glyphs are cached per backend (`GlyphCache`). On
   the pixel grid, the origin of a glyph is rounded to a quarter of a device pixel along the line and to a whole pixel across
   it, as the glyph caches of the browsers do. The synthetic bold thickens the outline (1/24 of the font size up to 9px, 1/32

@@ -21,17 +21,11 @@ Sources:
 - `mathml-core`: the source of [MathML Core](https://w3c.github.io/mathml-core/) (`spec.html`) and the files of its user
   agent style sheet (`user-agent-stylesheet`)
 - `webref`: curated WebIDL, parsed WebIDL, element definitions and CSS definitions from [w3c/webref](https://github.com/w3c/webref)
-- `unicode`: the Unicode Character Database files that the data of the complex-script shapers is generated from
-  (`ComplexShapingGenerator`, and the lowercase mappings of the hyphenation dictionaries). The URLs name a version
-  (`Public/18.0.0/`), the one of `tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt`: the other Unicode data
-  comes from the `Meziantou.Framework.Unicode` package, so the two move together. The conformance tests of the text
-  segmentation and of the bidirectional algorithm are the files of the package (`tests/Meziantou.Framework.Unicode.Tests/files`)
-- `harfbuzz`: files of [HarfBuzz](https://github.com/harfbuzz/harfbuzz) (MIT license), pinned to a release tag: the
-  OpenType language tag table (`src/hb-ot-tag-table.hh`: the mapping of the BCP 47 language tags to the OpenType language
-  system tags of the text shaping, `OpenTypeLanguageTags.g.cs`), the syllable machines of the complex-script shapers
-  (`src/hb-ot-shaper-{indic,khmer,myanmar,use}-machine.rl`, Ragel scanners compiled to `SyllableMachines.g.cs`), and the
-  data of the Universal Shaping Engine of Microsoft (`src/ms-use/`, MIT license: the additional Indic syllabic and positional
-  categories and the invalid vowel sequences of `IndicShapingInvalidCluster.txt`), see [layout.md](layout.md#text-shaping)
+- `unicode`: the Unicode Character Database file the lowercase mappings of the hyphenation dictionaries are generated from
+  (`UnicodeData.txt`). The URLs name a version (`Public/18.0.0/`), the one of
+  `tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt`: the other Unicode data comes from the
+  `Meziantou.Framework.Unicode` package, so the two move together. The conformance tests of the text segmentation and of the
+  bidirectional algorithm are the files of the package (`tests/Meziantou.Framework.Unicode.Tests/files`)
 - `chardetng`: the data of [chardetng](https://github.com/hsivonen/chardetng), the encoding detector of Firefox (Apache-2.0
   or MIT license: `COPYRIGHT`, `LICENSE-MIT`), pinned to a release tag: `src/data.rs` has the classes of the bytes of the
   single-byte encodings, the scores of the pairs of classes of each family of languages, and the most frequent ideographs
@@ -143,9 +137,6 @@ token with the contents and pull requests write permissions) to run it.
   `string.Normalize`, `IdnMapping` or `CharUnicodeInfo`. The properties of the code points (the bidi properties, see
   [layout.md](layout.md#bidirectional-text), the Line_Break, East_Asian_Width, Grapheme_Cluster_Break, General_Category...
   of the text segmentation, see [layout.md](layout.md#text-segmentation), Script and Script_Extensions, Joining_Type,
-  Vertical_Orientation...), NFC, the case mappings and IDNA come from the `Meziantou.Framework.Unicode` package. The
-  categories of the complex-script shapers are generated from `IndicSyllabicCategory.txt`, `IndicPositionalCategory.txt`,
-  `ArabicShaping.txt` and `Blocks.txt` (`ComplexShapingGenerator`, a port of the generators of HarfBuzz:
-  `gen-indic-table.py`, `gen-use-table.py`, `gen-vowel-constraints.py`, `gen-arabic-table.py`).
+  Vertical_Orientation...), NFC, the case mappings and IDNA come from the `Meziantou.Framework.Unicode` package.
 - When a test suite lags behind the specification data (for instance, IDNA tests generated from an older Unicode
   version), the affected tests are skipped with an explicit reason instead of pinning older data.

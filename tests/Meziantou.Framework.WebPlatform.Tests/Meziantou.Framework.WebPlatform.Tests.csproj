@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Meziantou.Framework.Fonts.MathConstant" Alias="MathConstant" />
   </ItemGroup>
   <ItemGroup>
     <!-- The conformance files of the Unicode version of Meziantou.Framework.Unicode, written by tools/Meziantou.Framework.Unicode.Generator -->

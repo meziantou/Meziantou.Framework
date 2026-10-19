@@ -1,15 +1,22 @@
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Unicode;
+using FontException = Meziantou.Framework.Fonts.FontException;
+using GlyphBuffer = Meziantou.Framework.Fonts.GlyphBuffer;
+using GlyphScratch = Meziantou.Framework.Fonts.GlyphScratch;
+using SharedFontFace = Meziantou.Framework.Fonts.FontFace;
+using SharedTextShaper = Meziantou.Framework.Fonts.TextShaper;
+using ShapingFeature = Meziantou.Framework.Fonts.ShapingFeature;
 
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
 /// <summary>
 /// The text shaping of the layout: converts a text run (characters of one style and one bidi level) to positioned glyphs with
-/// the fonts of a <see cref="FontFallbackList"/>, with the OpenType shaping engine (<see cref="OpenTypeShapingEngine"/>, a port
-/// of HarfBuzz). It implements:
+/// the fonts of a <see cref="FontFallbackList"/>, with the OpenType shaper of Meziantou.Framework.Fonts (shared with
+/// Meziantou.Framework.Imaging). It implements:
 /// <list type="bullet">
 /// <item>the clusters: a base character with its combining marks, joiners and variation selectors (the typographic character units);</item>
 /// <item>the font runs: the per-character font fallback with the <c>unicode-range</c> of the font faces (https://drafts.csswg.org/css-fonts-4/#font-style-matching),
@@ -33,6 +40,9 @@ namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 /// </remarks>
 internal static partial class TextShaper
 {
+    private static readonly uint ProportionalAlternatesTag = OpenTypeTag.FromString("palt");
+    private static readonly uint VerticalProportionalAlternatesTag = OpenTypeTag.FromString("vpal");
+
     /// <summary>Shapes a text run, using the cache of the font list.</summary>
     public static ShapedText Shape(ReadOnlySpan<char> text, FontFallbackList fonts, in TextShapingOptions options)
     {
@@ -162,14 +172,14 @@ internal static partial class TextShaper
                 ResolveSynthesis(codePoints.AsSpan(0, count), options);
             }
 
-            var buffer = fonts.ShapeCache.RentBuffer();
+            var workspace = fonts.ShapeCache.RentWorkspace();
             try
             {
-                ShapeRuns(text, codePoints.AsSpan(0, count), options, buffer, ref output, collectRuns);
+                ShapeRuns(text, codePoints.AsSpan(0, count), options, workspace, ref output, collectRuns);
             }
             finally
             {
-                fonts.ShapeCache.ReturnBuffer(buffer);
+                fonts.ShapeCache.ReturnWorkspace(workspace);
             }
 
             return ApplySpacing(text, codePoints.AsSpan(0, count), options, ref output);
@@ -199,13 +209,14 @@ internal static partial class TextShaper
             var clusterStart = index;
             var codePoint = ReadCodePoint(text, ref index);
 
-            // The cluster: the base character with the following combining marks, joiners, variation selectors, emoji modifiers and tags
+            // The cluster: the base character with the following combining marks, joiners, variation selectors, emoji modifiers and
+            // tags; a ZWJ after a space starts a cluster (see ShapeRuns)
             var clusterEnd = index;
             while (clusterEnd < text.Length)
             {
                 var position = clusterEnd;
                 var next = ReadCodePoint(text, ref position);
-                if (!IsClusterExtender(next))
+                if (!IsClusterExtender(next) || (next == 0x200D && codePoint == ' ' && clusterEnd == index))
                     break;
 
                 clusterEnd = position;
@@ -279,7 +290,7 @@ internal static partial class TextShaper
                 // or when the font has the precomposed character of the base and the mark (the shaping composes them, as in the
                 // browsers: "e" followed by U+0301 is drawn with the glyph of U+00E9)
                 MatchedFont markFont;
-                if (ShapingNormalizer.ComposeUnicode(composedBase, mark, out var composed) && font.HasGlyph(composed))
+                if (UnicodeNormalization.TryComposeCanonical(composedBase, mark, out var composed) && font.HasGlyph(composed))
                 {
                     markFont = font;
                     composedBase = composed;
@@ -431,8 +442,13 @@ internal static partial class TextShaper
         }
     }
 
-    /// <summary>Shapes the runs of code points of the same font, orientation, script and synthesis, and writes their glyphs.</summary>
-    private static void ShapeRuns(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, in TextShapingOptions options, ShapingBuffer buffer, ref GlyphWriter output, bool collectRuns)
+    /// <summary>
+    /// Shapes the runs of code points of the same font, orientation, script and synthesis, and writes their glyphs. A ZWJ
+    /// after a space starts a run, as in Chrome, which shapes the words between the spaces separately: the soft wrap
+    /// opportunity after the space is between two clusters (a joiner after a space starts a typographic character unit of its
+    /// own, UAX #14 LB10; WPT css/css-text/white-space/white-space-vs-joiners-002.html).
+    /// </summary>
+    private static void ShapeRuns(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, in TextShapingOptions options, ShapingWorkspace workspace, ref GlyphWriter output, bool collectRuns)
     {
         var start = 0;
         while (start < codePoints.Length)
@@ -442,17 +458,18 @@ internal static partial class TextShaper
             var script = codePoints[start].Script;
             var synthesis = codePoints[start].Synthesis;
             var end = start + 1;
-            while (end < codePoints.Length && ReferenceEquals(codePoints[end].Font, font) && codePoints[end].Upright == upright && codePoints[end].Script == script && codePoints[end].Synthesis == synthesis)
+            while (end < codePoints.Length && ReferenceEquals(codePoints[end].Font, font) && codePoints[end].Upright == upright && codePoints[end].Script == script && codePoints[end].Synthesis == synthesis
+                && !(codePoints[end].CodePoint == 0x200D && codePoints[end - 1].CodePoint == ' '))
             {
                 end++;
             }
 
-            ShapeRun(text, codePoints, start, end, options, buffer, ref output, collectRuns);
+            ShapeRun(text, codePoints, start, end, options, workspace, ref output, collectRuns);
             start = end;
         }
     }
 
-    private static void ShapeRun(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, in TextShapingOptions options, ShapingBuffer buffer, ref GlyphWriter output, bool collectRuns)
+    private static void ShapeRun(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, in TextShapingOptions options, ShapingWorkspace workspace, ref GlyphWriter output, bool collectRuns)
     {
         var first = codePoints[start];
         var font = first.Font;
@@ -460,34 +477,41 @@ internal static partial class TextShaper
         var synthesisScale = synthesis == Synthesis.None ? 1 : GetSynthesisScale(synthesis, options);
         var emSize = font.GetEmSize(options.FontSize * synthesisScale);
         var instance = font.GetVariationInstance(emSize);
-        var shapingFont = new ShapingFont(font.Font, instance);
-        var direction = first.Upright ? ShapingDirection.TopToBottom : options.IsRightToLeft ? ShapingDirection.RightToLeft : ShapingDirection.LeftToRight;
+        var face = instance?.Face ?? font.Font.Face;
+        var isVertical = first.Upright;
+        var isRightToLeft = !isVertical && options.IsRightToLeft;
 
-        buffer.Reset(end - start);
-        buffer.Direction = direction;
-        buffer.Script = first.Script;
-        if ((synthesis & (Synthesis.Uppercase | Synthesis.Lowercase)) == Synthesis.None)
+        // A run is shaped in the direction of its script (e.g. a Latin text in a right-to-left override is shaped from left to
+        // right in the visual order, its kerning pairs are the ones that are drawn side by side), as HarfBuzz and the browsers
+        var shapedRightToLeft = isRightToLeft;
+        if (!isVertical)
         {
-            for (var i = start; i < end; i++)
+            if (IsRightToLeftScript(first.Script))
             {
-                buffer.Add(codePoints[i].CodePoint, codePoints[i].Index);
+                // The numbers of a right-to-left script (and the regional indicators) are left-to-right
+                shapedRightToLeft = isRightToLeft || !HasOnlyNumbers(codePoints[start..end]);
+            }
+            else if (IsLeftToRightScript(first.Script))
+            {
+                shapedRightToLeft = false;
             }
         }
-        else
-        {
-            // The synthesized small capitals: the case mapping of the characters, in their clusters
-            var turkic = TextTransformer.UsesTurkicCasing(options.Language);
-            for (var i = start; i < end; i++)
-            {
-                AddMappedCodePoint(buffer, codePoints[i].CodePoint, codePoints[i].Index, (synthesis & Synthesis.Uppercase) != Synthesis.None, turkic);
-            }
-        }
+
+        var isReversed = shapedRightToLeft != isRightToLeft;
+        var buffer = workspace.Buffer;
+        var turkic = (synthesis & (Synthesis.Uppercase | Synthesis.Lowercase)) != Synthesis.None && TextTransformer.UsesTurkicCasing(options.Language);
+        AddCharacters(buffer, codePoints, start, end, synthesis, turkic, isReversed);
 
         // The characters around the run (of the text, or of the context of the text)
         Span<int> before = stackalloc int[1];
         Span<int> after = stackalloc int[1];
         var beforeCodePoint = start > 0 ? codePoints[start - 1].CodePoint : options.Context.Before;
         var afterCodePoint = end < codePoints.Length ? codePoints[end].CodePoint : options.Context.After;
+        if (isReversed)
+        {
+            (beforeCodePoint, afterCodePoint) = (afterCodePoint, beforeCodePoint);
+        }
+
         before[0] = beforeCodePoint;
         after[0] = afterCodePoint;
         buffer.SetContext(beforeCodePoint == 0 ? [] : before, afterCodePoint == 0 ? [] : after);
@@ -501,20 +525,60 @@ internal static partial class TextShaper
             features = features.WithSynthesis(GetCapsFeatures(synthesis), withoutPosition: (synthesis & Synthesis.Position) != Synthesis.None);
         }
 
-        var key = new ShapePlanKey(
-            first.Script,
-            direction,
-            options.Language,
-            options.LanguageOverride,
-            font.FaceFeatures,
-            features,
-            font.Font.LayoutGsub?.FindFeatureVariations(instance) ?? -1,
-            font.Font.LayoutGpos?.FindFeatureVariations(instance) ?? -1,
-            DisableKerning: !options.Kerning || (isCjk && !options.KerningRequested),
-            ProportionalAlternates: isCjk && options.Kerning && options.KerningRequested,
-            VerticalKerning: direction == ShapingDirection.TopToBottom && options.Kerning && options.KerningRequested);
-        var plan = font.Font.GetShapePlan(key);
-        OpenTypeShapingEngine.Shape(plan, buffer, shapingFont);
+        // The features in the order of precedence (a later value of a feature wins): the vertical kerning that
+        // font-kerning: normal requests (as Chrome), the features of the font face, the proportional alternates, the
+        // features of the run, and the kerning that font-kerning turns off
+        var shapingFeatures = workspace.Features;
+        shapingFeatures.Clear();
+        if (isVertical && options.Kerning && options.KerningRequested)
+        {
+            shapingFeatures.Add(new ShapingFeature(OpenTypeTag.VerticalKerning, 1));
+        }
+
+        AddFeatures(shapingFeatures, font.FaceFeatures);
+        if (isCjk && options.Kerning && options.KerningRequested)
+        {
+            shapingFeatures.Add(new ShapingFeature(isVertical ? VerticalProportionalAlternatesTag : ProportionalAlternatesTag, 1));
+        }
+
+        AddFeatures(shapingFeatures, features);
+        if (!options.Kerning || (isCjk && !options.KerningRequested))
+        {
+            shapingFeatures.Add(new ShapingFeature(isVertical ? OpenTypeTag.VerticalKerning : OpenTypeTag.Kern, 0));
+        }
+
+        // The text is mirrored by the inline layout with the bidi data. The shaper gives the glyphs in the visual order: the
+        // ones of a right-to-left run are put back in the order of the text.
+        var languages = workspace.GetLanguages(options.Language, options.LanguageOverride);
+        var script = ShapingWorkspace.GetScript(first.Script);
+        try
+        {
+            SharedTextShaper.Shape(buffer, face, script, languages, shapedRightToLeft, CollectionsMarshal.AsSpan(shapingFeatures), isVertical, workspace.Scratch, workspace.Cache, areCharactersMirrored: true);
+            if (isVertical)
+            {
+                // The shaper places an upright glyph by its vertical origin; the painting places it in the line itself (the
+                // vertical origins do not move the glyphs): only the offsets of the positioning are kept
+                RemoveVerticalOrigins(buffer, face, workspace.Scratch);
+            }
+        }
+        catch (FontException)
+        {
+            // The layout tables of the font cannot be used (malformed, or too much work for the text): the characters are
+            // drawn with the glyphs of the character map
+            AddCharacters(buffer, codePoints, start, end, synthesis, turkic, isReversed);
+            workspace.ShapeWithoutLayout(face, isVertical);
+            if (shapedRightToLeft)
+            {
+                buffer.Reverse();
+            }
+        }
+
+        if (isRightToLeft)
+        {
+            buffer.Reverse();
+        }
+
+        workspace.LargestRun = Math.Max(workspace.LargestRun, buffer.Length);
 
         // The glyphs, in CSS px
         var scale = emSize / font.Font.UnitsPerEm;
@@ -527,7 +591,7 @@ internal static partial class TextShaper
         // The synthesized subscripts and superscripts are shifted towards the line-over or the line-under side (the cross offset
         // of the upright glyphs is the horizontal one: the line-over side of the vertical lines is on the right)
         var baselineShift = (synthesis & Synthesis.Position) != Synthesis.None ? GetPositionShift(options.Position, options.FontSize) : 0;
-        if (direction == ShapingDirection.TopToBottom)
+        if (isVertical)
         {
             baselineShift = -baselineShift;
         }
@@ -554,23 +618,23 @@ internal static partial class TextShaper
                 flags |= ShapedGlyphFlags.ClusterStart;
             }
 
-            if (glyph.IsDefaultIgnorable)
+            if (glyph.IsIgnorable)
             {
                 flags |= ShapedGlyphFlags.Invisible;
             }
 
-            if (glyph.IsMark || glyph.IsUnicodeMark)
+            if (glyph.IsMark || glyph.Category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
             {
                 flags |= ShapedGlyphFlags.Mark;
             }
 
-            if ((glyph.Mask & GlyphFlags.UnsafeToBreak) != 0)
+            if (glyph.IsUnsafeToBreak)
             {
                 flags |= ShapedGlyphFlags.UnsafeToBreak;
             }
 
             double advance, offsetX, offsetY;
-            if (direction == ShapingDirection.TopToBottom)
+            if (isVertical)
             {
                 // The upright glyphs: the vertical advances are downwards, the cross offset is the horizontal one
                 advance = -position.YAdvance * scale;
@@ -584,7 +648,7 @@ internal static partial class TextShaper
                 offsetY = -position.YOffset * scale;
             }
 
-            output.Add(new ShapedGlyph((ushort)glyph.Codepoint, cluster, advance, offsetX, offsetY + baselineShift, flags));
+            output.Add(new ShapedGlyph((ushort)glyph.Glyph, cluster, advance, offsetX, offsetY + baselineShift, flags));
         }
 
         if (collectRuns && output.Count > runStart)
@@ -604,8 +668,115 @@ internal static partial class TextShaper
 
             if (units != clusterCount)
             {
-                AddLigatureCarets(text, codePoints, start, end, font, instance, scale, buffer, runStart, ref output);
+                AddLigatureCarets(text, codePoints, start, end, face, scale, shapedRightToLeft, runStart, ref output);
             }
+        }
+    }
+
+    /// <summary>
+    /// Adds the characters of a run to the buffer of the shaper, with the case mapping of the synthesized small capitals (the
+    /// characters of the mapping are in the cluster of the character), in the order of the text or in the reverse order of
+    /// the typographic character units (each one keeps the order of its characters).
+    /// </summary>
+    private static void AddCharacters(GlyphBuffer buffer, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, Synthesis synthesis, bool turkic, bool reverse)
+    {
+        buffer.Clear();
+        if (!reverse)
+        {
+            AddRange(buffer, codePoints, start, end, synthesis, turkic);
+            return;
+        }
+
+        for (var unitEnd = end; unitEnd > start;)
+        {
+            var unitStart = unitEnd - 1;
+            while (unitStart > start && codePoints[unitStart - 1].Cluster == codePoints[unitEnd - 1].Cluster)
+            {
+                unitStart--;
+            }
+
+            AddRange(buffer, codePoints, unitStart, unitEnd, synthesis, turkic);
+            unitEnd = unitStart;
+        }
+
+        static void AddRange(GlyphBuffer buffer, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, Synthesis synthesis, bool turkic)
+        {
+            var isMapped = (synthesis & (Synthesis.Uppercase | Synthesis.Lowercase)) != Synthesis.None;
+            for (var i = start; i < end; i++)
+            {
+                if (isMapped)
+                {
+                    AddMappedCodePoint(buffer, codePoints[i].CodePoint, codePoints[i].Index, (synthesis & Synthesis.Uppercase) != Synthesis.None, turkic);
+                }
+                else
+                {
+                    buffer.Add(GetShapedCharacter(codePoints[i].CodePoint), codePoints[i].Index);
+                }
+            }
+        }
+    }
+
+    /// <summary>Whether the characters of a run of a right-to-left script are numbers (or regional indicators), without letters.</summary>
+    private static bool HasOnlyNumbers(ReadOnlySpan<CodePointInfo> codePoints)
+    {
+        var hasNumber = false;
+        foreach (var codePoint in codePoints)
+        {
+            var category = UnicodeProperties.GetGeneralCategory(codePoint.CodePoint);
+            if (category <= UnicodeCategory.OtherLetter)
+                return false;
+
+            hasNumber |= category == UnicodeCategory.DecimalDigitNumber || codePoint.CodePoint is >= 0x1F1E6 and <= 0x1F1FF;
+        }
+
+        return hasNumber;
+    }
+
+    /// <summary>Whether the horizontal direction of a script is right-to-left.</summary>
+    private static bool IsRightToLeftScript(UnicodeScript script) => script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Thaana
+        or UnicodeScript.Cypriot or UnicodeScript.Kharoshthi or UnicodeScript.Phoenician or UnicodeScript.Nko or UnicodeScript.Lydian or UnicodeScript.Avestan
+        or UnicodeScript.ImperialAramaic or UnicodeScript.InscriptionalPahlavi or UnicodeScript.InscriptionalParthian or UnicodeScript.OldSouthArabian
+        or UnicodeScript.OldTurkic or UnicodeScript.Samaritan or UnicodeScript.Mandaic or UnicodeScript.MeroiticCursive or UnicodeScript.MeroiticHieroglyphs
+        or UnicodeScript.Manichaean or UnicodeScript.MendeKikakui or UnicodeScript.Nabataean or UnicodeScript.OldNorthArabian or UnicodeScript.Palmyrene
+        or UnicodeScript.PsalterPahlavi or UnicodeScript.Hatran or UnicodeScript.Adlam or UnicodeScript.HanifiRohingya or UnicodeScript.OldSogdian
+        or UnicodeScript.Sogdian or UnicodeScript.Elymaic or UnicodeScript.Chorasmian or UnicodeScript.Yezidi or UnicodeScript.OldUyghur
+        or UnicodeScript.Garay or UnicodeScript.Sidetic;
+
+    /// <summary>
+    /// Whether a script is left-to-right: the scripts Common, Inherited and Unknown, and the scripts written in both
+    /// directions (Old Hungarian, Old Italic, Runic, Tifinagh) take the direction of the run.
+    /// </summary>
+    private static bool IsLeftToRightScript(UnicodeScript script) => script is not (UnicodeScript.Unknown or UnicodeScript.Common or UnicodeScript.Inherited
+        or UnicodeScript.OldHungarian or UnicodeScript.OldItalic or UnicodeScript.Runic or UnicodeScript.Tifinagh) && !IsRightToLeftScript(script);
+
+    /// <summary>Moves the glyphs of an upright run back from their vertical origin (where the shaper places them) to the pen.</summary>
+    private static void RemoveVerticalOrigins(GlyphBuffer buffer, SharedFontFace face, GlyphScratch scratch)
+    {
+        var info = buffer.Info;
+        var positions = buffer.Positions;
+        for (var i = 0; i < info.Length; i++)
+        {
+            face.GetVerticalOrigin(info[i].Glyph, scratch, out var originX, out var originY);
+            positions[i].XOffset += originX;
+            positions[i].YOffset += originY;
+        }
+    }
+
+    /// <summary>
+    /// The character the shaper is given for a character of the text: a segment break is not rendered, as a default ignorable
+    /// character (a zero width space, which does not join either).
+    /// </summary>
+    private static int GetShapedCharacter(int codePoint) => codePoint == '\n' ? 0x200B : codePoint;
+
+    /// <summary>Adds the features of a list to the features of a run, in their order.</summary>
+    private static void AddFeatures(List<ShapingFeature> features, FontFeatureList? list)
+    {
+        if (list is null)
+            return;
+
+        foreach (var feature in list.Items)
+        {
+            features.Add(new ShapingFeature(feature.Tag, (int)Math.Min(feature.Value, int.MaxValue)));
         }
     }
 
@@ -614,12 +785,12 @@ internal static partial class TextShaper
     /// values of the ligature glyph in the GDEF table when it has one for each unit, else an equal division of the advance of
     /// the cluster, as Chrome does.
     /// </summary>
-    private static void AddLigatureCarets(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, MatchedFont font, FontVariationInstance? instance, double scale, ShapingBuffer buffer, int runStart, ref GlyphWriter output)
+    private static void AddLigatureCarets(ReadOnlySpan<char> text, ReadOnlySpan<CodePointInfo> codePoints, int start, int end, SharedFontFace face, double scale, bool isRightToLeft, int runStart, ref GlyphWriter output)
     {
         var glyphs = output.Glyphs;
         var g = runStart;
         var c = start;
-        Span<double> carets = stackalloc double[16];
+        Span<int> carets = stackalloc int[16];
         while (g < glyphs.Length)
         {
             // The glyphs of the cluster, and its typographic character units
@@ -660,7 +831,7 @@ internal static partial class TextShaper
                     }
                 }
 
-                var hasCarets = baseGlyphs == 1 && units - 1 <= carets.Length && font.Font.LayoutGdef is { } gdef && gdef.TryGetLigatureCarets(glyphs[ligatureGlyph].GlyphId, instance, carets, out var caretCount) && caretCount == units - 1;
+                var hasCarets = baseGlyphs == 1 && units - 1 <= carets.Length && GetLigatureCarets(face, glyphs[ligatureGlyph].GlyphId, carets) == units - 1;
                 var unit = 0;
                 for (var i = c; i < end && codePoints[i].Index < clusterEnd; i++)
                 {
@@ -673,7 +844,7 @@ internal static partial class TextShaper
                     {
                         // The caret values are from the origin of the glyph, from left to right
                         var advance = glyphs[ligatureGlyph].Advance;
-                        offset = buffer.IsBackward ? advance - (carets[units - 1 - unit] * scale) : carets[unit - 1] * scale;
+                        offset = isRightToLeft ? advance - (carets[units - 1 - unit] * scale) : carets[unit - 1] * scale;
                     }
                     else
                     {
@@ -685,6 +856,19 @@ internal static partial class TextShaper
             }
 
             g = glyphEnd;
+        }
+    }
+
+    /// <summary>The caret values of a ligature glyph in the GDEF table; none when the list is malformed.</summary>
+    private static int GetLigatureCarets(SharedFontFace face, int glyph, Span<int> carets)
+    {
+        try
+        {
+            return face.GetLigatureCarets(glyph, carets);
+        }
+        catch (FontException)
+        {
+            return 0;
         }
     }
 
@@ -733,7 +917,7 @@ internal static partial class TextShaper
                 // The invisible characters have no letter spacing, nor the letters of the cursive scripts, whose connections would
                 // break (https://drafts.csswg.org/css-text-4/#cursive-tracking: as Chrome and Firefox, for the joining scripts)
                 if (options.LetterSpacing != 0 && codePoints[i].Cluster == codePoints[i].Index && codePoint != '\n' && !UnicodeProperties.IsDefaultIgnorable(codePoint)
-                    && !ArabicJoiningScripts.HasJoining(UnicodeScripts.GetScript(codePoint)))
+                    && !CharacterProperties.IsJoiningScript(UnicodeScripts.GetScript(codePoint)))
                 {
                     units++;
                 }

@@ -50,8 +50,8 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 24,133 | 28,847 | 2,952 | 93% |
 | [Tentative](#tentative-tests) | 1,077 | 2,932 | 820 | 51% |
-| [Reftests](#reftests) | 27,007 | 28,524 | 226 | 95% |
-| **All** | **52,217** | **60,303** | **3,998** | **93%** |
+| [Reftests](#reftests) | 27,006 | 28,524 | 226 | 95% |
+| **All** | **52,216** | **60,303** | **3,998** | **93%** |
 
 ## Stable tests
 
@@ -600,7 +600,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`css/css-exclusions`](wpt-coverage/css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
 | [`css/css-flexbox`](wpt-coverage/css/css-flexbox.md#reftests) | 1,002 | 1,011 | 0 | 99% |
 | [`css/css-font-loading`](wpt-coverage/css/css-font-loading.md#reftests) | 6 | 7 | 0 | 86% |
-| [`css/css-fonts`](wpt-coverage/css/css-fonts.md#reftests) | 355 | 379 | 1 | 94% |
+| [`css/css-fonts`](wpt-coverage/css/css-fonts.md#reftests) | 354 | 379 | 1 | 94% |
 | [`css/css-forms`](wpt-coverage/css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
 | [`css/css-gaps`](wpt-coverage/css/css-gaps.md#reftests) | 500 | 505 | 0 | 99% |
 | [`css/css-grid`](wpt-coverage/css/css-grid.md#reftests) | 1,666 | 1,708 | 0 | 98% |
@@ -702,4 +702,4 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`webgl`](wpt-coverage/webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](wpt-coverage/webvtt.md#reftests) | 167 | 250 | 0 | 67% |
 | [`xml`](wpt-coverage/xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (129 sections)** | **27,007** | **28,524** | **226** | **95%** |
+| **Total (129 sections)** | **27,006** | **28,524** | **226** | **95%** |

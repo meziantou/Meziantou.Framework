@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="SlabPoolOptions"/>.
 /// </para>
 /// </remarks>
-internal sealed class AllocationScope
+internal sealed class AllocationScope : FontAllocator
 {
     private static long s_nextId;
 
@@ -52,7 +52,7 @@ internal sealed class AllocationScope
     public SlabPool Pool { get; }
 
     /// <summary>Gets the configured live-byte limit.</summary>
-    public long Limit => Limits.MaxLiveAllocationBytes;
+    public override long Limit => Limits.MaxLiveAllocationBytes;
 
     /// <summary>Gets the number of live bytes currently charged (including unconsumed reservations).</summary>
     public long LiveBytes
@@ -92,6 +92,10 @@ internal sealed class AllocationScope
         using var reservation = Reserve(GetChargedSize(length), kind);
         return reservation.Rent(length, clear);
     }
+
+    /// <summary>Charges and rents one temporary buffer: the storage of the font code.</summary>
+    /// <exception cref="ImageResourceLimitException">The charge would exceed the limit; nothing is charged or rented.</exception>
+    public override PooledBuffer Rent(int length, bool clear) => Rent(length, AllocationKind.Temporary, clear);
 
     /// <summary>Charges <paramref name="bytes"/> up front so that several buffers can then be rented from the reservation without further limit checks.</summary>
     /// <exception cref="ImageResourceLimitException">The charge would exceed the limit; nothing is charged.</exception>

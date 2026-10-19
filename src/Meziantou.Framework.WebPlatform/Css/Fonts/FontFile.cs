@@ -1,3 +1,11 @@
+using SharedFontException = Meziantou.Framework.Fonts.FontException;
+using SharedFontFace = Meziantou.Framework.Fonts.FontFace;
+using SharedFontLoader = Meziantou.Framework.Fonts.FontLoader;
+using SharedFontTags = Meziantou.Framework.Fonts.FontTags;
+using SharedOutlineKind = Meziantou.Framework.Fonts.FontOutlineKind;
+using SharedPooledFontEnvironment = Meziantou.Framework.Fonts.PooledFontEnvironment;
+using SharedResourceLimits = Meziantou.Framework.Fonts.FontResourceLimits;
+
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
 /// <summary>The format of a font file.</summary>
@@ -17,15 +25,14 @@ internal enum FontFileFormat
 }
 
 /// <summary>
-/// A font file decoded by the managed font reader: the sfnt data (an OpenType font or a font collection, after the WOFF or
-/// WOFF2 decompression) and its font faces. A file whose structure is invalid is not loaded (<see cref="Load(ReadOnlySpan{byte})"/>
-/// returns null), like the browsers that sanitize the web fonts before using them.
+/// A font file read by the font reader shared with Meziantou.Framework.Imaging: the sfnt data (an OpenType font or a font
+/// collection, after the WOFF or WOFF2 decompression) and its font faces. A file whose structure is invalid is not loaded
+/// (<see cref="Load(ReadOnlySpan{byte})"/> returns null), like the browsers that sanitize the web fonts before using them.
 /// </summary>
 /// <remarks>
 /// The rasterizer of a rendering backend creates its typefaces from <see cref="Data"/> and the index of the face in the
 /// collection (<see cref="OpenTypeFont.FaceIndex"/>), and draws the glyphs whose ids and positions are computed by the
-/// managed shaper: the outlines are not parsed by the reader. The instances are immutable and can be shared by the
-/// documents and the threads.
+/// managed shaper. The instances are immutable and can be shared by the documents and the threads.
 /// </remarks>
 internal sealed class FontFile
 {
@@ -43,6 +50,12 @@ internal sealed class FontFile
         Data = data;
         _faces = new OpenTypeFont[faceCount];
     }
+
+    /// <summary>
+    /// The limits of the font reader: the decoded data of a file is bounded by <see cref="MaxDecodedLength"/>, and the
+    /// temporary buffers of an operation (the expansion of a WOFF2 file, the decoding of an outline) by 256 MB.
+    /// </summary>
+    internal static SharedPooledFontEnvironment Environment { get; } = new(new SharedResourceLimits { MaxFontBytes = MaxDecodedLength }, maxLiveAllocationBytes: 256L * 1024 * 1024);
 
     /// <summary>The format of the file that was loaded.</summary>
     public FontFileFormat Format { get; }
@@ -62,173 +75,64 @@ internal sealed class FontFile
     /// <summary>Loads a font file (OpenType, TrueType, a collection, WOFF or WOFF2); returns null when the data is not a valid font file.</summary>
     public static FontFile? Load(ReadOnlySpan<byte> data)
     {
-        return FontBinary.U32(data, 0) switch
+        var format = FontBinary.U32(data, 0) switch
         {
-            OpenTypeTag.Woff => WoffDecoder.Decode(data) is { } sfnt ? FromSfnt(sfnt, FontFileFormat.Woff) : null,
-            OpenTypeTag.Woff2 => Woff2Decoder.Decode(data) is { } sfnt ? FromSfnt(sfnt, FontFileFormat.Woff2) : null,
-            OpenTypeTag.TrueTypeVersion or OpenTypeTag.OpenTypeCff or OpenTypeTag.AppleTrueType or OpenTypeTag.Collection => FromSfnt(data.ToArray(), FontFileFormat.OpenType),
-            _ => null,
+            OpenTypeTag.Woff => FontFileFormat.Woff,
+            OpenTypeTag.Woff2 => FontFileFormat.Woff2,
+            OpenTypeTag.Collection => FontFileFormat.Collection,
+            OpenTypeTag.TrueTypeVersion or OpenTypeTag.OpenTypeCff or OpenTypeTag.AppleTrueType => FontFileFormat.OpenType,
+            _ => (FontFileFormat?)null,
         };
+
+        if (format is not { } knownFormat)
+            return null;
+
+        SharedFontFace[] faces;
+        try
+        {
+            faces = SharedFontLoader.Load(data, Environment);
+        }
+        catch (SharedFontException)
+        {
+            return null;
+        }
+
+        if (faces.Length > MaxFaceCount)
+            return null;
+
+        // A WOFF2 file can hold a collection
+        var bytes = faces[0].Data.Bytes;
+        if (knownFormat == FontFileFormat.OpenType && FontBinary.U32(bytes, 0) == OpenTypeTag.Collection)
+        {
+            knownFormat = FontFileFormat.Collection;
+        }
+
+        var file = new FontFile(knownFormat, bytes, faces.Length);
+        for (var i = 0; i < faces.Length; i++)
+        {
+            if (!HasOutlines(faces[i]))
+                return null;
+
+            file._faces[i] = new OpenTypeFont(file, i, faces[i]);
+        }
+
+        return file;
     }
 
-    /// <summary>Loads a font file without copying it when it is an OpenType file: the array must not be modified afterwards.</summary>
+    /// <summary>Loads a font file. The array must not be modified afterwards.</summary>
     public static FontFile? Load(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        return FontBinary.U32(data, 0) is OpenTypeTag.TrueTypeVersion or OpenTypeTag.OpenTypeCff or OpenTypeTag.AppleTrueType or OpenTypeTag.Collection
-            ? FromSfnt(data, FontFileFormat.OpenType)
-            : Load((ReadOnlySpan<byte>)data);
+        return Load((ReadOnlySpan<byte>)data);
     }
 
-    private static FontFile? FromSfnt(byte[] data, FontFileFormat format)
+    /// <summary>
+    /// Returns whether a face has outlines (glyf and loca, CFF or CFF2), color bitmaps or SVG glyphs, as the OpenType
+    /// sanitizer of the browsers requires them.
+    /// </summary>
+    private static bool HasOutlines(SharedFontFace face)
     {
-        if (FontBinary.U32(data, 0) != OpenTypeTag.Collection)
-        {
-            var file = new FontFile(format, data, 1);
-            return OpenTypeFont.TryCreate(file, 0, 0) is { } font ? file.SetFace(0, font) : null;
-        }
-
-        // https://learn.microsoft.com/typography/opentype/spec/otff#ttc-header
-        var majorVersion = FontBinary.U16(data, 4);
-        var faceCount = FontBinary.U32(data, 8);
-        if (majorVersion is not (1 or 2) || faceCount is 0 or > MaxFaceCount || !FontBinary.IsInRange(data, 12, faceCount * 4))
-            return null;
-
-        var collection = new FontFile(format == FontFileFormat.OpenType ? FontFileFormat.Collection : format, data, (int)faceCount);
-        for (var i = 0; i < (int)faceCount; i++)
-        {
-            if (OpenTypeFont.TryCreate(collection, FontBinary.U32(data, 12 + (i * 4)), i) is not { } face)
-                return null;
-
-            collection.SetFace(i, face);
-        }
-
-        return collection;
+        var tags = face.TableTags;
+        return face.Outlines != SharedOutlineKind.None || tags.Contains(SharedFontTags.Cbdt) || tags.Contains(SharedFontTags.Sbix) || tags.Contains(OpenTypeTag.Svg);
     }
-
-    private FontFile SetFace(int index, OpenTypeFont font)
-    {
-        _faces[index] = font;
-        return this;
-    }
-}
-
-/// <summary>Writes the sfnt data of the tables decoded from a WOFF or WOFF2 file (https://learn.microsoft.com/typography/opentype/spec/otff#organization-of-an-opentype-font).</summary>
-internal static class SfntWriter
-{
-    /// <summary>Writes a font whose table directory contains the tables, in the order of their tags.</summary>
-    public static byte[] WriteFont(uint flavor, List<(uint Tag, ReadOnlyMemory<byte> Data)> tables)
-    {
-        tables.Sort(static (a, b) => a.Tag.CompareTo(b.Tag));
-        var length = 12L + (16L * tables.Count);
-        foreach (var (_, data) in tables)
-        {
-            length += Pad4(data.Length);
-        }
-
-        var output = new byte[length];
-        var offset = 12 + (16 * tables.Count);
-        WriteOffsetTable(output, 0, flavor, tables.Count);
-        var headOffset = -1;
-        for (var i = 0; i < tables.Count; i++)
-        {
-            var (tag, data) = tables[i];
-            data.Span.CopyTo(output.AsSpan(offset));
-            if (tag == OpenTypeTag.Head && data.Length >= 12)
-            {
-                // The checkSumAdjustment is computed when the whole font is written
-                headOffset = offset;
-                output.AsSpan(offset + 8, 4).Clear();
-            }
-
-            WriteTableRecord(output, 12 + (16 * i), tag, FontBinary.CalculateChecksum(output.AsSpan(offset, data.Length)), offset, data.Length);
-            offset += Pad4(data.Length);
-        }
-
-        if (headOffset >= 0)
-        {
-            WriteU32(output, headOffset + 8, 0xB1B0AFBA - FontBinary.CalculateChecksum(output));
-        }
-
-        return output;
-    }
-
-    /// <summary>Writes a font collection: the table directory of each font lists the indexes of its tables, whose data is shared.</summary>
-    public static byte[] WriteCollection(List<(uint Flavor, int[] Tables)> fonts, List<(uint Tag, ReadOnlyMemory<byte> Data)> tables)
-    {
-        // https://learn.microsoft.com/typography/opentype/spec/otff#ttc-header: version 1.0 (no DSIG table)
-        var headerLength = 12 + (4 * fonts.Count);
-        var length = (long)headerLength;
-        foreach (var (_, fontTables) in fonts)
-        {
-            length += 12 + (16 * fontTables.Length);
-        }
-
-        var tableOffsets = new int[tables.Count];
-        foreach (var (_, data) in tables)
-        {
-            length += Pad4(data.Length);
-        }
-
-        var output = new byte[length];
-        WriteU32(output, 0, OpenTypeTag.Collection);
-        WriteU32(output, 4, 0x00010000);
-        WriteU32(output, 8, (uint)fonts.Count);
-        var offset = headerLength;
-        for (var i = 0; i < fonts.Count; i++)
-        {
-            WriteU32(output, 12 + (4 * i), (uint)offset);
-            offset += 12 + (16 * fonts[i].Tables.Length);
-        }
-
-        for (var i = 0; i < tables.Count; i++)
-        {
-            tableOffsets[i] = offset;
-            tables[i].Data.Span.CopyTo(output.AsSpan(offset));
-            offset += Pad4(tables[i].Data.Length);
-        }
-
-        for (var i = 0; i < fonts.Count; i++)
-        {
-            var (flavor, fontTables) = fonts[i];
-            var directory = (int)FontBinary.U32(output, 12 + (4 * i));
-            var sorted = (int[])fontTables.Clone();
-            Array.Sort(sorted, (a, b) => tables[a].Tag.CompareTo(tables[b].Tag));
-            WriteOffsetTable(output, directory, flavor, sorted.Length);
-            for (var j = 0; j < sorted.Length; j++)
-            {
-                var table = tables[sorted[j]];
-                var tableOffset = tableOffsets[sorted[j]];
-                WriteTableRecord(output, directory + 12 + (16 * j), table.Tag, FontBinary.CalculateChecksum(output.AsSpan(tableOffset, table.Data.Length)), tableOffset, table.Data.Length);
-            }
-        }
-
-        return output;
-    }
-
-    private static int Pad4(int length) => (length + 3) & ~3;
-
-    private static void WriteOffsetTable(byte[] output, int offset, uint flavor, int tableCount)
-    {
-        // https://learn.microsoft.com/typography/opentype/spec/otff#table-directory
-        var entrySelector = tableCount == 0 ? 0 : 31 - System.Numerics.BitOperations.LeadingZeroCount((uint)tableCount);
-        var searchRange = (1 << entrySelector) * 16;
-        WriteU32(output, offset, flavor);
-        WriteU16(output, offset + 4, (ushort)tableCount);
-        WriteU16(output, offset + 6, (ushort)searchRange);
-        WriteU16(output, offset + 8, (ushort)entrySelector);
-        WriteU16(output, offset + 10, (ushort)((tableCount * 16) - searchRange));
-    }
-
-    private static void WriteTableRecord(byte[] output, int offset, uint tag, uint checksum, int tableOffset, int length)
-    {
-        WriteU32(output, offset, tag);
-        WriteU32(output, offset + 4, checksum);
-        WriteU32(output, offset + 8, (uint)tableOffset);
-        WriteU32(output, offset + 12, (uint)length);
-    }
-
-    private static void WriteU16(byte[] output, int offset, ushort value) => System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(output.AsSpan(offset), value);
-
-    private static void WriteU32(byte[] output, int offset, uint value) => System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(output.AsSpan(offset), value);
 }

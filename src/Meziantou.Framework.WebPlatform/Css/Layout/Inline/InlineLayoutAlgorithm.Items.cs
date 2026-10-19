@@ -1751,19 +1751,19 @@ internal sealed partial class InlineLayoutAlgorithm
                 i++;
             }
 
-            var type = ArabicShaper.GetJoiningType(codePoint);
-            if (type == (int)ArabicJoiningType.T)
+            var type = UnicodeProperties.GetJoiningType(codePoint);
+            if (type == UnicodeJoiningType.Transparent)
                 continue;
 
-            return type == (int)ArabicJoiningType.U ? 0 : codePoint;
+            return type == UnicodeJoiningType.NonJoining ? 0 : codePoint;
         }
 
         return 0;
     }
 
-    private static readonly uint HalfWidthsTag = ShapePlanBuilder.Tag("hwid");
-    private static readonly uint ThirdWidthsTag = ShapePlanBuilder.Tag("twid");
-    private static readonly uint QuarterWidthsTag = ShapePlanBuilder.Tag("qwid");
+    private static readonly uint HalfWidthsTag = OpenTypeTag.FromString("hwid");
+    private static readonly uint ThirdWidthsTag = OpenTypeTag.FromString("twid");
+    private static readonly uint QuarterWidthsTag = OpenTypeTag.FromString("qwid");
 
     /// <summary>
     /// Returns the OpenType feature of the glyphs whose advance is 1/n em for a composition of n characters

@@ -122,22 +122,29 @@ internal static class FontTestSupport
         }
     }
 
-    /// <summary>Gets the outline of a glyph as an SVG path, with the numbers written to a number of decimals.</summary>
+    /// <summary>
+    /// Gets the outline of a glyph as an SVG path, with the numbers written to a number of decimals. The errors are the
+    /// exceptions of the library, as when the glyph is drawn.
+    /// </summary>
     public static string GetOutline(Font font, int glyphId, int decimals, ImageConfiguration? configuration = null)
-    {
-        using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
-        var budget = new GlyphBudget(font.Face.Data.Limits);
-        var sink = new SvgPathSink { Format = "0." + new string('#', decimals) };
-        font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
-        return sink.ToString();
-    }
+        => GetOutline(font, glyphId, new SvgPathSink { Format = "0." + new string('#', decimals) }, configuration);
 
     public static string GetOutline(Font font, int glyphId, ImageConfiguration? configuration = null)
+        => GetOutline(font, glyphId, new SvgPathSink(), configuration);
+
+    private static string GetOutline(Font font, int glyphId, SvgPathSink sink, ImageConfiguration? configuration)
     {
         using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
         var budget = new GlyphBudget(font.Face.Data.Limits);
-        var sink = new SvgPathSink();
-        font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
+        try
+        {
+            font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+
         return sink.ToString();
     }
 
@@ -162,5 +169,86 @@ internal static class FontTestSupport
         public override string ToString() => _path.ToString();
 
         private string Write(double value) => value.ToString(Format, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Builds a GSUB table whose default script has one feature per substitution: a single substitution of one glyph.</summary>
+    public static byte[] BuildSingleSubstitutions(params (string Feature, int From, int To)[] substitutions)
+    {
+        var table = new List<byte>();
+        var count = substitutions.Length;
+        var featureList = 28 + (2 * count);
+        var lookupList = featureList + 2 + (12 * count);
+        UInt16(table, 1);
+        UInt16(table, 0);
+        UInt16(table, 10);
+        UInt16(table, featureList);
+        UInt16(table, lookupList);
+
+        // The script list: the default script, whose default language system has every feature
+        UInt16(table, 1);
+        Tag(table, "DFLT");
+        UInt16(table, 8);
+        UInt16(table, 4);
+        UInt16(table, 0);
+        UInt16(table, 0);
+        UInt16(table, 0xFFFF);
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, i);
+        }
+
+        // The feature list: each feature has its own lookup
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            Tag(table, substitutions[i].Feature);
+            UInt16(table, 2 + (6 * count) + (6 * i));
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, 0);
+            UInt16(table, 1);
+            UInt16(table, i);
+        }
+
+        // The lookup list: a single substitution of the second format, one glyph for another
+        UInt16(table, count);
+        for (var i = 0; i < count; i++)
+        {
+            UInt16(table, 2 + (2 * count) + (22 * i));
+        }
+
+        foreach (var (_, from, to) in substitutions)
+        {
+            UInt16(table, 1);
+            UInt16(table, 0);
+            UInt16(table, 1);
+            UInt16(table, 8);
+            UInt16(table, 2);
+            UInt16(table, 8);
+            UInt16(table, 1);
+            UInt16(table, to);
+            UInt16(table, 1);
+            UInt16(table, 1);
+            UInt16(table, from);
+        }
+
+        return [.. table];
+    }
+
+    private static void UInt16(List<byte> table, int value)
+    {
+        table.Add((byte)(value >> 8));
+        table.Add((byte)value);
+    }
+
+    private static void Tag(List<byte> table, string tag)
+    {
+        foreach (var character in tag)
+        {
+            table.Add((byte)character);
+        }
     }
 }

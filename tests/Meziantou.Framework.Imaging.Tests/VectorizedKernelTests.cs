@@ -4259,7 +4259,7 @@ public sealed class VectorizedKernelTests
     {
         // Published check values: CRC-32 of "123456789" is 0xCBF43926, Adler-32 of "Wikipedia" is 0x11E60398
         Assert.Equal(0xCBF43926u, Crc32.Compute("123456789"u8));
-        Assert.Equal(0x11E60398u, BoundedInflater.ComputeAdler32("Wikipedia"u8));
+        Assert.Equal(0x11E60398u, Adler32.Compute("Wikipedia"u8));
 
         var random = new Random(32);
         var data = new byte[70_000];
@@ -4278,14 +4278,14 @@ public sealed class VectorizedKernelTests
                 }
 
                 var adler = ((initial >> 16) % 65521 << 16) | ((initial & 0xFFFF) % 65521);
-                Assert.Equal(BoundedInflater.UpdateAdler32Scalar(adler, span), BoundedInflater.UpdateAdler32(adler, span));
+                Assert.Equal(Adler32.UpdateScalar(adler, span), Adler32.Update(adler, span));
             }
         }
 
         // Extreme bytes (all 0xFF) maximize every partial sum
         var ones = new byte[200_000];
         Array.Fill(ones, (byte)0xFF);
-        Assert.Equal(BoundedInflater.UpdateAdler32Scalar(0xFFF0FFF0, ones), BoundedInflater.UpdateAdler32(0xFFF0FFF0, ones));
+        Assert.Equal(Adler32.UpdateScalar(0xFFF0FFF0, ones), Adler32.Update(0xFFF0FFF0, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.Update(Crc32.Initial, ones));
         Assert.Equal(Crc32.UpdateScalar(Crc32.Initial, ones), Crc32.UpdateTables(Crc32.Initial, ones));
         if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)

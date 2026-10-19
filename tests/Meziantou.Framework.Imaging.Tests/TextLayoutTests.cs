@@ -1309,7 +1309,7 @@ public sealed class TextLayoutTests
     public void AVerticalLineAppliesTheFeaturesOfItsOrientation()
     {
         // The glyphs on their side have the forms their font has for that (vrtr): B in the place of A
-        var font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vrtr", FontSamples.BoxA, FontSamples.BoxB)));
+        var font = CreateIdeographs(builder => builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("vrtr", FontSamples.BoxA, FontSamples.BoxB)));
         AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16), Vertical()), new PointD(0, 0), SidewaysB(0, 0));
         AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16), Vertical(orientation: TextOrientation.Upright)), new PointD(0, 0), UprightA(0, 0));
         AssertRectangles(TextLayout.Create("A", new TextStyle(font, 16)), new PointD(0, 0), A(0, 0));
@@ -1317,7 +1317,7 @@ public sealed class TextLayoutTests
 
         // A feature of one direction is applied as its counterpart where the glyphs go the other way: the
         // horizontal kana alternates of the style are the vertical ones of the font for upright text
-        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vkna", FontSamples.BoxA, FontSamples.BoxC)));
+        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("vkna", FontSamples.BoxA, FontSamples.BoxC)));
         var style = new TextStyle(font, 16) { Features = [new FontFeature("hkna")] };
         AssertRectangles(TextLayout.Create("\u4E00", style, Vertical()), new PointD(0, 0), UprightC(0, 0));
         AssertRectangles(TextLayout.Create("\u4E00", style), new PointD(0, 0), A(0, 0));
@@ -1325,7 +1325,7 @@ public sealed class TextLayoutTests
 
         // With the rotated forms of the font (vrt2), a character the font has a rotated glyph for is upright with
         // that glyph, the frame E as C here; the vertical forms are not applied, and the other characters are turned
-        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("vert", FontSamples.BoxA, FontSamples.BoxB), ("vrt2", 6, FontSamples.BoxC)));
+        font = CreateIdeographs(builder => builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("vert", FontSamples.BoxA, FontSamples.BoxB), ("vrt2", 6, FontSamples.BoxC)));
         style = new TextStyle(font, 16) { Features = [new FontFeature("vrt2")] };
         var layout = TextLayout.Create("E\u4E00B", style, Vertical());
         Assert.Equal(40, layout.Height);
@@ -1365,7 +1365,7 @@ public sealed class TextLayoutTests
             Render(120, 70, canvas => canvas.FillText(White, layout, down)));
 
         // Unless its font has forms half an em wide for two characters (hwid): B in the place of A
-        var withWidths = new TextStyle(CreateIdeographs(builder => builder.RawTables["GSUB"] = BuildSingleSubstitutions(("hwid", FontSamples.BoxA, FontSamples.BoxB))), 16) { IsCombinedUpright = true };
+        var withWidths = new TextStyle(CreateIdeographs(builder => builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("hwid", FontSamples.BoxA, FontSamples.BoxB))), 16) { IsCombinedUpright = true };
         AssertRectangles(TextLayout.Create("AA", withWidths, Vertical()), new PointD(0, 0), CombinedB(0, 0), CombinedB(8, 0));
 
         // A line never ends inside it: B, a space and B are 24 pixels on their side, but one unit of 16 pixels
@@ -1452,73 +1452,6 @@ public sealed class TextLayoutTests
         {
             UInt16(table, 1);
             UInt16(table, coordinate);
-        }
-
-        return [.. table];
-    }
-
-    /// <summary>Builds a GSUB table whose default script has one feature per substitution: a single substitution of one glyph.</summary>
-    private static byte[] BuildSingleSubstitutions(params (string Feature, int From, int To)[] substitutions)
-    {
-        var table = new List<byte>();
-        var count = substitutions.Length;
-        var featureList = 28 + (2 * count);
-        var lookupList = featureList + 2 + (12 * count);
-        UInt16(table, 1);
-        UInt16(table, 0);
-        UInt16(table, 10);
-        UInt16(table, featureList);
-        UInt16(table, lookupList);
-
-        // The script list: the default script, whose default language system has every feature
-        UInt16(table, 1);
-        Tag(table, "DFLT");
-        UInt16(table, 8);
-        UInt16(table, 4);
-        UInt16(table, 0);
-        UInt16(table, 0);
-        UInt16(table, 0xFFFF);
-        UInt16(table, count);
-        for (var i = 0; i < count; i++)
-        {
-            UInt16(table, i);
-        }
-
-        // The feature list: each feature has its own lookup
-        UInt16(table, count);
-        for (var i = 0; i < count; i++)
-        {
-            Tag(table, substitutions[i].Feature);
-            UInt16(table, 2 + (6 * count) + (6 * i));
-        }
-
-        for (var i = 0; i < count; i++)
-        {
-            UInt16(table, 0);
-            UInt16(table, 1);
-            UInt16(table, i);
-        }
-
-        // The lookup list: a single substitution of the second format, one glyph for another
-        UInt16(table, count);
-        for (var i = 0; i < count; i++)
-        {
-            UInt16(table, 2 + (2 * count) + (22 * i));
-        }
-
-        foreach (var (_, from, to) in substitutions)
-        {
-            UInt16(table, 1);
-            UInt16(table, 0);
-            UInt16(table, 1);
-            UInt16(table, 8);
-            UInt16(table, 2);
-            UInt16(table, 8);
-            UInt16(table, 1);
-            UInt16(table, to);
-            UInt16(table, 1);
-            UInt16(table, 1);
-            UInt16(table, from);
         }
 
         return [.. table];

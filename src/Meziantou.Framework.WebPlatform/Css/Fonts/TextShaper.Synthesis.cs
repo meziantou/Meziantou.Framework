@@ -1,6 +1,7 @@
 using System.Text;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Unicode;
+using GlyphBuffer = Meziantou.Framework.Fonts.GlyphBuffer;
 
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
@@ -19,13 +20,13 @@ internal static partial class TextShaper
     /// </summary>
     internal const double SmallCapsScale = 0.7;
 
-    private static readonly uint SmallCapsTag = ShapePlanBuilder.Tag("smcp");
-    private static readonly uint CapitalsToSmallCapsTag = ShapePlanBuilder.Tag("c2sc");
-    private static readonly uint PetiteCapsTag = ShapePlanBuilder.Tag("pcap");
-    private static readonly uint CapitalsToPetiteCapsTag = ShapePlanBuilder.Tag("c2pc");
-    private static readonly uint UnicaseTag = ShapePlanBuilder.Tag("unic");
-    private static readonly uint SuperscriptsTag = ShapePlanBuilder.Tag("sups");
-    private static readonly uint SubscriptsTag = ShapePlanBuilder.Tag("subs");
+    private static readonly uint SmallCapsTag = OpenTypeTag.FromString("smcp");
+    private static readonly uint CapitalsToSmallCapsTag = OpenTypeTag.FromString("c2sc");
+    private static readonly uint PetiteCapsTag = OpenTypeTag.FromString("pcap");
+    private static readonly uint CapitalsToPetiteCapsTag = OpenTypeTag.FromString("c2pc");
+    private static readonly uint UnicaseTag = OpenTypeTag.FromString("unic");
+    private static readonly uint SuperscriptsTag = OpenTypeTag.FromString("sups");
+    private static readonly uint SubscriptsTag = OpenTypeTag.FromString("subs");
 
     /// <summary>The synthesis of a code point (<see cref="CodePointInfo.Synthesis"/>): bits that are compared to split the runs.</summary>
     [Flags]
@@ -262,8 +263,8 @@ internal static partial class TextShaper
         return count;
     }
 
-    /// <summary>Adds the case mapping of a code point to a shaping buffer: the code points of the mapping have the cluster of the character.</summary>
-    private static void AddMappedCodePoint(ShapingBuffer buffer, int codePoint, int cluster, bool uppercase, bool turkic)
+    /// <summary>Adds the case mapping of a code point to the glyphs of a run: the code points of the mapping have the cluster of the character.</summary>
+    private static void AddMappedCodePoint(GlyphBuffer buffer, int codePoint, int cluster, bool uppercase, bool turkic)
     {
         Span<char> mapped = stackalloc char[CaseMapping.MaxLength];
         var length = MapCase(codePoint, uppercase, turkic, mapped);

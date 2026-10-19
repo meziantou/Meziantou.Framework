@@ -213,22 +213,58 @@ public sealed class OpenTypeShapingTests : IDisposable
     [InlineData("sr-Latn", "SRB ")]
     [InlineData("ar", "ARA ")]
     [InlineData("mn-Mong", "MNG ")]
-    [InlineData("xyz", "XYZ ")]
     public void LanguageTags(string language, string expected)
     {
-        Assert.Equal(expected, OpenTypeTag.ToString(OpenTypeLanguageTags.GetTags(language)[0]));
+        using var workspace = new ShapingWorkspace();
+        Assert.Equal(expected, OpenTypeTag.ToString(workspace.GetLanguages(language, languageOverride: 0)[0]));
+
+        // font-language-override comes first
+        Assert.Equal(["SRB ", expected], workspace.GetLanguages(language, OpenTypeTag.FromString("SRB "))[..2].Select(OpenTypeTag.ToString));
+    }
+
+    [Fact]
+    public void LanguageTags_Unregistered()
+    {
+        using var workspace = new ShapingWorkspace();
+        Assert.Empty(workspace.GetLanguages("xyz", languageOverride: 0));
+        Assert.Empty(workspace.GetLanguages(language: null, languageOverride: 0));
+    }
+
+    [Fact]
+    public void JoiningScripts()
+    {
+        // The scripts of the characters that join (ArabicShaping.txt), from the data of Meziantou.Framework.Unicode
+        var scripts = new HashSet<UnicodeScript>();
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF || UnicodeProperties.GetJoiningType(codePoint) is UnicodeJoiningType.NonJoining or UnicodeJoiningType.Transparent)
+                continue;
+
+            var script = UnicodeScripts.GetScript(codePoint);
+            if (script is not (UnicodeScript.Common or UnicodeScript.Inherited or UnicodeScript.Unknown))
+            {
+                scripts.Add(script);
+            }
+        }
+
+        Assert.Equal(scripts.Order(), Enum.GetValues<UnicodeScript>().Where(CharacterProperties.IsJoiningScript).Order());
     }
 
     [Fact]
     public void ScriptTags()
     {
-        Span<uint> tags = stackalloc uint[4];
-        var count = OpenTypeScriptTags.GetTags(UnicodeScript.Devanagari, tags);
-        Assert.Equal(["dev3", "dev2", "deva"], tags[..count].ToArray().Select(OpenTypeTag.ToString));
-        count = OpenTypeScriptTags.GetTags(UnicodeScript.Arabic, tags);
-        Assert.Equal(["arab"], tags[..count].ToArray().Select(OpenTypeTag.ToString));
-        count = OpenTypeScriptTags.GetTags(UnicodeScript.KatakanaOrHiragana, tags);
-        Assert.Equal(["kana"], tags[..count].ToArray().Select(OpenTypeTag.ToString));
+        // The scripts of the text, by their ISO 15924 code, have the tags of the OpenType registry
+        string[] Tags(UnicodeScript script)
+        {
+            Span<uint> tags = stackalloc uint[Meziantou.Framework.Fonts.OpenTypeScript.MaxTagCount];
+            var count = Meziantou.Framework.Fonts.OpenTypeScript.GetTags(ShapingWorkspace.GetScript(script), tags);
+            return [.. tags[..count].ToArray().Select(OpenTypeTag.ToString)];
+        }
+
+        Assert.Equal(["dev3", "dev2", "deva"], Tags(UnicodeScript.Devanagari)[..3]);
+        Assert.Equal("arab", Tags(UnicodeScript.Arabic)[0]);
+        Assert.Equal("kana", Tags(UnicodeScript.KatakanaOrHiragana)[0]);
+        Assert.Equal("DFLT", Tags(UnicodeScript.Common)[0]);
     }
 
     [Fact]
@@ -252,17 +288,6 @@ public sealed class OpenTypeShapingTests : IDisposable
         var shaped = Shape("a (\u0628) b", "direction: rtl", singleFont: false);
         Assert.Equal(7, shaped.Glyphs.Length);
         Assert.Equal([A, B], GlyphIds(shaped).Where(glyph => glyph is A or B));
-    }
-
-    [Fact]
-    public void JoiningTypes()
-    {
-        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x0628));
-        Assert.Equal((int)ArabicJoiningType.R, ArabicShaper.GetJoiningType(0x0627));
-        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x064B));
-        Assert.Equal((int)ArabicJoiningType.U, ArabicShaper.GetJoiningType('a'));
-        Assert.Equal((int)ArabicJoiningType.D, ArabicShaper.GetJoiningType(0x1820));
-        Assert.Equal((int)ArabicJoiningType.T, ArabicShaper.GetJoiningType(0x200B));
     }
 
     [Theory]
@@ -337,12 +362,12 @@ public sealed class OpenTypeShapingTests : IDisposable
     public void WouldSubstitute()
     {
         var font = FontFile.Load(FontData)!.Faces[0];
-        Assert.True(font.WouldSubstitute(UnicodeScript.Latin, ShapePlanBuilder.Tag("sups"), B));
-        Assert.False(font.WouldSubstitute(UnicodeScript.Latin, ShapePlanBuilder.Tag("sups"), A));
-        Assert.True(font.WouldSubstitute(UnicodeScript.Latin, ShapePlanBuilder.Tag("smcp"), A));
-        Assert.False(font.WouldSubstitute(UnicodeScript.Latin, ShapePlanBuilder.Tag("subs"), B));
-        Assert.True(font.HasSubstitutionFeature(UnicodeScript.Latin, ShapePlanBuilder.Tag("smcp")));
-        Assert.False(font.HasSubstitutionFeature(UnicodeScript.Latin, ShapePlanBuilder.Tag("c2sc")));
+        Assert.True(font.WouldSubstitute(UnicodeScript.Latin, OpenTypeTag.FromString("sups"), B));
+        Assert.False(font.WouldSubstitute(UnicodeScript.Latin, OpenTypeTag.FromString("sups"), A));
+        Assert.True(font.WouldSubstitute(UnicodeScript.Latin, OpenTypeTag.FromString("smcp"), A));
+        Assert.False(font.WouldSubstitute(UnicodeScript.Latin, OpenTypeTag.FromString("subs"), B));
+        Assert.True(font.HasSubstitutionFeature(UnicodeScript.Latin, OpenTypeTag.FromString("smcp")));
+        Assert.False(font.HasSubstitutionFeature(UnicodeScript.Latin, OpenTypeTag.FromString("c2sc")));
     }
 
     [Theory]

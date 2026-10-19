@@ -84,8 +84,8 @@ internal sealed class FontFallbackList
 
         var result = FindFamilyFont(codePoint);
 
-        // U+2011 NON-BREAKING HYPHEN is shaped with the glyph of U+2010 HYPHEN by a font that only has the latter (see
-        // ShapingNormalizer), rather than with another font
+        // U+2011 NON-BREAKING HYPHEN is shaped with the glyph of U+2010 HYPHEN by a font that only has the latter, rather
+        // than with another font
         if (result is null && codePoint == 0x2011)
         {
             result = FindFamilyFont(0x2010);
@@ -93,8 +93,8 @@ internal sealed class FontFallbackList
 
         // The space characters that the fonts of the families do not support are not searched in the installed font fallback
         // (a fallback font may draw a picture of the space, e.g. U+205F in STIX Two Math): the shaping synthesizes them
-        // from the space of the font (see ShapingNormalizer and FallbackPositioning.PositionSpaces)
-        if (result is null && ShapingUnicode.GetSpaceFallback(codePoint) is SpaceFallback.NotSpace or SpaceFallback.Space)
+        // from the space of the font (see Meziantou.Framework.Fonts.TextShaper.IsSynthesizedSpace)
+        if (result is null && !Meziantou.Framework.Fonts.TextShaper.IsSynthesizedSpace(codePoint))
         {
             foreach (var family in _fallbacks)
             {

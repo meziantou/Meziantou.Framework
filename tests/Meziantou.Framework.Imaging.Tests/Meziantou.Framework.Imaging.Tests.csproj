@@ -35,4 +35,8 @@
 
   <!-- Shared helpers -->
   <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
+  <ItemGroup>
+    <!-- The internal API of the font reader and the shaper -->
+    <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
 </Project>

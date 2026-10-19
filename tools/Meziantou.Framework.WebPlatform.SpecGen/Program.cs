@@ -28,8 +28,6 @@ var context = new GeneratorContext(RepositoryPaths.FindRoot(), check);
 
 EncodingGenerator.Generate(context);
 EncodingDetectorGenerator.Generate(context);
-ComplexShapingGenerator.Generate(context);
-OpenTypeTagGenerator.Generate(context);
 PublicSuffixListGenerator.Generate(context);
 HyphenationGenerator.Generate(context);
 SegmentationGenerator.Generate(context);

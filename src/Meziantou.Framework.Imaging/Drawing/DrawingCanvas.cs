@@ -599,7 +599,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void FillText(Brush brush, TextLayout layout, PointD origin) => GetSession().FillText(brush, layout, origin);
+    public void FillText(Brush brush, TextLayout layout, PointD origin)
+    {
+        try
+        {
+            GetSession().FillText(brush, layout, origin);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Lays out a text on one line per line of the text and paints its glyphs.</summary>
     /// <param name="brush">The paint.</param>
@@ -624,7 +634,15 @@ public readonly ref struct DrawingCanvas
         ArgumentNullException.ThrowIfNull(brush);
         DrawingGuard.Point(origin, nameof(origin));
         var session = GetSession();
-        session.FillText(brush, TextLayout.Create(text, font, size), origin);
+        var layout = TextLayout.Create(text, font, size);
+        try
+        {
+            session.FillText(brush, layout, origin);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
     }
 
     /// <summary>Paints the outlines of the glyphs of a text layout with a pen.</summary>
@@ -638,7 +656,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void StrokeText(Pen pen, TextLayout layout, PointD origin) => GetSession().StrokeText(pen, layout, origin);
+    public void StrokeText(Pen pen, TextLayout layout, PointD origin)
+    {
+        try
+        {
+            GetSession().StrokeText(pen, layout, origin);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Fills a run of glyphs placed by the caller: the glyphs of a font at the positions a text shaper gives.</summary>
     /// <remarks>
@@ -664,7 +692,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void FillGlyphs(Brush brush, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().FillGlyphs(brush, font, size, glyphs, options);
+    public void FillGlyphs(Brush brush, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null)
+    {
+        try
+        {
+            GetSession().FillGlyphs(brush, font, size, glyphs, options);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Strokes the outlines of a run of glyphs placed by the caller, as one shape: <c>strokeText</c> of the HTML canvas.</summary>
     /// <remarks>A synthetic oblique shears the outlines; a synthetic bold does not widen the pen, as for <see cref="StrokeText(Pen, TextLayout, PointD)"/>. The glyphs a font draws with its own colors are stroked as their outlines.</remarks>
@@ -680,7 +718,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void StrokeGlyphs(Pen pen, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null) => GetSession().StrokeGlyphs(pen, font, size, glyphs, options);
+    public void StrokeGlyphs(Pen pen, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options = null)
+    {
+        try
+        {
+            GetSession().StrokeGlyphs(pen, font, size, glyphs, options);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Paints the glyphs of a text layout along a path.</summary>
     /// <param name="brush">The paint of the spans that have none.</param>
@@ -703,7 +751,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void FillText(Brush brush, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().FillText(brush, layout, path, options);
+    public void FillText(Brush brush, TextLayout layout, VectorPath path, TextPathOptions? options = null)
+    {
+        try
+        {
+            GetSession().FillText(brush, layout, path, options);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Paints the outlines of the glyphs of a text layout along a path, with a pen.</summary>
     /// <param name="pen">The stroke.</param>
@@ -715,7 +773,17 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().StrokeText(pen, layout, path, options);
+    public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options = null)
+    {
+        try
+        {
+            GetSession().StrokeText(pen, layout, path, options);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
+    }
 
     /// <summary>Runs a callback whose drawings only change the inside of a path.</summary>
     /// <remarks>

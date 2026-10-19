@@ -399,7 +399,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 // glyphs of vertical text)
                 const uint HaltFeature = 0x68616C74;
                 const uint VhalFeature = 0x7668616C;
-                if (run.Font.Font.LayoutGpos is not { } gpos || gpos.FindFeature(run.IsUpright ? VhalFeature : HaltFeature) < 0)
+                if (!run.Font.Font.HasPositioningFeature(run.IsUpright ? VhalFeature : HaltFeature))
                     return 0;
 
                 var advance = run.Font.GetAdvance(glyphs[glyphIndex].GlyphId, run.EmSize, run.IsUpright);

@@ -327,7 +327,7 @@ public sealed class FontFuzzTests
                     font.Face.DecodeOutline(glyph, sink, scratch, ref budget);
                     decoded++;
                 }
-                catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+                catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
                 {
                     // A malformed glyph: the documented outcomes. What was emitted before the error is still checked,
                     // except for the contour the error interrupted.
@@ -374,7 +374,7 @@ public sealed class FontFuzzTests
                 {
                     hasScript = font.Face.MapCodePoint(Rune.GetRuneAt(text, 0).Value) != 0;
                 }
-                catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+                catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
                 {
                     continue;
                 }
@@ -390,13 +390,13 @@ public sealed class FontFuzzTests
 
     private static FuzzFailure? CheckShaping(Font font, string text, UnicodeScript script, bool isRightToLeft, ShapingFeature[] features)
     {
-        var buffer = new GlyphBuffer(Options.Configuration.Limits);
+        var buffer = new GlyphBuffer(Options.Configuration.FontEnvironment.Limits);
         try
         {
             TextShaper.AddText(buffer, text);
             TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft, features);
         }
-        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
         {
             return null;
         }
@@ -546,7 +546,7 @@ public sealed class FontFuzzTests
                 }
             }
         }
-        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        catch (Exception exception) when (exception is FontException or ImageResourceLimitException)
         {
             return null;
         }

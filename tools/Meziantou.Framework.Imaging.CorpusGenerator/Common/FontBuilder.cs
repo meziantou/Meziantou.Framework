@@ -86,6 +86,18 @@ internal sealed class FontBuilder
 
     public int UnderlineThickness { get; set; } = 50;
 
+    /// <summary>Gets or sets <c>OS/2.usWidthClass</c>.</summary>
+    public int WidthClass { get; set; } = 5;
+
+    /// <summary>Gets or sets <c>OS/2.ySubscriptYOffset</c>: how far below the baseline subscripts are, positive downward.</summary>
+    public int SubscriptYOffset { get; set; }
+
+    /// <summary>Gets or sets <c>OS/2.ySuperscriptYOffset</c>: how far above the baseline superscripts are.</summary>
+    public int SuperscriptYOffset { get; set; }
+
+    /// <summary>Gets or sets <c>post.italicAngle</c>, in degrees counterclockwise from the vertical.</summary>
+    public double ItalicAngle { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the OS/2 table is omitted.</summary>
     public bool OmitOs2 { get; set; }
 
@@ -872,11 +884,14 @@ internal sealed class FontBuilder
         writer.UInt16(4);
         writer.Int16((int)Math.Round(Glyphs.Average(glyph => (double)glyph.AdvanceWidth), MidpointRounding.AwayFromZero));
         writer.UInt16(WeightClass);
-        writer.UInt16(5);
+        writer.UInt16(WidthClass);
         writer.UInt16(0);
 
-        // Subscript and superscript sizes and offsets are not used by the library.
-        writer.Zeros(16);
+        // The sizes and the horizontal offsets of subscripts and superscripts are not used by the library.
+        writer.Zeros(6);
+        writer.Int16(SubscriptYOffset);
+        writer.Zeros(6);
+        writer.Int16(SuperscriptYOffset);
         writer.Int16(StrikeoutSize);
         writer.Int16(StrikeoutPosition);
         writer.Int16(0);
@@ -962,7 +977,7 @@ internal sealed class FontBuilder
     {
         var writer = new FontWriter();
         writer.UInt32(0x00030000);
-        writer.UInt32(0);
+        writer.Int32((int)Math.Round(ItalicAngle * 65536, MidpointRounding.AwayFromZero));
         writer.Int16(UnderlinePosition);
         writer.Int16(UnderlineThickness);
         writer.UInt32(IsMonospaced ? 1u : 0u);

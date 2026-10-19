@@ -292,7 +292,9 @@ public sealed class PaintingTests : IDisposable
         Assert.Contains("clip-rounded-rect (2, 2, 50x50) radii=8,8,8,8", Dump(document), StringComparison.Ordinal);
     }
 
-    [Fact]
+    // Not in parallel with the other tests: a change of a style sheet through the CSSOM by another test (the process-wide
+    // CssStyleVersion) lays the document out again, which paints it again between the reads of the display list
+    [Fact(DisableParallelization = true)]
     public void Scrolling_TranslatesTheContentsAndInvalidatesThePainting()
     {
         var document = Parse("""

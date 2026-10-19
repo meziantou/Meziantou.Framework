@@ -78,6 +78,91 @@ internal static class Av1Simd
     }
 
     /// <summary>
+    /// The 64-bit products of 2 lanes of <paramref name="value"/> and <paramref name="factor"/>, whose lanes are equal: the
+    /// lanes 0 and 1 on Arm64, 0 and 2 on x64. <see cref="RoundNarrow12Split"/> joins them with the products of
+    /// <see cref="MultiplySplitSecond"/>.
+    /// </summary>
+    // pmuldq multiplies the lanes 0 and 2: with a broadcast factor, no lane needs to be moved, and the other lanes are
+    // shifted into the lanes 0 and 2 once for every factor
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitFirst(Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningLower(value.GetLower(), factor.GetLower());
+
+        return Sse41.Multiply(value, factor);
+    }
+
+    /// <summary>
+    /// The 64-bit products of the 2 lanes of <paramref name="value"/> that <see cref="MultiplySplitFirst"/> does not multiply
+    /// (2 and 3 on Arm64, 1 and 3 on x64) and <paramref name="factor"/>, whose lanes are equal.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitSecond(Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningUpper(value, factor);
+
+        return Sse41.Multiply(Sse2.ShiftRightLogical(value.AsInt64(), 32).AsInt32(), factor);
+    }
+
+    /// <summary><paramref name="addend"/> plus <see cref="MultiplySplitFirst"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitFirstAndAdd(Vector128<long> addend, Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningLowerAndAdd(addend, value.GetLower(), factor.GetLower());
+
+        return addend + MultiplySplitFirst(value, factor);
+    }
+
+    /// <summary><paramref name="addend"/> plus <see cref="MultiplySplitSecond"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitSecondAndAdd(Vector128<long> addend, Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningUpperAndAdd(addend, value, factor);
+
+        return addend + MultiplySplitSecond(value, factor);
+    }
+
+    /// <summary><paramref name="minuend"/> minus <see cref="MultiplySplitFirst"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitFirstAndSubtract(Vector128<long> minuend, Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningLowerAndSubtract(minuend, value.GetLower(), factor.GetLower());
+
+        return minuend - MultiplySplitFirst(value, factor);
+    }
+
+    /// <summary><paramref name="minuend"/> minus <see cref="MultiplySplitSecond"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MultiplySplitSecondAndSubtract(Vector128<long> minuend, Vector128<int> value, Vector128<int> factor)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.MultiplyWideningUpperAndSubtract(minuend, value, factor);
+
+        return minuend - MultiplySplitSecond(value, factor);
+    }
+
+    /// <summary>
+    /// <c>(int)Round2( x, 12 )</c> of the lanes of <paramref name="first"/> and <paramref name="second"/>, values computed
+    /// from <see cref="MultiplySplitFirst"/> and <see cref="MultiplySplitSecond"/>, in the lanes of the value they multiplied,
+    /// for values whose rounding cannot overflow.
+    /// </summary>
+    // The lanes 1 and 3 are the upper halves of the 64-bit lanes of second shifted left by 20 bits: their bits 12 to 43
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<int> RoundNarrow12Split(Vector128<long> first, Vector128<long> second)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return RoundNarrow12(first, second);
+
+        var rounding = Vector128.Create(1L << 11);
+        return Sse41.Blend(Vector128.ShiftRightLogical(first + rounding, 12).AsInt16(), Vector128.ShiftLeft(second + rounding, 20).AsInt16(), 0xCC).AsInt32();
+    }
+
+    /// <summary>
     /// <c>(int)Round2( x, 12 )</c> of the lanes of <paramref name="low"/> (lanes 0 and 1 of the result) and of
     /// <paramref name="high"/> (lanes 2 and 3), for values whose rounding cannot overflow.
     /// </summary>

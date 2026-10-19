@@ -2618,6 +2618,12 @@ public sealed class VectorizedKernelTests
                     WebPYuvConverter.ConvertSamples(luma, blue, red, withAlpha ? alpha : [], actual);
                     Assert.Equal(expected, actual);
                 }
+
+                var expectedRgb = new byte[length * 3];
+                var actualRgb = new byte[length * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(luma, blue, red, expectedRgb);
+                WebPYuvConverter.ConvertSamplesRgb(luma, blue, red, actualRgb);
+                Assert.Equal(expectedRgb, actualRgb);
             }
         }
 
@@ -2641,6 +2647,11 @@ public sealed class VectorizedKernelTests
                 WebPYuvConverter.ConvertSamplesScalar(lumas, blue, red, [], expected);
                 WebPYuvConverter.ConvertSamples(lumas, blue, red, [], actual);
                 Assert.Equal(expected, actual);
+                var expectedRgb = new byte[lumas.Length * 3];
+                var actualRgb = new byte[lumas.Length * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(lumas, blue, red, expectedRgb);
+                WebPYuvConverter.ConvertSamplesRgb(lumas, blue, red, actualRgb);
+                Assert.Equal(expectedRgb, actualRgb);
             }
         }
     }
@@ -4283,7 +4294,7 @@ public sealed class VectorizedKernelTests
     public void WebPAlphaAndOutputKernelsMatchTheScalarReferences()
     {
         // Alpha filtering and unfiltering (every filter, the first row and column, clamps of the gradient), the green
-        // extraction and the ARGB to RGBA rows, at lengths around the vector sizes
+        // extraction and the ARGB to RGBA and RGB rows, at lengths around the vector sizes
         var random = new Random(4053);
         for (var round = 0; round < 600; round++)
         {
@@ -4336,6 +4347,12 @@ public sealed class VectorizedKernelTests
                 WebPDecoder.ArgbToRgba(pixels, actualRgba, opaque);
                 Assert.Equal(expectedRgba, actualRgba);
             }
+
+            var expectedRgb = new byte[pixels.Length * 3];
+            var actualRgb = new byte[pixels.Length * 3];
+            WebPDecoder.ArgbToRgbScalar(pixels, expectedRgb);
+            WebPDecoder.ArgbToRgb(pixels, actualRgb);
+            Assert.Equal(expectedRgb, actualRgb);
         }
     }
 

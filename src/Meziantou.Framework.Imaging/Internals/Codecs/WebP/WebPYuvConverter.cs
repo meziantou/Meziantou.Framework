@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -39,13 +41,14 @@ internal static class WebPYuvConverter
     private static readonly int[] GreenCrTerm = CreateTable(static v => GreenFromCr * (v - 128));
     private static readonly int[] BlueCbTerm = CreateTable(static v => BlueFromCb * (v - 128));
 
-    /// <summary>Converts row <paramref name="y"/> of the planes to RGBA (alpha from <paramref name="alpha"/>, or opaque).</summary>
+    /// <summary>Converts row <paramref name="y"/> of the planes to RGBA (alpha from <paramref name="alpha"/>, or opaque) or RGB pixels.</summary>
     /// <param name="planes">The reconstructed planes.</param>
     /// <param name="y">The row (0 to <c>Height - 1</c>).</param>
-    /// <param name="alpha">The alpha values of the row, or empty for opaque pixels.</param>
-    /// <param name="destination">At least <c>4 * Width</c> bytes.</param>
+    /// <param name="alpha">The alpha values of the row, or empty for opaque pixels (always empty for RGB pixels).</param>
+    /// <param name="destination">At least <c>bytesPerPixel * Width</c> bytes.</param>
     /// <param name="scratch">At least <c>2 * Width</c> bytes of scratch space.</param>
-    public static void ConvertRow(Vp8Planes planes, int y, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch)
+    /// <param name="bytesPerPixel">4 for RGBA pixels, 3 for RGB pixels.</param>
+    public static void ConvertRow(Vp8Planes planes, int y, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
     {
         var width = planes.Width;
         var upU = scratch[..width];
@@ -53,24 +56,47 @@ internal static class WebPYuvConverter
         UpsampleRow(planes.U, planes.UVStride, planes.Width, planes.Height, y, upU);
         UpsampleRow(planes.V, planes.UVStride, planes.Width, planes.Height, y, upV);
         var luma = planes.Y.Slice(y * planes.YStride, width);
-        ConvertSamples(luma, upU, upV, alpha, destination[..(width * 4)]);
+        if (bytesPerPixel == 3)
+        {
+            ConvertSamplesRgb(luma, upU, upV, destination[..(width * 3)]);
+        }
+        else
+        {
+            ConvertSamples(luma, upU, upV, alpha, destination[..(width * 4)]);
+        }
     }
 
     /// <summary>Converts luma and upsampled chroma samples to RGBA pixels (alpha from <paramref name="alpha"/>, or opaque when it is empty).</summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, 16 pixels are converted at a time in 32-bit lanes with the arithmetic of
-    /// <see cref="ConvertSamplesScalar"/> (the largest term, 132201 * 127 + 76309 * 239 + 32768, fits 26 bits).
+    /// With 128-bit hardware vectors, 16 pixels are converted at a time in 32-bit lanes (256-bit vectors on x64 when they
+    /// are accelerated) with the arithmetic of <see cref="ConvertSamplesScalar"/> (the largest term,
+    /// 132201 * 127 + 76309 * 239 + 32768, fits 26 bits); the 16 values of a channel are narrowed with unsigned saturation,
+    /// which is the clamp, then interleaved.
     /// </remarks>
     internal static void ConvertSamples(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, ReadOnlySpan<byte> alpha, Span<byte> destination)
     {
-        var done = UseVectors ? ConvertSamplesVector(luma, blue, red, alpha, destination) : 0;
+        var done = UseVectors ? ConvertSamplesVector(luma, blue, red, alpha, destination, bytesPerPixel: 4) : 0;
         ConvertSamplesScalar(luma[done..], blue[done..], red[done..], alpha.IsEmpty ? alpha : alpha[done..], destination[(4 * done)..]);
+    }
+
+    /// <summary>Converts luma and upsampled chroma samples to RGB pixels, as <see cref="ConvertSamples"/> without alpha.</summary>
+    internal static void ConvertSamplesRgb(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
+    {
+        var done = UseVectors ? ConvertSamplesVector(luma, blue, red, default, destination, bytesPerPixel: 3) : 0;
+        ConvertSamplesRgbScalar(luma[done..], blue[done..], red[done..], destination[(3 * done)..]);
     }
 
     /// <summary>The scalar reference of <see cref="ConvertSamples"/>.</summary>
     internal static void ConvertSamplesScalar(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, ReadOnlySpan<byte> alpha, Span<byte> destination)
+        => ConvertSamplesCore(luma, blue, red, alpha, destination, bytesPerPixel: 4);
+
+    /// <summary>The scalar reference of <see cref="ConvertSamplesRgb"/>.</summary>
+    internal static void ConvertSamplesRgbScalar(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
+        => ConvertSamplesCore(luma, blue, red, default, destination, bytesPerPixel: 3);
+
+    private static void ConvertSamplesCore(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, ReadOnlySpan<byte> alpha, Span<byte> destination, int bytesPerPixel)
     {
-        var output = destination[..(luma.Length * 4)];
+        var output = destination[..(luma.Length * bytesPerPixel)];
         blue = blue[..luma.Length];
         red = red[..luma.Length];
         var hasAlpha = !alpha.IsEmpty;
@@ -89,8 +115,12 @@ internal static class WebPYuvConverter
             var c = lumaTerm[luma[x]];
             int cb = blue[x];
             int cr = red[x];
-            var pixel = output.Slice(x * 4, 4);
-            pixel[3] = hasAlpha ? alpha[x] : byte.MaxValue;
+            var pixel = output.Slice(x * bytesPerPixel, bytesPerPixel);
+            if (bytesPerPixel == 4)
+            {
+                pixel[3] = hasAlpha ? alpha[x] : byte.MaxValue;
+            }
+
             pixel[2] = Clamp((c + blueCb[cb]) >> 16);
             pixel[1] = Clamp((c - greenCb[cb] - greenCr[cr]) >> 16);
             pixel[0] = Clamp((c + redCr[cr]) >> 16);
@@ -150,7 +180,7 @@ internal static class WebPYuvConverter
         }
     }
 
-    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported);
 
     private static void UpsampleSamplesVector(ReadOnlySpan<byte> nearRow, ReadOnlySpan<byte> farRow, Span<byte> destination, int first, int count)
     {
@@ -180,11 +210,16 @@ internal static class WebPYuvConverter
         }
     }
 
-    /// <summary>Converts whole groups of 16 pixels.</summary>
+    // The constant terms of the matrix, folded: (76309 (Y - 16) + 104597 (Cr - 128) + 32768) is 76309 Y + 104597 Cr + RedOffset
+    private const int RedOffset = 32768 - (16 * LumaScale) - (128 * RedFromCr);
+    private const int GreenOffset = 32768 - (16 * LumaScale) + (128 * GreenFromCb) + (128 * GreenFromCr);
+    private const int BlueOffset = 32768 - (16 * LumaScale) - (128 * BlueFromCb);
+
+    /// <summary>Converts whole groups of 16 pixels to RGBA (4 bytes per pixel) or RGB (3 bytes per pixel).</summary>
     /// <returns>The number of pixels converted.</returns>
-    private static int ConvertSamplesVector(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, ReadOnlySpan<byte> alpha, Span<byte> destination)
+    private static int ConvertSamplesVector(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, ReadOnlySpan<byte> alpha, Span<byte> destination, int bytesPerPixel)
     {
-        var length = Math.Min(luma.Length, Math.Min(blue.Length, Math.Min(red.Length, destination.Length / 4)));
+        var length = Math.Min(luma.Length, Math.Min(blue.Length, Math.Min(red.Length, destination.Length / bytesPerPixel)));
         var hasAlpha = !alpha.IsEmpty;
         if (hasAlpha)
         {
@@ -200,34 +235,176 @@ internal static class WebPYuvConverter
         var x = 0;
         for (; x + 16 <= length; x += 16)
         {
-            var (y0, y1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)x)));
-            var (b0, b1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)x)));
-            var (r0, r1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)x)));
-            var (a0, a1) = Vector128.Widen(hasAlpha ? unsafe(Vector128.LoadUnsafe(ref alphaStart, (nuint)x)) : opaque);
-            ref var pixels = ref unsafe(Unsafe.Add(ref output, 4 * x));
-            unsafe { Convert4(Vector128.WidenLower(y0), Vector128.WidenLower(b0), Vector128.WidenLower(r0), Vector128.WidenLower(a0)).StoreUnsafe(ref pixels); }
-            unsafe { Convert4(Vector128.WidenUpper(y0), Vector128.WidenUpper(b0), Vector128.WidenUpper(r0), Vector128.WidenUpper(a0)).StoreUnsafe(ref Unsafe.Add(ref pixels, 16)); }
-            unsafe { Convert4(Vector128.WidenLower(y1), Vector128.WidenLower(b1), Vector128.WidenLower(r1), Vector128.WidenLower(a1)).StoreUnsafe(ref Unsafe.Add(ref pixels, 32)); }
-            unsafe { Convert4(Vector128.WidenUpper(y1), Vector128.WidenUpper(b1), Vector128.WidenUpper(r1), Vector128.WidenUpper(a1)).StoreUnsafe(ref Unsafe.Add(ref pixels, 48)); }
+            var lumaValues = unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)x));
+            var blueValues = unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)x));
+            var redValues = unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)x));
+            Vector128<byte> r;
+            Vector128<byte> g;
+            Vector128<byte> b;
+            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            {
+                (r, g, b) = Convert16Avx2(lumaValues, blueValues, redValues);
+            }
+            else
+            {
+                (r, g, b) = Convert16(lumaValues, blueValues, redValues);
+            }
+
+            if (bytesPerPixel == 3)
+            {
+                StoreRgb(r, g, b, ref unsafe(Unsafe.Add(ref output, 3 * x)));
+            }
+            else
+            {
+                var a = hasAlpha ? unsafe(Vector128.LoadUnsafe(ref alphaStart, (nuint)x)) : opaque;
+                StoreRgba(r, g, b, a, ref unsafe(Unsafe.Add(ref output, 4 * x)));
+            }
         }
 
         return x;
+    }
 
-        // 4 pixels as R | G << 8 | B << 16 | A << 24 in 32-bit lanes: their bytes are the RGBA pixels
-        static Vector128<byte> Convert4(Vector128<uint> lumaValues, Vector128<uint> blueValues, Vector128<uint> redValues, Vector128<uint> alphaValues)
+    /// <summary>The red, green and blue values of 16 pixels, in 4 groups of 32-bit lanes.</summary>
+    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
+    {
+        var (y0, y1) = Vector128.Widen(luma);
+        var (b0, b1) = Vector128.Widen(blue);
+        var (r0, r1) = Vector128.Widen(red);
+        var (red0, green0, blue0) = Convert4(Vector128.WidenLower(y0).AsInt32(), Vector128.WidenLower(b0).AsInt32(), Vector128.WidenLower(r0).AsInt32());
+        var (red1, green1, blue1) = Convert4(Vector128.WidenUpper(y0).AsInt32(), Vector128.WidenUpper(b0).AsInt32(), Vector128.WidenUpper(r0).AsInt32());
+        var (red2, green2, blue2) = Convert4(Vector128.WidenLower(y1).AsInt32(), Vector128.WidenLower(b1).AsInt32(), Vector128.WidenLower(r1).AsInt32());
+        var (red3, green3, blue3) = Convert4(Vector128.WidenUpper(y1).AsInt32(), Vector128.WidenUpper(b1).AsInt32(), Vector128.WidenUpper(r1).AsInt32());
+
+        // The values are between -223 and 480: narrowing to 16 bits is exact, the narrowing to bytes saturates
+        return (
+            PackUnsignedSaturate(Vector128.Narrow(red0, red1), Vector128.Narrow(red2, red3)),
+            PackUnsignedSaturate(Vector128.Narrow(green0, green1), Vector128.Narrow(green2, green3)),
+            PackUnsignedSaturate(Vector128.Narrow(blue0, blue1), Vector128.Narrow(blue2, blue3)));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static (Vector128<int> Red, Vector128<int> Green, Vector128<int> Blue) Convert4(Vector128<int> lumaValues, Vector128<int> blueValues, Vector128<int> redValues)
         {
-            var c = ((lumaValues.AsInt32() - Vector128.Create(16)) * Vector128.Create(LumaScale)) + Vector128.Create(32768);
-            var cb = blueValues.AsInt32() - Vector128.Create(128);
-            var cr = redValues.AsInt32() - Vector128.Create(128);
-            var r = (c + (cr * Vector128.Create(RedFromCr))) >> 16;
-            var g = (c - (cb * Vector128.Create(GreenFromCb)) - (cr * Vector128.Create(GreenFromCr))) >> 16;
-            var b = (c + (cb * Vector128.Create(BlueFromCb))) >> 16;
-            var zero = Vector128<int>.Zero;
-            var max = Vector128.Create(255);
-            r = Vector128.Min(Vector128.Max(r, zero), max);
-            g = Vector128.Min(Vector128.Max(g, zero), max);
-            b = Vector128.Min(Vector128.Max(b, zero), max);
-            return (r | (g << 8) | (b << 16) | (alphaValues.AsInt32() << 24)).AsByte();
+            var c = lumaValues * Vector128.Create(LumaScale);
+            var r = (c + ((redValues * Vector128.Create(RedFromCr)) + Vector128.Create(RedOffset))) >> 16;
+            var g = (c - (blueValues * Vector128.Create(GreenFromCb)) - (redValues * Vector128.Create(GreenFromCr)) + Vector128.Create(GreenOffset)) >> 16;
+            var b = (c + ((blueValues * Vector128.Create(BlueFromCb)) + Vector128.Create(BlueOffset))) >> 16;
+            return (r, g, b);
+        }
+    }
+
+    /// <summary>The red, green and blue values of 16 pixels, in 2 groups of 32-bit lanes of 256-bit vectors.</summary>
+    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16Avx2(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
+    {
+        var (red0, green0, blue0) = Convert8(Avx2.ConvertToVector256Int32(luma), Avx2.ConvertToVector256Int32(blue), Avx2.ConvertToVector256Int32(red));
+        var (red1, green1, blue1) = Convert8(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(luma, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(blue, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(red, 8)));
+        return (Pack(red0, red1), Pack(green0, green1), Pack(blue0, blue1));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static (Vector256<int> Red, Vector256<int> Green, Vector256<int> Blue) Convert8(Vector256<int> lumaValues, Vector256<int> blueValues, Vector256<int> redValues)
+        {
+            var c = lumaValues * Vector256.Create(LumaScale);
+            var r = (c + ((redValues * Vector256.Create(RedFromCr)) + Vector256.Create(RedOffset))) >> 16;
+            var g = (c - (blueValues * Vector256.Create(GreenFromCb)) - (redValues * Vector256.Create(GreenFromCr)) + Vector256.Create(GreenOffset)) >> 16;
+            var b = (c + ((blueValues * Vector256.Create(BlueFromCb)) + Vector256.Create(BlueOffset))) >> 16;
+            return (r, g, b);
+        }
+
+        // 16 values to bytes: the 16-bit pack works per 128-bit lane, its 64-bit groups hold the values 0-3, 8-11, 4-7, 12-15
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> Pack(Vector256<int> low, Vector256<int> high)
+        {
+            var words = Avx2.Permute4x64(Avx2.PackSignedSaturate(low, high).AsInt64(), 0b11_01_10_00).AsInt16();
+            return Sse2.PackUnsignedSaturate(words.GetLower(), words.GetUpper());
+        }
+    }
+
+    /// <summary>Narrows signed 16-bit values to bytes with unsigned saturation (0 to 255).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> PackUnsignedSaturate(Vector128<short> low, Vector128<short> high)
+    {
+        if (AdvSimd.IsSupported)
+            return AdvSimd.ExtractNarrowingSaturateUnsignedUpper(AdvSimd.ExtractNarrowingSaturateUnsignedLower(low), high);
+
+        return Sse2.PackUnsignedSaturate(low, high);
+    }
+
+    /// <summary>Interleaves 16 red, green and blue values into 48 bytes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRgb(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref byte destination)
+    {
+        Vector128<byte> first;
+        Vector128<byte> second;
+        Vector128<byte> third;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // Table indices: 0-15 red, 16-31 green, 32-47 blue
+            first = AdvSimd.Arm64.VectorTableLookup((r, g, b), Vector128.Create((byte)0, 16, 32, 1, 17, 33, 2, 18, 34, 3, 19, 35, 4, 20, 36, 5));
+            second = AdvSimd.Arm64.VectorTableLookup((r, g, b), Vector128.Create((byte)21, 37, 6, 22, 38, 7, 23, 39, 8, 24, 40, 9, 25, 41, 10, 26));
+            third = AdvSimd.Arm64.VectorTableLookup((r, g, b), Vector128.Create((byte)42, 11, 27, 43, 12, 28, 44, 13, 29, 45, 14, 30, 46, 15, 31, 47));
+        }
+        else
+        {
+            // 0x80 selects zero
+            first = Ssse3.Shuffle(r, Vector128.Create((byte)0, 0x80, 0x80, 1, 0x80, 0x80, 2, 0x80, 0x80, 3, 0x80, 0x80, 4, 0x80, 0x80, 5))
+                | Ssse3.Shuffle(g, Vector128.Create((byte)0x80, 0, 0x80, 0x80, 1, 0x80, 0x80, 2, 0x80, 0x80, 3, 0x80, 0x80, 4, 0x80, 0x80))
+                | Ssse3.Shuffle(b, Vector128.Create((byte)0x80, 0x80, 0, 0x80, 0x80, 1, 0x80, 0x80, 2, 0x80, 0x80, 3, 0x80, 0x80, 4, 0x80));
+            second = Ssse3.Shuffle(r, Vector128.Create((byte)0x80, 0x80, 6, 0x80, 0x80, 7, 0x80, 0x80, 8, 0x80, 0x80, 9, 0x80, 0x80, 10, 0x80))
+                | Ssse3.Shuffle(g, Vector128.Create((byte)5, 0x80, 0x80, 6, 0x80, 0x80, 7, 0x80, 0x80, 8, 0x80, 0x80, 9, 0x80, 0x80, 10))
+                | Ssse3.Shuffle(b, Vector128.Create((byte)0x80, 5, 0x80, 0x80, 6, 0x80, 0x80, 7, 0x80, 0x80, 8, 0x80, 0x80, 9, 0x80, 0x80));
+            third = Ssse3.Shuffle(r, Vector128.Create((byte)0x80, 11, 0x80, 0x80, 12, 0x80, 0x80, 13, 0x80, 0x80, 14, 0x80, 0x80, 15, 0x80, 0x80))
+                | Ssse3.Shuffle(g, Vector128.Create((byte)0x80, 0x80, 11, 0x80, 0x80, 12, 0x80, 0x80, 13, 0x80, 0x80, 14, 0x80, 0x80, 15, 0x80))
+                | Ssse3.Shuffle(b, Vector128.Create((byte)10, 0x80, 0x80, 11, 0x80, 0x80, 12, 0x80, 0x80, 13, 0x80, 0x80, 14, 0x80, 0x80, 15));
+        }
+
+        unsafe
+        {
+            first.StoreUnsafe(ref destination);
+            second.StoreUnsafe(ref destination, 16);
+            third.StoreUnsafe(ref destination, 32);
+        }
+    }
+
+    /// <summary>Interleaves 16 red, green, blue and alpha values into 64 bytes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRgba(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, Vector128<byte> a, ref byte destination)
+    {
+        Vector128<ushort> redGreenLow;
+        Vector128<ushort> redGreenHigh;
+        Vector128<ushort> blueAlphaLow;
+        Vector128<ushort> blueAlphaHigh;
+        Vector128<byte> first;
+        Vector128<byte> second;
+        Vector128<byte> third;
+        Vector128<byte> fourth;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            redGreenLow = AdvSimd.Arm64.ZipLow(r, g).AsUInt16();
+            redGreenHigh = AdvSimd.Arm64.ZipHigh(r, g).AsUInt16();
+            blueAlphaLow = AdvSimd.Arm64.ZipLow(b, a).AsUInt16();
+            blueAlphaHigh = AdvSimd.Arm64.ZipHigh(b, a).AsUInt16();
+            first = AdvSimd.Arm64.ZipLow(redGreenLow, blueAlphaLow).AsByte();
+            second = AdvSimd.Arm64.ZipHigh(redGreenLow, blueAlphaLow).AsByte();
+            third = AdvSimd.Arm64.ZipLow(redGreenHigh, blueAlphaHigh).AsByte();
+            fourth = AdvSimd.Arm64.ZipHigh(redGreenHigh, blueAlphaHigh).AsByte();
+        }
+        else
+        {
+            redGreenLow = Sse2.UnpackLow(r, g).AsUInt16();
+            redGreenHigh = Sse2.UnpackHigh(r, g).AsUInt16();
+            blueAlphaLow = Sse2.UnpackLow(b, a).AsUInt16();
+            blueAlphaHigh = Sse2.UnpackHigh(b, a).AsUInt16();
+            first = Sse2.UnpackLow(redGreenLow, blueAlphaLow).AsByte();
+            second = Sse2.UnpackHigh(redGreenLow, blueAlphaLow).AsByte();
+            third = Sse2.UnpackLow(redGreenHigh, blueAlphaHigh).AsByte();
+            fourth = Sse2.UnpackHigh(redGreenHigh, blueAlphaHigh).AsByte();
+        }
+
+        unsafe
+        {
+            first.StoreUnsafe(ref destination);
+            second.StoreUnsafe(ref destination, 16);
+            third.StoreUnsafe(ref destination, 32);
+            fourth.StoreUnsafe(ref destination, 48);
         }
     }
 

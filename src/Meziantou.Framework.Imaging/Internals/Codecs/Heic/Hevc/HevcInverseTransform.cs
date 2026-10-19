@@ -165,12 +165,13 @@ internal static class HevcInverseTransform
             return;
         }
 
-        // The coefficients of the rows up to the last one that is not zero and of the columns transformed (a multiple of 8),
-        // as 16-bit values, then the transposed g
+        // The coefficients of the rows up to the last one that is not zero and of the columns transformed (a multiple of 8, or
+        // of 16 with 256-bit vectors), as 16-bit values, then the transposed g
         var values = unsafe(MemoryMarshal.Cast<int, short>(scratch));
         var coefficients = values[..size];
         var transposed = values.Slice(size, size);
-        var width = (columns + 7) & ~7;
+        var wide = Avx2.IsSupported && log2TrafoSize >= 4;
+        var width = wide ? (columns + 15) & ~15 : (columns + 7) & ~7;
         for (var y = 0; y <= lastRow; y++)
         {
             var source = block.Slice(y * nTbS, columns);
@@ -184,7 +185,19 @@ internal static class HevcInverseTransform
             if (x < columns)
             {
                 Vector128.Narrow(Vector128.Create(source[x..]), Vector128<int>.Zero).CopyTo(destination[x..]);
+                x += 8;
             }
+
+            if (x < width)
+            {
+                destination[x..].Clear();
+            }
+        }
+
+        if (wide)
+        {
+            TransformWide(block, coefficients, transposed, log2TrafoSize, lastRow, columns, residualShift);
+            return;
         }
 
         // The sums of the outputs, 4 lanes for the first 4 columns and 4 for the last ones, and the coefficients of a stage
@@ -373,6 +386,157 @@ internal static class HevcInverseTransform
             return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(low), high);
 
         return Sse2.PackSignedSaturate(low, high);
+    }
+
+    // The passes of TransformVector for the blocks of 16x16 and 32x32 samples with AVX2: 16 columns at a time
+    // (ColumnTransformWide), whose results are transposed by blocks of 8x8 and 4x4 values in the 128-bit halves
+    [SkipLocalsInit]
+    private static void TransformWide(Span<int> block, ReadOnlySpan<short> coefficients, Span<short> transposed, int log2TrafoSize, int lastRow, int columns, int residualShift)
+    {
+        var nTbS = 1 << log2TrafoSize;
+        Span<Vector256<int>> sums = unsafe(stackalloc Vector256<int>[2 * 32]);
+        Span<Vector256<short>> pairs = unsafe(stackalloc Vector256<short>[2 * 8]);
+
+        // 1. and 2.: the packing of the sums gives the 16 columns in order (ColumnTransformWide)
+        var round = Vector256.Create(64);
+        for (var x = 0; x < columns; x += 16)
+        {
+            ColumnTransformWide(coefficients, nTbS, x, log2TrafoSize, lastRow, sums, pairs);
+            for (var y = 0; y < nTbS; y += 8)
+            {
+                var g0 = Avx2.PackSignedSaturate((sums[(2 * y) + 0] + round) >> 7, (sums[(2 * y) + 1] + round) >> 7);
+                var g1 = Avx2.PackSignedSaturate((sums[(2 * y) + 2] + round) >> 7, (sums[(2 * y) + 3] + round) >> 7);
+                var g2 = Avx2.PackSignedSaturate((sums[(2 * y) + 4] + round) >> 7, (sums[(2 * y) + 5] + round) >> 7);
+                var g3 = Avx2.PackSignedSaturate((sums[(2 * y) + 6] + round) >> 7, (sums[(2 * y) + 7] + round) >> 7);
+                var g4 = Avx2.PackSignedSaturate((sums[(2 * y) + 8] + round) >> 7, (sums[(2 * y) + 9] + round) >> 7);
+                var g5 = Avx2.PackSignedSaturate((sums[(2 * y) + 10] + round) >> 7, (sums[(2 * y) + 11] + round) >> 7);
+                var g6 = Avx2.PackSignedSaturate((sums[(2 * y) + 12] + round) >> 7, (sums[(2 * y) + 13] + round) >> 7);
+                var g7 = Avx2.PackSignedSaturate((sums[(2 * y) + 14] + round) >> 7, (sums[(2 * y) + 15] + round) >> 7);
+                StoreTransposed(g0.GetLower(), g1.GetLower(), g2.GetLower(), g3.GetLower(), g4.GetLower(), g5.GetLower(), g6.GetLower(), g7.GetLower(), transposed[((x * nTbS) + y)..], nTbS);
+                StoreTransposed(g0.GetUpper(), g1.GetUpper(), g2.GetUpper(), g3.GetUpper(), g4.GetUpper(), g5.GetUpper(), g6.GetUpper(), g7.GetUpper(), transposed[(((x + 8) * nTbS) + y)..], nTbS);
+            }
+        }
+
+        // 3.: the lanes 0 to 3 of a sum are the rows y to y + 3 and y + 8 to y + 11 in its 128-bit halves, the other lanes
+        // the rows y + 4 to y + 7 and y + 12 to y + 15
+        var rounding = Vector256.Create(residualShift > 0 ? 1 << (residualShift - 1) : 0);
+        for (var y = 0; y < nTbS; y += 16)
+        {
+            ColumnTransformWide(transposed, nTbS, y, log2TrafoSize, columns - 1, sums, pairs);
+            for (var x = 0; x < nTbS; x += 4)
+            {
+                for (var half = 0; half < 2; half++)
+                {
+                    var r0 = (sums[(2 * x) + half] + rounding) >> residualShift;
+                    var r1 = (sums[(2 * x) + 2 + half] + rounding) >> residualShift;
+                    var r2 = (sums[(2 * x) + 4 + half] + rounding) >> residualShift;
+                    var r3 = (sums[(2 * x) + 6 + half] + rounding) >> residualShift;
+                    HevcSimd.Transpose4x4(ref r0, ref r1, ref r2, ref r3);
+                    var row = y + (4 * half);
+                    r0.GetLower().CopyTo(block[((row * nTbS) + x)..]);
+                    r1.GetLower().CopyTo(block[(((row + 1) * nTbS) + x)..]);
+                    r2.GetLower().CopyTo(block[(((row + 2) * nTbS) + x)..]);
+                    r3.GetLower().CopyTo(block[(((row + 3) * nTbS) + x)..]);
+                    r0.GetUpper().CopyTo(block[(((row + 8) * nTbS) + x)..]);
+                    r1.GetUpper().CopyTo(block[(((row + 9) * nTbS) + x)..]);
+                    r2.GetUpper().CopyTo(block[(((row + 10) * nTbS) + x)..]);
+                    r3.GetUpper().CopyTo(block[(((row + 11) * nTbS) + x)..]);
+                }
+            }
+        }
+    }
+
+    // Transposes 8 rows of 8 values into 8 rows of destination, stride values apart
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreTransposed(Vector128<short> r0, Vector128<short> r1, Vector128<short> r2, Vector128<short> r3, Vector128<short> r4, Vector128<short> r5, Vector128<short> r6, Vector128<short> r7, Span<short> destination, int stride)
+    {
+        HevcSimd.Transpose8x8(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+        r0.CopyTo(destination);
+        r1.CopyTo(destination[stride..]);
+        r2.CopyTo(destination[(2 * stride)..]);
+        r3.CopyTo(destination[(3 * stride)..]);
+        r4.CopyTo(destination[(4 * stride)..]);
+        r5.CopyTo(destination[(5 * stride)..]);
+        r6.CopyTo(destination[(6 * stride)..]);
+        r7.CopyTo(destination[(7 * stride)..]);
+    }
+
+    /// <summary>
+    /// <see cref="ColumnTransform"/> of 16 columns with AVX2. The pairs of rows are interleaved in each 128-bit half, so that
+    /// the lanes of the sum <c>2 * k</c> are the columns 0 to 3 and 8 to 11, and those of the sum <c>2 * k + 1</c> the
+    /// columns 4 to 7 and 12 to 15: the packing of both sums to 16-bit values, also in each half, gives the columns in order.
+    /// </summary>
+    private static void ColumnTransformWide(ReadOnlySpan<short> source, int stride, int column, int log2Size, int last, Span<Vector256<int>> sums, Span<Vector256<short>> pairs)
+    {
+        // The transform of 2 samples: the pairs of the coefficients 0 and nTbS / 2 by ( 64, 64 ) and ( 64, -64 )
+        var half = 1 << (log2Size - 1);
+        var first = Vector256.Create(source[column..]);
+        var second = half <= last ? Vector256.Create(source[((half * stride) + column)..]) : default;
+        var low = Avx2.UnpackLow(first, second);
+        var high = Avx2.UnpackHigh(first, second);
+        var sum = Vector256.Create((64 * 65536) + 64).AsInt16();
+        var difference = Vector256.Create((-64 * 65536) + 64).AsInt16();
+        sums[0] = Avx2.MultiplyAddAdjacent(low, sum);
+        sums[1] = Avx2.MultiplyAddAdjacent(high, sum);
+        sums[2] = Avx2.MultiplyAddAdjacent(low, difference);
+        sums[3] = Avx2.MultiplyAddAdjacent(high, difference);
+
+        ref var weights = ref unsafe(MemoryMarshal.GetArrayDataReference(OddWeights));
+        for (var log2n = 2; log2n <= log2Size; log2n++)
+        {
+            var n = 1 << log2n;
+            var shift = log2Size - log2n;
+            var count = Math.Min(n / 2, ((last >> shift) + 1) >> 1);
+            var pairCount = (count + 1) >> 1;
+            for (var p = 0; p < pairCount; p++)
+            {
+                var a = Vector256.Create(source[(((((4 * p) + 1) << shift) * stride) + column)..]);
+                var row = ((4 * p) + 3) << shift;
+                var b = row <= last ? Vector256.Create(source[((row * stride) + column)..]) : default;
+                pairs[2 * p] = Avx2.UnpackLow(a, b);
+                pairs[(2 * p) + 1] = Avx2.UnpackHigh(a, b);
+            }
+
+            ref var output = ref unsafe(MemoryMarshal.GetReference(sums));
+            for (var k = 0; k < n / 2; k += 2)
+            {
+                var low0 = Vector256<int>.Zero;
+                var high0 = Vector256<int>.Zero;
+                var low1 = Vector256<int>.Zero;
+                var high1 = Vector256<int>.Zero;
+                ref var pair = ref unsafe(MemoryMarshal.GetReference(pairs));
+                ref var weight = ref weights;
+                for (var p = 0; p < pairCount; p++)
+                {
+                    var a = pair;
+                    var b = unsafe(Unsafe.Add(ref pair, 1));
+                    var weight0 = Avx2.BroadcastScalarToVector256(weight.AsInt32()).AsInt16();
+                    var weight1 = Avx2.BroadcastScalarToVector256(unsafe(Unsafe.Add(ref weight, n / 4)).AsInt32()).AsInt16();
+                    low0 += Avx2.MultiplyAddAdjacent(a, weight0);
+                    high0 += Avx2.MultiplyAddAdjacent(b, weight0);
+                    low1 += Avx2.MultiplyAddAdjacent(a, weight1);
+                    high1 += Avx2.MultiplyAddAdjacent(b, weight1);
+                    pair = ref unsafe(Unsafe.Add(ref pair, 2));
+                    weight = ref unsafe(Unsafe.Add(ref weight, 1));
+                }
+
+                weights = ref unsafe(Unsafe.Add(ref weights, n / 2));
+                Combine(ref unsafe(Unsafe.Add(ref output, 2 * k)), ref unsafe(Unsafe.Add(ref output, 2 * (n - 1 - k))), low0, high0);
+                Combine(ref unsafe(Unsafe.Add(ref output, 2 * (k + 1))), ref unsafe(Unsafe.Add(ref output, 2 * (n - 2 - k))), low1, high1);
+            }
+        }
+    }
+
+    // Combine with 256-bit vectors
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Combine(ref Vector256<int> first, ref Vector256<int> last, Vector256<int> low, Vector256<int> high)
+    {
+        var evenLow = first;
+        var evenHigh = unsafe(Unsafe.Add(ref first, 1));
+        first = evenLow + low;
+        unsafe { Unsafe.Add(ref first, 1) = evenHigh + high; }
+        last = evenLow - low;
+        unsafe { Unsafe.Add(ref last, 1) = evenHigh - high; }
     }
 
     // The transform of a 4x4 block in 4 vectors: its rows, then its transposed columns, then its rows again

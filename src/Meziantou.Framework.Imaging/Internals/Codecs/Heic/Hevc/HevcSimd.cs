@@ -104,4 +104,18 @@ internal static class HevcSimd
             r3 = Sse2.UnpackHigh(t2, t3).AsInt32();
         }
     }
+
+    /// <summary><see cref="Transpose4x4(ref Vector128{int}, ref Vector128{int}, ref Vector128{int}, ref Vector128{int})"/> in each 128-bit half, with AVX2.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Transpose4x4(ref Vector256<int> r0, ref Vector256<int> r1, ref Vector256<int> r2, ref Vector256<int> r3)
+    {
+        var t0 = Avx2.UnpackLow(r0, r1).AsInt64();
+        var t1 = Avx2.UnpackLow(r2, r3).AsInt64();
+        var t2 = Avx2.UnpackHigh(r0, r1).AsInt64();
+        var t3 = Avx2.UnpackHigh(r2, r3).AsInt64();
+        r0 = Avx2.UnpackLow(t0, t1).AsInt32();
+        r1 = Avx2.UnpackHigh(t0, t1).AsInt32();
+        r2 = Avx2.UnpackLow(t2, t3).AsInt32();
+        r3 = Avx2.UnpackHigh(t2, t3).AsInt32();
+    }
 }

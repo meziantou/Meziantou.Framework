@@ -27,6 +27,55 @@ public sealed class AdfDocumentTests
         """;
 
     [Fact]
+    public void ReadmeExample_ObjectModel()
+    {
+        #region AdfDocument_ObjectModel
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "heading", "attrs": { "level": 1 }, "content": [ { "type": "text", "text": "Title" } ] },
+                { "type": "paragraph", "content": [ { "type": "text", "text": "Hello " }, { "type": "mention", "attrs": { "id": "123", "text": "@Alex" } } ] }
+              ]
+            }
+            """;
+
+        var document = AdfDocument.Parse(json);
+
+        var mentionIds = document.Descendants().OfType<AdfMention>().Select(mention => mention.Id).ToList();
+        Assert.Equal(["123"], mentionIds);
+
+        var heading = (AdfHeading)document.Content[0];
+        Assert.Equal(1, heading.Level);
+
+        var markdown = document.ToMarkdown();
+        Assert.Equal("# Title\n\nHello @Alex", markdown);
+
+        var roundTripped = document.ToJsonString();
+        Assert.Equal(AdfDocument.Parse(roundTripped).ToMarkdown(), markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Build()
+    {
+        #region AdfDocument_Build
+        var document = new AdfDocument
+        {
+            Content =
+            [
+                new AdfHeading { Level = 1, Content = [new AdfText { Text = "Title" }] },
+                new AdfParagraph { Content = [new AdfText { Text = "Hello", Marks = [new AdfStrongMark()] }] },
+            ],
+        };
+
+        var json = document.ToJsonString();
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"Title"}]},{"type":"paragraph","content":[{"type":"text","text":"Hello","marks":[{"type":"strong"}]}]}]}""", json);
+        #endregion
+    }
+
+    [Fact]
     public void ParseReadsTheDocumentStructure()
     {
         var document = AdfDocument.Parse(SampleJson);

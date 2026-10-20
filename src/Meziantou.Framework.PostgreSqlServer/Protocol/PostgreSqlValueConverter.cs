@@ -9,6 +9,10 @@ internal static class PostgreSqlValueConverter
     /// <summary>The PostgreSQL binary date/time epoch. It is 2000-01-01, not the Unix epoch.</summary>
     private static readonly DateTime PostgreSqlEpoch = new(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+    private static readonly long MinTimestampMicroseconds = (DateTime.MinValue - PostgreSqlEpoch).Ticks / TimeSpan.TicksPerMicrosecond;
+
+    private static readonly long MaxTimestampMicroseconds = (DateTime.MaxValue - PostgreSqlEpoch).Ticks / TimeSpan.TicksPerMicrosecond;
+
     public static object? DecodeParameterValue(uint typeOid, int formatCode, byte[]? rawValue)
     {
         if (rawValue is null)
@@ -269,8 +273,8 @@ internal static class PostgreSqlValueConverter
             700 when bytes.Length == 4 => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32BigEndian(bytes)),
             701 when bytes.Length == 8 => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(bytes)),
             1082 when bytes.Length == 4 => DecodeBinaryDate(bytes),
-            1114 when bytes.Length == 8 => DecodeBinaryTimestamp(bytes),
-            1184 when bytes.Length == 8 => new DateTimeOffset(DecodeBinaryTimestamp(bytes), TimeSpan.Zero),
+            1114 when bytes.Length == 8 => TryDecodeBinaryTimestamp(bytes, out var timestamp) ? timestamp : bytes,
+            1184 when bytes.Length == 8 => TryDecodeBinaryTimestamp(bytes, out var timestamp) ? new DateTimeOffset(timestamp, TimeSpan.Zero) : bytes,
             1700 => DecodeBinaryNumeric(bytes),
             2950 when bytes.Length == 16 => new Guid(bytes, bigEndian: true),
             25 or 1043 or 114 or 3802 => Encoding.UTF8.GetString(bytes),
@@ -293,10 +297,19 @@ internal static class PostgreSqlValueConverter
         }
     }
 
-    private static DateTime DecodeBinaryTimestamp(byte[] bytes)
+    private static bool TryDecodeBinaryTimestamp(byte[] bytes, out DateTime timestamp)
     {
+        // PostgreSQL uses long.MaxValue and long.MinValue for infinity and -infinity. Like the other values outside of the
+        // DateTime range, they have no DateTime representation: multiplying them by the ticks per microsecond overflows.
         var microseconds = BinaryPrimitives.ReadInt64BigEndian(bytes);
-        return PostgreSqlEpoch.AddTicks(microseconds * (TimeSpan.TicksPerMillisecond / 1000));
+        if (microseconds < MinTimestampMicroseconds || microseconds > MaxTimestampMicroseconds)
+        {
+            timestamp = default;
+            return false;
+        }
+
+        timestamp = PostgreSqlEpoch.AddTicks(microseconds * TimeSpan.TicksPerMicrosecond);
+        return true;
     }
 
     private static object DecodeBinaryNumeric(byte[] bytes)

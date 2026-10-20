@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using Meziantou.Framework.PostgreSql.Handler;
 using Meziantou.Xunit;
@@ -314,6 +315,53 @@ public sealed class PostgreSqlServerBehaviorTests
         Assert.Equal(expectedGuid, captured[0].AsGuid());
         Assert.Equal(expectedTimestamp, captured[1].AsDateTimeOffset()!.Value.UtcDateTime);
         Assert.Equal(123.45m, captured[2].AsDecimal());
+    }
+
+    [Fact]
+    public async Task BinaryTimestampsOutsideOfTheDateTimeRangeAreKeptAsBytes()
+    {
+        var captured = new List<PostgreSqlQueryParameter>();
+        using var server = CreateServer((context, _) =>
+        {
+            if (context.RequestType == PostgreSqlQueryRequestType.ExtendedQuery)
+            {
+                captured.AddRange(context.Parameters);
+            }
+
+            return ValueTask.FromResult(Rows(PostgreSqlColumnType.Int32, "n", 1));
+        });
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+        await client.SendParseAsync("s1", "SELECT $1, $2, $3, $4", [1114, 1184, 1114, 1114]);
+
+        // infinity, -infinity, the year 11133, then one microsecond after 2000-01-01, in microseconds since 2000-01-01
+        long[] values = [long.MaxValue, long.MinValue, 0x0400_0000_0000_0000, 1];
+        var payload = new List<byte> { 0, (byte)'s', (byte)'1', 0, 0, 1, 0, 1, 0, (byte)values.Length };
+        foreach (var value in values)
+        {
+            var buffer = new byte[12];
+            BinaryPrimitives.WriteInt32BigEndian(buffer, 8);
+            BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan(4), value);
+            payload.AddRange(buffer);
+        }
+
+        payload.AddRange([0, 0]);
+        await client.SendMessageAsync((byte)'B', payload.ToArray());
+        await client.SendExecuteAsync("", maxRows: 0);
+        await client.SendSyncAsync();
+
+        var messages = await client.ReadUntilReadyForQueryAsync();
+        Assert.Equal([(byte)'1', (byte)'2', (byte)'D', (byte)'C', (byte)'Z'], messages.Select(message => message.Type));
+        Assert.HasCount(4, captured);
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.IsType<byte[]>(captured[i].Value);
+            Assert.Null(captured[i].AsDateTime());
+        }
+
+        Assert.Equal(new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(10), captured[3].AsDateTime());
     }
 
     [Theory]

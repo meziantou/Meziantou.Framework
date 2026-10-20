@@ -189,7 +189,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     library must output the reconstruction of the encoder) and `AvifEncoderInteropTests` (dav1d and libaom must output
     the same planes) are the tests to run after any change.
   - Every decision is made with integers (rates, distortions, the forward transforms): the output must not depend on
-    the platform. The forward transforms are measured on the inverse kernels of the decoder, not written out.
+    the platform. The forward transforms are the transposes of the inverse kernels of the decoder: their steps in the
+    reverse order, with the same integer rotations. `Av1ForwardTransformTests` bounds them against the exact product of
+    the bases that the inverse kernels give, and the encoder reconstructs its blocks with the inverse transform of the
+    decoder only.
   - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
     blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
     snapshots of a frame that has palettes, and the palettes of a block are in its record.

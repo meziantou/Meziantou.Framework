@@ -18,6 +18,7 @@ It is useful for test doubles, query gateways, proxies, and data virtualization 
 
 Without a certificate the server answers `SSLRequest` with "not supported", and clients that allow it (Npgsql's default `SSL Mode=Prefer`) then log in over an unencrypted connection — sending the password in the clear for cleartext and MD5 authentication. Configure `TlsPfxPath` or the PEM options for any deployment that is not loopback-only, and set `RequireEncryption` to reject plaintext connections outright.
 
+<!-- ref:../../samples/Meziantou.Framework.PostgreSqlServer.Samples/ReadmeExamples.cs;region=PostgreSqlServer_Tls;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new PostgreSqlServerOptions
 {
@@ -26,15 +27,16 @@ var options = new PostgreSqlServerOptions
     TlsPfxPassword = "…",
 };
 ```
+<!-- endref -->
 
 `RequireEncryption` without a certificate throws at startup rather than silently accepting plaintext.
 
 ## Quickstart (standalone)
 
-```csharp
-using Meziantou.Framework.PostgreSql;
-using Meziantou.Framework.PostgreSql.Handler;
+The examples import the `Meziantou.Framework.PostgreSql` and `Meziantou.Framework.PostgreSql.Handler` namespaces.
 
+<!-- ref:../../samples/Meziantou.Framework.PostgreSqlServer.Samples/ReadmeExamples.cs;region=PostgreSqlServer_Quickstart;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new PostgreSqlServerOptions
 {
     AuthenticationMethod = PostgreSqlAuthenticationMethod.ScramSha256,
@@ -72,9 +74,9 @@ using var server = new PostgreSqlServer(
 await server.StartAsync();
 Console.WriteLine($"Listening on port {server.Ports[0]}");
 Console.ReadLine();
-
 await server.StopAsync();
 ```
+<!-- endref -->
 
 Bind to port `0` to let the OS choose a free port, then read it back from `Ports` — the usual pattern in tests.
 
@@ -92,12 +94,17 @@ Every driver that sends parameters uses the extended query protocol, which asks 
 
 `PostgreSqlQueryParameter` exposes typed accessors (`AsInt32`, `AsGuid`, `AsDateTimeOffset`, `AsDecimal`, `AsJson`, …). Clients may send values in text or binary format; both are decoded. For a type the library does not model, `TypeOid`, `FormatCode` and `RawValue` give you the undecoded value.
 
+<!-- ref:../../tests/Meziantou.Framework.PostgreSqlServer.Tests/PostgreSqlServerProtocolTests.cs;region=PostgreSqlServer_ReadingParameters;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var id = context.Parameters[0].AsInt32();
 ```
+<!-- endref -->
 
 ## ASP.NET Core hosting
 
+The hosting extensions are in the `Meziantou.Framework.PostgreSql.Hosting` namespace.
+
+<!-- ref:../../samples/Meziantou.Framework.PostgreSqlServer.Samples/ReadmeExamples.cs;region=PostgreSqlServer_Hosting;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.AddPostgreSqlServer(options =>
@@ -107,22 +114,32 @@ builder.AddPostgreSqlServer(options =>
 });
 
 var app = builder.Build();
-app.MapPostgreSqlAuthenticationHandler((context, cancellationToken) => /* … */);
-app.MapPostgreSqlQueryHandler((context, cancellationToken) => /* … */);
+app.MapPostgreSqlAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!")
+    ? PostgreSqlAuthenticationResult.Success()
+    : PostgreSqlAuthenticationResult.Fail("invalid credentials")));
+app.MapPostgreSqlQueryHandler((context, cancellationToken) => ValueTask.FromResult(new PostgreSqlQueryResult()));
+
 app.Run();
 ```
+<!-- endref -->
 
 Both handlers must be mapped. A connection that arrives before they are fails authentication or receives an error, rather than being served.
 
 ## Reporting errors, tags and transaction state
 
+A query callback can return an error, or the command tag and the transaction state of a command:
+
+<!-- ref:../../tests/Meziantou.Framework.PostgreSqlServer.Tests/PostgreSqlServerProtocolTests.cs;region=PostgreSqlServer_ErrorsAndCommandTags;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// An error the client sees as a PostgresException, without terminating the connection.
-return ValueTask.FromResult(PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
+if (context.CommandText?.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase) != true)
 {
-    Code = "42601",
-    Message = "syntax error",
-}));
+    // An error the client sees as a PostgresException, without terminating the connection.
+    return ValueTask.FromResult(PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
+    {
+        Code = "42601",
+        Message = "syntax error",
+    }));
+}
 
 // Affected rows for a command that returns no result set.
 return ValueTask.FromResult(new PostgreSqlQueryResult
@@ -132,6 +149,7 @@ return ValueTask.FromResult(new PostgreSqlQueryResult
     TransactionStatus = PostgreSqlTransactionStatus.InTransaction,
 });
 ```
+<!-- endref -->
 
 Set `TransactionStatus` when you implement `BEGIN`/`COMMIT`, otherwise clients cannot tell that a transaction block is open.
 

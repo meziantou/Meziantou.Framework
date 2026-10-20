@@ -8,6 +8,45 @@ using Microsoft.Extensions.Time.Testing;
 namespace Meziantou.Framework.Http.Hsts.Tests;
 public sealed class HstsDomainPolicyCollectionTests
 {
+    [Fact]
+    public void ReadmeExample_PreloadListIsAFloor()
+    {
+        #region HstsDomainPolicyCollection_PreloadListIsAFloor
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // github.com is preloaded with includeSubdomains. Nothing a server sends changes that.
+        policies.Add("github.com", TimeSpan.FromSeconds(1), includeSubdomains: false);
+        Assert.True(policies.MustUpgradeRequest("sub.github.com")); // still true, now and after the second has passed
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_MaxLearnedPolicies()
+    {
+        #region HstsDomainPolicyCollection_MaxLearnedPolicies
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true, maxLearnedPolicies: 100_000);
+        #endregion
+
+        Assert.Equal(100_000, policies.MaxLearnedPolicies);
+    }
+
+    [Fact]
+    public void ReadmeExample_TryGetPolicy()
+    {
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        #region HstsDomainPolicyCollection_TryGetPolicy
+        if (policies.TryGetPolicy("github.com", out var policy))
+        {
+            Assert.Equal("github.com", policy.Host);
+            Assert.True(policy.IsPreloaded);
+            Assert.True(policy.IncludeSubdomains);
+        }
+        #endregion
+
+        Assert.NotNull(policy);
+    }
+
     [Theory]
     [InlineData("google", 1)]
     [InlineData("google.com", 2)]

@@ -784,6 +784,24 @@ public sealed class HstsClientHandlerTests
     }
 
     [Fact]
+    public void ReadmeExample_DependencyInjection()
+    {
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var services = new ServiceCollection();
+
+        #region HstsClientHandler_DependencyInjection
+        services.AddTransient(_ => new HstsClientHandler(policies));
+        services.AddHttpClient("api")
+                .AddHttpMessageHandler<HstsClientHandler>()
+                .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler());
+        #endregion
+
+        using var provider = services.BuildServiceProvider();
+        using var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("api");
+        Assert.NotNull(client);
+    }
+
+    [Fact]
     public async Task CanBeRegisteredWithAddHttpMessageHandler()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

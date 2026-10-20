@@ -8,6 +8,20 @@ public sealed class HyphenatorTests
 
     private static readonly HyphenatorOptions NoMinimum = new() { LeftHyphenMin = 1, RightHyphenMin = 1 };
 
+    [Fact]
+    public void ReadmeExample_Hyphenate()
+    {
+        #region Hyphenator_Hyphenate
+        // The patterns, as plain text: "hy3ph he2n ..." or a \patterns{...} group, then exceptions such as "as-so-ciate".
+        // Use Hyphenator.Load("hyph-en-us.pat.txt", "hyph-en-us.hyp.txt") to read them from files.
+        var hyphenator = Hyphenator.Parse("hy3ph he2n hena4 hen5at 1na n2at 1tio 2io", "as-so-ciate");
+
+        Span<int> positions = stackalloc int[32];
+        var count = hyphenator.Hyphenate("hyphenation", positions);
+        Assert.Equal<int>([2, 6], positions[..count]); // hy-phen-ation
+        #endregion
+    }
+
     [Theory]
     [InlineData("hyphenation", new[] { 2, 6 })]
     [InlineData("HYPHENATION", new[] { 2, 6 })]

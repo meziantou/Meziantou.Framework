@@ -466,7 +466,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         if (baseUri is null)
             return null;
 
-        return new Uri(baseUri, relativeOrAbsolute);
+        // The header comes from the origin: a reference that cannot be resolved against the request URI, such as
+        // "//host:port" with an invalid port, names no URI to invalidate.
+        return Uri.TryCreate(baseUri, relativeOrAbsolute, out var absoluteUri) ? absoluteUri : null;
     }
 
     private static bool IsSameHost(Uri? uri1, Uri? uri2)

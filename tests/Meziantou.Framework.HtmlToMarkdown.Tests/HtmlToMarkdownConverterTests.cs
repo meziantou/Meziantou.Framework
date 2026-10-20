@@ -12,6 +12,80 @@ public sealed class HtmlToMarkdownConverterTests
         Assert.Equal(expectedMarkdown, actual);
     }
 
+    [Fact]
+    public void ReadmeExample_Convert()
+    {
+        #region HtmlToMarkdown_Convert
+        var html = "<h1>Title</h1><p>Hello <strong>world</strong></p>";
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.Equal("""
+            # Title
+
+            Hello **world**
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        #region HtmlToMarkdown_Options
+        var html = "<h1>Title</h1><p>Line 1<br>Line 2</p>";
+
+        var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
+        {
+            HeadingStyle = HeadingStyle.Setext,
+            EmphasisMarker = EmphasisMarker.Underscore,
+            CodeBlockStyle = CodeBlockStyle.Fenced,
+            CodeBlockFenceCharacter = '~',
+            UnorderedListMarker = '*',
+            ThematicBreak = "***",
+            LineBreakStyle = LineBreakStyle.Backslash,
+            UseSimplePunctuation = true,
+            EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
+            UnknownElementHandling = UnknownElementHandling.StripKeepContent,
+        });
+        Assert.Equal("""
+            Title
+            =====
+
+            Line 1\
+            Line 2
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SimplePunctuation()
+    {
+        #region HtmlToMarkdown_SimplePunctuation
+        var markdown = HtmlToMarkdown.Convert(
+            "<p>“Hello” ‘Hello’ — – … « »</p>",
+            new HtmlToMarkdownOptions { UseSimplePunctuation = true });
+        Assert.Equal("""
+            "Hello" 'Hello' \-\-\- \-\- ... \<\< \>\>
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EmojiShortcodes()
+    {
+        #region HtmlToMarkdown_EmojiShortcodes
+        var markdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
+        {
+            EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
+        });
+        Assert.Equal("I :heart: Markdown", markdown);
+
+        var unicodeMarkdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
+        {
+            EmojiShortcodeMode = EmojiShortcodeMode.Unicode,
+        });
+        Assert.Equal("I :red_heart: Markdown", unicodeMarkdown);
+        #endregion
+    }
+
     // --- Empty / trivial inputs ---
 
     [Fact]

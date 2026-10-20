@@ -201,7 +201,11 @@ internal static class UrlCanonicalizer
 
         var result = SerializePath(ParsePath(modifiedValue));
 
-        return leadingSlash ? result : result[2..];
+        // The "-" segment of the prefix is gone when a ".." segment removed it ("a/../.." is "/"), which leaves nothing
+        if (leadingSlash)
+            return result;
+
+        return result.Length > 2 ? result[2..] : "";
     }
 
     /// <summary>Canonicalizes the pathname of a URL whose scheme is not a special scheme.</summary>

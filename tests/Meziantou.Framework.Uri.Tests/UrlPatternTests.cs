@@ -1644,6 +1644,19 @@ public sealed class UrlPatternTests
         Assert.Equal(expected, pattern.Pathname);
     }
 
+    [Theory]
+    // A relative pathname is canonicalized behind a "/-" prefix, and a ".." segment can remove the "-" segment
+    [InlineData("a/..")]
+    [InlineData("a/../..")]
+    [InlineData("a/b/../../..")]
+    public void Create_RelativePathnameThatClimbsAboveItsStart_IsEmpty(string pathname)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal("", pattern.Pathname);
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = pathname }));
+    }
+
     [Fact]
     public void Create_PathnameLiteralAfterAGroup_DoesNotGainASeparator()
     {

@@ -1258,6 +1258,27 @@ public sealed class InternetCalendarTests
         Assert.Equal(calendar.ToIcs(), InternetCalendar.Parse(calendar.ToIcs()).ToIcs());
     }
 
+    [Theory]
+    [InlineData("2.0\u0001")]
+    [InlineData("\u00002.0")]
+    [InlineData("2.0\u007F")]
+    public void Parse_RejectsAVersionContainingAControlCharacter(string version)
+    {
+        // Such a version cannot be written, so accepting it would give a calendar ToIcs throws for
+        Assert.False(InternetCalendar.TryParse("BEGIN:VCALENDAR\r\nVERSION:" + version + "\r\nEND:VCALENDAR\r\n", out var calendar, out var error));
+        Assert.Null(calendar);
+        Assert.Contains("VERSION", error);
+    }
+
+    [Fact]
+    public void Parse_AcceptsAVersionContainingATab()
+    {
+        var calendar = InternetCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\t\r\nEND:VCALENDAR\r\n");
+
+        Assert.Equal("2.0\t", calendar.Version);
+        Assert.Equal(calendar.ToIcs(), InternetCalendar.Parse(calendar.ToIcs()).ToIcs());
+    }
+
     [Fact]
     public void ToIcs_ThrowsBeforeWritingAnythingWhenTheVersionContainsALineBreak()
     {

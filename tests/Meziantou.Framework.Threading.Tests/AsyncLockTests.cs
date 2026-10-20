@@ -9,6 +9,29 @@ public class AsyncLockTests
     private static readonly TimeSpan RaceBudget = TimeSpan.FromSeconds(5);
 
     [Fact]
+    public async Task AsyncLock_Example()
+    {
+        #region AsyncLock_Usage
+        var asyncLock = new AsyncLock();
+        var counter = 0;
+
+        async Task AccessResourceAsync()
+        {
+            using (await asyncLock.LockAsync())
+            {
+                // Critical section - only one task can execute this at a time
+                var value = counter;
+                await Task.Yield();
+                counter = value + 1;
+            }
+        }
+
+        await Task.WhenAll(AccessResourceAsync(), AccessResourceAsync(), AccessResourceAsync());
+        Assert.Equal(3, counter);
+        #endregion
+    }
+
+    [Fact]
     public async Task Lock()
     {
         var asyncLock = new AsyncLock();

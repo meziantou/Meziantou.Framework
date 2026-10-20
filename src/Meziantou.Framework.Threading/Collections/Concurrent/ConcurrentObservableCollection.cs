@@ -31,12 +31,12 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../samples/Meziantou.Framework.WPF.CollectionSamples/ConcurrentObservableCollectionSamples.cs" ref:region="ConcurrentObservableCollection_BindToListBox" ref:dedent="true">
 /// var collection = new ConcurrentObservableCollection&lt;string&gt;();
 /// myListBox.ItemsSource = collection.AsObservable;
 ///
 /// // Safe to call from any thread
-/// await Task.Run(() => collection.Add("Item 1"));
+/// await Task.Run(() =&gt; collection.Add("Item 1"));
 /// </code>
 /// </example>
 public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList

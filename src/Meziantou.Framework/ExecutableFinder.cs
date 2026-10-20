@@ -2,11 +2,11 @@ namespace Meziantou.Framework;
 
 /// <summary>Provides methods to locate executables in the system PATH.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/ExecutableFinderTests.cs" ref:region="ExecutableFinder_GetFullExecutablePath" ref:dedent="true">
 /// string? gitPath = ExecutableFinder.GetFullExecutablePath("git");
 /// if (gitPath is not null)
 /// {
-///     Console.WriteLine($"Git found at: {gitPath}");
+///     Assert.True(File.Exists(gitPath));
 /// }
 /// </code>
 /// </example>

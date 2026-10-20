@@ -35,6 +35,25 @@ public sealed class CachedEnumerableTests
     }
 
     [Fact]
+    public void CachedEnumerable_Create_Example()
+    {
+        #region CachedEnumerable_Create
+        var enumerationCount = 0;
+        IEnumerable<int> GetExpensiveEnumerable()
+        {
+            enumerationCount++;
+            yield return 1;
+            yield return 2;
+        }
+
+        using var cached = CachedEnumerable.Create(GetExpensiveEnumerable());
+        Assert.Equal([1, 2], cached); // First enumeration
+        Assert.Equal([1, 2], cached); // Uses cached results
+        Assert.Equal(1, enumerationCount);
+        #endregion
+    }
+
+    [Fact]
     public void Enumerable_MultipleEnumerations_ShouldEnumerateOnce()
     {
         var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));

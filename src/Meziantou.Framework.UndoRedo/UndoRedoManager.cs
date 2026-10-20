@@ -9,22 +9,26 @@ namespace Meziantou.Framework.UndoRedo;
 /// </summary>
 /// <remarks>This type is not thread-safe; all operations are expected to run on a single logical flow.</remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs" ref:region="UndoRedoManager_Usage" ref:dedent="true">
 /// var manager = new UndoRedoManager();
 /// var list = new List&lt;int&gt;();
 ///
 /// // Asynchronous execute and unexecute delegates
 /// await manager.RecordActionAsync(
-///     execute: ct => { list.Add(1); return ValueTask.CompletedTask; },
-///     unexecute: ct => { list.RemoveAt(list.Count - 1); return ValueTask.CompletedTask; });
+///     execute: ct =&gt; { list.Add(1); return ValueTask.CompletedTask; },
+///     unexecute: ct =&gt; { list.RemoveAt(list.Count - 1); return ValueTask.CompletedTask; });
 ///
 /// // Synchronous execute and unexecute delegates
 /// await manager.RecordActionAsync(
-///     execute: () => list.Add(1),
-///     unexecute: () => list.RemoveAt(list.Count - 1));
+///     execute: () =&gt; list.Add(2),
+///     unexecute: () =&gt; list.RemoveAt(list.Count - 1));
+/// Assert.Equal([1, 2], list);
 ///
 /// await manager.UndoAsync();
+/// Assert.Equal([1], list);
+///
 /// await manager.RedoAsync();
+/// Assert.Equal([1, 2], list);
 /// </code>
 /// </example>
 public sealed class UndoRedoManager : INotifyPropertyChanged

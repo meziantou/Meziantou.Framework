@@ -8,19 +8,25 @@ namespace Meziantou.Framework.Threading;
 /// <see langword="await"/>. Use <see cref="KeyedAsyncLock{TKey}"/> for asynchronous code.
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// var keyedLock = new KeyedLock<string>();
-/// 
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/KeyedLockTests.cs" ref:region="KeyedLock_Usage" ref:dedent="true">
+/// var keyedLock = new KeyedLock&lt;string&gt;(StringComparer.Ordinal);
+/// var updateCounts = new ConcurrentDictionary&lt;string, int&gt;(StringComparer.Ordinal);
+///
 /// void ProcessUser(string userId)
 /// {
 ///     using (keyedLock.Lock(userId))
 ///     {
 ///         // Only one operation per userId at a time
 ///         // Multiple different userIds can be processed concurrently
-///         UpdateUserData(userId);
+///         var count = updateCounts.GetValueOrDefault(userId);
+///         updateCounts[userId] = count + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// Parallel.Invoke(() =&gt; ProcessUser("alice"), () =&gt; ProcessUser("alice"), () =&gt; ProcessUser("bob"));
+/// Assert.Equal(2, updateCounts["alice"]);
+/// Assert.Equal(1, updateCounts["bob"]);
+/// </code>
 /// </example>
 public sealed class KeyedLock<TKey> where TKey : notnull
 {

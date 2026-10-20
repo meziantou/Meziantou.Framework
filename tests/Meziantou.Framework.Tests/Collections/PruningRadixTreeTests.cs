@@ -5,6 +5,20 @@ namespace Meziantou.Framework.Tests.Collections;
 public sealed class PruningRadixTreeTests
 {
     [Fact]
+    public void PruningRadixTree_GetTopTermsByPrefix_Example()
+    {
+        #region PruningRadixTree_GetTopTermsByPrefix
+        var tree = new PruningRadixTree();
+        tree.Add("car", 10);
+        tree.Add("cart", 5);
+        tree.Add("cat", 7);
+
+        var suggestions = tree.GetTopTermsByPrefix("ca", topK: 2, out _);
+        Assert.Equal([KeyValuePair.Create("car", 10L), KeyValuePair.Create("cat", 7L)], suggestions);
+        #endregion
+    }
+
+    [Fact]
     public void AddAggregatesFrequency()
     {
         var tree = new PruningRadixTree();

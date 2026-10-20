@@ -1,7 +1,34 @@
+using System.Collections.Concurrent;
+
 namespace Meziantou.Framework.Threading.Tests;
 
 public sealed class KeyedAsyncLockTests
 {
+    [Fact]
+    public async Task KeyedAsyncLock_Example()
+    {
+        #region KeyedAsyncLock_Usage
+        var keyedLock = new KeyedAsyncLock<string>(StringComparer.Ordinal);
+        var updateCounts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+
+        async Task ProcessUserAsync(string userId)
+        {
+            using (await keyedLock.LockAsync(userId))
+            {
+                // Only one operation per userId at a time
+                // Multiple different userIds can be processed concurrently
+                var count = updateCounts.GetValueOrDefault(userId);
+                await Task.Yield();
+                updateCounts[userId] = count + 1;
+            }
+        }
+
+        await Task.WhenAll(ProcessUserAsync("alice"), ProcessUserAsync("alice"), ProcessUserAsync("bob"));
+        Assert.Equal(2, updateCounts["alice"]);
+        Assert.Equal(1, updateCounts["bob"]);
+        #endregion
+    }
+
     [Fact]
     public async Task Test()
     {

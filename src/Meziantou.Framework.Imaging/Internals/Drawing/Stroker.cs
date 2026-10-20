@@ -18,7 +18,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// When a single piece contains the whole frame, so does the stroke: <see cref="CoversFrame"/> is set and nothing more is
 /// emitted. A stroke much wider than the frame is made of such pieces, all crossing each other; measuring their union
 /// would cost a lot to find the whole frame. Only pens at least as wide as the smallest side of the frame can have such
-/// a piece, so the others are not tested.
+/// a piece, so the others are not tested. Every piece is narrower than the pen in some direction, so under an affine
+/// transformation, which keeps the pieces convex, it is the width of the pen times the largest factor of the
+/// transformation that is compared to the frame; a transformation that mirrors the pieces reverses their orientation,
+/// and the side of their edges the frame has to be on.
 /// </para>
 /// <para>
 /// A part of a round join or cap whose triangle (its ends and the meeting point of their tangents) has a box outside
@@ -46,8 +49,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Under a transformation of the canvas, the path is stroked as it is given and the vertices of the pieces are
 /// transformed when they are emitted: the pen is transformed with the path, whatever the transformation. The round
-/// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and no piece of an
-/// affine transformation is tested against the frame. A pen that the transformation does not apply to (<see cref="Pen.ScalesWithTransform"/>)
+/// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and the pieces are
+/// tested against the frame once they are transformed. A pen that the transformation does not apply to (<see cref="Pen.ScalesWithTransform"/>)
 /// is given the path as it is on the canvas instead, by a <see cref="TransformSink"/> before it: it strokes as it
 /// does without transformation. Under a projective transformation, each piece is cut where it has no image before its
 /// vertices are transformed (<see cref="ProjectiveSink"/>), and the arcs of a join or a cap are cut finer by the
@@ -70,6 +73,8 @@ internal sealed class Stroker : PathSink
     private bool _sweepsCurves;
     private bool _hasOutputTransform;
     private Affine2D _outputTransform;
+    private double _outputScale = 1;
+    private bool _isOutputMirrored;
     private double _originX;
     private double _originY;
     private bool _isOutputChecked = true;
@@ -151,9 +156,11 @@ internal sealed class Stroker : PathSink
         _isOutputChecked = isChecked;
         _hasOutputTransform = hasTransform;
         _outputTransform = transform;
+        _outputScale = hasTransform ? scale : 1;
+        _isOutputMirrored = hasTransform && (transform.A * transform.D) - (transform.B * transform.C) < 0;
         _isProjectiveOutput = false;
         Projection = null;
-        Scale = hasTransform ? scale : 1;
+        Scale = _outputScale;
     }
 
     /// <summary>
@@ -164,6 +171,8 @@ internal sealed class Stroker : PathSink
     public void SetOutput(in ProjectiveView view)
     {
         _hasOutputTransform = false;
+        _outputScale = 1;
+        _isOutputMirrored = false;
         _isProjectiveOutput = true;
         Projection = view;
         _pieceView = view.WithoutReach();
@@ -179,7 +188,7 @@ internal sealed class Stroker : PathSink
         var width = pen.StrokeWidth * widthFactor;
         CoversFrame = false;
         _clipsToRange = false;
-        _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
+        _testFrame = CanCoverFrame(width);
         _halfWidth = width / 2;
         _join = pen.LineJoin;
         _cap = pen.LineCap;
@@ -193,7 +202,7 @@ internal sealed class Stroker : PathSink
     {
         CoversFrame = false;
         _clipsToRange = false;
-        _testFrame = _edges is not null && !_hasOutputTransform && (_isProjectiveOutput || width >= Math.Min(_edges.Width, _edges.Height));
+        _testFrame = CanCoverFrame(width);
         _halfWidth = width / 2;
         _join = join;
         _cap = LineCap.Butt;
@@ -201,6 +210,15 @@ internal sealed class Stroker : PathSink
         _sweepsCurves = false;
         _hasStart = false;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether a piece of a stroke of a width can contain the whole frame, and is tested against
+    /// it: any piece of a projective transformation, whose factor has no bound; otherwise, a piece whose width on the
+    /// canvas, at most the width of the pen times the largest factor of the transformation, reaches the smallest side of
+    /// the frame.
+    /// </summary>
+    private bool CanCoverFrame(double width)
+        => _edges is not null && (_isProjectiveOutput || width * _outputScale >= Math.Min(_edges.Width, _edges.Height));
 
     public override void MoveTo(double x, double y)
     {
@@ -998,9 +1016,16 @@ internal sealed class Stroker : PathSink
         if (_testFrame && (x != _pieceX || y != _pieceY))
         {
             // A point is strictly inside a convex piece when it is strictly on the inner side of every edge; with the
-            // orientation of the pieces, that side is where the cross product is positive
+            // orientation of the pieces, that side is where the cross product is positive. A transformation that mirrors
+            // the pieces reverses their orientation: the edge is turned back instead.
             var dx = x - _pieceX;
             var dy = y - _pieceY;
+            if (_isOutputMirrored)
+            {
+                dx = -dx;
+                dy = -dy;
+            }
+
             var left = -_pieceX;
             var top = -_pieceY;
             var right = _edges.Width - _pieceX;

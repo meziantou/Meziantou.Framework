@@ -1,4 +1,6 @@
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -6,6 +8,124 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestCoreApi
 {
+    [Fact]
+    public void ReadmeExample_ToHtml()
+    {
+        #region MarkdownConverter_ToHtml
+        var html = MarkdownConverter.ToHtml("This is a text with some *emphasis*");
+        Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Pipeline()
+    {
+        #region MarkdownConverter_Pipeline
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("| a | b |\n|---|---|\n| 1 | 2 |", pipeline);
+        Assert.StartsWith("<table>", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_PipelineExtensions()
+    {
+        #region MarkdownConverter_PipelineExtensions
+        var pipeline = new MarkdownPipelineBuilder()
+            .UsePipeTables()
+            .UseTaskLists()
+            .UseAutoIdentifiers()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("# Getting started", pipeline);
+        Assert.Equal("<h1 id=\"getting-started\">Getting started</h1>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GenericAttributesFilter()
+    {
+        #region MarkdownConverter_GenericAttributesFilter
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseGenericAttributes(name => GenericAttributesExtension.IsSafeAttributeName(name) || name.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("Text {data-id=1 style=color:red}", pipeline);
+        Assert.Equal("<p data-id=\"1\">Text</p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SyntaxTree()
+    {
+        #region MarkdownConverter_SyntaxTree
+        var document = MarkdownConverter.Parse("# Title\n\nSee [the docs](https://example.com).");
+
+        foreach (var heading in document.Descendants<HeadingBlock>())
+        {
+            Assert.Equal(1, heading.Level);
+            Assert.Equal(0, heading.Line);
+        }
+
+        foreach (var link in document.Descendants<LinkInline>())
+        {
+            Assert.Equal("https://example.com", link.Url);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ChangeTree()
+    {
+        #region MarkdownConverter_ChangeTree
+        var markdown = "See [the docs](http://example.com).";
+        var pipeline = new MarkdownPipelineBuilder().Build();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        foreach (var link in document.Descendants<LinkInline>())
+        {
+            link.Url = link.Url?.Replace("http://", "https://", StringComparison.Ordinal);
+        }
+
+        var html = document.ToHtml(pipeline);
+        Assert.Equal("<p>See <a href=\"https://example.com\">the docs</a>.</p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_OtherFormats()
+    {
+        #region MarkdownConverter_OtherFormats
+        // Plain text, without any markup
+        var text = MarkdownConverter.ToPlainText("Some **bold** text");
+        Assert.Equal("Some bold text\n", text);
+
+        // Normalized Markdown
+        var normalized = MarkdownConverter.Normalize("Title\n=====");
+        Assert.Equal("# Title", normalized);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Roundtrip()
+    {
+        #region MarkdownConverter_Roundtrip
+        var markdown = "#   Title  \n\n*  item\n";
+        var document = MarkdownConverter.Parse(markdown, trackTrivia: true);
+
+        // Change the tree here...
+
+        using var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        renderer.Write(document);
+        var output = writer.ToString();
+        Assert.Equal(markdown, output); // Same as markdown when nothing changed
+        #endregion
+    }
+
     [Fact]
     public void TestToHtml()
     {

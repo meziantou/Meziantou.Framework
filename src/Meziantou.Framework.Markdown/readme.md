@@ -26,14 +26,14 @@ dotnet add package Meziantou.Framework.Markdown
 
 ## Convert Markdown to HTML
 
-`MarkdownConverter` is the entry point. Without a pipeline, it uses the plain CommonMark parser:
+`MarkdownConverter` (in the `Meziantou.Framework.Markdown` namespace) is the entry point. Without a pipeline, it uses the plain CommonMark parser:
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_ToHtml;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Markdown;
-
 var html = MarkdownConverter.ToHtml("This is a text with some *emphasis*");
-// <p>This is a text with some <em>emphasis</em></p>
+Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
 ```
+<!-- endref -->
 
 To write to a `TextWriter` instead of allocating a string, use the `ToHtml(string, TextWriter, ...)` overload.
 
@@ -42,15 +42,16 @@ To write to a `TextWriter` instead of allocating a string, use the `ToHtml(strin
 A `MarkdownPipeline` describes which parsers and renderers are active. Build it once and reuse it: a pipeline is
 immutable and can be shared between threads.
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_Pipeline;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Markdown;
-
 var pipeline = new MarkdownPipelineBuilder()
     .UseAdvancedExtensions()
     .Build();
 
 var html = MarkdownConverter.ToHtml("| a | b |\n|---|---|\n| 1 | 2 |", pipeline);
+Assert.StartsWith("<table>", html);
 ```
+<!-- endref -->
 
 `UseAdvancedExtensions()` enables alert blocks, abbreviations, auto-identifiers, citations, custom containers,
 definition lists, extra emphasis, figures, footers, footnotes, grid tables, mathematics, media links, pipe tables, extra
@@ -58,13 +59,18 @@ list types, task lists, diagrams, auto-links, and generic attributes.
 
 Each extension can also be enabled on its own:
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_PipelineExtensions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var pipeline = new MarkdownPipelineBuilder()
     .UsePipeTables()
     .UseTaskLists()
     .UseAutoIdentifiers()
     .Build();
+
+var html = MarkdownConverter.ToHtml("# Getting started", pipeline);
+Assert.Equal("<h1 id=\"getting-started\">Getting started</h1>\n", html);
 ```
+<!-- endref -->
 
 ## Extensions
 
@@ -125,14 +131,20 @@ general attributes that `Meziantou.Framework.HtmlSanitizer` allows, other than `
 `language`, `loading`, `nohref`, `nowrap`, `open`, `rel`, `rev`, `reversed`, `role`, `rows`, `rowspan`, `rules`,
 `scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `translate`, `type`,
 `valign`, `value`, `vspace`, `width` and `aria-*`. `{#id}` and `{.class}` are always written. When the Markdown is
-trusted, pass a filter to allow more attributes:
+trusted, pass a filter to allow more attributes (`GenericAttributesExtension` is in the
+`Meziantou.Framework.Markdown.Extensions.GenericAttributes` namespace):
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_GenericAttributesFilter;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var pipeline = new MarkdownPipelineBuilder()
     .UseAdvancedExtensions()
     .UseGenericAttributes(name => GenericAttributesExtension.IsSafeAttributeName(name) || name.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
     .Build();
+
+var html = MarkdownConverter.ToHtml("Text {data-id=1 style=color:red}", pipeline);
+Assert.Equal("<p data-id=\"1\">Text</p>\n", html);
 ```
+<!-- endref -->
 
 Nesting depth is limited so that hostile input cannot overflow the stack: a document nested too deeply throws an
 `ArgumentException` instead. Catch it when you process untrusted input.
@@ -140,29 +152,32 @@ Nesting depth is limited so that hostile input cannot overflow the stack: a docu
 ## Work with the syntax tree
 
 `MarkdownConverter.Parse` returns a `MarkdownDocument`. Blocks and inlines are `MarkdownObject` instances, and each one
-has a `Span` (offsets in the source text), a `Line`, and a `Column`. Lines and columns are zero-based.
+has a `Span` (offsets in the source text), a `Line`, and a `Column`. Lines and columns are zero-based. Blocks such as
+`HeadingBlock` are in the `Meziantou.Framework.Markdown.Syntax` namespace, and inlines such as `LinkInline` in
+`Meziantou.Framework.Markdown.Syntax.Inlines`.
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_SyntaxTree;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Markdown;
-using Meziantou.Framework.Markdown.Syntax;
-using Meziantou.Framework.Markdown.Syntax.Inlines;
-
 var document = MarkdownConverter.Parse("# Title\n\nSee [the docs](https://example.com).");
 
 foreach (var heading in document.Descendants<HeadingBlock>())
 {
-    Console.WriteLine($"Heading level {heading.Level} at line {heading.Line}");
+    Assert.Equal(1, heading.Level);
+    Assert.Equal(0, heading.Line);
 }
 
 foreach (var link in document.Descendants<LinkInline>())
 {
-    Console.WriteLine(link.Url);
+    Assert.Equal("https://example.com", link.Url);
 }
 ```
+<!-- endref -->
 
 You can change the tree and render it with the same pipeline:
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_ChangeTree;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var markdown = "See [the docs](http://example.com).";
 var pipeline = new MarkdownPipelineBuilder().Build();
 var document = MarkdownConverter.Parse(markdown, pipeline);
 foreach (var link in document.Descendants<LinkInline>())
@@ -171,17 +186,23 @@ foreach (var link in document.Descendants<LinkInline>())
 }
 
 var html = document.ToHtml(pipeline);
+Assert.Equal("<p>See <a href=\"https://example.com\">the docs</a>.</p>\n", html);
 ```
+<!-- endref -->
 
 ## Other output formats
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_OtherFormats;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Plain text, without any markup
 var text = MarkdownConverter.ToPlainText("Some **bold** text");
+Assert.Equal("Some bold text\n", text);
 
 // Normalized Markdown
 var normalized = MarkdownConverter.Normalize("Title\n=====");
+Assert.Equal("# Title", normalized);
 ```
+<!-- endref -->
 
 For other formats, implement `IMarkdownRenderer` (or derive from `TextRendererBase<T>`) and call
 `MarkdownConverter.Convert(markdown, renderer, pipeline)`.
@@ -190,12 +211,12 @@ For other formats, implement `IMarkdownRenderer` (or derive from `TextRendererBa
 
 When trivia tracking is enabled, the parser records all whitespace, line endings, and other characters that do not change
 the meaning of the document. The `RoundtripRenderer` then writes the document back exactly as it was parsed, so you can
-change a document without reformatting it.
+change a document without reformatting it. `RoundtripRenderer` is in the
+`Meziantou.Framework.Markdown.Renderers.Roundtrip` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_Roundtrip;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Markdown;
-using Meziantou.Framework.Markdown.Renderers.Roundtrip;
-
+var markdown = "#   Title  \n\n*  item\n";
 var document = MarkdownConverter.Parse(markdown, trackTrivia: true);
 
 // Change the tree here...
@@ -203,8 +224,10 @@ var document = MarkdownConverter.Parse(markdown, trackTrivia: true);
 using var writer = new StringWriter();
 var renderer = new RoundtripRenderer(writer);
 renderer.Write(document);
-var output = writer.ToString(); // Same as markdown when nothing changed
+var output = writer.ToString();
+Assert.Equal(markdown, output); // Same as markdown when nothing changed
 ```
+<!-- endref -->
 
 Trivia is not part of the CommonMark specification, so the implementation decides where it goes. Line endings are
 attached to the first node that can hold them. Blank lines are stored in `Block.LinesBefore` and `Block.LinesAfter`.

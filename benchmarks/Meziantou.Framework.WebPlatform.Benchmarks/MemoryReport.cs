@@ -16,7 +16,7 @@ internal static class MemoryReport
     {
         Console.WriteLine("| Type | Instance bytes |");
         Console.WriteLine("|---|---:|");
-        foreach (var name in new[] { "Dom.Text", "Dom.Comment", "Dom.Element", "Dom.HtmlDivElement", "Dom.Attr", "Dom.NodeRareData", "Dom.ElementRareData", "Css.Cascade.ComputedStyle", "Css.Layout.LayoutStyle" })
+        foreach (var name in new[] { "Dom.Text", "Dom.Comment", "Dom.Element", "Dom.HtmlDivElement", "Dom.Attr", "Dom.NodeRareData", "Dom.ElementRareData", "Css.Cascade.ComputedStyle", "Css.Layout.LayoutStyle", "Css.Layout.BoxModelStyle", "Css.Layout.ContainerBox", "Css.Layout.TextRun", "Css.Layout.BoxFragment", "Css.Layout.TextFragment" })
         {
             if (typeof(Node).Assembly.GetType("Meziantou.Framework.WebPlatform." + name) is { } type)
             {
@@ -176,7 +176,11 @@ internal static class MemoryReport
         return length;
     }
 
-    /// <summary>The size of the heap after a compacting collection (the free space between the objects is not counted).</summary>
+    /// <summary>
+    /// The size of the objects of the heap after a compacting collection (the free space between the objects is not counted). It
+    /// is not <see cref="GC.GetTotalMemory(bool)"/>, which also counts memory that holds no object: on .NET 10, it was up to 200 MB
+    /// more than the heap after the collection, and that part varied from one measure to the next.
+    /// </summary>
     private static long GetCompactedHeapSize()
     {
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -184,7 +188,8 @@ internal static class MemoryReport
         GC.WaitForPendingFinalizers();
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-        return GC.GetTotalMemory(forceFullCollection: false);
+        var info = GC.GetGCMemoryInfo(GCKind.FullBlocking);
+        return info.HeapSizeBytes - info.FragmentedBytes;
     }
 
     /// <summary>The size of an object of the type (the bytes allocated by an uninitialized instance).</summary>

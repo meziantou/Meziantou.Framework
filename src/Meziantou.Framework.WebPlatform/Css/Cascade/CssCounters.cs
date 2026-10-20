@@ -20,6 +20,9 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// </remarks>
 internal sealed class CssCounters
 {
+    /// <summary>The counters set of the boxes that have no counter in scope (the stored sets are not changed).</summary>
+    private static readonly List<Counter> NoCounters = [];
+
     private readonly StyleEngine _engine;
     private readonly Dictionary<(Element Element, string? PseudoElement), List<Counter>> _sets = [];
 
@@ -170,7 +173,7 @@ internal sealed class CssCounters
 
         var set = Inherit(parentSet, siblingSet);
         ApplyProperties(element, pseudoElement: null, style, set);
-        Store(element, pseudoElement: null, set);
+        set = Store(element, pseudoElement: null, set, siblingSet ?? parentSet);
 
         // https://drafts.csswg.org/css-contain-2/#containment-style: the sub-tree of an element with style containment (not the
         // element itself) is a new scope ("no effect if the element does not generate a principal box": display: contents)
@@ -262,8 +265,7 @@ internal sealed class CssCounters
         }
 
         ApplyProperties(element, pseudoElement, style, set);
-        Store(element, pseudoElement, set);
-        return set;
+        return Store(element, pseudoElement, set, siblingSet ?? parentSet);
     }
 
     /// <summary>
@@ -298,10 +300,21 @@ internal sealed class CssCounters
         return set;
     }
 
-    private void Store(Element element, string? pseudoElement, List<Counter> set)
+    /// <summary>Stores the counters set of a box, and returns it: the set it inherited when they are the same (most boxes do not change the counters).</summary>
+    private List<Counter> Store(Element element, string? pseudoElement, List<Counter> set, List<Counter>? source)
     {
+        if (set.Count == 0)
+        {
+            set = NoCounters;
+        }
+        else if (source is not null && set.SequenceEqual(source))
+        {
+            set = source;
+        }
+
         _sets[(element, pseudoElement)] = set;
         _previous = set;
+        return set;
     }
 
     /// <summary>

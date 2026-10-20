@@ -1862,6 +1862,14 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void Parse_ReadsADurationEndingOnTheLastDayOfDateTime()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART;VALUE=DATE:20240101", "DURATION:P2913173D"));
+
+        Assert.Equal(new DateTime(9999, 12, 31), Assert.Single(calendar.Events).End);
+    }
+
+    [Fact]
     public void ToIcs_WritesTheEndInsteadOfTheDurationOnceTheEndChanged()
     {
         var calendar = InternetCalendar.Parse(CreateIcs("DTSTART:20240101T100000Z", "DURATION:PT1H"));
@@ -1899,6 +1907,10 @@ public sealed class InternetCalendarTests
     [InlineData("DTSTART:20240101T100000Z", "DURATION:P99999999999999999999D")]
     [InlineData("DTSTART:99991231T100000Z", "DURATION:P1D")]
     [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:PT1H")]
+
+    // The days left after a midnight are a whole number of days minus one tick, which a double rounds up
+    [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:P2913174D")]
+    [InlineData("DTSTART:20240101T000000", "DURATION:P2913174D")]
     public void Parse_RejectsAnInvalidDuration(params string[] contentLines)
     {
         Assert.False(InternetCalendar.TryParse(CreateIcs(contentLines), out var calendar, out var error));

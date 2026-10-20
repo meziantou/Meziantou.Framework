@@ -53,6 +53,62 @@ public sealed class CssTransitionsTests : IDisposable
     }
 
     [Fact]
+    public void RepeatedReversals_KeepTheEffectStackOfTheTargetBounded()
+    {
+        var document = Load("<div id=target style='width: 0px; transition: width 100ms linear'></div>");
+        var target = (HtmlElement)document.GetElementById("target")!;
+        GetComputed(target, "width");
+        for (var i = 0; i < 50; i++)
+        {
+            target.Style.SetProperty("width", i % 2 == 0 ? "100px" : "0px");
+            Advance(1000d / 60);
+        }
+
+        // (the canceled and completed transitions leave the effect stack of their target)
+        Assert.InRange(document.AnimationsOrNull?.GetElementAnimations(target)?.Get(pseudoElement: null)?.Count ?? 0, 0, 1);
+    }
+
+    [Fact]
+    public void CompletedTransition_LeavesTheEffectStackOfItsTarget()
+    {
+        var document = Load("<div id=target style='width: 0px; transition: width 100ms linear'></div>");
+        var target = (HtmlElement)document.GetElementById("target")!;
+        var ended = 0;
+        target.AddEventListener("transitionend", _ => ended++);
+        GetComputed(target, "width");
+        target.Style.SetProperty("width", "100px");
+        var transition = Assert.IsType<CssTransition>(Assert.Single(target.GetAnimations()));
+        Advance(200);
+
+        Assert.Equal(1, ended);
+        Assert.Equal(AnimationPlayState.Finished, transition.PlayState);
+        Assert.Null(document.AnimationsOrNull?.GetElementAnimations(target));
+        Assert.Equal("100px", GetComputed(target, "width"));
+
+        // (seeking the completed transition registers its effect again)
+        transition.CurrentTime = 50;
+        Assert.Equal("50px", GetComputed(target, "width"));
+    }
+
+    [Fact]
+    public void CanceledTransition_AppliesAgainWhenPlayed()
+    {
+        var document = Load("<div id=target style='width: 0px; transition: width 100ms linear'></div>");
+        var target = (HtmlElement)document.GetElementById("target")!;
+        GetComputed(target, "width");
+        target.Style.SetProperty("width", "100px");
+        var transition = Assert.IsType<CssTransition>(Assert.Single(target.GetAnimations()));
+        transition.Cancel();
+        Assert.Equal(AnimationPlayState.Idle, transition.PlayState);
+        Assert.Null(document.AnimationsOrNull?.GetElementAnimations(target));
+        Assert.Equal("100px", GetComputed(target, "width"));
+
+        transition.Play();
+        Assert.Equal("0px", GetComputed(target, "width"));
+        Assert.Same(transition, Assert.Single(target.GetAnimations()));
+    }
+
+    [Fact]
     public void TransitionAll()
     {
         var document = Load("<div id=target style='color: black; opacity: 1'></div>");

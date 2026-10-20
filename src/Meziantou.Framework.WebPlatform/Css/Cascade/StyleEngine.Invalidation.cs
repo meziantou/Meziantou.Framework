@@ -159,6 +159,13 @@ internal sealed partial class StyleEngine
                 PruneBeforeChangeStyles();
             }
 
+            // (the inserted elements are not added to a pending computation of the styles: the next update of the animations
+            // computes the styles of all the elements, see ComputeAnimationStyles)
+            if (!_recalcAll)
+            {
+                _animationStylesComputed = false;
+            }
+
             ElementInvalidationCount++;
             return true;
         }
@@ -195,6 +202,7 @@ internal sealed partial class StyleEngine
             else
             {
                 _beforeChangeStyles.Clear();
+                _animationStylesComputed = false;
             }
 
             if (VerifyInvalidations)

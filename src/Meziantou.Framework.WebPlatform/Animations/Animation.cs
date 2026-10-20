@@ -229,6 +229,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
     }
 
+    /// <summary>
+    /// Whether the play state is idle (https://drafts.csswg.org/web-animations-1/#play-states), like <see cref="PlayStateValue"/>
+    /// without reading the timeline: without start time, hold time and pending task, the current time is unresolved.
+    /// </summary>
+    internal bool IsIdle => _startTime is null && _holdTime is null && _pendingTask == PendingTask.None;
+
     /// <summary>https://drafts.csswg.org/web-animations-1/#play-states</summary>
     internal AnimationPlayState PlayStateValue
     {
@@ -1307,11 +1313,18 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>
+    /// Registers the effects of the animation with the effect stacks of their targets, or unregisters them, after a change of the
+    /// playback state (the effect of an idle animation is not in the effect stack of its target, see <see cref="KeyframeEffect.UpdateRegistration"/>).
+    /// </summary>
+    internal virtual void UpdateEffectRegistrations() => (_effect as KeyframeEffect)?.UpdateRegistration();
+
+    /// <summary>
     /// Called after any change of the playback state, the timeline or the effect: the animation is tracked by its document
     /// while it may change, and the styles of its target are invalidated.
     /// </summary>
     private protected void OnPlaybackChanged()
     {
+        UpdateEffectRegistrations();
         if (DocumentForTiming is { } document)
         {
             document.Animations.OnAnimationChanged(this);

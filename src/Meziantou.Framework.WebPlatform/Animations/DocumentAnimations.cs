@@ -343,6 +343,7 @@ internal sealed class DocumentAnimations
 
         // The animations whose effects may have changed: the styles of their targets are invalidated
         List<Animation>? sampled = null;
+        List<Animation>? untracked = null;
         foreach (var animation in animations)
         {
             var timeDependent = animation.NeedsFrames;
@@ -387,6 +388,7 @@ internal sealed class DocumentAnimations
             if (!animation.NeedsFrames)
             {
                 _trackedAnimations.Remove(animation);
+                (untracked ??= []).Add(animation);
             }
         }
 
@@ -429,6 +431,16 @@ internal sealed class DocumentAnimations
             foreach (var pending in events)
             {
                 pending.Target.FireEvent(pending.Event);
+            }
+        }
+
+        // The effects of the animations that no longer change (e.g. a completed CSS transition) leave the effect stacks of their
+        // targets once their events are dispatched (see KeyframeEffect.UpdateRegistration)
+        if (untracked is not null)
+        {
+            foreach (var animation in untracked)
+            {
+                animation.UpdateEffectRegistrations();
             }
         }
 

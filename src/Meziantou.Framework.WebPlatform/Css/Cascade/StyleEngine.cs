@@ -63,6 +63,13 @@ internal sealed partial class StyleEngine
     /// <summary>The elements whose pseudo-element styles the pending computation computes (their own styles were kept).</summary>
     private readonly HashSet<Element> _recalcElements = new(ReferenceEqualityComparer.Instance);
 
+    /// <summary>
+    /// Whether <see cref="ComputeAnimationStyles"/> computed the styles of all the elements, and every style discarded since then
+    /// was added to the pending computation of the styles (see <see cref="RecalculateStyles"/>): the next update of the animations
+    /// only computes the pending styles.
+    /// </summary>
+    private bool _animationStylesComputed;
+
     private bool _includeStartingStyle;
     private bool _recalculating;
 
@@ -381,6 +388,43 @@ internal sealed partial class StyleEngine
 
         _animationFlushVersion = version;
         return true;
+    }
+
+    /// <summary>
+    /// Computes the styles that create, update and cancel the CSS animations and transitions of the document (see
+    /// <see cref="Dom.Document.FlushAnimationStyles"/>): the styles discarded since the last update when they were all added to
+    /// the pending computation of the styles (see <see cref="RecalculateStyles"/>), otherwise the styles of all the elements, e.g.
+    /// at the first update, or after a change while no known rule declared an animation or a transition (the rules of a shadow
+    /// tree are known once the style of one of its elements is computed).
+    /// </summary>
+    public void ComputeAnimationStyles()
+    {
+        EnsureUpToDate();
+        if (_recalculating)
+            return;
+
+        if (!_animationStylesComputed && _document.BrowsingContext is not null)
+        {
+            _animationStylesComputed = true;
+            _recalcPending = true;
+            _recalcAll = true;
+            _recalcSubtrees.Clear();
+            _recalcElements.Clear();
+        }
+
+        // (the subtrees whose styles the layout discarded are not computed by a style read, see InvalidateQueryContainerDescendants)
+        if (!_recalcPending && _recalcSubtrees.Count == 0)
+            return;
+
+        _recalculating = true;
+        try
+        {
+            RecalculateStyles();
+        }
+        finally
+        {
+            _recalculating = false;
+        }
     }
 
     /// <summary>Removes the before-change styles of the elements that are no longer connected.</summary>
@@ -1450,6 +1494,7 @@ internal sealed partial class StyleEngine
         else
         {
             _beforeChangeStyles.Clear();
+            _animationStylesComputed = false;
         }
 
         previousStyles.Clear();
@@ -1598,7 +1643,18 @@ internal sealed partial class StyleEngine
             }
         }
 
+        // (the styles that the layout does not compute again, e.g. of the elements that are not rendered, are computed by the next
+        // update of the animations, see ComputeAnimationStyles)
         var mayHaveTransitions = _environmentOverride is null && MayHaveTransitions();
+        if (mayHaveTransitions)
+        {
+            AddRecalculationRoot(container, subtree: true);
+        }
+        else
+        {
+            _animationStylesComputed = false;
+        }
+
         foreach (var key in keys)
         {
             _styles.Remove(key, out var discarded);
@@ -1918,6 +1974,7 @@ internal sealed partial class StyleEngine
         if (_document.BrowsingContext is null)
         {
             ClearRecalculation();
+            _animationStylesComputed = false;
             return;
         }
 

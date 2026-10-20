@@ -29,6 +29,23 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
+    public async Task ReadmeExample_WhenAll()
+    {
+        #region TaskExtensions_WhenAll
+        var task1 = Task.FromResult(42);
+        var task2 = Task.FromResult("value");
+
+        var (a, b) = await (task1, task2);
+        Assert.Equal(42, a);
+        Assert.Equal("value", b);
+
+        var (c, d) = await (task1, task2).ConfigureAwait(false);
+        Assert.Equal(42, c);
+        Assert.Equal("value", d);
+        #endregion
+    }
+
+    [Fact]
     public async Task WhenAll()
     {
         var (a, b) = await (Task.FromResult(0), Task.FromResult("test"));

@@ -305,6 +305,19 @@ public sealed partial class ObservableCollectionTests : IDisposable
     }
 
     [Fact]
+    public void ReadmeExample_SynchronizationContext()
+    {
+        var synchronizationContext = _synchronizationContext;
+
+        #region ConcurrentObservableCollection_SynchronizationContext
+        var collection = new ConcurrentObservableCollection<string>(synchronizationContext);
+        #endregion
+
+        collection.Add("item");
+        Assert.Equal(["item"], collection.AsObservable);
+    }
+
+    [Fact]
     public void Add_HandlerModifyingTheCollectionRaisesTheNotificationsInOrder()
     {
         var collection = CreateCollection<int>();

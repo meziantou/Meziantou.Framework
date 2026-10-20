@@ -10,9 +10,12 @@ dotnet add package Meziantou.Xunit
 
 ## Usage
 
-```c#
+<!-- ref:../../samples/Meziantou.Xunit.Samples/SampleTests.cs;region=SampleTests;format=md-fenced-code-block;dedent=true -->
+```csharp
 using Meziantou.Xunit;
 using Xunit;
+
+namespace MyProject.Tests;
 
 public sealed class SampleTests
 {
@@ -41,6 +44,7 @@ public sealed class SampleTests
     }
 }
 ```
+<!-- endref -->
 
 `RunIf` executes the test only when all specified conditions match. `SkipIf` skips the test when all specified conditions match.
 

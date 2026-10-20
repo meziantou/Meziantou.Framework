@@ -17,10 +17,13 @@ const string StepTrimmable = "trimmable";
 const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
 const string StepBom = "bom";
+const string StepSnippets = "snippets";
 const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
-string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
+const string FileReferencerNamespace = "urn:meziantou:file-referencer";
+const string FileReferencerMarkdownMarker = "<!-- ref:";
+string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom];
+string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -33,8 +36,8 @@ for (var i = 0; i < args.Length; i++)
             Console.WriteLine("Usage: dotnet run ./eng/update-all.cs [-- --step <name>] [--output-path <path>]");
             Console.WriteLine("Runs source generation/update steps.");
             Console.WriteLine("Available step names:");
-            Console.WriteLine("  readme, trimmable, slnx, templates, bom, validate-testprojects, all");
-            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> bom");
+            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, bom, validate-testprojects, all");
+            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> bom");
             return 0;
 
         case "--output-path" when i + 1 < args.Length:
@@ -88,6 +91,12 @@ if (ShouldRunStep(StepTemplates))
 {
     Console.WriteLine("[update-all] Running templates");
     tasks.Add(Task.Run(() => RunTemplateStep(rootPath)));
+}
+
+if (ShouldRunStep(StepSnippets))
+{
+    Console.WriteLine("[update-all] Running snippets");
+    tasks.Add(Task.Run(() => RunUpdateSnippetsStep(rootPath)));
 }
 
 await Task.WhenAll(tasks);
@@ -177,6 +186,64 @@ void RunTemplateStep(FullPath rootPath)
             updatedFiles.Enqueue(relativeTemplatePath);
         }
     });
+}
+
+// Fills the code examples of the XML documentation and of the readme files from regions of tests and samples, using Meziantou.FileReferencer
+void RunUpdateSnippetsStep(FullPath rootPath)
+{
+    // Only pass the files that contain snippet references: processing every file of the repository takes minutes.
+    // The validate_file_references CI job checks every tracked file.
+    var originalContents = Directory.EnumerateFiles(rootPath / "src", "*", SearchOption.AllDirectories)
+        .Select(file => (Path: FullPath.FromPath(file), Marker: Path.GetExtension(file).ToLowerInvariant() switch
+        {
+            ".cs" => FileReferencerNamespace,
+            ".md" => FileReferencerMarkdownMarker,
+            _ => null,
+        }))
+        .Where(item => item.Marker is not null)
+        .Select(item => (item.Path, item.Marker, Content: File.ReadAllText(item.Path)))
+        .Where(item => item.Content.Contains(item.Marker!, StringComparison.Ordinal))
+        .ToDictionary(item => item.Path, item => item.Content);
+    if (originalContents.Count is 0)
+        return;
+
+    TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
+    if (RunProcessAndReturnExitCodeWithRetry(rootPath, "dotnet", ["tool", "restore"], retryDelays) != 0)
+    {
+        Console.WriteLine("ERROR: 'dotnet tool restore' failed");
+        updatedFiles.Enqueue("dotnet-tools.json");
+        return;
+    }
+
+    var files = originalContents.Keys.Select(path => path.MakePathRelativeTo(rootPath)).Order(StringComparer.Ordinal).ToArray();
+
+    // Keep the command lines short enough for Windows
+    foreach (var batch in files.Chunk(100))
+    {
+        if (RunFileReferencer(batch, check: true) is 0)
+            continue;
+
+        RunFileReferencer(batch, check: false);
+        if (RunFileReferencer(batch, check: true) is not 0)
+        {
+            Console.WriteLine("ERROR: Some snippets reference a missing file or region, see the errors above");
+            updatedFiles.Enqueue("src (invalid snippet references)");
+        }
+    }
+
+    foreach (var (path, originalContent) in originalContents)
+    {
+        if (File.ReadAllText(path) != originalContent)
+        {
+            updatedFiles.Enqueue(path.MakePathRelativeTo(rootPath));
+        }
+    }
+
+    int RunFileReferencer(string[] paths, bool check)
+    {
+        string[] arguments = ["tool", "run", "Meziantou.FileReferencer", "--", .. paths];
+        return RunProcessAndReturnExitCode(rootPath, "dotnet", check ? [.. arguments, "--check"] : arguments);
+    }
 }
 
 void RunUpdateBomStep(FullPath rootPath)

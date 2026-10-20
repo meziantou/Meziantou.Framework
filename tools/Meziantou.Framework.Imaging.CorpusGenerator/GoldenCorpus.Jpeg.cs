@@ -368,7 +368,7 @@ internal static partial class GoldenCorpus
             var arithmetic = info.Sof is 0xC9 or 0xCA;
             Py.Assert(progressive == fixtureId.StartsWith("jpeg/progressive-", StringComparison.Ordinal), fixtureId);
             Py.Assert(arithmetic == fixtureId.Contains("arithmetic-", StringComparison.Ordinal), fixtureId);
-            // Reference: djpeg with explicit settings (accurate integer IDCT, default fancy upsampling); never rotates. Block
+            // Reference decoder: djpeg with explicit settings (accurate integer IDCT, default fancy upsampling); never rotates. Block
             // smoothing (progressive frames only) is inactive: DC and the AC coefficients 1-9 are complete in every fixture
             List<string> decode = [t.Djpeg, "-dct", "int", "-pnm", path.Value];
             var reference = CommonCorpus.ReadPnm(Proc.Run(decode));

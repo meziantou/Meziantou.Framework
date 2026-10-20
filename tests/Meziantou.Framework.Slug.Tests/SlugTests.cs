@@ -5,6 +5,39 @@ namespace Meziantou.Framework.Tests;
 
 public class SlugTests
 {
+    [Fact]
+    public void ReadmeExample_Create()
+    {
+        #region Slug_Create
+        var result = Slug.Create("This is a text");
+        Assert.Equal("This-is-a-text", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomOptions()
+    {
+        #region Slug_CustomOptions
+        var options = new SlugOptions
+        {
+            MaximumLength = 20,
+            Separator = "-",
+            CanEndWithSeparator = false,
+            CasingTransformation = CasingTransformation.ToLowerCase,
+        };
+
+        // AllowedRanges is read-only, so change the list in place instead of assigning a new one.
+        // It already contains a-z, A-Z and 0-9, so clear it first to replace that set.
+        options.AllowedRanges.Clear();
+        options.AllowedRanges.Add(UnicodeRange.Create('a', 'z'));
+        options.AllowedRanges.Add(UnicodeRange.Create('A', 'Z'));
+        options.AllowedRanges.Add(UnicodeRange.Create('0', '9'));
+
+        var result = Slug.Create("This is a text", options);
+        Assert.Equal("this-is-a-text", result);
+        #endregion
+    }
+
     [Theory]
     [InlineData("a", "a")]
     [InlineData("z", "z")]

@@ -2,6 +2,32 @@ namespace Meziantou.Framework.Versioning.Tests;
 
 public class SemanticVersionTests
 {
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region SemanticVersion_Example
+        // Parse a semantic version string
+        var version = SemanticVersion.Parse("1.2.3-alpha.1+build");
+        Assert.Equal(1, version.Major);
+        Assert.Equal(2, version.Minor);
+        Assert.Equal(3, version.Patch);
+        Assert.True(version.IsPrerelease);
+        Assert.Equal(["alpha", "1"], version.PrereleaseLabels);
+        Assert.True(version.HasMetadata);
+        Assert.Equal(["build"], version.Metadata);
+
+        // Create and compare versions (prerelease versions have lower precedence)
+        var v1 = new SemanticVersion(1, 0, 0, "alpha");
+        var v2 = new SemanticVersion(1, 0, 0);
+        Assert.True(v1 < v2);
+
+        // Get the next version
+        Assert.Equal("1.0.1", v2.NextPatchVersion().ToString());
+        Assert.Equal("1.1.0", v2.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", v2.NextMajorVersion().ToString());
+        #endregion
+    }
+
     [Theory]
     [MemberData(nameof(TryParse_ShouldParseVersion_Data))]
     public void TryParse_ShouldParseVersion(string version, SemanticVersion expected)

@@ -2,26 +2,26 @@ namespace Meziantou.Framework.Versioning;
 
 /// <summary>Implements Semantic Version 2.0.0.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionTests.cs" ref:region="SemanticVersion_Example" ref:dedent="true">
 /// // Parse a semantic version string
 /// var version = SemanticVersion.Parse("1.2.3-alpha.1+build");
-/// Console.WriteLine(version.Major); // 1
-/// Console.WriteLine(version.Minor); // 2
-/// Console.WriteLine(version.Patch); // 3
-/// Console.WriteLine(version.IsPrerelease); // true
-/// Console.WriteLine(version.PrereleaseLabels); // ["alpha", "1"]
-/// Console.WriteLine(version.HasMetadata); // true
-/// Console.WriteLine(version.Metadata); // ["build"]
+/// Assert.Equal(1, version.Major);
+/// Assert.Equal(2, version.Minor);
+/// Assert.Equal(3, version.Patch);
+/// Assert.True(version.IsPrerelease);
+/// Assert.Equal(["alpha", "1"], version.PrereleaseLabels);
+/// Assert.True(version.HasMetadata);
+/// Assert.Equal(["build"], version.Metadata);
 ///
-/// // Create and compare versions
+/// // Create and compare versions (prerelease versions have lower precedence)
 /// var v1 = new SemanticVersion(1, 0, 0, "alpha");
 /// var v2 = new SemanticVersion(1, 0, 0);
-/// Console.WriteLine(v1 &lt; v2); // true (prerelease versions have lower precedence)
+/// Assert.True(v1 &lt; v2);
 ///
-/// // Get next version
-/// Console.WriteLine(v2.NextPatchVersion()); // 1.0.1
-/// Console.WriteLine(v2.NextMinorVersion()); // 1.1.0
-/// Console.WriteLine(v2.NextMajorVersion()); // 2.0.0
+/// // Get the next version
+/// Assert.Equal("1.0.1", v2.NextPatchVersion().ToString());
+/// Assert.Equal("1.1.0", v2.NextMinorVersion().ToString());
+/// Assert.Equal("2.0.0", v2.NextMajorVersion().ToString());
 /// </code>
 /// </example>
 // https://github.com/semver/semver/blob/master/semver.md

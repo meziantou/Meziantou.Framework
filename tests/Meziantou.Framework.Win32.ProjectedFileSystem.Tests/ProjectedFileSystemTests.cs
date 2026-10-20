@@ -5,6 +5,80 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 public sealed class ProjectedFileSystemTests
 {
     [ProjectedFileSystemFact]
+    public void ReadmeExample_Start()
+    {
+        #region ProjectedFileSystem_Start
+        // Start the virtual file system
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+
+        using var vfs = new MyVirtualFileSystem(rootPath);
+        vfs.Start(options: null);
+
+        // The files are now accessible through Windows Explorer or any application
+        var content = File.ReadAllText(Path.Combine(rootPath, "file1.txt"));
+        Assert.Equal("Hello, World!", content);
+        Assert.Equal("Nested file", File.ReadAllText(Path.Combine(rootPath, "folder", "nested.txt")));
+        #endregion
+
+        #region ProjectedFileSystem_GetOnDiskFileState
+        var state = ProjectedFileSystemBase.GetOnDiskFileState(Path.Combine(rootPath, "file1.txt"));
+        Assert.True(state.HasFlag(PRJ_FILE_STATE.PRJ_FILE_STATE_HYDRATED_PLACEHOLDER)); // The content was read
+        #endregion
+
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
+    [ProjectedFileSystemFact]
+    public void ReadmeExample_StartOptions()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+        using var vfs = new MyVirtualFileSystem(rootPath);
+
+        #region ProjectedFileSystem_StartOptions
+        var options = new ProjectedFileSystemStartOptions
+        {
+            // Enable caching of non-existent file paths for better performance
+            UseNegativePathCache = true,
+
+            // Subscribe to file system notifications
+            Notifications =
+            {
+                new Notification(
+                    PRJ_NOTIFY_TYPES.FILE_OPENED |
+                    PRJ_NOTIFY_TYPES.NEW_FILE_CREATED |
+                    PRJ_NOTIFY_TYPES.FILE_RENAMED |
+                    PRJ_NOTIFY_TYPES.PRE_DELETE),
+            },
+        };
+
+        vfs.Start(options);
+        #endregion
+
+        Assert.Equal("Another file content", File.ReadAllText(Path.Combine(rootPath, "file2.txt")));
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
+    [Fact]
+    public void ReadmeExample_Entries()
+    {
+        #region ProjectedFileSystem_Entries
+        // Create a file entry
+        var file = ProjectedFileSystemEntry.File("example.txt", length: 1024);
+        Assert.False(file.IsDirectory);
+        Assert.Equal(1024, file.Length);
+
+        // Create a folder entry
+        var folder = ProjectedFileSystemEntry.Directory("MyFolder");
+        Assert.True(folder.IsDirectory);
+        Assert.Equal("MyFolder", folder.Name);
+        #endregion
+    }
+
+    [ProjectedFileSystemFact]
     public void BasicEnumerationAndFileRead()
     {
         var guid = Guid.NewGuid();

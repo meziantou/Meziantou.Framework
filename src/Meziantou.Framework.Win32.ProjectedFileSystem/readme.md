@@ -15,18 +15,19 @@ Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 
 ### Basic Example
 
-Create a virtual file system by inheriting from `ProjectedFileSystemBase` and implementing the required abstract methods:
+Create a virtual file system by inheriting from `ProjectedFileSystemBase` (in the `Meziantou.Framework.Win32.ProjectedFileSystem`
+namespace) and implementing the required abstract methods:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/TestFileSystems/MyVirtualFileSystem.cs;region=ProjectedFileSystem_MyVirtualFileSystem;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32.ProjectedFileSystem;
-
-public class MyVirtualFileSystem : ProjectedFileSystemBase
+internal sealed class MyVirtualFileSystem : ProjectedFileSystemBase
 {
     public MyVirtualFileSystem(string rootFolder) : base(rootFolder)
     {
     }
 
-    // Return the list of files and folders for a given path
+    // Return the list of files and folders for a given path.
+    // The length of a file must be the exact size of the content returned by OpenReadAsync.
     protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (string.IsNullOrEmpty(path))
@@ -34,8 +35,8 @@ public class MyVirtualFileSystem : ProjectedFileSystemBase
             return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
             [
                 ProjectedFileSystemEntry.Directory("folder"),
-                ProjectedFileSystemEntry.File("file1.txt", length: 100),
-                ProjectedFileSystemEntry.File("file2.txt", length: 200),
+                ProjectedFileSystemEntry.File("file1.txt", length: 13),
+                ProjectedFileSystemEntry.File("file2.txt", length: 20),
             ]);
         }
 
@@ -43,7 +44,7 @@ public class MyVirtualFileSystem : ProjectedFileSystemBase
         {
             return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
             [
-                ProjectedFileSystemEntry.File("nested.txt", length: 50),
+                ProjectedFileSystemEntry.File("nested.txt", length: 11),
             ]);
         }
 
@@ -69,22 +70,32 @@ public class MyVirtualFileSystem : ProjectedFileSystemBase
         return ValueTask.FromResult<Stream?>(null);
     }
 }
+```
+<!-- endref -->
 
+Start the virtual file system:
+
+<!-- ref:../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_Start;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Start the virtual file system
-var rootPath = @"C:\MyVirtualFS";
+var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(rootPath);
 
 using var vfs = new MyVirtualFileSystem(rootPath);
 vfs.Start(options: null);
 
 // The files are now accessible through Windows Explorer or any application
-var content = File.ReadAllText(Path.Combine(rootPath, "file1.txt")); // "Hello, World!"
+var content = File.ReadAllText(Path.Combine(rootPath, "file1.txt"));
+Assert.Equal("Hello, World!", content);
+Assert.Equal("Nested file", File.ReadAllText(Path.Combine(rootPath, "folder", "nested.txt")));
 ```
+<!-- endref -->
 
 ### Advanced Options
 
 Configure the virtual file system with start options:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_StartOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new ProjectedFileSystemStartOptions
 {
@@ -98,12 +109,13 @@ var options = new ProjectedFileSystemStartOptions
             PRJ_NOTIFY_TYPES.FILE_OPENED |
             PRJ_NOTIFY_TYPES.NEW_FILE_CREATED |
             PRJ_NOTIFY_TYPES.FILE_RENAMED |
-            PRJ_NOTIFY_TYPES.PRE_DELETE)
-    }
+            PRJ_NOTIFY_TYPES.PRE_DELETE),
+    },
 };
 
 vfs.Start(options);
 ```
+<!-- endref -->
 
 ## Key Classes
 
@@ -127,13 +139,19 @@ Protected helper methods:
 
 Represents a file or folder in the virtual file system:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_Entries;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Create a file entry
 var file = ProjectedFileSystemEntry.File("example.txt", length: 1024);
+Assert.False(file.IsDirectory);
+Assert.Equal(1024, file.Length);
 
 // Create a folder entry
 var folder = ProjectedFileSystemEntry.Directory("MyFolder");
+Assert.True(folder.IsDirectory);
+Assert.Equal("MyFolder", folder.Name);
 ```
+<!-- endref -->
 
 Properties:
 - `Name`: File or folder name
@@ -149,11 +167,14 @@ Configuration options when starting the file system:
 
 ### `PRJ_FILE_STATE` (Enum)
 
-Query the on-disk state of a file:
+Query the on-disk state of a file of the virtual file system started above:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_GetOnDiskFileState;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var state = ProjectedFileSystemBase.GetOnDiskFileState(@"C:\MyVirtualFS\file.txt");
+var state = ProjectedFileSystemBase.GetOnDiskFileState(Path.Combine(rootPath, "file1.txt"));
+Assert.True(state.HasFlag(PRJ_FILE_STATE.PRJ_FILE_STATE_HYDRATED_PLACEHOLDER)); // The content was read
 ```
+<!-- endref -->
 
 States:
 - `PRJ_FILE_STATE_PLACEHOLDER`: Virtual file (not yet hydrated)

@@ -3211,7 +3211,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         var options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true };
 
-        AssertSerialization("a­b‎c‮de⁦f", options, "a<U+00AD>b<U+200E>c<U+202E>d<U+0081>e<U+2066>f");
+        AssertSerialization("a\u00ADb\u200Ec\u202Ed\u0081e\u2066f", options, "a<U+00AD>b<U+200E>c<U+202E>d<U+0081>e<U+2066>f");
     }
 
     [Fact]

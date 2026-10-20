@@ -1442,7 +1442,7 @@ public class GlobTests
     [InlineData("*[￾-￿]", "a￿")]
     [InlineData("**/[￾-￿]/x", "a/￿/x")]
     [InlineData("[￿-￿]", "￿")]
-    [InlineData("[￸-￿]", "￻")]
+    [InlineData("[￸-￿]", "\uFFFB")]
     public void RangeEndingAtTheLastCharacterIsParsedAndMatched(string pattern, string path)
     {
         Assert.True(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot, out var glob));

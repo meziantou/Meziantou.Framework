@@ -362,7 +362,7 @@ public class MiscTests
     [InlineData("[a](", "")]
     [InlineData("![a](", "")]
     [InlineData("[a](()", "")]
-    [InlineData("[a]( ", "")]
+    [InlineData("[a](\u00A0", "")]
     [InlineData("[a]([a](<(>", "")]
     [InlineData("[a](b (", "")]
     [InlineData("[a](b (", ")x")]
@@ -394,7 +394,7 @@ public class MiscTests
     [InlineData("[a]([a]([a](b )", "<p>[a]([a](<a href=\"b\">a</a></p>")]
     [InlineData("[a]([a]([a](x)", "<p>[a]([a](<a href=\"x\">a</a></p>")]
     [InlineData("[a]([a](<(> )", "<p>[a](<a href=\"(\">a</a></p>")]
-    [InlineData("[a]( [a]( [a](b )", "<p>[a]( [a]( <a href=\"b\">a</a></p>")]
+    [InlineData("[a](\u00A0[a](\u00A0[a](b )", "<p>[a](\u00A0[a](\u00A0<a href=\"b\">a</a></p>")]
     [InlineData("[a](b ([a](b ([a](b (", "<p>[a](b ([a](b ([a](b (</p>")]
     [InlineData("[a](b ( [a](b (c) x", "<p>[a](b ( [a](b (c) x</p>")]
     [InlineData("[a](b (x) y [a](b (c))", "<p>[a](b (x) y <a href=\"b\" title=\"c\">a</a></p>")]
@@ -1097,7 +1097,7 @@ public class MiscTests
     [Fact]
     public void TestInvalidCodeEscape()
     {
-        var input = "```**Header**	";
+        var input = "```**Header**\t";
         _ = MarkdownConverter.ToHtml(input);
     }
 

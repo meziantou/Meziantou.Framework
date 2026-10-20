@@ -299,7 +299,7 @@ public class TestHtmlAttributes
     public void GenericAttributesScanOutcomesMatchTryParse()
     {
         // The outcomes computed in linear time must follow the steps of TryParse exactly
-        const string Alphabet = "{{}}##..=='\" \t\n \0aZ1_:-!";
+        const string Alphabet = "{{}}##..=='\" \t\n\u00A0\0aZ1_:-!";
         var state = 42UL;
         int Next(int maxValue)
         {

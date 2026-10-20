@@ -93,7 +93,7 @@ internal sealed class SvgImage
         try
         {
             var text = System.Text.Encoding.UTF8.GetString(image.Data.Span);
-            if (text.Length > 0 && text[0] == '﻿')
+            if (text.Length > 0 && text[0] == '\uFEFF')
             {
                 text = text[1..];
             }

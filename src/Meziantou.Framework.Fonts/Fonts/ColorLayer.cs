@@ -7,4 +7,4 @@ namespace Meziantou.Framework.Fonts;
 /// its color in the palette (<see cref="CpalTable.Foreground"/> for the color of the text).
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct ColorLayer(int Glyph, int PaletteIndex);
+public readonly record struct ColorLayer(int Glyph, int PaletteIndex);

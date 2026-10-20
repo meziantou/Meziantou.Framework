@@ -196,6 +196,11 @@ internal abstract class Fragment
     {
         var clone = (Fragment)MemberwiseClone();
         clone.Parent = null;
+        if (clone is BoxFragment box)
+        {
+            box.CloneRareData();
+        }
+
         if (_children.Length > 0)
         {
             var children = new Fragment[_children.Length];
@@ -236,8 +241,11 @@ internal sealed class BoxFragment : Fragment
     public BoxFragment(ContainerBox box, PhysicalSize size, Sides<double> border, Sides<double> padding, Sides<double> margin, Fragment[]? children)
         : base(box, size, children)
     {
-        Border = border;
-        Padding = padding;
+        if (border != default || padding != default)
+        {
+            _edges = new Edges(border, padding);
+        }
+
         Margin = margin;
         var layout = box.Style.Layout;
         WritingDirection = WritingDirection.FromStyle(layout);
@@ -279,10 +287,10 @@ internal sealed class BoxFragment : Fragment
     /// </summary>
     public double[]? SvgTransform
     {
-        get;
+        get => _rareData?.SvgTransform;
         set
         {
-            field = value;
+            GetRareData(value is not null)?.SvgTransform = value;
             _flags = value is null ? _flags : (_flags | OverflowFlags.Transformed) & ~OverflowFlags.OverflowComputed;
         }
     }
@@ -328,16 +336,31 @@ internal sealed class BoxFragment : Fragment
         public Sides<double?>? ResolvedInsets;
         public List<OutOfFlowCandidate>? PendingOutOfFlow;
         public PhysicalRect? ReplacedContentRect;
+        public PhysicalOffset RelativeOffset;
+        public double[]? SvgTransform;
+
+        public RareData Clone() => (RareData)MemberwiseClone();
     }
+
+    /// <summary>The borders and the paddings of a box that has some (most boxes have neither).</summary>
+    private sealed record Edges(Sides<double> Border, Sides<double> Padding);
+
+    /// <summary>The overflow rectangles of a box whose contents overflow its border box (see <see cref="EnsureOverflow"/>).</summary>
+    private sealed record OverflowRects(PhysicalRect Scrollable, PhysicalRect Ink);
 
     private OverflowFlags _flags;
     private RareData? _rareData;
     private ScrollContainerData? _scrollData;
+    private readonly Edges? _edges;
+
+    /// <summary>The overflow rectangles, or null when they are the border box (when <see cref="OverflowFlags.OverflowComputed"/> is set).</summary>
+    private OverflowRects? _overflow;
     private int _inFlowChildCount;
-    private PhysicalRect _scrollableOverflow;
-    private PhysicalRect _inkOverflow;
 
     private ScrollContainerData ScrollData => _scrollData ??= new ScrollContainerData();
+
+    /// <summary>Gives a copy of the fragment (see <see cref="Fragment.CloneSubtree"/>) its own rare data.</summary>
+    internal void CloneRareData() => _rareData = _rareData?.Clone();
 
     /// <summary>Returns the rare data to set a property, or null when it is not allocated and the value is the default one (which needs no storage).</summary>
     private RareData? GetRareData(bool hasValue) => hasValue ? _rareData ??= new RareData() : _rareData;
@@ -486,10 +509,10 @@ internal sealed class BoxFragment : Fragment
     public new ContainerBox Box => (ContainerBox)base.Box!;
 
     /// <summary>The used widths of the borders (https://drafts.csswg.org/css-backgrounds-3/#border-width).</summary>
-    public Sides<double> Border { get; }
+    public Sides<double> Border => _edges?.Border ?? default;
 
     /// <summary>The used paddings (https://drafts.csswg.org/css-box-4/#paddings).</summary>
-    public Sides<double> Padding { get; }
+    public Sides<double> Padding => _edges?.Padding ?? default;
 
     /// <summary>
     /// The used margins (https://drafts.csswg.org/css-box-4/#margins), after the resolution of the <c>auto</c> margins (not
@@ -538,7 +561,11 @@ internal sealed class BoxFragment : Fragment
     /// out of a relatively positioned inline box (see <see cref="ContainerBox.SplitInlineParent"/>): <see cref="Fragment.Offset"/>
     /// includes it (the parent adds it when it places the fragment).
     /// </summary>
-    public PhysicalOffset RelativeOffset { get; internal set; }
+    public PhysicalOffset RelativeOffset
+    {
+        get => _rareData?.RelativeOffset ?? default;
+        internal set => GetRareData(value != PhysicalOffset.Zero)?.RelativeOffset = value;
+    }
 
     /// <summary>
     /// The offset of a sticky positioned box (https://drafts.csswg.org/css-position-3/#stickypos-insets) for the current scroll
@@ -662,10 +689,22 @@ internal sealed class BoxFragment : Fragment
     /// The first baseline of the fragment (https://drafts.csswg.org/css-align-3/#first-baseline): the distance of the alphabetic
     /// baseline from the block-start edge of the border box, in the writing mode of the box, or null when it has no baseline.
     /// </summary>
-    public double? FirstBaseline { get; set; }
+    public double? FirstBaseline
+    {
+        get => double.IsNaN(_firstBaseline) ? null : _firstBaseline;
+        set => _firstBaseline = value ?? double.NaN;
+    }
 
     /// <summary>The last baseline of the fragment (https://drafts.csswg.org/css-align-3/#last-baseline), measured like <see cref="FirstBaseline"/>.</summary>
-    public double? LastBaseline { get; set; }
+    public double? LastBaseline
+    {
+        get => double.IsNaN(_lastBaseline) ? null : _lastBaseline;
+        set => _lastBaseline = value ?? double.NaN;
+    }
+
+    // (NaN when there is no baseline: a double? takes twice the space)
+    private double _firstBaseline = double.NaN;
+    private double _lastBaseline = double.NaN;
 
     /// <summary>
     /// The rectangle the replaced content of a replaced box is painted in (https://drafts.csswg.org/css-images-3/#the-object-fit):
@@ -866,7 +905,7 @@ internal sealed class BoxFragment : Fragment
         get
         {
             EnsureOverflow();
-            return _scrollableOverflow;
+            return _overflow?.Scrollable ?? BorderBoxRect;
         }
     }
 
@@ -880,7 +919,7 @@ internal sealed class BoxFragment : Fragment
         get
         {
             EnsureOverflow();
-            return _inkOverflow;
+            return _overflow?.Ink ?? BorderBoxRect;
         }
     }
 
@@ -1011,8 +1050,8 @@ internal sealed class BoxFragment : Fragment
         }
 
         var contents = ComputeOverflow(out var ink);
-        _scrollableOverflow = Unite(BorderBoxRect, contents);
-        _inkOverflow = ink;
+        var scrollable = Unite(BorderBoxRect, contents);
+        _overflow = scrollable == BorderBoxRect && ink == BorderBoxRect ? null : new OverflowRects(scrollable, ink);
         _flags |= OverflowFlags.OverflowComputed;
     }
 
@@ -1087,8 +1126,8 @@ internal sealed class BoxFragment : Fragment
             {
                 case BoxFragment box:
                     box.EnsureOverflow();
-                    var boxScrollable = box._scrollableOverflow;
-                    var boxInk = box._inkOverflow;
+                    var boxScrollable = box._overflow?.Scrollable ?? box.BorderBoxRect;
+                    var boxInk = box._overflow?.Ink ?? box.BorderBoxRect;
                     var flags = box._flags;
                     if ((flags & (OverflowFlags.ClipsX | OverflowFlags.ClipsY)) != OverflowFlags.None)
                     {

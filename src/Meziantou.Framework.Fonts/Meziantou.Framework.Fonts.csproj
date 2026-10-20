@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Version>1.0.0</Version>
-    <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts, and the shaping of complex scripts. Its API is internal to these packages.</Description>
+    <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts, and the shaping of complex scripts.</Description>
     <PackageTags>font;opentype;truetype;woff;woff2;cff;shaping;typography</PackageTags>
 
     <!-- Every member must be documented -->
@@ -16,16 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The API is internal: the packages that use it depend on the exact version of this package -->
-    <InternalsVisibleTo Include="Meziantou.Framework.Imaging" />
+    <!-- The tests, the fuzzing and the benchmarks also use the internal types -->
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
-    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
-    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
   </ItemGroup>
 </Project>

@@ -173,6 +173,9 @@ internal sealed partial class StyleEngine
 
     public Document Document => _document;
 
+    /// <summary>The groups of layout properties shared by the layout styles of the elements (see <see cref="Layout.LayoutStyleGroupTable"/>).</summary>
+    internal Layout.LayoutStyleGroupTable LayoutStyleGroups => field ??= new();
+
     /// <summary>
     /// Returns the random base value of a random caching key (https://drafts.csswg.org/css-values-5/#random-caching-key): a
     /// random number in [0, 1), the same for the lifetime of the document (or of the element when it is element-scoped).

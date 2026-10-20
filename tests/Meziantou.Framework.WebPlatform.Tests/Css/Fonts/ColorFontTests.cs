@@ -126,7 +126,7 @@ public sealed class ColorFontTests : IDisposable
         cpal.AsSpan(14).Clear();
         new byte[] { 1, 2, 3, 255, 40, 50, 60, 128 }.CopyTo(cpal, 14);
 
-        var font = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr), ("CPAL", cpal)))!.Faces[0];
+        var font = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data.Span, ("COLR", colr), ("CPAL", cpal)))!.Faces[0];
         var glyphs = font.ColorGlyphs;
         Assert.NotNull(glyphs);
         Assert.Equal(1, glyphs.PaletteCount);
@@ -143,7 +143,7 @@ public sealed class ColorFontTests : IDisposable
         Assert.False(glyphs.IsColorGlyph(6));
 
         // Without CPAL table, only the layers in the color of the text are drawn
-        glyphs = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr)))!.Faces[0].ColorGlyphs;
+        glyphs = FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data.Span, ("COLR", colr)))!.Faces[0].ColorGlyphs;
         Assert.NotNull(glyphs);
         Assert.Equal(0, glyphs.PaletteCount);
         Assert.True(glyphs.TryGetLayers(5, out layers));
@@ -152,9 +152,9 @@ public sealed class ColorFontTests : IDisposable
         // A table without base glyph record (e.g. only the paint graphs of the version 1) has no color glyph; a font whose
         // records are outside of the table is malformed, and is not loaded
         Write16(colr, 2, 0);
-        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr)))!.Faces[0].ColorGlyphs);
+        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data.Span, ("COLR", colr)))!.Faces[0].ColorGlyphs);
         Write16(colr, 2, 200);
-        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data, ("COLR", colr))));
+        Assert.Null(FontFile.Load(AddTables(BundledFonts.Ahem.Font.Data.Span, ("COLR", colr))));
         Assert.Null(BundledFonts.Ahem.Font.ColorGlyphs);
 
         static void Write16(byte[] data, int offset, ushort value) => BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(offset), value);
@@ -162,16 +162,16 @@ public sealed class ColorFontTests : IDisposable
     }
 
     /// <summary>Adds tables to an OpenType font (or replaces them): the table directory is written again, without checksums.</summary>
-    private static byte[] AddTables(byte[] font, params (string Tag, byte[] Data)[] added)
+    private static byte[] AddTables(ReadOnlySpan<byte> font, params (string Tag, byte[] Data)[] added)
     {
         var tables = new SortedDictionary<uint, byte[]>();
-        var count = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
+        var count = BinaryPrimitives.ReadUInt16BigEndian(font[4..]);
         for (var i = 0; i < count; i++)
         {
-            var record = font.AsSpan(12 + (i * 16), 16);
+            var record = font.Slice(12 + (i * 16), 16);
             var offset = (int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]);
             var length = (int)BinaryPrimitives.ReadUInt32BigEndian(record[12..]);
-            tables[BinaryPrimitives.ReadUInt32BigEndian(record)] = font.AsSpan(offset, length).ToArray();
+            tables[BinaryPrimitives.ReadUInt32BigEndian(record)] = font.Slice(offset, length).ToArray();
         }
 
         foreach (var (tag, data) in added)

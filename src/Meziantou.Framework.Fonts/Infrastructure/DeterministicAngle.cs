@@ -1,4 +1,10 @@
+// Compiled into Meziantou.Framework.Fonts and Meziantou.Framework.Imaging, internal to each. The copy of Imaging is in
+// its namespace: its tests see the internals of both assemblies, and find that copy first.
+#if MEZIANTOU_FRAMEWORK_IMAGING
+namespace Meziantou.Framework.Imaging;
+#else
 namespace Meziantou.Framework.Fonts;
+#endif
 
 /// <summary>
 /// The trigonometric functions the paints of a color glyph need, computed with additions, multiplications, divisions

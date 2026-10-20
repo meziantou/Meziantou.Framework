@@ -8,8 +8,38 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 // The groups of properties of LayoutStyle: each group is converted at once, on first access. The lengths are in CSS px,
 // multiplied by the effective zoom; the percentages are resolved by the layout.
 
+/// <summary>
+/// The groups of layout properties shared by the layout styles of a style engine: most elements have the same box model (no
+/// size, margin, padding nor border), the same text properties (they are inherited) and the same fragmentation properties, so
+/// a group equal to a group of another style is replaced by it. The groups are immutable values (records).
+/// </summary>
+internal sealed class LayoutStyleGroupTable
+{
+    // A document has few distinct groups; the table is emptied when it is full (e.g. the styles of an animation), the groups
+    // already shared stay valid
+    private const int MaxCount = 4096;
+
+    private readonly HashSet<object> _groups = [];
+
+    /// <summary>Returns the group of the table that is equal to <paramref name="group"/>, or adds it to the table.</summary>
+    public T Share<T>(T group)
+        where T : class, IEquatable<T>
+    {
+        if (_groups.TryGetValue(group, out var existing))
+            return (T)existing;
+
+        if (_groups.Count >= MaxCount)
+        {
+            _groups.Clear();
+        }
+
+        _groups.Add(group);
+        return group;
+    }
+}
+
 /// <summary>The box model (https://drafts.csswg.org/css-box-4/, https://drafts.csswg.org/css-sizing-3/): sizes, margins, paddings and borders.</summary>
-internal sealed class BoxModelStyle
+internal sealed record BoxModelStyle
 {
     internal BoxModelStyle(ComputedStyle style, double zoom)
     {
@@ -114,7 +144,7 @@ internal sealed class BoxModelStyle
 }
 
 /// <summary>The insets of the positioned boxes (https://drafts.csswg.org/css-position-3/#insets) and z-index.</summary>
-internal sealed class InsetStyle
+internal sealed record InsetStyle
 {
     internal InsetStyle(ComputedStyle style, double zoom)
     {
@@ -136,7 +166,7 @@ internal sealed class InsetStyle
 }
 
 /// <summary>The properties of the inline layout (https://drafts.csswg.org/css-inline-3/) and of the text (https://drafts.csswg.org/css-text-4/).</summary>
-internal sealed class TextLayoutStyle
+internal sealed record TextLayoutStyle
 {
     internal TextLayoutStyle(ComputedStyle style, double zoom, double fontSize)
     {
@@ -405,7 +435,7 @@ internal sealed class FontLayoutStyle
 }
 
 /// <summary>The properties of the flex layout (https://drafts.csswg.org/css-flexbox-1/), and of the legacy -webkit-box (https://compat.spec.whatwg.org/#the-webkit-box-orient-property).</summary>
-internal sealed class FlexLayoutStyle
+internal sealed record FlexLayoutStyle
 {
     internal FlexLayoutStyle(ComputedStyle style, double zoom)
     {
@@ -492,7 +522,7 @@ internal sealed class FlexLayoutStyle
 }
 
 /// <summary>The box alignment properties (https://drafts.csswg.org/css-align-3/) and the gaps.</summary>
-internal sealed class AlignmentStyle
+internal sealed record AlignmentStyle
 {
     internal AlignmentStyle(ComputedStyle style, double zoom)
     {
@@ -614,7 +644,7 @@ internal sealed class TableLayoutStyle
 }
 
 /// <summary>The properties of the multi-column layout (https://drafts.csswg.org/css-multicol-1/) and of the fragmentation (https://drafts.csswg.org/css-break-4/).</summary>
-internal sealed class FragmentationStyle
+internal sealed record FragmentationStyle
 {
     internal FragmentationStyle(ComputedStyle style, double zoom)
     {

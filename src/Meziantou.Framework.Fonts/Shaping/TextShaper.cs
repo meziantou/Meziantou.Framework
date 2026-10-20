@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Fonts;
 /// of the glyphs are used.
 /// </para>
 /// </remarks>
-internal static class TextShaper
+public static class TextShaper
 {
     // The bits of the mask of a glyph: the features of every glyph, then the features of the parts of a fraction.
     private const uint GlobalMask = 0x01;

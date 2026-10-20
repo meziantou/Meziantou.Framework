@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Fonts;
 /// The limits that bound the work of the font code on untrusted input: the bytes read and kept, the work of decoding a
 /// glyph and the glyphs of a shaped text. Exceeding a limit throws a <see cref="FontResourceLimitException"/>.
 /// </summary>
-internal sealed class FontResourceLimits
+public sealed class FontResourceLimits
 {
     /// <summary>The default maximum number of bytes read from a font file (256 MiB).</summary>
     public const long DefaultMaxEncodedBytes = 256L * 1024 * 1024;

@@ -4,9 +4,9 @@ namespace Meziantou.Framework.Fonts;
 /// How a glyph of mathematical layout grows along a direction: its larger forms, from the smallest, and the parts of
 /// the assembly that makes it as large as needed.
 /// </summary>
-internal sealed class MathGlyphConstruction
+public sealed class MathGlyphConstruction
 {
-    public MathGlyphConstruction(MathGlyphVariant[] variants, MathGlyphPart[] parts, int assemblyItalicsCorrection)
+    internal MathGlyphConstruction(MathGlyphVariant[] variants, MathGlyphPart[] parts, int assemblyItalicsCorrection)
     {
         Variants = variants;
         AssemblyParts = parts;

@@ -8,16 +8,20 @@ namespace Meziantou.Framework.Fonts;
 /// <see cref="FontResourceLimits.MaxFontBytes"/> when it is created: a font is an immutable object without owner or
 /// lifetime, so its bytes cannot be rented from a pool.
 /// </remarks>
-internal sealed class FontData
+public sealed class FontData
 {
-    public FontData(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps = false)
+    internal FontData(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
-        Bytes = bytes;
+        RawBytes = bytes;
         Environment = environment;
         UseEmbeddedBitmaps = useEmbeddedBitmaps;
     }
 
-    public byte[] Bytes { get; }
+    /// <summary>Gets the bytes of the font, in the sfnt format: a compressed container is expanded.</summary>
+    public ReadOnlyMemory<byte> Bytes => RawBytes;
+
+    /// <summary>Gets the array of <see cref="Bytes"/>, which the tables are read from in place.</summary>
+    internal byte[] RawBytes { get; }
 
     /// <summary>Gets the environment the font was loaded with.</summary>
     public FontEnvironment Environment { get; }

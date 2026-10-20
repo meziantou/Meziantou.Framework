@@ -305,9 +305,9 @@ internal sealed class ColorSurface : IDisposable
     private bool Evaluate(ColorGlyph glyph, in ColorPaint paint, in Affine2D inverse, int px, int py, out double red, out double green, out double blue, out double alpha)
     {
         if (paint.Kind == ColorPaintKind.Image)
-            return Sample(glyph.Image!, glyph.Numbers.AsSpan(paint.Geometry, 4), inverse.TransformX(px + 0.5, py + 0.5), inverse.TransformY(px + 0.5, py + 0.5), out red, out green, out blue, out alpha);
+            return Sample(glyph.Image!, glyph.Numbers.Slice(paint.Geometry, 4), inverse.TransformX(px + 0.5, py + 0.5), inverse.TransformY(px + 0.5, py + 0.5), out red, out green, out blue, out alpha);
 
-        var stops = glyph.Stops.AsSpan(paint.FirstStop, paint.StopCount);
+        var stops = glyph.Stops.Slice(paint.FirstStop, paint.StopCount);
         if (paint.Kind == ColorPaintKind.Solid)
         {
             Resolve(stops[0], px, py, out red, out green, out blue, out alpha);
@@ -317,7 +317,7 @@ internal sealed class ColorSurface : IDisposable
         // The center of the pixel, in the space of the paint.
         var x = inverse.TransformX(px + 0.5, py + 0.5);
         var y = inverse.TransformY(px + 0.5, py + 0.5);
-        var geometry = glyph.Numbers.AsSpan(paint.Geometry);
+        var geometry = glyph.Numbers[paint.Geometry..];
         double t;
         int line;
         switch (paint.Kind)
@@ -439,9 +439,9 @@ internal sealed class ColorSurface : IDisposable
         blue /= alpha;
         return true;
 
-        static void Add(byte[] pixels, int index, double weight, ref double red, ref double green, ref double blue, ref double alpha)
+        static void Add(ReadOnlySpan<byte> pixels, int index, double weight, ref double red, ref double green, ref double blue, ref double alpha)
         {
-            var pixel = pixels.AsSpan(index * 4, 4);
+            var pixel = pixels.Slice(index * 4, 4);
             var opacity = weight * (pixel[3] / 255.0);
             red += opacity * (pixel[0] / 255.0);
             green += opacity * (pixel[1] / 255.0);

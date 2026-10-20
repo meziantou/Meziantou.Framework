@@ -1,11 +1,16 @@
 # Meziantou.Extensions.Logging.Xunit.v3
 
+An `ILogger` that writes to the xUnit.net v3 test output. The types are in the `Meziantou.Extensions.Logging.Xunit.v3`
+namespace.
+
 ## Statically create XUnitLogger or XUnitLogger\<T\>
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs;region=XUnitLogger_CreateLogger;format=md-fenced-code-block;dedent=true -->
+```csharp
 ILogger logger = XUnitLogger.CreateLogger();
-ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>();
+ILogger<MyType> typedLogger = XUnitLogger.CreateLogger<MyType>();
 ```
+<!-- endref -->
 
 These overloads do not take an `ITestOutputHelper`. The logger resolves `TestContext.Current.TestOutputHelper`
 each time it writes, so it always targets the test that is currently running. This is the recommended way to log
@@ -13,10 +18,12 @@ from code whose lifetime is not tied to a single test, such as a host or a fixtu
 
 ## Statically create XUnitLogger or XUnitLogger\<T\> by passing an existing ITestOutputHelper
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs;region=XUnitLogger_CreateLoggerWithTestOutputHelper;format=md-fenced-code-block;dedent=true -->
+```csharp
 ILogger logger = XUnitLogger.CreateLogger(testOutputHelper);
-ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>(testOutputHelper);
+ILogger<MyType> typedLogger = XUnitLogger.CreateLogger<MyType>(testOutputHelper);
 ```
+<!-- endref -->
 
 A logger created this way writes to that specific helper. If the helper belongs to a test that has already
 finished, the log record is dropped instead of throwing.
@@ -25,8 +32,9 @@ finished, the log record is dropped instead of throwing.
 
 Every entry point accepts an optional `XUnitLoggerOptions`:
 
-```c#
-ILogger logger = XUnitLogger.CreateLogger(testOutputHelper, new XUnitLoggerOptions
+<!-- ref:../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs;region=XUnitLogger_Options;format=md-fenced-code-block;dedent=true -->
+```csharp
+ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>(testOutputHelper, new XUnitLoggerOptions
 {
     IncludeLogLevel = true,
     IncludeCategory = true,
@@ -35,9 +43,15 @@ ILogger logger = XUnitLogger.CreateLogger(testOutputHelper, new XUnitLoggerOptio
     UseUtcTimestamp = true,
 });
 
+using (logger.BeginScope("TheScope"))
+{
+    logger.LogWarning("Something happened");
+}
+
 // 12:20:41.812 warn [MyNamespace.MyType] Something happened
 //  => TheScope
 ```
+<!-- endref -->
 
 | Property | Default | Effect |
 | --- | --- | --- |
@@ -49,14 +63,16 @@ ILogger logger = XUnitLogger.CreateLogger(testOutputHelper, new XUnitLoggerOptio
 
 ## Register the logger with dependency injection
 
-```c#
-var host = new HostBuilder()
+<!-- ref:../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs;region=XUnitLogger_AddXunit;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var host = new HostBuilder()
     .ConfigureLogging(builder =>
     {
         builder.AddXunit();
     })
     .Build();
 ```
+<!-- endref -->
 
 `AddXunit` has four overloads: no argument, an `ITestOutputHelper`, an `XUnitLoggerOptions`, or both. Use the
 parameterless one to write to whichever test is running, and pass an `ITestOutputHelper` only when you need to
@@ -69,30 +85,35 @@ ambiguous and does not compile. Call `AddXunit()` to say "no test output helper"
 
 ## Using WebApplicationFactory
 
-If you are using a `WebApplicationFactory`:
+If you are using a `WebApplicationFactory` (from the `Microsoft.AspNetCore.Mvc.Testing` package):
 
-```c#
+<!-- ref:../../samples/Meziantou.Extensions.Logging.Xunit.v3.Samples/UnitTest1.cs;region=XUnitLogger_WebApplicationFactory;format=md-fenced-code-block;dedent=true -->
+```csharp
 public class UnitTest1(ITestOutputHelper testOutputHelper)
 {
     [Fact]
     public async Task Test1()
     {
-        using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
+        using var application = new WebApplicationFactory<Program>();
+        using var factory = application.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureLogging(builder =>
             {
-                builder.ConfigureLogging(builder =>
-                {
-                    // You can override the logging configuration if needed
-                    //builder.SetMinimumLevel(LogLevel.Trace);
-                    //builder.AddFilter(_ => true);
+                // You can override the logging configuration if needed
+                //builder.SetMinimumLevel(LogLevel.Trace);
+                //builder.AddFilter(_ => true);
 
-                    // Register the xUnit logger provider
-                    builder.AddXunit(testOutputHelper, new XUnitLoggerOptions { IncludeScopes = true });
-                });
+                // Register the xUnit logger provider
+                builder.AddXunit(testOutputHelper, new XUnitLoggerOptions { IncludeScopes = true });
             });
+        });
+
+        using var client = factory.CreateClient();
+        _ = await client.GetStringAsync(new Uri("/", UriKind.Relative), TestContext.Current.CancellationToken);
     }
 }
 ```
+<!-- endref -->
 
 If the factory outlives the test that created it, prefer `builder.AddXunit()` without the helper so each record
 goes to the test that is running when it is written.

@@ -10,22 +10,23 @@ Before using it, read [Security considerations](#security-considerations) below.
 
 **Note:** Administrator privileges are required to set or remove values in LSA private data storage.
 
+`LsaPrivateData` is in the `Meziantou.Framework.Win32` namespace.
+
 ### Store a value
 
+<!-- ref:../../samples/Meziantou.Framework.Win32.Lsa.Samples/Program.cs;region=LsaPrivateData_SetValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
 // Requires administrator privileges
 LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
 ```
+<!-- endref -->
 
 ### Retrieve a value
 
+<!-- ref:../../samples/Meziantou.Framework.Win32.Lsa.Samples/Program.cs;region=LsaPrivateData_GetValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
-string? value = LsaPrivateData.GetValue("L$MySecretKey");
-if (value != null)
+var value = LsaPrivateData.GetValue("L$MySecretKey");
+if (value is not null)
 {
     Console.WriteLine($"Retrieved value: {value}");
 }
@@ -34,15 +35,16 @@ else
     Console.WriteLine("Key not found");
 }
 ```
+<!-- endref -->
 
 ### Remove a value
 
+<!-- ref:../../samples/Meziantou.Framework.Win32.Lsa.Samples/Program.cs;region=LsaPrivateData_RemoveValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
 // Requires administrator privileges
 LsaPrivateData.RemoveValue("L$MySecretKey");
 ```
+<!-- endref -->
 
 Removing a key that does not exist does nothing.
 

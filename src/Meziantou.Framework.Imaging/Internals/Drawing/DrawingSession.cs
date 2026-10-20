@@ -894,7 +894,7 @@ internal sealed partial class DrawingSession : IDisposable
         var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
 
         // The glyphs along the path can be seen where the path is not
-        SetDrawingScale(measure, DrawingGuard.MaxCoordinate);
+        SetDrawingScale(measure, DrawingGuard.MaxCoordinate, DrawingGuard.MaxCoordinate);
         measure.Reset();
         PathFlattener.Flatten(path, measure);
         return measure;
@@ -996,7 +996,7 @@ internal sealed partial class DrawingSession : IDisposable
         _cancellationToken.ThrowIfCancellationRequested();
         var recorder = _strokeRecorder ??= new PathRecorder(_image.Owner.Scope);
         recorder.Reset();
-        SetDrawingScale(recorder, GetStrokeReach(pen, widthFactor: 2));
+        SetDrawingScale(recorder, GetCurveReach(pen, widthFactor: 2), GetStrokeReach(pen, widthFactor: 2));
         return recorder;
     }
 
@@ -1010,7 +1010,7 @@ internal sealed partial class DrawingSession : IDisposable
         var isPlacedFirst = IsPlacedBeforeStroke(pen);
         var hasOutputTransform = (_hasTransform || _isProjective) && !isPlacedFirst;
         var scale = hasOutputTransform ? _transformScale : 1;
-        ProjectiveView? projection = hasOutputTransform && UsesProjectiveGeometry ? GeometryView.Inflate(0, GetStrokeReach(pen, widthFactor)) : null;
+        ProjectiveView? projection = hasOutputTransform && UsesProjectiveGeometry ? GeometryView.Inflate(0, GetCurveReach(pen, widthFactor), GetStrokeReach(pen, widthFactor)) : null;
         if (projection is { } outputProjection)
         {
             stroker.SetOutput(outputProjection);
@@ -1074,9 +1074,31 @@ internal sealed partial class DrawingSession : IDisposable
         return sink;
     }
 
-    /// <summary>Gets the distance from its path a stroke can reach: half its width, its miters, or anywhere with markers.</summary>
+    /// <summary>
+    /// Gets the distance from its path a stroke can reach: half its width, its miters (only those of a pen that miters
+    /// its corners), the corners of its square caps, or anywhere with markers.
+    /// </summary>
     private static double GetStrokeReach(Pen pen, double widthFactor)
-        => pen.HasMarkers ? DrawingGuard.MaxCoordinate : pen.StrokeWidth * widthFactor * Math.Max(pen.MiterLimit, 1) / 2;
+    {
+        if (pen.HasMarkers)
+            return DrawingGuard.MaxCoordinate;
+
+        var factor = Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, pen.LineCap == LineCap.Square ? Math.Sqrt(2) : 1);
+        return pen.StrokeWidth * widthFactor * factor / 2;
+    }
+
+    /// <summary>
+    /// Gets the distance from the inside of a curve a stroke can reach: half its width, or the corners of the square caps
+    /// of its dashes. Its vertices there are smooth: they have round joins, never a miter.
+    /// </summary>
+    private static double GetCurveReach(Pen pen, double widthFactor)
+    {
+        if (pen.HasMarkers)
+            return DrawingGuard.MaxCoordinate;
+
+        var factor = pen.LineCap == LineCap.Square ? Math.Sqrt(2) : 1;
+        return pen.StrokeWidth * widthFactor * factor / 2;
+    }
 
     /// <summary>Gets a value indicating whether the path of a stroke is placed on the canvas before the pen strokes it: the pen is then not transformed with the path.</summary>
     private bool IsPlacedBeforeStroke(Pen pen) => (_hasTransform || _isProjective) && !pen.IsScaled;

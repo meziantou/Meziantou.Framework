@@ -710,6 +710,27 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void TheMiterLimitDoesNotChangeHowFinelyAnEllipseIsCutInPerspective()
+    {
+        // An ellipse narrower than the pen, on a plane whose horizon is about 100 pixels away from it. The miters of the
+        // pen once made the whole curve reach that horizon, where it was cut 65,536 times finer: 160,000 crossing
+        // pieces, 33 s per stroke (fuzzing), even with bevel joins. An ellipse has no corner, so no miter.
+        var transform = new ProjectiveTransform(0.5, 0, 0, -0.4854, -0.4854, -0.00735, 66.24, 66.24, 1.0037);
+        var center = new PointD(23.2, -1);
+        foreach (var join in (LineJoin[])[LineJoin.Miter, LineJoin.Bevel, LineJoin.Round])
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(10));
+            using var limited = NewBlack(133, 132);
+            using var unlimited = NewBlack(133, 132);
+            limited.Frames[0].Draw(canvas => canvas.Transform(transform, plane => plane.StrokeEllipse(new Pen(White, 57.6) { LineJoin = join, MiterLimit = 1 }, center, 9.4, 33.4)), budget.Token);
+            unlimited.Frames[0].Draw(canvas => canvas.Transform(transform, plane => plane.StrokeEllipse(new Pen(White, 57.6) { LineJoin = join, MiterLimit = 588 }, center, 9.4, 33.4)), budget.Token);
+            Assert.Equal(DrawingTestSupport.ReadSamples(limited.Frames[0]), DrawingTestSupport.ReadSamples(unlimited.Frames[0]));
+            Assert.Contains(DrawingTestSupport.ReadSamples(limited.Frames[0]), sample => sample != 0);
+        }
+    }
+
+    [Fact]
     public void AWidePenCoversTheCanvasWhateverTheTransformation()
     {
         // Dots 4 million pixels wide, one every half pixel, through a transformation: the image of a layer of a rectangle

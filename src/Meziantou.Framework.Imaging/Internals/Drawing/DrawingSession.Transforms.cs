@@ -268,11 +268,12 @@ internal sealed partial class DrawingSession
     /// <summary>Gives a sink that receives the coordinates of the drawing the factor its curves are cut finer by.</summary>
     /// <param name="sink">The sink.</param>
     /// <param name="reach">The distance in the drawing around a curve that what is drawn from it can reach.</param>
-    private void SetDrawingScale(PathSink sink, double reach)
+    /// <param name="endReach">The distance in the drawing around the ends of a curve that what is drawn from it can reach.</param>
+    private void SetDrawingScale(PathSink sink, double reach, double endReach)
     {
         sink.Scale = _transformScale;
         sink.Tolerance = _curveTolerance;
-        sink.Projection = UsesProjectiveGeometry ? GeometryView.Inflate(0, reach) : null;
+        sink.Projection = UsesProjectiveGeometry ? GeometryView.Inflate(0, reach, endReach) : null;
     }
 
     /// <summary>A transformation of the stack, as it was before the one that follows it started.</summary>

@@ -114,8 +114,15 @@ internal static class UrlCanonicalizer
         if (value.Length == 0)
             return value;
 
+        // The host parser reads a value that starts with '[' as an IPv6 address, which must be valid and is serialized
+        // in its compressed form, such as "[::1]" for "[0:0:0:0:0:0:0:1]"
         if (value[0] is '[')
-            return CanonicalizeIPv6Hostname(value);
+        {
+            if (!HostParser.TryParse(value, isOpaque: false, out var host))
+                throw new UrlPatternException($"Invalid hostname: '{value}' is not a valid IPv6 address");
+
+            return host;
+        }
 
         var domain = PercentEncoding.Decode(value);
         if (!HostParser.TryDomainToAscii(domain, out var asciiDomain))

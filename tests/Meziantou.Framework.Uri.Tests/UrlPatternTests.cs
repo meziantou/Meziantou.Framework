@@ -1803,6 +1803,25 @@ public sealed class UrlPatternTests
     }
 
     [Theory]
+    // A literal part of a hostname that starts with '[' is parsed as an IPv6 address
+    [InlineData("http://[/")]
+    [InlineData("http://*[1]/")]
+    [InlineData("http://*[1:2]/")]
+    public void Create_HostnameLiteralThatIsNotAnIPv6Address_Throws(string pattern)
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(pattern));
+    }
+
+    [Fact]
+    public void IsMatch_IPv6HostnameOfAnInit_IsSerialized()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = @"[\:\:ab]" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Hostname = "[0:0:0:0:0:0:0:AB]" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Hostname = "[0:0:0:0:0:0:0:AB" }));
+    }
+
+    [Theory]
     [InlineData("HTTPS", "https")]
     [InlineData("https:", "https")]
     [InlineData("HTTPS:", "https")]

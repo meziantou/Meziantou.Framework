@@ -6,6 +6,26 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public sealed class NoVarySearchTests
 {
     [Fact]
+    public async Task ReadmeExample_NoVarySearch()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=3600"), ("No-Vary-Search", "params=(\"utm_source\")"));
+        var httpClient = context.HttpClient;
+
+        #region HttpCachingDelegateHandler_NoVarySearch
+        // Server responds with:
+        // Cache-Control: max-age=3600
+        // No-Vary-Search: params=("utm_source")
+
+        using var response1 = await httpClient.GetAsync("https://api.example.com/data?utm_source=newsletter");
+        using var response2 = await httpClient.GetAsync("https://api.example.com/data?utm_source=twitter"); // Served from cache
+        using var response3 = await httpClient.GetAsync("https://api.example.com/data"); // Served from cache
+        Assert.NotNull(response2.Headers.Age); // The cache adds the Age header to the responses it serves
+        Assert.NotNull(response3.Headers.Age);
+        #endregion
+    }
+
+    [Fact]
     public async Task WhenParameterIsIgnoredThenUsesCache()
     {
         await using var context = new HttpTestContext();

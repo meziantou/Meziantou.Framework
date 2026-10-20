@@ -1,4 +1,6 @@
 using System.Net;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
@@ -6,6 +8,24 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 /// <summary>Tests that a failing <see cref="IHttpCacheStore"/> degrades to no caching, not to a failed request.</summary>
 public sealed class StoreFailureTests
 {
+    [Fact]
+    public async Task ReadmeExample_OnStoreError()
+    {
+        ILogger logger = NullLogger.Instance;
+
+        #region HttpCachingOptions_OnStoreError
+        var options = new HttpCachingOptions
+        {
+            OnStoreError = ex => logger.LogWarning(ex, "HTTP cache store failure"),
+        };
+        #endregion
+
+        using var innerHandler = new StubHandler();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new ThrowingStore(failReads: true, failWrites: true), options);
+        using var client = new HttpClient(handler);
+        Assert.Equal("from-origin", await client.GetStringAsync("http://example.com/resource", CancellationToken.None));
+    }
+
     [Fact]
     public async Task WhenSetEntryThrowsThenTheOriginResponseIsStillReturned()
     {

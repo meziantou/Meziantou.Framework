@@ -7,6 +7,32 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public sealed class VaryHeaderTests
 {
     [Fact]
+    public async Task ReadmeExample_Vary()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "en-content", ("Cache-Control", "max-age=3600"), ("Vary", "Accept-Language"));
+        context.AddResponse(HttpStatusCode.OK, "fr-content", ("Cache-Control", "max-age=3600"), ("Vary", "Accept-Language"));
+        var httpClient = context.HttpClient;
+
+        #region HttpCachingDelegateHandler_Vary
+        // Server responds with:
+        // Cache-Control: max-age=3600
+        // Vary: Accept-Language
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+        request1.Headers.Add("Accept-Language", "en-US");
+        using var response1 = await httpClient.SendAsync(request1); // Caches with Accept-Language=en-US
+
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+        request2.Headers.Add("Accept-Language", "fr-FR");
+        using var response2 = await httpClient.SendAsync(request2); // Fetches new response and caches separately
+        Assert.Null(response2.Headers.Age); // The cache adds the Age header only to the responses it serves
+        #endregion
+
+        Assert.Equal("fr-content", await response2.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task WhenVaryHeaderMatchesThenUsesCache()
     {
         await using var context = new HttpTestContext();

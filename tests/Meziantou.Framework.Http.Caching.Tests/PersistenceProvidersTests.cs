@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.Sqlite;
 using Meziantou.Framework.Http.Caching.InMemory;
 using Meziantou.Framework.Http.Caching.Redis;
@@ -13,6 +14,24 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 
 public class PersistenceProvidersTests
 {
+    [Fact]
+    public async Task ReadmeExample_DependencyInjection()
+    {
+        var services = new ServiceCollection();
+
+        #region HttpCachingDelegateHandler_DependencyInjection
+        services.AddSingleton<IHttpCacheStore, InMemoryHttpCacheStore>();
+        services.AddTransient<HttpCachingDelegateHandler>();
+
+        services.AddHttpClient("MyApi")
+            .AddHttpMessageHandler<HttpCachingDelegateHandler>();
+        #endregion
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        using var httpClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("MyApi");
+        Assert.NotNull(httpClient);
+    }
+
     [Fact]
     public async Task CustomPersistenceProviderCanBeConfiguredUsingCachingOptions()
     {

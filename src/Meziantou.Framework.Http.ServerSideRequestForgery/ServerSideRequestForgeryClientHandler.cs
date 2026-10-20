@@ -8,10 +8,14 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery;
 /// HTTP/3 is not protected. Prefer this handler over calling <c>ConfigureSsrf</c> directly.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryClientHandlerTests.cs" ref:region="ServerSideRequestForgeryClientHandler_Example" ref:dedent="true">
 /// var options = new ServerSideRequestForgeryOptions();
 /// var handler = new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options);
 /// using var client = new HttpClient(handler, disposeHandler: true);
+///
+/// // Requests to a loopback or private address are rejected before connecting
+/// var exception = await Assert.ThrowsAsync&lt;HttpRequestException&gt;(() =&gt; client.GetAsync(new Uri("https://127.0.0.1/")));
+/// Assert.IsType&lt;ServerSideRequestForgeryException&gt;(exception.InnerException);
 /// </code>
 /// </example>
 public sealed class ServerSideRequestForgeryClientHandler : DelegatingHandler

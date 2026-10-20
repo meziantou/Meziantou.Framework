@@ -6,13 +6,14 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Represents a log entry captured by an in-memory logger.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogEntry_Example" ref:dedent="true">
 /// var logger = InMemoryLogger.CreateLogger("sample");
 /// logger.LogInformation("User {UserId} logged in", 123);
-/// 
+///
 /// var log = logger.Logs.Informations.Single();
-/// Console.WriteLine(log.Message); // "User 123 logged in"
-/// log.TryGetParameterValue("UserId", out var userId); // userId = 123
+/// Assert.Equal("User 123 logged in", log.Message);
+/// Assert.True(log.TryGetParameterValue("UserId", out var userId));
+/// Assert.Equal(123, userId);
 /// </code>
 /// </example>
 public sealed class InMemoryLogEntry

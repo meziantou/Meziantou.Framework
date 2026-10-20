@@ -15,12 +15,15 @@ namespace Meziantou.AspNetCore.Components;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
-/// // In Program.cs or Startup.cs
+/// Register the service in <c>Program.cs</c>:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Program.cs" ref:region="QueryStringService_Registration" ref:dedent="true">
 /// builder.Services.AddQueryStringParameters();
-///
-/// // In a component
+/// </code>
+/// Use it in a component:
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Examples/QueryStringServiceExample.razor">
 /// @inject QueryStringService QueryStringService
+///
+/// &lt;input type="search" value="@SearchTerm" @onchange="e =&gt; UpdateSearch(e.Value as string)" /&gt;
 ///
 /// @code {
 ///     [Parameter]
@@ -37,7 +40,7 @@ namespace Meziantou.AspNetCore.Components;
 ///         QueryStringService.SetParametersFromQueryString(this);
 ///     }
 ///
-///     private async Task UpdateSearch(string newSearchTerm)
+///     private async Task UpdateSearch(string? newSearchTerm)
 ///     {
 ///         SearchTerm = newSearchTerm;
 ///         // Update the URL with new query string parameters

@@ -18,6 +18,23 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void HstsDomainPolicyCollection_Example()
+    {
+        #region HstsDomainPolicyCollection_Example
+        // Create a collection with preloaded domains from the Chromium HSTS preload list
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        Assert.True(policies.MustUpgradeRequest("github.com"));
+
+        // Add a custom domain policy
+        policies.Add("example.com", TimeSpan.FromDays(365), includeSubdomains: true);
+
+        // Check if a domain should be upgraded to HTTPS
+        Assert.True(policies.MustUpgradeRequest("example.com"));
+        Assert.True(policies.MustUpgradeRequest("www.example.com"));
+        #endregion
+    }
+
+    [Fact]
     public void HstsCollection_Add_VeryLargeMaxAge_Saturates()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

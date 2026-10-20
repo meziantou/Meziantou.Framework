@@ -1,0 +1,9 @@
+<Project Sdk="Meziantou.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
+  </ItemGroup>
+</Project>

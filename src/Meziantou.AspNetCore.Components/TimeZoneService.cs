@@ -14,18 +14,24 @@ namespace Meziantou.AspNetCore.Components;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
-/// // In Program.cs or Startup.cs
+/// Register the service in <c>Program.cs</c>:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Program.cs" ref:region="TimeZoneService_Registration" ref:dedent="true">
 /// builder.Services.AddTimeZoneServices();
-///
-/// // In a component
+/// </code>
+/// Use it in a component:
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Examples/TimeZoneServiceExample.razor">
 /// @inject TimeZoneService TimeZoneService
 ///
+/// &lt;button @onclick="ConvertToLocalTime"&gt;Show the local time&lt;/button&gt;
+/// &lt;p&gt;@localTime&lt;/p&gt;
+///
 /// @code {
+///     private DateTimeOffset? localTime;
+///
 ///     private async Task ConvertToLocalTime()
 ///     {
 ///         var utcTime = DateTimeOffset.UtcNow;
-///         var localTime = await TimeZoneService.GetLocalDateTimeAsync(utcTime);
+///         localTime = await TimeZoneService.GetLocalDateTimeAsync(utcTime);
 ///     }
 /// }
 /// </code>

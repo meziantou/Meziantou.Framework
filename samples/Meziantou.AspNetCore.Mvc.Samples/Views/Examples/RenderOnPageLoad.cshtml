@@ -1,0 +1,9 @@
+@* Defer loading of non-critical stylesheet *@
+<render-on-page-load>
+    <link rel="stylesheet" href="/css/non-critical.css" />
+</render-on-page-load>
+
+@* Defer loading with custom ID *@
+<render-on-page-load id="analytics-scripts">
+    <script src="/js/analytics.js"></script>
+</render-on-page-load>

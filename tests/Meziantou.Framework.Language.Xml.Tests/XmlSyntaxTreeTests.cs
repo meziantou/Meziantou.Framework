@@ -390,9 +390,9 @@ public sealed class XmlSyntaxTreeTests
     {
         #region XmlFormattingOptions_Format
         var tree = XmlSyntaxTree.ParseText("<root><item id=\"1\"/></root>");
-        var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n" };
+        var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n", SpaceAroundEquals = true };
         var formatted = Formatter.Format(tree.GetRoot(), options);
-        Assert.Equal("<root>\r\n    <item id=\"1\" />\r\n</root>", formatted.ToFullString());
+        Assert.Equal("<root>\r\n    <item id = \"1\" />\r\n</root>", formatted.ToFullString());
         #endregion
     }
 

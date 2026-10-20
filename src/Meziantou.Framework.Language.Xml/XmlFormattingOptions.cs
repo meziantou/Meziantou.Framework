@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Language.Xml;
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlFormattingOptions_Format" ref:dedent="true">
 /// var tree = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item id=\"1\"/&gt;&lt;/root&gt;");
-/// var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n" };
+/// var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n", SpaceAroundEquals = true };
 /// var formatted = Formatter.Format(tree.GetRoot(), options);
-/// Assert.Equal("&lt;root&gt;\r\n    &lt;item id=\"1\" /&gt;\r\n&lt;/root&gt;", formatted.ToFullString());
+/// Assert.Equal("&lt;root&gt;\r\n    &lt;item id = \"1\" /&gt;\r\n&lt;/root&gt;", formatted.ToFullString());
 /// </code>
 /// </example>
 public sealed class XmlFormattingOptions

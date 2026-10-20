@@ -26,7 +26,7 @@ internal sealed partial class StyleEngine
     /// </summary>
     private readonly Dictionary<Element, string[]> _pseudoElementStyleNames = new(ReferenceEqualityComparer.Instance);
 
-    /// <summary>The names of the pseudo-elements whose styles <see cref="RecalculateAllStyles"/> computes for every element, in its order.</summary>
+    /// <summary>The combinations of the pseudo-elements whose styles <see cref="RecalculateStyles"/> computes for an element, in its order.</summary>
     private static readonly string[][] CommonPseudoElementStyleNames =
     [
         ["marker"], ["marker", "before"], ["marker", "before", "after"], ["marker", "after"], ["before"], ["before", "after"], ["after"],

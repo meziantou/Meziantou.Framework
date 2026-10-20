@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>What an operation of the display list of a color glyph does.</summary>
-internal enum ColorOpKind
+public enum ColorOpKind
 {
     /// <summary>Fills the outline of a glyph with a paint, over what is already drawn, within the clip.</summary>
     FillGlyph,

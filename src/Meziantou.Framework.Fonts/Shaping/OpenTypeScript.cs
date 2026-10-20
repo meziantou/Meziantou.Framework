@@ -3,8 +3,9 @@ namespace Meziantou.Framework.Fonts;
 /// <summary>
 /// Gives the script tags of the OpenType Layout tables for a Unicode script: OpenType specification, "Script Tags".
 /// </summary>
-internal static class OpenTypeScript
+public static class OpenTypeScript
 {
+    /// <summary>The tag 'DFLT' of the default script.</summary>
     public const uint Default = ((uint)'D' << 24) | ((uint)'F' << 16) | ((uint)'L' << 8) | 'T';
     private const uint LowercaseDefault = ((uint)'d' << 24) | ((uint)'f' << 16) | ((uint)'l' << 8) | 't';
     private const uint Latin = ((uint)'l' << 24) | ((uint)'a' << 16) | ((uint)'t' << 8) | 'n';

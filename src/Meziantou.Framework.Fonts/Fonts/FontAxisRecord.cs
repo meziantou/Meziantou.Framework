@@ -4,9 +4,9 @@ namespace Meziantou.Framework.Fonts;
 
 /// <summary>An axis of a variable font. The values are 16.16 fixed-point numbers, in the units of the axis.</summary>
 [StructLayout(LayoutKind.Auto)]
-internal readonly struct FontAxisRecord
+public readonly struct FontAxisRecord
 {
-    public FontAxisRecord(uint tag, int minimum, int @default, int maximum, bool isHidden, int nameId)
+    internal FontAxisRecord(uint tag, int minimum, int @default, int maximum, bool isHidden, int nameId)
     {
         Tag = tag;
         Minimum = minimum;
@@ -16,12 +16,16 @@ internal readonly struct FontAxisRecord
         NameId = nameId;
     }
 
+    /// <summary>Gets the tag of the axis, such as <c>wght</c>, as a big-endian integer.</summary>
     public uint Tag { get; }
 
+    /// <summary>Gets the smallest value of the axis.</summary>
     public int Minimum { get; }
 
+    /// <summary>Gets the value of the axis in the default instance.</summary>
     public int Default { get; }
 
+    /// <summary>Gets the largest value of the axis.</summary>
     public int Maximum { get; }
 
     /// <summary>Gets a value indicating whether the font asks that the axis is not shown to the users.</summary>

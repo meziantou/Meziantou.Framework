@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Fonts;
 /// place. The bytes read are bounded by <see cref="FontResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
 /// by <see cref="FontResourceLimits.MaxFontBytes"/>.
 /// </remarks>
-internal static class FontLoader
+public static class FontLoader
 {
     private const int ChunkLength = 64 * 1024;
 
@@ -30,6 +30,11 @@ internal static class FontLoader
         return Parse(data.ToArray(), environment, useEmbeddedBitmaps);
     }
 
+    /// <summary>Reads the faces of a font file from a stream.</summary>
+    /// <param name="stream">The stream of the font file, read to its end.</param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
+    /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static FontFace[] Load(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
         var limits = environment.Limits;
@@ -61,6 +66,12 @@ internal static class FontLoader
         return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
     }
 
+    /// <summary>Reads the faces of a font file from a stream, asynchronously.</summary>
+    /// <param name="stream">The stream of the font file, read to its end.</param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static async Task<FontFace[]> LoadAsync(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -181,7 +192,7 @@ internal static class FontLoader
     /// <summary>Reads the header of a font collection: OpenType specification, "Font Collections".</summary>
     private static FontFace[] ParseCollection(FontData data)
     {
-        var file = data.Bytes.AsSpan();
+        var file = data.RawBytes.AsSpan();
         var majorVersion = FontBinary.UInt16(file, 4);
         if (majorVersion is not (1 or 2))
             throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");

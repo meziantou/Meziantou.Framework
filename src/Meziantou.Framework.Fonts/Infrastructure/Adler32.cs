@@ -3,7 +3,13 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
+// Compiled into Meziantou.Framework.Fonts and Meziantou.Framework.Imaging, internal to each. The copy of Imaging is in
+// its namespace: its tests see the internals of both assemblies, and find that copy first.
+#if MEZIANTOU_FRAMEWORK_IMAGING
+namespace Meziantou.Framework.Imaging;
+#else
 namespace Meziantou.Framework.Fonts;
+#endif
 
 /// <summary>The Adler-32 checksum of RFC 1950 (zlib): the checksum of the tables of a WOFF file, and of the zlib streams of the image codecs.</summary>
 /// <remarks>

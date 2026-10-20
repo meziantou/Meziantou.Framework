@@ -106,7 +106,7 @@ internal sealed partial class OpenTypeFont
     internal SharedFontFace Face { get; }
 
     /// <summary>The sfnt data of the file (shared by the faces of a collection).</summary>
-    public byte[] Data => File.Data;
+    public ReadOnlyMemory<byte> Data => File.Data;
 
     /// <summary>The number of font units per em (<c>head.unitsPerEm</c>).</summary>
     public int UnitsPerEm => Face.UnitsPerEm;

@@ -7,4 +7,4 @@ namespace Meziantou.Framework.Fonts;
 /// at its end, its full size along the direction of the assembly (in font units), and whether it can be repeated.
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct MathGlyphPart(int Glyph, int StartConnectorLength, int EndConnectorLength, int FullAdvance, bool IsExtender);
+public readonly record struct MathGlyphPart(int Glyph, int StartConnectorLength, int EndConnectorLength, int FullAdvance, bool IsExtender);

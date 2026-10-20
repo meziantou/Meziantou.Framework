@@ -869,7 +869,7 @@ public sealed class FontTests
         Assert.Equal(5, exception.Requested);
 
         var bomb = LoadCff(cff);
-        Assert.HasCountLessThan(1024, bomb.Face.Data.Bytes);
+        Assert.HasCountLessThan(1024, bomb.Face.Data.RawBytes);
         exception = Assert.Throws<ImageResourceLimitException>(() => FontTestSupport.GetOutline(bomb, 1));
         Assert.Equal(ImageResourceLimitKind.GlyphComplexity, exception.Kind);
         Assert.Equal(ImageResourceLimits.DefaultMaxGlyphComplexity, exception.Limit);
@@ -1504,7 +1504,7 @@ public sealed class FontTests
         AssertSameFont(Font.Load(original), font, sameGlyphBytes: true);
 
         // The expanded font is the original one, table for table; only the unused checksum fields may differ.
-        Assert.HasCount(original.Length, font.Face.Data.Bytes);
+        Assert.HasCount(original.Length, font.Face.Data.RawBytes);
     }
 
     [Fact]
@@ -1585,7 +1585,7 @@ public sealed class FontTests
 
         // WOFF2: the rebuilt font has its glyphs padded to four bytes.
         var woff2 = FontWoff2Writer.Write(builder);
-        var rebuiltLength = Font.Load(woff2).Face.Data.Bytes.Length;
+        var rebuiltLength = Font.Load(woff2).Face.Data.RawBytes.Length;
         Assert.Equal(13, Font.Load(woff2, Options(rebuiltLength)).GlyphCount);
         exception = Assert.Throws<ImageResourceLimitException>(() => Font.Load(woff2, Options(rebuiltLength - 1)));
         Assert.Equal(ImageResourceLimitKind.FontBytes, exception.Kind);

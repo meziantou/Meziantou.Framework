@@ -10,4 +10,4 @@ namespace Meziantou.Framework.Fonts;
 /// <param name="Alpha">The opacity, from 0 to 1.</param>
 /// <param name="IsForeground">Whether the color is the one of the text: its components are then those of the brush the text is drawn with, and <paramref name="Alpha"/> multiplies its opacity.</param>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct ColorStop(double Offset, double Red, double Green, double Blue, double Alpha, bool IsForeground);
+public readonly record struct ColorStop(double Offset, double Red, double Green, double Blue, double Alpha, bool IsForeground);

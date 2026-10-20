@@ -11,7 +11,7 @@
 
 namespace Meziantou.Framework.Fonts;
 
-internal static partial class OpenTypeLanguage
+public static partial class OpenTypeLanguage
 {
     private const int CodeCount = 1462;
 

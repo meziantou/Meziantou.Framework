@@ -353,12 +353,8 @@ internal sealed class ColrTable
 
             FontErrors.EnsureCoordinates(xMin, yMin);
             FontErrors.EnsureCoordinates(xMax, yMax);
-            return new ColorGlyph
+            return new ColorGlyph([.. _ops], [.. _paints], [.. _stops], [.. _numbers])
             {
-                Ops = [.. _ops],
-                Paints = [.. _paints],
-                Stops = [.. _stops],
-                Numbers = [.. _numbers],
                 XMin = xMin,
                 YMin = yMin,
                 XMax = xMax,

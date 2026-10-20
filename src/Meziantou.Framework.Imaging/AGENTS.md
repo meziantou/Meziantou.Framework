@@ -17,7 +17,7 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - Fully managed, no native dependency, and two package dependencies of this repository: `Meziantou.Framework.Unicode`,
   the Unicode algorithms text layout needs (properties, normalization, scripts, segmentation, bidi), which is itself
   fully managed and independent of ICU, and `Meziantou.Framework.Fonts`, the font reader and the shaper (see its
-  [AGENTS.md](../Meziantou.Framework.Fonts/AGENTS.md)), whose internal API the library uses with an exact version.
+  [AGENTS.md](../Meziantou.Framework.Fonts/AGENTS.md)), whose public API the library uses with an exact version.
   Nothing else (`ApiSurfaceTests`). The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
 - Write implementations from the format specifications. Never copy or port code from other image libraries

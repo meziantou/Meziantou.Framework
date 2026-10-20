@@ -1,7 +1,6 @@
 using SharedFontException = Meziantou.Framework.Fonts.FontException;
 using SharedFontFace = Meziantou.Framework.Fonts.FontFace;
 using SharedFontLoader = Meziantou.Framework.Fonts.FontLoader;
-using SharedFontTags = Meziantou.Framework.Fonts.FontTags;
 using SharedOutlineKind = Meziantou.Framework.Fonts.FontOutlineKind;
 using SharedPooledFontEnvironment = Meziantou.Framework.Fonts.PooledFontEnvironment;
 using SharedResourceLimits = Meziantou.Framework.Fonts.FontResourceLimits;
@@ -44,7 +43,7 @@ internal sealed class FontFile
 
     private readonly OpenTypeFont[] _faces;
 
-    private FontFile(FontFileFormat format, byte[] data, int faceCount)
+    private FontFile(FontFileFormat format, ReadOnlyMemory<byte> data, int faceCount)
     {
         Format = format;
         Data = data;
@@ -61,10 +60,10 @@ internal sealed class FontFile
     public FontFileFormat Format { get; }
 
     /// <summary>The sfnt data: an OpenType font, or a font collection when <see cref="IsCollection"/> is true.</summary>
-    public byte[] Data { get; }
+    public ReadOnlyMemory<byte> Data { get; }
 
     /// <summary>Whether <see cref="Data"/> is a font collection (a <c>ttcf</c> file, or a WOFF2 file of a collection).</summary>
-    public bool IsCollection => FontBinary.U32(Data, 0) == OpenTypeTag.Collection;
+    public bool IsCollection => FontBinary.U32(Data.Span, 0) == OpenTypeTag.Collection;
 
     /// <summary>The font faces of the file (one, except for a collection).</summary>
     public IReadOnlyList<OpenTypeFont> Faces => _faces;
@@ -102,7 +101,7 @@ internal sealed class FontFile
 
         // A WOFF2 file can hold a collection
         var bytes = faces[0].Data.Bytes;
-        if (knownFormat == FontFileFormat.OpenType && FontBinary.U32(bytes, 0) == OpenTypeTag.Collection)
+        if (knownFormat == FontFileFormat.OpenType && FontBinary.U32(bytes.Span, 0) == OpenTypeTag.Collection)
         {
             knownFormat = FontFileFormat.Collection;
         }
@@ -133,6 +132,6 @@ internal sealed class FontFile
     private static bool HasOutlines(SharedFontFace face)
     {
         var tags = face.TableTags;
-        return face.Outlines != SharedOutlineKind.None || tags.Contains(SharedFontTags.Cbdt) || tags.Contains(SharedFontTags.Sbix) || tags.Contains(OpenTypeTag.Svg);
+        return face.Outlines != SharedOutlineKind.None || tags.Contains(OpenTypeTag.Cbdt) || tags.Contains(OpenTypeTag.Sbix) || tags.Contains(OpenTypeTag.Svg);
     }
 }

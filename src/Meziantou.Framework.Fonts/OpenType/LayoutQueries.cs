@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Fonts;
 /// feature does to a glyph or to a pair of glyphs. The lookups are those of the default language system of a script.
 /// </summary>
 /// <remarks>Each call reads the tables: a caller that asks often keeps the answers.</remarks>
-internal static class LayoutQueries
+public static class LayoutQueries
 {
     /// <summary>The tag of the default script, and the scripts a feature of a script is looked for in after it.</summary>
     public static readonly uint DefaultScript = ShapingFeature.ToTag("DFLT");

@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>The kinds of paints of a color glyph.</summary>
-internal enum ColorPaintKind
+public enum ColorPaintKind
 {
     /// <summary>One color.</summary>
     Solid,

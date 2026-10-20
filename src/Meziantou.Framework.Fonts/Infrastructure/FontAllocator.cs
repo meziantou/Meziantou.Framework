@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>The storage of the temporary buffers of an operation of the font code, bounded by a number of live bytes.</summary>
-internal abstract class FontAllocator
+public abstract class FontAllocator
 {
     /// <summary>Gets the maximum number of bytes that can be rented at the same time.</summary>
     public abstract long Limit { get; }

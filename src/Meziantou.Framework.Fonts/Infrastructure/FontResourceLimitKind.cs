@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>The limits of <see cref="FontResourceLimits"/> and of a <see cref="FontAllocator"/>.</summary>
-internal enum FontResourceLimitKind
+public enum FontResourceLimitKind
 {
     /// <summary>The bytes read from a font file (<see cref="FontResourceLimits.MaxEncodedBytes"/>).</summary>
     EncodedBytes,

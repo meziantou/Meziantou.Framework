@@ -12,10 +12,12 @@ Generate code to access the content of resx files. It does provides more methods
 </root>
 ````
 
-````c#
-_ = Sample.Hello; // Hello {0}
-_ = Sample.FormatHello("meziantou"); // Hello meziantou
-````
+<!-- ref:../../tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/ResxGeneratorTests.cs;region=ResxSourceGenerator_Format;format=md-fenced-code-block;dedent=true -->
+```csharp
+Assert.Equal("Hello {0}!", Sample.Hello);
+Assert.Equal("Hello meziantou!", Sample.FormatHello("meziantou"));
+```
+<!-- endref -->
 
 The generator also supports binary resources and expose them as `byte[]`.
 

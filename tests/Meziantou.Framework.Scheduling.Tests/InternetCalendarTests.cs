@@ -1299,6 +1299,26 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void ToIcs_OmitsTheIdAndTheSummaryMadeOfControlCharactersOnly()
+    {
+        // TEXT escaping drops the control characters, which leaves nothing to write, as for an empty value
+        var ics = CreateCalendarWithEvent(new Event { Id = "\u0001", Summary = "\u000C\u001B" }).ToIcs();
+
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("UID", StringComparison.Ordinal) || line.StartsWith("SUMMARY", StringComparison.Ordinal));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
+    }
+
+    [Fact]
+    public void Parse_WritesBackTheSummaryMadeOfControlCharactersOnlyTheSameWayOnceParsed()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("UID:\u000C", "SUMMARY:\u0001"));
+
+        var ics = calendar.ToIcs();
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("UID", StringComparison.Ordinal) || line.StartsWith("SUMMARY", StringComparison.Ordinal));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
+    }
+
+    [Fact]
     public void ToIcs_OmitsTheStartWhenItIsNotSet()
     {
         var ics = CreateCalendarWithEvent(new Event { Summary = "No start" }).ToIcs();

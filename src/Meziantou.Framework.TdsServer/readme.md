@@ -26,13 +26,11 @@ on the local machine.
 
 ## Usage
 
-```csharp
-using System.Net;
-using System.Security.Claims;
-using Meziantou.Framework.Tds;
-using Meziantou.Framework.Tds.Handler;
-using Meziantou.Framework.Tds.Hosting;
+The examples import the `Meziantou.Framework.Tds`, `Meziantou.Framework.Tds.Handler` and
+`Meziantou.Framework.Tds.Hosting` namespaces, as well as `System.Net` and `System.Security.Claims`.
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.AddTdsServer(options =>
 {
@@ -41,7 +39,7 @@ builder.AddTdsServer(options =>
 
 var app = builder.Build();
 app.MapTdsHandlers(
-    authenticate: async (context, cancellationToken) =>
+    authenticate: (context, cancellationToken) =>
     {
         if (context.UserName == "sa" && context.Password == "Password123!")
         {
@@ -51,12 +49,12 @@ app.MapTdsHandlers(
                 new Claim(ClaimTypes.Name, context.UserName ?? "sa"),
             ],
             authenticationType: "password");
-            return TdsAuthenticationResult.Success(userContext: new ClaimsPrincipal(identity));
+            return ValueTask.FromResult(TdsAuthenticationResult.Success(userContext: new ClaimsPrincipal(identity)));
         }
 
-        return TdsAuthenticationResult.Fail("Login failed");
+        return ValueTask.FromResult(TdsAuthenticationResult.Fail("Login failed"));
     },
-    query: async (context, cancellationToken) =>
+    query: (context, cancellationToken) =>
     {
         var user = context.UserContext;
 
@@ -66,19 +64,20 @@ app.MapTdsHandlers(
 
         var result = new TdsQueryResult();
         result.ResultSets.Add(resultSet);
-        return result;
+        return ValueTask.FromResult(result);
     });
 
 app.Run();
 ```
+<!-- endref -->
 
 ## Built-in query engine
 
 The low-level query callback can be backed by the built-in query engine. It maps RPC requests to configured delegates and translates simple SQL text queries to typed `IQueryable` expressions.
+The query engine is in the `Meziantou.Framework.Tds.QueryEngine` namespace, and `Customer` is a `record Customer(int Id, string Name)`.
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_QueryEngine;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Tds.QueryEngine;
-
 var customers = new[]
 {
     new Customer(1, "Alice"),
@@ -90,7 +89,7 @@ queryEngineOptions.AddQueryRoot(
     "customers",
     context =>
     {
-        if (int.TryParse(context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        if (int.TryParse(context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier), CultureInfo.InvariantCulture, out var userId))
         {
             return customers.Where(customer => customer.Id == userId);
         }
@@ -102,7 +101,7 @@ queryEngineOptions.StoredProcedures.Add(
     (TdsQueryContext context, int id) =>
     {
         var userIdClaim = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdClaim, out var userId))
+        if (!int.TryParse(userIdClaim, CultureInfo.InvariantCulture, out var userId))
         {
             return Array.Empty<Customer>().AsQueryable();
         }
@@ -113,6 +112,7 @@ queryEngineOptions.StoredProcedures.Add(
 app.MapTdsAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()));
 app.MapTdsQueryEngine(queryEngineOptions);
 ```
+<!-- endref -->
 
 Query roots are resolved per request and receive the full query `context`, so you can prefilter data for the authenticated user (or use other request metadata) before SQL translation happens.
 
@@ -120,6 +120,7 @@ Stored procedure delegates can also declare a `TdsQueryContext` parameter (and o
 
 You can also deny access to a specific stored procedure or query root:
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_Authorization;format=md-fenced-code-block;dedent=true -->
 ```csharp
 queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
 {
@@ -140,6 +141,7 @@ queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
     return true;
 };
 ```
+<!-- endref -->
 
 When authorization is denied, the built-in query engine returns a permission-denied error (SQL-style error `229`, class `14`). Unknown roots or stored procedures remain distinct errors.
 
@@ -169,10 +171,11 @@ Main unsupported SQL features include `LIKE`, recursive CTEs, many advanced subq
 
 The query callback gives you access to both SQL batch text and RPC/stored-procedure metadata:
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_AccessRequest;format=md-fenced-code-block;dedent=true -->
 ```csharp
 app.MapTdsHandlers(
-    authenticate: async (context, cancellationToken) => TdsAuthenticationResult.Success(),
-    query: async (context, cancellationToken) =>
+    authenticate: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+    query: (context, cancellationToken) =>
     {
         if (context.RequestType == TdsQueryRequestType.SqlBatch)
         {
@@ -196,9 +199,10 @@ app.MapTdsHandlers(
 
         var user = context.UserContext; // ClaimsPrincipal from authentication result, if any
 
-        return new TdsQueryResult();
+        return ValueTask.FromResult(new TdsQueryResult());
     });
 ```
+<!-- endref -->
 
 ## TLS configuration
 
@@ -207,6 +211,7 @@ For `Microsoft.Data.SqlClient` interoperability, the server negotiates TLS 1.2 f
 
 ### PFX
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_TlsPfx;format=md-fenced-code-block;dedent=true -->
 ```csharp
 builder.AddTdsServer(options =>
 {
@@ -215,9 +220,11 @@ builder.AddTdsServer(options =>
     options.TlsPfxPassword = "Password123!";
 });
 ```
+<!-- endref -->
 
 ### PEM certificate + private key
 
+<!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_TlsPem;format=md-fenced-code-block;dedent=true -->
 ```csharp
 builder.AddTdsServer(options =>
 {
@@ -226,5 +233,6 @@ builder.AddTdsServer(options =>
     options.TlsPemPrivateKeyPath = "certificates/server.key.pem";
 });
 ```
+<!-- endref -->
 
 Use client connection strings with `Encrypt=True` to require TLS, or `Encrypt=Optional` to allow non-TLS on the same endpoint.

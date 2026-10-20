@@ -6,6 +6,28 @@ namespace Meziantou.Framework.DiffEngine.Tests;
 public sealed class DiffToolsTests
 {
     [Fact]
+    public void ReadmeExample_FindTool()
+    {
+        // Make the example independent of the diff tools installed on the machine
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var diffToolScope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var targetPositionScope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null);
+
+        #region DiffTools_TryFindByName
+        if (DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool))
+        {
+            var arguments = tool.GetArguments("received.json", "verified.json");
+            Assert.Equal("--diff received.json verified.json", arguments);
+
+            // Start the tool with Process.Start(tool.ExePath, arguments)
+        }
+        #endregion
+
+        Assert.NotNull(tool);
+    }
+
+    [Fact]
     public void TryFindByName_UsesEnvironmentVariableFilePath()
     {
         using var temp = TemporaryDirectory.Create();

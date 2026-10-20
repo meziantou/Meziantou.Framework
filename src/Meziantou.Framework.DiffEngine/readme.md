@@ -16,13 +16,17 @@ This package is designed for snapshot testing scenarios and is API-compatible wi
 
 ## Example
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.DiffEngine.Tests/DiffToolsTests.cs;region=DiffTools_TryFindByName;format=md-fenced-code-block;dedent=true -->
+```csharp
 if (DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool))
 {
     var arguments = tool.GetArguments("received.json", "verified.json");
-    Console.WriteLine($"{tool.ExePath} {arguments}");
+    Assert.Equal("--diff received.json verified.json", arguments);
+
+    // Start the tool with Process.Start(tool.ExePath, arguments)
 }
-````
+```
+<!-- endref -->
 
 ## Environment variables
 

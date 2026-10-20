@@ -28,7 +28,7 @@ every CI build.
 ## Running
 
 `eng/run-fuzz.ps1` publishes the targets, instruments the library, and runs each target with libFuzzer (Linux only, see
-[fuzz/README.md](../../../fuzz/README.md#running-a-campaign)). The weekly `fuzz-sharpfuzz` workflow runs every target, caches its
+[fuzz/README.md](../../../fuzz/README.md#running-a-campaign)). The weekly `fuzz-sharpfuzz` workflow runs every target, keeps its
 corpus from run to run, and opens an issue for each failed target:
 
 ```bash

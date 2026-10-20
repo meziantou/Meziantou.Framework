@@ -10,7 +10,7 @@ only (libfuzzer-dotnet uses System V shared memory).
 Every target gets a directory under OutputDirectory/results/<target>: the libFuzzer log, the failing input libFuzzer
 wrote (crash-*, timeout-*, oom-*), result.json, and failure.md, the body of the issue that
 eng/report-fuzz-crashes.ps1 opens. The corpus each target reaches is kept under CorpusDirectory/<target>, minimized,
-so that the next campaign starts from it (the weekly workflow caches it).
+so that the next campaign starts from it (the weekly workflow uploads it as an artifact).
 
 Exits with code 1 when a target fails.
 #>
@@ -206,7 +206,7 @@ foreach ($target in $Targets) {
         Set-Content -LiteralPath (Join-Path $targetDirectory 'failure.md') -Value $body.ToString()
     }
     else {
-        # Keep only the inputs that add coverage, so that the cached corpus does not grow without bound
+        # Keep only the inputs that add coverage, so that the saved corpus does not grow without bound
         $merged = Join-Path $targetDirectory 'merged-corpus'
         New-Item -ItemType Directory -Path $merged | Out-Null
         & $LibFuzzer "--target_path=$executable" "--target_arg=$target" "-timeout=$TimeoutSeconds" '-merge=1' $merged $corpus 2>&1 | Out-Null

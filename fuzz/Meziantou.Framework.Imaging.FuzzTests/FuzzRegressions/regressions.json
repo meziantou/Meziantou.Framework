@@ -1,5 +1,5 @@
 {
-  "description": "Minimized inputs that made the fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests/MutationFuzzTests.cs) fail, and hand-authored variants of the same defects. Malformed-input regressions only: never valid-image pixel references. Validated and replayed by FuzzRegressionTests. See tests/Meziantou.Framework.Imaging.Fixtures/README.md.",
+  "description": "Minimized inputs that made the fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests/MutationFuzzTests.cs, and FontFuzzTests.cs for the entries of \"kind\": \"font\") fail, and hand-authored variants of the same defects. Malformed-input regressions only: never valid-image pixel references. Validated and replayed by FuzzRegressionTests. See tests/Meziantou.Framework.Imaging.Fixtures/README.md.",
   "regressions": [
     {
       "id": "png/idat-zlib-preset-dictionary-min",
@@ -164,6 +164,28 @@
       "foundBy": "FuzzTests group heic-sequence, weekly campaign (run 39012479568), base seed 39012479568, 420 s, mutation 69864 of invalid/heic/sequence-ctts-collision (reader variant 64); not reducible by FuzzMinimizer, which moves the offsets of the container",
       "defect": "The first sample of the track is presented last (composition offset 67,108,868) and the only edit starts at the presentation time of the second one: header identification, which locates the first sample only, took its time for the first presentation time and threw UnsupportedImageFeatureException while full identification and the loads accepted the edit list. Fixed in HeifMovieBox: the first presentation time is the smallest one of every sample, located or not.",
       "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "font/axis-name-outside-name-table",
+      "file": "font-axis-name-outside-name-table.otf",
+      "sha256": "511985efe682e6f6b97d567ecf6c2df5b1ed85218332fa321bd764da683f0e6a",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "kind": "font",
+      "foundBy": "FontFuzzTests, weekly campaign (run 39448128288), base seed 39448128288, 120 s, mutation 5723 of fonts/synthetic-variable-charstrings; not reducible by FuzzMinimizer (1164 bytes)",
+      "defect": "The string of the name record of an axis of fvar is outside the name table: FontFace.GetName threw InvalidFontException while Font was created (CreateAxes), an exception Font.Load does not document. Fixed in NameTable: a record whose string is outside the table is ignored, as if the font did not have it.",
+      "expectedLoad": "success"
+    },
+    {
+      "id": "font/instance-name-outside-name-table",
+      "file": "font-instance-name-outside-name-table.ttf",
+      "sha256": "c9e49f51fc2452ec381dca95f9aed283e90933a21c891a18006de12d617593c5",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "kind": "font",
+      "foundBy": "FontFuzzTests, weekly campaign (run 39448128288), base seed 39448128288, 120 s, mutation 679 of fonts/trt-gvar-composite; not reducible by FuzzMinimizer (3592 bytes)",
+      "defect": "The string of the name record of a named instance of fvar is outside the name table: FontFace.GetName threw InvalidFontException while Font was created (CreateNamedInstances), an exception Font.Load does not document. Fixed in NameTable: a record whose string is outside the table is ignored, as if the font did not have it.",
       "expectedLoad": "success"
     }
   ]

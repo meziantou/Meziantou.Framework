@@ -10,14 +10,16 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// </summary>
 internal sealed class RunShapeCache
 {
-    // A run usually has one shaped text; more when it is split by forced line breaks or bidi levels, or styled by ::first-line
+    // A run usually has one shaped text, kept in the cache itself; more when it is split by forced line breaks or bidi levels,
+    // or styled by ::first-line, kept in the other entries (allocated on first use)
     private const int Capacity = 4;
 
-    // (the arrays grow up to the capacity: most runs have one entry)
-    private (string Text, FontFallbackList Fonts, TextShapingOptions Options, ShapedText Shaped)[] _entries = [];
+    private Entry _first;
+    private Entry[]? _others;
     private int _count;
     private int _next;
 
+    // (the array of the slices grows up to the capacity: most runs have none or one)
     private (ShapedText Source, int Start, int End, ShapedText Slice)[] _slices = [];
     private int _sliceCount;
     private int _nextSlice;
@@ -29,7 +31,7 @@ internal sealed class RunShapeCache
         {
             for (var i = 0; i < cache._count; i++)
             {
-                ref readonly var entry = ref cache._entries[i];
+                ref readonly var entry = ref cache.GetEntry(i);
                 if (ReferenceEquals(entry.Fonts, fonts) && entry.Options == options && text.SequenceEqual(entry.Text))
                     return entry.Shaped;
             }
@@ -41,7 +43,9 @@ internal sealed class RunShapeCache
         // (the text of the entry of the cache of the fonts is shared)
         var shaped = TextShaper.ShapeWithCachedText(text, fonts, options, out var key);
         cache ??= GetOrCreate(run);
-        Add(ref cache._entries, ref cache._count, ref cache._next, (key ?? text.ToString(), fonts, options, shaped));
+        cache.GetEntry(cache._next) = new Entry(key ?? text.ToString(), fonts, options, shaped);
+        cache._next = (cache._next + 1) % Capacity;
+        cache._count = Math.Min(cache._count + 1, Capacity);
         return shaped;
     }
 
@@ -64,21 +68,15 @@ internal sealed class RunShapeCache
         }
 
         var slice = shaped.Slice(start, end);
-        Add(ref cache._slices, ref cache._sliceCount, ref cache._nextSlice, (shaped, start, end, slice));
-        return slice;
-    }
-
-    /// <summary>Adds an entry to the entries of a cache, replacing the oldest one when the capacity is reached.</summary>
-    private static void Add<T>(ref T[] entries, ref int count, ref int next, T entry)
-    {
-        if (count == entries.Length && count < Capacity)
+        if (cache._sliceCount == cache._slices.Length && cache._sliceCount < Capacity)
         {
-            Array.Resize(ref entries, Math.Min(Math.Max(count * 2, 1), Capacity));
+            Array.Resize(ref cache._slices, Math.Min(Math.Max(cache._sliceCount * 2, 1), Capacity));
         }
 
-        entries[next] = entry;
-        next = (next + 1) % Capacity;
-        count = Math.Min(count + 1, Capacity);
+        cache._slices[cache._nextSlice] = (shaped, start, end, slice);
+        cache._nextSlice = (cache._nextSlice + 1) % Capacity;
+        cache._sliceCount = Math.Min(cache._sliceCount + 1, Capacity);
+        return slice;
     }
 
     private static RunShapeCache GetOrCreate(TextRun run)
@@ -91,4 +89,15 @@ internal sealed class RunShapeCache
 
         return cache;
     }
+
+    private ref Entry GetEntry(int index)
+    {
+        if (index == 0)
+            return ref _first;
+
+        _others ??= new Entry[Capacity - 1];
+        return ref _others[index - 1];
+    }
+
+    private readonly record struct Entry(string Text, FontFallbackList Fonts, TextShapingOptions Options, ShapedText Shaped);
 }

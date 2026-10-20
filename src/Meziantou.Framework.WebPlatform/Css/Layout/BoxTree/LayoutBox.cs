@@ -148,6 +148,7 @@ internal sealed class ContainerBox : LayoutBox
 
     /// <summary>The properties that few boxes have (allocated on first use).</summary>
     private RareData? _rareData;
+    private LayoutCaches? _caches;
 
     public ContainerBoxKind Kind { get; }
 
@@ -314,25 +315,41 @@ internal sealed class ContainerBox : LayoutBox
         : Element ?? (IsFieldsetContent || IsTextControlInnerEditor ? Style.Element : null);
 
     /// <summary>The cache of the intrinsic inline sizes of the box for a layout pass (see <see cref="IntrinsicSizing.GetIntrinsicInlineSizes"/>), or null.</summary>
-    internal IntrinsicSizesCache? IntrinsicSizesCache { get; set; }
+    internal IntrinsicSizesCache? IntrinsicSizesCache
+    {
+        get => _caches?.IntrinsicSizes;
+        set => GetCaches(value is not null)?.IntrinsicSizes = value;
+    }
 
     /// <summary>
     /// The layout pass that last asked for the scrollbar gutters of the box to size it from its contents, before its layout
     /// (<see cref="IntrinsicSizing.GetScrollbarGutters"/>), and the scrollbars that were assumed (see <see cref="LayoutEngine.UpdateLayout"/>).
     /// </summary>
-    internal int ScrollbarGuttersPass { get; set; }
+    internal int ScrollbarGuttersPass { get => _rareData?.ScrollbarGuttersPass ?? 0; set => GetRareData().ScrollbarGuttersPass = value; }
 
     /// <summary>The scrollbars assumed by the layout pass <see cref="ScrollbarGuttersPass"/>.</summary>
-    internal Scrollbars AssumedScrollbars { get; set; }
+    internal Scrollbars AssumedScrollbars { get => _rareData?.AssumedScrollbars ?? Scrollbars.None; set => GetRareData().AssumedScrollbars = value; }
 
     /// <summary>The last measure of the intrinsic block size of the box in the layout pass (see <see cref="LayoutContext.MeasureIntrinsicBlockSize"/>), or null.</summary>
-    internal IntrinsicBlockSizeCache? IntrinsicBlockSizeCache { get; set; }
+    internal IntrinsicBlockSizeCache? IntrinsicBlockSizeCache
+    {
+        get => _caches?.IntrinsicBlockSize;
+        set => GetCaches(value is not null)?.IntrinsicBlockSize = value;
+    }
 
     /// <summary>The result of the last layout of the box, used again by the next layout passes that lay it out in the same constraint space (see <see cref="LayoutResultCache"/>), or null.</summary>
-    internal LayoutResultCacheEntry? LayoutResult { get; set; }
+    internal LayoutResultCacheEntry? LayoutResult
+    {
+        get => _caches?.LayoutResult;
+        set => GetCaches(value is not null)?.LayoutResult = value;
+    }
 
     /// <summary>The result of the last layout of the box that measured its intrinsic block size (see <see cref="ConstraintSpace.MeasuresIntrinsicBlockSize"/>, <see cref="LayoutResultCache"/>), or null.</summary>
-    internal LayoutResultCacheEntry? MeasureLayoutResult { get; set; }
+    internal LayoutResultCacheEntry? MeasureLayoutResult
+    {
+        get => _caches?.MeasureLayoutResult;
+        set => GetCaches(value is not null)?.MeasureLayoutResult = value;
+    }
 
     /// <summary>
     /// Whether the children are laid out by a formatting context other than block and inline layout (flex, grid, table,
@@ -433,8 +450,22 @@ internal sealed class ContainerBox : LayoutBox
 
     private RareData GetRareData() => _rareData ??= new RareData();
 
+    /// <summary>Returns the caches to set one, or null when they are not allocated and the value is null (which needs no storage).</summary>
+    private LayoutCaches? GetCaches(bool hasValue) => hasValue ? _caches ??= new LayoutCaches() : _caches;
+
+    /// <summary>The caches of the layout of the box (the inline boxes, most of the boxes, have none: they are laid out by their block container).</summary>
+    private sealed class LayoutCaches
+    {
+        public IntrinsicSizesCache? IntrinsicSizes;
+        public IntrinsicBlockSizeCache? IntrinsicBlockSize;
+        public LayoutResultCacheEntry? LayoutResult;
+        public LayoutResultCacheEntry? MeasureLayoutResult;
+    }
+
     private sealed class RareData
     {
+        public int ScrollbarGuttersPass;
+        public Scrollbars AssumedScrollbars;
         public ContainerBox? Continuation;
         public ContainerBox? PreviousContinuation;
         public ComputedStyle? FirstLineStyle;

@@ -23,6 +23,14 @@ public class ReferenceFilterResult
     /// </summary>
     public const decimal TieWindow = 0.0000001m;
 
+    /// <summary>
+    /// The distance to the rounding boundary under which either neighbor is accepted for the integer resize of the library
+    /// (8-bit samples without translucent pixels, filtered as stored): its weights have 14 fractional bits and its
+    /// intermediate rows 16 bits, which moves a sum by up to about 0.02 sample units (0.0184 at most over 59 million
+    /// samples of photos, noise and gradients). A sample further than this from a boundary must still be correctly rounded.
+    /// </summary>
+    public const decimal FixedPointTieWindow = 0.05m;
+
     private readonly decimal[] _values;
 
     private readonly string _description;
@@ -41,6 +49,9 @@ public class ReferenceFilterResult
 
     /// <summary>Gets the output width.</summary>
     public int Width { get; }
+
+    /// <summary>Gets the distance to the rounding boundary under which either neighbor is accepted (<see cref="TieWindow"/> by default).</summary>
+    public decimal AcceptedTieWindow { get; init; } = TieWindow;
 
     /// <summary>Gets the output height.</summary>
     public int Height { get; }
@@ -166,7 +177,7 @@ public class ReferenceFilterResult
         var biased = value + TieBias;
         var floor = decimal.Floor(biased);
         int Clamp(decimal v) => (int)Math.Clamp(v, 0, Layout.MaxSampleValue);
-        return Math.Abs(biased - floor - 0.5m) <= TieWindow ? (Clamp(floor), Clamp(floor + 1)) : (RoundHalfUp(value), RoundHalfUp(value));
+        return Math.Abs(biased - floor - 0.5m) <= AcceptedTieWindow ? (Clamp(floor), Clamp(floor + 1)) : (RoundHalfUp(value), RoundHalfUp(value));
     }
 
     private int RoundHalfUp(decimal value) => (int)Math.Clamp(decimal.Floor(value + 0.5m + TieBias), 0, Layout.MaxSampleValue);

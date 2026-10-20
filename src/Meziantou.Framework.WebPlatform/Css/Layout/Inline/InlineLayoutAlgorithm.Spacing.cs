@@ -65,24 +65,54 @@ internal sealed partial class InlineLayoutAlgorithm
         if (text.TextSpacingTrim == TextSpacingTrim.SpaceAll && autospace == TextAutospace.None)
             return shaped;
 
-        // Most texts have no CJK character: the classes of the spacing are all below U+00B7 (or U+2E80 for the ideographs)
+        // Most texts have no CJK character: the spacing only applies to the fullwidth punctuation (trimming) and around the
+        // ideographs (U+2E80 and above), or the marks of the last character in the next item (see GetItemSpacing)
         var characters = _text.AsSpan(item.Start, item.End - item.Start);
-        // (or the marks of its last character in the next item, see GetItemSpacing)
-        if (!MayNeedSpacing(characters) && !(autospace != TextAutospace.None && GetAdjacentCharacter(item.End - 1, index, forward: true).CodePoint is var next && (next >= 0x2E80 || (next >= 0x300 && Unicode.CharacterProperties.IsMark(next)))))
-            return shaped;
+        bool spacesAll;
+        var punctuation = -1;
+        if (characters.IndexOfAnyInRange((char)0x2018, char.MaxValue) < 0 && !characters.Contains((char)0xB7))
+        {
+            if (autospace == TextAutospace.None || !IsIdeographOrMarkAfter(index))
+                return shaped;
+
+            spacesAll = true;
+        }
+        else
+        {
+            spacesAll = autospace != TextAutospace.None && MayHaveAutospace(characters, index);
+            if (!spacesAll)
+            {
+                punctuation = text.TextSpacingTrim != TextSpacingTrim.SpaceAll ? characters.IndexOfAny(FullwidthPunctuationCandidates) : -1;
+                if (punctuation < 0)
+                    return shaped;
+            }
+        }
 
         var length = characters.Length;
+        var itemStart = item.Start;
         var before = ArrayPool<double>.Shared.Rent(length);
         var after = ArrayPool<double>.Shared.Rent(length);
         try
         {
             var changed = false;
-            for (var position = item.Start; position < item.End; position++)
+            if (spacesAll)
             {
-                var (b, trimAfter, autospaceAfter) = GetItemSpacing(position, index, style, shaped);
-                before[position - item.Start] = b;
-                after[position - item.Start] = trimAfter + autospaceAfter;
-                changed |= b != 0 || trimAfter != 0 || autospaceAfter != 0;
+                for (var position = item.Start; position < item.End; position++)
+                {
+                    changed |= SetSpacing(position);
+                }
+            }
+            else
+            {
+                // Only the punctuation that may be trimmed: the other characters have no spacing
+                before.AsSpan(0, length).Clear();
+                after.AsSpan(0, length).Clear();
+                while (punctuation >= 0)
+                {
+                    changed |= SetSpacing(item.Start + punctuation);
+                    var next = characters[(punctuation + 1)..].IndexOfAny(FullwidthPunctuationCandidates);
+                    punctuation = next < 0 ? -1 : punctuation + 1 + next;
+                }
             }
 
             return changed ? shaped.WithSpacing(0, length, before.AsSpan(0, length), after.AsSpan(0, length)) : shaped;
@@ -93,16 +123,55 @@ internal sealed partial class InlineLayoutAlgorithm
             ArrayPool<double>.Shared.Return(after);
         }
 
-        static bool MayNeedSpacing(ReadOnlySpan<char> characters)
+        bool SetSpacing(int position)
         {
-            foreach (var c in characters)
-            {
-                if (c is (char)0xB7 or >= (char)0x2018)
-                    return true;
-            }
-
-            return false;
+            var (b, trimAfter, autospaceAfter) = GetItemSpacing(position, index, style, shaped);
+            before[position - itemStart] = b;
+            after[position - itemStart] = trimAfter + autospaceAfter;
+            return b != 0 || trimAfter != 0 || autospaceAfter != 0;
         }
+    }
+
+    /// <summary>
+    /// The characters that may be fullwidth punctuation (see <see cref="TextSpacingClasses.GetFullwidthPunctuation"/>): the other
+    /// characters are not trimmed by <c>text-spacing-trim</c>.
+    /// </summary>
+    private static readonly SearchValues<char> FullwidthPunctuationCandidates = CreateFullwidthPunctuationCandidates();
+
+    private static SearchValues<char> CreateFullwidthPunctuationCandidates()
+    {
+        // (the CJK Symbols and Punctuation block and the characters after it: the fullwidth punctuation of the East Asian Width)
+        ReadOnlySpan<char> others = [(char)0xB7, (char)0x2018, (char)0x2019, (char)0x201C, (char)0x201D, (char)0x2027];
+        var characters = new char[others.Length + char.MaxValue - 0x3000 + 1];
+        others.CopyTo(characters);
+        for (var i = others.Length; i < characters.Length; i++)
+        {
+            characters[i] = (char)(0x3000 + i - others.Length);
+        }
+
+        return SearchValues.Create(characters);
+    }
+
+    /// <summary>
+    /// Whether the <c>text-autospace</c> spacing may apply to a character of a text item (see <see cref="GetItemSpacing"/>): an
+    /// ideograph in the item or after it (or a mark after it, whose base is the last character of the item), or a mark or a space
+    /// at the start of the item, whose base or previous character is in the previous item. Else, the characters around each
+    /// character are below U+2E80: none of them is an ideograph.
+    /// </summary>
+    private bool MayHaveAutospace(ReadOnlySpan<char> characters, int index)
+    {
+        if (characters.IndexOfAnyInRange((char)0x2E80, char.MaxValue) >= 0)
+            return true;
+
+        var first = characters[0];
+        return first == ' ' || (first >= 0x300 && Unicode.CharacterProperties.IsMark(GetCodePointAt(characters, 0))) || IsIdeographOrMarkAfter(index);
+    }
+
+    /// <summary>Whether the character after a text item on the line is an ideograph (U+2E80 and above) or a mark.</summary>
+    private bool IsIdeographOrMarkAfter(int index)
+    {
+        var next = GetAdjacentCharacter(Items[index].End - 1, index, forward: true).CodePoint;
+        return next >= 0x2E80 || (next >= 0x300 && Unicode.CharacterProperties.IsMark(next));
     }
 
     /// <summary>

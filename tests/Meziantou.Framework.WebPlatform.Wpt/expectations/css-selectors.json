@@ -29,6 +29,9 @@
   "css/selectors/attribute-selectors/attribute-case/value-case-sensitivity-svg.html": {
     "total": 3
   },
+  "css/selectors/attribute-selectors/attribute-case/xhtml-mixed-case-attribute-ancestor.xhtml": {
+    "total": 4
+  },
   "css/selectors/attribute-selectors/style-attribute-selector.html": {
     "total": 11
   },
@@ -151,6 +154,20 @@
   },
   "css/selectors/featureless-005.html": {
     "reftest": "PASS"
+  },
+  "css/selectors/featureless-006.html": {
+    "total": 46
+  },
+  "css/selectors/featureless-007.html": {
+    "total": 24,
+    "failures": {
+      ":is(:host) does not match the shadow host with a default namespace the host is in": "FAIL",
+      ":is(:host) does not match the shadow host with a foreign default namespace": "FAIL",
+      ":not(:not(:host)) does not match the shadow host with a default namespace the host is in": "FAIL",
+      ":not(:not(:host)) does not match the shadow host with a foreign default namespace": "FAIL",
+      ":where(:host) does not match the shadow host with a default namespace the host is in": "FAIL",
+      ":where(:host) does not match the shadow host with a foreign default namespace": "FAIL"
+    }
   },
   "css/selectors/first-child.html": {
     "total": 5
@@ -724,6 +741,9 @@
   },
   "css/selectors/invalidation/has-sibling-insertion-removal.html": {
     "total": 28
+  },
+  "css/selectors/invalidation/has-sibling-propagation.html": {
+    "reftest": "PASS"
   },
   "css/selectors/invalidation/has-sibling.html": {
     "total": 71

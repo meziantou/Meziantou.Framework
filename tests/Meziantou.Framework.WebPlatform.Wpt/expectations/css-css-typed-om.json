@@ -5,6 +5,9 @@
   "css/css-typed-om/background-image-gradient.html": {
     "reftest": "PASS"
   },
+  "css/css-typed-om/container-length-units-type.html": {
+    "total": 30
+  },
   "css/css-typed-om/declared-styleMap-accepts-inherit.html": {
     "total": 1
   },
@@ -140,6 +143,9 @@
   },
   "css/css-typed-om/stylevalue-subclasses/cssLab.html": {
     "total": 15
+  },
+  "css/css-typed-om/stylevalue-subclasses/cssMatrixComponent-toMatrix-returns-new-matrix.html": {
+    "total": 4
   },
   "css/css-typed-om/stylevalue-subclasses/cssMatrixComponent.tentative.html": {
     "total": 10
@@ -427,7 +433,7 @@
     "total": 34
   },
   "css/css-typed-om/stylevalue-subclasses/numeric-objects/parse.tentative.html": {
-    "total": 22
+    "total": 23
   },
   "css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js": {
     "total": 19

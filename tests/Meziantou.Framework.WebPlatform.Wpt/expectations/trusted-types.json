@@ -217,6 +217,9 @@
   "trusted-types/Window-block-eval-function-constructor.html": {
     "total": 6
   },
+  "trusted-types/Window-setTimeout-setInterval-default-policy-before-csp.html": {
+    "total": 2
+  },
   "trusted-types/Window-setTimeout-setInterval.html": {
     "total": 6
   },
@@ -344,7 +347,7 @@
     "total": 5
   },
   "trusted-types/idlharness.window.js": {
-    "total": 100
+    "total": 109
   },
   "trusted-types/inheriting-csp-for-local-schemes.html": {
     "total": 10

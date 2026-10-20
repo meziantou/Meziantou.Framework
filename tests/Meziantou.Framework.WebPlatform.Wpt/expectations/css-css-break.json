@@ -1853,6 +1853,39 @@
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-014.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-025.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -1863,6 +1896,18 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-008.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-001.html": {
@@ -1976,6 +2021,36 @@
   "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-016.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-018.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-019.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-020.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-021.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-022.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-023.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-024.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-025.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-026.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -1990,6 +2065,21 @@
   },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-005.html": {
     "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-009.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-010.html": {
+    "reftest": "FAIL"
   },
   "css/css-break/grid/monolithic-overflow-001.tentative.html": {
     "reftest": "PASS"
@@ -2158,6 +2248,12 @@
   },
   "css/css-break/offset-top-block-in-inline.html": {
     "total": 1
+  },
+  "css/css-break/oof-in-self-collapsing-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/oof-in-self-collapsing-block-002.html": {
+    "reftest": "PASS"
   },
   "css/css-break/orphans-in-parallel-flow.html": {
     "reftest": "PASS"
@@ -3197,6 +3293,9 @@
   "css/css-break/tall-content-inside-constrained-block-006.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-break/tall-content-inside-constrained-block-007.tentative.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/tall-float-pushed-to-next-fragmentainer-000.html": {
     "reftest": "PASS"
   },
@@ -3282,7 +3381,7 @@
     "reftest": "PASS"
   },
   "css/css-break/transform-015.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/transform-016.html": {
     "reftest": "PASS"

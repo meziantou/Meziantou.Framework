@@ -24,11 +24,13 @@ internal static class WorkingSamples
     /// light, with the function of the transfer characteristics <paramref name="transfer"/> of <see cref="CicpTransfer"/>;
     /// 0 keeps the encoded values). With <see cref="WorkingAlpha.Premultiplied"/>, colors are multiplied by the alpha sample <c>a</c> (0 to max);
     /// with <see cref="WorkingAlpha.Preserved"/> they are kept straight. In both cases the alpha working sample is <c>a</c>.
+    /// With <see cref="WorkingAlpha.Opaque"/>, the working samples are the three colors of each pixel, straight: 3 per 4
+    /// stored samples.
     /// </summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, encoded samples are converted 4 at a time (one 256-bit vector with AVX2): every sample
-    /// and product is an integer below 2^32, so the conversions and the products are exact and give the doubles of
-    /// <see cref="LoadScalar"/>.
+    /// With 128-bit hardware vectors, encoded samples are converted 4 at a time (one 256-bit vector with AVX2, except the
+    /// colors of opaque pixels): every sample and product is an integer below 2^32, so the conversions and the products are
+    /// exact and give the doubles of <see cref="LoadScalar"/>.
     /// </remarks>
     public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
@@ -36,7 +38,7 @@ internal static class WorkingSamples
         var done = 0;
         if (transfer is 0 && !Resampler.TestForceScalar)
         {
-            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && alpha != WorkingAlpha.Opaque)
             {
                 done = LoadVector256(samples, working, alpha);
             }
@@ -46,8 +48,11 @@ internal static class WorkingSamples
             }
         }
 
-        LoadScalar(samples[done..], working[done..], alpha, transfer);
+        LoadScalar(samples[done..], working[GetWorkingLength(done, alpha)..], alpha, transfer);
     }
+
+    /// <summary>Gets the number of working samples of <paramref name="count"/> stored samples (3 per 4 for <see cref="WorkingAlpha.Opaque"/>).</summary>
+    internal static int GetWorkingLength(int count, WorkingAlpha alpha) => alpha == WorkingAlpha.Opaque ? count / 4 * 3 : count;
 
     /// <summary>The scalar reference of <see cref="Load"/>.</summary>
     internal static void LoadScalar<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
@@ -97,6 +102,24 @@ internal static class WorkingSamples
                 working[i + 3] = ToInt(samples[i + 3]);
             }
         }
+        else if (alpha == WorkingAlpha.Opaque)
+        {
+            for (int i = 0, o = 0; i < samples.Length; i += 4, o += 3)
+            {
+                if (linear)
+                {
+                    working[o] = decode[ToInt(samples[i])];
+                    working[o + 1] = decode[ToInt(samples[i + 1])];
+                    working[o + 2] = decode[ToInt(samples[i + 2])];
+                }
+                else
+                {
+                    working[o] = ToInt(samples[i]);
+                    working[o + 1] = ToInt(samples[i + 1]);
+                    working[o + 2] = ToInt(samples[i + 2]);
+                }
+            }
+        }
         else if (linear)
         {
             for (var i = 0; i < samples.Length; i++)
@@ -116,16 +139,17 @@ internal static class WorkingSamples
     /// <summary>
     /// Converts filtered working samples to stored samples. With <see cref="WorkingAlpha.Premultiplied"/>: <c>A</c> is
     /// rounded to the output alpha; zero gives transparent black, otherwise each color is unpremultiplied by the unrounded
-    /// <c>A</c>. With <see cref="WorkingAlpha.Preserved"/>, the stored alpha sample is left untouched. Colors are then
-    /// encoded (linear light: clamped to [0, 1] and <c>max * Encode(L)</c>), rounded with <c>floor(v + 0.5 + 2^-20)</c>
-    /// and clamped to [0, max].
+    /// <c>A</c>. With <see cref="WorkingAlpha.Preserved"/>, the stored alpha sample is left untouched. With
+    /// <see cref="WorkingAlpha.Opaque"/>, the values are the three colors of each pixel and the stored alpha is
+    /// <paramref name="max"/>. Colors are then encoded (linear light: clamped to [0, 1] and <c>max * Encode(L)</c>), rounded
+    /// with <c>floor(v + 0.5 + 2^-20)</c> and clamped to [0, max].
     /// </summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, encoded samples without alpha or with premultiplied alpha are rounded 4 at a time (one
-    /// 256-bit vector with AVX2) with the same IEEE operations (division, addition, floor) as <see cref="StoreScalar"/>, so
-    /// the results are identical. Linear light is encoded to 8-bit samples with the thresholds of the encoding
-    /// (<see cref="QuantizationThresholds"/>), which give the samples of <see cref="StoreScalar"/> without evaluating the
-    /// transfer function.
+    /// With 128-bit hardware vectors, encoded samples without alpha, with premultiplied alpha or of opaque pixels are rounded
+    /// 4 at a time (one 256-bit vector with AVX2, except opaque pixels) with the same IEEE operations (division, addition,
+    /// floor) as <see cref="StoreScalar"/>, so the results are identical. Linear light is encoded to 8-bit samples with the
+    /// thresholds of the encoding (<see cref="QuantizationThresholds"/>), which give the samples of
+    /// <see cref="StoreScalar"/> without evaluating the transfer function.
     /// </remarks>
     public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
@@ -133,7 +157,14 @@ internal static class WorkingSamples
         var done = 0;
         if (transfer is 0 && alpha != WorkingAlpha.Preserved && !Resampler.TestForceScalar)
         {
-            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            if (alpha == WorkingAlpha.Opaque)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    done = StoreOpaqueVector(values, samples, max);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
             {
                 done = StoreVector256(values, samples, alpha == WorkingAlpha.Premultiplied, max);
             }
@@ -144,7 +175,7 @@ internal static class WorkingSamples
         }
 
         var thresholds = typeof(TSample) == typeof(byte) && max == byte.MaxValue && transfer is not 0 and not CicpTransfer.Linear && transfer < Thresholds8.Length && !Resampler.TestForceScalar ? GetThresholds8(transfer) : null;
-        StoreCore(values[done..], samples[done..], alpha, transfer, max, thresholds);
+        StoreCore(values[GetWorkingLength(done, alpha)..], samples[done..], alpha, transfer, max, thresholds);
     }
 
     /// <summary>The scalar reference of <see cref="Store"/>.</summary>
@@ -159,8 +190,18 @@ internal static class WorkingSamples
     private static void StoreCore<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max, QuantizationThresholds? thresholds)
         where TSample : unmanaged
     {
-        Debug.Assert(samples.Length == values.Length);
-        if (alpha == WorkingAlpha.Premultiplied)
+        Debug.Assert(GetWorkingLength(samples.Length, alpha) == values.Length);
+        if (alpha == WorkingAlpha.Opaque)
+        {
+            for (int i = 0, o = 0; i < samples.Length; i += 4, o += 3)
+            {
+                samples[i] = FromInt<TSample>(EncodeColor(values[o], max, transfer, thresholds));
+                samples[i + 1] = FromInt<TSample>(EncodeColor(values[o + 1], max, transfer, thresholds));
+                samples[i + 2] = FromInt<TSample>(EncodeColor(values[o + 2], max, transfer, thresholds));
+                samples[i + 3] = FromInt<TSample>(max);
+            }
+        }
+        else if (alpha == WorkingAlpha.Premultiplied)
         {
             for (var i = 0; i < samples.Length; i += 4)
             {
@@ -201,7 +242,10 @@ internal static class WorkingSamples
     private static int LoadVector<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha)
         where TSample : unmanaged
     {
-        Debug.Assert(working.Length >= samples.Length);
+        Debug.Assert(working.Length >= GetWorkingLength(samples.Length, alpha));
+        if (alpha == WorkingAlpha.Opaque)
+            return LoadOpaqueVector(samples, working);
+
         ref var input = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
         ref var output = ref unsafe(MemoryMarshal.GetReference(working));
         var length = samples.Length;
@@ -226,6 +270,47 @@ internal static class WorkingSamples
                 var (first, second) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16());
                 StoreWorking(first, ref output, i, alpha);
                 StoreWorking(second, ref output, i + 4, alpha);
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>
+    /// Converts the colors of the leading opaque pixels, 4 pixels at a time: each pixel is stored as 4 doubles 3 elements
+    /// after the previous one, so that the next pixel overwrites its alpha; the last pixel is left to the scalar loop, which
+    /// writes nothing after the colors.
+    /// </summary>
+    /// <returns>The number of samples converted, a multiple of 4.</returns>
+    private static int LoadOpaqueVector<TSample>(ReadOnlySpan<TSample> samples, Span<double> working)
+        where TSample : unmanaged
+    {
+        ref var input = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(working));
+        var length = samples.Length;
+        var i = 0;
+        if (typeof(TSample) == typeof(byte))
+        {
+            for (; i + 16 < length; i += 16)
+            {
+                var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)i)));
+                var (first, second) = Vector128.Widen(low);
+                var (third, fourth) = Vector128.Widen(high);
+                var o = i / 4 * 3;
+                StoreWorking(first, ref output, o, WorkingAlpha.None);
+                StoreWorking(second, ref output, o + 3, WorkingAlpha.None);
+                StoreWorking(third, ref output, o + 6, WorkingAlpha.None);
+                StoreWorking(fourth, ref output, o + 9, WorkingAlpha.None);
+            }
+        }
+        else
+        {
+            for (; i + 8 < length; i += 8)
+            {
+                var (first, second) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref input, (nuint)(2 * i))).AsUInt16());
+                var o = i / 4 * 3;
+                StoreWorking(first, ref output, o, WorkingAlpha.None);
+                StoreWorking(second, ref output, o + 3, WorkingAlpha.None);
             }
         }
 
@@ -381,6 +466,41 @@ internal static class WorkingSamples
                 rounded &= ~Vector128.Equals(Vector128.Shuffle(rounded, Vector128.Create(3)), Vector128<int>.Zero);
             }
 
+            var narrowed = Vector128.Narrow(rounded.AsUInt32(), Vector128<uint>.Zero);
+            if (typeof(TSample) == typeof(byte))
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, i), Vector128.Narrow(narrowed, Vector128<ushort>.Zero).AsUInt32().ToScalar()); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 2 * i), narrowed.AsUInt64().ToScalar()); }
+            }
+        }
+
+        return i;
+    }
+
+    /// <summary>
+    /// Rounds the colors of the leading opaque pixels, one pixel at a time: the 3 colors and the first value of the next
+    /// pixel, whose lane becomes the maximum alpha. The last pixel is left to the scalar loop, which reads nothing after
+    /// its colors.
+    /// </summary>
+    /// <returns>The number of samples stored, a multiple of 4.</returns>
+    private static int StoreOpaqueVector<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, int max)
+        where TSample : unmanaged
+    {
+        Debug.Assert(values.Length == GetWorkingLength(samples.Length, WorkingAlpha.Opaque));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(values));
+        ref var output = ref unsafe(Unsafe.As<TSample, byte>(ref MemoryMarshal.GetReference(samples)));
+        var maximum = Vector128.Create((double)max);
+        var alpha = Vector128.Create(max);
+        var alphaLane = Vector128.Create(0, 0, 0, -1);
+        var i = 0;
+        for (var o = 0; o + 4 <= values.Length; i += 4, o += 3)
+        {
+            var low = unsafe(Vector128.LoadUnsafe(ref input, (nuint)o));
+            var high = unsafe(Vector128.LoadUnsafe(ref input, (nuint)(o + 2)));
+            var rounded = Vector128.ConditionalSelect(alphaLane, alpha, Vector128.ConvertToInt32(Vector128.Narrow(RoundVector(low, maximum), RoundVector(high, maximum))));
             var narrowed = Vector128.Narrow(rounded.AsUInt32(), Vector128<uint>.Zero);
             if (typeof(TSample) == typeof(byte))
             {

@@ -695,6 +695,12 @@
   "WebCryptoAPI/import_export/ec_importKey_failures_ECDSA.https.any.js#dedicatedworker": {
     "total": 908
   },
+  "WebCryptoAPI/import_export/okp_fixed_length.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/import_export/okp_fixed_length.https.any.js#dedicatedworker": {
+    "total": 6
+  },
   "WebCryptoAPI/import_export/okp_importKey_Ed25519.https.any.js": {
     "total": 72
   },
@@ -743,6 +749,12 @@
   "WebCryptoAPI/import_export/okp_importKey_failures_X448.tentative.https.any.js#dedicatedworker": {
     "total": 662
   },
+  "WebCryptoAPI/import_export/okp_malformed_asn1.https.any.js": {
+    "total": 12
+  },
+  "WebCryptoAPI/import_export/okp_malformed_asn1.https.any.js#dedicatedworker": {
+    "total": 12
+  },
   "WebCryptoAPI/import_export/raw_format_aliases.tentative.https.any.js": {
     "total": 20
   },
@@ -761,6 +773,249 @@
   "WebCryptoAPI/import_export/symmetric_importKey.https.any.js#dedicatedworker": {
     "total": 606
   },
+  "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any.js": {
+    "total": 4
+  },
+  "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "WebCryptoAPI/modern-algos/digest/cshake.https.any.js": {
+    "total": 88
+  },
+  "WebCryptoAPI/modern-algos/digest/cshake.https.any.js#dedicatedworker": {
+    "total": 88
+  },
+  "WebCryptoAPI/modern-algos/digest/kangarootwelve.https.any.js": {
+    "total": 148
+  },
+  "WebCryptoAPI/modern-algos/digest/kangarootwelve.https.any.js#dedicatedworker": {
+    "total": 148
+  },
+  "WebCryptoAPI/modern-algos/digest/sha3.https.any.js": {
+    "total": 48
+  },
+  "WebCryptoAPI/modern-algos/digest/sha3.https.any.js#dedicatedworker": {
+    "total": 48
+  },
+  "WebCryptoAPI/modern-algos/digest/turboshake.https.any.js": {
+    "total": 135
+  },
+  "WebCryptoAPI/modern-algos/digest/turboshake.https.any.js#dedicatedworker": {
+    "total": 135
+  },
+  "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any.js": {
+    "total": 18
+  },
+  "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any.js": {
+    "total": 240
+  },
+  "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any.js#dedicatedworker": {
+    "total": 240
+  },
+  "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any.js": {
+    "total": 277
+  },
+  "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any.js#dedicatedworker": {
+    "total": 277
+  },
+  "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any.js": {
+    "total": 28
+  },
+  "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_AES-OCB.https.any.js": {
+    "total": 686
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_AES-OCB.https.any.js#dedicatedworker": {
+    "total": 686
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_Hybrid-KEM.https.any.js": {
+    "total": 684
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_Hybrid-KEM.https.any.js#dedicatedworker": {
+    "total": 684
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any.js": {
+    "total": 252
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any.js#dedicatedworker": {
+    "total": 252
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_ML-KEM.https.any.js": {
+    "total": 684
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_ML-KEM.https.any.js#dedicatedworker": {
+    "total": 684
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_chacha20_poly1305.https.any.js": {
+    "total": 276
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_chacha20_poly1305.https.any.js#dedicatedworker": {
+    "total": 276
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any.js": {
+    "total": 312
+  },
+  "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any.js#dedicatedworker": {
+    "total": 312
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_AES-OCB.https.any.js": {
+    "total": 288
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_AES-OCB.https.any.js#dedicatedworker": {
+    "total": 288
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_Hybrid-KEM.https.any.js": {
+    "total": 468
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_Hybrid-KEM.https.any.js#dedicatedworker": {
+    "total": 468
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.js": {
+    "total": 108
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.js#dedicatedworker": {
+    "total": 108
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.js": {
+    "total": 468
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.js#dedicatedworker": {
+    "total": 468
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_chacha20_poly1305.https.any.js": {
+    "total": 192
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_chacha20_poly1305.https.any.js#dedicatedworker": {
+    "total": 192
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.js": {
+    "total": 144
+  },
+  "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.js#dedicatedworker": {
+    "total": 144
+  },
+  "WebCryptoAPI/modern-algos/getPublicKey.https.any.js": {
+    "total": 43
+  },
+  "WebCryptoAPI/modern-algos/getPublicKey.https.any.js#dedicatedworker": {
+    "total": 43
+  },
+  "WebCryptoAPI/modern-algos/idlharness.https.any.js": {
+    "total": 28
+  },
+  "WebCryptoAPI/modern-algos/idlharness.https.any.js#dedicatedworker": {
+    "total": 28
+  },
+  "WebCryptoAPI/modern-algos/import_export/AES-OCB_importKey.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/modern-algos/import_export/AES-OCB_importKey.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/modern-algos/import_export/Argon2_importKey.https.any.js": {
+    "total": 45
+  },
+  "WebCryptoAPI/modern-algos/import_export/Argon2_importKey.https.any.js#dedicatedworker": {
+    "total": 45
+  },
+  "WebCryptoAPI/modern-algos/import_export/ChaCha20-Poly1305_importKey.https.any.js": {
+    "total": 24
+  },
+  "WebCryptoAPI/modern-algos/import_export/ChaCha20-Poly1305_importKey.https.any.js#dedicatedworker": {
+    "total": 24
+  },
+  "WebCryptoAPI/modern-algos/import_export/Hybrid-KEM_importKey.https.any.js": {
+    "total": 216
+  },
+  "WebCryptoAPI/modern-algos/import_export/Hybrid-KEM_importKey.https.any.js#dedicatedworker": {
+    "total": 216
+  },
+  "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.js": {
+    "total": 144
+  },
+  "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.js#dedicatedworker": {
+    "total": 144
+  },
+  "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.js": {
+    "total": 180
+  },
+  "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.js#dedicatedworker": {
+    "total": 180
+  },
+  "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any.js": {
+    "total": 324
+  },
+  "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any.js#dedicatedworker": {
+    "total": 324
+  },
+  "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any.js": {
+    "total": 20
+  },
+  "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any.js#dedicatedworker": {
+    "total": 20
+  },
+  "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/modern-algos/serialization/hybridkem.https.window.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/kmac.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/kmac.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/mldsa.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/mldsa.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/mlkem.https.any.js": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/serialization/mlkem.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any.js": {
+    "total": 103
+  },
+  "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any.js#dedicatedworker": {
+    "total": 103
+  },
+  "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any.js": {
+    "total": 57
+  },
+  "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any.js#dedicatedworker": {
+    "total": 57
+  },
+  "WebCryptoAPI/modern-algos/supports-modern.https.any.js": {
+    "total": 147
+  },
+  "WebCryptoAPI/modern-algos/supports-modern.https.any.js#dedicatedworker": {
+    "total": 147
+  },
+  "WebCryptoAPI/modern-algos/supports.https.any.js": {
+    "total": 200
+  },
+  "WebCryptoAPI/modern-algos/supports.https.any.js#dedicatedworker": {
+    "total": 200
+  },
   "WebCryptoAPI/normalize-algorithm-name.https.any.js": {
     "total": 4
   },
@@ -772,6 +1027,90 @@
   },
   "WebCryptoAPI/randomUUID.https.any.js#dedicatedworker": {
     "total": 3
+  },
+  "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any.js": {
+    "total": 18
+  },
+  "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any.js#dedicatedworker": {
+    "total": 18
+  },
+  "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_keys_curve448.https.any.js": {
+    "total": 16
+  },
+  "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_keys_curve448.https.any.js#dedicatedworker": {
+    "total": 16
+  },
+  "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any.js": {
+    "total": 84
+  },
+  "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any.js#dedicatedworker": {
+    "total": 84
+  },
+  "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any.js": {
+    "total": 104
+  },
+  "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any.js#dedicatedworker": {
+    "total": 104
+  },
+  "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.js": {
+    "total": 36
+  },
+  "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.js#dedicatedworker": {
+    "total": 36
+  },
+  "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.js": {
+    "total": 32
+  },
+  "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "WebCryptoAPI/secure-curves/idlharness.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/idlharness.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.js": {
+    "total": 72
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.js#dedicatedworker": {
+    "total": 72
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.js": {
+    "total": 54
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.js#dedicatedworker": {
+    "total": 54
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any.js": {
+    "total": 770
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any.js#dedicatedworker": {
+    "total": 770
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any.js": {
+    "total": 662
+  },
+  "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any.js#dedicatedworker": {
+    "total": 662
+  },
+  "WebCryptoAPI/secure-curves/serialization/ed448.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/serialization/ed448.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/serialization/x448.https.any.js": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/serialization/x448.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any.js": {
+    "total": 19
+  },
+  "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any.js#dedicatedworker": {
+    "total": 19
   },
   "WebCryptoAPI/secure_context/crypto-subtle-secure-context-available.https.sub.html": {
     "total": 2
@@ -964,6 +1303,12 @@
   },
   "WebCryptoAPI/supports.tentative.https.any.js#dedicatedworker": {
     "total": 200
+  },
+  "WebCryptoAPI/wrapKey_unwrapKey/aes_kw_unwrapKey_failures.https.any.js": {
+    "total": 3
+  },
+  "WebCryptoAPI/wrapKey_unwrapKey/aes_kw_unwrapKey_failures.https.any.js#dedicatedworker": {
+    "total": 3
   },
   "WebCryptoAPI/wrapKey_unwrapKey/wrapKey_unwrapKey.https.any.js": {
     "total": 472

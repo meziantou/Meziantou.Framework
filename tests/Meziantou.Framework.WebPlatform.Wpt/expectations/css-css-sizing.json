@@ -32,6 +32,21 @@
   "css/css-sizing/abspos-stretch-replaced-percentage-child.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/animation/aspect-ratio-interpolation-degenerate.html": {
+    "total": 12
+  },
+  "css/css-sizing/animation/aspect-ratio-interpolation-sideways-lr.html": {
+    "total": 40
+  },
+  "css/css-sizing/animation/aspect-ratio-interpolation-sideways-rl.html": {
+    "total": 40
+  },
+  "css/css-sizing/animation/aspect-ratio-interpolation-vertical-lr.html": {
+    "total": 40
+  },
+  "css/css-sizing/animation/aspect-ratio-interpolation-vertical-rl.html": {
+    "total": 40
+  },
   "css/css-sizing/animation/aspect-ratio-interpolation.html": {
     "total": 249,
     "failures": {
@@ -163,6 +178,9 @@
   },
   "css/css-sizing/aspect-ratio/abspos-aspect-ratio-border.html": {
     "total": 6
+  },
+  "css/css-sizing/aspect-ratio/abspos-intrinsic-block-size.html": {
+    "total": 32
   },
   "css/css-sizing/aspect-ratio/aspect-ratio-minimum-size-single-axis-scroll-container.html": {
     "total": 4
@@ -337,6 +355,9 @@
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-058.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html": {
+    "reftest": "FAIL"
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-with-margin-collapsing-001.html": {
     "reftest": "PASS"
@@ -524,6 +545,15 @@
   "css/css-sizing/aspect-ratio/flex-aspect-ratio-055.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/aspect-ratio/flex-aspect-ratio-orthogonal-percentage-child.html": {
+    "total": 4
+  },
+  "css/css-sizing/aspect-ratio/flex-aspect-ratio-row-percentage-height-child.html": {
+    "total": 1
+  },
+  "css/css-sizing/aspect-ratio/flex-aspect-ratio-shrink-to-fit-ancestor-relayout.html": {
+    "total": 8
+  },
   "css/css-sizing/aspect-ratio/floats-aspect-ratio-001.html": {
     "reftest": "PASS"
   },
@@ -651,6 +681,9 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/grid-aspect-ratio-042.html": {
+    "reftest": "PASS"
+  },
+  "css/css-sizing/aspect-ratio/grid-aspect-ratio-043.html": {
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/grid-aspect-ratio-align-items-center.html": {
@@ -1345,6 +1378,9 @@
   "css/css-sizing/dynamic-change-inline-size-004.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/fieldset-intrinsic-size-percent.html": {
+    "total": 12
+  },
   "css/css-sizing/fit-content-block-size-abspos.html": {
     "reftest": "PASS"
   },
@@ -1726,6 +1762,9 @@
   "css/css-sizing/min-width-max-width-precedence.html": {
     "total": 1
   },
+  "css/css-sizing/min-width-min-content-contribution.html": {
+    "total": 6
+  },
   "css/css-sizing/nested-flexbox-image-percentage-max-height-computes-as-none.html": {
     "reftest": "PASS"
   },
@@ -1874,6 +1913,9 @@
     "reftest": "PASS"
   },
   "css/css-sizing/replaced-min-width-min-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-sizing/replaced-percent-min-width-max-content.html": {
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/parsing/frame-sizing-computed.html": {
@@ -2082,6 +2124,18 @@
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=,300,150": {
     "total": 1
   },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,200,150,vertical-rl": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-block-size and wm=vertical-rl": "FAIL"
+    }
+  },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,300,100": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-block-size and wm=undefined": "FAIL"
+    }
+  },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,300,200": {
     "total": 1,
     "failures": {
@@ -2094,10 +2148,28 @@
       "Measure target with value=content-block-size and wm=vertical-rl": "FAIL"
     }
   },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-height,300,100": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-height and wm=undefined": "FAIL"
+    }
+  },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-height,300,200": {
     "total": 1,
     "failures": {
       "Measure target with value=content-height and wm=undefined": "FAIL"
+    }
+  },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,200,150": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-inline-size and wm=undefined": "FAIL"
+    }
+  },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,300,100,vertical-rl": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-inline-size and wm=vertical-rl": "FAIL"
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,300,200,vertical-rl": {
@@ -2110,6 +2182,18 @@
     "total": 1,
     "failures": {
       "Measure target with value=content-inline-size and wm=undefined": "FAIL"
+    }
+  },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,200,150": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-width and wm=undefined": "FAIL"
+    }
+  },
+  "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,200,150,,vertical-rl": {
+    "total": 1,
+    "failures": {
+      "Measure target with value=content-width and wm=": "FAIL"
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,400,150": {

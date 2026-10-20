@@ -300,10 +300,7 @@
     "total": 1
   },
   "css/css-scroll-snap/scroll-snap-type-pair-007.html": {
-    "total": 1,
-    "failures": {
-      "DirectionStrategy prefers higher cosine similarity candidate during 2D momentum fling": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/scroll-snap-type.html": {
     "total": 4

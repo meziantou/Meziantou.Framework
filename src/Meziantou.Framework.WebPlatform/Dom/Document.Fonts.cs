@@ -31,9 +31,15 @@ public partial class Document
 
     /// <summary>
     /// The fonts that the host installed in addition to the bundled fonts (<see cref="BrowsingContextOptions.InstalledFonts"/>
-    /// of the browsing context of the document, or of the worker whose font source is the document), or null.
+    /// of the browsing context of the document, or of the worker whose font source is the document; else the fonts
+    /// installed on the machine when <see cref="BrowsingContextOptions.UseSystemFonts"/> is set), or null.
     /// </summary>
-    internal InstalledFontCollection? InstalledFonts => (FontSourceWorker?.Options ?? EnvironmentOptions)?.InstalledFonts;
+    internal InstalledFontCollection? InstalledFonts => (FontSourceWorker?.Options ?? EnvironmentOptions) switch
+    {
+        { InstalledFonts: { } installedFonts } => installedFonts,
+        { UseSystemFonts: true } => InstalledFontCollection.System,
+        _ => null,
+    };
 
     /// <summary>
     /// Returns the font source of the document for the font matching: it is created without loading the font faces used by

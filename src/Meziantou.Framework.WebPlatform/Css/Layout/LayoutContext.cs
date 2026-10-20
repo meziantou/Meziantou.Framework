@@ -110,6 +110,12 @@ internal sealed class LayoutContext
     internal void ReturnInlineLayout(InlineLayoutAlgorithm algorithm) => Engine.ReturnInlineLayout(algorithm);
 
     /// <summary>
+    /// The data of the items of the inline formatting contexts measured during the pass, reused by their layout (see
+    /// <see cref="InlineLayoutAlgorithm.InlineItemsData"/>).
+    /// </summary>
+    internal Dictionary<ContainerBox, InlineLayoutAlgorithm.InlineItemsData>? InlineItemsData { get; set; }
+
+    /// <summary>
     /// The anchor elements by anchor name (https://drafts.csswg.org/css-anchor-position-1/#name), built by the first anchor query of
     /// the pass (see <see cref="AnchorQuery"/>).
     /// </summary>

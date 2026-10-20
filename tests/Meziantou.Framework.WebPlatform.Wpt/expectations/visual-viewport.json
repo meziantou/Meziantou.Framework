@@ -6,9 +6,11 @@
     }
   },
   "visual-viewport/resize-event-order.html": {
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "Popup: DOMWindow resize fired before VisualViewport.": "FAIL"
+      "Popup: DOMWindow resize fired before VisualViewport.": "TIMEOUT",
+      "iframe: DOMWindow resize fired before VisualViewport.": "NOTRUN"
     }
   },
   "visual-viewport/scroll-event-order.html": {

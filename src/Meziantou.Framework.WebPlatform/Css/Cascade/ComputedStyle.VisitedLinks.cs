@@ -34,24 +34,17 @@ internal sealed partial class ComputedStyle
     }.ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>The unvisited style of a visited style (the computed style of the element), or null for the other styles.</summary>
-    private readonly ComputedStyle? _unvisitedStyle;
-    private ComputedStyle? _visitedStyle;
-
-    /// <summary>The cascaded values of the visited style, when they are known (see <see cref="GetVisitedCascadedValues"/>).</summary>
-    private Dictionary<string, CascadedValue>? _visitedCascaded;
-
-    /// <summary>The style that the style was derived from with the same cascaded values (and the same cascaded values of its visited style), or null.</summary>
-    private ComputedStyle? _visitedCascadeSource;
+    private ComputedStyle? UnvisitedStyle => _rareData?.UnvisitedStyle;
 
     /// <summary>
     /// The visited link that the element is in, or null: the element itself when it is a link that was visited (see
     /// <see cref="Document.IsVisitedLink"/>), else the link of the style that it inherits from, unless the element is an
     /// unvisited link. It is always null when the browsing context has no history of visited links.
     /// </summary>
-    internal Element? VisitedLink { get; }
+    internal Element? VisitedLink => _rareData?.VisitedLink;
 
     /// <summary>Whether the style is the visited style of an element (see <see cref="VisitedOrSelf"/>).</summary>
-    internal bool IsVisitedStyle => _unvisitedStyle is not null;
+    internal bool IsVisitedStyle => UnvisitedStyle is not null;
 
     /// <summary>
     /// Whether the cascaded values of the style are the result of the cascade of the rules for its element and its
@@ -62,7 +55,17 @@ internal sealed partial class ComputedStyle
     internal bool IsCascadeOfRules { get; init; }
 
     /// <summary>The root of the use-element shadow tree that the style is the style of an element instance of (see <see cref="StyleEngine.GetUseInstanceStyle"/>), or null.</summary>
-    internal Element? UseInstanceRoot { get; init; }
+    internal Element? UseInstanceRoot
+    {
+        get => _rareData?.UseInstanceRoot;
+        init
+        {
+            if (value is not null)
+            {
+                Rare.UseInstanceRoot = value;
+            }
+        }
+    }
 
     private static Element? GetVisitedLink(StyleEngine engine, Element element, string? pseudoElement, ComputedStyle? parent)
     {
@@ -79,7 +82,7 @@ internal sealed partial class ComputedStyle
     /// The style that the painting reads the declarations of the colors from: the visited style of an element in a visited
     /// link, else the style itself. The colors themselves are returned by <see cref="GetUsedValue"/>.
     /// </summary>
-    internal ComputedStyle VisitedOrSelf => VisitedLink is null || _unvisitedStyle is not null ? this : _visitedStyle ??= CreateVisitedStyle();
+    internal ComputedStyle VisitedOrSelf => VisitedLink is null || UnvisitedStyle is not null ? this : Rare.VisitedStyle ??= CreateVisitedStyle();
 
     private ComputedStyle CreateVisitedStyle()
     {
@@ -94,17 +97,17 @@ internal sealed partial class ComputedStyle
     /// <summary>Returns the cascaded values of the visited style of the style.</summary>
     private Dictionary<string, CascadedValue> GetVisitedCascadedValues()
     {
-        if (_visitedCascaded is { } cascaded)
+        if (_rareData?.VisitedCascaded is { } cascaded)
             return cascaded;
 
-        if (_visitedCascadeSource is { } source)
-            return _visitedCascaded = source.GetVisitedCascadedValues();
+        if (_rareData?.VisitedCascadeSource is { } source)
+            return Rare.VisitedCascaded = source.GetVisitedCascadedValues();
 
         if (IsCascadeOfRules)
-            return _visitedCascaded = Engine.CascadeVisitedStyle(this);
+            return Rare.VisitedCascaded = Engine.CascadeVisitedStyle(this);
 
         _cascadedShared = true;
-        return _visitedCascaded = _cascaded;
+        return Rare.VisitedCascaded = _cascaded;
     }
 
     /// <summary>
@@ -113,12 +116,12 @@ internal sealed partial class ComputedStyle
     /// </summary>
     private ComputedStyle WithVisitedCascadeOf(ComputedStyle derived, bool sameCascadedValues = false)
     {
-        if (derived.VisitedLink is null || _unvisitedStyle is not null)
+        if (derived.VisitedLink is null || UnvisitedStyle is not null)
             return derived;
 
         if (sameCascadedValues)
         {
-            derived._visitedCascadeSource = this;
+            derived.Rare.VisitedCascadeSource = this;
             return derived;
         }
 
@@ -133,7 +136,7 @@ internal sealed partial class ComputedStyle
             (copy ??= new Dictionary<string, CascadedValue>(visited, StringComparer.Ordinal))[name] = value;
         }
 
-        derived._visitedCascaded = copy ?? visited;
+        derived.Rare.VisitedCascaded = copy ?? visited;
         return derived;
     }
 

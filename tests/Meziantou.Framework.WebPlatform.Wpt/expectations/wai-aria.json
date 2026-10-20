@@ -51,6 +51,19 @@
   "wai-aria/heading/invalid-nesting.html": {
     "total": 14
   },
+  "wai-aria/heading/invalid-nesting.tentative.html": {
+    "total": 8,
+    "failures": {
+      "button[role=heading][aria-level=1] with text contents and invalid span[role=heading][aria-level=2] descendant": "FAIL",
+      "div[role=heading][aria-level=1] with invalid div[role=heading][aria-level=2] descendant": "FAIL",
+      "div[role=heading][aria-level=1] with text contents and invalid div[role=heading][aria-level=2] descendant": "FAIL",
+      "div[role=heading][aria-level=2] invalidly nested inside div[role=heading][aria-level=1] should not, if imitating native html-aam behavior, have any DOM ancestor with a heading role": "FAIL",
+      "div[role=heading][aria-level=3] invalidly nested inside div[role=heading][aria-level=1] > div[role=heading][aria-level=2] should not, if imitating native html-aam behavior, have any DOM ancestor with a heading role": "FAIL",
+      "div[role=heading][aria-level=4] with invalid div[role=heading][aria-level=3] descendant": "FAIL",
+      "div[role=heading][aria-level=5] with invalid div[role=heading][aria-level=6] descendant": "FAIL",
+      "p[role=heading][aria-level=1] with text contents and invalid span[role=heading][aria-level=2] descendant": "FAIL"
+    }
+  },
   "wai-aria/idlharness.window.js": {
     "total": 121,
     "failures": {
@@ -84,6 +97,9 @@
   "wai-aria/role/contextual-roles.tentative.html": {
     "total": 2
   },
+  "wai-aria/role/empty-container-roles.tentative.html": {
+    "total": 4
+  },
   "wai-aria/role/fallback-roles.html": {
     "total": 22
   },
@@ -115,7 +131,7 @@
     "total": 7
   },
   "wai-aria/role/role_none_conflict_resolution.tentative.html": {
-    "total": 5,
+    "total": 9,
     "failures": {
       "JS injected HTML button within another HTML button": "FAIL",
       "focusable ARIA[role=button] nesting focusable ARIA[role=button]": "FAIL",

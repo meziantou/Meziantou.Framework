@@ -5307,7 +5307,8 @@ in document order (the [painter's model](https://svgwg.org/svg2-draft/render.htm
 Text is measured with fonts read by the managed font reader of `Meziantou.Framework.Fonts`, which
 `Meziantou.Framework.Imaging` also uses (`Css/Fonts`, namespace `Meziantou.Framework.WebPlatform.Css.Fonts`, adapts it to
 CSS): there is no native dependency (no FreeType, no HarfBuzz), so the library stays AOT-compatible and the results are
-the same on every machine. The fonts installed on the machine are never used.
+the same on every machine. The fonts installed on the machine are not used unless the host sets
+`BrowsingContextOptions.UseSystemFonts` (see [System fonts](#system-fonts)).
 
 ### Font files
 
@@ -5446,6 +5447,24 @@ of Unicode ranges, which render the characters of their ranges that no other fon
 searched first: the installed fonts change neither the default font nor the fonts of the characters that the bundled
 fonts support.
 
+### System fonts
+
+`BrowsingContextOptions.UseSystemFonts` (false by default) lets `font-family` and `local()` name the fonts installed on the
+machine. The index of these fonts is `SystemFontCollection.Default` of `Meziantou.Framework.Fonts`: the font directories of
+the operating system (Windows: the fonts directory, the fonts of the user and the files the registry lists; macOS: the
+`Library/Fonts` directories and the downloaded fonts; Linux: the directories of the configuration of fontconfig and the XDG
+font directories), scanned once per process by reading only the table directories and the `head`, `OS/2`, `post`, `name`
+and `fvar` tables. `InstalledFontCollection.System` wraps it, and is used when the options have no `InstalledFonts`:
+
+- a face belongs to the families of its typographic family names and of its family names, in all their languages (the
+  legacy names such as `Arial Black` name a face, as in the browsers);
+- the font matching uses capabilities computed from the index (`FontSelectionCapabilities.FromSystemFont`, the same values
+  as `FromFont` once the font is loaded); only the selected face is loaded, from its file, and the faces of a file share
+  the loaded file. A face whose file can no longer be loaded (removed or changed since the scan) makes its family missing;
+- the bundled fonts keep their names and the generic families (`serif`, `sans-serif`, `monospace`, `math`): only the
+  families the bundled fonts do not have come from the machine, and the default font does not change. The fonts of the
+  machine add no installed font fallback.
+
 ### CSS Font Loading
 
 A `FontFace` is loaded when one of its sources is a valid font file: its `FontFile` (internal) is the decoded file, for the
@@ -5453,7 +5472,8 @@ font matching. The font matching of the layout starts the loads of the font face
 the font face set of a rendered document updates the layout before it is switched to loaded
 (`FontFaceSet.UpdateLayoutForFonts`), so `document.fonts.ready` waits for them. A source that starts with a font signature but whose structure is invalid is skipped, like a
 network error. A `local()` source is a bundled font, else a font installed by the host, whose full name or PostScript name
-matches (case-insensitive); the fonts installed on the machine are never used.
+matches (case-insensitive), else a font installed on the machine when `UseSystemFonts` is set. A `local()` source that names
+a face of a font collection uses that face.
 
 ### Font matching
 

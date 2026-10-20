@@ -1422,6 +1422,9 @@
   "html/dom/elements/global-attributes/dataset-enumeration.html": {
     "total": 2
   },
+  "html/dom/elements/global-attributes/dataset-get-invalid-names.html": {
+    "total": 28
+  },
   "html/dom/elements/global-attributes/dataset-get.html": {
     "total": 10
   },
@@ -1928,7 +1931,7 @@
     "reftest": "PASS"
   },
   "html/dom/elements/the-innertext-and-outertext-properties/dynamic-getter.html": {
-    "total": 7
+    "total": 9
   },
   "html/dom/elements/the-innertext-and-outertext-properties/getter-first-letter-marker-multicol.html": {
     "total": 1
@@ -1992,16 +1995,12 @@
     "total": 13
   },
   "html/dom/idlharness.any.js#dedicatedworker": {
-    "total": 805,
-    "failures": {
-      "MessagePort interface: attribute onclose": "FAIL"
-    }
+    "total": 808
   },
   "html/dom/idlharness.https.html?exclude=(Document|Window|HTML.+)": {
-    "total": 1743,
+    "total": 1806,
     "failures": {
       "Location interface: stringifier": "FAIL",
-      "MessagePort interface: attribute onclose": "FAIL",
       "NotRestoredReasonDetails interface object length": "FAIL",
       "NotRestoredReasonDetails interface object name": "FAIL",
       "NotRestoredReasonDetails interface: attribute reason": "FAIL",
@@ -2031,7 +2030,7 @@
       "Document interface: calling execCommand(DOMString, optional boolean, optional DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
       "Document interface: calling getElementsByName(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
       "Document interface: calling parseHTML(DOMString, optional SetHTMLOptions) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling parseHTMLUnsafe((TrustedHTML or DOMString), optional ParseHTMLUnsafeOptions) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
+      "Document interface: calling parseHTMLUnsafe((TrustedHTML or DOMString), optional (ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
       "Document interface: calling queryCommandEnabled(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
       "Document interface: calling queryCommandIndeterm(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
       "Document interface: calling queryCommandState(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
@@ -2041,7 +2040,7 @@
     }
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
-    "total": 3899,
+    "total": 3903,
     "failures": {
       "HTMLAllCollection interface: calling item(optional DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
       "HTMLAllCollection interface: calling namedItem(DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
@@ -2312,6 +2311,27 @@
     "total": 1
   },
   "html/dom/render-blocking/element-render-blocking-041.html": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-form-stack-removal.html?misnested": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-form-stack-removal.html?nested": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-insert-named-anchor.html?cached": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-insert-named-anchor.html?uncached": {
+    "total": 1
+  },
+  "html/dom/render-blocking/element-render-blocking-top-of-document.html?empty": {
+    "total": 1,
+    "failures": {
+      "rel=expect blocks for the top-of-document value from #": "FAIL"
+    }
+  },
+  "html/dom/render-blocking/element-render-blocking-top-of-document.html?top": {
     "total": 1
   },
   "html/dom/render-blocking/non-render-blocking-scripts.optional.html": {

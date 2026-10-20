@@ -44,6 +44,9 @@
   "media-source/dedicated-worker/mediasource-worker-duration.html": {
     "total": 1
   },
+  "media-source/dedicated-worker/mediasource-worker-handle-transfer-to-shared-and-service-workers.https.html": {
+    "total": 4
+  },
   "media-source/dedicated-worker/mediasource-worker-handle-transfer.html": {
     "total": 9
   },

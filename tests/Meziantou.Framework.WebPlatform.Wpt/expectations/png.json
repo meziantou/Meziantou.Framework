@@ -107,6 +107,93 @@
   "png/exif-chunk.html": {
     "total": 1
   },
+  "png/progressive/1bit_19x13-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/I16_37x23-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/I16_3x5-hdr-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/I16_3x5-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/I16_5x3-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/I16_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/L_37x23-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/L_3x5-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/L_5x3-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/L_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/P_37x23-hdr-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/P_37x23-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/P_3x5-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/P_5x3-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/P_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/Ptrns_21x17-hdr-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/Ptrns_21x17-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBA_37x23-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBA_3x5-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBA_5x3-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBA_64x64-hdr-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBA_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGB_37x23-hdr-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGB_37x23-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGB_3x5-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGB_5x3-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGB_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBflat_40x40-progressive.html": {
+    "reftest": "PASS"
+  },
+  "png/progressive/RGBgradient_64x64-progressive.html": {
+    "reftest": "PASS"
+  },
   "png/trns-chunk.html": {
     "total": 1
   }

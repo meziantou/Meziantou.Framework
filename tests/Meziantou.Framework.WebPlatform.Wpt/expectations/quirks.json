@@ -77,9 +77,7 @@
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body/><div id=\"test\"/></html>": "FAIL",
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><body><div id=\"test\"/></body></body></html>": "FAIL",
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><span><body><div id=\"test\"/></body></span></html>": "FAIL",
-      "The percentage height calculation quirk, <html><head xmlns=\"{html}\"><style>#test { height:100% }</style></head><body xmlns=\"{html}\"><div id=\"test\"/></body></html>": "FAIL",
-      "The percentage height calculation quirk, <img id=test src=\"{png}\" height=100% border=10>": "FAIL",
-      "The percentage height calculation quirk, <img id=test src=\"{png}\" height=100%>": "FAIL"
+      "The percentage height calculation quirk, <html><head xmlns=\"{html}\"><style>#test { height:100% }</style></head><body xmlns=\"{html}\"><div id=\"test\"/></body></html>": "FAIL"
     }
   },
   "quirks/percentage-height-quirk-excludes-flex-grid-001.html": {

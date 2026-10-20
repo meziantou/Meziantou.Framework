@@ -102,7 +102,8 @@ public sealed class Av1ForwardTransformTests
                 }
 
                 // The other direction, for the sizes that keep every coefficient: a residual is transformed, then
-                // reconstructed by the inverse transform within the rounding of both
+                // reconstructed by the inverse transform within the rounding of both, and within the precision of the
+                // division by 2^n / 2 (the squared norms of the bases differ from it by up to 7 parts in 10,000)
                 if (largest is 64)
                     continue;
 
@@ -117,9 +118,10 @@ public sealed class Av1ForwardTransformTests
                     Av1ForwardTransform.Forward(residual.AsSpan(0, w * h), forward.AsSpan(0, tw * th), txSz, txType);
                     Av1InverseTransform.Transform(forward.AsSpan(0, tw * th), transformed.AsSpan(0, w * h), txSz, txType, lossless: false, bitDepth: 12);
                     Mirror(transformed, inverse);
+                    var tolerance = 2 + (amplitude >> 10);
                     for (var i = 0; i < w * h; i++)
                     {
-                        Assert.True(Math.Abs(residual[i] - inverse[i]) <= 2, $"transform size {txSz}, type {txType}, sample {i}: {residual[i]} became {inverse[i]}");
+                        Assert.True(Math.Abs(residual[i] - inverse[i]) <= tolerance, $"transform size {txSz}, type {txType}, sample {i}: {residual[i]} became {inverse[i]}");
                     }
                 }
 
@@ -140,6 +142,173 @@ public sealed class Av1ForwardTransformTests
 
         TestContext.Current.TestOutputHelper?.WriteLine($"largest error: {worst}");
     }
+
+    [Fact]
+    public void TheCosinesExtendTheTableOfTheSpecification()
+    {
+        // cos128( angle ) of section 7.13.2.1, from Cos128_Lookup and the symmetries of the cosine
+        var lookup = Av1Tables.Cos128Lookup;
+        for (var angle = 0; angle < 256; angle++)
+        {
+            var expected = angle switch
+            {
+                <= 64 => lookup[angle],
+                <= 128 => -lookup[128 - angle],
+                <= 192 => -lookup[angle - 128],
+                _ => lookup[256 - angle],
+            };
+            Assert.Equal(expected, Av1ForwardTransform.Cos128Values[angle]);
+        }
+    }
+
+    [Fact]
+    public void TheBasesOfTheInverseKernelsHaveTheSquaredNormOfTheirLength()
+    {
+        // The forward transform divides the transposed kernels of 2^n points by 2^n / 2, the squared norm of their bases
+        for (var n = 2; n <= 6; n++)
+        {
+            foreach (var kind in new[] { Av1InverseTransform.Kind.Dct, Av1InverseTransform.Kind.Adst, Av1InverseTransform.Kind.Identity })
+            {
+                if (!IsApplicable(kind, n))
+                    continue;
+
+                var bases = GetBases(kind, n);
+                for (var k = 0; k < bases.Length; k++)
+                {
+                    var norm = bases[k].Sum(value => value * value) / ((1 << n) / 2.0);
+                    Assert.True(Math.Abs(norm - 1) < 1.0 / 1024, $"{kind} of {1 << n} points, basis {k}: {norm}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void EveryTransformIsTheProductOfTheBasesOfTheInverseKernels()
+    {
+        // The exact product of the residual by the bases of the decoder (the responses of its inverse kernels), divided by
+        // their squared norms 2^n / 2, then multiplied by the scale of the inverse process: 2^(4 + Transform_Row_Shift), and
+        // sqrt(2) for a 2:1 rectangle. The forward transform only differs from it by the roundings of its rotations: at most
+        // 3 units, for coefficients of up to 2^19
+        var random = new Random(3);
+        var residual = new int[64 * 64];
+        var forward = new int[32 * 32];
+        var worst = 0.0;
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            int log2W = Av1Tables.TxWidthLog2[txSz];
+            int log2H = Av1Tables.TxHeightLog2[txSz];
+            var w = 1 << log2W;
+            var h = 1 << log2H;
+            var tw = Math.Min(32, w);
+            var th = Math.Min(32, h);
+            var scale = Math.Pow(2, Av1Tables.TransformRowShift[txSz] + 4) * (Math.Abs(log2W - log2H) is 1 ? 5793 / 4096.0 : 1);
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                var rowKind = Av1InverseTransform.GetRowKind(txType);
+                var colKind = Av1InverseTransform.GetColumnKind(txType);
+                if (!IsApplicable(rowKind, log2W) || !IsApplicable(colKind, log2H))
+                    continue;
+
+                var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
+                var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
+                var rowBases = GetBases(rowKind, log2W);
+                var colBases = GetBases(colKind, log2H);
+                for (var round = 0; round < 10; round++)
+                {
+                    // Random, extreme (the largest differences of 12-bit samples), sparse and smooth residuals, and the
+                    // residual of 12-bit samples that gives a coefficient its largest magnitude: the signs of its basis
+                    var (worstK, worstL) = (random.Next(th), random.Next(tw));
+                    for (var i = 0; i < w * h; i++)
+                    {
+                        var (r, c) = (i / w, i % w);
+                        residual[i] = (round % 5) switch
+                        {
+                            0 => random.Next(-4095, 4096),
+                            1 => random.Next(2) is 0 ? -4095 : 4095,
+                            2 => random.Next(8) is 0 ? random.Next(-300, 301) : 0,
+                            3 => (int)(2000 * Math.Sin(c * 0.3) * Math.Cos(r * 0.2)),
+                            _ => colBases[worstK][flipUD ? h - 1 - r : r] * rowBases[worstL][flipLR ? w - 1 - c : c] < 0 ? -4095 : 4095,
+                        };
+                    }
+
+                    Av1ForwardTransform.Forward(residual.AsSpan(0, w * h), forward.AsSpan(0, tw * th), txSz, txType);
+
+                    // The columns, then the rows; the FLIPADST types read the samples from the other end
+                    var columns = new double[th * w];
+                    for (var k = 0; k < th; k++)
+                    {
+                        for (var c = 0; c < w; c++)
+                        {
+                            var sum = 0.0;
+                            for (var r = 0; r < h; r++)
+                            {
+                                sum += colBases[k][r] * residual[((flipUD ? h - 1 - r : r) * w) + c];
+                            }
+
+                            columns[(k * w) + c] = sum / (h / 2);
+                        }
+                    }
+
+                    for (var k = 0; k < th; k++)
+                    {
+                        for (var l = 0; l < tw; l++)
+                        {
+                            var sum = 0.0;
+                            for (var c = 0; c < w; c++)
+                            {
+                                sum += rowBases[l][c] * columns[(k * w) + (flipLR ? w - 1 - c : c)];
+                            }
+
+                            var exact = sum / (w / 2) * scale;
+                            var error = Math.Abs(forward[(k * tw) + l] - exact);
+                            worst = Math.Max(worst, error);
+                            Assert.True(error <= 3, $"transform size {txSz}, type {txType}, round {round}, coefficient {(k * tw) + l}: {forward[(k * tw) + l]} instead of {exact}");
+                        }
+                    }
+                }
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"largest error: {worst}");
+    }
+
+    // The response of the inverse kernel of 2^n points to each of its first 32 coefficients: a large impulse, so that the
+    // roundings of the kernel are negligible
+    private static double[][] GetBases(Av1InverseTransform.Kind kind, int n)
+    {
+        const int Impulse = 1 << 22;
+        var length = 1 << n;
+        var bases = new double[Math.Min(32, length)][];
+        var t = new int[length];
+        for (var k = 0; k < bases.Length; k++)
+        {
+            Array.Clear(t);
+            t[k] = Impulse;
+            switch (kind)
+            {
+                case Av1InverseTransform.Kind.Dct:
+                    Av1InverseTransform.InverseDct(t, n, 31);
+                    break;
+                case Av1InverseTransform.Kind.Adst:
+                    Av1InverseTransform.InverseAdst(t, n, 31);
+                    break;
+                default:
+                    Av1InverseTransform.InverseIdentity(t, n);
+                    break;
+            }
+
+            bases[k] = t.Select(value => value / (double)Impulse).ToArray();
+        }
+
+        return bases;
+    }
+
+    private static bool IsApplicable(Av1InverseTransform.Kind kind, int log2Size) => kind switch
+    {
+        Av1InverseTransform.Kind.Adst => log2Size <= 4,
+        Av1InverseTransform.Kind.Identity => log2Size <= 5,
+        _ => true,
+    };
 
     [Fact]
     public void AConstantResidualIsADcCoefficient()

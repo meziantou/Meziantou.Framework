@@ -783,16 +783,25 @@
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-moved.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "moving the candidate source": "FAIL"
+    }
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-addEventListener.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "removing the candidate source, addEventListener": "FAIL"
+    }
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-no-listener.html": {
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-onerror.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "removing the candidate source, onerror": "FAIL"
+    }
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html": {
     "harness": "ERROR",
@@ -1947,6 +1956,9 @@
   "html/semantics/embedded-content/the-area-element/area-download-click.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/the-area-element/area-image-cursor.html": {
+    "total": 1
+  },
   "html/semantics/embedded-content/the-area-element/area-offsets.html": {
     "total": 3
   },
@@ -2110,7 +2122,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-canvas-element/security.pattern.fillStyle.sub.html": {
-    "total": 14
+    "total": 18
   },
   "html/semantics/embedded-content/the-canvas-element/security.pattern.image.fillStyle.cross.html": {
     "total": 1
@@ -3092,6 +3104,9 @@
   "html/semantics/embedded-content/the-img-element/img-picture-ancestor.html": {
     "total": 4
   },
+  "html/semantics/embedded-content/the-img-element/img-src-encoding-parse.html": {
+    "total": 1
+  },
   "html/semantics/embedded-content/the-img-element/img-src-in-synthetic-document.html": {
     "total": 1
   },
@@ -3147,7 +3162,10 @@
     "total": 4
   },
   "html/semantics/embedded-content/the-img-element/relevant-mutations-lazy.html": {
-    "total": 8
+    "total": 9,
+    "failures": {
+      "width attribute changes": "FAIL"
+    }
   },
   "html/semantics/embedded-content/the-img-element/relevant-mutations.html": {
     "total": 113,
@@ -3195,6 +3213,61 @@
     "total": 179,
     "failures": {
       "<img srcset=\"/images/green-1x1.png?e38 50w, /images/green-16x16.png?e38 51w\" sizes=\"(min-width:calc(0)) 1px\"> ref sizes=\"1px\" (width:1000px)": "FAIL"
+    }
+  },
+  "html/semantics/embedded-content/the-img-element/sizes/sizes-2d.tentative.html": {
+    "total": 100,
+    "failures": {
+      "<img sizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?img12 50w 50h, /images/green-16x16.png?img12 51w 51h\">": "FAIL",
+      "<img sizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?img13 50w 50h, /images/green-16x16.png?img13 51w 51h\">": "FAIL",
+      "<img sizes=\"(max-width: 0px) cover 10px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?img10 50w 50h, /images/green-16x16.png?img10 51w 51h\">": "FAIL",
+      "<img sizes=\"(max-width: 0px) or (min-height: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img18 50w 50h, /images/green-16x16.png?img18 51w 51h\">": "FAIL",
+      "<img sizes=\"(min-width: 0px) and (min-height: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img16 50w 50h, /images/green-16x16.png?img16 51w 51h\">": "FAIL",
+      "<img sizes=\"(min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?img11 50w 50h, /images/green-16x16.png?img11 51w 51h\">": "FAIL",
+      "<img sizes=\"(min-width: 0px) contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?img8 50w 50h, /images/green-16x16.png?img8 51w 51h\">": "FAIL",
+      "<img sizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" srcset=\"/images/green-1x1.png?img23 50w 50h, /images/green-16x16.png?img23 51w 51h\">": "FAIL",
+      "<img sizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img19 50w 50h, /images/green-16x16.png?img19 51w 51h\">": "FAIL",
+      "<img sizes=\"CONTAIN 10px 1000px\" srcset=\"/images/green-1x1.png?img2 50w 50h, /images/green-16x16.png?img2 51w 51h\">": "FAIL",
+      "<img sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img34 50w 50h, /images/green-16x16.png?img34 51w 51h\">": "FAIL",
+      "<img sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?img1 50w 50h, /images/green-16x16.png?img1 51w 51h\">": "FAIL",
+      "<img sizes=\"contain 10px 1000px\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img32 50w 50h, /images/green-16x16.png?img32 51w 51h\">": "FAIL",
+      "<img sizes=\"contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?img5 50w 50h, /images/green-16x16.png?img5 51w 51h\">": "FAIL",
+      "<img sizes=\"contain 10px 10px\" srcset=\"/images/green-1x1.png?img7 50w 1h, /images/green-16x16.png?img7 51w 2h\">": "FAIL",
+      "<img sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?img31 50w, /images/green-16x16.png?img31 51w\">": "FAIL",
+      "<img sizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img14 50w 50h, /images/green-16x16.png?img14 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link12 50w 50h, /images/green-16x16.png?link12 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" imagesrcset=\"/images/green-1x1.png?link13 50w 50h, /images/green-16x16.png?link13 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) cover 10px 1000px, contain 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link10 50w 50h, /images/green-16x16.png?link10 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) or (min-height: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link18 50w 50h, /images/green-16x16.png?link18 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(min-width: 0px) and (min-height: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link16 50w 50h, /images/green-16x16.png?link16 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(min-width: 0px) contain 10px 1000px, 1000px\" imagesrcset=\"/images/green-1x1.png?link11 50w 50h, /images/green-16x16.png?link11 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(min-width: 0px) contain 10px 1000px, cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link8 50w 50h, /images/green-16x16.png?link8 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" imagesrcset=\"/images/green-1x1.png?link23 50w 50h, /images/green-16x16.png?link23 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link19 50w 50h, /images/green-16x16.png?link19 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"CONTAIN 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link2 50w 50h, /images/green-16x16.png?link2 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link34 50w 50h, /images/green-16x16.png?link34 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link1 50w 50h, /images/green-16x16.png?link1 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 1000px, cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link5 50w 50h, /images/green-16x16.png?link5 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 10px\" imagesrcset=\"/images/green-1x1.png?link7 50w 1h, /images/green-16x16.png?link7 51w 2h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link31 50w, /images/green-16x16.png?link31 51w\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link14 50w 50h, /images/green-16x16.png?link14 51w 51h\">": "FAIL",
+      "<picture><source sizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture12 50w 50h, /images/green-16x16.png?picture12 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?picture13 50w 50h, /images/green-16x16.png?picture13 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(max-width: 0px) cover 10px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture10 50w 50h, /images/green-16x16.png?picture10 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(max-width: 0px) or (min-height: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture18 50w 50h, /images/green-16x16.png?picture18 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(min-width: 0px) and (min-height: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture16 50w 50h, /images/green-16x16.png?picture16 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?picture11 50w 50h, /images/green-16x16.png?picture11 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(min-width: 0px) contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture8 50w 50h, /images/green-16x16.png?picture8 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" srcset=\"/images/green-1x1.png?picture23 50w 50h, /images/green-16x16.png?picture23 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture19 50w 50h, /images/green-16x16.png?picture19 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"CONTAIN 10px 1000px\" srcset=\"/images/green-1x1.png?picture2 50w 50h, /images/green-16x16.png?picture2 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture34 50w 50h, /images/green-16x16.png?picture34 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture1 50w 50h, /images/green-16x16.png?picture1 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture32 50w 50h, /images/green-16x16.png?picture32 51w 51h\"><img style=\"object-fit: cover\"></picture>": "FAIL",
+      "<picture><source sizes=\"contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture5 50w 50h, /images/green-16x16.png?picture5 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"contain 10px 10px\" srcset=\"/images/green-1x1.png?picture7 50w 1h, /images/green-16x16.png?picture7 51w 2h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture31 50w, /images/green-16x16.png?picture31 51w\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture14 50w 50h, /images/green-16x16.png?picture14 51w 51h\"><img></picture>": "FAIL"
     }
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-dynamic-attributes.html": {
@@ -3364,6 +3437,44 @@
   },
   "html/semantics/embedded-content/the-object-element/usemap-casing.html": {
     "total": 8
+  },
+  "html/semantics/embedded-content/the-persistentwidget-element/tentative/idlharness.window.js": {
+    "total": 57,
+    "failures": {
+      "HTMLBodyElement interface: attribute onopenerchange": "FAIL",
+      "HTMLBodyElement interface: document.body must inherit property \"onopenerchange\" with the proper type": "FAIL",
+      "HTMLFrameSetElement interface: attribute onopenerchange": "FAIL",
+      "HTMLPersistentWidgetElement interface object length": "FAIL",
+      "HTMLPersistentWidgetElement interface object name": "FAIL",
+      "HTMLPersistentWidgetElement interface: attribute name": "FAIL",
+      "HTMLPersistentWidgetElement interface: attribute src": "FAIL",
+      "HTMLPersistentWidgetElement interface: calling postMessage(any, USVString) on document.createElement(\"persistentwidget\") with too few arguments must throw TypeError": "FAIL",
+      "HTMLPersistentWidgetElement interface: calling postMessage(any, optional WindowPostMessageOptions) on document.createElement(\"persistentwidget\") with too few arguments must throw TypeError": "FAIL",
+      "HTMLPersistentWidgetElement interface: document.createElement(\"persistentwidget\") must inherit property \"name\" with the proper type": "FAIL",
+      "HTMLPersistentWidgetElement interface: document.createElement(\"persistentwidget\") must inherit property \"postMessage(any, USVString)\" with the proper type": "FAIL",
+      "HTMLPersistentWidgetElement interface: document.createElement(\"persistentwidget\") must inherit property \"postMessage(any, optional WindowPostMessageOptions)\" with the proper type": "FAIL",
+      "HTMLPersistentWidgetElement interface: document.createElement(\"persistentwidget\") must inherit property \"src\" with the proper type": "FAIL",
+      "HTMLPersistentWidgetElement interface: existence and properties of interface object": "FAIL",
+      "HTMLPersistentWidgetElement interface: existence and properties of interface prototype object": "FAIL",
+      "HTMLPersistentWidgetElement interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "HTMLPersistentWidgetElement interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "HTMLPersistentWidgetElement interface: operation postMessage(any, USVString)": "FAIL",
+      "HTMLPersistentWidgetElement interface: operation postMessage(any, optional WindowPostMessageOptions)": "FAIL",
+      "HTMLPersistentWidgetElement must be primary interface of document.createElement(\"persistentwidget\")": "FAIL",
+      "PersistentWidgetOpener interface object length": "FAIL",
+      "PersistentWidgetOpener interface object name": "FAIL",
+      "PersistentWidgetOpener interface: existence and properties of interface object": "FAIL",
+      "PersistentWidgetOpener interface: existence and properties of interface prototype object": "FAIL",
+      "PersistentWidgetOpener interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PersistentWidgetOpener interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PersistentWidgetOpener interface: operation postMessage(any, USVString)": "FAIL",
+      "PersistentWidgetOpener interface: operation postMessage(any, optional WindowPostMessageOptions)": "FAIL",
+      "Stringification of document.createElement(\"persistentwidget\")": "FAIL",
+      "Window interface: attribute onopenerchange": "FAIL",
+      "Window interface: attribute persistentWidgetOpener": "FAIL",
+      "Window interface: window must inherit property \"onopenerchange\" with the proper type": "FAIL",
+      "Window interface: window must inherit property \"persistentWidgetOpener\" with the proper type": "FAIL"
+    }
   },
   "html/semantics/embedded-content/the-video-element/intrinsic_sizes.htm": {
     "total": 5
@@ -3938,6 +4049,46 @@
   "html/semantics/forms/the-button-element/button-willvalidate.html": {
     "total": 1
   },
+  "html/semantics/forms/the-button-element/controls-inside-link-activation.tentative.html": {
+    "total": 49,
+    "failures": {
+      "<button command> without commandfor follows the link": "FAIL",
+      "<button commandfor> without command follows the link": "FAIL",
+      "<button type=button>, in form follows the link": "FAIL",
+      "<button type=button>, no form follows the link": "FAIL",
+      "<button type=reset>, no form follows the link": "FAIL",
+      "<button type=submit>, no form follows the link": "FAIL",
+      "<button> commandfor/command=--custom, added during click": "FAIL",
+      "<button> commandfor/command=--custom, present before click": "FAIL",
+      "<button> commandfor/command=--custom, removed during click": "FAIL",
+      "<button> commandfor/command=show-popover, added during click": "FAIL",
+      "<button> commandfor/command=show-popover, present before click": "FAIL",
+      "<button> commandfor/command=show-popover, removed during click": "FAIL",
+      "<button> popovertarget, added during click": "FAIL",
+      "<button> popovertarget, present before click": "FAIL",
+      "<button> popovertarget, removed during click": "FAIL",
+      "<button> type=reset in form, removed during click": "FAIL",
+      "<button> type=submit in form, removed during click": "FAIL",
+      "<button>, no form follows the link": "FAIL",
+      "<input type=button>, in form follows the link": "FAIL",
+      "<input type=button>, no form follows the link": "FAIL",
+      "<input type=reset>, no form follows the link": "FAIL",
+      "<input type=submit>, no form follows the link": "FAIL",
+      "<input type=text> follows the link": "FAIL",
+      "<input> popovertarget, added during click": "FAIL",
+      "<input> popovertarget, present before click": "FAIL",
+      "<input> popovertarget, removed during click": "FAIL",
+      "<input> type=reset in form, removed during click": "FAIL",
+      "<input> type=submit in form, removed during click": "FAIL",
+      "Inner label that gains a control during click clicks the control, and the outer link is not followed": "FAIL",
+      "Inner label that loses its control during click does not click it, and the outer link is followed": "FAIL",
+      "Inner link that gains href during click is followed instead of the outer link": "FAIL",
+      "Inner link that loses href during click is not followed, and the outer link is followed": "FAIL",
+      "Link that gains href during click on <button> is followed": "FAIL",
+      "Link that gains href during click on <input> is followed": "FAIL",
+      "Link that gains href during click on a <span> is followed": "FAIL"
+    }
+  },
   "html/semantics/forms/the-datalist-element/datalistoptions.html": {
     "total": 2
   },
@@ -4188,6 +4339,66 @@
   "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html": {
     "total": 80
   },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-false-0": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-false-1": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-false-2": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-false-3": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-false-4": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-true-0": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-true-1": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-true-2": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-true-3": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=from-text-true-4": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-false-0": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-false-1": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-false-2": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-false-3": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-false-4": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-true-0": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-true-1": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-true-2": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-true-3": {
+    "total": 5
+  },
+  "html/semantics/forms/the-input-element/focus-dynamic-type-change-on-blur.html?include=to-text-true-4": {
+    "total": 5
+  },
   "html/semantics/forms/the-input-element/focus-dynamic-type-change.html": {
     "total": 40
   },
@@ -4411,6 +4622,9 @@
     "total": 2
   },
   "html/semantics/forms/the-input-element/radio-focused-and-scrolled-into-view.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-input-element/radio-form-owner.html": {
     "total": 1
   },
   "html/semantics/forms/the-input-element/radio-groupname-case.html": {
@@ -4801,7 +5015,11 @@
     "total": 4
   },
   "html/semantics/forms/the-select-element/customizable-select-listbox/customizable-select-listbox-mouse-behavior.html": {
-    "total": 4
+    "total": 4,
+    "failures": {
+      "mouse: input behavior for base appearance <select size=4>": "FAIL",
+      "touch: input behavior for base appearance <select size=4>": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select-listbox/customizable-select-listbox-sizing.html": {
     "reftest": "FAIL"
@@ -4940,6 +5158,12 @@
   "html/semantics/forms/the-select-element/customizable-select/select-appearance-active.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-select-element/customizable-select/select-appearance-auto-button-mutation.html": {
+    "reftest": "FAIL"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-appearance-auto-button.html": {
+    "reftest": "FAIL"
+  },
   "html/semantics/forms/the-select-element/customizable-select/select-appearance-base-display.html": {
     "reftest": "PASS"
   },
@@ -5035,6 +5259,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-appearance-wrong-picker-argument.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-ask-for-reset-base-appearance.html": {
+    "total": 2
   },
   "html/semantics/forms/the-select-element/customizable-select/select-base-appearance-computed-style.html": {
     "total": 11,
@@ -5159,6 +5386,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-optgroup-legend-label.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-optgroup-tabindex-focus.html": {
+    "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/select-option-arrow-scroll.optional.html": {
     "total": 2
@@ -5292,6 +5522,9 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-attribute-change.html": {
     "total": 7
   },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-cloned-option-is-not-an-option.tentative.html": {
+    "total": 1
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-color.html": {
     "reftest": "PASS"
   },
@@ -5307,17 +5540,39 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-mutations.html": {
     "total": 8,
     "failures": {
-      "MutationObserver records during parsing of <select> with <selectedcontent>: test6": "FAIL"
+      "MutationObserver records during parsing of <select> with <selectedcontent>: test6": "FAIL",
+      "MutationObserver records during parsing of <select> with <selectedcontent>: test8": "FAIL"
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested-select.html": {
-    "total": 1
+    "total": 2,
+    "failures": {
+      "Removing an ancestor of a nested select enables its selectedcontent element.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
-    "total": 2
+    "total": 8,
+    "failures": {
+      "Inserting a select that already contains options updates its selectedcontent once.": "FAIL",
+      "Inserting an option followed by selectedcontent updates selectedcontent once.": "FAIL",
+      "Inserting an option that causes another option to be selected updates selectedcontent.": "FAIL",
+      "Inserting selectedcontent followed by an option that changes selectedness updates every selectedcontent once.": "FAIL",
+      "Inserting selectedcontent followed by an option updates selectedcontent once.": "FAIL"
+    }
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
+    "total": 8,
+    "failures": {
+      "A queued update of a moved selectedcontent element does nothing if it was updated in the meantime.": "FAIL",
+      "A queued update of selectedcontent does nothing if it was updated in the meantime.": "FAIL",
+      "Inserting an option performs a pending update of selectedcontent.": "FAIL",
+      "Inserting selectedcontent while an update of its select's selectedcontent elements is queued leaves it to that update.": "FAIL",
+      "Moving a selectedcontent element twice queues a single update.": "FAIL",
+      "Removing options queues a single update of selectedcontent.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2,
@@ -5327,10 +5582,14 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html": {
-    "total": 2
+    "total": 3,
+    "failures": {
+      "selectedcontent moved into a select that becomes multiple before the microtask runs is not updated.": "FAIL",
+      "selectedcontent stays up to date after an ancestor of the select is moved.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent.html": {
-    "total": 6
+    "total": 11
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html": {
     "total": 1,
@@ -5408,7 +5667,7 @@
     "total": 3
   },
   "html/semantics/forms/the-select-element/select-ask-for-reset.html": {
-    "total": 3
+    "total": 4
   },
   "html/semantics/forms/the-select-element/select-attribute-change-reset.html": {
     "total": 8
@@ -5512,11 +5771,21 @@
   "html/semantics/forms/the-select-element/select-setcustomvalidity.html": {
     "total": 1
   },
+  "html/semantics/forms/the-select-element/select-setter-dirtiness.html": {
+    "total": 7
+  },
   "html/semantics/forms/the-select-element/select-tab-navigation.tentative.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/select-toggle-multiple.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/select-user-selection-dirtiness.html": {
+    "total": 4,
+    "failures": {
+      "Clicking the selected option in a list box sets its dirtiness": "FAIL",
+      "Typing to select an option in a dropdown box sets its dirtiness": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/select-validity.html": {
     "total": 6
@@ -5764,6 +6033,12 @@
   },
   "html/semantics/grouping-content/the-ul-element/grouping-ul.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/commands/option/option-accesskey-dirtiness.html": {
+    "total": 2
+  },
+  "html/semantics/interactive-elements/commands/option/option-accesskey.html": {
+    "total": 3
   },
   "html/semantics/interactive-elements/contextmenu-historical.html": {
     "total": 11
@@ -6735,25 +7010,21 @@
     }
   },
   "html/semantics/menu/tentative/checkable.html": {
-    "total": 20,
+    "total": 15,
     "failures": {
-      "Default checkedness and checkedness dirtying are wired up correctly": "FAIL",
-      "checkable menuitem exclusivity": "FAIL",
-      "checkable menuitem exclusivity when disconnected": "FAIL",
-      "checkable multiple": "FAIL",
-      "checked event fires asynchronously on checkable menuitem activation, but not from IDL attribute setter or exclusivity updates": "FAIL",
-      "checked event fires asynchronously when toggling a checkable menuitem to unchecked": "FAIL",
-      "fieldset '' => single; all but the first checked menuitem gets reset": "FAIL",
-      "fieldset multiple => single; all but the first checked menuitem gets reset": "FAIL",
-      "fieldset unknownvalue => single; all but the first checked menuitem gets reset": "FAIL",
-      "fieldset with checkable=\"\" allows multiple menuitems to be checked": "FAIL",
-      "fieldset with checkable=unknownvalue allows multiple menuitems to be checked": "FAIL",
-      "menuitem in menubar is not checkable": "FAIL",
-      "menuitem in menulist": "FAIL",
-      "menuitem is not checkable on its own": "FAIL",
-      "when fieldset becomes uncheckable, so do its menuitems": "FAIL",
-      "when fieldset with checkable='' becomes uncheckable, so do its menuitems": "FAIL",
-      "when fieldset with checkable=unknownvalue becomes uncheckable, so do its menuitems": "FAIL"
+      "Default checkedness and checkedness dirtying on menuitemcheckbox": "FAIL",
+      "Default checkedness and checkedness dirtying on menuitemradio": "FAIL",
+      "checked event fires asynchronously on menuitemradio activation, but not from IDL attribute setter or exclusivity updates": "FAIL",
+      "checked event fires asynchronously when toggling a menuitemcheckbox to unchecked": "FAIL",
+      "menuitemcheckbox allows multiple checked items": "FAIL",
+      "menuitemcheckbox and menuitemradio do not support command and commandfor attributes": "FAIL",
+      "menuitemcheckbox is checkable on its own": "FAIL",
+      "menuitemradio exclusivity": "FAIL",
+      "menuitemradio exclusivity directly under a menulist (no fieldset)": "FAIL",
+      "menuitemradio exclusivity when disconnected": "FAIL",
+      "menuitemradio exclusivity within a menubar": "FAIL",
+      "menuitemradio groups are separated by nearest fieldset ancestor": "FAIL",
+      "menuitemradio is checkable on its own": "FAIL"
     }
   },
   "html/semantics/menu/tentative/focus-enters-menulist.html": {
@@ -6807,9 +7078,8 @@
     }
   },
   "html/semantics/menu/tentative/idlharness.https.html": {
-    "total": 51,
+    "total": 72,
     "failures": {
-      "HTMLFieldSetElement interface: attribute checkable": "FAIL",
       "HTMLMenuBarElement interface object length": "FAIL",
       "HTMLMenuBarElement interface object name": "FAIL",
       "HTMLMenuBarElement interface: existence and properties of interface object": "FAIL",
@@ -6817,19 +7087,41 @@
       "HTMLMenuBarElement interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "HTMLMenuBarElement interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "HTMLMenuBarElement must be primary interface of document.createElement(\"menubar\")": "FAIL",
+      "HTMLMenuItemCheckboxElement interface object length": "FAIL",
+      "HTMLMenuItemCheckboxElement interface object name": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: attribute checked": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: attribute defaultChecked": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: attribute disabled": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: document.createElement(\"menuitemcheckbox\") must inherit property \"checked\" with the proper type": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: document.createElement(\"menuitemcheckbox\") must inherit property \"defaultChecked\" with the proper type": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: document.createElement(\"menuitemcheckbox\") must inherit property \"disabled\" with the proper type": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: existence and properties of interface object": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: existence and properties of interface prototype object": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "HTMLMenuItemCheckboxElement interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "HTMLMenuItemCheckboxElement must be primary interface of document.createElement(\"menuitemcheckbox\")": "FAIL",
       "HTMLMenuItemElement interface object length": "FAIL",
       "HTMLMenuItemElement interface object name": "FAIL",
-      "HTMLMenuItemElement interface: attribute checked": "FAIL",
-      "HTMLMenuItemElement interface: attribute defaultChecked": "FAIL",
       "HTMLMenuItemElement interface: attribute disabled": "FAIL",
-      "HTMLMenuItemElement interface: document.createElement(\"menuitem\") must inherit property \"checked\" with the proper type": "FAIL",
-      "HTMLMenuItemElement interface: document.createElement(\"menuitem\") must inherit property \"defaultChecked\" with the proper type": "FAIL",
       "HTMLMenuItemElement interface: document.createElement(\"menuitem\") must inherit property \"disabled\" with the proper type": "FAIL",
       "HTMLMenuItemElement interface: existence and properties of interface object": "FAIL",
       "HTMLMenuItemElement interface: existence and properties of interface prototype object": "FAIL",
       "HTMLMenuItemElement interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "HTMLMenuItemElement interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "HTMLMenuItemElement must be primary interface of document.createElement(\"menuitem\")": "FAIL",
+      "HTMLMenuItemRadioElement interface object length": "FAIL",
+      "HTMLMenuItemRadioElement interface object name": "FAIL",
+      "HTMLMenuItemRadioElement interface: attribute checked": "FAIL",
+      "HTMLMenuItemRadioElement interface: attribute defaultChecked": "FAIL",
+      "HTMLMenuItemRadioElement interface: attribute disabled": "FAIL",
+      "HTMLMenuItemRadioElement interface: document.createElement(\"menuitemradio\") must inherit property \"checked\" with the proper type": "FAIL",
+      "HTMLMenuItemRadioElement interface: document.createElement(\"menuitemradio\") must inherit property \"defaultChecked\" with the proper type": "FAIL",
+      "HTMLMenuItemRadioElement interface: document.createElement(\"menuitemradio\") must inherit property \"disabled\" with the proper type": "FAIL",
+      "HTMLMenuItemRadioElement interface: existence and properties of interface object": "FAIL",
+      "HTMLMenuItemRadioElement interface: existence and properties of interface prototype object": "FAIL",
+      "HTMLMenuItemRadioElement interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "HTMLMenuItemRadioElement interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "HTMLMenuItemRadioElement must be primary interface of document.createElement(\"menuitemradio\")": "FAIL",
       "HTMLMenuListElement interface object length": "FAIL",
       "HTMLMenuListElement interface object name": "FAIL",
       "HTMLMenuListElement interface: existence and properties of interface object": "FAIL",
@@ -6846,6 +7138,8 @@
       "HTMLSubMenuElement must be primary interface of document.createElement(\"submenu\")": "FAIL",
       "Stringification of document.createElement(\"menubar\")": "FAIL",
       "Stringification of document.createElement(\"menuitem\")": "FAIL",
+      "Stringification of document.createElement(\"menuitemcheckbox\")": "FAIL",
+      "Stringification of document.createElement(\"menuitemradio\")": "FAIL",
       "Stringification of document.createElement(\"menulist\")": "FAIL",
       "Stringification of document.createElement(\"submenu\")": "FAIL"
     }
@@ -6854,41 +7148,43 @@
     "reftest": "FAIL"
   },
   "html/semantics/menu/tentative/menu-content-model-violation.html": {
-    "total": 34,
+    "total": 36,
     "failures": {
-      "A single violation forces the entire menu tree (ancestors, siblings, descendants) into dialog mode": "FAIL",
-      "Adding and immediately removing an invalid text node does not force dialog": "FAIL",
-      "Adding and immediately removing text inside a menuitem does not force dialog": "FAIL",
-      "Attribute mutation double-counting incorrectly fails to untrigger dialog mode": "FAIL",
-      "Detaching an invalid subtree restores the outer menu, but the detached subtree remains a dialog": "FAIL",
-      "Dynamic mutation correctly triggers and untriggers dialog mode": "FAIL",
+      "A single violation forces list role on the entire menu tree (ancestors, siblings, descendants)": "FAIL",
+      "Adding and immediately removing an invalid text node does not force list role": "FAIL",
+      "Adding and immediately removing text inside a menuitem does not force list role": "FAIL",
+      "Attribute mutation double-counting incorrectly fails to remove list role": "FAIL",
+      "Detaching an invalid subtree restores the outer menu, but the detached subtree remains a list": "FAIL",
+      "Dynamic mutation correctly adds and removes list role": "FAIL",
       "Dynamic removal of the only violation restores the entire tree": "FAIL",
-      "Dynamic structural violation (div in submenu) does not force dialog": "FAIL",
-      "Dynamic text mutation correctly triggers and untriggers dialog mode": "FAIL",
-      "Fieldset containing wayward text forces dialog": "FAIL",
+      "Dynamic structural violation (div in submenu) does not force list role": "FAIL",
+      "Dynamic text mutation correctly adds and removes list role": "FAIL",
+      "Fieldset containing wayward text forces list": "FAIL",
       "Inserting and immediately removing a violating subtree correctly maintains the outer menu state": "FAIL",
-      "Invalid outer menubar forces dialog on itself and list on valid inner menubar": "FAIL",
-      "Invalid outer menubar forces dialog on itself and list on valid inner menulist": "FAIL",
-      "Invalid submenu missing item intentionally does not force dialog": "FAIL",
-      "Invalid submenu multiple items intentionally does not force dialog": "FAIL",
-      "Invalid submenu sequence intentionally does not force dialog": "FAIL",
-      "Menubar containing an anchor tag forces dialog": "FAIL",
-      "Menubar with wayward button forces dialog": "FAIL",
-      "Menubar without content model violations does not force dialog": "FAIL",
-      "Menulist containing a menubar does not force dialog": "FAIL",
-      "Menulist containing an anchor tag forces dialog": "FAIL",
-      "Menulist with wayward pseudo-element text incorrectly fails to force dialog": "FAIL",
-      "Menulist with wayward text content forces dialog": "FAIL",
-      "Menulist without content model violations does not force dialog": "FAIL",
+      "Invalid outer menubar forces list on itself and on valid inner menubar": "FAIL",
+      "Invalid outer menubar forces list on itself and on valid inner menulist": "FAIL",
+      "Invalid submenu missing item intentionally does not force list role": "FAIL",
+      "Invalid submenu multiple items intentionally does not force list role": "FAIL",
+      "Invalid submenu sequence intentionally does not force list role": "FAIL",
+      "Menubar containing an anchor tag forces list": "FAIL",
+      "Menubar with wayward button forces list": "FAIL",
+      "Menubar without content model violations does not force list role": "FAIL",
+      "Menuitem roles track the owner's list role across dynamic mutations": "FAIL",
+      "Menuitems fall back to listitem, radio, and checkbox roles when the content model is violated": "FAIL",
+      "Menulist containing a menubar does not force list role": "FAIL",
+      "Menulist containing an anchor tag forces list": "FAIL",
+      "Menulist with wayward pseudo-element text incorrectly fails to force list": "FAIL",
+      "Menulist with wayward text content forces list": "FAIL",
+      "Menulist without content model violations does not force list role": "FAIL",
       "Multiple violations across different branches require all to be removed before restoring": "FAIL",
       "Outer menu ignores mutations inside detached nested menus": "FAIL",
-      "React/lit teardown: Mutating a detached subtree does not incorrectly trigger dialog mode": "FAIL",
+      "React/lit teardown: Mutating a detached subtree does not incorrectly force list role": "FAIL",
       "Removing a node from a detached valid subtree should not crash": "FAIL",
       "Removing a wrapper element containing an invalid menu correctly restores the outer menu": "FAIL",
-      "Removing valid text content does not incorrectly clear dialog mode": "FAIL",
+      "Removing valid text content does not incorrectly remove list role": "FAIL",
       "Reparenting a standalone violating menulist into a menubar correctly transfers violations to the top-level observer": "FAIL",
-      "Submenu containing <div>text</div> forces dialog": "FAIL",
-      "Submenu containing wayward text content forces dialog": "FAIL",
+      "Submenu containing <div>text</div> forces list": "FAIL",
+      "Submenu containing wayward text content forces list": "FAIL",
       "Vue/Angular teardown: Removing invalid nodes in reverse tree order restores menu role": "FAIL"
     }
   },
@@ -6930,11 +7226,11 @@
   "html/semantics/menu/tentative/menu-violation-mode-focus.html": {
     "total": 5,
     "failures": {
-      "Dialog mode allows tabbing across deep submenu boundaries.": "FAIL",
-      "Dialog mode fallback applies to the specific menu and all nested menus.": "FAIL",
-      "Global dialog propagation correctly applies dialog keyboard routing to lateral structurally-valid submenus.": "FAIL",
-      "In dialog mode, Tab navigates between interactive children and natively focusable menuitems instead of closing the menu.": "FAIL",
-      "Tab navigation skips disabled menuitems in dialog mode": "FAIL"
+      "Global violation mode propagation correctly applies violation mode keyboard routing to lateral structurally-valid submenus.": "FAIL",
+      "In violation mode, Tab navigates between interactive children and natively focusable menuitems instead of closing the menu.": "FAIL",
+      "Tab navigation skips disabled menuitems in violation mode": "FAIL",
+      "Violation mode allows tabbing across deep submenu boundaries.": "FAIL",
+      "Violation mode fallback applies to the specific menu and all nested menus.": "FAIL"
     }
   },
   "html/semantics/menu/tentative/menubar-interest-command-invoker.tentative.html": {
@@ -6951,7 +7247,7 @@
       "Menuitem with toggle-popover, show-popover, hide-popover commands can invoke menulist popover.": "FAIL",
       "Nested submenu can be invoked by clicking.": "FAIL",
       "hidePopover() on nested menulist closes the popover.": "FAIL",
-      "menuitems that invoke menulists cannot be checkable": "FAIL"
+      "menuitemcheckbox does not invoke menulists or support command/commandfor": "FAIL"
     }
   },
   "html/semantics/menu/tentative/menuitem-activate.html": {
@@ -6998,15 +7294,16 @@
     }
   },
   "html/semantics/menu/tentative/menulist-popover-attribute.html": {
-    "total": 1,
+    "total": 2,
     "failures": {
+      "Clicks outside a menulist without a popover attribute reach the target": "FAIL",
       "menulist is a popover by default.": "FAIL"
     }
   },
   "html/semantics/menu/tentative/reparent-with-pending-violation-microtask.html": {
     "total": 1,
     "failures": {
-      "Synchronous reparenting correctly delegates dialog role updates to the new root": "FAIL"
+      "Synchronous reparenting correctly distributes the list role to the new root": "FAIL"
     }
   },
   "html/semantics/menu/tentative/uncheck-menuitem-dismiss-popover.html": {
@@ -7184,6 +7481,9 @@
   "html/semantics/popovers/popover-focus-slotted.html": {
     "total": 2
   },
+  "html/semantics/popovers/popover-focus-source-contenteditable.html": {
+    "total": 1
+  },
   "html/semantics/popovers/popover-focus-tabindex.html": {
     "total": 1
   },
@@ -7195,6 +7495,19 @@
   },
   "html/semantics/popovers/popover-hidden-display.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/popovers/popover-hide-inactive-document.html": {
+    "total": 8,
+    "failures": {
+      "hidePopover() hides a showing popover=auto once its iframe is removed": "FAIL",
+      "hidePopover() hides a showing popover=auto once its iframe navigates away": "FAIL",
+      "hidePopover() hides a showing popover=manual once its iframe is removed": "FAIL",
+      "hidePopover() hides a showing popover=manual once its iframe navigates away": "FAIL",
+      "togglePopover() hides a showing popover=auto once its iframe is removed": "FAIL",
+      "togglePopover() hides a showing popover=auto once its iframe navigates away": "FAIL",
+      "togglePopover() hides a showing popover=manual once its iframe is removed": "FAIL",
+      "togglePopover() hides a showing popover=manual once its iframe navigates away": "FAIL"
+    }
   },
   "html/semantics/popovers/popover-hint-hierarchy.html": {
     "total": 5
@@ -7275,6 +7588,14 @@
       "The popover attribute, on an element with no implicit role, then the element's role instead maps to group.": "FAIL"
     }
   },
+  "html/semantics/popovers/popover-move-documents-during-hide.html": {
+    "total": 3,
+    "failures": {
+      "A popover moved and re-shown in another document closes on Escape there": "FAIL",
+      "hidePopover() does not hide a popover moved and re-shown by its child's beforetoggle": "FAIL",
+      "hidePopover() does not hide a popover moved and re-shown by its own beforetoggle": "FAIL"
+    }
+  },
   "html/semantics/popovers/popover-move-documents.html": {
     "total": 3
   },
@@ -7304,6 +7625,9 @@
   },
   "html/semantics/popovers/popover-removal-2.html": {
     "total": 1
+  },
+  "html/semantics/popovers/popover-removal-hides.html": {
+    "total": 6
   },
   "html/semantics/popovers/popover-removal.html": {
     "total": 1
@@ -7432,7 +7756,7 @@
     "total": 5
   },
   "html/semantics/scripting-1/the-script-element/css-module/content-type-checking.html": {
-    "total": 5
+    "total": 6
   },
   "html/semantics/scripting-1/the-script-element/css-module/cors-crossorigin-requests.html": {
     "total": 3
@@ -7958,6 +8282,9 @@
   },
   "html/semantics/scripting-1/the-script-element/fetch-src/alpha/base.html": {
     "total": 1
+  },
+  "html/semantics/scripting-1/the-script-element/fetch-src/empty-set-while-connected.html": {
+    "total": 2
   },
   "html/semantics/scripting-1/the-script-element/fetch-src/empty-with-base.html": {
     "total": 1
@@ -8521,6 +8848,9 @@
   "html/semantics/scripting-1/the-script-element/module/load-error-events.html": {
     "total": 8
   },
+  "html/semantics/scripting-1/the-script-element/module/module-import-referrer-base-url.html": {
+    "total": 2
+  },
   "html/semantics/scripting-1/the-script-element/module/module-import-referrer.html": {
     "total": 4
   },
@@ -8597,7 +8927,12 @@
     "total": 2
   },
   "html/semantics/scripting-1/the-script-element/module/type.html": {
-    "total": 5
+    "total": 6,
+    "failures": {
+      "type=\" module \"": "FAIL",
+      "type=\" module\"": "FAIL",
+      "type=\"module \"": "FAIL"
+    }
   },
   "html/semantics/scripting-1/the-script-element/moving-between-documents-during-evaluation.html": {
     "total": 1
@@ -8887,6 +9222,9 @@
   "html/semantics/scripting-1/the-script-element/scripting-enabled.html": {
     "total": 1
   },
+  "html/semantics/scripting-1/the-script-element/src-empty-or-invalid-error-event-queued.html": {
+    "total": 4
+  },
   "html/semantics/scripting-1/the-script-element/svg-script-fragment-parsed-not-executed-on-clone.html": {
     "total": 4
   },
@@ -9138,6 +9476,19 @@
       "HTML partial updates: template with contentmethod does not work in XHTML": "FAIL"
     }
   },
+  "html/semantics/scripting-1/the-template-element/template-for/template-for-pagehide-dynamic-markup-insertion.html": {
+    "total": 8,
+    "failures": {
+      "document.close() in pagehide throws InvalidStateError during prepare content patching (via document.write)": "FAIL",
+      "document.close() in pagehide throws InvalidStateError during prepare content patching (via streamAppendHTMLUnsafe)": "FAIL",
+      "document.open() in pagehide throws InvalidStateError during prepare content patching (via document.write)": "FAIL",
+      "document.open() in pagehide throws InvalidStateError during prepare content patching (via streamAppendHTMLUnsafe)": "FAIL",
+      "document.write() in pagehide throws InvalidStateError during prepare content patching (via document.write)": "FAIL",
+      "document.write() in pagehide throws InvalidStateError during prepare content patching (via streamAppendHTMLUnsafe)": "FAIL",
+      "document.writeln() in pagehide throws InvalidStateError during prepare content patching (via document.write)": "FAIL",
+      "document.writeln() in pagehide throws InvalidStateError during prepare content patching (via streamAppendHTMLUnsafe)": "FAIL"
+    }
+  },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-parsing-only.html": {
     "total": 4
   },
@@ -9205,7 +9556,7 @@
     "total": 61
   },
   "html/semantics/sections/headingoffset-mutations.html": {
-    "total": 39
+    "total": 45
   },
   "html/semantics/selectors/case-sensitivity/values.window.js": {
     "total": 276
@@ -9217,6 +9568,9 @@
     "total": 2
   },
   "html/semantics/selectors/pseudo-classes/checked-002.html": {
+    "total": 1
+  },
+  "html/semantics/selectors/pseudo-classes/checked-after-clone.html": {
     "total": 1
   },
   "html/semantics/selectors/pseudo-classes/checked-indeterminate.window.js": {

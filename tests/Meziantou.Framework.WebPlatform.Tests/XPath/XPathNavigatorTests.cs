@@ -478,7 +478,7 @@ public sealed class XPathNavigatorTests
     }
 
     [Fact]
-    public void DetachedAttributeIsARootlessNode()
+    public void DetachedAttributeIsTheOnlyNodeOfItsTree()
     {
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
         var attribute = document.CreateAttribute("a");
@@ -490,6 +490,14 @@ public sealed class XPathNavigatorTests
         Assert.Equal("a", navigator.LocalName);
         Assert.Equal("", navigator.NamespaceURI);
         Assert.Equal("v", navigator.Value);
+        Assert.False(navigator.MoveToFirstChild());
+
+        // Its parent is the root of its tree, which is not a DOM node and has no children
+        Assert.True(navigator.MoveToParent());
+        Assert.Equal(XPathNodeType.Root, navigator.NodeType);
+        Assert.Null(navigator.UnderlyingObject);
+        Assert.Equal("", navigator.Name);
+        Assert.Equal("", navigator.Value);
         Assert.False(navigator.MoveToFirstChild());
         Assert.False(navigator.MoveToParent());
 
@@ -507,8 +515,16 @@ public sealed class XPathNavigatorTests
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><p></p>");
         var detached = document.CreateElement("div");
         var other = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><p></p>");
-        Assert.Equal(XmlNodeOrder.Unknown, document.CreateNavigator().ComparePosition(detached.CreateNavigator()));
-        Assert.Equal(XmlNodeOrder.Unknown, document.CreateNavigator().ComparePosition(other.CreateNavigator()));
+
+        // The trees are in an arbitrary but consistent order
+        foreach (var node in (Node[])[detached, other])
+        {
+            var order = document.CreateNavigator().ComparePosition(node.CreateNavigator());
+            Assert.True(order is XmlNodeOrder.Before or XmlNodeOrder.After);
+            Assert.Equal(order is XmlNodeOrder.Before ? XmlNodeOrder.After : XmlNodeOrder.Before, node.CreateNavigator().ComparePosition(document.CreateNavigator()));
+            Assert.Equal(order, document.QuerySelector("p")!.CreateNavigator().ComparePosition(node.CreateNavigator()));
+        }
+
         Assert.Equal(XmlNodeOrder.Unknown, document.CreateNavigator().ComparePosition(CreateReferenceNavigator("<a/>")));
         Assert.False(document.CreateNavigator().IsSamePosition(other.CreateNavigator()));
         Assert.False(document.CreateNavigator().MoveTo(CreateReferenceNavigator("<a/>")));

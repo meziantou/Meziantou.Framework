@@ -83,6 +83,14 @@
   "custom-elements/disconnected-callbacks.html": {
     "total": 40
   },
+  "custom-elements/element-internals-aria-element-reflection-shadow-including-root.tentative.html": {
+    "total": 7,
+    "failures": {
+      "ARIA element reflection on ElementInternals returns an element in the custom element's own shadow tree": "FAIL",
+      "ariaActiveDescendantElement on ElementInternals of a disconnected element": "FAIL",
+      "ariaActiveDescendantElement on ElementInternals returns an element in another shadow tree in the same document": "FAIL"
+    }
+  },
   "custom-elements/element-internals-aria-element-reflection.html": {
     "total": 9
   },
@@ -225,6 +233,15 @@
   },
   "custom-elements/parser/parser-fallsback-to-unknown-element.html": {
     "total": 4
+  },
+  "custom-elements/parser/parser-sets-attributes-after-autonomous-constructor.html": {
+    "total": 3
+  },
+  "custom-elements/parser/parser-sets-attributes-after-built-in-constructor.html": {
+    "total": 9,
+    "failures": {
+      "Live document.anchors reflects a empty name attribute appended by the parser after the constructor inserted the element": "FAIL"
+    }
   },
   "custom-elements/parser/parser-sets-attributes-and-children.html": {
     "total": 5

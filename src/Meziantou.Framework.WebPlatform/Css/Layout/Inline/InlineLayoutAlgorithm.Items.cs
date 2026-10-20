@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
@@ -42,6 +43,15 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>Whether an atomic inline is in a box whose <c>letter-spacing</c> is not zero (see <see cref="ApplyAtomicLetterSpacing"/>).</summary>
     private bool _hasLetterSpacedAtomics;
 
+    /// <summary>The characters of a text that the white space processing or <c>word-space-transform</c> may change (see <see cref="CollectText"/>).</summary>
+    private static readonly SearchValues<char> WhiteSpaceOrZeroWidthSpace = SearchValues.Create(" \t\r\n\u200B");
+
+    /// <summary>The forced line breaks of UAX #14 that are not items (see <see cref="AppendChar"/>).</summary>
+    private static readonly SearchValues<char> MandatoryBreakCharacters = SearchValues.Create("\v\f\r\u0085\u2028\u2029");
+
+    /// <summary>The characters with the Bidi_Control property (see <see cref="IsBidiControl"/>).</summary>
+    private static readonly SearchValues<char> BidiControlCharacters = SearchValues.Create("\u061C\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u2066\u2067\u2068\u2069");
+
     /// <summary>The white space discarded by <c>white-space-trim</c>.</summary>
     private enum WhiteSpaceDiscard : byte
     {
@@ -75,6 +85,10 @@ internal sealed partial class InlineLayoutAlgorithm
         _needsBidi = isRightToLeft || unicodeBidi == UnicodeBidi.Plaintext;
         _hasNoWrap = layout.TextWrapMode == TextWrapMode.NoWrap;
         _hasClonedEdges = false;
+        _hasPercentageEdges = false;
+        _opportunitiesComputed = false;
+        if (TryRestoreItemsData())
+            return;
 
         // https://drafts.csswg.org/css-writing-modes-4/#bidi-control-codes-injection: the override of a block container
         var blockStart = BidiControls.GetBlockContainerStart(unicodeBidi, isRightToLeft);
@@ -105,13 +119,13 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         // The break opportunities are computed when a line does not fit (see BreakLine)
-        _opportunitiesComputed = false;
         if (_needsBidi)
         {
             ResolveBidi(unicodeBidi, isRightToLeft);
         }
 
         ShapeItems();
+        StoreItemsData();
     }
 
     private void CollectChildren(ContainerBox container)
@@ -428,8 +442,11 @@ internal sealed partial class InlineLayoutAlgorithm
 
         var boxModel = box.Style.Layout.Box;
         var side = start ? WritingDirection.FromStyle(box.Style.Layout).InlineStart : WritingDirection.FromStyle(box.Style.Layout).InlineEnd;
-        var margin = boxModel.Margin.Get(side).Resolve(_percentageBasis);
-        var padding = Math.Max(0, boxModel.Padding.Get(side).Resolve(_percentageBasis));
+        var marginValue = boxModel.Margin.Get(side);
+        var paddingValue = boxModel.Padding.Get(side);
+        _hasPercentageEdges |= (!marginValue.IsAuto && marginValue.Value.HasPercentage) || paddingValue.HasPercentage;
+        var margin = marginValue.Resolve(_percentageBasis);
+        var padding = Math.Max(0, paddingValue.Resolve(_percentageBasis));
         return (margin, boxModel.BorderWidth.Get(side) + padding);
     }
 
@@ -668,8 +685,27 @@ internal sealed partial class InlineLayoutAlgorithm
         // The virtual expandable separators at the phrase boundaries of word-space-transform: auto-phrase
         var phraseSeparators = layout.Text.WordSpaceTransformAutoPhrase ? GetPhraseSeparators(run) : null;
         var nextPhraseSeparator = 0;
+        var appendsPlainText = phraseSeparators is null && transform == TextTransform.None;
         for (var i = first; i < text.Length; i++)
         {
+            // The characters that are not white space nor U+200B are appended as they are
+            if (appendsPlainText)
+            {
+                var count = text[i..].IndexOfAny(WhiteSpaceOrZeroWidthSpace);
+                if (count < 0)
+                {
+                    count = text.Length - i;
+                }
+
+                if (count > 0)
+                {
+                    AppendPlainText(text.Slice(i, count), baseOffset + i);
+                    i += count;
+                    if (i == text.Length)
+                        break;
+                }
+            }
+
             var c = text[i];
             if (phraseSeparators is not null && nextPhraseSeparator < phraseSeparators.Count && phraseSeparators[nextPhraseSeparator] <= i)
             {
@@ -1002,10 +1038,56 @@ internal sealed partial class InlineLayoutAlgorithm
         // The characters below U+0590 are left-to-right or neutral: the bidi algorithm is not needed
         if (c >= 0x0590 && !_needsBidi)
         {
-            _needsBidi = char.IsSurrogate(c) || CharacterProperties.GetBidiClass(c) is BidiClass.R or BidiClass.AL or BidiClass.AN
-                or BidiClass.LRE or BidiClass.RLE or BidiClass.LRO or BidiClass.RLO or BidiClass.PDF or BidiClass.LRI or BidiClass.RLI or BidiClass.FSI or BidiClass.PDI;
+            _needsBidi = NeedsBidi(c);
         }
     }
+
+    /// <summary>
+    /// Appends characters of the text of a run that are neither white space nor U+200B, without text transformation: the
+    /// same as <see cref="AppendTextChar"/> for each of them.
+    /// </summary>
+    private void AppendPlainText(ReadOnlySpan<char> characters, int domOffset)
+    {
+        var length = _length + characters.Length;
+        if (length > _text.Length)
+        {
+            var capacity = Math.Max(length, _text.Length * 2);
+            Array.Resize(ref _text, capacity);
+            Array.Resize(ref _offsets, capacity);
+        }
+
+        characters.CopyTo(_text.AsSpan(_length));
+        var offsets = _offsets.AsSpan(_length, characters.Length);
+        for (var i = 0; i < offsets.Length; i++)
+        {
+            offsets[i] = domOffset + i;
+        }
+
+        _length = length;
+        _hasMandatoryBreakCharacters |= characters.ContainsAny(MandatoryBreakCharacters);
+        if (!_needsBidi && characters.IndexOfAnyInRange((char)0x0590, char.MaxValue) is var index and >= 0)
+        {
+            foreach (var c in characters[index..])
+            {
+                if (c >= 0x0590 && NeedsBidi(c))
+                {
+                    _needsBidi = true;
+                    break;
+                }
+            }
+        }
+
+        _inWord = TextTransformer.IsWordCharacter(characters[^1]);
+        if (characters.ContainsAnyExcept(BidiControlCharacters))
+        {
+            _afterCollapsibleSpace = false;
+        }
+    }
+
+    /// <summary>Whether a character needs the bidi algorithm: a strong right-to-left character, an Arabic number or a bidi control code.</summary>
+    private static bool NeedsBidi(char c)
+        => char.IsSurrogate(c) || CharacterProperties.GetBidiClass(c) is BidiClass.R or BidiClass.AL or BidiClass.AN
+            or BidiClass.LRE or BidiClass.RLE or BidiClass.LRO or BidiClass.RLO or BidiClass.PDF or BidiClass.LRI or BidiClass.RLI or BidiClass.FSI or BidiClass.PDI;
 
     private void AddItem(InlineItem item)
     {
@@ -1160,7 +1242,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // the min-content width of an inline formatting context for which a table cell cell is the containing block, if cell has
         // a computed value of the width property that is auto, img elements that are inline-level replaced elements in that inline
         // formatting context must not have a soft wrap opportunity before or after them"
-        if (_measuring && _context.IsQuirksMode && _block.Display.Internal == DisplayInternal.TableCell && _block.Style.Layout.Box.GetSize(_writingDirection.IsHorizontal).IsAuto)
+        if (AppliesTableCellImageQuirk())
         {
             foreach (ref readonly var item in Items)
             {
@@ -1179,6 +1261,8 @@ internal sealed partial class InlineLayoutAlgorithm
             }
         }
 
+        StoreOpportunities();
+
         static ReadOnlySpan<LineBreakOptionsRun> CollectionsMarshalAsSpan(List<LineBreakOptionsRun> list) => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(list);
 
         // The characters that forbid the break between them and an atomic inline
@@ -1187,6 +1271,13 @@ internal sealed partial class InlineLayoutAlgorithm
         // The bidi controls are combining marks for the line breaking: no opportunity before them
         static bool IsCombiningControl(char c) => c is >= (char)0x202A and <= (char)0x202E or >= (char)0x2066 and <= (char)0x2069;
     }
+
+    /// <summary>
+    /// Whether the img elements have no soft wrap opportunity around them: the min-content size of a table cell whose width is
+    /// auto, in quirks mode (see <see cref="ComputeBreakOpportunities"/>).
+    /// </summary>
+    private bool AppliesTableCellImageQuirk()
+        => _measuring && _context.IsQuirksMode && _block.Display.Internal == DisplayInternal.TableCell && _block.Style.Layout.Box.GetSize(_writingDirection.IsHorizontal).IsAuto;
 
     /// <summary>
     /// Removes the soft wrap opportunities where wrapping is not allowed (https://drafts.csswg.org/css-text-4/#text-wrap-mode):
@@ -1704,7 +1795,7 @@ internal sealed partial class InlineLayoutAlgorithm
             if (items[i].Kind != InlineItemKind.Text)
                 continue;
 
-            var part = shaped.Slice(items[i].Start - start, items[i].End - start);
+            var part = RunShapeCache.Slice(items[i].Box as TextRun, shaped, items[i].Start - start, items[i].End - start);
             items[i].Shaped = ApplyItemSpacing(i, items[i].Style, part);
         }
     }
@@ -2051,7 +2142,7 @@ internal sealed partial class InlineLayoutAlgorithm
             if (items[i].Kind != InlineItemKind.Text)
                 continue;
 
-            var part = shaped.Slice(items[i].Start - start, items[i].End - start);
+            var part = RunShapeCache.Slice(items[i].Box as TextRun, shaped, items[i].Start - start, items[i].End - start);
             items[i].FirstLineShaped = ApplyItemSpacing(i, GetLineStyle(items[i], isFirstLine: true), part);
         }
     }

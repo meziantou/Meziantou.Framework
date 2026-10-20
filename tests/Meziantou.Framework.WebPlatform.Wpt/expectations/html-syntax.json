@@ -300,7 +300,7 @@
     "total": 1
   },
   "html/syntax/parsing/html5lib_url.html?file=plain-text-unsafe": {
-    "total": 48
+    "total": 53
   },
   "html/syntax/parsing/html5lib_url.html?file=processing-instructions": {
     "total": 123
@@ -477,7 +477,7 @@
     "total": 1
   },
   "html/syntax/parsing/html5lib_write.html?file=plain-text-unsafe": {
-    "total": 37
+    "total": 42
   },
   "html/syntax/parsing/html5lib_write.html?file=processing-instructions": {
     "total": 123
@@ -645,7 +645,7 @@
     "total": 1
   },
   "html/syntax/parsing/html5lib_write_single.html?file=plain-text-unsafe": {
-    "total": 37
+    "total": 42
   },
   "html/syntax/parsing/html5lib_write_single.html?file=processing-instructions": {
     "total": 123

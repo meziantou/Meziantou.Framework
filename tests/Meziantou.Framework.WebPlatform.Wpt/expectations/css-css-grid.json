@@ -233,6 +233,9 @@
   "css/css-grid/abspos/grid-abspos-staticpos-justify-self-vertWM-last-baseline-004.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/abspos/grid-container-min-max-height-abspos-descendant-001.html": {
+    "total": 3
+  },
   "css/css-grid/abspos/grid-fixedpos-static-position-not-containing-block.html": {
     "reftest": "PASS"
   },
@@ -878,6 +881,30 @@
   "css/css-grid/alignment/grid-alignment-implies-size-change-036.html": {
     "total": 2
   },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-037.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-038.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-039.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-040.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-041.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-042.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-043.html": {
+    "total": 4
+  },
+  "css/css-grid/alignment/grid-alignment-implies-size-change-044.html": {
+    "total": 4
+  },
   "css/css-grid/alignment/grid-alignment-style-changes-001.html": {
     "total": 6
   },
@@ -1154,6 +1181,9 @@
   "css/css-grid/alignment/grid-content-distribution-029.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/alignment/grid-content-distribution-stretch-different-sized-tracks-001.html": {
+    "total": 2
+  },
   "css/css-grid/alignment/grid-content-distribution-with-collapsed-tracks-001.html": {
     "reftest": "PASS"
   },
@@ -1352,6 +1382,12 @@
   "css/css-grid/alignment/grid-item-auto-margins-alignment.html": {
     "total": 8
   },
+  "css/css-grid/alignment/grid-item-auto-margins-and-specified-margins-001.html": {
+    "total": 7
+  },
+  "css/css-grid/alignment/grid-item-auto-margins-and-stretch-001.html": {
+    "total": 6
+  },
   "css/css-grid/alignment/grid-item-content-baseline-001.html": {
     "reftest": "FAIL"
   },
@@ -1397,6 +1433,18 @@
   "css/css-grid/alignment/grid-item-self-baseline-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/alignment/grid-item-stretch-dynamic-size-margin-change-001.html": {
+    "total": 6
+  },
+  "css/css-grid/alignment/grid-item-stretch-margin-border-padding-001.html": {
+    "total": 12
+  },
+  "css/css-grid/alignment/grid-item-stretch-margin-border-padding-vertical-lr-001.html": {
+    "total": 12
+  },
+  "css/css-grid/alignment/grid-item-stretch-margin-border-padding-vertical-rl-001.html": {
+    "total": 12
+  },
   "css/css-grid/alignment/grid-justify-baseline-001.html": {
     "reftest": "PASS"
   },
@@ -1412,11 +1460,32 @@
   "css/css-grid/alignment/grid-justify-baseline-005.html": {
     "total": 4
   },
+  "css/css-grid/alignment/grid-justify-content-001.html": {
+    "total": 13
+  },
+  "css/css-grid/alignment/grid-justify-content-distribution-001.html": {
+    "total": 24
+  },
+  "css/css-grid/alignment/grid-justify-content-distribution-vertical-lr-001.html": {
+    "total": 24
+  },
+  "css/css-grid/alignment/grid-justify-content-distribution-vertical-rl-001.html": {
+    "total": 24
+  },
   "css/css-grid/alignment/grid-justify-content-end-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/alignment/grid-justify-content-space-between-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/alignment/grid-justify-content-vertical-lr-001.html": {
+    "total": 10
+  },
+  "css/css-grid/alignment/grid-justify-content-vertical-rl-001.html": {
+    "total": 10
+  },
+  "css/css-grid/alignment/grid-justify-self-cell-001.html": {
+    "total": 10
   },
   "css/css-grid/alignment/grid-place-content-001.html": {
     "total": 20
@@ -2265,6 +2334,12 @@
   "css/css-grid/grid-definition/grid-minimum-contribution-with-percentages.html": {
     "total": 16
   },
+  "css/css-grid/grid-definition/grid-percentage-max-size-flex-rows-001.html": {
+    "total": 4
+  },
+  "css/css-grid/grid-definition/grid-percentage-max-size-flex-rows-002.html": {
+    "total": 4
+  },
   "css/css-grid/grid-definition/grid-percentage-rows-indefinite-height-001.html": {
     "total": 120
   },
@@ -2558,6 +2633,9 @@
   "css/css-grid/grid-items/grid-item-border-padding-005.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-items/grid-item-children-percentage-resolution-001.html": {
+    "total": 14
+  },
   "css/css-grid/grid-items/grid-item-containing-block-001.html": {
     "reftest": "PASS"
   },
@@ -2618,6 +2696,9 @@
   "css/css-grid/grid-items/grid-item-min-contribution-fit-content-001.html": {
     "total": 1
   },
+  "css/css-grid/grid-items/grid-item-min-height-border-box-001.html": {
+    "total": 14
+  },
   "css/css-grid/grid-items/grid-item-min-height-overrides-fixed-height-001.html": {
     "reftest": "PASS"
   },
@@ -2626,6 +2707,12 @@
   },
   "css/css-grid/grid-items/grid-item-min-size-auto-overflow-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-items/grid-item-min-width-height-auto-001.html": {
+    "total": 8
+  },
+  "css/css-grid/grid-items/grid-item-min-width-margin-box-001.html": {
+    "total": 14
   },
   "css/css-grid/grid-items/grid-item-min-width-overrides-fixed-width-001.html": {
     "reftest": "PASS"
@@ -2650,6 +2737,15 @@
   },
   "css/css-grid/grid-items/grid-item-paddings-and-writing-modes-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-items/grid-item-percentage-height-auto-height-grid-001.html": {
+    "total": 8
+  },
+  "css/css-grid/grid-items/grid-item-percentage-resolution-writing-modes-001.html": {
+    "total": 4
+  },
+  "css/css-grid/grid-items/grid-item-percentage-resolution-writing-modes-quirks-001.html": {
+    "total": 4
   },
   "css/css-grid/grid-items/grid-item-percentage-size-in-positioned-grid-001.html": {
     "reftest": "PASS"
@@ -2836,6 +2932,12 @@
   },
   "css/css-grid/grid-items/grid-items-percentage-paddings-016.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-items/grid-items-percentage-paddings-margins-track-change-001.html": {
+    "total": 1
+  },
+  "css/css-grid/grid-items/grid-items-percentage-paddings-margins-writing-modes-001.html": {
+    "total": 4
   },
   "css/css-grid/grid-items/grid-items-percentage-paddings-vertical-lr-001.html": {
     "total": 8
@@ -3590,6 +3692,9 @@
   "css/css-grid/grid-lanes/alignment/row-track-reverse-dense-packing-justify-self-multi-span-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html": {
+    "total": 240
+  },
   "css/css-grid/grid-lanes/animation/flow-tolerance-interpolation.html": {
     "total": 240
   },
@@ -4067,7 +4172,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/column-negative-margin-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/column-negative-margin-004.html": {
     "reftest": "PASS"
@@ -4537,14 +4642,29 @@
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-002a.html": {
     "reftest": "FAIL"
   },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-003a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-004a.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/independent-formatting-context.html": {
     "reftest": "FAIL"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-001a.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-002a.html": {
     "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-003a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-004a.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-005a.html": {
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/independent-formatting-context.html": {
     "reftest": "FAIL"
@@ -6145,6 +6265,12 @@
   "css/css-grid/grid-model/grid-container-margin-border-padding-scrollbar-001.html": {
     "total": 16
   },
+  "css/css-grid/grid-model/grid-container-padding-border-size-001.html": {
+    "total": 6
+  },
+  "css/css-grid/grid-model/grid-container-rows-or-columns-only-001.html": {
+    "total": 2
+  },
   "css/css-grid/grid-model/grid-container-scrollbar-001.html": {
     "reftest": "PASS"
   },
@@ -6271,6 +6397,9 @@
   "css/css-grid/grid-model/grid-min-max-height-001.html": {
     "total": 12
   },
+  "css/css-grid/grid-model/grid-min-max-width-001.html": {
+    "total": 20
+  },
   "css/css-grid/grid-model/grid-multicol-001.html": {
     "reftest": "PASS"
   },
@@ -6355,6 +6484,21 @@
   "css/css-grid/img-src-changes.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/implicit-grids/grid-auto-columns-rows-auto-flow-resolution-001.html": {
+    "total": 12
+  },
+  "css/css-grid/implicit-grids/grid-auto-columns-rows-resolution-001.html": {
+    "total": 3
+  },
+  "css/css-grid/implicit-grids/grid-implicit-columns-auto-resolution-001.html": {
+    "total": 3
+  },
+  "css/css-grid/implicit-grids/grid-implicit-rows-auto-resolution-001.html": {
+    "total": 3
+  },
+  "css/css-grid/implicit-grids/grid-implicit-tracks-before-explicit-001.html": {
+    "total": 31
+  },
   "css/css-grid/implicit-grids/grid-item-placed-in-trailing-implicit-column-001.html": {
     "total": 4
   },
@@ -6412,6 +6556,9 @@
   "css/css-grid/layout-algorithm/flex-sizing-rows-min-max-height-001.html": {
     "total": 12
   },
+  "css/css-grid/layout-algorithm/flex-sizing-rows-min-max-height-border-box-001.html": {
+    "total": 6
+  },
   "css/css-grid/layout-algorithm/flex-tracks-with-fractional-size.html": {
     "reftest": "PASS"
   },
@@ -6438,6 +6585,12 @@
   },
   "css/css-grid/layout-algorithm/grid-as-flex-item-should-not-shrink-to-fit-008.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-auto-columns-content-resolution-001.html": {
+    "total": 3
+  },
+  "css/css-grid/layout-algorithm/grid-auto-rows-content-resolution-001.html": {
+    "total": 3
   },
   "css/css-grid/layout-algorithm/grid-auto-track-item-with-border-001.html": {
     "reftest": "PASS"
@@ -6478,6 +6631,12 @@
   "css/css-grid/layout-algorithm/grid-find-fr-size-restart-algorithm.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/layout-algorithm/grid-fit-content-indefinite-percentage-not-stretched-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-fit-content-indefinite-percentage-not-stretched-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/layout-algorithm/grid-fit-content-percentage.html": {
     "total": 20
   },
@@ -6487,6 +6646,9 @@
   "css/css-grid/layout-algorithm/grid-flex-and-auto-columns-fill-available-width-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/layout-algorithm/grid-flex-rows-container-height-change-001.html": {
+    "total": 2
+  },
   "css/css-grid/layout-algorithm/grid-flex-track-intrinsic-sizes-001.html": {
     "total": 30
   },
@@ -6495,6 +6657,9 @@
   },
   "css/css-grid/layout-algorithm/grid-flex-track-intrinsic-sizes-003.html": {
     "total": 102
+  },
+  "css/css-grid/layout-algorithm/grid-flex-tracks-item-with-border-001.html": {
+    "total": 3
   },
   "css/css-grid/layout-algorithm/grid-float-intrinsic-width-percent-height-aspect-ratio-001.html": {
     "reftest": "PASS"
@@ -6517,17 +6682,38 @@
   "css/css-grid/layout-algorithm/grid-intrinsic-track-sizes-min-size-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/layout-algorithm/grid-intrinsic-tracks-item-with-border-001.html": {
+    "total": 4
+  },
+  "css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html": {
+    "total": 35,
+    "failures": {
+      ".grid 23": "FAIL"
+    }
+  },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html": {
     "total": 4
   },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-001.html": {
     "total": 4
   },
+  "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-002.html": {
+    "total": 2
+  },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-rl-001.html": {
     "total": 4
   },
+  "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-rl-002.html": {
+    "total": 2
+  },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-rtl-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-item-positioning-orthogonal-flows-001.html": {
+    "total": 4
+  },
+  "css/css-grid/layout-algorithm/grid-item-sizing-orthogonal-flows-001.html": {
+    "total": 4
   },
   "css/css-grid/layout-algorithm/grid-item-stale-block-size-001.html": {
     "total": 1
@@ -6553,6 +6739,15 @@
   "css/css-grid/layout-algorithm/grid-minimum-contribution-baseline-shim.html": {
     "total": 6
   },
+  "css/css-grid/layout-algorithm/grid-minmax-content-tracks-multiple-items-001.html": {
+    "total": 4
+  },
+  "css/css-grid/layout-algorithm/grid-minmax-spanning-items-columns-001.html": {
+    "total": 26
+  },
+  "css/css-grid/layout-algorithm/grid-minmax-spanning-items-rows-001.html": {
+    "total": 28
+  },
   "css/css-grid/layout-algorithm/grid-percent-cols-filled-shrinkwrap-001.html": {
     "reftest": "PASS"
   },
@@ -6565,13 +6760,43 @@
   "css/css-grid/layout-algorithm/grid-percent-rows-spanned-shrinkwrap-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/layout-algorithm/grid-percentage-of-indefinite-auto-track-size-001.html": {
+    "total": 6
+  },
+  "css/css-grid/layout-algorithm/grid-percentage-of-indefinite-track-size-001.html": {
+    "total": 6
+  },
+  "css/css-grid/layout-algorithm/grid-percentage-tracks-container-margin-border-padding-001.html": {
+    "total": 8
+  },
+  "css/css-grid/layout-algorithm/grid-percentage-tracks-container-size-001.html": {
+    "total": 12
+  },
+  "css/css-grid/layout-algorithm/grid-percentage-tracks-intrinsic-container-001.html": {
+    "total": 1
+  },
+  "css/css-grid/layout-algorithm/grid-relayout-orthogonal-items-same-result-001.html": {
+    "total": 3
+  },
   "css/css-grid/layout-algorithm/grid-spanning-item-with-paddings-auto-columns-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/layout-algorithm/grid-spanning-item-with-paddings-auto-rows-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/layout-algorithm/grid-spanning-items-orthogonal-flows-001.html": {
+    "total": 6
+  },
+  "css/css-grid/layout-algorithm/grid-spanning-items-percentage-grid-001.html": {
+    "total": 19
+  },
   "css/css-grid/layout-algorithm/grid-stretch-respects-min-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-stretch-respects-min-size-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-stretch-respects-min-size-003.html": {
     "reftest": "PASS"
   },
   "css/css-grid/layout-algorithm/grid-template-flexible-rerun-track-sizing.html": {
@@ -6582,6 +6807,12 @@
   },
   "css/css-grid/layout-algorithm/grid-track-ignores-max-size-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/layout-algorithm/grid-track-sizing-item-addition-001.html": {
+    "total": 63
+  },
+  "css/css-grid/layout-algorithm/grid-track-sizing-item-removal-001.html": {
+    "total": 66
   },
   "css/css-grid/layout-algorithm/minmax-tracks-with-fixed-breadths.html": {
     "total": 22
@@ -6773,16 +7004,40 @@
     "total": 66
   },
   "css/css-grid/parsing/grid-template-shorthand-valid.html": {
-    "total": 40
+    "total": 42
   },
   "css/css-grid/parsing/grid-template-shorthand.html": {
     "total": 28
   },
+  "css/css-grid/placement/grid-auto-flow-dynamic-change-001.html": {
+    "total": 6
+  },
+  "css/css-grid/placement/grid-auto-flow-resolution-001.html": {
+    "total": 13
+  },
   "css/css-grid/placement/grid-auto-flow-sparse-001.html": {
     "total": 8
   },
+  "css/css-grid/placement/grid-auto-placement-automatic-span-001.html": {
+    "total": 16
+  },
+  "css/css-grid/placement/grid-auto-placement-definite-span-001.html": {
+    "total": 8
+  },
+  "css/css-grid/placement/grid-auto-placement-fixed-row-column-001.html": {
+    "total": 16
+  },
   "css/css-grid/placement/grid-auto-placement-implicit-tracks-001.html": {
     "total": 12
+  },
+  "css/css-grid/placement/grid-auto-placement-item-addition-001.html": {
+    "total": 20
+  },
+  "css/css-grid/placement/grid-auto-placement-item-removal-001.html": {
+    "total": 20
+  },
+  "css/css-grid/placement/grid-auto-placement-order-change-001.html": {
+    "total": 4
   },
   "css/css-grid/placement/grid-container-change-grid-tracks-recompute-child-positions-001.html": {
     "total": 6
@@ -6811,11 +7066,38 @@
   "css/css-grid/placement/grid-negative-line-placement-001.html": {
     "total": 7
   },
+  "css/css-grid/placement/grid-placement-dynamic-change-001.html": {
+    "total": 88
+  },
+  "css/css-grid/placement/grid-placement-huge-negative-indexes-001.html": {
+    "total": 3
+  },
+  "css/css-grid/placement/grid-placement-invalid-double-span-001.html": {
+    "total": 4
+  },
   "css/css-grid/placement/grid-placement-items-spanning-multiple-rows-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/placement/grid-placement-items-spanning-multiple-rows-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/placement/grid-placement-named-grid-area-resolution-001.html": {
+    "total": 2
+  },
+  "css/css-grid/placement/grid-placement-named-lines-and-areas-001.html": {
+    "total": 22
+  },
+  "css/css-grid/placement/grid-placement-negative-integer-explicit-grid-001.html": {
+    "total": 4
+  },
+  "css/css-grid/placement/grid-placement-negative-position-resolution-001.html": {
+    "total": 16
+  },
+  "css/css-grid/placement/grid-placement-unknown-named-area-001.html": {
+    "total": 4
+  },
+  "css/css-grid/placement/grid-placement-unknown-named-grid-line-001.html": {
+    "total": 17
   },
   "css/css-grid/placement/grid-placement-using-named-grid-lines-001.html": {
     "reftest": "PASS"

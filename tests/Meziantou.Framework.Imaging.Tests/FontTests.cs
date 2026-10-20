@@ -2079,6 +2079,349 @@ public sealed class FontTests
         });
     }
 
+    [Fact]
+    public void SystemFontsAreIndexedWithoutLoadingThem()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var bold = FontSamples.Boxes();
+        bold.FamilyName = "Meziantou Boxes Bold";
+        bold.TypographicFamilyName = "Meziantou Boxes";
+        bold.TypographicSubfamilyName = "Bold";
+        bold.PostScriptName = "MeziantouBoxes-Bold";
+        bold.WeightClass = 700;
+        bold.IsBold = true;
+        bold.WidthClass = 6;
+        bold.ItalicAngle = -12;
+        bold.IsMonospaced = true;
+        var variable = FontSamples.Curves();
+        variable.Axes.Add(new FontAxisDefinition("wght", 100, 400, 900, "Weight"));
+        var italic = FontSamples.Boxes();
+        italic.SubfamilyName = "Italic";
+        italic.IsItalic = true;
+        italic.PostScriptName = "MeziantouBoxes-Italic";
+
+        var regularPath = directory.Write("boxes.ttf", FontSamples.Boxes().Build());
+        var boldPath = directory.Write(Path.Combine("nested", "deeper", "boxes-bold.otf"), bold.Build());
+        var collectionPath = directory.Write("family.TTC", FontBuilder.WriteCollection([variable.BuildTables(), italic.BuildTables()], 2));
+        var woff2Path = directory.Write("boxes.woff2", FontWoff2Writer.Write(FontSamples.Curves()));
+        directory.Write("notes.txt", "not a font"u8.ToArray());
+        directory.Write("boxes.bin", FontSamples.Boxes().Build());
+        directory.Write("truncated.ttf", FontSamples.Boxes().Build()[..200]);
+        directory.Write("garbage.otf", "neither a font"u8.ToArray());
+        directory.Write("empty.ttf", []);
+
+        var collection = SystemFontCollection.Create([directory.Path]);
+
+        Assert.Equal(
+            new[] { (regularPath, 0), (collectionPath, 1), (boldPath, 0), (woff2Path, 0), (collectionPath, 0) },
+            collection.Fonts.Select(font => (font.FilePath, font.FaceIndex)).ToArray());
+
+        // What the index declares is what the loaded face declares.
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 1024 * 1024);
+        foreach (var descriptor in collection.Fonts)
+        {
+            var face = FontLoader.Load(File.ReadAllBytes(descriptor.FilePath), environment)[descriptor.FaceIndex];
+            Assert.Equal(face.FamilyName, descriptor.FamilyName);
+            Assert.Equal(face.SubfamilyName, descriptor.SubfamilyName);
+            Assert.Equal(face.PostScriptName, descriptor.PostScriptName);
+            Assert.Equal(face.GetName(4), descriptor.FullName);
+            Assert.Equal(face.HasOs2, descriptor.HasOs2);
+            Assert.Equal(face.Weight, descriptor.Weight);
+            Assert.Equal(face.WidthClass, descriptor.WidthClass);
+            Assert.Equal(face.Selection, descriptor.Selection);
+            Assert.Equal(face.MacStyle, descriptor.MacStyle);
+            Assert.Equal(face.IsItalic, descriptor.IsItalic);
+            Assert.Equal(face.ItalicAngle, descriptor.ItalicAngle);
+            Assert.Equal(face.IsMonospaced, descriptor.IsMonospaced);
+            Assert.Equal(face.Axes.ToArray(), descriptor.Axes.ToArray());
+            Assert.Equal(face.FamilyName, FontCollection.Load(descriptor.FilePath)[descriptor.FaceIndex].FamilyName);
+        }
+
+        var boldDescriptor = collection.Fonts[2];
+        Assert.Equal(new[] { "Meziantou Boxes", "Meziantou Boxes Bold" }, boldDescriptor.FamilyNames.ToArray());
+        Assert.Equal("Bold", boldDescriptor.SubfamilyName);
+        Assert.Equal(700, boldDescriptor.Weight);
+        Assert.Equal(6, boldDescriptor.WidthClass);
+        Assert.Equal(-12, boldDescriptor.ItalicAngle);
+        Assert.True(boldDescriptor.IsMonospaced);
+        Assert.False(boldDescriptor.IsItalic);
+        Assert.False(boldDescriptor.IsOblique);
+        Assert.Equal("Meziantou Boxes Bold Regular", boldDescriptor.FullName);
+        Assert.True(collection.Fonts[1].IsItalic);
+        Assert.Equal("wght", Encoding.ASCII.GetString(BitConverter.GetBytes(BinaryPrimitives.ReverseEndianness(collection.Fonts[4].Axes[0].Tag))));
+        Assert.Contains(regularPath, collection.Fonts[0].ToString());
+    }
+
+    [Fact]
+    public void SystemFontsAreFoundOnceAndOnlyWhenTheFontCodeLoadsThem()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var path = directory.Write("boxes.ttf", FontSamples.Boxes().Build());
+
+        // A font without outlines nor color glyphs is not loaded by WebPlatform: it is left out.
+        var outlineless = FontSamples.Boxes();
+        outlineless.OmittedTables.Add("glyf");
+        outlineless.OmittedTables.Add("loca");
+        directory.Write("outlineless.ttf", outlineless.Build());
+
+        // A collection is left out whole when one of its faces is malformed.
+        var collection = FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]);
+        BinaryPrimitives.WriteUInt32BigEndian(collection.AsSpan(16), 0xFFFFFF);
+        directory.Write("broken.ttc", collection);
+
+        var fonts = SystemFontCollection.Create([directory.Path, directory.Path + Path.DirectorySeparatorChar, path, Path.Combine(directory.Path, "missing"), ""]);
+
+        Assert.Equal(path, Assert.Single(fonts.Fonts).FilePath);
+        Assert.Empty(SystemFontCollection.Create([]).Fonts);
+        Assert.Throws<ArgumentNullException>("paths", () => SystemFontCollection.Create(null!));
+    }
+
+    [Fact]
+    public void SystemFontsAreFoundByAnyFamilyNameAndByTheirFullOrPostScriptName()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var light = FontSamples.Boxes();
+        light.FamilyName = "Meziantou Boxes Light";
+        light.TypographicFamilyName = "Meziantou Boxes";
+        light.TypographicSubfamilyName = "Light";
+        light.WeightClass = 300;
+        light.PostScriptName = "MeziantouBoxes-Light";
+        light.RawTables["name"] = WriteNameTable(
+            (3, 1, 0x0409, 1, "Meziantou Boxes Light"),
+            (3, 1, 0x0409, 2, "Regular"),
+            (3, 1, 0x0409, 4, "Meziantou Boxes Light"),
+            (3, 1, 0x0409, 6, "MeziantouBoxes-Light"),
+            (3, 1, 0x0409, 16, "Meziantou Boxes"),
+            (3, 1, 0x040C, 16, "Boîtes Meziantou"),
+            (3, 1, 0x0409, 17, "Light"));
+        directory.Write("light.ttf", light.Build());
+        directory.Write("regular.ttf", FontSamples.Boxes().Build());
+        directory.Write("curves.ttf", FontSamples.Curves().Build());
+
+        var fonts = SystemFontCollection.Create([directory.Path]);
+
+        Assert.Equal(new[] { "Light", "Regular" }, fonts.GetFamily("Meziantou Boxes").Select(font => font.SubfamilyName).ToArray());
+        Assert.Equal(new[] { "Light", "Regular" }, fonts.GetFamily("MEZIANTOU BOXES").Select(font => font.SubfamilyName).ToArray());
+        Assert.Equal("Light", Assert.Single(fonts.GetFamily("boÎtes meziantou")).SubfamilyName);
+        Assert.Equal("Light", Assert.Single(fonts.GetFamily("Meziantou Boxes Light")).SubfamilyName);
+        Assert.Empty(fonts.GetFamily("Meziantou"));
+        Assert.Equal("Meziantou Curves", Assert.Single(fonts.GetFamily("Meziantou Curves")).FamilyName);
+
+        Assert.Equal("Light", fonts.FindByName("meziantou boxes light")?.SubfamilyName);
+        Assert.Equal("Light", fonts.FindByName("MeziantouBoxes-Light")?.SubfamilyName);
+        Assert.Equal("Regular", fonts.FindByName("Meziantou Boxes Regular")?.SubfamilyName);
+        Assert.Null(fonts.FindByName("Meziantou Boxes"));
+        Assert.Throws<ArgumentNullException>("familyName", () => fonts.GetFamily(null!));
+        Assert.Throws<ArgumentNullException>("name", () => fonts.FindByName(null!));
+    }
+
+    [Fact]
+    public void SystemFontsAreMatchedByWidthThenStyleThenWeight()
+    {
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("light.ttf", CreateStyledBoxes("Light", weight: 300).Build());
+        directory.Write("medium.ttf", CreateStyledBoxes("Medium", weight: 500).Build());
+        directory.Write("bold.ttf", CreateStyledBoxes("Bold", weight: 700).Build());
+        directory.Write("italic.ttf", CreateStyledBoxes("Italic", weight: 400, italic: true).Build());
+        directory.Write("oblique.ttf", SetObliqueBit(CreateStyledBoxes("Oblique", weight: 400).Build()));
+        directory.Write("condensed.ttf", CreateStyledBoxes("Condensed", weight: 400, widthClass: 3).Build());
+
+        var variable = CreateStyledBoxes("Variable", weight: 400, family: "Meziantou Variable");
+        variable.Axes.Add(new FontAxisDefinition("wght", 100, 400, 600, "Weight"));
+        directory.Write("variable.ttf", variable.Build());
+        directory.Write("upright.ttf", CreateStyledBoxes("Upright", weight: 400, family: "Meziantou Upright").Build());
+        directory.Write("slanted.ttf", SetObliqueBit(CreateStyledBoxes("Slanted", weight: 400, family: "Meziantou Slanted").Build()));
+
+        var fonts = SystemFontCollection.Create([directory.Path]);
+
+        Assert.Equal("Medium", fonts.Match("Meziantou Boxes")?.SubfamilyName);
+        Assert.Equal("Medium", fonts.Match("Meziantou Boxes", 450)?.SubfamilyName);
+        Assert.Equal("Bold", fonts.Match("Meziantou Boxes", 600)?.SubfamilyName);
+        Assert.Equal("Bold", fonts.Match("Meziantou Boxes", 900)?.SubfamilyName);
+        Assert.Equal("Light", fonts.Match("Meziantou Boxes", 300)?.SubfamilyName);
+        Assert.Equal("Light", fonts.Match("Meziantou Boxes", 100)?.SubfamilyName);
+        Assert.Equal("Bold", fonts.Match("Meziantou Boxes", 550)?.SubfamilyName);
+        Assert.Equal("Italic", fonts.Match("meziantou boxes", 700, isItalic: true)?.SubfamilyName);
+        Assert.Equal("Variable", fonts.Match("Meziantou Variable", 550)?.SubfamilyName);
+        Assert.Equal("Variable", fonts.Match("Meziantou Variable", 1000, isItalic: true)?.SubfamilyName);
+        Assert.Equal("Upright", fonts.Match("Meziantou Upright", isItalic: true)?.SubfamilyName);
+        Assert.Equal("Slanted", fonts.Match("Meziantou Slanted")?.SubfamilyName);
+        Assert.Null(fonts.Match("Meziantou Unknown"));
+
+        directory.Write(Path.Combine("more", "slanted.ttf"), SetObliqueBit(CreateStyledBoxes("Oblique", weight: 400, family: "Meziantou Upright").Build()));
+        var withOblique = SystemFontCollection.Create([directory.Path]);
+        Assert.Equal("Oblique", withOblique.Match("Meziantou Upright", isItalic: true)?.SubfamilyName);
+        Assert.Equal("Upright", withOblique.Match("Meziantou Upright")?.SubfamilyName);
+
+        Assert.Throws<ArgumentNullException>("familyName", () => fonts.Match(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("weight", () => fonts.Match("Meziantou Boxes", 0));
+        Assert.Throws<ArgumentOutOfRangeException>("weight", () => fonts.Match("Meziantou Boxes", 1001));
+
+        static FontBuilder CreateStyledBoxes(string subfamily, int weight, bool italic = false, int widthClass = 5, string family = "Meziantou Boxes")
+        {
+            var builder = FontSamples.Boxes();
+            builder.FamilyName = family + " " + subfamily;
+            builder.TypographicFamilyName = family;
+            builder.TypographicSubfamilyName = subfamily;
+            builder.PostScriptName = null;
+            builder.WeightClass = weight;
+            builder.IsItalic = italic;
+            builder.WidthClass = widthClass;
+            return builder;
+        }
+
+        // Bit 9 of OS/2.fsSelection: the face is oblique.
+        static byte[] SetObliqueBit(byte[] font)
+        {
+            var tableCount = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
+            for (var i = 0; i < tableCount; i++)
+            {
+                var record = font.AsSpan(12 + (i * 16), 16);
+                if (record[..4].SequenceEqual("OS/2"u8))
+                {
+                    var selection = font.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]) + 62, 2);
+                    BinaryPrimitives.WriteUInt16BigEndian(selection, (ushort)(BinaryPrimitives.ReadUInt16BigEndian(selection) | 0x0200));
+                }
+            }
+
+            return font;
+        }
+    }
+
+    [Fact]
+    public void TheFontDirectoriesOfFontconfigAreReadFromItsConfiguration()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var configFile = directory.Write("fonts.conf", Encoding.UTF8.GetBytes("""
+            <?xml version="1.0"?>
+            <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+            <fontconfig>
+              <dir>/usr/share/fonts</dir>
+              <dir prefix="xdg">fonts</dir>
+              <dir>~/.fonts</dir>
+              <dir prefix="relative">local-fonts</dir>
+              <dir>  </dir>
+              <match target="pattern"><edit name="family"><string>sans-serif</string></edit></match>
+              <include ignore_missing="yes">conf.d</include>
+              <include ignore_missing="yes">missing.conf</include>
+              <include ignore_missing="yes" prefix="xdg">fontconfig/fonts.conf</include>
+            </fontconfig>
+            """));
+        directory.Write(Path.Combine("conf.d", "20-second.conf"), "<fontconfig><dir>/second</dir></fontconfig>"u8.ToArray());
+        directory.Write(Path.Combine("conf.d", "10-first.conf"), "<fontconfig><dir>/first</dir><include>../fonts.conf</include></fontconfig>"u8.ToArray());
+        directory.Write(Path.Combine("conf.d", "30-malformed.conf"), "<fontconfig><dir>/third</dir><dir>"u8.ToArray());
+        directory.Write(Path.Combine("conf.d", "README"), "<fontconfig><dir>/readme</dir></fontconfig>"u8.ToArray());
+        directory.Write(Path.Combine("conf.d", "not-numbered.conf"), "<fontconfig><dir>/not-numbered</dir></fontconfig>"u8.ToArray());
+        directory.Write(Path.Combine("config", "fontconfig", "fonts.conf"), "<fontconfig><dir>/user</dir></fontconfig>"u8.ToArray());
+
+        var variables = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["FONTCONFIG_FILE"] = configFile,
+            ["XDG_DATA_HOME"] = "/xdg/data",
+            ["XDG_CONFIG_HOME"] = Path.Combine(directory.Path, "config"),
+        };
+
+        var directories = FontConfigFile.ReadDirectories(name => variables.GetValueOrDefault(name), "/home/user");
+
+        Assert.Equal(
+            new[]
+            {
+                Path.GetFullPath("/usr/share/fonts"),
+                Path.GetFullPath("/xdg/data/fonts"),
+                Path.GetFullPath("/home/user/.fonts"),
+                Path.Combine(directory.Path, "local-fonts"),
+                Path.GetFullPath("/first"),
+                Path.GetFullPath("/second"),
+                Path.GetFullPath("/third"),
+                Path.GetFullPath("/user"),
+            },
+            directories.ToArray());
+
+        // Without a home directory, the paths from it are ignored and the XDG directories have no default.
+        variables.Remove("XDG_DATA_HOME");
+        Assert.Equal(new[] { Path.GetFullPath("/usr/share/fonts"), Path.Combine(directory.Path, "local-fonts") }, FontConfigFile.ReadDirectories(name => variables.GetValueOrDefault(name), home: null).Take(2).ToArray());
+
+        // The configuration is fonts.conf in $FONTCONFIG_PATH; reset-dirs removes the directories declared before it.
+        variables.Remove("FONTCONFIG_FILE");
+        var resetDirectory = Path.Combine(directory.Path, "reset");
+        directory.Write(Path.Combine("reset", "fonts.conf"), "<fontconfig><dir>/before</dir><reset-dirs /><dir>/after</dir></fontconfig>"u8.ToArray());
+        variables["FONTCONFIG_PATH"] = resetDirectory;
+        Assert.Equal(new[] { Path.GetFullPath("/after") }, FontConfigFile.ReadDirectories(name => variables.GetValueOrDefault(name), "/home/user").ToArray());
+
+        variables["FONTCONFIG_FILE"] = Path.Combine(directory.Path, "missing.conf");
+        Assert.Empty(FontConfigFile.ReadDirectories(name => variables.GetValueOrDefault(name), "/home/user"));
+    }
+
+    [Fact]
+    public void TheFontsInstalledOnTheMachineAreFound()
+    {
+        var directories = SystemFontDirectories.GetDefault(Environment.GetEnvironmentVariable);
+        Assert.NotEmpty(directories);
+
+        var fonts = SystemFontCollection.Default;
+        Assert.Same(fonts, SystemFontCollection.Default);
+
+        // The machines of the continuous integration may have no font on Linux.
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            Assert.NotEmpty(fonts.Fonts);
+        }
+
+        foreach (var descriptor in fonts.Fonts.Take(10))
+        {
+            Assert.Equal(descriptor.FamilyName, FontCollection.Load(descriptor.FilePath)[descriptor.FaceIndex].FamilyName);
+        }
+    }
+
+    private static byte[] WriteNameTable(params (int Platform, int Encoding, int Language, int Id, string Value)[] records)
+    {
+        var header = new List<byte>();
+        var storage = new List<byte>();
+        void UInt16(List<byte> target, int value)
+        {
+            target.Add((byte)(value >> 8));
+            target.Add((byte)value);
+        }
+
+        UInt16(header, 0);
+        UInt16(header, records.Length);
+        UInt16(header, 6 + (records.Length * 12));
+        foreach (var (platform, encoding, language, id, value) in records)
+        {
+            var data = Encoding.BigEndianUnicode.GetBytes(value);
+            UInt16(header, platform);
+            UInt16(header, encoding);
+            UInt16(header, language);
+            UInt16(header, id);
+            UInt16(header, data.Length);
+            UInt16(header, storage.Count);
+            storage.AddRange(data);
+        }
+
+        return [.. header, .. storage];
+    }
+
+    private sealed class TemporaryFontDirectory : IDisposable
+    {
+        public TemporaryFontDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "font-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public string Write(string relativePath, byte[] data)
+        {
+            var path = System.IO.Path.Combine(Path, relativePath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, data);
+            return path;
+        }
+
+        public void Dispose() => Directory.Delete(Path, recursive: true);
+    }
+
     private sealed class NonSeekableStream(byte[] data) : Stream
     {
         private readonly MemoryStream _inner = new(data);

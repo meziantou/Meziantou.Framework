@@ -299,9 +299,30 @@ public sealed partial class BrowsingContextOptions
     public Func<Document, ClipboardAccess, bool>? ClipboardPermission { get; init; }
 
     /// <summary>
+    /// Gets or sets whether the fonts installed on the machine can be used: a <c>font-family</c> and a <c>local()</c> source
+    /// of <c>@font-face</c> can name them, as in a browser. The default is false: the documents only use the fonts bundled
+    /// with the library (Tinos, Arimo, Cousine, STIX Two Math and Ahem) and their web fonts, so that the layout is the same
+    /// on every machine.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The installed fonts are found in the font directories of the operating system (Windows, macOS, and the
+    /// configuration of fontconfig on Linux), once per process: a font installed later is not seen. Only the names and the
+    /// styles of the fonts are read to match them, and a font file is read when one of its faces is used.
+    /// </para>
+    /// <para>
+    /// The bundled fonts keep their names: <c>Arimo</c> and <c>Tinos</c> are always the bundled fonts, and the generic
+    /// families (<c>serif</c>, <c>sans-serif</c>, <c>monospace</c>, <c>math</c>) still use them, with the metrics of the
+    /// default fonts of the browsers.
+    /// </para>
+    /// </remarks>
+    public bool UseSystemFonts { get; init; }
+
+    /// <summary>
     /// Gets or sets the fonts installed in addition to the bundled fonts: families that <c>font-family</c> and
     /// <c>local()</c> can name, and fonts of the installed font fallback for the scripts that the bundled fonts do not cover
-    /// (see <see cref="Css.Fonts.InstalledFontCollection"/>). The default is null: the installed fonts are the bundled fonts.
+    /// (see <see cref="Css.Fonts.InstalledFontCollection"/>). The default is null: the installed fonts are the bundled fonts,
+    /// and the fonts of the machine when <see cref="UseSystemFonts"/> is set. When it is set, it replaces the fonts of the machine.
     /// </summary>
     /// <remarks>
     /// Internal: it is used by the runner of the web-platform-tests, whose tests need the fonts of the CSS test suite to be

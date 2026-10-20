@@ -176,6 +176,12 @@
   "eventsource/format-field-id-null.window.js": {
     "total": 5
   },
+  "eventsource/format-field-id-redirect.any.js": {
+    "total": 1
+  },
+  "eventsource/format-field-id-redirect.any.js#dedicatedworker": {
+    "total": 1
+  },
   "eventsource/format-field-id.any.js": {
     "total": 1
   },

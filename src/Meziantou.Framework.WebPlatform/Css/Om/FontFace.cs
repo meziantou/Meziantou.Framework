@@ -617,8 +617,9 @@ public sealed class FontFace
 
     /// <summary>
     /// Returns the font of a local() source (https://drafts.csswg.org/css-fonts-4/#descdef-font-face-src): the bundled font, else
-    /// the font installed by the host (<see cref="BrowsingContextOptions.InstalledFonts"/>), whose full name or PostScript name
-    /// is the name (case-insensitive), or null. The fonts installed on the machine are never used.
+    /// the font installed by the host (<see cref="BrowsingContextOptions.InstalledFonts"/>, or the fonts installed on the
+    /// machine when <see cref="BrowsingContextOptions.UseSystemFonts"/> is set), whose full name or PostScript name is the
+    /// name (case-insensitive), or null.
     /// </summary>
     private FontFile? FindLocalFont(string name)
     {
@@ -628,16 +629,7 @@ public sealed class FontFace
                 return bundled.Font.File;
         }
 
-        if (_document?.InstalledFonts is { } installedFonts)
-        {
-            foreach (var installed in installedFonts.Fonts)
-            {
-                if (HasName(installed.Font))
-                    return installed.Font.File;
-            }
-        }
-
-        return null;
+        return _document?.InstalledFonts?.FindByName(name)?.Font is { } installed ? installed.File.GetSingleFaceFile(installed) : null;
 
         bool HasName(OpenTypeFont font) => string.Equals(font.FullName, name, StringComparison.OrdinalIgnoreCase) || string.Equals(font.PostScriptName, name, StringComparison.OrdinalIgnoreCase);
     }

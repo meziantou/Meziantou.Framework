@@ -682,7 +682,96 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<div id=target style='font-family: attr(data-foo)'></div>", "font-family", "\"\"")] // A missing attribute without type is an empty string
     [InlineData("<style>@property --b { syntax: '<length>'; inherits: false; initial-value: 4px }</style><div style='font-size: 10px'><div id=target data-foo='var(--b)' style='--b: 3em; font-size: attr(data-foo type(*))'></div></div>", "font-size", "10px")] // A cycle via the font-relative units through an attribute
     [InlineData("<style>@property --b { syntax: '<length>'; inherits: false; initial-value: 4px }</style><div id=target data-foo='5px' style='--b: 3em; font-size: attr(data-foo type(<length>), var(--b))'></div>", "font-size", "5px")] // The fallback is not used
+    [InlineData("<div data-u='url(https://a.test/a.png)' style='--i: attr(data-u type(*))'><p><span id=target style='list-style-image: var(--i)'></span></p></div>", "list-style-image", "none")] // The attr()-taint of an inherited value
+    [InlineData("<div style='--x: 1px'><p style='--y: 2px'><span><b id=target style='display: block; width: calc(var(--x) + var(--y))'></b></span></p></div>", "width", "3px")]
+    [InlineData("<style>@property --r { syntax: '*'; inherits: false }</style><div style='--r: 1px'><p><span id=target style='--x: var(--r, 2px)'></span></p></div>", "--x", "2px")] // Not inherited
+    [InlineData("<style>@property --r { syntax: '*'; inherits: false }</style><div style='--r: 1px'><p id=target style='--r: inherit'></p></div>", "--r", "1px")]
     public void CustomProperties(string html, string property, string expected) => Assert.Equal(expected, Get(html, property));
+
+    // The elements that declare no custom property have the custom properties of their parent, with its values
+    [Fact]
+    public void CustomProperties_Names()
+    {
+        var document = Parse("<div id=a style='--x: 1'><p id=b><span id=c style='--y: 2'><b id=d style='--x: 3'></b></span></p></div>");
+
+        Assert.Equal(["--x"], GetCustomPropertyNames("#a"));
+        Assert.Equal(["--x"], GetCustomPropertyNames("#b"));
+        Assert.Equal(["--x", "--y"], GetCustomPropertyNames("#c"));
+        Assert.Equal(["--x", "--y"], GetCustomPropertyNames("#d"));
+        Assert.Equal("1", GetStyle(document, "#b").GetPropertyValue("--x"));
+        Assert.Equal("1", GetStyle(document, "#c").GetPropertyValue("--x"));
+        Assert.Equal("3", GetStyle(document, "#d").GetPropertyValue("--x"));
+        Assert.Equal("2", GetStyle(document, "#d").GetPropertyValue("--y"));
+
+        string[] GetCustomPropertyNames(string selector)
+        {
+            var style = GetStyle(document, selector);
+            return [.. Enumerable.Range(0, (int)style.Length).Select(i => style.Item((uint)i)).Where(name => name.StartsWith("--", StringComparison.Ordinal))];
+        }
+    }
+
+    // A registered property that is not inherited has no value in the elements that do not declare it
+    [Fact]
+    public void CustomProperties_NamesOfRegisteredProperties()
+    {
+        var document = Parse("<style>@property --r { syntax: '*'; inherits: false }</style><div id=a style='--r: 1; --x: 2'><p id=b></p></div>");
+
+        Assert.Equal(["--r", "--x"], GetCustomPropertyNames("#a"));
+        Assert.Equal(["--x"], GetCustomPropertyNames("#b"));
+
+        string[] GetCustomPropertyNames(string selector)
+        {
+            var style = GetStyle(document, selector);
+            return [.. Enumerable.Range(0, (int)style.Length).Select(i => style.Item((uint)i)).Where(name => name.StartsWith("--", StringComparison.Ordinal))];
+        }
+    }
+
+    // The styles share the computed values (see ComputedValueTable): the values that are not shared (e.g. long values) are kept by the style
+    [Fact]
+    public void ComputedValues_SharedBetweenStyles()
+    {
+        var url = "https://a.test/" + new string('a', 200) + ".png";
+        var document = Parse($"<div id=a style='margin-top: 1px'></div><div id=b style='margin-top: 1px; list-style-image: url({url})'></div>");
+        var engine = document.GetStyleEngine();
+        var a = engine.GetStyle(document.QuerySelector("#a")!);
+        var b = engine.GetStyle(document.QuerySelector("#b")!);
+
+        // (more than a few values: the values are packed)
+        foreach (var property in Meziantou.Framework.WebPlatform.Css.Values.CssPropertyRegistry.Properties.Where(property => !property.IsShorthand && property.Name != "list-style-image").Take(100))
+        {
+            Assert.Same(a.GetComputedValue(property.Name), b.GetComputedValue(property.Name));
+        }
+
+        Assert.Same(a.GetComputedValue("margin-top"), b.GetComputedValue("margin-top"));
+        Assert.Equal("url(\"" + url + "\")", b.GetComputedValue("list-style-image"));
+        Assert.Equal("none", a.GetComputedValue("list-style-image"));
+    }
+
+    // A full table of shared values is replaced: the styles keep the values of the previous table
+    [Fact]
+    public void ComputedValues_MoreDistinctValuesThanTheTable()
+    {
+        var count = Meziantou.Framework.WebPlatform.Css.Cascade.ComputedValueTable.MaxCount + 100;
+        var document = Parse("<!DOCTYPE html>" + string.Concat(Enumerable.Range(0, count).Select(i => $"<div style='width: {i}px; margin-left: {i}.5px'></div>")));
+        var engine = document.GetStyleEngine();
+        var elements = document.QuerySelectorAll("div").Cast<Element>().ToArray();
+        var properties = Meziantou.Framework.WebPlatform.Css.Values.CssPropertyRegistry.Properties.Where(property => !property.IsShorthand).Take(20).Select(property => property.Name).ToArray();
+        foreach (var element in elements)
+        {
+            var style = engine.GetStyle(element);
+            foreach (var property in properties)
+            {
+                _ = style.GetComputedValue(property);
+            }
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var style = engine.GetStyle(elements[i]);
+            Assert.Equal($"{i}px", style.GetComputedValue("width"));
+            Assert.Equal($"{i}.5px", style.GetComputedValue("margin-left"));
+        }
+    }
 
     [Theory]
     [InlineData("@function --f() { result: 12px; } #target { --a: --f(); }", "--a", "12px")]

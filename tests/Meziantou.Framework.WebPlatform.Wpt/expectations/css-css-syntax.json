@@ -98,7 +98,13 @@
   "css/css-syntax/input-preprocessing.html": {
     "total": 10
   },
+  "css/css-syntax/invalid-margin-trim-block-balancing.html": {
+    "total": 1
+  },
   "css/css-syntax/invalid-nested-rules.html": {
+    "total": 1
+  },
+  "css/css-syntax/invalid-shape-block-balancing.html": {
     "total": 1
   },
   "css/css-syntax/missing-semicolon.html": {

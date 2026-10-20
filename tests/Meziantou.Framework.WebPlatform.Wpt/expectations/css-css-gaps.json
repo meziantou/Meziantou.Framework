@@ -53,6 +53,9 @@
   "css/css-gaps/animation/row-rule-width-interpolation.html": {
     "total": 168
   },
+  "css/css-gaps/animation/rule-color-accumulation-auto-repeaters.html": {
+    "total": 4
+  },
   "css/css-gaps/animation/rule-color-interpolation-conversion-001.html": {
     "total": 1
   },
@@ -64,6 +67,9 @@
   },
   "css/css-gaps/animation/rule-color-interpolation-repeaters-001.html": {
     "total": 276
+  },
+  "css/css-gaps/animation/rule-width-accumulation-auto-repeaters.html": {
+    "total": 5
   },
   "css/css-gaps/animation/rule-width-interpolation-conversion-001.html": {
     "total": 1
@@ -644,17 +650,47 @@
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-around-003.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-around-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-around-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-around-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-around-007.html": {
+    "reftest": "PASS"
+  },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-001.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-002.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-003.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-009.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-010.html": {
+    "reftest": "FAIL"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-empty-all.html": {
     "reftest": "PASS"
@@ -845,6 +881,18 @@
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-around-003.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-around-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-around-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-around-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-around-007.html": {
+    "reftest": "PASS"
+  },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-001.html": {
     "reftest": "PASS"
   },
@@ -855,7 +903,25 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-004.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-009.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-010.html": {
+    "reftest": "FAIL"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-empty-all.html": {
     "reftest": "PASS"

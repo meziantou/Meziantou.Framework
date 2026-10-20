@@ -86,6 +86,34 @@
   "css/css-cascade/at-scope-relative-syntax.html": {
     "total": 8
   },
+  "css/css-cascade/declaration-context.html": {
+    "total": 28,
+    "failures": {
+      "@keyframes inside @scope vs. in the stylesheet accepts the same properties set": "FAIL",
+      "@keyframes inside @scope vs. in the stylesheet parses the same declarations": "FAIL",
+      "@page inside @scope accepts page declarations": "FAIL",
+      "@page inside @scope vs. in the stylesheet accepts the same properties set": "FAIL",
+      "@page inside @scope vs. in the stylesheet parses the same declarations": "FAIL",
+      "@position-try cssText set in @media all / @scope (:root) / @supports (display: grid) / @layer inner": "FAIL",
+      "@position-try cssText set in @scope (:root)": "FAIL",
+      "@position-try declarations inserted into @media all / @scope (:root) / @supports (display: grid) / @layer inner": "FAIL",
+      "@position-try declarations inserted into @scope (:root)": "FAIL",
+      "@position-try declarations inserted with @media all / @scope (:root) / @supports (display: grid) / @layer inner": "FAIL",
+      "@position-try declarations inserted with @scope (:root)": "FAIL",
+      "@position-try declarations parsed in @media all / @scope (:root) / @supports (display: grid) / @layer inner": "FAIL",
+      "@position-try declarations parsed in @scope (:root)": "FAIL",
+      "@position-try inside @scope vs. in the stylesheet accepts the same properties set": "FAIL",
+      "@position-try inside @scope vs. in the stylesheet parses the same declarations": "FAIL",
+      "@position-try properties set in @media all / @scope (:root) / @supports (display: grid) / @layer inner": "FAIL",
+      "@position-try properties set in @scope (:root)": "FAIL",
+      "@scope cannot relax keyframe declaration restrictions": "FAIL",
+      "@scope cannot relax page declaration restrictions": "FAIL",
+      "Declarations after a nested @page inside @scope are not restricted": "FAIL"
+    }
+  },
+  "css/css-cascade/duplicate-stylesheets.html": {
+    "total": 17
+  },
   "css/css-cascade/idlharness.html": {
     "total": 34
   },
@@ -133,6 +161,9 @@
   },
   "css/css-cascade/layer-counter-style-override.html": {
     "total": 4
+  },
+  "css/css-cascade/layer-cssom-insert-after-style.html": {
+    "total": 12
   },
   "css/css-cascade/layer-cssom-order-reverse-at-property.html": {
     "total": 2
@@ -363,6 +394,15 @@
   "css/css-cascade/scope-implicit-006-print.html": {
     "reftest": "PASS"
   },
+  "css/css-cascade/scope-implicit-constructed-document.html": {
+    "total": 14,
+    "failures": {
+      ":scope in implicit @scope in a constructed stylesheet adopted by a document does not match any element": "FAIL",
+      "Child combinator in implicit @scope in a constructed stylesheet adopted by a document matches only the root element": "FAIL",
+      "Implicit @scope in a constructed stylesheet adopted by a document matches the root element": "FAIL",
+      "Scoped declarations in implicit @scope in a constructed stylesheet adopted by a document do not match any element": "FAIL"
+    }
+  },
   "css/css-cascade/scope-implicit-crash-print.html": {
     "reftest": "PASS"
   },
@@ -400,7 +440,7 @@
     "total": 2
   },
   "css/css-cascade/scope-invalidation.html": {
-    "total": 29
+    "total": 31
   },
   "css/css-cascade/scope-layer.html": {
     "total": 1

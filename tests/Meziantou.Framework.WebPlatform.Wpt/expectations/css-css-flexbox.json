@@ -695,6 +695,9 @@
   "css/css-flexbox/balance/balance-flex-grow.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/balance/balance-line-break-overflowing-item.html": {
+    "reftest": "PASS"
+  },
   "css/css-flexbox/balance/balance-line-count-intrinsic-001.html": {
     "reftest": "PASS"
   },
@@ -835,6 +838,9 @@
   },
   "css/css-flexbox/checkbox-percentage-width-in-flex.html": {
     "total": 4
+  },
+  "css/css-flexbox/column-flex-child-center-with-indefinite-height.html": {
+    "reftest": "PASS"
   },
   "css/css-flexbox/column-flex-child-with-max-width.html": {
     "reftest": "PASS"
@@ -3443,6 +3449,12 @@
   "css/css-flexbox/intrinsic-size/auto-min-size-001.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/intrinsic-size/col-flex-grow-negative-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/intrinsic-size/col-negative-margin-hidden-grid-item-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-flexbox/intrinsic-size/col-wrap-001.html": {
     "reftest": "PASS"
   },
@@ -3529,6 +3541,12 @@
   },
   "css/css-flexbox/intrinsic-size/row-008.html": {
     "total": 11
+  },
+  "css/css-flexbox/intrinsic-size/row-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/intrinsic-size/row-010.html": {
+    "reftest": "PASS"
   },
   "css/css-flexbox/intrinsic-size/row-compat-001.html": {
     "total": 3

@@ -569,6 +569,9 @@
   "svg/animations/slider-switch.html": {
     "total": 1
   },
+  "svg/animations/smil-clock-value-large-hours.html": {
+    "total": 2
+  },
   "svg/animations/smil-clock-value-parsing.html": {
     "total": 18
   },
@@ -791,6 +794,9 @@
   "svg/animations/svglengthlist-animation-invalid-value-3.html": {
     "total": 1
   },
+  "svg/animations/svglengthlist-animation-percentage.html": {
+    "total": 1
+  },
   "svg/animations/svglengthlist-animation-unitType.html": {
     "total": 1
   },
@@ -927,6 +933,9 @@
     "reftest": "PASS"
   },
   "svg/animations/use-animate-display-none-symbol.html": {
+    "reftest": "PASS"
+  },
+  "svg/as-image/external-resource-data-url-sheet.sub.html": {
     "reftest": "PASS"
   },
   "svg/as-image/external-resource-inline-sheet.html": {
@@ -1451,6 +1460,9 @@
   "svg/interact/focus-inside-hidden-svg-containers-03.html": {
     "total": 1
   },
+  "svg/interact/focus-inside-hidden-svg-containers-04.html": {
+    "total": 8
+  },
   "svg/interact/image-load-error-events.html": {
     "total": 5,
     "failures": {
@@ -1787,6 +1799,31 @@
   "svg/linking/scripted/a-download-click.svg": {
     "total": 1
   },
+  "svg/linking/scripted/a-hyperlinkutils-getter-setter.html": {
+    "total": 45,
+    "failures": {
+      "SVGAElement mutation [Mode: xlink] (0): hash": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (1): hash": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (10): search": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (11): search": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (12): search": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (13): search": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (14): username": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (2): host": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (3): hostname": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (5): password": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (6): pathname": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (7): port": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (8): protocol": "FAIL",
+      "SVGAElement mutation [Mode: xlink] (9): protocol": "FAIL"
+    }
+  },
+  "svg/linking/scripted/a-hyperlinkutils-getter.html": {
+    "total": 30
+  },
+  "svg/linking/scripted/a-referrerpolicy-navigation.html": {
+    "total": 5
+  },
   "svg/linking/scripted/a-referrerpolicy-reflection.html": {
     "total": 11
   },
@@ -1820,6 +1857,14 @@
   },
   "svg/linking/scripted/a.rel-setter-01.svg": {
     "total": 2
+  },
+  "svg/linking/scripted/a.target-dynamic-update.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Clicking a <use> instance of <a> uses the target set via setAttribute": "TIMEOUT",
+      "Clicking a <use> instance of <a> uses the target set via target.baseVal": "NOTRUN"
+    }
   },
   "svg/linking/scripted/a.type-getter-01.svg": {
     "total": 2
@@ -2286,6 +2331,15 @@
   "svg/painting/reftests/svg-percent-stroke-dasharray-rect-viewbox-update.html": {
     "reftest": "PASS"
   },
+  "svg/painting/reftests/svg-percent-stroke-dashoffset-line-viewbox-update.html": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/svg-percent-stroke-dashoffset-path-viewbox-update.html": {
+    "reftest": "PASS"
+  },
+  "svg/painting/reftests/svg-percent-stroke-dashoffset-rect-viewbox-update.html": {
+    "reftest": "PASS"
+  },
   "svg/painting/reftests/symbol-in-mask.html": {
     "reftest": "PASS"
   },
@@ -2297,6 +2351,9 @@
   },
   "svg/painting/reftests/text-shadow-03.html": {
     "reftest": "FAIL"
+  },
+  "svg/painting/reftests/visibility-collapse-001.html": {
+    "reftest": "PASS"
   },
   "svg/painting/reftests/zero-scale-svg-transform-inside-g-tag.html": {
     "reftest": "PASS"
@@ -2426,6 +2483,27 @@
   },
   "svg/path/interfaces/getPathData-segments.html": {
     "total": 8
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-boundaries.html": {
+    "total": 3
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-clamping.html": {
+    "total": 2
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-detached-element.html": {
+    "total": 1
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-during-animation.html": {
+    "total": 1,
+    "failures": {
+      "getPathSegmentAtLength() must not use the animated value during SMIL animation": "FAIL"
+    }
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-invalid.html": {
+    "total": 5
+  },
+  "svg/path/interfaces/getPathSegmentAtLength-segments.html": {
+    "total": 9
   },
   "svg/path/interfaces/setPathData-css-d.tentative.html": {
     "total": 2
@@ -2586,6 +2664,12 @@
   "svg/pservers/reftests/gradient-objectBoundingBox-absolute-units.svg": {
     "reftest": "PASS"
   },
+  "svg/pservers/reftests/gradient-on-tspan-after-font-size-change.html": {
+    "reftest": "PASS"
+  },
+  "svg/pservers/reftests/gradient-on-use-context-fill-after-font-size-change.html": {
+    "reftest": "PASS"
+  },
   "svg/pservers/reftests/gradient-transform-01.svg": {
     "reftest": "PASS"
   },
@@ -2639,6 +2723,9 @@
   },
   "svg/pservers/reftests/radialgradient-basic-002.svg": {
     "reftest": "PASS"
+  },
+  "svg/pservers/reftests/radialgradient-basic-003.svg": {
+    "reftest": "FAIL"
   },
   "svg/pservers/reftests/radialgradient-fully-overlapping.svg": {
     "reftest": "PASS"
@@ -3052,7 +3139,14 @@
   "svg/struct/scripted/svg-getIntersectionList-006.svg": {
     "total": 1
   },
+  "svg/struct/scripted/switch_reentrant_removal.html": {
+    "harness": "ERROR",
+    "total": 1
+  },
   "svg/struct/scripted/use-external-reload-in-iframe.html": {
+    "total": 1
+  },
+  "svg/struct/scripted/use-iframe-onload.html": {
     "total": 1
   },
   "svg/struct/scripted/use-load-error-events.tentative.html": {
@@ -3194,7 +3288,7 @@
     "reftest": "PASS"
   },
   "svg/styling/invalidation/attribute-style-invalidation.html": {
-    "total": 2
+    "total": 5
   },
   "svg/styling/invalidation/nth-child-of-class.svg": {
     "reftest": "PASS"
@@ -3583,6 +3677,9 @@
   "svg/text/reftests/text-transform-002.html": {
     "reftest": "PASS"
   },
+  "svg/text/reftests/text-unknown-element-not-rendered.svg": {
+    "reftest": "PASS"
+  },
   "svg/text/reftests/text-xml-space-001.svg": {
     "reftest": "PASS"
   },
@@ -3596,6 +3693,15 @@
     "reftest": "PASS"
   },
   "svg/text/reftests/textpath-combining-marks.html": {
+    "reftest": "PASS"
+  },
+  "svg/text/reftests/textpath-dynamic-href-change.svg": {
+    "reftest": "PASS"
+  },
+  "svg/text/reftests/textpath-dynamic-insert-target.svg": {
+    "reftest": "PASS"
+  },
+  "svg/text/reftests/textpath-dynamic-remove-readd-target.svg": {
     "reftest": "PASS"
   },
   "svg/text/reftests/textpath-letter-spacing-01.svg": {
@@ -3678,6 +3784,15 @@
   },
   "svg/text/reftests/textpath-side-005.svg": {
     "reftest": "FAIL"
+  },
+  "svg/text/reftests/textpath-side-right-startoffset.svg": {
+    "reftest": "FAIL"
+  },
+  "svg/text/reftests/textpath-side-right-subpaths.svg": {
+    "reftest": "FAIL"
+  },
+  "svg/text/reftests/tiny-text-with-scaling.html": {
+    "reftest": "PASS"
   },
   "svg/text/reftests/transform-dynamic-change-root.html": {
     "reftest": "PASS"
@@ -4009,6 +4124,9 @@
   "svg/types/scripted/SVGLength-convertToSpecifiedUnits-reserialization.html": {
     "total": 7
   },
+  "svg/types/scripted/SVGLength-ex.html": {
+    "total": 3
+  },
   "svg/types/scripted/SVGLength-ic.html": {
     "total": 2
   },
@@ -4054,11 +4172,20 @@
   "svg/types/scripted/SVGList-animVal-reflects-base-value.html": {
     "total": 20
   },
+  "svg/types/scripted/SVGList-getItem-identity.html": {
+    "total": 18
+  },
   "svg/types/scripted/SVGList-getItem-identity.tentative.html": {
     "total": 18
   },
+  "svg/types/scripted/SVGList-identity-across-attribute-change.html": {
+    "total": 17
+  },
   "svg/types/scripted/SVGList-identity-across-attribute-change.tentative.html": {
     "total": 17
+  },
+  "svg/types/scripted/SVGList-mutator-return-identity.html": {
+    "total": 18
   },
   "svg/types/scripted/SVGList-mutator-return-identity.tentative.html": {
     "total": 18
@@ -4067,7 +4194,7 @@
     "total": 5
   },
   "svg/types/scripted/SVGList-reflected-attribute-synchronize.html": {
-    "total": 54
+    "total": 59
   },
   "svg/types/scripted/SVGMatrix.html": {
     "total": 9

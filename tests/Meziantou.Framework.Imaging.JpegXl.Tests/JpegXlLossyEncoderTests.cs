@@ -221,6 +221,51 @@ public sealed class JpegXlLossyEncoderTests
     }
 
     /// <summary>
+    /// The one-dimensional forward DCT, computed by halving, is the DCT of the format multiplied by the number of values:
+    /// <c>X[0] = sum(x[n])</c> and <c>X[k] = sqrt(2) * sum(x[n] * cos(pi * k * (n + 1/2) / N))</c>, within float rounding.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    [InlineData(16)]
+    [InlineData(32)]
+    [InlineData(64)]
+    public void TheForwardDctIsTheDctOfTheFormat(int count)
+    {
+        var state = (uint)count * 2654435761u;
+        var values = new float[count];
+        for (var round = 0; round < 20; round++)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                state = (state * 1664525u) + 1013904223u;
+                values[i] = ((state >> 8) * (1f / (1 << 24))) - 0.5f;
+            }
+
+            var expected = new double[count];
+            for (var k = 0; k < count; k++)
+            {
+                var sum = 0.0;
+                for (var n = 0; n < count; n++)
+                {
+                    sum += values[n] * Math.Cos(Math.PI * k * (n + 0.5) / count);
+                }
+
+                expected[k] = k == 0 ? sum : Math.Sqrt(2) * sum;
+            }
+
+            var actual = values.ToArray();
+            JpegXlForwardTransform.ForwardDct(actual, new float[count]);
+            for (var k = 0; k < count; k++)
+            {
+                Assert.True(Math.Abs(actual[k] - expected[k]) <= 2e-6 * count, $"coefficient {k} of {count}: {actual[k]} instead of {expected[k]}.");
+            }
+        }
+    }
+
+    /// <summary>
     /// The forward transforms give the coefficients from which the transforms of the decoder give the samples back, for
     /// every transform the encoder chooses; the lowest frequencies of a transform of several blocks go through the LF
     /// samples of its blocks, as they do in a file.

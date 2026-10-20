@@ -11,6 +11,9 @@
   "domparsing/DOMParser-parseFromString-stylesheets.html": {
     "total": 6
   },
+  "domparsing/DOMParser-parseFromString-url-base-about.window.js": {
+    "total": 2
+  },
   "domparsing/DOMParser-parseFromString-url-base-pushstate.html": {
     "total": 45
   },
@@ -66,6 +69,35 @@
   },
   "domparsing/domparser-spurious-attributes.html": {
     "total": 2
+  },
+  "domparsing/html-insertion-methods-html-element.html": {
+    "total": 26,
+    "failures": {
+      "afterHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "afterHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "afterHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "afterHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "appendHTML on a detached html element throws HierarchyRequestError": "FAIL",
+      "appendHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "appendHTML on the html element throws HierarchyRequestError": "FAIL",
+      "appendHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
+      "appendHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "appendHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
+      "beforeHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "beforeHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "beforeHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "beforeHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "prependHTML on a detached html element throws HierarchyRequestError": "FAIL",
+      "prependHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "prependHTML on the html element throws HierarchyRequestError": "FAIL",
+      "prependHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
+      "prependHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "prependHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
+      "replaceWithHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "replaceWithHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "replaceWithHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "replaceWithHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL"
+    }
   },
   "domparsing/innerhtml-01.xhtml": {
     "total": 2
@@ -124,6 +156,63 @@
   "domparsing/parsed-document-origin.window.js": {
     "total": 7
   },
+  "domparsing/positional-html-into-script-safe.html": {
+    "total": 91
+  },
+  "domparsing/positional-methods-with-parser-options.html": {
+    "total": 284
+  },
+  "domparsing/positional-methods-with-trusted-types-no-createParserOptions.html": {
+    "total": 180
+  },
+  "domparsing/positional-methods-with-trusted-types.html": {
+    "total": 355,
+    "failures": {
+      "Unsafe positional methods throw HierarchyRequestError when parent or target is an html element": "FAIL"
+    }
+  },
+  "domparsing/positional-methods.html": {
+    "total": 480,
+    "failures": {
+      "afterHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "afterHTML throws HierarchyRequestError if parent is an html element": "FAIL",
+      "afterHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "afterHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL",
+      "appendHTML on a disconnected html element throws HierarchyRequestError": "FAIL",
+      "appendHTML on an html element throws HierarchyRequestError": "FAIL",
+      "appendHTMLUnsafe on a disconnected html element throws HierarchyRequestError": "FAIL",
+      "appendHTMLUnsafe on an html element throws HierarchyRequestError": "FAIL",
+      "beforeHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "beforeHTML throws HierarchyRequestError if parent is an html element": "FAIL",
+      "beforeHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "beforeHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL",
+      "prependHTML on a disconnected html element throws HierarchyRequestError": "FAIL",
+      "prependHTML on an html element throws HierarchyRequestError": "FAIL",
+      "prependHTMLUnsafe on a disconnected html element throws HierarchyRequestError": "FAIL",
+      "prependHTMLUnsafe on an html element throws HierarchyRequestError": "FAIL",
+      "replaceWithHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "replaceWithHTML throws HierarchyRequestError if parent is an html element": "FAIL",
+      "replaceWithHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
+      "replaceWithHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL"
+    }
+  },
+  "domparsing/positional-template-child.html": {
+    "total": 6
+  },
+  "domparsing/stream-html-reentrancy.html": {
+    "total": 21,
+    "failures": {
+      "streamAppendHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamAppendHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamAppendHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL",
+      "streamHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamPrependHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamPrependHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL"
+    }
+  },
   "domparsing/style_attribute_html.html": {
     "total": 4
   },
@@ -158,68 +247,133 @@
     "total": 12
   },
   "domparsing/tentative/stream-append-html-unsafe.html": {
-    "total": 14,
-    "failures": {
-      "Aborting streamAppendHTMLUnsafe()": "FAIL"
-    }
+    "total": 14
   },
   "domparsing/tentative/stream-append-html.html": {
-    "total": 17,
-    "failures": {
-      "Aborting streamAppendHTML()": "FAIL"
-    }
+    "total": 17
   },
   "domparsing/tentative/stream-fragment-context.html": {
     "total": 54
+  },
+  "domparsing/tentative/stream-html-abort-unblocks-rendering.html": {
+    "total": 1,
+    "failures": {
+      "abort() unblocks rendering on a streamed render-blocking parser-blocking script": "FAIL"
+    }
   },
   "domparsing/tentative/stream-html-custom-element-sanitizer.html": {
     "total": 80
   },
   "domparsing/tentative/stream-html-custom-element.html": {
-    "total": 24
+    "total": 40
   },
   "domparsing/tentative/stream-html-defer-async-script.html": {
-    "total": 6,
+    "total": 12,
     "failures": {
       "element.streamAppendHTMLUnsafe with defer/async scripts": "FAIL",
       "element.streamAppendHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL",
+      "element.streamAppendHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL",
       "element.streamHTMLUnsafe with defer/async scripts": "FAIL",
-      "element.streamHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL"
+      "element.streamHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL",
+      "element.streamHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL"
+    }
+  },
+  "domparsing/tentative/stream-html-element.html": {
+    "total": 28,
+    "failures": {
+      "streamAfterHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamAfterHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "streamAfterHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamAfterHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "streamAppendHTML on a detached html element throws HierarchyRequestError": "FAIL",
+      "streamAppendHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "streamAppendHTML on the html element throws HierarchyRequestError": "FAIL",
+      "streamAppendHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
+      "streamAppendHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "streamAppendHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
+      "streamBeforeHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamBeforeHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "streamBeforeHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamBeforeHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "streamPrependHTML on a detached html element throws HierarchyRequestError": "FAIL",
+      "streamPrependHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "streamPrependHTML on the html element throws HierarchyRequestError": "FAIL",
+      "streamPrependHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
+      "streamPrependHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
+      "streamPrependHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
+      "streamReplaceWithHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamReplaceWithHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
+      "streamReplaceWithHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
+      "streamReplaceWithHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL"
     }
   },
   "domparsing/tentative/stream-html-parser-blocking-script.html": {
-    "total": 8,
+    "harness": "ERROR",
+    "total": 26,
     "failures": {
+      "Blocking script whose src 404s fires error event, parsing continues, and close() resolves": "FAIL",
       "DOM mutations inside streamed parser-blocking script maintain correct insertion order": "FAIL",
       "External script tag split across chunk boundaries parses and executes correctly": "FAIL",
+      "Live document script-blocking stylesheets do not block streamed inline, external, or defer scripts": "FAIL",
       "Multiple parser-blocking scripts with out-of-order fetch times execute in document order": "FAIL",
+      "Rejected write (displacedRef) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (symbol) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (toStringThrow) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Removing iframe while stream is blocked on external script does not crash or execute scripts": "FAIL",
+      "Two concurrent streams block independently": "FAIL",
+      "close() while blocked waits for the blocking script and remaining input, then defer scripts run": "FAIL",
+      "document.write() from external streamed script is ignored; from inline streamed script implicitly opens document": "FAIL",
+      "streamAppendHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "NOTRUN",
       "streamHTMLUnsafe with parser blocking script should process in order": "FAIL",
-      "streamHTMLUnsafe with parser-blocking script should not execute after abort": "FAIL"
+      "streamHTMLUnsafe with parser-blocking script should not execute after abort": "FAIL",
+      "streamHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "FAIL",
+      "streamPrependHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "NOTRUN",
+      "write() resolves without waiting for a parser-blocking script to finish loading": "FAIL"
     }
   },
   "domparsing/tentative/stream-html-run-scripts-option.html": {
-    "total": 8
+    "total": 14
   },
   "domparsing/tentative/stream-html-sanitizer-safe.html": {
     "total": 30
   },
   "domparsing/tentative/stream-html-sanitizer.html": {
-    "total": 204
-  },
-  "domparsing/tentative/stream-html-script-safe.html": {
-    "total": 12
-  },
-  "domparsing/tentative/stream-html-unsafe.html": {
-    "total": 15,
+    "total": 276,
     "failures": {
-      "Aborting streamHTMLUnsafe()": "FAIL"
+      "element.streamAfterHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamAfterHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamAfterHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
+      "element.streamAppendHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamAppendHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamAppendHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
+      "element.streamBeforeHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamBeforeHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamBeforeHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
+      "element.streamHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
+      "element.streamPrependHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamPrependHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamPrependHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
+      "element.streamReplaceWithHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamReplaceWithHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
+      "element.streamReplaceWithHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL"
     }
   },
-  "domparsing/tentative/stream-html-with-declarative-shadow-root.html": {
+  "domparsing/tentative/stream-html-script-safe.html": {
     "total": 36
+  },
+  "domparsing/tentative/stream-html-unsafe.html": {
+    "total": 17
+  },
+  "domparsing/tentative/stream-html-with-declarative-shadow-root.html": {
+    "total": 37
   },
   "domparsing/tentative/stream-html-with-trusted-types-adopt.html": {
     "total": 24
+  },
+  "domparsing/tentative/stream-html-with-trusted-types-createParserOptions-order.html": {
+    "total": 5
   },
   "domparsing/tentative/stream-html-with-trusted-types-error-in-policy.html": {
     "total": 6
@@ -237,14 +391,7 @@
     "total": 10
   },
   "domparsing/tentative/stream-html-with-trusted-types-runScripts-cannot-be-turned-on.html": {
-    "total": 10,
-    "failures": {
-      "The default TT policy cannot turn runScripts on if they are off in the options for streamAfterHTMLUnsafe": "FAIL",
-      "The default TT policy cannot turn runScripts on if they are off in the options for streamAppendHTMLUnsafe": "FAIL",
-      "The default TT policy cannot turn runScripts on if they are off in the options for streamBeforeHTMLUnsafe": "FAIL",
-      "The default TT policy cannot turn runScripts on if they are off in the options for streamHTMLUnsafe": "FAIL",
-      "The default TT policy cannot turn runScripts on if they are off in the options for streamPrependHTMLUnsafe": "FAIL"
-    }
+    "total": 10
   },
   "domparsing/tentative/stream-html-with-trusted-types-runScripts-off.html": {
     "total": 10
@@ -253,16 +400,13 @@
     "total": 20
   },
   "domparsing/tentative/stream-html.html": {
-    "total": 15,
-    "failures": {
-      "Aborting streamHTML()": "FAIL"
-    }
+    "total": 16
   },
   "domparsing/tentative/stream-insertion-logic.html": {
-    "total": 52
+    "total": 70
   },
   "domparsing/tentative/stream-positional-template-child.html": {
-    "total": 6
+    "total": 12
   },
   "domparsing/tentative/stream-positional.html": {
     "total": 88
@@ -277,11 +421,13 @@
     "total": 18
   },
   "domparsing/tentative/stream-tokenizer-context.html": {
-    "total": 32,
+    "total": 45
+  },
+  "domparsing/tentative/unclosed-script-already-started.html": {
+    "total": 4,
     "failures": {
-      "streamAppendHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL",
-      "streamHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL",
-      "streamPrependHTMLUnsafe on <script> initializes tokenizer in Script data state": "FAIL"
+      "Unclosed <script> from createContextualFragment() never runs": "FAIL",
+      "Unclosed <script> from setHTMLUnsafe({runScripts: true}) never runs": "FAIL"
     }
   },
   "domparsing/xml-parse-serialize-roundtrip.html": {

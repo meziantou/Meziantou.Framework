@@ -223,16 +223,25 @@ internal sealed partial class OpenTypeFont
     public bool UseTypoMetrics => HasOS2 && (FsSelection & 0x80) != 0;
 
     /// <summary>Whether the font is italic or oblique (<c>OS/2.fsSelection</c> bits 0 and 9, or <c>head.macStyle</c> bit 1).</summary>
-    public bool IsItalic => (FsSelection & 0x0201) != 0 || (MacStyle & 0x02) != 0;
+    public bool IsItalic => IsItalicStyle(FsSelection, MacStyle);
 
     /// <summary>Whether the font is oblique rather than italic (<c>OS/2.fsSelection</c> bit 9).</summary>
-    public bool IsOblique => (FsSelection & 0x0200) != 0;
+    public bool IsOblique => IsObliqueStyle(FsSelection);
+
+    /// <summary>Whether a font is italic or oblique: <c>OS/2.fsSelection</c> bits 0 and 9, or <c>head.macStyle</c> bit 1.</summary>
+    internal static bool IsItalicStyle(int fsSelection, int macStyle) => (fsSelection & 0x0201) != 0 || (macStyle & 0x02) != 0;
+
+    /// <summary>Whether a font is oblique rather than italic: <c>OS/2.fsSelection</c> bit 9.</summary>
+    internal static bool IsObliqueStyle(int fsSelection) => (fsSelection & 0x0200) != 0;
 
     /// <summary>Whether the font is bold (<c>OS/2.fsSelection</c> bit 5, or <c>head.macStyle</c> bit 0).</summary>
     public bool IsBold => (FsSelection & 0x20) != 0 || (MacStyle & 0x01) != 0;
 
     /// <summary>The <c>font-width</c> of the width class, as a percentage (https://drafts.csswg.org/css-fonts-4/#font-stretch-prop).</summary>
-    public double WidthPercentage => WidthClass switch
+    public double WidthPercentage => GetWidthPercentage(WidthClass);
+
+    /// <summary>The <c>font-width</c> of a width class, as a percentage (https://drafts.csswg.org/css-fonts-4/#font-stretch-prop).</summary>
+    internal static double GetWidthPercentage(int widthClass) => widthClass switch
     {
         1 => 50,
         2 => 62.5,

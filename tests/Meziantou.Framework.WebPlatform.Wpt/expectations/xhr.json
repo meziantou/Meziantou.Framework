@@ -771,6 +771,15 @@
   "xhr/progress-events-response-data-gzip.htm": {
     "total": 1
   },
+  "xhr/progressevent-constructor.any.js": {
+    "total": 10
+  },
+  "xhr/progressevent-constructor.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "xhr/progressevent-constructor.any.js#sharedworker": {
+    "total": 10
+  },
   "xhr/progressevent-constructor.html": {
     "total": 10
   },

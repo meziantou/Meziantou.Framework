@@ -5,6 +5,9 @@
   "sanitizer-api/parsehtml-noscript.html": {
     "total": 6
   },
+  "sanitizer-api/parsehtmlunsafe-with-trustedtypes.html": {
+    "total": 7
+  },
   "sanitizer-api/parsehtmlunsafe-with-trustedtypes.tentative.html": {
     "total": 7,
     "failures": {
@@ -13,18 +16,21 @@
     }
   },
   "sanitizer-api/sanitizer-base-immutable.html": {
-    "total": 19
+    "total": 27
   },
   "sanitizer-api/sanitizer-basic-filtering.html": {
-    "total": 162
+    "total": 354
   },
   "sanitizer-api/sanitizer-boolean-defaults.html": {
-    "total": 4
+    "total": 3
   },
   "sanitizer-api/sanitizer-config.html": {
     "total": 72
   },
   "sanitizer-api/sanitizer-custom-elements-constructor.html": {
+    "total": 14
+  },
+  "sanitizer-api/sanitizer-custom-elements-is.html": {
     "total": 8
   },
   "sanitizer-api/sanitizer-custom-elements-is.tentative.html": {
@@ -36,17 +42,28 @@
       "Get the expected default config": "FAIL"
     }
   },
+  "sanitizer-api/sanitizer-duplicate-html-body.html": {
+    "total": 12
+  },
   "sanitizer-api/sanitizer-get.html": {
     "total": 9
   },
   "sanitizer-api/sanitizer-in-adoption-agency.html": {
-    "total": 15
+    "total": 55,
+    "failures": {
+      "Testcase #29, \"<table><b><div>x</b>y\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #48, \"<table><b><div>x</b><input type=\"hidden\">\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #50, \"<article><b><i><section><div><div><div><div><div><div><div><div>x</b>y</article>z\", config: \"{ \"replaceWithChildrenElements\": [\"section\"] }\".": "FAIL"
+    }
+  },
+  "sanitizer-api/sanitizer-in-noahs-ark.html": {
+    "total": 22
   },
   "sanitizer-api/sanitizer-inert-document.html": {
     "total": 4
   },
   "sanitizer-api/sanitizer-javascript-url.html": {
-    "total": 1278
+    "total": 1334
   },
   "sanitizer-api/sanitizer-modifiers.html": {
     "total": 22
@@ -55,13 +72,19 @@
     "total": 27
   },
   "sanitizer-api/sanitizer-parseHTML.html": {
-    "total": 28
+    "total": 49,
+    "failures": {
+      "parseHTMLUnsafe testcase 23, \"<div></div><frameset>\"": "FAIL"
+    }
   },
   "sanitizer-api/sanitizer-processing-instructions.html": {
-    "total": 57
+    "total": 63
   },
   "sanitizer-api/sanitizer-removeUnsafe.html": {
     "total": 8
+  },
+  "sanitizer-api/sanitizer-script-tokenizer.html": {
+    "total": 10
   },
   "sanitizer-api/sanitizer-svg-animate.html": {
     "total": 22,
@@ -88,20 +111,55 @@
       "ShadowRoot.setHTMLUnsafe with a sanitizer runs disconnectedCallback for the replaced children before returning": "FAIL"
     }
   },
+  "sanitizer-api/sethtml-form-owner.html": {
+    "total": 4
+  },
+  "sanitizer-api/sethtml-noscript.html": {
+    "total": 6
+  },
+  "sanitizer-api/sethtml-replace-with-children.html": {
+    "total": 6,
+    "failures": {
+      "setHTMLUnsafe: a custom element inside a foster-parented replaced element is connected before the table": "FAIL",
+      "setHTMLUnsafe: a declarative shadow root inside a replaced element is not attached": "FAIL"
+    }
+  },
   "sanitizer-api/sethtml-safety.html": {
     "total": 33
   },
   "sanitizer-api/sethtml-tree-construction.html": {
-    "total": 87
+    "total": 126,
+    "failures": {
+      "Testcase #101, \"<table><div><input type=\"hidden\"><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #102, \"<table><div><template>t</template><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #103, \"<table><div><!-- c --><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"], \"comments\": true }\".": "FAIL",
+      "Testcase #85, \"<table><div><span>Content</span></div><td>cell</td></table>\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #86, \"<table><tr><div><span>Content</span></div><td>cell</td></tr></table>\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #92, \"<table><tr><div>x</div><td>y\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
+      "Testcase #93, \"<table>a<b>y</b>c<tr><td>z\", config: \"{ \"replaceWithChildrenElements\": [\"b\"] }\".": "FAIL"
+    }
   },
   "sanitizer-api/sethtml-with-custom-elements.html": {
-    "total": 13
+    "total": 24
+  },
+  "sanitizer-api/sethtml-with-declarative-shadow-root.html": {
+    "total": 14,
+    "failures": {
+      "declarative shadow root on a host replaced with its children is not attached to the parent; the template is kept as a regular template": "FAIL",
+      "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
+    }
   },
   "sanitizer-api/sethtml-with-declarative-shadow-root.tentative.html": {
     "total": 10,
     "failures": {
       "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
     }
+  },
+  "sanitizer-api/sethtml-with-trustedhtml-createParserOptions.html": {
+    "total": 166
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.html": {
+    "total": 2
   },
   "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.tentative.html": {
     "total": 2,
@@ -110,6 +168,12 @@
       "TrustedHTMLParserOptions has no public members when createParserOptions returns null/empty": "FAIL"
     }
   },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions-report-only.html": {
+    "total": 134
+  },
+  "sanitizer-api/sethtml-with-trustedtypes-createParserOptions.html": {
+    "total": 97
+  },
   "sanitizer-api/sethtml-with-trustedtypes-createParserOptions.tentative.html": {
     "total": 11,
     "failures": {
@@ -117,8 +181,14 @@
       "ShadowRoot.setHTMLUnsafe: TrustedHTMLParserOptions without sanitizer still requires createHTML": "FAIL"
     }
   },
+  "sanitizer-api/sethtml-with-trustedtypes-immutable.html": {
+    "total": 16
+  },
   "sanitizer-api/sethtml-with-trustedtypes-immutable.tentative.html": {
     "total": 6
+  },
+  "sanitizer-api/sethtml-with-trustedtypes.html": {
+    "total": 253
   },
   "sanitizer-api/sethtml-with-trustedtypes.tentative.html": {
     "total": 151,
@@ -165,6 +235,12 @@
       "ShadowRoot: createParserOptions cannot change runScripts from false to true": "FAIL"
     }
   },
+  "sanitizer-api/sethtml-xml-document-sanitizer-report-only.html": {
+    "total": 21
+  },
+  "sanitizer-api/sethtml-xml-document-sanitizer.html": {
+    "total": 26
+  },
   "sanitizer-api/sethtml-xml-document-sanitizer.tentative.html": {
     "total": 7,
     "failures": {
@@ -185,17 +261,35 @@
       "Testcase #3, shadow inside xmlDoc, shadowroot.setHTML(\"<iframe></iframe><p>text</p>\")": "FAIL"
     }
   },
+  "sanitizer-api/sethtmlunsafe-toplevel-template-script.html": {
+    "total": 10
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createHTML.html": {
+    "total": 180
+  },
   "sanitizer-api/trustedhtml-unvetted-parser-options-default-createHTML.tentative.html": {
     "total": 54
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-default-createParserOptions.html": {
+    "total": 19
   },
   "sanitizer-api/trustedhtml-unvetted-parser-options-default-createParserOptions.tentative.html": {
     "total": 5
   },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-no-enforcement.html": {
+    "total": 29
+  },
   "sanitizer-api/trustedhtml-unvetted-parser-options-no-enforcement.tentative.html": {
     "total": 8
   },
+  "sanitizer-api/trustedhtml-unvetted-parser-options-report-only.html": {
+    "total": 39
+  },
   "sanitizer-api/trustedhtml-unvetted-parser-options-report-only.tentative.html": {
     "total": 8
+  },
+  "sanitizer-api/trustedhtml-unvetted-parser-options.html": {
+    "total": 141
   },
   "sanitizer-api/trustedhtml-unvetted-parser-options.tentative.html": {
     "total": 43

@@ -497,6 +497,9 @@
   "css/css-text-decor/text-decoration-underline-wavy-covers-whole-line-length-001.html": {
     "reftest": "PASS"
   },
+  "css/css-text-decor/text-decoration-wavy-phase-across-elements-001.html": {
+    "reftest": "FAIL"
+  },
   "css/css-text-decor/text-emphasis-color-001.xht": {
     "reftest": "PASS"
   },

@@ -9,44 +9,51 @@
 
 ## Usage
 
-Create a context per application and scan content with it:
+Create a context per application and scan content with it (the types are in the `Meziantou.Framework.Win32`
+namespace). The examples scan the EICAR test string, which antimalware products
+detect as malware:
 
-```c#
-using Meziantou.Framework.Win32;
-
+<!-- ref:../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs;region=AmsiContext_IsMalware;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var context = AmsiContext.Create("MyApplication");
 
-if (context.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt"))
-{
-    Console.WriteLine("Malware detected!");
-}
+var isMalware = context.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt");
+Assert.True(isMalware);
 ```
+<!-- endref -->
 
-Byte buffers are supported too:
+Byte buffers are supported too, such as the content of an uploaded file:
 
-```c#
-var payload = File.ReadAllBytes("document.docm");
-if (context.IsMalware(payload, "document.docm"))
-{
-    Console.WriteLine("Malware detected!");
-}
+<!-- ref:../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs;region=AmsiContext_IsMalwareBuffer;format=md-fenced-code-block;dedent=true -->
+```csharp
+var payload = Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*");
+Assert.True(context.IsMalware(payload, "document.txt"));
+Assert.False(context.IsMalware([0, 0, 0, 0], "document.bin"));
 ```
+<!-- endref -->
 
 When several scans belong together — the fragments of one script, or the parts of one upload — open a session so the provider can correlate them:
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs;region=AmsiContext_Session;format=md-fenced-code-block;dedent=true -->
+```csharp
+string[] fragments = ["Write-Host 'Hello'", @"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"];
+
 using var context = AmsiContext.Create("MyApplication");
 using var session = context.CreateSession();
 
+var detected = false;
 foreach (var fragment in fragments)
 {
     if (session.IsMalware(fragment, "script.ps1"))
     {
-        Console.WriteLine("Malware detected!");
+        detected = true;
         break;
     }
 }
+
+Assert.True(detected);
 ```
+<!-- endref -->
 
 Dispose the session and the context when you are done with them.
 

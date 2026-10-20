@@ -6,6 +6,46 @@ namespace Meziantou.Framework.Win32.AmsiTests;
 public class AmsiContextTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void ReadmeExample_Scan()
+    {
+        #region AmsiContext_IsMalware
+        using var context = AmsiContext.Create("MyApplication");
+
+        var isMalware = context.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt");
+        Assert.True(isMalware);
+        #endregion
+
+        #region AmsiContext_IsMalwareBuffer
+        var payload = Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*");
+        Assert.True(context.IsMalware(payload, "document.txt"));
+        Assert.False(context.IsMalware([0, 0, 0, 0], "document.bin"));
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void ReadmeExample_Session()
+    {
+        #region AmsiContext_Session
+        string[] fragments = ["Write-Host 'Hello'", @"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"];
+
+        using var context = AmsiContext.Create("MyApplication");
+        using var session = context.CreateSession();
+
+        var detected = false;
+        foreach (var fragment in fragments)
+        {
+            if (session.IsMalware(fragment, "script.ps1"))
+            {
+                detected = true;
+                break;
+            }
+        }
+
+        Assert.True(detected);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void AmsiShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");

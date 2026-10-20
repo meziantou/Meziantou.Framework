@@ -5,6 +5,42 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 public sealed class ExpressionQueryBuilderTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region ExpressionQueryBuilder_Usage
+        // Define a query builder for your entity
+        var queryBuilder = new ExpressionQueryBuilder<Customer>();
+
+        // Add handlers for string properties (uses Contains for partial matching).
+        // Case sensitivity follows the provider: the database collation for EF Core, ordinal for LINQ to Objects.
+        // Pass a StringComparison to force one, but note that EF Core cannot translate it.
+        queryBuilder.AddHandler("name", customer => customer.FullName);
+
+        // Add handlers for comparable types (supports range and comparison operators)
+        queryBuilder.AddHandler<int>("age", customer => customer.Age);
+        queryBuilder.AddHandler<DateTime>("created", customer => customer.CreatedAt);
+
+        // Optional: handle free-text search across multiple fields
+        queryBuilder.SetFreeTextHandler(text =>
+            customer => customer.FullName.Contains(text) || customer.Email.Contains(text));
+
+        // Build the query
+        var query = queryBuilder.Build("name:John AND age>=21");
+
+        // Apply to an IQueryable (e.g., an EF Core DbSet)
+        var customers = new[]
+        {
+            new Customer("John Doe", "john@example.com", 30, new DateTime(2024, 1, 1)),
+            new Customer("Johnny Smith", "johnny@example.com", 18, new DateTime(2024, 1, 1)),
+            new Customer("Jane Doe", "jane@example.com", 40, new DateTime(2024, 1, 1)),
+        };
+        var results = query.Apply(customers.AsQueryable()).ToList();
+
+        Assert.Equal(["John Doe"], results.Select(customer => customer.FullName));
+        #endregion
+    }
+
+    [Fact]
     public void FieldEquals_Int32()
     {
         var queryBuilder = new ExpressionQueryBuilder<Sample>();
@@ -559,3 +595,9 @@ public sealed class ExpressionQueryBuilderTests
         public Guid GuidValue { get; set; }
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region ExpressionQueryBuilder_Customer
+internal sealed record Customer(string FullName, string Email, int Age, DateTime CreatedAt);
+#endregion
+#pragma warning restore MA0048

@@ -2,7 +2,8 @@
 
 `Meziantou.Framework.Win32.RecentDocuments` is a wrapper for manipulating recent documents in Windows.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.Win32.RecentDocumentsConsole/ReadmeExamples.cs;region=RecentDocuments_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Add a document to Recent Items and to the Jump List of the current application.
 // A relative path is resolved against the current directory.
 Meziantou.Framework.Win32.RecentDocuments.AddToRecentDocuments(@"C:\Users\Public\Documents\file.txt");
@@ -14,5 +15,6 @@ Meziantou.Framework.Win32.RecentDocuments.AddToRecentDocuments(@"C:\Users\Public
 // Warning: clears Recent Items and the Recent/Frequent lists of every application's Jump List, not only yours.
 Meziantou.Framework.Win32.RecentDocuments.ClearRecentDocuments();
 ```
+<!-- endref -->
 
 Executable (`.exe`) files are accepted but never appear in Recent Items, and folders only appear in the File Explorer Jump List.

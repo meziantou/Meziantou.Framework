@@ -4,27 +4,28 @@
 
 ## Basic usage
 
-```csharp
-using Meziantou.Framework;
+`PooledMemoryStream` is in the `Meziantou.Framework` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_BasicUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var stream = new PooledMemoryStream();
 stream.Write("Hello, "u8);
 stream.Write("World!"u8);
 
 stream.Position = 0;
 using var reader = new StreamReader(stream);
-Console.WriteLine(reader.ReadToEnd()); // Hello, World!
+Assert.Equal("Hello, World!", reader.ReadToEnd());
 
 // The pooled buffers are returned to the shared pool when the stream is disposed.
 ```
+<!-- endref -->
 
 ## Use it as an `IBufferWriter<byte>`
 
-```csharp
-using System.Buffers;
-using System.Text.Json;
-using Meziantou.Framework;
+`IBufferWriter<T>` is in the `System.Buffers` namespace, and `Utf8JsonWriter` in `System.Text.Json`.
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_BufferWriter;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var stream = new PooledMemoryStream();
 
 // PooledMemoryStream implements IBufferWriter<byte> (explicit), so it can be passed where one is expected.
@@ -36,16 +37,17 @@ await using (var json = new Utf8JsonWriter(writer))
     json.WriteEndObject();
 }
 
-var bytes = stream.ToArray(); // {"message":"hello"}
+var bytes = stream.ToArray();
+Assert.Equal("""{"message":"hello"}"""u8.ToArray(), bytes);
 ```
+<!-- endref -->
 
 Data written through `IBufferWriter<byte>` is appended at the end of the stream; after `Advance`, `Position` is moved to the new end.
 
 ## Configure the buffer sizes
 
+<!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 var options = new PooledMemoryStreamOptions
 {
     // Any number of strictly ascending tiers (bytes). Small streams use the smallest size and
@@ -57,6 +59,7 @@ var options = new PooledMemoryStreamOptions
 
 using var stream = new PooledMemoryStream(options);
 ```
+<!-- endref -->
 
 `PooledMemoryStreamOptions` becomes immutable (frozen) the first time it is used to create a stream; after that, setting any property throws `InvalidOperationException`. The shared `PooledMemoryStreamOptions.Default` is always frozen. Configure all properties before passing the options to a stream.
 

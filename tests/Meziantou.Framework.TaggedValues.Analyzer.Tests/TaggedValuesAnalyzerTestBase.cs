@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.TaggedValues;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -67,6 +68,15 @@ public abstract class TaggedValuesAnalyzerTestBase
     protected static DiagnosticResult Diagnostic(string id)
     {
         return new DiagnosticResult(id, DiagnosticSeverity.Warning);
+    }
+
+    /// <summary>
+    /// Resolves the references of a compilation: the .NET reference assemblies and Meziantou.Framework.TaggedValues.
+    /// </summary>
+    protected static async Task<ImmutableArray<MetadataReference>> GetReferencesAsync()
+    {
+        var frameworkReferences = await Net11.ResolveAsync(LanguageNames.CSharp, XunitCancellationToken);
+        return [.. frameworkReferences, GetTaggedValuesReference()];
     }
 
     /// <summary>

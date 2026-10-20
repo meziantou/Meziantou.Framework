@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <!--
+    The readme examples of Meziantou.Framework.TaggedValues. The analyzer does not run on this project: the examples
+    contain the diagnostics they document, and tests/Meziantou.Framework.TaggedValues.Analyzer.Tests checks that the
+    analyzer reports the diagnostics written in their comments.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Sample</RootNamespace>
+    <!-- The examples show the flow of tagged values, not API design: several types per file, members that could be static,
+         List<T> properties, unused locals and parameters, and tuple elements read as Item1 and Item2 -->
+    <NoWarn>$(NoWarn);CA1002;CA1822;IDE0033;IDE0059;IDE0060;MA0048</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.TaggedValues" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.TaggedValues/Meziantou.Framework.TaggedValues.csproj" />
+  </ItemGroup>
+
+</Project>

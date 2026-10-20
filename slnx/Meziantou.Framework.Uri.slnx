@@ -1,15 +1,23 @@
 <Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Uri.Fuzz/Meziantou.Framework.Uri.Fuzz.csproj" />
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Uri.Tests/Meziantou.Framework.Uri.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="../tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
+    <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
   </Folder>
 </Solution>

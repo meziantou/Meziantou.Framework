@@ -380,20 +380,32 @@
     <Project Path="tools/Meziantou.Framework.WebPlatform.SpecUpdate/Meziantou.Framework.WebPlatform.SpecUpdate.csproj" />
   </Folder>
   <Folder Name="/fuzz/">
+    <Project Path="fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Dns.Fuzz/Meziantou.Framework.Dns.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Unicode.Fuzz/Meziantou.Framework.Unicode.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Uri.Fuzz/Meziantou.Framework.Uri.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Versioning.Fuzz/Meziantou.Framework.Versioning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>

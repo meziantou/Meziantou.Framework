@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
     <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Uri.Fuzz/Meziantou.Framework.Uri.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -10,6 +11,7 @@
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+    <Project Path="../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Jint/Meziantou.Framework.WebPlatform.Jint.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />

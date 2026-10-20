@@ -23,6 +23,7 @@ on:
           - dns
           - globbing
           - html-sanitizer
+          - htpasswd
           - jsonpath
           - language
           - markdown
@@ -84,6 +85,7 @@ env:
       { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
+      { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },

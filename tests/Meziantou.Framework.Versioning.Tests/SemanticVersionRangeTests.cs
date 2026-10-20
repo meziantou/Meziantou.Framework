@@ -2,6 +2,29 @@ namespace Meziantou.Framework.Versioning.Tests;
 
 public class SemanticVersionRangeTests
 {
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region SemanticVersionRange_Example
+        // NuGet format examples
+        var range1 = SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)"); // >=1.0.0 and <2.0.0
+        var range2 = SemanticVersionRange.ParseNuGet("1.0.0");          // >=1.0.0
+        var range3 = SemanticVersionRange.ParseNuGet("[1.0.0]");        // ==1.0.0
+        Assert.Equal(SemanticVersionRange.GreaterThanOrEqual(SemanticVersion.Parse("1.0.0")), range2);
+        Assert.Equal(SemanticVersionRange.Exact(SemanticVersion.Parse("1.0.0")), range3);
+
+        // npm format examples
+        var range4 = SemanticVersionRange.ParseNpm(">=1.0.0 <2.0.0");  // >=1.0.0 and <2.0.0
+        var range5 = SemanticVersionRange.ParseNpm("<=2.0.0");         // <=2.0.0
+        Assert.Equal(range1, range4);
+        Assert.Equal(SemanticVersionRange.LessThanOrEqual(SemanticVersion.Parse("2.0.0")), range5);
+
+        // Check if a version satisfies the range
+        var version = SemanticVersion.Parse("1.5.0");
+        Assert.True(range1.Satisfies(version));
+        #endregion
+    }
+
     [Theory]
     [InlineData("1.0.0", true)]
     [InlineData("1.5.0", true)]

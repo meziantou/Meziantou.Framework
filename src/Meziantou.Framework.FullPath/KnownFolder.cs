@@ -2,12 +2,14 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents a Windows known folder with its unique identifier and default path.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs" ref:region="KnownFolder_Example" ref:dedent="true">
 /// // Get path to Downloads folder
 /// FullPath downloadsPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
+/// Assert.False(downloadsPath.IsEmpty);
 ///
 /// // Get path to Documents folder
 /// FullPath documentsPath = FullPath.GetKnownFolderPath(KnownFolder.Documents);
+/// Assert.False(documentsPath.IsEmpty);
 /// </code>
 /// </example>
 public sealed class KnownFolder

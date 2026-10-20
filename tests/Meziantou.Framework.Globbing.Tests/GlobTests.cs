@@ -190,6 +190,16 @@ public class GlobTests
         }
     }
 
+    [Fact]
+    public void GlobExample()
+    {
+        #region Glob_IsMatch
+        var glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("src/folder/file.txt"));
+        Assert.False(glob.IsMatch("docs/file.txt"));
+        #endregion
+    }
+
     [Theory]
     [InlineData("a?c", "a?C")]
     [InlineData("a?c", "adC")]

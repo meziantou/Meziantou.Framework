@@ -5,10 +5,14 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 /// <summary>Provides a fluent API for configuring and validating inline snapshots.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs" ref:region="InlineSnapshotBuilder_WithSerializer" ref:dedent="true">
+/// var data = new { LastName = "Doe", FirstName = "John" };
 /// InlineSnapshot
-///     .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
-///     .Validate(data, "expected snapshot");
+///     .WithSerializer(options =&gt; options.PropertyOrder = StringComparer.Ordinal)
+///     .Validate(data, """
+///         FirstName: John
+///         LastName: Doe
+///         """);
 /// </code>
 /// </example>
 public readonly struct InlineSnapshotBuilder

@@ -25,6 +25,54 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void SensitiveDataExample()
+    {
+        #region SensitiveData_Create
+        // Create sensitive data from a string
+        using var secret = SensitiveData.Create("my-password");
+
+        // Reveal the data when needed
+        string password = secret.RevealToString();
+        Assert.Equal("my-password", password);
+
+        // Create sensitive data from a byte array
+        byte[] key = [1, 2, 3, 4, 5];
+        using var sensitiveKey = SensitiveData.Create(key);
+        byte[] revealedKey = sensitiveKey.RevealToArray();
+        Assert.Equal(key, revealedKey);
+        #endregion
+    }
+
+    [Fact]
+    public void SensitiveDataOfTExample()
+    {
+        #region SensitiveDataOfT_Reveal
+        // Create and use sensitive data
+        using var secret = SensitiveData.Create("my-secret-password");
+
+        // Get the length without revealing the data
+        int length = secret.GetLength();
+        Assert.Equal(18, length);
+
+        // Reveal data into an existing buffer
+        char[] buffer = new char[length];
+        secret.RevealInto(buffer);
+        Assert.Equal("my-secret-password", new string(buffer));
+
+        // Or reveal to a new array
+        char[] revealed = secret.RevealToArray();
+        Assert.Equal("my-secret-password", new string(revealed));
+
+        // Use the data with a callback to avoid keeping it in memory
+        secret.RevealAndUse(arg: length, static (span, expectedLength) =>
+        {
+            // Process the sensitive data here
+            Assert.HasCount(expectedLength, span);
+        });
+        #endregion
+    }
+
+    [Fact]
     public void RevealToString()
     {
         var data = SensitiveData.Create("foo");

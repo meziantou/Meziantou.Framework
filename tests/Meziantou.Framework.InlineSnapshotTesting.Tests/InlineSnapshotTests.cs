@@ -73,6 +73,32 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void InlineSnapshotExample()
+    {
+        #region InlineSnapshot_Validate
+        var data = new { FirstName = "John", LastName = "Doe" };
+        InlineSnapshot.Validate(data, """
+            FirstName: John
+            LastName: Doe
+            """);
+        #endregion
+    }
+
+    [Fact]
+    public void InlineSnapshotBuilderExample()
+    {
+        #region InlineSnapshotBuilder_WithSerializer
+        var data = new { LastName = "Doe", FirstName = "John" };
+        InlineSnapshot
+            .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+            .Validate(data, """
+                FirstName: John
+                LastName: Doe
+                """);
+        #endregion
+    }
+
+    [Fact]
     public void ForceUpdateSnapshots_WithDisallowStrategy_DoesNotThrow()
     {
         // The force-update path used to call FileEditor.UpdateFile without asking the strategy first, so
@@ -314,6 +340,20 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             NickName: meziantou");
             """",
             languageVersion: "10", forceUpdateSnapshots: true);
+    }
+
+    [Fact]
+    public void InlineSnapshotAssertionAttributeExample()
+    {
+        #region InlineSnapshotAssertionAttribute_Example
+        Helper(new { Name = "John" }, "Name: John");
+
+        [InlineSnapshotAssertion(nameof(expected))]
+        static void Helper(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+        {
+            InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+        }
+        #endregion
     }
 
     [Fact]

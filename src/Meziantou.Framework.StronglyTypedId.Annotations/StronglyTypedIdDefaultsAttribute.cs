@@ -5,16 +5,17 @@ namespace Meziantou.Framework.Annotations;
 /// Options set on <see cref="StronglyTypedIdAttribute"/> or <c>StronglyTypedIdAttribute&lt;T&gt;</c> take precedence over the values defined by this attribute.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.StronglyTypedId.Samples/Program.cs" ref:region="StronglyTypedIdDefaultsAttribute_Example" ref:dedent="true">
 /// [assembly: StronglyTypedIdDefaults(GuidGenerationStrategy = GuidGenerationStrategy.Version7, GenerateNewtonsoftJsonConverter = false)]
+///
+/// // Usage:
+/// var productId = ProductId.New(); // Uses Guid.CreateVersion7()
+/// Console.WriteLine(productId.Value.Version); // 7
 ///
 /// [StronglyTypedId&lt;Guid&gt;]
 /// public partial struct ProductId
 /// {
 /// }
-///
-/// // Usage:
-/// var productId = ProductId.New(); // Uses Guid.CreateVersion7()
 /// </code>
 /// </example>
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]

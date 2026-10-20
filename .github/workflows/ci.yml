@@ -63,8 +63,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "The public suffix list of Meziantou.Framework.Uri is not generated from tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat" }
 
   # Meziantou.FileReferencer copies the code examples of the XML documentation and of the readme files from tests
-  # and samples, and some files from their source (e.g. .editorconfig). This job checks every tracked file, so it
-  # runs on its own to keep the other jobs fast.
+  # and samples, and some files from their source (e.g. .editorconfig). This job checks every tracked file, except the
+  # ones listed in eng/file-references-exclusions.txt, so it runs on its own to keep the other jobs fast.
   validate_file_references:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
@@ -79,21 +79,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "dotnet tool restore failed with exit code $LASTEXITCODE" }
       - name: Validate file references
         run: |
-          # Vendored files are copies of upstream data: they contain no file references, but some of their comments
-          # look like references (e.g. "// Reference: ..." in public_suffix_list.dat)
-          $excludedPaths = @(
-            'src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph'
-            'src/Meziantou.Framework.WebPlatform/Unicode/Segmentation/*.dict'
-            'tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/'
-            'tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/'
-            'tests/Meziantou.Framework.Imaging.Fixtures/font-suites/'
-            'tests/Meziantou.Framework.Language.Css.Tests/files/css-parsing-tests/'
-            'tests/Meziantou.Framework.Language.Toml.Tests/files/toml-test/'
-            'tests/Meziantou.Framework.WebPlatform.SpecData/'
-            'tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/HarfBuzz/'
-            'tests/Meziantou.Framework.Yaml.Tests/files/yaml-test-suite/'
-          )
-          $excludeArguments = $excludedPaths | ForEach-Object { '--exclude', $_ }
+          $excludeArguments = Get-Content eng/file-references-exclusions.txt | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object { '--exclude', $_ }
 
           dotnet tool run Meziantou.FileReferencer -- . --git-tracked-only --check @excludeArguments
           if ($LASTEXITCODE -ne 0) { throw "File references are out of date or invalid. Run 'dotnet run ./eng/update-all.cs', or 'dotnet tool run Meziantou.FileReferencer -- <path>' for the files reported above, and commit the changes." }

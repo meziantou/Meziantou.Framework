@@ -20,8 +20,6 @@ const string StepBom = "bom";
 const string StepSnippets = "snippets";
 const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-const string FileReferencerNamespace = "urn:meziantou:file-referencer";
-const string FileReferencerMarkdownMarker = "<!-- ref:";
 string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom];
 string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
@@ -188,25 +186,11 @@ void RunTemplateStep(FullPath rootPath)
     });
 }
 
-// Fills the code examples of the XML documentation and of the readme files from regions of tests and samples, using Meziantou.FileReferencer
+// Fills the code examples of the XML documentation and of the readme files from regions of tests and samples, and
+// the other file references of the repository, using Meziantou.FileReferencer. The validate_file_references CI job runs
+// the same command with --check.
 void RunUpdateSnippetsStep(FullPath rootPath)
 {
-    // Only pass the files that contain snippet references: processing every file of the repository takes minutes.
-    // The validate_file_references CI job checks every tracked file.
-    var originalContents = Directory.EnumerateFiles(rootPath / "src", "*", SearchOption.AllDirectories)
-        .Select(file => (Path: FullPath.FromPath(file), Marker: Path.GetExtension(file).ToLowerInvariant() switch
-        {
-            ".cs" => FileReferencerNamespace,
-            ".md" => FileReferencerMarkdownMarker,
-            _ => null,
-        }))
-        .Where(item => item.Marker is not null)
-        .Select(item => (item.Path, item.Marker, Content: File.ReadAllText(item.Path)))
-        .Where(item => item.Content.Contains(item.Marker!, StringComparison.Ordinal))
-        .ToDictionary(item => item.Path, item => item.Content);
-    if (originalContents.Count is 0)
-        return;
-
     TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
     if (RunProcessAndReturnExitCodeWithRetry(rootPath, "dotnet", ["tool", "restore"], retryDelays) != 0)
     {
@@ -215,34 +199,46 @@ void RunUpdateSnippetsStep(FullPath rootPath)
         return;
     }
 
-    var files = originalContents.Keys.Select(path => path.MakePathRelativeTo(rootPath)).Order(StringComparer.Ordinal).ToArray();
-
-    // Keep the command lines short enough for Windows
-    foreach (var batch in files.Chunk(100))
+    var psi = new ProcessStartInfo("dotnet")
     {
-        if (RunFileReferencer(batch, check: true) is 0)
+        UseShellExecute = false,
+        WorkingDirectory = rootPath,
+        RedirectStandardOutput = true,
+        Environment = { ["TERM"] = "dumb" },
+    };
+
+    foreach (var argument in (string[])["tool", "run", "Meziantou.FileReferencer", "--", ".", "--git-tracked-only"])
+    {
+        psi.ArgumentList.Add(argument);
+    }
+
+    foreach (var line in File.ReadLines(rootPath / "eng" / "file-references-exclusions.txt"))
+    {
+        if (line is "" or ['#', ..])
             continue;
 
-        RunFileReferencer(batch, check: false);
-        if (RunFileReferencer(batch, check: true) is not 0)
+        psi.ArgumentList.Add("--exclude");
+        psi.ArgumentList.Add(line);
+    }
+
+    // The tool reports each file it rewrites on the standard output. Errors go to the standard error, which is not redirected.
+    const string UpdatedFilePrefix = "Updating file ";
+    using var process = Process.Start(psi)!;
+    while (process.StandardOutput.ReadLine() is { } line)
+    {
+        if (line.StartsWith(UpdatedFilePrefix, StringComparison.Ordinal))
         {
-            Console.WriteLine("ERROR: Some snippets reference a missing file or region, see the errors above");
-            updatedFiles.Enqueue("src (invalid snippet references)");
+            var relativePath = (rootPath / line[UpdatedFilePrefix.Length..]).MakePathRelativeTo(rootPath);
+            Console.WriteLine($"[update-snippets] Updated {relativePath}");
+            updatedFiles.Enqueue(relativePath);
         }
     }
 
-    foreach (var (path, originalContent) in originalContents)
+    process.WaitForExit();
+    if (process.ExitCode is not 0)
     {
-        if (File.ReadAllText(path) != originalContent)
-        {
-            updatedFiles.Enqueue(path.MakePathRelativeTo(rootPath));
-        }
-    }
-
-    int RunFileReferencer(string[] paths, bool check)
-    {
-        string[] arguments = ["tool", "run", "Meziantou.FileReferencer", "--", .. paths];
-        return RunProcessAndReturnExitCode(rootPath, "dotnet", check ? [.. arguments, "--check"] : arguments);
+        Console.WriteLine("ERROR: Some file references are invalid, see the errors above");
+        updatedFiles.Enqueue("(invalid file references)");
     }
 }
 

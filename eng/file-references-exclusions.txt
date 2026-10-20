@@ -1,0 +1,15 @@
+# Paths that Meziantou.FileReferencer skips, in the .gitignore syntax, relative to the repository root. Used by the
+# snippets step of eng/update-all.cs and by the validate_file_references job of .github/workflows/ci.yml.
+#
+# Vendored files are copies of upstream data: they contain no file references, but some of their comments look like
+# references (e.g. "// Reference: ..." in public_suffix_list.dat).
+src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
+src/Meziantou.Framework.WebPlatform/Unicode/Segmentation/*.dict
+tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
+tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
+tests/Meziantou.Framework.Imaging.Fixtures/font-suites/
+tests/Meziantou.Framework.Language.Css.Tests/files/css-parsing-tests/
+tests/Meziantou.Framework.Language.Toml.Tests/files/toml-test/
+tests/Meziantou.Framework.WebPlatform.SpecData/
+tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/HarfBuzz/
+tests/Meziantou.Framework.Yaml.Tests/files/yaml-test-suite/

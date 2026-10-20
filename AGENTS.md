@@ -49,4 +49,4 @@ Code examples in XML documentation (`<example>`, `<code>`) and in the `readme.md
   /// </example>
   ```
   In a readme file, write `<!-- ref:../../tests/Meziantou.Framework.Sample.Tests/SampleTests.cs;region=Sample_Usage;format=md-fenced-code-block;dedent=true -->` and `<!-- endref -->` on two lines, each alone on its line: the tool generates the fenced code block between them. (They are inline code here so that the tool does not process this file.)
-- Run `dotnet run ./eng/update-all.cs` (or `dotnet run ./eng/update-all.cs -- --step snippets`) to fill or refresh the content. Do not edit the generated content. CI fails when the content is out of date or when a reference is invalid.
+- Run `dotnet run ./eng/update-all.cs` (or `dotnet run ./eng/update-all.cs -- --step snippets`) to fill or refresh the content. Do not edit the generated content. CI fails when the content is out of date or when a reference is invalid. When you add vendored files (copies of upstream data or test suites), add them to `eng/file-references-exclusions.txt`: their comments can look like file references.

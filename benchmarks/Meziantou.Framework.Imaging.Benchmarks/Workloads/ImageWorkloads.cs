@@ -174,6 +174,22 @@ internal static class ImageWorkloads
         }
     }
 
+    /// <summary>Copies a source image and blurs the copy (the source stays unchanged so the workload can be repeated).</summary>
+    public static Image GaussianBlurCopy(Image source, double sigma)
+    {
+        var copy = source.Clone();
+        try
+        {
+            copy.GaussianBlur(sigma);
+            return copy;
+        }
+        catch
+        {
+            copy.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Mutable state of <see cref="SumGreen"/>.</summary>
     internal sealed class SumState
     {

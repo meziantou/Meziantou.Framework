@@ -220,6 +220,40 @@ public sealed class BenchmarkWorkloadTests
         }
     }
 
+    [Fact]
+    public void GaussianBlurWorkloadsMatchTheReferenceConvolver()
+    {
+        // A 120x90 crop of each benchmark source (three bands of 30 rows when four workers are allowed), sequential and
+        // parallel; the reference is the matrix of the products of the weights
+        foreach (var workers in new[] { 1, 4 })
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+            using var rgba32 = Crop(Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration));
+            using var rgba64 = Crop(Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration));
+            foreach (var source in new Image[] { rgba32, rgba64 })
+            {
+                const double Sigma = 2;
+                decimal[] row = [.. Enumerable.Range(-6, 13).Select(i => (decimal)Math.Exp(-(i * i) / (2 * Sigma * Sigma)))];
+                var sum = row.Sum();
+                row = [.. row.Select(weight => weight / sum)];
+                var before = ImageSnapshots.CaptureFrame(source.Frames[0]);
+                using var result = ImageWorkloads.GaussianBlurCopy(source, Sigma);
+                var reference = ReferenceConvolver.Convolve(before, new ReferenceConvolutionOptions(13, 13, [.. row.SelectMany(vertical => row.Select(horizontal => vertical * horizontal))]));
+                var comparison = reference.Compare(ImageSnapshots.CaptureFrame(result.Frames[0]), $"{source.PixelFormat} Gaussian blur {Sigma}, {workers} worker(s)", writePreviews: false);
+                Assert.True(comparison.IsMatch, comparison.ToString());
+
+                var unchanged = PixelBufferComparer.Compare(before, ImageSnapshots.CaptureFrame(source.Frames[0]), ComparisonPolicy.Exact, "source");
+                Assert.True(unchanged.IsMatch, unchanged.Describe());
+            }
+        }
+
+        static Image Crop(Image image)
+        {
+            image.Crop(new Rectangle(600, 400, 120, 90));
+            return image;
+        }
+    }
+
     public static TheoryData<ResamplingFilter, ResizeWorkingSpace, int, int> ResizeCases() => new()
     {
         { ResamplingFilter.NearestNeighbor, ResizeWorkingSpace.Encoded, 80, 45 },

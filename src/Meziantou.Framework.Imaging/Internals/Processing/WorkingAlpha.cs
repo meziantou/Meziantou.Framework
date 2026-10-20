@@ -11,4 +11,11 @@ internal enum WorkingAlpha
 
     /// <summary>The last of four samples is a straight alpha: colors are filtered straight and the stored alpha is kept.</summary>
     Preserved,
+
+    /// <summary>
+    /// The last of four stored samples is an alpha at its maximum in every pixel the operation reads: the working samples are
+    /// the three colors only (premultiplying them by a constant alpha only adds rounding), and the stored alpha is the
+    /// maximum.
+    /// </summary>
+    Opaque,
 }

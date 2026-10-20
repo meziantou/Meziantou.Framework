@@ -9,9 +9,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// primitive: those of the filtered surface when a primitive reads the drawing or its alpha, and otherwise only those the
 /// subregions cover, which the filtered surface is transparent beyond. A result is kept in the colors its primitive
 /// computed with; an input in other colors is converted, once, to the colors of the primitive that reads it: each color
-/// is divided by the alpha, decoded or encoded by the transfer function of sRGB (<see cref="SrgbTransfer"/>), and
-/// multiplied by the alpha again. The alpha of a pixel is never converted, and the drawing
-/// (<see cref="FilterInputKind.SourceGraphic"/>) is in sRGB.
+/// is divided by the alpha, decoded or encoded by the transfer function of sRGB (<see cref="DeterministicSrgbTransfer"/>,
+/// which needs no function of the platform), and multiplied by the alpha again. The alpha of a pixel is never
+/// converted, and the drawing (<see cref="FilterInputKind.SourceGraphic"/>) is in sRGB.
 /// </para>
 /// <para>
 /// The subregion of a primitive is in pixels of the canvas: those whose center is in the box of the image of the
@@ -214,9 +214,9 @@ internal sealed class FilterGraphContext : IDisposable
         var blue = color.B / 65535.0;
         if (!_current!.IsColorSpaceNeutral && _current.ColorSpace == FilterColorSpace.LinearRgb)
         {
-            red = SrgbTransfer.Decode(red);
-            green = SrgbTransfer.Decode(green);
-            blue = SrgbTransfer.Decode(blue);
+            red = DeterministicSrgbTransfer.Decode(red);
+            green = DeterministicSrgbTransfer.Decode(green);
+            blue = DeterministicSrgbTransfer.Decode(blue);
         }
 
         return (red, green, blue, color.A / 65535.0);
@@ -418,7 +418,7 @@ internal sealed class FilterGraphContext : IDisposable
             for (var channel = 0; channel < 3; channel++)
             {
                 var color = Math.Clamp(from[i + channel] / alpha, 0, 1);
-                to[i + channel] = (float)((decode ? SrgbTransfer.Decode(color) : SrgbTransfer.Encode(color)) * alpha);
+                to[i + channel] = (float)((decode ? DeterministicSrgbTransfer.Decode(color) : DeterministicSrgbTransfer.Encode(color)) * alpha);
             }
 
             to[i + 3] = (float)alpha;

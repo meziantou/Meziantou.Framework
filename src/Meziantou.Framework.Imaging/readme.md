@@ -604,7 +604,8 @@ are computed with exact rational arithmetic, rounded to nearest (ties up), and a
 neighbor, bilinear, bicubic Catmull-Rom (default) and Lanczos3, sampled at pixel centers with clamped edges, normalized
 weights, and a support widened when downsampling. Colors are filtered premultiplied by alpha, so hidden colors of
 transparent pixels never bleed (zero alpha becomes transparent black), and 16-bit images are filtered with 16-bit
-precision.
+precision. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps the maximum
+alpha: premultiplying by a constant alpha would only add roundings.
 
 - `ResizeWorkingSpace.Encoded` (default) filters the stored sample values directly, like most image tools.
 - `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light before filtering and back afterward (more
@@ -618,8 +619,14 @@ precision.
   samples. Unspecified transfer characteristics are read as sRGB, linear ones are filtered as stored, and reserved
   ones are rejected. The name of the value is historical.
 
-A resize to the current size leaves the image unchanged. Results do not depend on the worker count or on SIMD support:
-the vectorized and parallel kernels are bit-identical to the scalar reference.
+A resize to the current size leaves the image unchanged. Sums are computed in double precision, every term added with a
+fused multiply-add (one rounding per term), and samples are correctly rounded, except for 8-bit images filtered in
+`Encoded` space whose pixels read are all opaque (or that have no alpha): those are filtered in fixed point, with
+weights of 14 fractional bits that add up to exactly 1, 16-bit intermediate rows and 32-bit sums, which is faster.
+About 0.2% of their samples are then one unit off the correctly rounded value, when the exact value is within 0.02 of a
+rounding boundary; none is off by more, and the headroom of the 16-bit rows is checked for the weights of every resize,
+which keeps double precision when it does not fit. Results do not depend on the worker count or on SIMD support: the
+vectorized and parallel kernels are bit-identical to the scalar reference.
 
 <!-- snippet: resize-animation -->
 ```csharp
@@ -648,18 +655,22 @@ divide them by their sum to keep the overall brightness. `ConvolutionOptions` th
 - `WorkingSpace`: `Encoded` (default) or `LinearSrgb`, with the same meaning and the same ICC profile rule as
   `ResizeWorkingSpace`.
 
-Sums are computed in double precision at the storage precision (16-bit images are filtered with 16-bit precision),
-rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image is rewritten in place,
-with a scratch of a few rows per worker proportional to the matrix height, charged to the allocation limit; the pixel
-format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is removed). As for resizing,
-results do not depend on the worker count or on SIMD support. The cost grows with the number of non-zero weights: there
-is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for these.
+Sums are computed in double precision with fused multiply-adds, at the storage precision (16-bit images are filtered
+with 16-bit precision), rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image
+is rewritten in place, with a scratch of a few rows per worker proportional to the matrix height, charged to the
+allocation limit; the pixel format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is
+removed). As for resizing, results do not depend on the worker count or on SIMD support. The cost grows with the number
+of non-zero weights: there is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for
+these.
 
 `GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
-gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same
-weights as a column, so that the time grows with the deviation and not with its square. It takes the edge mode and the
-working space of a convolution, and follows its rules; both passes are prepared before a pixel changes. The weights
-`exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
+gives to a blur is twice the deviation): one separable convolution, each row filtered by a row of `2 ceil(3 sigma) + 1`
+weights and the filtered rows by the same weights as a column, so that the time grows with the deviation and not with
+its square. Nothing is rounded between the two directions: the result is the one of the matrix of the products of the
+weights, rounded once. It takes the edge mode and the working space of a convolution, and follows its rules; an opaque
+frame is blurred as its colors alone and keeps the maximum alpha, except with the `Zero` edge mode, which reads
+transparent pixels beyond the image. The weights `exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without
+any function of the platform.
 
 <!-- snippet: convolve -->
 ```csharp
@@ -1811,9 +1822,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Filter graphs.** Every primitive of a `FilterGraph` has a result of the size of the filtered surface, in single
   precision, transparent outside its subregion: the pixels whose center is in the box of the image of its rectangle on
   the canvas, within the region of the filter. A primitive that computes in linear light reads each input converted
-  once (each color divided by the alpha, decoded by the transfer function of sRGB with `Math.Pow`, multiplied by the
-  alpha again), and its result is encoded the same way when a primitive in sRGB reads it, or at the end; an offset, a
-  tile and a flood are not converted. An offset interpolates the four pixels around the position it reads; a
+  once (each color divided by the alpha, decoded by the transfer function of sRGB, multiplied by the alpha again), and
+  its result is encoded the same way when a primitive in sRGB reads it, or at the end; an offset, a tile and a flood
+  are not converted. An offset interpolates the four pixels around the position it reads; a
   composite, a merge and a blend work on colors multiplied by their alpha (a blend with the straight colors of
   `BlendMode`); a color matrix and the transfer functions work on straight colors and are clamped to the range from 0
   to 1, and an arithmetic composite is clamped and each of its colors limited to its alpha. Sums are made in double
@@ -1826,6 +1837,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the surface from the Sobel kernels of the specification (with those of its edges and corners at the edges of the
   region of the filter), the pixels at the top left corner of their pixel and at the height `surfaceScale A`, and the
   height of a light multiplied by the square root of the product of the scales of the axes; its powers use `Math.Pow`.
+  The transfer function of sRGB of the filter graphs uses no function of the platform: its power is a polynomial of
+  degree 5 on each of 256 segments of every power of two, within a few units in the last place of double precision of
+  the exact function, so the colors of the primitives are the same on every platform.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip

@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Language.Fuzz\Meziantou.Framework.Language.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Markdown.Fuzz\Meziantou.Framework.Markdown.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.MediaTags.Fuzz\Meziantou.Framework.MediaTags.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.RobotsTxt.Fuzz\Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SyntaxHighlighting.Fuzz\Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.TdsServer.Fuzz\Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Toml.Fuzz\Meziantou.Framework.Toml.Fuzz.csproj" />

@@ -14,6 +14,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Language.Fuzz", Language.Fuzz.LanguageFuzzTargets.All),
         ("Meziantou.Framework.Markdown.Fuzz", Markdown.Fuzz.MarkdownFuzzTargets.All),
         ("Meziantou.Framework.MediaTags.Fuzz", MediaTags.Fuzz.MediaTagsFuzzTargets.All),
+        ("Meziantou.Framework.RobotsTxt.Fuzz", RobotsTxt.Fuzz.RobotsTxtFuzzTargets.All),
         ("Meziantou.Framework.SyntaxHighlighting.Fuzz", SyntaxHighlighting.Fuzz.SyntaxHighlightingFuzzTargets.All),
         ("Meziantou.Framework.TdsServer.Fuzz", TdsServer.Fuzz.TdsServerFuzzTargets.All),
         ("Meziantou.Framework.Toml.Fuzz", Toml.Fuzz.TomlFuzzTargets.All),

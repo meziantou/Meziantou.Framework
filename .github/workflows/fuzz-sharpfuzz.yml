@@ -23,6 +23,7 @@ on:
           - language
           - markdown
           - media-tags
+          - robots-txt
           - syntax-highlighting
           - tds-server
           - toml
@@ -76,6 +77,7 @@ env:
       { "project": "Meziantou.Framework.Language.Fuzz",           "component": "language",            "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",           "component": "markdown",            "day": 2 },
       { "project": "Meziantou.Framework.MediaTags.Fuzz",          "component": "media-tags",          "day": 3 },
+      { "project": "Meziantou.Framework.RobotsTxt.Fuzz",          "component": "robots-txt",          "day": 0 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz", "component": "syntax-highlighting", "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",          "component": "tds-server",          "day": 4 },
       { "project": "Meziantou.Framework.Toml.Fuzz",               "component": "toml",                "day": 4 },

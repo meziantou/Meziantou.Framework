@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.RobotsTxt. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The robots.txt files and the patterns of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.RobotsTxt.Tests\RobotsFileTests.cs" LogicalName="RobotsFileTests.cs" Link="Seeds\RobotsFileTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.RobotsTxt\Meziantou.Framework.RobotsTxt.csproj" />
+  </ItemGroup>
+</Project>

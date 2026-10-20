@@ -5,6 +5,40 @@ namespace Meziantou.Framework.Win32.Tests;
 public class PerceivedTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_GetPerceivedType()
+    {
+        #region Perceived_GetPerceivedType
+        // Get perceived type for a file extension
+        var perceived = Perceived.GetPerceivedType(".txt");
+        Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+        Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
+
+        // Works with various file types
+        var image = Perceived.GetPerceivedType(".jpg");
+        Assert.Equal(PerceivedType.Image, image.PerceivedType);
+
+        var video = Perceived.GetPerceivedType(".mp4");
+        Assert.Equal(PerceivedType.Video, video.PerceivedType);
+
+        var audio = Perceived.GetPerceivedType(".mp3");
+        Assert.Equal(PerceivedType.Audio, audio.PerceivedType);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AddPerceived()
+    {
+        #region Perceived_AddPerceived
+        // Add a custom perceived type
+        Perceived.AddPerceived(".myext", PerceivedType.Text);
+        Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
+
+        // Add default perceived types for common extensions
+        Perceived.AddDefaultPerceivedTypes();
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetPerceivedType_txt()
     {
         var perceived = Perceived.GetPerceivedType(".txt");

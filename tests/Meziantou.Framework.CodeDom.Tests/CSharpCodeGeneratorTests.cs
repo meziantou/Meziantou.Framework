@@ -42,10 +42,11 @@ public class CSharpCodeGeneratorTests
         var generatedCode = unit.ToCsharpString();
         #endregion
 
-        // The readme shows this output after the example. The generator writes no line break between the last using
-        // directive and the first namespace.
+        // The readme shows this output after the example.
         Assert.Equal("""
-            using System;namespace Demo
+            using System;
+
+            namespace Demo
             {
                 public class Greeter
                 {
@@ -953,6 +954,59 @@ void Sample()
         var directive = new UsingDirective("System");
 
         AssertCsharp(directive, "using System;");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_Usings()
+    {
+        var unit = new CompilationUnit();
+        unit.AddUsing("System");
+        unit.AddUsing("System.Collections.Generic");
+        unit.AddType(new ClassDeclaration("Sample"));
+
+        AssertCsharp(unit, """
+            using System;
+            using System.Collections.Generic;
+
+            class Sample
+            {
+            }
+
+            """);
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsOnly()
+    {
+        var unit = new CompilationUnit();
+        unit.AddUsing("System");
+
+        AssertCsharp(unit, """
+            using System;
+
+            """);
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_Namespace_Usings()
+    {
+        var ns = new NamespaceDeclaration("Demo");
+        ns.AddUsing("System");
+        ns.AddUsing("System.Collections.Generic");
+        ns.AddType(new ClassDeclaration("Sample"));
+
+        AssertCsharp(ns, """
+            namespace Demo
+            {
+                using System;
+                using System.Collections.Generic;
+
+                class Sample
+                {
+                }
+            }
+
+            """);
     }
 
     [Fact]

@@ -144,7 +144,7 @@ public partial class CSharpCodeGenerator
     {
         WriteBeforeComments(writer, unit);
         WriteNullableContextBefore(writer, unit);
-        Write(writer, unit.Usings, writer.NewLine);
+        WriteUsingDirectives(writer, unit.Usings, hasFollowingMembers: unit.Namespaces.Count > 0 || unit.Types.Count > 0);
         Write(writer, unit.Namespaces, writer.NewLine);
         Write(writer, unit.Types, writer.NewLine);
         WriteAfterComments(writer, unit);
@@ -158,7 +158,7 @@ public partial class CSharpCodeGenerator
         writer.WriteLine();
         writer.WriteLine("{");
         writer.Indent++;
-        Write(writer, ns.Usings, writer.NewLine);
+        WriteUsingDirectives(writer, ns.Usings, hasFollowingMembers: ns.Types.Count > 0 || ns.Namespaces.Count > 0);
         Write(writer, ns.Types, writer.NewLine);
         Write(writer, ns.Namespaces, writer.NewLine);
         writer.Indent--;
@@ -1374,6 +1374,23 @@ public partial class CSharpCodeGenerator
 
             Write(writer, o);
             first = false;
+        }
+    }
+
+    private void WriteUsingDirectives(IndentedTextWriter writer, CodeObjectCollection<UsingDirective> usings, bool hasFollowingMembers)
+    {
+        if (usings.Count == 0)
+            return;
+
+        foreach (var directive in usings)
+        {
+            Write(writer, directive);
+            writer.WriteLine();
+        }
+
+        if (hasFollowingMembers)
+        {
+            writer.WriteLine();
         }
     }
 

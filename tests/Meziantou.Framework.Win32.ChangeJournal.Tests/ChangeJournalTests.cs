@@ -8,6 +8,72 @@ namespace Meziantou.Framework.Win32.Tests;
 // The tests are flaky on GitHub Actions, use a retry mechanism
 public class ChangeJournalTests
 {
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_GetEntry()
+    {
+        #region ChangeJournal_GetEntry
+        var path = Path.GetTempFileName();
+        var entry = ChangeJournal.GetEntry(path);
+        Assert.Equal(Path.GetFileName(path), entry.Name);
+        #endregion
+
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
+    public void ReadmeExample_GetEntries()
+    {
+        Retry(() =>
+        {
+            #region ChangeJournal_GetEntries
+            using var changeJournal = ChangeJournal.Open(new DriveInfo("C:"), unprivileged: false);
+
+            var names = new List<string>();
+            var modifiedRanges = new List<ChangeJournalEntryExtent>();
+            foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero))
+            {
+                if (change is ChangeJournalEntryVersion2or3 changev2)
+                {
+                    names.Add(changev2.Name);
+                }
+                else if (change is ChangeJournalEntryVersion4 changev4)
+                {
+                    // Version 4 records are written when the tracking of the modified ranges is enabled
+                    modifiedRanges.AddRange(changev4.Extents);
+                }
+            }
+
+            Assert.NotEmpty(names);
+            #endregion
+        });
+    }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
+    public void ReadmeExample_GetEntriesFromUsn()
+    {
+        Retry(() =>
+        {
+            var path = Path.GetTempFileName();
+            var entry = ChangeJournal.GetEntry(path);
+            using var changeJournal = ChangeJournal.Open(new DriveInfo(Path.GetPathRoot(path) ?? throw new InvalidOperationException("Cannot determine drive root")), unprivileged: false);
+            File.AppendAllText(path, "new content");
+
+            #region ChangeJournal_GetEntriesFromUsn
+            var changes = new List<ChangeJournalEntryVersion2or3>();
+            foreach (var change in changeJournal.GetEntries(entry.UniqueSequenceNumber, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero))
+            {
+                if (change is ChangeJournalEntryVersion2or3 changev2)
+                {
+                    changes.Add(changev2);
+                }
+            }
+            #endregion
+
+            Assert.Contains(changes, change => string.Equals(change.Name, Path.GetFileName(path), StringComparison.Ordinal) && change.Reason.HasFlag(ChangeReason.DataExtend));
+            File.Delete(path);
+        });
+    }
+
     [Fact, RunIf(WindowsGroups.Administrator)]
     public void EnumerateEntries_ShouldFindNewFile()
     {

@@ -136,8 +136,8 @@ public sealed class PostgreSqlQueryParameter
             uint value => value,
             long value => value,
             ulong value => value,
-            float value => (decimal)value,
-            double value => (decimal)value,
+            float value => ToDecimal(value),
+            double value => ToDecimal(value),
             string text when decimal.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var value) => value,
             _ => null,
         };
@@ -208,6 +208,11 @@ public sealed class PostgreSqlQueryParameter
             _ => ParseJsonObject(AsString() ?? throw new FormatException("Parameter value cannot be converted to JSON.")),
         };
     }
+
+    // NaN, the infinities, and the values whose magnitude reaches 2^96 have no decimal representation.
+    private static decimal? ToDecimal(float value) => float.IsFinite(value) && Math.Abs(value) < 79228162514264337593543950336f ? (decimal)value : null;
+
+    private static decimal? ToDecimal(double value) => double.IsFinite(value) && Math.Abs(value) < 79228162514264337593543950336d ? (decimal)value : null;
 
     private static JsonObject ParseJsonObject(string value)
     {

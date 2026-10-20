@@ -316,6 +316,32 @@ public sealed class PostgreSqlServerBehaviorTests
         Assert.Equal(123.45m, captured[2].AsDecimal());
     }
 
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(1e29)]
+    [InlineData(-79228162514264337593543950336d)]
+    public void AsDecimalReturnsNullForADoubleWithoutDecimalRepresentation(double value)
+    {
+        var parameter = new PostgreSqlQueryParameter { Name = "$1", Value = value, Type = PostgreSqlColumnType.Double };
+        Assert.Null(parameter.AsDecimal());
+
+        var singleParameter = new PostgreSqlQueryParameter { Name = "$1", Value = (float)value, Type = PostgreSqlColumnType.Single };
+        Assert.Null(singleParameter.AsDecimal());
+    }
+
+    [Fact]
+    public void AsDecimalConvertsFiniteFloatingPointValues()
+    {
+        Assert.Equal(1.5m, new PostgreSqlQueryParameter { Name = "$1", Value = 1.5d, Type = PostgreSqlColumnType.Double }.AsDecimal());
+        Assert.Equal(-0.25m, new PostgreSqlQueryParameter { Name = "$1", Value = -0.25f, Type = PostgreSqlColumnType.Single }.AsDecimal());
+
+        // The largest double below 2^96 (the conversion rounds differently across runtimes)
+        Assert.NotNull(new PostgreSqlQueryParameter { Name = "$1", Value = Math.BitDecrement(79228162514264337593543950336d), Type = PostgreSqlColumnType.Double }.AsDecimal());
+        Assert.NotNull(new PostgreSqlQueryParameter { Name = "$1", Value = MathF.BitDecrement(79228162514264337593543950336f), Type = PostgreSqlColumnType.Single }.AsDecimal());
+    }
+
     [Fact]
     public async Task AConnectionStaysUsableAfterAQueryError()
     {

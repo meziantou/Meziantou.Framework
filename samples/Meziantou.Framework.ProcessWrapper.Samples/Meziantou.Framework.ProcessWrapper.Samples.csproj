@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- Compiles the readme examples that start placeholder commands, so CI checks them without running them -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
+  </ItemGroup>
+</Project>

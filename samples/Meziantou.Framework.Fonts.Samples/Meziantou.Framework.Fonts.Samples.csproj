@@ -1,0 +1,11 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- The examples of src/Meziantou.Framework.Fonts/readme.md, which read the fonts installed on the machine (see Program.cs) -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CA1303;CA1515</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+</Project>

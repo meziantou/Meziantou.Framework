@@ -6,6 +6,49 @@ namespace Meziantou.Framework.Tests;
 public class ValueStringBuilderTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region ValueStringBuilder_Usage
+        Span<char> initialBuffer = stackalloc char[64];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append("Hello");
+        sb.Append(' ');
+        sb.Append("World");
+
+        string text = sb.ToString();
+        Assert.Equal("Hello World", text);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ToStringDisposes()
+    {
+        #region ValueStringBuilder_ToStringDisposes
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello");
+
+        Assert.Equal("Hello", sb.ToString()); // and the builder is now disposed
+        Assert.Equal("", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AsSpan()
+    {
+        #region ValueStringBuilder_AsSpan
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello");
+
+        ReadOnlySpan<char> content = sb.AsSpan(); // the builder is still usable
+        Assert.Equal("Hello", content);
+
+        sb.Append(" World");
+        Assert.Equal("Hello World", sb.AsSpan());
+        #endregion
+    }
+
+    [Fact]
     public void AppendWithStackBuffer()
     {
         Span<char> initialBuffer = stackalloc char[8];

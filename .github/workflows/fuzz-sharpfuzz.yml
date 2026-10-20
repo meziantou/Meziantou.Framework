@@ -18,6 +18,7 @@ on:
           - all
           - bencode
           - codeowners
+          - csv
           - dependency-scanning
           - globbing
           - html-sanitizer
@@ -74,6 +75,7 @@ env:
     [
       { "project": "Meziantou.Framework.Bencode.Fuzz",            "component": "bencode",             "day": 2 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",         "component": "codeowners",          "day": 1 },
+      { "project": "Meziantou.Framework.Csv.Fuzz",                "component": "csv",                 "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz", "component": "dependency-scanning", "day": 0 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",           "component": "globbing",            "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",      "component": "html-sanitizer",      "day": 1 },

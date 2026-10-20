@@ -9,6 +9,7 @@ internal static class FuzzProjects
     [
         ("Meziantou.Framework.Bencode.Fuzz", Bencode.Fuzz.BencodeFuzzTargets.All),
         ("Meziantou.Framework.CodeOwners.Fuzz", CodeOwners.Fuzz.CodeOwnersFuzzTargets.All),
+        ("Meziantou.Framework.Csv.Fuzz", Csv.Fuzz.CsvFuzzTargets.All),
         ("Meziantou.Framework.DependencyScanning.Fuzz", DependencyScanning.Fuzz.DependencyScanningFuzzTargets.All),
         ("Meziantou.Framework.Globbing.Fuzz", Globbing.Fuzz.GlobbingFuzzTargets.All),
         ("Meziantou.Framework.HtmlSanitizer.Fuzz", Sanitizers.Fuzz.HtmlSanitizerFuzzTargets.All),

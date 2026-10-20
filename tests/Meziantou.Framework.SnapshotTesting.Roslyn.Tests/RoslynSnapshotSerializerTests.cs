@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.SnapshotTesting.Roslyn.Tests;
@@ -9,6 +11,119 @@ namespace Meziantou.Framework.SnapshotTesting.Roslyn.Tests;
 public sealed class RoslynSnapshotSerializerTests
 {
     private static readonly DiagnosticDescriptor SampleDescriptor = new("SG0001", "Sample", "Sample message '{0}'", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+    // The settings, generator, rewriter and analyzer used by the readme examples
+    #region SnapshotSettings_AddRoslyn
+    internal static class SnapshotConfiguration
+    {
+        [ModuleInitializer]
+        internal static void Initialize()
+        {
+            SnapshotSettings.Default.AddRoslyn();
+        }
+    }
+    #endregion
+
+    internal sealed class MyGenerator : IIncrementalGenerator
+    {
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+            var classNames = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is ClassDeclarationSyntax,
+                static (context, _) => ((ClassDeclarationSyntax)context.Node).Identifier.ValueText);
+
+            context.RegisterSourceOutput(classNames, (context, className) =>
+                context.AddSource(className + ".g.cs", "partial class " + className + "\n{\n    public override string ToString() => \"" + className + "\";\n}\n"));
+        }
+    }
+
+    internal sealed class MyRewriter : CSharpSyntaxRewriter
+    {
+        public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node)
+        {
+            var visited = (ClassDeclarationSyntax)base.VisitClassDeclaration(node)!;
+            return visited.AddModifiers(SyntaxFactory.Token(SyntaxKind.SealedKeyword).WithTrailingTrivia(SyntaxFactory.Space));
+        }
+    }
+
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1001:Missing diagnostic analyzer attribute", Justification = "The analyzer is only run by CompilationWithAnalyzers; the attribute would make the test project an analyzer project (RS1036, RS1041).")]
+    internal sealed class MyAnalyzer : DiagnosticAnalyzer
+    {
+        private static readonly DiagnosticDescriptor Rule = new("MY0001", "Do not use this method", "Do not use this method", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.EnableConcurrentExecution();
+            context.RegisterSyntaxNodeAction(context =>
+            {
+                var method = (MethodDeclarationSyntax)context.Node;
+                if (method.Identifier.ValueText is "DoNotUse")
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Rule, method.Identifier.GetLocation()));
+                }
+            }, SyntaxKind.MethodDeclaration);
+        }
+    }
+
+    [Fact]
+    public void ReadmeExample_SourceGenerator()
+    {
+        #region SnapshotRoslyn_SourceGenerator
+        var source = "partial class Customer; partial class Order;";
+        MetadataReference[] references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
+
+        var compilation = CSharpCompilation.Create("compilation", [CSharpSyntaxTree.ParseText(source)], references);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new MyGenerator());
+        driver = driver.RunGenerators(compilation);
+
+        Snapshot.Validate(driver.GetRunResult());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SyntaxRewriter()
+    {
+        #region SnapshotRoslyn_SyntaxRewriter
+        var tree = CSharpSyntaxTree.ParseText("""
+            public class Sample
+            {
+                public class Nested;
+            }
+            """);
+
+        Snapshot.Validate(new MyRewriter().Visit(tree.GetRoot()));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SourceText()
+    {
+        #region SnapshotRoslyn_SourceText
+        var sourceText = SourceText.From("class Sample;\n");
+        Snapshot.Validate(sourceText, SnapshotType.Create("cs"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Diagnostics()
+    {
+        #region SnapshotRoslyn_Diagnostics
+        var source = """
+            class Sample
+            {
+                void DoNotUse() { }
+            }
+            """;
+        var compilation = CSharpCompilation.Create("compilation", [CSharpSyntaxTree.ParseText(source, path: "Sample.cs")]);
+
+        var diagnostics = await compilation.WithAnalyzers([new MyAnalyzer()]).GetAnalyzerDiagnosticsAsync();
+
+        Snapshot.Validate(diagnostics);
+        #endregion
+    }
 
     [Fact]
     public void Serialize_OneFilePerGeneratedSourceOrderedByHintName()

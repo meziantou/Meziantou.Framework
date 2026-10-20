@@ -2,6 +2,99 @@ namespace Meziantou.Framework.Language.Ini.Tests;
 
 public sealed class IniSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Overview()
+    {
+        #region IniSyntaxTree_Overview
+        var tree = IniSyntaxTree.ParseText("""
+        ; comment
+        [database]
+        server=localhost
+        port: 5432
+        """);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GetValue()
+    {
+        #region IniSyntaxTree_GetValue
+        var root = IniSyntaxTree.ParseText("[database]\nport=5432\n").GetRoot();
+
+        Assert.Equal("5432", root.GetValue("database", "port"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_PythonOptions()
+    {
+        #region IniSyntaxTree_PythonOptions
+        var python = new IniParseOptions
+        {
+            InlineComments = IniInlineCommentMode.None,
+            AllowQuotedValues = false,
+            AllowMultilineValues = true,
+        };
+
+        var root = IniSyntaxTree.ParseText("[paths]\nhome = \"/home/user\" ; not a comment\nlist = a\n  b\n", python).GetRoot();
+        Assert.Equal("\"/home/user\" ; not a comment", root.GetValue("paths", "home"));
+        Assert.Equal("a\nb", root.GetValue("paths", "list"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_KeysWithoutValue()
+    {
+        #region IniSyntaxTree_KeysWithoutValue
+        var text = "[mysqld]\nskip-networking\n";
+        var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowKeysWithoutValue = true });
+
+        Assert.Empty(tree.GetDiagnostics());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Editing()
+    {
+        #region IniSyntaxTree_Editing
+        var tree = IniSyntaxTree.ParseText("name=old");
+        var property = (IniPropertySyntax)tree.GetRoot().Entries[0];
+
+        IniDocumentSyntax updated = tree.GetRoot().ReplaceNode(property, property.WithValue("new"));
+
+        Assert.Equal("name=new", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CommonEdits()
+    {
+        #region IniSyntaxTree_CommonEdits
+        var root = IniSyntaxTree.ParseText("[database]\n  port = 5432\n[legacy]\nold = 1\n").GetRoot();
+
+        root = root.SetValue("database", "host", "localhost"); // adds "  host = localhost" under port
+        Assert.Equal("[database]\n  port = 5432\n  host = localhost\n[legacy]\nold = 1\n", root.ToFullString());
+
+        root = root.RemoveProperties("database", "port");      // removes every "port" in the section, and its comments
+        root = root.RemoveSections("legacy");                  // removes the headers and everything under them
+        Assert.Equal("[database]\n  host = localhost\n", root.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SetValues()
+    {
+        #region IniSyntaxTree_SetValues
+        var root = IniSyntaxTree.ParseText("[database]\nhost = localhost\nport = 5432\n").GetRoot();
+
+        root = root.SetValues([("database", "host", "db1"), ("database", "port", "5433")]);
+        Assert.Equal("[database]\nhost = db1\nport = 5433\n", root.ToFullString());
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         "name=value",

@@ -1811,9 +1811,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Filter graphs.** Every primitive of a `FilterGraph` has a result of the size of the filtered surface, in single
   precision, transparent outside its subregion: the pixels whose center is in the box of the image of its rectangle on
   the canvas, within the region of the filter. A primitive that computes in linear light reads each input converted
-  once (each color divided by the alpha, decoded by the transfer function of sRGB with `Math.Pow`, multiplied by the
-  alpha again), and its result is encoded the same way when a primitive in sRGB reads it, or at the end; an offset, a
-  tile and a flood are not converted. An offset interpolates the four pixels around the position it reads; a
+  once (each color divided by the alpha, decoded by the transfer function of sRGB, multiplied by the alpha again), and
+  its result is encoded the same way when a primitive in sRGB reads it, or at the end; an offset, a tile and a flood
+  are not converted. An offset interpolates the four pixels around the position it reads; a
   composite, a merge and a blend work on colors multiplied by their alpha (a blend with the straight colors of
   `BlendMode`); a color matrix and the transfer functions work on straight colors and are clamped to the range from 0
   to 1, and an arithmetic composite is clamped and each of its colors limited to its alpha. Sums are made in double
@@ -1826,6 +1826,9 @@ public static void MarkAnimation(string inputPath, string outputPath)
   the surface from the Sobel kernels of the specification (with those of its edges and corners at the edges of the
   region of the filter), the pixels at the top left corner of their pixel and at the height `surfaceScale A`, and the
   height of a light multiplied by the square root of the product of the scales of the axes; its powers use `Math.Pow`.
+  The transfer function of sRGB of the filter graphs uses no function of the platform: its power is a polynomial of
+  degree 5 on each of 256 segments of every power of two, within a few units in the last place of double precision of
+  the exact function, so the colors of the primitives are the same on every platform.
 - **Inner shadows.** The shadow is the one of **Shadows** computed from one minus the alpha of the layer; its color
   is combined with the pixels of the layer by `SourceAtop`, with the coverage of the shadow.
 - **Aligned strokes and markers.** A stroke on one side of its path is the stroke of a pen twice as wide under a clip

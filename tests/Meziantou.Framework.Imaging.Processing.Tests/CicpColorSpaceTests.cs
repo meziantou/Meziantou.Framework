@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -99,6 +100,102 @@ public sealed class CicpColorSpaceTests
 
         Assert.True(CicpTransfer.GetDecode8(13) == SrgbTransfer.Decode8);
         Assert.True(CicpTransfer.GetDecode16(13) == SrgbTransfer.Decode16);
+    }
+
+    [Fact]
+    public void TheSrgbFunctionOfFiltersIsWithinAFewUnitsInTheLastPlaceOfTheExactFunction()
+    {
+        // The sRGB function in decimal arithmetic (about 27 digits) is the exact function. The inputs are every 8-bit
+        // sample, every seventh 16-bit sample, and the start and the middle of every segment of the polynomials of
+        // DeterministicSrgbTransfer, for each exponent of the base of the power. The junctions of the linear segments are
+        // left out: the two parts of the function do not meet (by about 1e-8), and a double and a decimal threshold may
+        // put a value on different sides
+        var inputs = new List<double>();
+        for (var sample = 0; sample <= ushort.MaxValue; sample += 7)
+        {
+            inputs.Add(sample / 65535.0);
+        }
+
+        for (var sample = 0; sample <= byte.MaxValue; sample++)
+        {
+            inputs.Add(sample / 255.0);
+        }
+
+        var segments = new List<double>();
+        for (var exponent = -9; exponent < 0; exponent++)
+        {
+            for (var segment = 0; segment < 512; segment++)
+            {
+                segments.Add(Math.ScaleB(1 + (segment / 512.0), exponent));
+            }
+        }
+
+        foreach (var linear in inputs.Concat(segments))
+        {
+            AssertWithinBound(linear, DeterministicSrgbTransfer.Encode(linear), ReferenceCicpTransfer.Encode(13, ToDecimal(linear)));
+        }
+
+        // The base of the power of decoding is (v + 0.055) / 1.055
+        foreach (var encoded in inputs.Concat(segments.Where(x => x > 0.0905).Select(x => (x * 1.055) - 0.055)))
+        {
+            AssertWithinBound(encoded, DeterministicSrgbTransfer.Decode(encoded), ReferenceCicpTransfer.Decode(13, ToDecimal(encoded)));
+        }
+
+        // 1e-15 is a few units in the last place of a double (the transfer function with Math.Pow is within 5e-16), and
+        // the result rounded to a float, as filters keep it, is the float nearest to the exact value
+        static void AssertWithinBound(double input, double actual, decimal exact)
+        {
+            var error = Math.Abs((double)(ToDecimal(actual) - exact));
+            Assert.True(error <= 1e-15, $"The error at {input.ToString("R", CultureInfo.InvariantCulture)} is {error.ToString("R", CultureInfo.InvariantCulture)}.");
+            Assert.Equal(GetNearestFloat(exact), (float)actual);
+        }
+
+        static float GetNearestFloat(decimal value)
+        {
+            var guess = (float)(double)value;
+            var nearest = guess;
+            foreach (var candidate in (float[])[MathF.BitDecrement(guess), MathF.BitIncrement(guess)])
+            {
+                if (Math.Abs(ToDecimal(candidate) - value) < Math.Abs(ToDecimal(nearest) - value))
+                {
+                    nearest = candidate;
+                }
+            }
+
+            return nearest;
+        }
+
+        // The value of a positive double below 2, to 28 decimal places: its significand divided by a power of two
+        static decimal ToDecimal(double value)
+        {
+            if (value == 0)
+                return 0;
+
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            decimal result = (bits & ((1L << 52) - 1)) | (1L << 52);
+            for (var shift = 1075 - (int)(bits >> 52); shift > 0; shift -= 62)
+            {
+                result /= 1L << Math.Min(shift, 62);
+            }
+
+            return result;
+        }
+    }
+
+    [Fact]
+    public void TheSrgbFunctionOfFiltersGivesTheSameBitsOnEveryPlatform()
+    {
+        // A hash of the bits of every 16-bit sample, encoded and decoded: the polynomials and their tables are built with
+        // additions, multiplications and divisions only, so the value does not depend on the platform
+        var hash = 0UL;
+        for (var sample = 0; sample <= ushort.MaxValue; sample++)
+        {
+            var value = sample / 65535.0;
+            hash = (hash * 31) + (ulong)BitConverter.DoubleToInt64Bits(DeterministicSrgbTransfer.Encode(value));
+            hash = (hash * 31) + (ulong)BitConverter.DoubleToInt64Bits(DeterministicSrgbTransfer.Decode(value));
+        }
+
+        Assert.Equal(15625745378631040713UL, hash);
     }
 
     [Fact]

@@ -639,6 +639,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
   frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
+- The linear light of a filter graph (`FilterGraphContext.Convert` and `GetColor`) goes through
+  `DeterministicSrgbTransfer`, not `Math.Pow`: a polynomial of degree 5 per segment of the significand, from tables
+  built with roots found by Newton's method (`+ - * /` only). Rounded to a float, it gives the values of `SrgbTransfer`
+  on every float from 0 to 1 (measured on macOS Arm64); its bound against the decimal reference and a hash of its bits
+  are tested (`CicpColorSpaceTests`). Change it only with a sweep against an exact reference (integer roots of big
+  integers).
 - A filter that leaves transparent what is beyond its reach (`Filter.GetLocalSteps`: blurs with transparent edges,
   shadows, color matrices that add no alpha, before any reach) applies to what is within twice its reach of what is
   drawn on its layer (`GetLocalFilterArea`: the dirty rectangle, or the drawn bounds the session of a bounded layer

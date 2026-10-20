@@ -1,27 +1,33 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The priority of the tasks and of the continuations of a <see cref="Scheduler"/> (https://wicg.github.io/scheduling-apis/#enumdef-taskpriority).</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#enumdef-taskpriority"/>
 [IdlInterface("TaskPriority", "https://wicg.github.io/scheduling-apis/#enumdef-taskpriority")]
 public enum TaskPriority
 {
     /// <summary>The highest priority: the tasks that should run as soon as possible, e.g. the work that responds to the input of the user.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-blocking"/>
     [IdlMember("user-blocking", "https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-blocking")]
     UserBlocking,
 
     /// <summary>The default priority: the tasks whose effects are visible to the user, but not immediately.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-visible"/>
     [IdlMember("user-visible", "https://wicg.github.io/scheduling-apis/#dom-taskpriority-user-visible")]
     UserVisible,
 
     /// <summary>The lowest priority: the tasks that are not time-critical.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskpriority-background"/>
     [IdlMember("background", "https://wicg.github.io/scheduling-apis/#dom-taskpriority-background")]
     Background,
 }
 
 /// <summary>The initialization dictionary of a <see cref="TaskPriorityChangeEvent"/> (https://wicg.github.io/scheduling-apis/#dictdef-taskprioritychangeeventinit).</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#dictdef-taskprioritychangeeventinit"/>
 [IdlInterface("TaskPriorityChangeEventInit", "https://wicg.github.io/scheduling-apis/#dictdef-taskprioritychangeeventinit")]
 public sealed class TaskPriorityChangeEventInit : EventInit
 {
     /// <summary>Gets the priority of the signal before the change.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeeventinit-previouspriority"/>
     [IdlMember("previousPriority", "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeeventinit-previouspriority")]
     public required TaskPriority PreviousPriority { get; init; }
 }
@@ -30,10 +36,12 @@ public sealed class TaskPriorityChangeEventInit : EventInit
 /// The <c>prioritychange</c> event fired at a <see cref="TaskSignal"/> when its priority changes
 /// (https://wicg.github.io/scheduling-apis/#sec-task-priority-change-event): the new priority is the one of its target.
 /// </summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#taskprioritychangeevent"/>
 [IdlInterface("TaskPriorityChangeEvent", "https://wicg.github.io/scheduling-apis/#taskprioritychangeevent")]
 public sealed class TaskPriorityChangeEvent : Event
 {
     /// <summary>Creates an event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-taskprioritychangeevent"/>
     [IdlMember("constructor", "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-taskprioritychangeevent")]
     public TaskPriorityChangeEvent(string type, TaskPriorityChangeEventInit priorityChangeEventInitDict)
         : base(type, priorityChangeEventInitDict)
@@ -43,15 +51,18 @@ public sealed class TaskPriorityChangeEvent : Event
     }
 
     /// <summary>Gets the priority of the signal before the change.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-previouspriority"/>
     [IdlMember("previousPriority", "https://wicg.github.io/scheduling-apis/#dom-taskprioritychangeevent-previouspriority")]
     public TaskPriority PreviousPriority { get; }
 }
 
 /// <summary>The initialization dictionary of a <see cref="TaskController"/> (https://wicg.github.io/scheduling-apis/#dictdef-taskcontrollerinit).</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#dictdef-taskcontrollerinit"/>
 [IdlInterface("TaskControllerInit", "https://wicg.github.io/scheduling-apis/#dictdef-taskcontrollerinit")]
 public sealed class TaskControllerInit
 {
     /// <summary>Gets the initial priority of the signal of the controller.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskcontrollerinit-priority"/>
     [IdlMember("priority", "https://wicg.github.io/scheduling-apis/#dom-taskcontrollerinit-priority")]
     public TaskPriority Priority { get; init; } = TaskPriority.UserVisible;
 }
@@ -60,10 +71,12 @@ public sealed class TaskControllerInit
 /// Aborts the tasks of a <see cref="Scheduler"/> that were posted with its signal and changes their priority
 /// (https://wicg.github.io/scheduling-apis/#sec-task-controller).
 /// </summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#taskcontroller"/>
 [IdlInterface("TaskController", "https://wicg.github.io/scheduling-apis/#taskcontroller")]
 public sealed class TaskController : AbortController
 {
     /// <summary>Creates a controller whose signal is a new <see cref="TaskSignal"/> with the priority of <paramref name="init"/> (<see cref="TaskPriority.UserVisible"/> by default).</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskcontroller-taskcontroller"/>
     [IdlMember("constructor", "https://wicg.github.io/scheduling-apis/#dom-taskcontroller-taskcontroller")]
     public TaskController(TaskControllerInit? init = null)
         : base(new TaskSignal(init?.Priority ?? TaskPriority.UserVisible))
@@ -80,11 +93,13 @@ public sealed class TaskController : AbortController
     /// at the signal and at the signals that depend on it.
     /// </summary>
     /// <exception cref="DomException">The priority of the signal is being changed (<c>NotAllowedError</c>).</exception>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-taskcontroller-setpriority"/>
     [IdlMember("setPriority", "https://wicg.github.io/scheduling-apis/#dom-taskcontroller-setpriority")]
     public void SetPriority(TaskPriority priority) => Signal.SignalPriorityChange(priority);
 }
 
 /// <summary>The priority of <see cref="TaskSignalAnyInit"/>: a fixed <see cref="TaskPriority"/>, or the <see cref="TaskSignal"/> whose priority is followed.</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#dom-tasksignalanyinit-priority"/>
 [IdlInterface("(TaskPriority or TaskSignal)", "https://wicg.github.io/scheduling-apis/#dom-tasksignalanyinit-priority")]
 public readonly struct TaskPriorityOrSignal : IUnionValue, IEquatable<TaskPriorityOrSignal>
 {
@@ -146,10 +161,12 @@ public readonly struct TaskPriorityOrSignal : IUnionValue, IEquatable<TaskPriori
 }
 
 /// <summary>The options of <see cref="TaskSignal.Any"/> (https://wicg.github.io/scheduling-apis/#dictdef-tasksignalanyinit).</summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#dictdef-tasksignalanyinit"/>
 [IdlInterface("TaskSignalAnyInit", "https://wicg.github.io/scheduling-apis/#dictdef-tasksignalanyinit")]
 public sealed class TaskSignalAnyInit
 {
     /// <summary>Gets the priority of the signal: a fixed priority, or a signal whose priority the new signal follows.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-tasksignalanyinit-priority"/>
     [IdlMember("priority", "https://wicg.github.io/scheduling-apis/#dom-tasksignalanyinit-priority")]
     public TaskPriorityOrSignal Priority { get; init; } = TaskPriority.UserVisible;
 }
@@ -158,6 +175,7 @@ public sealed class TaskSignalAnyInit
 /// An <see cref="AbortSignal"/> that also has a priority (https://wicg.github.io/scheduling-apis/#sec-task-signal): the
 /// tasks posted to a <see cref="Scheduler"/> with the signal of a <see cref="TaskController"/> follow its priority.
 /// </summary>
+/// <seealso href="https://wicg.github.io/scheduling-apis/#tasksignal"/>
 [IdlInterface("TaskSignal", "https://wicg.github.io/scheduling-apis/#tasksignal")]
 public sealed class TaskSignal : AbortSignal
 {
@@ -182,10 +200,12 @@ public sealed class TaskSignal : AbortSignal
     }
 
     /// <summary>Gets the priority of the signal (https://wicg.github.io/scheduling-apis/#dom-tasksignal-priority).</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-tasksignal-priority"/>
     [IdlMember("priority", "https://wicg.github.io/scheduling-apis/#dom-tasksignal-priority")]
     public TaskPriority Priority { get; private set; }
 
     /// <summary>Gets or sets the event handler of the <c>prioritychange</c> event.</summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-tasksignal-onprioritychange"/>
     [IdlMember("onprioritychange", "https://wicg.github.io/scheduling-apis/#dom-tasksignal-onprioritychange")]
     public Action<Event>? OnPriorityChange
     {
@@ -204,6 +224,7 @@ public sealed class TaskSignal : AbortSignal
     /// <paramref name="init"/>: a fixed priority, or the priority of a signal, which the new signal follows
     /// (https://wicg.github.io/scheduling-apis/#dom-tasksignal-any).
     /// </summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-tasksignal-any"/>
     [IdlMember("any", "https://wicg.github.io/scheduling-apis/#dom-tasksignal-any")]
     public static TaskSignal Any(IEnumerable<AbortSignal> signals, TaskSignalAnyInit? init = null)
     {

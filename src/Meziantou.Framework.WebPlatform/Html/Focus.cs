@@ -146,6 +146,7 @@ public partial class Document
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hasfocus: whether the key events are routed
     /// through or to the document, and its top-level browsing context has the system focus (see <see cref="BrowsingContext.HasSystemFocus"/>).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hasfocus"/>
     [IdlMember("hasFocus", "https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hasfocus")]
     public bool HasFocus() => FocusModel.HasFocus(this);
 
@@ -153,6 +154,7 @@ public partial class Document
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement: the focused element,
     /// retargeted against the document, or the body element (or the document element) when the viewport is focused.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement"/>
     [IdlMember("activeElement", "https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement")]
     public Element? ActiveElement => FocusModel.GetActiveElement(this);
 
@@ -214,6 +216,7 @@ public partial class Document
 public sealed partial class ShadowRoot
 {
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement: the focused element, retargeted against the shadow root.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement"/>
     [IdlMember("activeElement", "https://html.spec.whatwg.org/multipage/interaction.html#dom-documentorshadowroot-activeelement")]
     public Element? ActiveElement => FocusModel.GetActiveElement(this);
 }

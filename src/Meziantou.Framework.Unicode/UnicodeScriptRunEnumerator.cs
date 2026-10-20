@@ -47,6 +47,9 @@ public ref struct UnicodeScriptRunEnumerator
 
         while (_position < _text.Length)
         {
+            if (TrySkipAscii(ref candidates, ref hasCandidates, ref firstScript, ref hasFirstScript))
+                continue;
+
             var length = Unicode.GetGraphemeClusterLength(_text[_position..]);
             var cluster = _text.Slice(_position, length);
             var hasSet = TryGetClusterScripts(cluster, out var set, out var clusterScript, out var hasClusterScript);
@@ -134,6 +137,62 @@ public ref struct UnicodeScriptRunEnumerator
 
         _current = new UnicodeScriptRun(start, _position - start, resolved);
         return true;
+    }
+
+    /// <summary>Skips the ASCII characters at the current position that are not brackets, which is most of a Latin text.</summary>
+    /// <returns><see langword="false"/> when the current character is not one of them, or ends the run.</returns>
+    /// <remarks>
+    /// Each of these characters is a cluster on its own, and has no Script_Extensions: the letters are Latin, and the
+    /// others are Common, so they do not change the run. The last of them is left when a character that is not ASCII
+    /// follows, since that character can extend its cluster.
+    /// </remarks>
+    private bool TrySkipAscii(ref ScriptSet candidates, ref bool hasCandidates, ref UnicodeScript firstScript, ref bool hasFirstScript)
+    {
+        if (_text[_position] >= 0x80)
+            return false;
+
+        var remaining = _text[_position..];
+        var length = 0;
+        while (length < remaining.Length && remaining[length] < 0x80 && remaining[length] is not ('(' or ')' or '[' or ']' or '{' or '}'))
+        {
+            length++;
+        }
+
+        if (length > 0 && length < remaining.Length && remaining[length] >= 0x80)
+        {
+            length--;
+        }
+
+        var segment = remaining[..length];
+        var firstLetter = segment.IndexOfAnyInRange('A', 'Z');
+        var firstLowercase = segment.IndexOfAnyInRange('a', 'z');
+        if (firstLetter < 0 || (firstLowercase >= 0 && firstLowercase < firstLetter))
+        {
+            firstLetter = firstLowercase;
+        }
+
+        if (firstLetter >= 0)
+        {
+            if (hasCandidates && !candidates.Contains((int)UnicodeScript.Latin))
+            {
+                // The first letter starts the next run: skip the characters before it only.
+                segment = segment[..firstLetter];
+            }
+            else
+            {
+                candidates = default;
+                candidates.Add((int)UnicodeScript.Latin);
+                hasCandidates = true;
+                if (!hasFirstScript)
+                {
+                    firstScript = UnicodeScript.Latin;
+                    hasFirstScript = true;
+                }
+            }
+        }
+
+        _position += segment.Length;
+        return !segment.IsEmpty;
     }
 
     /// <summary>Gets the scripts a cluster can be written in.</summary>

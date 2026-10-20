@@ -89,4 +89,34 @@ public sealed class TextTransformerTests
 
     [Fact]
     public void FullSizeKana_OutsideOfTheBmp() => Assert.Equal("\U00003053\U00003042", Transform("\U0001B132\U00003041", TextTransform.FullSizeKana));
+
+    [Theory]
+    [InlineData("Uppercase", null)]
+    [InlineData("Uppercase", "el")]
+    [InlineData("Uppercase", "nl")]
+    [InlineData("Uppercase", "tr")]
+    [InlineData("Uppercase", "lt")]
+    [InlineData("Lowercase", null)]
+    [InlineData("Lowercase", "el")]
+    [InlineData("Lowercase", "nl")]
+    [InlineData("Lowercase", "tr")]
+    [InlineData("Lowercase", "lt")]
+    [InlineData("Capitalize", "nl")]
+    [InlineData("Uppercase, FullWidth", null)]
+    public void TransformString(string transformName, string? language)
+    {
+        // The runs of ASCII characters are converted at once: the result is the one of the transformation of each character
+        var transform = Enum.Parse<TextTransform>(transformName);
+        var text = string.Concat(Enumerable.Repeat("Hello ijsland Stra\u00DFe \u03A3\u039F\u03A6\u039F\u03A3 \u03AE \u03BA\u03B1\u03BB\u03B7\u03BC\u03AD\u03C1\u03B1 I\u0307 i\u0307\u0300 I\u0300 \u0130 \U00010428 \uFB03 x_y'z 42. ", 20));
+        var caseLanguage = TextTransformer.GetCaseLanguage(language);
+        Assert.Equal(Transform(text, transform, language), TextTransformer.Transform(text, transform, caseLanguage));
+    }
+
+    [Fact]
+    public void TransformString_Unchanged()
+    {
+        var text = "HELLO, WORLD! \u0391";
+        Assert.Same(text, TextTransformer.Transform(text, TextTransform.Uppercase, CaseLanguage.None));
+        Assert.Same(text, TextTransformer.Transform(text, TextTransform.Uppercase, CaseLanguage.Greek));
+    }
 }

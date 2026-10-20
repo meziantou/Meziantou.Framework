@@ -5,31 +5,38 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The state of a <see cref="MediaSource"/> (https://w3c.github.io/media-source/#dom-readystate).</summary>
+/// <seealso href="https://w3c.github.io/media-source/#dom-readystate"/>
 [IdlInterface("ReadyState", "https://w3c.github.io/media-source/#dom-readystate")]
 public enum MediaSourceReadyState
 {
     /// <summary>The source is not attached to a media element.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-readystate-closed"/>
     [IdlMember("closed", "https://w3c.github.io/media-source/#dom-readystate-closed")]
     Closed,
 
     /// <summary>The source is attached to a media element and is ready to receive data.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-readystate-open"/>
     [IdlMember("open", "https://w3c.github.io/media-source/#dom-readystate-open")]
     Open,
 
     /// <summary>The source is attached to a media element and <c>endOfStream()</c> was called.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-readystate-ended"/>
     [IdlMember("ended", "https://w3c.github.io/media-source/#dom-readystate-ended")]
     Ended,
 }
 
 /// <summary>The error signaled by <see cref="MediaSource.EndOfStream"/> (https://w3c.github.io/media-source/#dom-endofstreamerror).</summary>
+/// <seealso href="https://w3c.github.io/media-source/#dom-endofstreamerror"/>
 [IdlInterface("EndOfStreamError", "https://w3c.github.io/media-source/#dom-endofstreamerror")]
 public enum EndOfStreamError
 {
     /// <summary>The playback ends with a network error.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-endofstreamerror-network"/>
     [IdlMember("network", "https://w3c.github.io/media-source/#dom-endofstreamerror-network")]
     Network,
 
     /// <summary>The playback ends with a decode error.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-endofstreamerror-decode"/>
     [IdlMember("decode", "https://w3c.github.io/media-source/#dom-endofstreamerror-decode")]
     Decode,
 }
@@ -91,6 +98,7 @@ internal sealed record MediaSourceSnapshot(double Duration, MediaTimeRange[] Buf
 /// library implements the algorithms of the specification on the coded frames it reports. Without a backend, no type is
 /// supported.
 /// </remarks>
+/// <seealso href="https://w3c.github.io/media-source/#mediasource"/>
 [IdlInterface("MediaSource", "https://w3c.github.io/media-source/#mediasource")]
 public class MediaSource : EventTarget
 {
@@ -111,6 +119,7 @@ public class MediaSource : EventTarget
     private volatile bool _elementHasError;
 
     /// <summary>Creates a media source (https://w3c.github.io/media-source/#dom-mediasource-constructor): it is closed until it is attached to a media element.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/media-source/#dom-mediasource-constructor")]
     public MediaSource()
     {
@@ -162,10 +171,12 @@ public class MediaSource : EventTarget
     /// (https://w3c.github.io/media-source/#dom-mediasource-handle): it is transferred to the window and assigned to
     /// <c>srcObject</c>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-handle"/>
     [IdlMember("handle", "https://w3c.github.io/media-source/#dom-mediasource-handle")]
     public MediaSourceHandle Handle => _handle ??= new MediaSourceHandle(this);
 
     /// <summary>Gets the source buffers of the source (https://w3c.github.io/media-source/#dom-mediasource-sourcebuffers).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-sourcebuffers"/>
     [IdlMember("sourceBuffers", "https://w3c.github.io/media-source/#dom-mediasource-sourcebuffers")]
     public SourceBufferList SourceBuffers { get; }
 
@@ -173,10 +184,12 @@ public class MediaSource : EventTarget
     /// Gets the source buffers that provide the selected video track and the enabled audio tracks
     /// (https://w3c.github.io/media-source/#dom-mediasource-activesourcebuffers), in the order of <see cref="SourceBuffers"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-activesourcebuffers"/>
     [IdlMember("activeSourceBuffers", "https://w3c.github.io/media-source/#dom-mediasource-activesourcebuffers")]
     public SourceBufferList ActiveSourceBuffers { get; }
 
     /// <summary>Gets the state of the source (https://w3c.github.io/media-source/#dom-mediasource-readystate).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-readystate"/>
     [IdlMember("readyState", "https://w3c.github.io/media-source/#dom-mediasource-readystate")]
     public MediaSourceReadyState ReadyState => _readyState;
 
@@ -186,6 +199,7 @@ public class MediaSource : EventTarget
     /// <c>InvalidStateError</c> when the source is not open, a source buffer is updating, or the value is less than the
     /// highest presentation timestamp of the buffered frames.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-duration"/>
     [IdlMember("duration", "https://w3c.github.io/media-source/#dom-mediasource-duration")]
     public double Duration
     {
@@ -205,6 +219,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>sourceopen</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-onsourceopen"/>
     [IdlMember("onsourceopen", "https://w3c.github.io/media-source/#dom-mediasource-onsourceopen")]
     public Action<Event>? OnSourceOpen
     {
@@ -213,6 +228,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>sourceended</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-onsourceended"/>
     [IdlMember("onsourceended", "https://w3c.github.io/media-source/#dom-mediasource-onsourceended")]
     public Action<Event>? OnSourceEnded
     {
@@ -221,6 +237,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>sourceclose</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-onsourceclose"/>
     [IdlMember("onsourceclose", "https://w3c.github.io/media-source/#dom-mediasource-onsourceclose")]
     public Action<Event>? OnSourceClose
     {
@@ -229,6 +246,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>Gets a value indicating whether a media source can be created in a dedicated worker (https://w3c.github.io/media-source/#dom-mediasource-canconstructindedicatedworker): always true.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-canconstructindedicatedworker"/>
     [IdlMember("canConstructInDedicatedWorker", "https://w3c.github.io/media-source/#dom-mediasource-canconstructindedicatedworker")]
     public static bool CanConstructInDedicatedWorker => true;
 
@@ -237,6 +255,7 @@ public class MediaSource : EventTarget
     /// <c>TypeError</c> for an empty type, a <c>NotSupportedError</c> when the media backend does not support the type, and
     /// an <c>InvalidStateError</c> when the source is not open.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-addsourcebuffer"/>
     [IdlMember("addSourceBuffer", "https://w3c.github.io/media-source/#dom-mediasource-addsourcebuffer")]
     public SourceBuffer AddSourceBuffer(string type)
     {
@@ -268,6 +287,7 @@ public class MediaSource : EventTarget
     /// aborted, and its tracks are removed from the media element. Throws a <c>NotFoundError</c> when the buffer is not in
     /// <see cref="SourceBuffers"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-removesourcebuffer"/>
     [IdlMember("removeSourceBuffer", "https://w3c.github.io/media-source/#dom-mediasource-removesourcebuffer")]
     public void RemoveSourceBuffer(SourceBuffer sourceBuffer)
     {
@@ -299,6 +319,7 @@ public class MediaSource : EventTarget
     /// duration becomes the end of the buffered data and the media element can play to the end; with an error, the media
     /// element fails. Throws an <c>InvalidStateError</c> when the source is not open or a source buffer is updating.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-endofstream"/>
     [IdlMember("endOfStream", "https://w3c.github.io/media-source/#dom-mediasource-endofstream")]
     public void EndOfStream(EndOfStreamError? error = null)
     {
@@ -314,6 +335,7 @@ public class MediaSource : EventTarget
     /// Sets the range the media element can seek to when the duration is infinite
     /// (https://w3c.github.io/media-source/#dom-mediasource-setliveseekablerange).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-setliveseekablerange"/>
     [IdlMember("setLiveSeekableRange", "https://w3c.github.io/media-source/#dom-mediasource-setliveseekablerange")]
     public void SetLiveSeekableRange(double start, double end)
     {
@@ -328,6 +350,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>Clears the live seekable range (https://w3c.github.io/media-source/#dom-mediasource-clearliveseekablerange).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-clearliveseekablerange"/>
     [IdlMember("clearLiveSeekableRange", "https://w3c.github.io/media-source/#dom-mediasource-clearliveseekablerange")]
     public void ClearLiveSeekableRange()
     {
@@ -348,6 +371,7 @@ public class MediaSource : EventTarget
     /// allows the <c>codecs</c> parameter and does not have it is not supported, though <c>addSourceBuffer()</c> accepts it)
     /// and creates a byte stream parser for it (<see cref="MediaBackend.CreateSegmentParser"/>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-mediasource-istypesupported"/>
     [IdlMember("isTypeSupported", "https://w3c.github.io/media-source/#dom-mediasource-istypesupported")]
     public static bool IsTypeSupported(string type)
     {
@@ -815,6 +839,7 @@ public class MediaSource : EventTarget
 /// it is transferred to the window of the worker, and assigned to the <c>srcObject</c> attribute of a media element to
 /// attach the source.
 /// </summary>
+/// <seealso href="https://w3c.github.io/media-source/#mediasourcehandle"/>
 [IdlInterface("MediaSourceHandle", "https://w3c.github.io/media-source/#mediasourcehandle")]
 public sealed class MediaSourceHandle : IStructuredTransferable
 {
@@ -863,6 +888,7 @@ public sealed class MediaSourceHandle : IStructuredTransferable
 }
 
 /// <summary>A list of source buffers (https://w3c.github.io/media-source/#sourcebufferlist).</summary>
+/// <seealso href="https://w3c.github.io/media-source/#sourcebufferlist"/>
 [IdlInterface("SourceBufferList", "https://w3c.github.io/media-source/#sourcebufferlist")]
 public sealed class SourceBufferList : EventTarget, IReadOnlyList<SourceBuffer>
 {
@@ -873,10 +899,12 @@ public sealed class SourceBufferList : EventTarget, IReadOnlyList<SourceBuffer>
     }
 
     /// <summary>Gets the number of source buffers in the list.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebufferlist-length"/>
     [IdlMember("length", "https://w3c.github.io/media-source/#dom-sourcebufferlist-length")]
     public uint Length => (uint)_buffers.Count;
 
     /// <summary>Gets the source buffer at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dfn-sourcebufferlist-getter"/>
     [IdlMember("getter", "https://w3c.github.io/media-source/#dfn-sourcebufferlist-getter")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public SourceBuffer? this[uint index] => index < (uint)_buffers.Count ? _buffers[(int)index] : null;
@@ -891,6 +919,7 @@ public sealed class SourceBufferList : EventTarget, IReadOnlyList<SourceBuffer>
     public int Count => _buffers.Count;
 
     /// <summary>Gets or sets the event handler of the <c>addsourcebuffer</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebufferlist-onaddsourcebuffer"/>
     [IdlMember("onaddsourcebuffer", "https://w3c.github.io/media-source/#dom-sourcebufferlist-onaddsourcebuffer")]
     public Action<Event>? OnAddSourceBuffer
     {
@@ -899,6 +928,7 @@ public sealed class SourceBufferList : EventTarget, IReadOnlyList<SourceBuffer>
     }
 
     /// <summary>Gets or sets the event handler of the <c>removesourcebuffer</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebufferlist-onremovesourcebuffer"/>
     [IdlMember("onremovesourcebuffer", "https://w3c.github.io/media-source/#dom-sourcebufferlist-onremovesourcebuffer")]
     public Action<Event>? OnRemoveSourceBuffer
     {

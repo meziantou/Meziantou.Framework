@@ -268,6 +268,7 @@ public partial class HtmlInputElement : IEditableTextControl
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-value</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/input.html#dom-input-value")]
     public string Value
     {
@@ -489,6 +490,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-checked</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-checked"/>
     [IdlMember("checked", "https://html.spec.whatwg.org/multipage/input.html#dom-input-checked")]
     public bool Checked
     {
@@ -511,6 +513,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>Gets or sets a value indicating whether the checkbox is in the indeterminate state.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-indeterminate"/>
     [IdlMember("indeterminate", "https://html.spec.whatwg.org/multipage/input.html#dom-input-indeterminate")]
     public bool Indeterminate
     {
@@ -559,6 +562,7 @@ public partial class HtmlInputElement : IEditableTextControl
     internal IReadOnlyList<File> SelectedFiles => _selectedFiles;
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-files</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-files"/>
     [IdlMember("files", "https://html.spec.whatwg.org/multipage/input.html#dom-input-files")]
     public FileList? Files
     {
@@ -575,6 +579,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-list</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-list"/>
     [IdlMember("list", "https://html.spec.whatwg.org/multipage/input.html#dom-input-list")]
     public HtmlDataListElement? List
     {
@@ -662,6 +667,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasnumber</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasnumber"/>
     [IdlMember("valueAsNumber", "https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasnumber")]
     public double ValueAsNumber
     {
@@ -679,6 +685,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasdate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasdate"/>
     [IdlMember("valueAsDate", "https://html.spec.whatwg.org/multipage/input.html#dom-input-valueasdate")]
     public DateTime? ValueAsDate
     {
@@ -861,12 +868,14 @@ public partial class HtmlInputElement : IEditableTextControl
     /// <summary>
     /// Increases the value by the given number of steps (one by default) of the <c>step</c> attribute.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-stepup"/>
     [IdlMember("stepUp", "https://html.spec.whatwg.org/multipage/input.html#dom-input-stepup")]
     public void StepUp(int n = 1) => StepValue(n, up: true);
 
     /// <summary>
     /// Decreases the value by the given number of steps (one by default) of the <c>step</c> attribute.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-stepdown"/>
     [IdlMember("stepDown", "https://html.spec.whatwg.org/multipage/input.html#dom-input-stepdown")]
     public void StepDown(int n = 1) => StepValue(n, up: false);
 
@@ -939,6 +948,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-showpicker</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-showpicker"/>
     [IdlMember("showPicker", "https://html.spec.whatwg.org/multipage/input.html#dom-input-showpicker")]
     public void ShowPicker()
     {
@@ -1283,6 +1293,7 @@ public partial class HtmlInputElement : IEditableTextControl
     private TextSelection Selection => new(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-select</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-select"/>
     [IdlMember("select", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-select")]
     public void Select()
     {
@@ -1299,6 +1310,7 @@ public partial class HtmlInputElement : IEditableTextControl
     /// Gets or sets the index of the start of the text selection, or null when the selection does not apply to the
     /// input type.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionstart"/>
     [IdlMember("selectionStart", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionstart")]
     public uint? SelectionStart
     {
@@ -1316,6 +1328,7 @@ public partial class HtmlInputElement : IEditableTextControl
     /// Gets or sets the index of the end of the text selection, or null when the selection does not apply to the input
     /// type.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionend"/>
     [IdlMember("selectionEnd", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionend")]
     public uint? SelectionEnd
     {
@@ -1333,6 +1346,7 @@ public partial class HtmlInputElement : IEditableTextControl
     /// Gets or sets the direction of the text selection (<c>forward</c>, <c>backward</c> or <c>none</c>), or null when
     /// the selection does not apply to the input type.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectiondirection"/>
     [IdlMember("selectionDirection", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectiondirection")]
     public string? SelectionDirection
     {
@@ -1347,6 +1361,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>Replaces the selected text with the given text.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext"/>
     [IdlMember("setRangeText", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext")]
     public void SetRangeText(string replacement)
     {
@@ -1360,6 +1375,7 @@ public partial class HtmlInputElement : IEditableTextControl
     /// Replaces the text between the start and end indexes with the given text and updates the selection according to
     /// the selection mode.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext"/>
     [IdlMember("setRangeText", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext")]
     public void SetRangeText(string replacement, uint start, uint end, string selectionMode = "preserve")
     {
@@ -1370,6 +1386,7 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>Selects the text between the start and end indexes, with the given direction.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setselectionrange"/>
     [IdlMember("setSelectionRange", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setselectionrange")]
     public void SetSelectionRange(uint start, uint end, string? direction = null)
     {

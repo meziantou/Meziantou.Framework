@@ -7,9 +7,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public abstract partial class Node
 {
 
-    internal List<RegisteredObserver>? RegisteredObserverList => _rareData?.RegisteredObservers;
+    internal List<RegisteredObserver>? RegisteredObserverList => RareDataOrNull?.RegisteredObservers;
 
-    internal IReadOnlyList<RegisteredObserver> RegisteredObservers => _rareData?.RegisteredObservers ?? (IReadOnlyList<RegisteredObserver>)[];
+    internal IReadOnlyList<RegisteredObserver> RegisteredObservers => RareDataOrNull?.RegisteredObservers ?? (IReadOnlyList<RegisteredObserver>)[];
 
     internal void AddRegisteredObserver(RegisteredObserver observer)
     {
@@ -25,7 +25,7 @@ public abstract partial class Node
 
 
     /// <summary>The slottable state of an Element or Text node, if any.</summary>
-    internal SlottableData? Slottable => _rareData?.Slottable;
+    internal SlottableData? Slottable => RareDataOrNull?.Slottable;
 
     internal SlottableData GetOrCreateSlottable() => RareData.Slottable ??= new SlottableData();
 
@@ -534,7 +534,11 @@ public abstract partial class Node
         }
 
         _childCount++;
-        _childrenVersion++;
+        if (RareDataOrNull is { } rareData)
+        {
+            rareData.ChildrenVersion++;
+        }
+
         NodeDocument.IncrementTreeVersion(this, node, removed: false);
     }
 
@@ -563,8 +567,18 @@ public abstract partial class Node
         node._parent = null;
         node._previousSibling = null;
         node._nextSibling = null;
+        if (node is Element element)
+        {
+            // (the cached index is stamped with the version of the children of the parent: it must not be valid in another parent)
+            element.ElementIndexStamp = 0;
+        }
+
         _childCount--;
-        _childrenVersion++;
+        if (RareDataOrNull is { } rareData)
+        {
+            rareData.ChildrenVersion++;
+        }
+
         NodeDocument.IncrementTreeVersion(this, node, removed: true);
     }
 
@@ -773,7 +787,7 @@ public abstract partial class Node
             // Transient registered observers
             for (Node? inclusiveAncestor = this; inclusiveAncestor is not null; inclusiveAncestor = inclusiveAncestor._parent)
             {
-                if (inclusiveAncestor._rareData?.RegisteredObservers is not { } registeredObservers)
+                if (inclusiveAncestor.RareDataOrNull?.RegisteredObservers is not { } registeredObservers)
                     continue;
 
                 foreach (var registered in registeredObservers.ToArray())

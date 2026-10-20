@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -91,32 +94,7 @@ internal static class JpegXlNoise
         {
             var plane = noise.Span.Slice(c * length, length);
             var output = filtered.Span[..length];
-            for (var y = 0; y < height; y++)
-            {
-                if ((y & 63) == 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
-
-                for (var x = 0; x < width; x++)
-                {
-                    var others = 0f;
-                    for (var dy = -2; dy <= 2; dy++)
-                    {
-                        var row = plane.Slice(Mirror(y + dy, height) * width, width);
-                        for (var dx = -2; dx <= 2; dx++)
-                        {
-                            if (dx != 0 || dy != 0)
-                            {
-                                others += row[Mirror(x + dx, width)];
-                            }
-                        }
-                    }
-
-                    output[(y * width) + x] = (others * 0.16f) + (plane[(y * width) + x] * -3.84f);
-                }
-            }
-
+            HighPass(plane, output, width, height, cancellationToken);
             output.CopyTo(plane);
         }
 
@@ -141,6 +119,104 @@ internal static class JpegXlNoise
                 rowY[x] += sum;
                 rowB[x] += baseCorrelationB * sum;
             }
+        }
+    }
+
+    /// <summary>
+    /// The high-pass filter of the noise: 0.16 times the 24 neighbors minus 3.84 times the value, the neighbors outside the
+    /// plane being the mirror image of those inside. Away from the left and right edges, four samples are filtered at a
+    /// time, one per lane, with the additions of <see cref="HighPassScalar"/> in the same order.
+    /// </summary>
+    internal static void HighPass(ReadOnlySpan<float> plane, Span<float> output, int width, int height, CancellationToken cancellationToken)
+    {
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            HighPassScalar(plane, output, width, height, cancellationToken);
+            return;
+        }
+
+        Span<int> rows = stackalloc int[5];
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            for (var dy = -2; dy <= 2; dy++)
+            {
+                rows[dy + 2] = Mirror(y + dy, height) * width;
+            }
+
+            // The samples from 2 on whose four lanes have their two neighbors on the right inside the row
+            var x = Math.Min(2, width);
+            HighPassColumns(plane, output, width, height, y, 0, x);
+            var center = plane.Slice(y * width, width);
+            var outputRow = output.Slice(y * width, width);
+            for (; x + Vector128<float>.Count + 2 <= width; x += Vector128<float>.Count)
+            {
+                var others = AddRow(Vector128<float>.Zero, plane.Slice(rows[0] + x - 2, 8), includeCenter: true);
+                others = AddRow(others, plane.Slice(rows[1] + x - 2, 8), includeCenter: true);
+                others = AddRow(others, plane.Slice(rows[2] + x - 2, 8), includeCenter: false);
+                others = AddRow(others, plane.Slice(rows[3] + x - 2, 8), includeCenter: true);
+                others = AddRow(others, plane.Slice(rows[4] + x - 2, 8), includeCenter: true);
+
+                var result = (others * Vector128.Create(0.16f)) + (Vector128.Create(center.Slice(x, Vector128<float>.Count)) * Vector128.Create(-3.84f));
+                result.CopyTo(outputRow.Slice(x, Vector128<float>.Count));
+            }
+
+            HighPassColumns(plane, output, width, height, y, x, width);
+        }
+    }
+
+    /// <summary>Adds the five values of a row around four samples (four without the center one), left to right.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> AddRow(Vector128<float> sum, ReadOnlySpan<float> row, bool includeCenter)
+    {
+        sum += Vector128.Create(row[..4]);
+        sum += Vector128.Create(row.Slice(1, 4));
+        if (includeCenter)
+        {
+            sum += Vector128.Create(row.Slice(2, 4));
+        }
+
+        sum += Vector128.Create(row.Slice(3, 4));
+        return sum + Vector128.Create(row.Slice(4, 4));
+    }
+
+    /// <summary>The scalar reference of <see cref="HighPass"/>.</summary>
+    internal static void HighPassScalar(ReadOnlySpan<float> plane, Span<float> output, int width, int height, CancellationToken cancellationToken)
+    {
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            HighPassColumns(plane, output, width, height, y, 0, width);
+        }
+    }
+
+    /// <summary>Filters the samples <paramref name="start"/> to <paramref name="end"/> (excluded) of the row <paramref name="y"/>, one at a time.</summary>
+    private static void HighPassColumns(ReadOnlySpan<float> plane, Span<float> output, int width, int height, int y, int start, int end)
+    {
+        for (var x = start; x < end; x++)
+        {
+            var others = 0f;
+            for (var dy = -2; dy <= 2; dy++)
+            {
+                var row = plane.Slice(Mirror(y + dy, height) * width, width);
+                for (var dx = -2; dx <= 2; dx++)
+                {
+                    if (dx != 0 || dy != 0)
+                    {
+                        others += row[Mirror(x + dx, width)];
+                    }
+                }
+            }
+
+            output[(y * width) + x] = (others * 0.16f) + (plane[(y * width) + x] * -3.84f);
         }
     }
 

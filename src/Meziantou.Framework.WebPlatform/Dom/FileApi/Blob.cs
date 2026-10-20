@@ -9,12 +9,14 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi;
 /// referenced by a <c>blob:</c> URL (<see cref="Url.CreateObjectUrl(Blob)"/>). <c>stream()</c> and <c>textStream()</c> are
 /// defined by the WebIDL bindings, with the streams implemented in JavaScript (docs/scripting.md#streams).
 /// </summary>
+/// <seealso href="https://w3c.github.io/FileAPI/#blob-section"/>
 [IdlInterface("Blob", "https://w3c.github.io/FileAPI/#blob-section")]
 public class Blob : Scripting.IStructuredSerializable
 {
     private protected readonly byte[] Content;
 
     /// <summary>Creates a blob from the given parts (strings, blobs or bytes) and options.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#constructorBlob"/>
     [IdlMember("constructor", "https://w3c.github.io/FileAPI/#constructorBlob")]
     public Blob(IReadOnlyList<object>? blobParts = null, BlobPropertyBag? options = null)
     {
@@ -123,14 +125,17 @@ public class Blob : Scripting.IStructuredSerializable
     }
 
     /// <summary>Gets the size of the blob, in bytes.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-size"/>
     [IdlMember("size", "https://w3c.github.io/FileAPI/#dfn-size")]
     public ulong Size => (ulong)Content.LongLength;
 
     /// <summary>Gets the media type of the blob, or an empty string when it is unknown.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-type"/>
     [IdlMember("type", "https://w3c.github.io/FileAPI/#dfn-type")]
     public string Type { get; }
 
     /// <summary>https://w3c.github.io/FileAPI/#dfn-slice</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-slice"/>
     [IdlMember("slice", "https://w3c.github.io/FileAPI/#dfn-slice")]
     public Blob Slice(long? start = null, long? end = null, string? contentType = null)
     {
@@ -142,6 +147,7 @@ public class Blob : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns the content decoded as UTF-8, without the byte order mark (https://w3c.github.io/FileAPI/#text-method-algo).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#text-method-algo"/>
     [IdlMember("text", "https://w3c.github.io/FileAPI/#text-method-algo")]
     public Task<string> Text()
     {
@@ -155,10 +161,12 @@ public class Blob : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns a copy of the content (an <c>ArrayBuffer</c> in JavaScript, https://w3c.github.io/FileAPI/#arraybuffer-method-algo).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#arraybuffer-method-algo"/>
     [IdlMember("arrayBuffer", "https://w3c.github.io/FileAPI/#arraybuffer-method-algo")]
     public Task<byte[]> ArrayBuffer() => Task.FromResult(Content.ToArray());
 
     /// <summary>Returns a copy of the content (a <c>Uint8Array</c> in JavaScript, https://w3c.github.io/FileAPI/#bytes-method-algo).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#bytes-method-algo"/>
     [IdlMember("bytes", "https://w3c.github.io/FileAPI/#bytes-method-algo")]
     public Task<byte[]> Bytes() => Task.FromResult(Content.ToArray());
 }

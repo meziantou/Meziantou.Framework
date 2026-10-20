@@ -3,45 +3,55 @@ using System.Diagnostics;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#dictdef-eventinit</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-eventinit"/>
 [IdlInterface("EventInit", "https://dom.spec.whatwg.org/#dictdef-eventinit")]
 public class EventInit
 {
     /// <summary>Gets a value indicating whether the event bubbles up through the tree.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventinit-bubbles"/>
     [IdlMember("bubbles", "https://dom.spec.whatwg.org/#dom-eventinit-bubbles")]
     public bool Bubbles { get; init; }
 
     /// <summary>Gets a value indicating whether the event can be canceled with <c>preventDefault()</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventinit-cancelable"/>
     [IdlMember("cancelable", "https://dom.spec.whatwg.org/#dom-eventinit-cancelable")]
     public bool Cancelable { get; init; }
 
     /// <summary>Gets a value indicating whether the event propagates across the shadow DOM boundary.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-eventinit-composed"/>
     [IdlMember("composed", "https://dom.spec.whatwg.org/#dom-eventinit-composed")]
     public bool Composed { get; init; }
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-event</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#event"/>
 [IdlInterface("Event", "https://dom.spec.whatwg.org/#event")]
 public partial class Event
 {
     /// <summary>The event is not being dispatched.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-none"/>
     [IdlMember("NONE", "https://dom.spec.whatwg.org/#dom-event-none")]
     public const ushort None = 0;
 
     /// <summary>The event is propagating through the ancestors of the target, from the root.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-capturing_phase"/>
     [IdlMember("CAPTURING_PHASE", "https://dom.spec.whatwg.org/#dom-event-capturing_phase")]
     public const ushort CapturingPhase = 1;
 
     /// <summary>The event has reached its target.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-at_target"/>
     [IdlMember("AT_TARGET", "https://dom.spec.whatwg.org/#dom-event-at_target")]
     public const ushort AtTarget = 2;
 
     /// <summary>The event is propagating back up through the ancestors of the target.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-bubbling_phase"/>
     [IdlMember("BUBBLING_PHASE", "https://dom.spec.whatwg.org/#dom-event-bubbling_phase")]
     public const ushort BubblingPhase = 3;
 
     private static readonly long TimeOrigin = Stopwatch.GetTimestamp();
 
     /// <summary>https://dom.spec.whatwg.org/#dom-event-event</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-event"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-event-event")]
     public Event(string type, EventInit? eventInitDict = null)
     {
@@ -112,18 +122,22 @@ public partial class Event
     internal static Event CreateUninitialized() => new();
 
     /// <summary>Gets the type of the event, such as <c>click</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-type"/>
     [IdlMember("type", "https://dom.spec.whatwg.org/#dom-event-type")]
     public string Type { get; internal set; }
 
     /// <summary>Gets the object the event was dispatched to.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-target"/>
     [IdlMember("target", "https://dom.spec.whatwg.org/#dom-event-target")]
     public EventTarget? Target => TargetInternal;
 
     /// <summary>Gets the object the event was dispatched to (legacy alias of <c>target</c>).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-srcelement"/>
     [IdlMember("srcElement", "https://dom.spec.whatwg.org/#dom-event-srcelement")]
     public EventTarget? SrcElement => TargetInternal;
 
     /// <summary>Gets the object whose listener is currently being invoked.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-currenttarget"/>
     [IdlMember("currentTarget", "https://dom.spec.whatwg.org/#dom-event-currenttarget")]
     public EventTarget? CurrentTarget { get; internal set; }
 
@@ -131,38 +145,46 @@ public partial class Event
     /// Gets the current phase of the event dispatch (<c>NONE</c>, <c>CAPTURING_PHASE</c>, <c>AT_TARGET</c> or
     /// <c>BUBBLING_PHASE</c>).
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-eventphase"/>
     [IdlMember("eventPhase", "https://dom.spec.whatwg.org/#dom-event-eventphase")]
     public ushort EventPhase { get; internal set; }
 
     /// <summary>Gets a value indicating whether the event bubbles up through the tree.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-bubbles"/>
     [IdlMember("bubbles", "https://dom.spec.whatwg.org/#dom-event-bubbles")]
     public bool Bubbles { get; private set; }
 
     /// <summary>Gets a value indicating whether the event can be canceled with <c>preventDefault()</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-cancelable"/>
     [IdlMember("cancelable", "https://dom.spec.whatwg.org/#dom-event-cancelable")]
     public bool Cancelable { get; private set; }
 
     /// <summary>Gets a value indicating whether the event propagates across the shadow DOM boundary.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-composed"/>
     [IdlMember("composed", "https://dom.spec.whatwg.org/#dom-event-composed")]
     public bool Composed => ComposedFlag;
 
     /// <summary>
     /// Gets a value indicating whether the event was dispatched by the user agent rather than created by a script.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-istrusted"/>
     [IdlMember("isTrusted", "https://dom.spec.whatwg.org/#dom-event-istrusted")]
     public bool IsTrusted { get; internal set; }
 
     /// <summary>The time the event was created, in milliseconds relative to the time origin.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-timestamp"/>
     [IdlMember("timeStamp", "https://dom.spec.whatwg.org/#dom-event-timestamp")]
     public double TimeStamp { get; private set; }
 
     /// <summary>Gets a value indicating whether the event has been canceled.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-defaultprevented"/>
     [IdlMember("defaultPrevented", "https://dom.spec.whatwg.org/#dom-event-defaultprevented")]
     public bool DefaultPrevented => CanceledFlag;
 
     /// <summary>
     /// Gets or sets the legacy stop propagation flag; setting it to true stops the propagation of the event.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-cancelbubble"/>
     [IdlMember("cancelBubble", "https://dom.spec.whatwg.org/#dom-event-cancelbubble")]
     public bool CancelBubble
     {
@@ -179,6 +201,7 @@ public partial class Event
     /// <summary>
     /// Gets or sets the legacy inverse of <c>defaultPrevented</c>; setting it to false cancels the event.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-returnvalue"/>
     [IdlMember("returnValue", "https://dom.spec.whatwg.org/#dom-event-returnvalue")]
     public bool ReturnValue
     {
@@ -218,12 +241,14 @@ public partial class Event
     internal bool DispatchFlag { get; set; }
 
     /// <summary>Prevents the event from reaching the listeners of the other objects of its path.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-stoppropagation"/>
     [IdlMember("stopPropagation", "https://dom.spec.whatwg.org/#dom-event-stoppropagation")]
     public void StopPropagation() => StopPropagationFlag = true;
 
     /// <summary>
     /// Prevents the event from reaching the other listeners, including the remaining listeners of the current target.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-stopimmediatepropagation"/>
     [IdlMember("stopImmediatePropagation", "https://dom.spec.whatwg.org/#dom-event-stopimmediatepropagation")]
     public void StopImmediatePropagation()
     {
@@ -232,6 +257,7 @@ public partial class Event
     }
 
     /// <summary>Cancels the event when it is cancelable.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-preventdefault"/>
     [IdlMember("preventDefault", "https://dom.spec.whatwg.org/#dom-event-preventdefault")]
     public void PreventDefault() => SetCanceledFlag();
 
@@ -245,6 +271,7 @@ public partial class Event
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-event-initevent</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-initevent"/>
     [IdlMember("initEvent", "https://dom.spec.whatwg.org/#dom-event-initevent")]
     public void InitEvent(string type, bool bubbles = false, bool cancelable = false)
     {
@@ -270,6 +297,7 @@ public partial class Event
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-event-composedpath</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-event-composedpath"/>
     [IdlMember("composedPath", "https://dom.spec.whatwg.org/#dom-event-composedpath")]
     public IReadOnlyList<EventTarget> ComposedPath()
     {
@@ -381,19 +409,23 @@ internal sealed class EventPathItem
 }
 
 /// <summary>Represents the initialization dictionary of a <see cref="CustomEvent"/>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-customeventinit"/>
 [IdlInterface("CustomEventInit", "https://dom.spec.whatwg.org/#dictdef-customeventinit")]
 public sealed class CustomEventInit : EventInit
 {
     /// <summary>Gets the custom data associated with the event.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-customeventinit-detail"/>
     [IdlMember("detail", "https://dom.spec.whatwg.org/#dom-customeventinit-detail")]
     public object? Detail { get; init; }
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-customevent</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#customevent"/>
 [IdlInterface("CustomEvent", "https://dom.spec.whatwg.org/#customevent")]
 public sealed class CustomEvent : Event
 {
     /// <summary>Creates a custom event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-customevent-customevent"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-customevent-customevent")]
     public CustomEvent(string type, CustomEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -408,10 +440,12 @@ public sealed class CustomEvent : Event
     internal static CustomEvent CreateUninitializedCustomEvent() => new();
 
     /// <summary>Gets the custom data associated with the event.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-customevent-detail"/>
     [IdlMember("detail", "https://dom.spec.whatwg.org/#dom-customevent-detail")]
     public object? Detail { get; private set; }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-customevent-initcustomevent</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-customevent-initcustomevent"/>
     [IdlMember("initCustomEvent", "https://dom.spec.whatwg.org/#dom-customevent-initcustomevent")]
     public void InitCustomEvent(string type, bool bubbles = false, bool cancelable = false, object? detail = null)
     {

@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// in a window or in a worker, or by <c>transferControlToOffscreen()</c> for a <c>canvas</c> element (its placeholder), whose
 /// frames are then displayed by the element. It is transferable (to a worker), and needs a rendering backend for its 2D context.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas"/>
 [IdlInterface("OffscreenCanvas", "https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas")]
 public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICanvasHost
 {
@@ -17,6 +18,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     private bool _commitQueued;
 
     /// <summary>Creates an <see cref="OffscreenCanvas"/> of the given size, without context (https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas")]
     public OffscreenCanvas(ulong width, ulong height)
     {
@@ -48,6 +50,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     /// it resets the bitmap and the 2D context.
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-width")]
     public ulong Width
     {
@@ -67,6 +70,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     /// setting it resets the bitmap and the 2D context.
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-height")]
     public ulong Height
     {
@@ -86,6 +90,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     int ICanvasHost.BitmapHeight => (int)Math.Min(_height, int.MaxValue);
 
     /// <summary>Gets or sets the event handler of the <c>contextlost</c> event (never fired).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#handler-offscreencanvas-oncontextlost"/>
     [IdlMember("oncontextlost", "https://html.spec.whatwg.org/multipage/canvas.html#handler-offscreencanvas-oncontextlost")]
     public Action<Event>? OnContextLost
     {
@@ -94,6 +99,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextrestored</c> event (never fired).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#handler-offscreencanvas-oncontextrestored"/>
     [IdlMember("oncontextrestored", "https://html.spec.whatwg.org/multipage/canvas.html#handler-offscreencanvas-oncontextrestored")]
     public Action<Event>? OnContextRestored
     {
@@ -108,6 +114,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     /// already has a context of another type.
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-getcontext"/>
     [IdlMember("getContext", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-getcontext")]
     public object? GetContext(OffscreenRenderingContextId contextId, CanvasRenderingContext2DSettings? options = null)
     {
@@ -146,6 +153,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     /// (https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-transfertoimagebitmap).
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is detached or has no context.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-transfertoimagebitmap"/>
     [IdlMember("transferToImageBitmap", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-transfertoimagebitmap")]
     public ImageBitmap TransferToImageBitmap()
     {
@@ -179,6 +187,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     /// PNG, JPEG or WebP (another type is serialized as PNG).
     /// </summary>
     /// <returns>A task completed in a task of the event loop; it fails with an <c>InvalidStateError</c> when the canvas is detached, a <c>SecurityError</c> when it is not origin-clean, an <c>IndexSizeError</c> when it has no pixels.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-converttoblob"/>
     [IdlMember("convertToBlob", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencanvas-converttoblob")]
     public Task<Blob> ConvertToBlob(ImageEncodeOptions? options = null)
     {

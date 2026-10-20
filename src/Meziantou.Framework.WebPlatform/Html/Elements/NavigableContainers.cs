@@ -102,14 +102,17 @@ public partial class HtmlIFrameElement
     internal BrowsingContext? ContentNavigable { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentdocument"/>
     [IdlMember("contentDocument", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentdocument")]
     public Document? ContentDocument => NavigableContainers.GetContentDocument(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentwindow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentwindow"/>
     [IdlMember("contentWindow", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-contentwindow")]
     public Window? ContentWindow => ContentNavigable?.Window;
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-getsvgdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-getsvgdocument"/>
     [IdlMember("getSVGDocument", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-getsvgdocument")]
     public Document? GetSvgDocument() => NavigableContainers.GetSvgDocument(this);
 
@@ -224,10 +227,12 @@ public partial class HtmlFrameElement
     internal BrowsingContext? ContentNavigable { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentdocument"/>
     [IdlMember("contentDocument", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentdocument")]
     public Document? ContentDocument => NavigableContainers.GetContentDocument(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentwindow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentwindow"/>
     [IdlMember("contentWindow", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-frame-contentwindow")]
     public Window? ContentWindow => ContentNavigable?.Window;
 

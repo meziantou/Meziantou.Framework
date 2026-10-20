@@ -1,3 +1,5 @@
+using System.Runtime.ExceptionServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -8,6 +10,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// Memory: the data of the items or of the samples that are not decoded yet (the walker), the decoded picture buffer of the
 /// HEVC decoders, the planes of the color image and of the alpha plane, and three rows, all charged to the operation scope.
+/// The planes of a grid without alpha plane hold one row of tiles: its rows are converted before the next row is decoded.
 /// The decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, and the pictures that they output before their turn: the samples are in decoding
 /// order and the images are written in presentation order, so the pictures that wait are bounded by the size of the decoded
@@ -15,6 +18,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class HeicDecoder : HeifDecodeObserver
 {
+    // The tiles of a grid that is converted one row of tiles at a time are at least as high as the rows that a row of tiles
+    // keeps for the next one
+    private const int MinBandTileHeight = 4 * HeicPlanarImage.BandOverlap;
+
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
     private readonly Queue<HevcPicture> _colorPictures = new();
@@ -51,10 +58,18 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         var plan = structure.Plan;
         var sink = _sink!;
         sink.BeginFrame(FrameDuration.Zero);
-        using var color = DecodeImage(structure, plan.Color);
-        structure.SetBitstreamColorDescription(color.Format);
-        using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
-        HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, plan.Color.Size, plan.Crop);
+        if (plan.Alpha is null && plan.Color.IsGrid && plan.Color.TileSize.Height >= MinBandTileHeight)
+        {
+            DecodeGridByTileRows(structure, plan.Color, sink, plan.Crop);
+        }
+        else
+        {
+            using var color = DecodeImage(structure, plan.Color);
+            structure.SetBitstreamColorDescription(color.Format);
+            using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
+            HeifFrameWriter.WriteFrame(_context, sink, structure, color, alpha, plan.Color.Size, plan.Crop);
+        }
+
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
     }
@@ -158,34 +173,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         {
             for (var i = 0; i < image.Tiles.Length; i++)
             {
-                _context.CancellationToken.ThrowIfCancellationRequested();
-                structure.GetItemBuffer(image.Tiles[i], out var data, out var length);
-                var configuration = structure.GetConfigurationRecord(image, i);
-
-                // What the identification of the file checks: the sequence parameter set of the configuration record, or
-                // else the first one of the data. The parameter set of the picture, checked below, is another one when
-                // the data replace the one of the record.
-                var identified = HeicBinding.Instance.ReadBitstreamFormat(_context.Scope, configuration, data.AsSpan(0, length), image.OperatingPoints[i]);
-                HeifStructureParser.EnsureMatchesConfiguration(image, identified);
-                var picture = DecodeCodedItem(configuration, image.ConfigurationRecords[i], data, length);
-                HeifBitstreamFormat format;
-                try
-                {
-                    format = HeicBinding.ToBitstreamFormat(picture.Sps);
-                    EnsureIsIdentifiedFormat(format, identified);
-                    HeifStructureParser.EnsureMatchesConfiguration(image, format);
-                    if (picture.Sps.OutputWidth != image.TileSize.Width || picture.Sps.OutputHeight != image.TileSize.Height)
-                        throw HeicBinding.Instance.Invalid("the size of an HEVC image does not match its 'ispe' property.");
-
-                    if (result is not null && result.Format != format)
-                        throw HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
-                }
-                catch
-                {
-                    picture.Release();
-                    throw;
-                }
-
+                var picture = DecodeTile(structure, image, i, result?.Format, out var format);
                 if (!image.IsGrid)
                     return HeicPlanarImage.FromPicture(_context.Scope, picture, format);
 
@@ -209,6 +197,102 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         {
             result?.Dispose();
         }
+    }
+
+    // Decodes the tiles of a grid without alpha plane and writes the rows of the image as soon as the rows of tiles that
+    // their conversion reads are decoded: the planes hold one row of tiles, and the last rows of the one above, which the
+    // chroma of the last rows of the row above reads. The errors happen in the order of the decoding of the whole image
+    // before its conversion: those of the conversion are thrown once every tile is decoded.
+    private void DecodeGridByTileRows(HeifStructureParser structure, HeifCodedImage image, DecodedFrameSink sink, Rectangle crop)
+    {
+        HeicPlanarImage? band = null;
+        HeifFrameWriter? writer = null;
+        ExceptionDispatchInfo? conversionError = null;
+        var tileHeight = image.TileSize.Height;
+        var nextRow = 0;
+        try
+        {
+            for (var i = 0; i < image.Tiles.Length; i++)
+            {
+                var picture = DecodeTile(structure, image, i, band?.Format, out var format);
+                var tileRow = i / image.Columns;
+                try
+                {
+                    band ??= HeicPlanarImage.CreateBand(_context.Scope, format, image.Columns * image.TileSize.Width, image.Rows * tileHeight, tileHeight);
+                    if (i % image.Columns is 0)
+                    {
+                        band.BeginTileRow(tileRow * tileHeight);
+                    }
+
+                    band.CopyPicture(picture, i % image.Columns * image.TileSize.Width, tileRow * tileHeight);
+                }
+                finally
+                {
+                    picture.Release();
+                }
+
+                if (i % image.Columns != image.Columns - 1 || conversionError is not null)
+                    continue;
+
+                // The chroma of the last two luma rows of a row of tiles may be interpolated with the first chroma row of the
+                // next row of tiles, when it is subsampled vertically
+                var end = tileRow == image.Rows - 1 ? crop.Height : Math.Min(crop.Height, ((tileRow + 1) * tileHeight) - (format.SubsamplingY is 0 ? 0 : HeicPlanarImage.BandOverlap) - crop.Y);
+                if (end <= nextRow)
+                    continue;
+
+                try
+                {
+                    writer ??= new HeifFrameWriter(_context, structure, format, alpha: null, image.Size, crop);
+                    writer.WriteRows(sink, band, alpha: null, nextRow, end);
+                    nextRow = end;
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    conversionError = ExceptionDispatchInfo.Capture(ex);
+                }
+            }
+
+            structure.SetBitstreamColorDescription(band!.Format);
+            conversionError?.Throw();
+        }
+        finally
+        {
+            writer?.Dispose();
+            band?.Dispose();
+        }
+    }
+
+    // Decodes a coded item of an image, and checks the picture against the file and against the previous tiles of a grid
+    private HevcPicture DecodeTile(HeifStructureParser structure, HeifCodedImage image, int index, HeifBitstreamFormat? previous, out HeifBitstreamFormat format)
+    {
+        _context.CancellationToken.ThrowIfCancellationRequested();
+        structure.GetItemBuffer(image.Tiles[index], out var data, out var length);
+        var configuration = structure.GetConfigurationRecord(image, index);
+
+        // What the identification of the file checks: the sequence parameter set of the configuration record, or else the
+        // first one of the data. The parameter set of the picture, checked below, is another one when the data replace the
+        // one of the record.
+        var identified = HeicBinding.Instance.ReadBitstreamFormat(_context.Scope, configuration, data.AsSpan(0, length), image.OperatingPoints[index]);
+        HeifStructureParser.EnsureMatchesConfiguration(image, identified);
+        var picture = DecodeCodedItem(configuration, image.ConfigurationRecords[index], data, length);
+        try
+        {
+            format = HeicBinding.ToBitstreamFormat(picture.Sps);
+            EnsureIsIdentifiedFormat(format, identified);
+            HeifStructureParser.EnsureMatchesConfiguration(image, format);
+            if (picture.Sps.OutputWidth != image.TileSize.Width || picture.Sps.OutputHeight != image.TileSize.Height)
+                throw HeicBinding.Instance.Invalid("the size of an HEVC image does not match its 'ispe' property.");
+
+            if (previous is { } expected && expected != format)
+                throw HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
+        }
+        catch
+        {
+            picture.Release();
+            throw;
+        }
+
+        return picture;
     }
 
     // Decodes the picture of a coded item: the decoder is released, the picture is kept by the caller

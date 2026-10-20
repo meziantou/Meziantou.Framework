@@ -2658,6 +2658,10 @@ internal static class UnicodeTables
         251,0,231,1,41,149,223,1,236,1,41,
     ];
 
+    /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have an entry, and is not below the first entry.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool MayHaveSpecialCasing(int codePoint) => codePoint >= 0xDF && (codePoint >> 8) is 0x0 or 0x1 or 0x3 or 0x5 or 0x1E or 0x1F or 0xFB or 0x1DF;
+
     // The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.
     internal static ReadOnlySpan<byte> SpecialCasingPool =>
     [

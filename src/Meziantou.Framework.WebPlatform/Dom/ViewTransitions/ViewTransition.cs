@@ -13,14 +13,17 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public delegate object? ViewTransitionUpdateCallback();
 
 /// <summary>https://drafts.csswg.org/css-view-transitions-2/#dictdef-startviewtransitionoptions</summary>
+/// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dictdef-startviewtransitionoptions"/>
 [IdlInterface("StartViewTransitionOptions", "https://drafts.csswg.org/css-view-transitions-2/#dictdef-startviewtransitionoptions")]
 public sealed class StartViewTransitionOptions
 {
     /// <summary>Gets the callback that updates the document, or null.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-startviewtransitionoptions-update"/>
     [IdlMember("update", "https://drafts.csswg.org/css-view-transitions-2/#dom-startviewtransitionoptions-update")]
     public ViewTransitionUpdateCallback? Update { get; init; }
 
     /// <summary>Gets the initial types of the transition (matched by <c>:active-view-transition-type()</c>), or null.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-startviewtransitionoptions-types"/>
     [IdlMember("types", "https://drafts.csswg.org/css-view-transitions-2/#dom-startviewtransitionoptions-types")]
     public IReadOnlyList<string>? Types { get; init; }
 }
@@ -41,6 +44,7 @@ internal enum ViewTransitionPhase : byte
 /// and the tree of <c>::view-transition</c> pseudo-elements, which shows the snapshots of the old state and the live
 /// images of the new state, is animated until its animations finish.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#viewtransition"/>
 [IdlInterface("ViewTransition", "https://drafts.csswg.org/css-view-transitions-1/#viewtransition")]
 public sealed class ViewTransition
 {
@@ -124,6 +128,7 @@ public sealed class ViewTransition
     /// Gets a task completed when the promise returned by the update callback is fulfilled; it fails when the promise is
     /// rejected (https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone"/>
     [IdlMember("updateCallbackDone", "https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone")]
     public Task UpdateCallbackDone => _updateCallbackDone.Task;
 
@@ -131,6 +136,7 @@ public sealed class ViewTransition
     /// Gets a task completed when the pseudo-elements of the transition are created and the animations are about to start; it
     /// fails when the transition cannot begin or is skipped before (https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready"/>
     [IdlMember("ready", "https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready")]
     public Task Ready => _ready.Task;
 
@@ -138,14 +144,17 @@ public sealed class ViewTransition
     /// Gets a task completed when the end state is visible: the animations finished or the transition was skipped. It only
     /// fails when the update callback failed (https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished"/>
     [IdlMember("finished", "https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished")]
     public Task Finished => _finished.Task;
 
     /// <summary>Gets the types of the transition, matched by <c>:active-view-transition-type()</c> (https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-types).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-types"/>
     [IdlMember("types", "https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-types")]
     public ViewTransitionTypeSet Types { get; }
 
     /// <summary>Gets the element that hosts the transition: the document element (https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-transitionroot).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-transitionroot"/>
     [IdlMember("transitionRoot", "https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-transitionroot")]
     public Element? TransitionRoot => RootElement;
 
@@ -177,6 +186,7 @@ public sealed class ViewTransition
     /// Finishes the transition immediately, or prevents it from starting; the update callback is still called
     /// (https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition"/>
     [IdlMember("skipTransition", "https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition")]
     public void SkipTransition()
     {
@@ -187,6 +197,7 @@ public sealed class ViewTransition
     }
 
     /// <summary>Delays the end of the transition until the task completes (https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-waituntil).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-waituntil"/>
     [IdlMember("waitUntil", "https://drafts.csswg.org/css-view-transitions-2/#dom-viewtransition-waituntil")]
     public void WaitUntil(Task<object?> promise)
     {

@@ -63,6 +63,7 @@ public readonly struct CssNumberish : IUnionValue, IEquatable<CssNumberish>
 /// A numeric value: a &lt;number&gt;, a &lt;percentage&gt;, a &lt;dimension&gt; or a math expression
 /// (https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue).
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue"/>
 [IdlInterface("CSSNumericValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue")]
 public abstract class CssNumericValue : CssStyleValue
 {
@@ -75,10 +76,12 @@ public abstract class CssNumericValue : CssStyleValue
     internal NumericType NumericType { get; }
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-add</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-add"/>
     [IdlMember("add", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-add")]
     public CssNumericValue Add(params ReadOnlySpan<CssNumberish> values) => AddCore(Rectify(values));
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-sub</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-sub"/>
     [IdlMember("sub", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-sub")]
     public CssNumericValue Sub(params ReadOnlySpan<CssNumberish> values)
     {
@@ -92,10 +95,12 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-mul</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-mul"/>
     [IdlMember("mul", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-mul")]
     public CssNumericValue Mul(params ReadOnlySpan<CssNumberish> values) => MultiplyCore(Rectify(values));
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-div</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-div"/>
     [IdlMember("div", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-div")]
     public CssNumericValue Div(params ReadOnlySpan<CssNumberish> values)
     {
@@ -109,6 +114,7 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-min</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-min"/>
     [IdlMember("min", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-min")]
     public CssNumericValue Min(params ReadOnlySpan<CssNumberish> values)
     {
@@ -120,6 +126,7 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-max</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-max"/>
     [IdlMember("max", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-max")]
     public CssNumericValue Max(params ReadOnlySpan<CssNumberish> values)
     {
@@ -134,6 +141,7 @@ public abstract class CssNumericValue : CssStyleValue
     /// Returns whether the values are equal numeric values to this value (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-equals):
     /// the same classes, units and values, in the same order.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-equals"/>
     [IdlMember("equals", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-equals")]
     public bool NumericEquals(params ReadOnlySpan<CssNumberish> value)
     {
@@ -147,6 +155,7 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>Converts the value to a unit (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to"/>
     [IdlMember("to", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to")]
     public CssUnitValue To(string unit)
     {
@@ -164,6 +173,7 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>Converts the value to a sum of values of the units (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-tosum).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-tosum"/>
     [IdlMember("toSum", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-tosum")]
     public CssMathSum ToSum(params ReadOnlySpan<string> units)
     {
@@ -217,10 +227,12 @@ public abstract class CssNumericValue : CssStyleValue
     }
 
     /// <summary>Returns the type of the value (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-type).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-type"/>
     [IdlMember("type", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-type")]
     public CssNumericType Type() => NumericType.ToDictionary();
 
     /// <summary>Parses a numeric value (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-parse).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-parse"/>
     [IdlMember("parse", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-parse")]
     public static CssNumericValue Parse(string cssText)
     {
@@ -395,10 +407,12 @@ public abstract class CssNumericValue : CssStyleValue
 /// A value with a single unit, a number or a percentage (https://drafts.css-houdini.org/css-typed-om-1/#cssunitvalue), e.g.
 /// 42px (the unit is "px"), 10 (the unit is "number") or 50% (the unit is "percent").
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssunitvalue"/>
 [IdlInterface("CSSUnitValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssunitvalue")]
 public sealed class CssUnitValue : CssNumericValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-cssunitvalue</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-cssunitvalue"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-cssunitvalue")]
     public CssUnitValue(double value, string unit)
         : base(GetUnitType(unit))
@@ -408,10 +422,12 @@ public sealed class CssUnitValue : CssNumericValue
     }
 
     /// <summary>Gets or sets the numeric value, without its unit.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-value"/>
     [IdlMember("value", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-value")]
     public double Value { get; set; }
 
     /// <summary>The unit: "number", "percent" or the unit of a dimension (ASCII lowercase, e.g. "px", "q", "hz").</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-unit"/>
     [IdlMember("unit", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunitvalue-unit")]
     public string Unit { get; }
 

@@ -34,23 +34,28 @@ internal static class SvgValueOwnerExtensions
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGUnitTypes</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGUnitTypes"/>
 [IdlInterface("SVGUnitTypes", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGUnitTypes")]
 public static class SvgUnitTypes
 {
     /// <summary>The unit type is not one of the predefined types.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_UNKNOWN"/>
     [IdlMember("SVG_UNIT_TYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_UNKNOWN")]
     public const ushort SvgUnitTypeUnknown = 0;
 
     /// <summary>The coordinates are in the user coordinate system in place at the time of use.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_USERSPACEONUSE"/>
     [IdlMember("SVG_UNIT_TYPE_USERSPACEONUSE", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_USERSPACEONUSE")]
     public const ushort SvgUnitTypeUserSpaceOnUse = 1;
 
     /// <summary>The coordinates are fractions of the bounding box of the element.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_OBJECTBOUNDINGBOX"/>
     [IdlMember("SVG_UNIT_TYPE_OBJECTBOUNDINGBOX", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGUnitTypes__SVG_UNIT_TYPE_OBJECTBOUNDINGBOX")]
     public const ushort SvgUnitTypeObjectBoundingBox = 2;
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGNumber</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumber"/>
 [IdlInterface("SVGNumber", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumber")]
 public sealed class SvgNumber
 {
@@ -65,6 +70,7 @@ public sealed class SvgNumber
     internal ISvgValueOwner? Owner { get; set; }
 
     /// <summary>Gets or sets the number.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNumber__value"/>
     [IdlMember("value", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNumber__value")]
     public float Value
     {
@@ -93,50 +99,62 @@ public sealed class SvgNumber
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGLength</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLength"/>
 [IdlInterface("SVGLength", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLength")]
 public sealed class SvgLength
 {
     /// <summary>The unit is not one of the predefined units.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_UNKNOWN"/>
     [IdlMember("SVG_LENGTHTYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_UNKNOWN")]
     public const ushort SvgLengthTypeUnknown = 0;
 
     /// <summary>A number without unit, in user units.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_NUMBER"/>
     [IdlMember("SVG_LENGTHTYPE_NUMBER", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_NUMBER")]
     public const ushort SvgLengthTypeNumber = 1;
 
     /// <summary>A percentage.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PERCENTAGE"/>
     [IdlMember("SVG_LENGTHTYPE_PERCENTAGE", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PERCENTAGE")]
     public const ushort SvgLengthTypePercentage = 2;
 
     /// <summary>A length in <c>em</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_EMS"/>
     [IdlMember("SVG_LENGTHTYPE_EMS", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_EMS")]
     public const ushort SvgLengthTypeEms = 3;
 
     /// <summary>A length in <c>ex</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_EXS"/>
     [IdlMember("SVG_LENGTHTYPE_EXS", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_EXS")]
     public const ushort SvgLengthTypeExs = 4;
 
     /// <summary>A length in <c>px</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PX"/>
     [IdlMember("SVG_LENGTHTYPE_PX", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PX")]
     public const ushort SvgLengthTypePx = 5;
 
     /// <summary>A length in <c>cm</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_CM"/>
     [IdlMember("SVG_LENGTHTYPE_CM", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_CM")]
     public const ushort SvgLengthTypeCm = 6;
 
     /// <summary>A length in <c>mm</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_MM"/>
     [IdlMember("SVG_LENGTHTYPE_MM", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_MM")]
     public const ushort SvgLengthTypeMm = 7;
 
     /// <summary>A length in <c>in</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_IN"/>
     [IdlMember("SVG_LENGTHTYPE_IN", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_IN")]
     public const ushort SvgLengthTypeIn = 8;
 
     /// <summary>A length in <c>pt</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PT"/>
     [IdlMember("SVG_LENGTHTYPE_PT", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PT")]
     public const ushort SvgLengthTypePt = 9;
 
     /// <summary>A length in <c>pc</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PC"/>
     [IdlMember("SVG_LENGTHTYPE_PC", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__SVG_LENGTHTYPE_PC")]
     public const ushort SvgLengthTypePc = 10;
 
@@ -159,6 +177,7 @@ public sealed class SvgLength
     internal (Element Element, string Attribute)? Context { get; set; }
 
     /// <summary>Gets the type of the unit of the length, one of the <c>SVG_LENGTHTYPE_*</c> constants.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__unitType"/>
     [IdlMember("unitType", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__unitType")]
     public ushort UnitType
     {
@@ -170,6 +189,7 @@ public sealed class SvgLength
     }
 
     /// <summary>https://svgwg.org/svg2-draft/types.html#__svg__SVGLength__value</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__value"/>
     [IdlMember("value", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__value")]
     public float Value
     {
@@ -187,6 +207,7 @@ public sealed class SvgLength
     }
 
     /// <summary>Gets or sets the value of the length in its own unit.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__valueInSpecifiedUnits"/>
     [IdlMember("valueInSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__valueInSpecifiedUnits")]
     public float ValueInSpecifiedUnits
     {
@@ -206,6 +227,7 @@ public sealed class SvgLength
     /// <summary>
     /// Gets or sets the serialized length, e.g. <c>10px</c>; setting an invalid length throws a <c>SyntaxError</c>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__valueAsString"/>
     [IdlMember("valueAsString", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__valueAsString")]
     public string ValueAsString
     {
@@ -229,6 +251,7 @@ public sealed class SvgLength
     }
 
     /// <summary>https://svgwg.org/svg2-draft/types.html#__svg__SVGLength__newValueSpecifiedUnits</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__newValueSpecifiedUnits"/>
     [IdlMember("newValueSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__newValueSpecifiedUnits")]
     public void NewValueSpecifiedUnits(ushort unitType, float valueInSpecifiedUnits)
     {
@@ -243,6 +266,7 @@ public sealed class SvgLength
     }
 
     /// <summary>https://svgwg.org/svg2-draft/types.html#__svg__SVGLength__convertToSpecifiedUnits</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__convertToSpecifiedUnits"/>
     [IdlMember("convertToSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__convertToSpecifiedUnits")]
     public void ConvertToSpecifiedUnits(ushort unitType)
     {
@@ -361,26 +385,32 @@ public sealed class SvgLength
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAngle</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAngle"/>
 [IdlInterface("SVGAngle", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAngle")]
 public sealed class SvgAngle
 {
     /// <summary>The unit is not one of the predefined units.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_UNKNOWN"/>
     [IdlMember("SVG_ANGLETYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_UNKNOWN")]
     public const ushort SvgAngleTypeUnknown = 0;
 
     /// <summary>An angle without unit, in degrees.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_UNSPECIFIED"/>
     [IdlMember("SVG_ANGLETYPE_UNSPECIFIED", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_UNSPECIFIED")]
     public const ushort SvgAngleTypeUnspecified = 1;
 
     /// <summary>An angle in degrees.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_DEG"/>
     [IdlMember("SVG_ANGLETYPE_DEG", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_DEG")]
     public const ushort SvgAngleTypeDeg = 2;
 
     /// <summary>An angle in radians.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_RAD"/>
     [IdlMember("SVG_ANGLETYPE_RAD", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_RAD")]
     public const ushort SvgAngleTypeRad = 3;
 
     /// <summary>An angle in gradians.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_GRAD"/>
     [IdlMember("SVG_ANGLETYPE_GRAD", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__SVG_ANGLETYPE_GRAD")]
     public const ushort SvgAngleTypeGrad = 4;
 
@@ -400,6 +430,7 @@ public sealed class SvgAngle
     internal ISvgValueOwner? Owner { get; set; }
 
     /// <summary>Gets the type of the unit of the angle, one of the <c>SVG_ANGLETYPE_*</c> constants.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__unitType"/>
     [IdlMember("unitType", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__unitType")]
     public ushort UnitType
     {
@@ -411,6 +442,7 @@ public sealed class SvgAngle
     }
 
     /// <summary>Gets or sets the value of the angle, in degrees.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__value"/>
     [IdlMember("value", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__value")]
     public float Value
     {
@@ -428,6 +460,7 @@ public sealed class SvgAngle
     }
 
     /// <summary>Gets or sets the value of the angle in its own unit.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__valueInSpecifiedUnits"/>
     [IdlMember("valueInSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__valueInSpecifiedUnits")]
     public float ValueInSpecifiedUnits
     {
@@ -447,6 +480,7 @@ public sealed class SvgAngle
     /// <summary>
     /// Gets or sets the serialized angle, e.g. <c>45deg</c>; setting an invalid angle throws a <c>SyntaxError</c>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__valueAsString"/>
     [IdlMember("valueAsString", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__valueAsString")]
     public string ValueAsString
     {
@@ -470,6 +504,7 @@ public sealed class SvgAngle
     }
 
     /// <summary>Sets the unit type and the value in that unit of the angle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__newValueSpecifiedUnits"/>
     [IdlMember("newValueSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__newValueSpecifiedUnits")]
     public void NewValueSpecifiedUnits(ushort unitType, float valueInSpecifiedUnits)
     {
@@ -484,6 +519,7 @@ public sealed class SvgAngle
     }
 
     /// <summary>Converts the value of the angle to the given unit type, preserving the angle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__convertToSpecifiedUnits"/>
     [IdlMember("convertToSpecifiedUnits", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__convertToSpecifiedUnits")]
     public void ConvertToSpecifiedUnits(ushort unitType)
     {
@@ -573,62 +609,77 @@ public sealed class SvgAngle
 }
 
 /// <summary>https://svgwg.org/svg2-draft/coords.html#InterfaceSVGPreserveAspectRatio</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGPreserveAspectRatio"/>
 [IdlInterface("SVGPreserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGPreserveAspectRatio")]
 public sealed class SvgPreserveAspectRatio
 {
     /// <summary>The alignment is not one of the predefined values.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_UNKNOWN"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_UNKNOWN")]
     public const ushort SvgPreserveAspectRatioUnknown = 0;
 
     /// <summary>No uniform scaling: the <c>none</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_NONE"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_NONE", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_NONE")]
     public const ushort SvgPreserveAspectRatioNone = 1;
 
     /// <summary>The <c>xMinYMin</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMIN"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMINYMIN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMIN")]
     public const ushort SvgPreserveAspectRatioXMinYMin = 2;
 
     /// <summary>The <c>xMidYMin</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMIN"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMIDYMIN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMIN")]
     public const ushort SvgPreserveAspectRatioXMidYMin = 3;
 
     /// <summary>The <c>xMaxYMin</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMIN"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMAXYMIN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMIN")]
     public const ushort SvgPreserveAspectRatioXMaxYMin = 4;
 
     /// <summary>The <c>xMinYMid</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMID"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMINYMID", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMID")]
     public const ushort SvgPreserveAspectRatioXMinYMid = 5;
 
     /// <summary>The <c>xMidYMid</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMID"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMIDYMID", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMID")]
     public const ushort SvgPreserveAspectRatioXMidYMid = 6;
 
     /// <summary>The <c>xMaxYMid</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMID"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMAXYMID", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMID")]
     public const ushort SvgPreserveAspectRatioXMaxYMid = 7;
 
     /// <summary>The <c>xMinYMax</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMAX"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMINYMAX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMINYMAX")]
     public const ushort SvgPreserveAspectRatioXMinYMax = 8;
 
     /// <summary>The <c>xMidYMax</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMAX"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMIDYMAX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMIDYMAX")]
     public const ushort SvgPreserveAspectRatioXMidYMax = 9;
 
     /// <summary>The <c>xMaxYMax</c> alignment.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMAX"/>
     [IdlMember("SVG_PRESERVEASPECTRATIO_XMAXYMAX", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_PRESERVEASPECTRATIO_XMAXYMAX")]
     public const ushort SvgPreserveAspectRatioXMaxYMax = 10;
 
     /// <summary>The meet-or-slice value is not one of the predefined values.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_UNKNOWN"/>
     [IdlMember("SVG_MEETORSLICE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_UNKNOWN")]
     public const ushort SvgMeetOrSliceUnknown = 0;
 
     /// <summary>The <c>meet</c> value: the viewBox is scaled to fit entirely in the viewport.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_MEET"/>
     [IdlMember("SVG_MEETORSLICE_MEET", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_MEET")]
     public const ushort SvgMeetOrSliceMeet = 1;
 
     /// <summary>The <c>slice</c> value: the viewBox is scaled to cover the entire viewport.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_SLICE"/>
     [IdlMember("SVG_MEETORSLICE_SLICE", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__SVG_MEETORSLICE_SLICE")]
     public const ushort SvgMeetOrSliceSlice = 2;
 
@@ -645,6 +696,7 @@ public sealed class SvgPreserveAspectRatio
     internal ISvgValueOwner? Owner { get; }
 
     /// <summary>Gets or sets the alignment, one of the <c>SVG_PRESERVEASPECTRATIO_*</c> constants.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__align"/>
     [IdlMember("align", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__align")]
     public ushort Align
     {
@@ -668,6 +720,7 @@ public sealed class SvgPreserveAspectRatio
     /// Gets or sets whether the viewBox is fitted (<c>meet</c>) or covers the viewport (<c>slice</c>), one of the
     /// <c>SVG_MEETORSLICE_*</c> constants.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__meetOrSlice"/>
     [IdlMember("meetOrSlice", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGPreserveAspectRatio__meetOrSlice")]
     public ushort MeetOrSlice
     {

@@ -421,7 +421,7 @@ internal sealed partial class BoxTreeBuilder
         var source = rootStyle;
         if (_root.IsHtml(TagId.Html) && !ScrollContainers.HasContainment(rootStyle.Layout))
         {
-            foreach (var child in _root.ChildNodes)
+            foreach (var child in _root.EnumerateChildNodes())
             {
                 if (child is HtmlBodyElement body)
                 {

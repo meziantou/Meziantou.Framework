@@ -43,6 +43,13 @@ public ref struct UnicodeLineBreakEnumerator
     private Unit _next2;
     private int _readAhead;
 
+    // The character that ended the last unit that was read, which rule LB9 looked up: the next unit starts with it.
+    // _lookedUpIndex is -1 when there is none.
+    private int _lookedUpIndex;
+    private int _lookedUpCodePoint;
+    private int _lookedUpLength;
+    private int _lookedUpTuple;
+
     // The units before the position.
     private Unit _previous;
     private Unit _beforePrevious;
@@ -60,12 +67,15 @@ public ref struct UnicodeLineBreakEnumerator
     private int _regionalIndicators;
 
     // The run of Complex_Context characters that the dictionary segments, and the piece of it that is segmented:
-    // _wordStarts has a bit for each index of the piece where a word of the dictionary starts.
+    // _wordStarts has a bit for each index of the piece where a word of the dictionary starts, and _boundaries the
+    // boundaries after the piece that the dictionary already found.
     private int _runStart;
     private int _runEnd;
     private int _pieceStart;
     private int _pieceEnd;
-    private WordStarts _wordStarts;
+    private PieceBits _wordStarts;
+    private PieceBits _boundaries;
+    private int _boundaryLength;
 
     private int _position;
     private bool _isStarted;
@@ -83,6 +93,7 @@ public ref struct UnicodeLineBreakEnumerator
         _previous = new Unit(StartOfText, 0, 0, endsWithJoiner: false);
         _beforePrevious = _previous;
         _beforeSpaces = StartOfText;
+        _lookedUpIndex = -1;
     }
 
     /// <summary>Gets the current break.</summary>
@@ -111,6 +122,11 @@ public ref struct UnicodeLineBreakEnumerator
 
         while (true)
         {
+            if (_previous.Class is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric && _wordBreak is not UnicodeWordBreakBehavior.BreakAll)
+            {
+                SkipAsciiLettersAndDigits();
+            }
+
             var next = Peek(0);
             if (next.Class is EndOfText)
             {
@@ -400,6 +416,7 @@ public ref struct UnicodeLineBreakEnumerator
             _runEnd = end;
             _pieceStart = start;
             _pieceEnd = start;
+            _boundaryLength = 0;
         }
 
         if (index == _runStart)
@@ -408,13 +425,47 @@ public ref struct UnicodeLineBreakEnumerator
         while (index >= _pieceEnd)
         {
             _pieceStart = _pieceEnd;
-            _pieceEnd += _dictionary!.SegmentPiece(_text[_pieceStart.._runEnd], _wordStarts);
+            _pieceEnd += _dictionary!.SegmentPiece(_text[_pieceStart.._runEnd], _wordStarts, _boundaries, ref _boundaryLength);
         }
 
         // A cluster that is longer than a piece has no word.
         var offset = index - _pieceStart;
         return offset < LineBreakDictionary.PieceLength && (_wordStarts[offset >> 6] & (1UL << (offset & 63))) != 0;
     }
+
+    /// <summary>Moves the position over the ASCII letters and digits that follow a letter or a digit, but the last one.</summary>
+    /// <remarks>
+    /// There is no break between a letter or a digit and an ASCII letter or digit (rules LB23, LB25 and LB28), and
+    /// what the rules remember after them only depends on the last two. The last one is read as usual: a combining
+    /// mark can follow it (LB9).
+    /// </remarks>
+    private void SkipAsciiLettersAndDigits()
+    {
+        // The runs are words: a loop is faster than a vectorized search for them.
+        var end = _position;
+        while (end < _text.Length && char.IsAsciiLetterOrDigit(_text[end]))
+        {
+            end++;
+        }
+
+        var skipped = end - _position - 1;
+        if (skipped <= 0)
+            return;
+
+        end = _position + skipped;
+        _beforePrevious = skipped >= 2 ? CreateAsciiUnit(end - 2) : _previous;
+        _previous = CreateAsciiUnit(end - 1);
+        _beforeSpaces = _previous.Class;
+        _isAfterOpeningQuote = false;
+        _number = _previous.Class is LineBreak.Numeric ? 1 : 0;
+        _regionalIndicators = 0;
+        _position = end;
+
+        // The units read ahead start at the old position: they are read again.
+        _readAhead = 0;
+    }
+
+    private readonly Unit CreateAsciiUnit(int index) => new(char.IsAsciiDigit(_text[index]) ? LineBreak.Numeric : LineBreak.Alphabetic, 0, index + 1, endsWithJoiner: false);
 
     /// <summary>Moves the position after the next unit and updates what the rules remember of the text before it.</summary>
     private void Consume()
@@ -489,13 +540,27 @@ public ref struct UnicodeLineBreakEnumerator
     }
 
     /// <summary>Reads a character and the combining marks and zero width joiners it carries (LB9), and resolves its class (LB1, LB10).</summary>
-    private readonly Unit ReadUnit(int index)
+    private Unit ReadUnit(int index)
     {
         if (index >= _text.Length)
             return new Unit(EndOfText, 0, _text.Length, endsWithJoiner: false);
 
-        var codePoint = Unicode.DecodeAt(_text, index, out var length);
-        var value = Resolve(UnicodeProperties.GetLineBreakTuple(codePoint), out var flags);
+        int codePoint;
+        int length;
+        int tuple;
+        if (index == _lookedUpIndex)
+        {
+            codePoint = _lookedUpCodePoint;
+            length = _lookedUpLength;
+            tuple = _lookedUpTuple;
+        }
+        else
+        {
+            codePoint = Unicode.DecodeAt(_text, index, out length);
+            tuple = UnicodeProperties.GetLineBreakTuple(codePoint);
+        }
+
+        var value = Resolve(tuple, out var flags);
         var endsWithJoiner = value is LineBreak.ZWJ;
         index += length;
 
@@ -504,9 +569,21 @@ public ref struct UnicodeLineBreakEnumerator
             // LB9
             while (index < _text.Length)
             {
-                var mark = Resolve(UnicodeProperties.GetLineBreakTuple(Unicode.DecodeAt(_text, index, out length)), out _);
-                if (mark is not (LineBreak.CombiningMark or LineBreak.ZWJ))
+                // The printable ASCII characters are not combining marks: most text does not need the lookup.
+                if (_text[index] is >= ' ' and <= '~')
                     break;
+
+                var markCodePoint = Unicode.DecodeAt(_text, index, out length);
+                var markTuple = UnicodeProperties.GetLineBreakTuple(markCodePoint);
+                var mark = Resolve(markTuple, out _);
+                if (mark is not (LineBreak.CombiningMark or LineBreak.ZWJ))
+                {
+                    _lookedUpIndex = index;
+                    _lookedUpCodePoint = markCodePoint;
+                    _lookedUpLength = length;
+                    _lookedUpTuple = markTuple;
+                    break;
+                }
 
                 endsWithJoiner = mark is LineBreak.ZWJ;
                 index += length;
@@ -566,7 +643,7 @@ public ref struct UnicodeLineBreakEnumerator
     }
 
     [InlineArray(LineBreakDictionary.PieceLength / 64)]
-    private struct WordStarts
+    private struct PieceBits
     {
         private ulong _element;
     }

@@ -190,7 +190,18 @@ internal sealed class RenderedText
 
     private void CollectChildren(Node parent, ComputedStyle parentStyle, ChildrenMode mode)
     {
-        var summary = mode == ChildrenMode.ClosedDetails ? parent.ChildNodes.OfType<Element>().FirstOrDefault(e => e.IsHtml(TagId.Summary)) : null;
+        Element? summary = null;
+        if (mode == ChildrenMode.ClosedDetails)
+        {
+            for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
+            {
+                if (child is Element element && element.IsHtml(TagId.Summary))
+                {
+                    summary = element;
+                    break;
+                }
+            }
+        }
         for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
         {
             if (_range is not null && !_range.IntersectsNode(child))

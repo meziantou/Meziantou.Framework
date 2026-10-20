@@ -13,43 +13,53 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // - WebVtt/: the WebVTT parser, the cues (VttCue, VttRegion) and their rendering.
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#texttrackmode</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttrackmode"/>
 [IdlInterface("TextTrackMode", "https://html.spec.whatwg.org/multipage/media.html#texttrackmode")]
 public enum TextTrackMode
 {
     /// <summary>The track is not active: no cue is active, no event is fired and its cues are not obtained.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-disabled")]
     Disabled,
 
     /// <summary>The track is active (its cues are obtained, the events of its cues are fired), but its cues are not displayed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-hidden"/>
     [IdlMember("hidden", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-hidden")]
     Hidden,
 
     /// <summary>The track is active and its cues are displayed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-showing"/>
     [IdlMember("showing", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-showing")]
     Showing,
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#texttrackkind</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttrackkind"/>
 [IdlInterface("TextTrackKind", "https://html.spec.whatwg.org/multipage/media.html#texttrackkind")]
 public enum TextTrackKind
 {
     /// <summary>The transcription or the translation of the dialog.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-subtitles"/>
     [IdlMember("subtitles", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-subtitles")]
     Subtitles,
 
     /// <summary>The transcription or the translation of the dialog, the sound effects and the other relevant audio information.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-captions"/>
     [IdlMember("captions", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-captions")]
     Captions,
 
     /// <summary>The textual descriptions of the video component of the media resource.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-descriptions"/>
     [IdlMember("descriptions", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-descriptions")]
     Descriptions,
 
     /// <summary>The chapter titles, used to navigate the media resource.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-chapters"/>
     [IdlMember("chapters", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-chapters")]
     Chapters,
 
     /// <summary>The tracks intended for use from script, which are not displayed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-metadata"/>
     [IdlMember("metadata", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-metadata")]
     Metadata,
 }
@@ -64,6 +74,7 @@ internal enum TextTrackReadinessState
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#texttrack</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttrack"/>
 [IdlInterface("TextTrack", "https://html.spec.whatwg.org/multipage/media.html#texttrack")]
 public sealed class TextTrack : EventTarget
 {
@@ -138,14 +149,17 @@ public sealed class TextTrack : EventTarget
     }
 
     /// <summary>Gets the kind of the track (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-kind).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-kind"/>
     [IdlMember("kind", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-kind")]
     public TextTrackKind Kind => TrackElement is { } element ? element.TrackKind : _kind;
 
     /// <summary>Gets the label of the track, or an empty string (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-label).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-label"/>
     [IdlMember("label", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-label")]
     public string Label => TrackElement is { } element ? element.GetAttributeValue("label") ?? "" : _label;
 
     /// <summary>Gets the language of the track (a BCP 47 language tag), or an empty string (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-language).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-language")]
     public string Language => TrackElement is { } element ? element.GetAttributeValue("srclang") ?? "" : _language;
 
@@ -153,6 +167,7 @@ public sealed class TextTrack : EventTarget
     /// Gets the identifier of the track (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-id): the <c>id</c>
     /// attribute of its track element, the identifier of a track of the media resource, or an empty string.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-id")]
     public string Id => TrackElement is { } element ? element.GetAttributeValue("id") ?? "" : _id;
 
@@ -160,10 +175,12 @@ public sealed class TextTrack : EventTarget
     /// Gets the source buffer that created the track (https://w3c.github.io/media-source/#dom-texttrack-sourcebuffer): always
     /// null (the text tracks of the byte streams of the Media Source Extensions are not supported).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-texttrack-sourcebuffer"/>
     [IdlMember("sourceBuffer", "https://w3c.github.io/media-source/#dom-texttrack-sourcebuffer")]
     public SourceBuffer? SourceBuffer => null;
 
     /// <summary>Gets the in-band metadata track dispatch type of a metadata track of the media resource, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-inbandmetadatatrackdispatchtype"/>
     [IdlMember("inBandMetadataTrackDispatchType", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-inbandmetadatatrackdispatchtype")]
     public string InBandMetadataTrackDispatchType { get; } = "";
 
@@ -172,6 +189,7 @@ public sealed class TextTrack : EventTarget
     /// whose mode is not <see cref="TextTrackMode.Disabled"/> obtains the cues of its track element; a <c>change</c> event
     /// is fired at the list of text tracks of the media element when the mode changes.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-mode"/>
     [IdlMember("mode", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-mode")]
     public TextTrackMode Mode
     {
@@ -207,6 +225,7 @@ public sealed class TextTrack : EventTarget
     /// Gets the cues of the track, in text track cue order (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-cues),
     /// or null when the track is disabled. The list is live.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-cues"/>
     [IdlMember("cues", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-cues")]
     public TextTrackCueList? Cues => _mode == TextTrackMode.Disabled ? null : field ??= new TextTrackCueList(this, activeOnly: false);
 
@@ -215,6 +234,7 @@ public sealed class TextTrack : EventTarget
     /// text track cue order (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues), or null when the
     /// track is disabled. The list is live.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues"/>
     [IdlMember("activeCues", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues")]
     public TextTrackCueList? ActiveCues => _mode == TextTrackMode.Disabled ? null : field ??= new TextTrackCueList(this, activeOnly: true);
 
@@ -222,6 +242,7 @@ public sealed class TextTrack : EventTarget
     /// Adds a cue to the list of cues of the track (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-addcue);
     /// the cue is first removed from the track it belongs to.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-addcue"/>
     [IdlMember("addCue", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-addcue")]
     public void AddCue(TextTrackCue cue)
     {
@@ -251,6 +272,7 @@ public sealed class TextTrack : EventTarget
     /// Removes a cue from the list of cues of the track (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-removecue).
     /// </summary>
     /// <exception cref="DomException">A <c>NotFoundError</c> when the cue is not in the list of cues of the track.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-removecue"/>
     [IdlMember("removeCue", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-removecue")]
     public void RemoveCue(TextTrackCue cue)
     {
@@ -378,6 +400,7 @@ public sealed class TextTrack : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>cuechange</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttrack-oncuechange"/>
     [IdlMember("oncuechange", "https://html.spec.whatwg.org/multipage/media.html#handler-texttrack-oncuechange")]
     public Action<Event>? OnCueChange
     {
@@ -387,6 +410,7 @@ public sealed class TextTrack : EventTarget
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#texttracklist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttracklist"/>
 [IdlInterface("TextTrackList", "https://html.spec.whatwg.org/multipage/media.html#texttracklist")]
 public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
 {
@@ -448,10 +472,12 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
     internal void InvalidateOrder() => _tracks = null;
 
     /// <summary>Gets the number of tracks in the list.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-length")]
     public uint Length => (uint)Tracks.Count;
 
     /// <summary>Gets the track at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public TextTrack? this[uint index] => index < (uint)Tracks.Count ? Tracks[(int)index] : null;
@@ -466,6 +492,7 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
     public int Count => Tracks.Count;
 
     /// <summary>Returns the first track of the list with the given identifier, or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-gettrackbyid"/>
     [IdlMember("getTrackById", "https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-gettrackbyid")]
     public TextTrack? GetTrackById(string id)
     {
@@ -474,6 +501,7 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onchange")]
     public Action<Event>? OnChange
     {
@@ -482,6 +510,7 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>addtrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onaddtrack"/>
     [IdlMember("onaddtrack", "https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onaddtrack")]
     public Action<Event>? OnAddTrack
     {
@@ -490,6 +519,7 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
     }
 
     /// <summary>Gets or sets the event handler of the <c>removetrack</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onremovetrack"/>
     [IdlMember("onremovetrack", "https://html.spec.whatwg.org/multipage/media.html#handler-texttracklist-onremovetrack")]
     public Action<Event>? OnRemoveTrack
     {
@@ -550,6 +580,7 @@ public sealed class TextTrackList : EventTarget, IReadOnlyList<TextTrack>
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/media.html#texttrackcuelist</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttrackcuelist"/>
 [IdlInterface("TextTrackCueList", "https://html.spec.whatwg.org/multipage/media.html#texttrackcuelist")]
 public sealed class TextTrackCueList : IReadOnlyList<TextTrackCue>
 {
@@ -582,10 +613,12 @@ public sealed class TextTrackCueList : IReadOnlyList<TextTrackCue>
     }
 
     /// <summary>Gets the number of cues in the list.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-length")]
     public uint Length => (uint)Cues.Count;
 
     /// <summary>Gets the cue at the given index (the cues are in text track cue order), or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public TextTrackCue? this[uint index] => index < (uint)Cues.Count ? Cues[(int)index] : null;
@@ -603,6 +636,7 @@ public sealed class TextTrackCueList : IReadOnlyList<TextTrackCue>
     /// Returns the first cue of the list (in text track cue order) with the given identifier, or null when there is none or
     /// when the identifier is the empty string.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-getcuebyid"/>
     [IdlMember("getCueById", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-getcuebyid")]
     public TextTrackCue? GetCueById(string id)
     {
@@ -621,6 +655,7 @@ public sealed class TextTrackCueList : IReadOnlyList<TextTrackCue>
 /// https://html.spec.whatwg.org/multipage/media.html#texttrackcue: the unit of time-sensitive data of a text track. The
 /// cues are <see cref="VttCue"/> objects.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/media.html#texttrackcue"/>
 [IdlInterface("TextTrackCue", "https://html.spec.whatwg.org/multipage/media.html#texttrackcue")]
 public abstract class TextTrackCue : EventTarget
 {
@@ -669,10 +704,12 @@ public abstract class TextTrackCue : EventTarget
     }
 
     /// <summary>Gets the text track the cue belongs to, or null (https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-track).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-track"/>
     [IdlMember("track", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-track")]
     public TextTrack? Track { get; internal set; }
 
     /// <summary>Gets or sets the identifier of the cue (https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-id).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-id")]
     public string Id
     {
@@ -686,6 +723,7 @@ public abstract class TextTrackCue : EventTarget
     } = "";
 
     /// <summary>Gets or sets the start time of the cue, in seconds (https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-starttime).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-starttime"/>
     [IdlMember("startTime", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-starttime")]
     public double StartTime
     {
@@ -708,6 +746,7 @@ public abstract class TextTrackCue : EventTarget
     /// positive infinity for an unbounded cue.
     /// </summary>
     /// <exception cref="ArgumentException">The value is negative infinity or NaN.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-endtime"/>
     [IdlMember("endTime", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-endtime")]
     public double EndTime
     {
@@ -729,10 +768,12 @@ public abstract class TextTrackCue : EventTarget
     /// Gets or sets a value indicating whether the playback of the media resource pauses when the end of the cue is reached
     /// (https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-pauseonexit).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-pauseonexit"/>
     [IdlMember("pauseOnExit", "https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcue-pauseonexit")]
     public bool PauseOnExit { get; set; }
 
     /// <summary>Gets or sets the event handler of the <c>enter</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttrackcue-onenter"/>
     [IdlMember("onenter", "https://html.spec.whatwg.org/multipage/media.html#handler-texttrackcue-onenter")]
     public Action<Event>? OnEnter
     {
@@ -741,6 +782,7 @@ public abstract class TextTrackCue : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>exit</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#handler-texttrackcue-onexit"/>
     [IdlMember("onexit", "https://html.spec.whatwg.org/multipage/media.html#handler-texttrackcue-onexit")]
     public Action<Event>? OnExit
     {

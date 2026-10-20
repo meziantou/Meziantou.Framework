@@ -1,14 +1,17 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A brand of the user agent and its version (https://wicg.github.io/ua-client-hints/#dictdef-navigatoruabrandversion).</summary>
+/// <seealso href="https://wicg.github.io/ua-client-hints/#dictdef-navigatoruabrandversion"/>
 [IdlInterface("NavigatorUABrandVersion", "https://wicg.github.io/ua-client-hints/#dictdef-navigatoruabrandversion")]
 public sealed class NavigatorUABrandVersion
 {
     /// <summary>Gets or sets the brand: the commercial name of the user agent, or of an equivalence class (e.g. its rendering engine).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-brand"/>
     [IdlMember("brand", "https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-brand")]
     public string? Brand { get; init; }
 
     /// <summary>Gets or sets the version of the brand.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-version"/>
     [IdlMember("version", "https://wicg.github.io/ua-client-hints/#dom-navigatoruabrandversion-version")]
     public string? Version { get; init; }
 }
@@ -17,67 +20,83 @@ public sealed class NavigatorUABrandVersion
 /// The values returned by <see cref="NavigatorUAData.GetHighEntropyValues"/> (https://wicg.github.io/ua-client-hints/#dictdef-uadatavalues):
 /// the low-entropy values, and the high-entropy values that were requested (the other members are null).
 /// </summary>
+/// <seealso href="https://wicg.github.io/ua-client-hints/#dictdef-uadatavalues"/>
 [IdlInterface("UADataValues", "https://wicg.github.io/ua-client-hints/#dictdef-uadatavalues")]
 public sealed class UADataValues
 {
     /// <summary>Gets or sets the architecture of the platform (<c>x86</c>, <c>arm</c> or the empty string).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-architecture"/>
     [IdlMember("architecture", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-architecture")]
     public string? Architecture { get; init; }
 
     /// <summary>Gets or sets the bitness of the architecture of the platform (<c>32</c>, <c>64</c> or the empty string).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-bitness"/>
     [IdlMember("bitness", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-bitness")]
     public string? Bitness { get; init; }
 
     /// <summary>Gets or sets the brands of the user agent and their significant versions.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-brands"/>
     [IdlMember("brands", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-brands")]
     public IReadOnlyList<NavigatorUABrandVersion>? Brands { get; init; }
 
     /// <summary>Gets or sets the form factors of the device.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-formfactors"/>
     [IdlMember("formFactors", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-formfactors")]
     public IReadOnlyList<string>? FormFactors { get; init; }
 
     /// <summary>Gets or sets the brands of the user agent and their full versions.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-fullversionlist"/>
     [IdlMember("fullVersionList", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-fullversionlist")]
     public IReadOnlyList<NavigatorUABrandVersion>? FullVersionList { get; init; }
 
     /// <summary>Gets or sets the model of the device.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-model"/>
     [IdlMember("model", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-model")]
     public string? Model { get; init; }
 
     /// <summary>Gets or sets whether the user agent prefers a mobile experience.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-mobile"/>
     [IdlMember("mobile", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-mobile")]
     public bool? Mobile { get; init; }
 
     /// <summary>Gets or sets the platform brand.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platform"/>
     [IdlMember("platform", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platform")]
     public string? Platform { get; init; }
 
     /// <summary>Gets or sets the version of the platform.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platformversion"/>
     [IdlMember("platformVersion", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-platformversion")]
     public string? PlatformVersion { get; init; }
 
     /// <summary>Gets or sets the full version of the user agent (deprecated in favor of <see cref="FullVersionList"/>).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-uafullversion"/>
     [IdlMember("uaFullVersion", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-uafullversion")]
     public string? UAFullVersion { get; init; }
 
     /// <summary>Gets or sets whether the user agent runs in 32-bit mode on 64-bit Windows.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-uadatavalues-wow64"/>
     [IdlMember("wow64", "https://wicg.github.io/ua-client-hints/#dom-uadatavalues-wow64")]
     public bool? Wow64 { get; init; }
 }
 
 /// <summary>The low-entropy values returned by <see cref="NavigatorUAData.ToJson"/> (https://wicg.github.io/ua-client-hints/#dictdef-ualowentropyjson).</summary>
+/// <seealso href="https://wicg.github.io/ua-client-hints/#dictdef-ualowentropyjson"/>
 [IdlInterface("UALowEntropyJSON", "https://wicg.github.io/ua-client-hints/#dictdef-ualowentropyjson")]
 public sealed class UALowEntropyJson
 {
     /// <summary>Gets or sets the brands of the user agent and their significant versions.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-brands"/>
     [IdlMember("brands", "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-brands")]
     public IReadOnlyList<NavigatorUABrandVersion>? Brands { get; init; }
 
     /// <summary>Gets or sets whether the user agent prefers a mobile experience.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-mobile"/>
     [IdlMember("mobile", "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-mobile")]
     public bool? Mobile { get; init; }
 
     /// <summary>Gets or sets the platform brand.</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-platform"/>
     [IdlMember("platform", "https://wicg.github.io/ua-client-hints/#dom-ualowentropyjson-platform")]
     public string? Platform { get; init; }
 }
@@ -87,6 +106,7 @@ public sealed class UALowEntropyJson
 /// <c>navigator.userAgentData</c> in the windows and the workers of the secure contexts): the values of
 /// <see cref="BrowsingContextOptions.ClientHints"/>, also sent in the <c>Sec-CH-UA-*</c> request headers.
 /// </summary>
+/// <seealso href="https://wicg.github.io/ua-client-hints/#navigatoruadata"/>
 [IdlInterface("NavigatorUAData", "https://wicg.github.io/ua-client-hints/#navigatoruadata")]
 public sealed class NavigatorUAData
 {
@@ -97,14 +117,17 @@ public sealed class NavigatorUAData
     private ClientHintsOptions Values => _global.Options.ClientHints ?? ClientHintsOptions.Default;
 
     /// <summary>Gets the brands of the user agent and their significant versions (https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands"/>
     [IdlMember("brands", "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands")]
     public IReadOnlyList<NavigatorUABrandVersion> Brands => Values.Brands;
 
     /// <summary>Gets whether the user agent prefers a mobile experience (https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-mobile).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-mobile"/>
     [IdlMember("mobile", "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-mobile")]
     public bool Mobile => Values.Mobile;
 
     /// <summary>Gets the platform brand (https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-platform).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-platform"/>
     [IdlMember("platform", "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-platform")]
     public string Platform => Values.Platform;
 
@@ -116,6 +139,7 @@ public sealed class NavigatorUAData
     /// completes in a task of the event loop of the global object.
     /// </summary>
     /// <param name="hints">The names of the high-entropy values.</param>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-gethighentropyvalues"/>
     [IdlMember("getHighEntropyValues", "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-gethighentropyvalues")]
     public Task<UADataValues> GetHighEntropyValues(IReadOnlyList<string> hints)
     {
@@ -145,6 +169,7 @@ public sealed class NavigatorUAData
     }
 
     /// <summary>Returns the low-entropy values (https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-tojson).</summary>
+    /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-tojson"/>
     [IdlMember("toJSON", "https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-tojson")]
     public UALowEntropyJson ToJson()
     {

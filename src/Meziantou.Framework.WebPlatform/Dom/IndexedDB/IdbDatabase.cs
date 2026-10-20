@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A connection to a database (https://w3c.github.io/IndexedDB/#idbdatabase).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbdatabase"/>
 [IdlInterface("IDBDatabase", "https://w3c.github.io/IndexedDB/#idbdatabase")]
 public sealed class IdbDatabase : EventTarget
 {
@@ -47,18 +48,22 @@ public sealed class IdbDatabase : EventTarget
     internal bool UpgradeAborted { get; set; }
 
     /// <summary>Gets the name of the database.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-name"/>
     [IdlMember("name", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-name")]
     public string Name { get; }
 
     /// <summary>Gets the version of the connection.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-version"/>
     [IdlMember("version", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-version")]
     public ulong Version => VersionValue;
 
     /// <summary>Gets the sorted names of the object stores of the connection.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-objectstorenames"/>
     [IdlMember("objectStoreNames", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-objectstorenames")]
     public DomStringList ObjectStoreNames => CreateSortedNameList(ObjectStoreSet.Select(store => store.Name));
 
     /// <summary>The event handler of the abort events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-onabort"/>
     [IdlMember("onabort", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onabort")]
     public Action<Event>? OnAbort
     {
@@ -67,6 +72,7 @@ public sealed class IdbDatabase : EventTarget
     }
 
     /// <summary>The event handler of the close events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-onclose"/>
     [IdlMember("onclose", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onclose")]
     public Action<Event>? OnClose
     {
@@ -75,6 +81,7 @@ public sealed class IdbDatabase : EventTarget
     }
 
     /// <summary>The event handler of the error events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-onerror"/>
     [IdlMember("onerror", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onerror")]
     public Action<Event>? OnError
     {
@@ -83,6 +90,7 @@ public sealed class IdbDatabase : EventTarget
     }
 
     /// <summary>The event handler of the versionchange events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-onversionchange"/>
     [IdlMember("onversionchange", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-onversionchange")]
     public Action<Event>? OnVersionChange
     {
@@ -94,6 +102,7 @@ public sealed class IdbDatabase : EventTarget
     /// <param name="storeNames">The name of an object store, or a list of names.</param>
     /// <param name="mode">The mode of the transaction: <see cref="IdbTransactionMode.ReadOnly"/> or <see cref="IdbTransactionMode.ReadWrite"/>.</param>
     /// <param name="options">The options of the transaction.</param>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-transaction"/>
     [IdlMember("transaction", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-transaction")]
     public IdbTransaction Transaction(object? storeNames, IdbTransactionMode mode = IdbTransactionMode.ReadOnly, IdbTransactionOptions? options = null)
     {
@@ -134,10 +143,12 @@ public sealed class IdbDatabase : EventTarget
     }
 
     /// <summary>Closes the connection once its transactions are finished (https://w3c.github.io/IndexedDB/#dom-idbdatabase-close).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-close"/>
     [IdlMember("close", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-close")]
     public void Close() => CloseConnection(forced: false);
 
     /// <summary>Creates an object store in the upgrade transaction (https://w3c.github.io/IndexedDB/#dom-idbdatabase-createobjectstore).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-createobjectstore"/>
     [IdlMember("createObjectStore", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-createobjectstore")]
     public IdbObjectStore CreateObjectStore(string name, IdbObjectStoreParameters? options = null)
     {
@@ -166,6 +177,7 @@ public sealed class IdbDatabase : EventTarget
     }
 
     /// <summary>Deletes an object store in the upgrade transaction (https://w3c.github.io/IndexedDB/#dom-idbdatabase-deleteobjectstore).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbdatabase-deleteobjectstore"/>
     [IdlMember("deleteObjectStore", "https://w3c.github.io/IndexedDB/#dom-idbdatabase-deleteobjectstore")]
     public void DeleteObjectStore(string name)
     {

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using GraphemeBreak = Meziantou.Framework.UnicodeGraphemeClusterBreak;
 using WordBreak = Meziantou.Framework.UnicodeWordBreak;
 
@@ -5,6 +6,9 @@ namespace Meziantou.Framework;
 
 public static partial class Unicode
 {
+    // The first code point that can extend a grapheme cluster: below it, every code point is Control, CR, LF or Other.
+    private const int MinGraphemeExtendingCodePoint = 0x300;
+
     /// <summary>Gets the length of the first extended grapheme cluster of a text.</summary>
     /// <param name="text">The text.</param>
     /// <returns>The number of UTF-16 code units of the cluster; 0 when <paramref name="text"/> is empty.</returns>
@@ -22,6 +26,19 @@ public static partial class Unicode
         if (text.IsEmpty)
             return 0;
 
+        // Every code point below U+0300 is Control, CR, LF or Other, and none is Prepend, Extend or Linker: there is a
+        // boundary between two of them (rules GB4, GB5 and GB999), except between CR and LF (GB3).
+        if (text.Length == 1)
+            return 1;
+
+        if (text[0] < MinGraphemeExtendingCodePoint && text[1] < MinGraphemeExtendingCodePoint)
+            return text[0] == '\r' && text[1] == '\n' ? 2 : 1;
+
+        return GetGraphemeClusterLengthCore(text);
+    }
+
+    private static int GetGraphemeClusterLengthCore(ReadOnlySpan<char> text)
+    {
         var tuple = UnicodeProperties.GetSegmentationTuple(DecodeAt(text, 0, out var index));
         var previous = (GraphemeBreak)(tuple & 0x1F);
 
@@ -265,6 +282,21 @@ public static partial class Unicode
 
         while (index < text.Length)
         {
+            // A run of ASCII letters, digits and low lines after a letter, a digit or a low line is part of the
+            // segment (rules WB5, WB8, WB9, WB10, WB13a and WB13b): skip it with a vectorized search.
+            if (previous is WordBreak.ALetter or WordBreak.HebrewLetter or WordBreak.Numeric or WordBreak.ExtendNumLet
+                && IsAsciiWordCharacter(text[index]))
+            {
+                var end = GetAsciiWordRunEnd(text, index);
+                beforePrevious = end - index >= 2 ? GetAsciiWordBreak(text[end - 2]) : previous;
+                hasBeforePrevious = true;
+                previous = GetAsciiWordBreak(text[end - 1]);
+                actualPrevious = previous;
+                regionalIndicators = 0;
+                index = end;
+                continue;
+            }
+
             tuple = UnicodeProperties.GetSegmentationTuple(DecodeAt(text, index, out var length));
             var next = (WordBreak)(tuple >> 8);
 
@@ -309,6 +341,29 @@ public static partial class Unicode
 
         return index;
     }
+
+    private static bool IsAsciiWordCharacter(char value) => char.IsAsciiLetterOrDigit(value) || value == '_';
+
+    // Not inlined: it would make the loop of GetWordSegmentLength slower for the text it does not apply to. The runs
+    // are words: a loop is faster than a vectorized search for them.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int GetAsciiWordRunEnd(ReadOnlySpan<char> text, int index)
+    {
+        while (index < text.Length && IsAsciiWordCharacter(text[index]))
+        {
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>Gets the Word_Break value of an ASCII letter, digit or low line.</summary>
+    private static WordBreak GetAsciiWordBreak(char value) => value switch
+    {
+        '_' => WordBreak.ExtendNumLet,
+        >= '0' and <= '9' => WordBreak.Numeric,
+        _ => WordBreak.ALetter,
+    };
 
     /// <summary>Applies the rules WB5 to WB16 to the classes around a position.</summary>
     private static bool IsWordJoined(WordBreak beforePrevious, WordBreak previous, WordBreak next, ReadOnlySpan<char> text, int afterNext, int regionalIndicators)

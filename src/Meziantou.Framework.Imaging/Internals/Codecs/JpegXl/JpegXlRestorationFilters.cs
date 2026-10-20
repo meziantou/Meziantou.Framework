@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -9,8 +10,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// edge-preserving filter, which averages each sample with the neighbors that look like it.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The filters read the samples outside the frame as the mirror image of the samples inside, the edge sample included.
-/// Each one reads a copy of the channels that has that border and writes the channels in place.
+/// </para>
+/// <para>
+/// They run as a pipeline over the rows of the frame: each filter (the Gabor-like filter, then each step of the
+/// edge-preserving filter) keeps the rows it reads in a ring of 2 r + 1 rows with a border of r mirrored samples on each
+/// side, where r is the reach of the filter (1, then 3, 2 and 1). It produces a row as soon as it holds the rows around
+/// it, and writes it in the ring of the next filter; the last filter writes the channels in place, below the rows the
+/// first one has already copied. The result is the one of the filters applied to the whole frame one after the other.
+/// </para>
+/// <para>
+/// A step of the edge-preserving filter computes, once for each row, the absolute differences of the samples with their
+/// neighbor in each direction of the step, then their sums over the patch: the distance of each sample to that neighbor.
+/// The distance of a sample to its neighbor in the opposite direction is the distance of that neighbor, since the
+/// absolute difference of two samples does not depend on their order; the sums keep the order of the patch.
+/// </para>
 /// </remarks>
 internal static class JpegXlRestorationFilters
 {
@@ -20,10 +35,36 @@ internal static class JpegXlRestorationFilters
     /// <summary>The inverse strength below which the edge-preserving filter leaves a block as it is: a strength under 0.3.</summary>
     private const float MinInverseSigma = -3.90524291751269967465540850526868f;
 
-    private const int Border = 3;
+    /// <summary>The step of the pipeline that is the Gabor-like filter; the steps of the edge-preserving filter are 0 to 2.</summary>
+    private const int GaborishStep = -1;
+
+    /// <summary>The largest reach of a filter: the first step of the edge-preserving filter.</summary>
+    private const int MaxBorder = 3;
 
     /// <summary>The largest number of samples over which a neighbor is compared with a sample.</summary>
     private const int MaxPatchLength = 5;
+
+    /// <summary>The largest number of neighbors averaged with a sample.</summary>
+    private const int MaxNeighbors = 12;
+
+    /// <summary>Gets the neighbors that the first step averages with a sample, as (row, column) offsets.</summary>
+    private static ReadOnlySpan<sbyte> WideNeighbors => [-2, 0, -1, -1, -1, 0, -1, 1, 0, -2, 0, -1, 0, 1, 0, 2, 1, -1, 1, 0, 1, 1, 2, 0];
+
+    /// <summary>Gets the neighbors that the other steps average with a sample.</summary>
+    private static ReadOnlySpan<sbyte> CrossNeighbors => [-1, 0, 0, -1, 0, 1, 1, 0];
+
+    /// <summary>Gets the samples over which a neighbor is compared with the sample: a cross of five, or, in the last step, the sample itself.</summary>
+    private static ReadOnlySpan<sbyte> Cross => [0, 0, -1, 0, 0, -1, 1, 0, 0, 1];
+
+    /// <summary>
+    /// Gets the directions whose absolute differences the first step computes once per row: every neighbor is one of them
+    /// or its opposite, and the difference of a sample with its neighbor in the opposite direction is the difference
+    /// computed for that neighbor.
+    /// </summary>
+    private static ReadOnlySpan<sbyte> WideDirections => [2, 0, 1, 1, 1, 0, 1, -1, 0, 2, 0, 1];
+
+    /// <summary>Gets the directions whose absolute differences the other steps compute once per row.</summary>
+    private static ReadOnlySpan<sbyte> CrossDirections => [1, 0, 0, 1];
 
     /// <summary>
     /// Computes, for each block of 8x8 samples of a VarDCT frame, the inverse of the strength of the edge-preserving filter:
@@ -63,31 +104,90 @@ internal static class JpegXlRestorationFilters
     public static void ApplyGaborish(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, AllocationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filter);
-        var paddedWidth = width + 2;
-        using var padded = Av1PooledArray<float>.Rent(scope, (long)paddedWidth * (height + 2), clear: false);
-        for (var c = 0; c < 3; c++)
-        {
-            // The weights of the center, of the four sides and of the four corners, normalized
-            var side = filter.GaborWeights[c * 2];
-            var corner = filter.GaborWeights[(c * 2) + 1];
-            var scale = 1f / (1f + (4f * (side + corner)));
-            var centerWeight = scale;
-            var sideWeight = side * scale;
-            var cornerWeight = corner * scale;
-            var plane = planes[c].Span;
-            CopyWithBorder(plane, stride, width, height, padded.Span, 1);
-            for (var y = 0; y < height; y++)
-            {
-                if ((y & 63) == 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
+        Run(planes, stride, width, height, filter, isGaborEnabled: true, epfIterations: 0, inverseSigma: default, blocksWide: 0, scope, cancellationToken);
+    }
 
-                var top = padded.Span.Slice(y * paddedWidth, paddedWidth);
-                var middle = padded.Span.Slice((y + 1) * paddedWidth, paddedWidth);
-                var bottom = padded.Span.Slice((y + 2) * paddedWidth, paddedWidth);
-                GaborishRow(top, middle, bottom, centerWeight, sideWeight, cornerWeight, plane.Slice(y * stride, width));
+    /// <summary>Applies the steps of the edge-preserving filter that the number of iterations of the frame selects.</summary>
+    /// <param name="planes">The samples of each channel, in rows of <paramref name="stride"/> values.</param>
+    /// <param name="stride">The distance between two rows.</param>
+    /// <param name="width">The width of the frame.</param>
+    /// <param name="height">The height of the frame.</param>
+    /// <param name="filter">The parameters of the filter.</param>
+    /// <param name="inverseSigma">The inverse strength of each block of 8x8 samples, in rows of <paramref name="blocksWide"/> values.</param>
+    /// <param name="blocksWide">The width of the frame, in blocks.</param>
+    /// <param name="scope">The scope of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    public static void ApplyEdgePreservingFilter(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        Run(planes, stride, width, height, filter, isGaborEnabled: false, filter.EpfIterations, inverseSigma, blocksWide, scope, cancellationToken);
+    }
+
+    /// <summary>
+    /// Applies the Gabor-like filter if the frame enables it, then the steps of the edge-preserving filter, in one pass over
+    /// the rows.
+    /// </summary>
+    /// <param name="planes">The samples of each channel, in rows of <paramref name="stride"/> values.</param>
+    /// <param name="stride">The distance between two rows.</param>
+    /// <param name="width">The width of the frame.</param>
+    /// <param name="height">The height of the frame.</param>
+    /// <param name="filter">The parameters of the filters.</param>
+    /// <param name="inverseSigma">The inverse strength of each block of 8x8 samples, in rows of <paramref name="blocksWide"/> values; not read without edge-preserving filter.</param>
+    /// <param name="blocksWide">The width of the frame, in blocks.</param>
+    /// <param name="scope">The scope of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    public static void Apply(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        Run(planes, stride, width, height, filter, filter.IsGaborEnabled, filter.EpfIterations, inverseSigma, blocksWide, scope, cancellationToken);
+    }
+
+    private static void Run(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, bool isGaborEnabled, int epfIterations, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        // Three iterations add a first step with a wide neighborhood; two add a last step that compares single samples
+        Span<int> steps = stackalloc int[4];
+        var count = 0;
+        if (isGaborEnabled)
+        {
+            steps[count++] = GaborishStep;
+        }
+
+        if (epfIterations >= 3)
+        {
+            steps[count++] = 0;
+        }
+
+        if (epfIterations >= 1)
+        {
+            steps[count++] = 1;
+        }
+
+        if (epfIterations >= 2)
+        {
+            steps[count++] = 2;
+        }
+
+        if (count == 0 || width <= 0 || height <= 0)
+            return;
+
+        Span<Stage> stages = stackalloc Stage[count];
+        var length = 0L;
+        for (var s = 0; s < count; s++)
+        {
+            stages[s] = new Stage(steps[s], width, length);
+            length += stages[s].Length;
+        }
+
+        using var buffer = Av1PooledArray<float>.Rent(scope, length, clear: false);
+        var pipeline = new Pipeline(planes[0].Span, planes[1].Span, planes[2].Span, stride, width, height, buffer.Span, stages, filter, inverseSigma, blocksWide);
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
             }
+
+            pipeline.Receive(y);
         }
     }
 
@@ -132,277 +232,514 @@ internal static class JpegXlRestorationFilters
         }
     }
 
-    /// <summary>Applies the steps of the edge-preserving filter that the number of iterations of the frame selects.</summary>
-    /// <param name="planes">The samples of each channel, in rows of <paramref name="stride"/> values.</param>
-    /// <param name="stride">The distance between two rows.</param>
-    /// <param name="width">The width of the frame.</param>
-    /// <param name="height">The height of the frame.</param>
-    /// <param name="filter">The parameters of the filter.</param>
-    /// <param name="inverseSigma">The inverse strength of each block of 8x8 samples, in rows of <paramref name="blocksWide"/> values.</param>
-    /// <param name="blocksWide">The width of the frame, in blocks.</param>
-    /// <param name="scope">The scope of the working memory.</param>
-    /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void ApplyEdgePreservingFilter(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    /// <summary>Gets the neighbors that a step of the edge-preserving filter averages with a sample, as (row, column) offsets.</summary>
+    internal static ReadOnlySpan<sbyte> GetNeighbors(int step) => step == 0 ? WideNeighbors : CrossNeighbors;
+
+    /// <summary>Gets the samples over which a step of the edge-preserving filter compares a neighbor with the sample, as (row, column) offsets.</summary>
+    internal static ReadOnlySpan<sbyte> GetPatch(int step) => step == 2 ? Cross[..2] : Cross;
+
+    /// <summary>Gets the directions whose absolute differences a step of the edge-preserving filter computes once per row, as (row, column) offsets.</summary>
+    internal static ReadOnlySpan<sbyte> GetDirections(int step) => step == 0 ? WideDirections : CrossDirections;
+
+    /// <summary>
+    /// Computes the absolute difference of each sample of <paramref name="first"/> with the sample of
+    /// <paramref name="second"/> at the same position: <c>|first - second|</c>, the term of the distance between a sample
+    /// and a neighbor.
+    /// </summary>
+    internal static void AbsoluteDifferences(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> differences)
     {
-        ArgumentNullException.ThrowIfNull(filter);
-        if (filter.EpfIterations == 0)
-            return;
+        var length = differences.Length;
+        if (first.Length < length || second.Length < length)
+            throw new ArgumentOutOfRangeException(nameof(differences));
 
-        var paddedWidth = width + (2 * Border);
-        var paddedLength = (long)paddedWidth * (height + (2 * Border));
-        using var padded = Av1PooledArray<float>.Rent(scope, 3 * paddedLength, clear: false);
-
-        // Three iterations add a first step with a wide neighborhood; two add a last step that compares single samples
-        if (filter.EpfIterations >= 3)
+        ref var a = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var b = ref unsafe(MemoryMarshal.GetReference(second));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(differences));
+        var x = 0;
+        if (Vector256.IsHardwareAccelerated)
         {
-            ApplyStep(planes, stride, width, height, filter, inverseSigma, blocksWide, padded.Span, step: 0, cancellationToken);
-        }
-
-        ApplyStep(planes, stride, width, height, filter, inverseSigma, blocksWide, padded.Span, step: 1, cancellationToken);
-        if (filter.EpfIterations >= 2)
-        {
-            ApplyStep(planes, stride, width, height, filter, inverseSigma, blocksWide, padded.Span, step: 2, cancellationToken);
-        }
-    }
-
-    private static void ApplyStep(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, Span<float> padded, int step, CancellationToken cancellationToken)
-    {
-        // The neighbors that are averaged with a sample, as (row, column) offsets
-        ReadOnlySpan<sbyte> wideNeighbors = [-2, 0, -1, -1, -1, 0, -1, 1, 0, -2, 0, -1, 0, 1, 0, 2, 1, -1, 1, 0, 1, 1, 2, 0];
-        ReadOnlySpan<sbyte> crossNeighbors = [-1, 0, 0, -1, 0, 1, 1, 0];
-        var neighbors = step == 0 ? wideNeighbors : crossNeighbors;
-
-        // A neighbor is compared with the sample over a cross of five samples, or, in the last step, by itself
-        ReadOnlySpan<sbyte> cross = [0, 0, -1, 0, 0, -1, 1, 0, 0, 1];
-        var patch = step == 2 ? cross[..2] : cross;
-
-        var paddedWidth = width + (2 * Border);
-        var paddedLength = paddedWidth * (height + (2 * Border));
-        var paddedX = padded[..paddedLength];
-        var paddedY = padded.Slice(paddedLength, paddedLength);
-        var paddedB = padded.Slice(2 * paddedLength, paddedLength);
-        CopyWithBorder(planes[0].Span, stride, width, height, paddedX, Border);
-        CopyWithBorder(planes[1].Span, stride, width, height, paddedY, Border);
-        CopyWithBorder(planes[2].Span, stride, width, height, paddedB, Border);
-
-        Span<int> neighborOffsets = stackalloc int[neighbors.Length / 2];
-        for (var i = 0; i < neighborOffsets.Length; i++)
-        {
-            neighborOffsets[i] = (neighbors[i * 2] * paddedWidth) + neighbors[(i * 2) + 1];
-        }
-
-        Span<int> patchOffsets = stackalloc int[patch.Length / 2];
-        for (var i = 0; i < patchOffsets.Length; i++)
-        {
-            patchOffsets[i] = (patch[i * 2] * paddedWidth) + patch[(i * 2) + 1];
-        }
-
-        // The differences count less on the border of a block of 8x8 samples, where the transforms leave discontinuities
-        var sigmaScale = step switch
-        {
-            0 => filter.EpfPass0SigmaScale * 1.65f,
-            1 => 1.65f,
-            _ => filter.EpfPass2SigmaScale * 1.65f,
-        };
-        var parameters = new EdgePreservingStep(sigmaScale, sigmaScale * filter.EpfBorderSadMultiplier, filter.EpfChannelScale[0], filter.EpfChannelScale[1], filter.EpfChannelScale[2]);
-        var outputX = planes[0].Span;
-        var outputY = planes[1].Span;
-        var outputB = planes[2].Span;
-        for (var y = 0; y < height; y++)
-        {
-            if ((y & 63) == 0)
+            for (; x <= length - 8; x += 8)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                unsafe
+                {
+                    Vector256.Abs(Vector256.LoadUnsafe(ref a, (nuint)x) - Vector256.LoadUnsafe(ref b, (nuint)x)).StoreUnsafe(ref target, (nuint)x);
+                }
             }
+        }
 
-            var isBorderRow = (y & 7) is 0 or 7;
-            var sigmaRow = inverseSigma.Slice((y >> 3) * blocksWide, blocksWide);
-            var rowStart = ((y + Border) * paddedWidth) + Border;
-            var target = y * stride;
-            FilterRow(paddedX, paddedY, paddedB, rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, outputX.Slice(target, width), outputY.Slice(target, width), outputB.Slice(target, width));
+        if (Vector128.IsHardwareAccelerated)
+        {
+            for (; x <= length - 4; x += 4)
+            {
+                unsafe
+                {
+                    Vector128.Abs(Vector128.LoadUnsafe(ref a, (nuint)x) - Vector128.LoadUnsafe(ref b, (nuint)x)).StoreUnsafe(ref target, (nuint)x);
+                }
+            }
+        }
+
+        for (; x < length; x++)
+        {
+            differences[x] = MathF.Abs(first[x] - second[x]);
         }
     }
 
     /// <summary>
-    /// Filters one row of samples with one step of the edge-preserving filter, four samples at a time: each lane performs
-    /// the operations of <see cref="FilterRowScalar"/> in the same order, and a neighbor whose weight is not positive is left
-    /// out by a selection, not by a product with zero.
+    /// Computes the distances of a row of samples to their neighbors in one direction: for each sample, the sum of the
+    /// absolute differences of the samples of its patch with their neighbor, from zero, in the order of the patch, the
+    /// operations of <see cref="FilterRowScalar"/>.
     /// </summary>
-    /// <param name="paddedX">The X channel with its border.</param>
-    /// <param name="paddedY">The Y channel with its border.</param>
-    /// <param name="paddedB">The B channel with its border.</param>
-    /// <param name="rowStart">The position of the first sample of the row in the padded channels.</param>
-    /// <param name="width">The number of samples of the row.</param>
-    /// <param name="neighborOffsets">The offsets of the neighbors averaged with a sample.</param>
-    /// <param name="patchOffsets">The offsets of the samples over which a neighbor is compared with the sample.</param>
-    /// <param name="sigmaRow">The inverse strength of each block of the row.</param>
-    /// <param name="isBorderRow">Whether the row is the first or the last of its blocks.</param>
-    /// <param name="parameters">The scales of the step.</param>
+    /// <param name="differences">The rows of absolute differences.</param>
+    /// <param name="terms">For each sample of the patch, the position of its difference in <paramref name="differences"/>, for the sample at column 0.</param>
+    /// <param name="start">The column of the first distance.</param>
+    /// <param name="distances">Receives the distances.</param>
+    internal static void SumPatch(ReadOnlySpan<float> differences, ReadOnlySpan<int> terms, int start, Span<float> distances)
+    {
+        var count = distances.Length;
+        foreach (var term in terms)
+        {
+            if (term + start < 0 || (long)term + start + count > differences.Length)
+                throw new ArgumentOutOfRangeException(nameof(terms));
+        }
+
+        var x = 0;
+        ref var target = ref unsafe(MemoryMarshal.GetReference(distances));
+        if (Vector128.IsHardwareAccelerated && terms.Length is 1 or MaxPatchLength)
+        {
+            // The positions are checked above, once for the row
+            ref var source = ref unsafe(MemoryMarshal.GetReference(differences));
+            ref var d0 = ref unsafe(Unsafe.Add(ref source, terms[0] + start));
+            if (terms.Length == 1)
+            {
+                for (; x <= count - 4; x += 4)
+                {
+                    unsafe
+                    {
+                        (Vector128<float>.Zero + Vector128.LoadUnsafe(ref d0, (nuint)x)).StoreUnsafe(ref target, (nuint)x);
+                    }
+                }
+            }
+            else
+            {
+                ref var d1 = ref unsafe(Unsafe.Add(ref source, terms[1] + start));
+                ref var d2 = ref unsafe(Unsafe.Add(ref source, terms[2] + start));
+                ref var d3 = ref unsafe(Unsafe.Add(ref source, terms[3] + start));
+                ref var d4 = ref unsafe(Unsafe.Add(ref source, terms[4] + start));
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    for (; x <= count - 8; x += 8)
+                    {
+                        unsafe
+                        {
+                            var i = (nuint)x;
+                            var sum = ((((Vector256<float>.Zero + Vector256.LoadUnsafe(ref d0, i)) + Vector256.LoadUnsafe(ref d1, i)) + Vector256.LoadUnsafe(ref d2, i)) + Vector256.LoadUnsafe(ref d3, i)) + Vector256.LoadUnsafe(ref d4, i);
+                            sum.StoreUnsafe(ref target, i);
+                        }
+                    }
+                }
+
+                for (; x <= count - 4; x += 4)
+                {
+                    unsafe
+                    {
+                        var i = (nuint)x;
+                        var sum = ((((Vector128<float>.Zero + Vector128.LoadUnsafe(ref d0, i)) + Vector128.LoadUnsafe(ref d1, i)) + Vector128.LoadUnsafe(ref d2, i)) + Vector128.LoadUnsafe(ref d3, i)) + Vector128.LoadUnsafe(ref d4, i);
+                        sum.StoreUnsafe(ref target, i);
+                    }
+                }
+            }
+        }
+
+        for (; x < count; x++)
+        {
+            var sum = 0f;
+            foreach (var term in terms)
+            {
+                sum += differences[term + start + x];
+            }
+
+            distances[x] = sum;
+        }
+    }
+
+    /// <summary>
+    /// Filters one row of samples with one step of the edge-preserving filter, four or eight samples at a time: each lane
+    /// performs the operations of <see cref="FilterRowScalar"/> in the same order, and a neighbor whose weight is not
+    /// positive is left out by a selection, not by a product with zero. The distance of a sample to each neighbor is read
+    /// from <see cref="EdgePreservingRow.Distances"/>, computed once for the rows (<see cref="SumPatch"/>).
+    /// </summary>
+    /// <param name="row">The samples, their distances to their neighbors and the parameters of the row.</param>
     /// <param name="outputX">Receives the X samples of the row; the samples of a block the filter leaves are not written.</param>
     /// <param name="outputY">Receives the Y samples of the row.</param>
     /// <param name="outputB">Receives the B samples of the row.</param>
-    internal static void FilterRow(
-        ReadOnlySpan<float> paddedX,
-        ReadOnlySpan<float> paddedY,
-        ReadOnlySpan<float> paddedB,
-        int rowStart,
-        int width,
-        ReadOnlySpan<int> neighborOffsets,
-        ReadOnlySpan<int> patchOffsets,
-        ReadOnlySpan<float> sigmaRow,
-        bool isBorderRow,
-        in EdgePreservingStep parameters,
-        Span<float> outputX,
-        Span<float> outputY,
-        Span<float> outputB)
+    internal static void FilterRow(in EdgePreservingRow row, Span<float> outputX, Span<float> outputY, Span<float> outputB)
     {
+        var width = outputX.Length;
         var x = 0;
-        if (Vector128.IsHardwareAccelerated && patchOffsets.Length <= MaxPatchLength && IsInside(paddedX.Length, rowStart, width, neighborOffsets, patchOffsets) && IsInside(paddedY.Length, rowStart, width, neighborOffsets, patchOffsets) && IsInside(paddedB.Length, rowStart, width, neighborOffsets, patchOffsets))
+        if (Vector128.IsHardwareAccelerated && IsInside(row, width, outputY.Length, outputB.Length))
         {
-            // Every position read is checked above, once for the row: the loads are not checked again
-            ref var originX = ref unsafe(MemoryMarshal.GetReference(paddedX));
-            ref var originY = ref unsafe(MemoryMarshal.GetReference(paddedY));
-            ref var originB = ref unsafe(MemoryMarshal.GetReference(paddedB));
-            var scaleX = Vector128.Create(parameters.ScaleX);
-            var scaleY = Vector128.Create(parameters.ScaleY);
-            var scaleB = Vector128.Create(parameters.ScaleB);
-
-            // The samples of the patch around the four samples, which every neighbor is compared with
-            Span<Vector128<float>> patch = stackalloc Vector128<float>[3 * MaxPatchLength];
-            var patchX = patch[..patchOffsets.Length];
-            var patchY = patch.Slice(MaxPatchLength, patchOffsets.Length);
-            var patchB = patch.Slice(2 * MaxPatchLength, patchOffsets.Length);
-            for (; x <= width - 4; x += 4)
-            {
-                // The four samples are in the same block: the first one is on its left border, or the last one on its right border
-                var blockInverseSigma = sigmaRow[x >> 3];
-                if (blockInverseSigma < MinInverseSigma)
-                    continue;
-
-                var inner = blockInverseSigma * parameters.SigmaScale;
-                var border = blockInverseSigma * parameters.BorderScale;
-                var scaledInverseSigma = isBorderRow ? Vector128.Create(border) : (x & 4) == 0 ? Vector128.Create(border, inner, inner, inner) : Vector128.Create(inner, inner, inner, border);
-                var position = rowStart + x;
-                for (var k = 0; k < patchOffsets.Length; k++)
-                {
-                    var reference = position + patchOffsets[k];
-                    patchX[k] = Load(ref originX, reference);
-                    patchY[k] = Load(ref originY, reference);
-                    patchB[k] = Load(ref originB, reference);
-                }
-
-                var weightSum = Vector128<float>.One;
-                var sumX = Load(ref originX, position);
-                var sumY = Load(ref originY, position);
-                var sumB = Load(ref originB, position);
-                foreach (var neighbor in neighborOffsets)
-                {
-                    var differenceX = Vector128<float>.Zero;
-                    var differenceY = Vector128<float>.Zero;
-                    var differenceB = Vector128<float>.Zero;
-                    for (var k = 0; k < patchOffsets.Length; k++)
-                    {
-                        var reference = position + patchOffsets[k] + neighbor;
-                        differenceX += Vector128.Abs(patchX[k] - Load(ref originX, reference));
-                        differenceY += Vector128.Abs(patchY[k] - Load(ref originY, reference));
-                        differenceB += Vector128.Abs(patchB[k] - Load(ref originB, reference));
-                    }
-
-                    var difference = (differenceX * scaleX) + (differenceY * scaleY) + (differenceB * scaleB);
-                    var weight = (difference * scaledInverseSigma) + Vector128<float>.One;
-                    var isPositive = Vector128.GreaterThan(weight, Vector128<float>.Zero);
-                    weightSum = Vector128.ConditionalSelect(isPositive, weightSum + weight, weightSum);
-                    sumX = Vector128.ConditionalSelect(isPositive, sumX + (weight * Load(ref originX, position + neighbor)), sumX);
-                    sumY = Vector128.ConditionalSelect(isPositive, sumY + (weight * Load(ref originY, position + neighbor)), sumY);
-                    sumB = Vector128.ConditionalSelect(isPositive, sumB + (weight * Load(ref originB, position + neighbor)), sumB);
-                }
-
-                var inverseWeight = Vector128<float>.One / weightSum;
-                (sumX * inverseWeight).CopyTo(outputX.Slice(x, 4));
-                (sumY * inverseWeight).CopyTo(outputY.Slice(x, 4));
-                (sumB * inverseWeight).CopyTo(outputB.Slice(x, 4));
-            }
+            // Eight samples at a time share the computation of the positions they read: with two vectors of four when
+            // there is no vector of eight
+            x = Vector256.IsHardwareAccelerated ? FilterVector256(row, outputX, outputY, outputB) : FilterVector128Pairs(row, outputX, outputY, outputB);
+            x = FilterVector128(row, outputX, outputY, outputB, x);
         }
 
-        FilterRowScalar(paddedX, paddedY, paddedB, rowStart, width, neighborOffsets, patchOffsets, sigmaRow, isBorderRow, parameters, outputX, outputY, outputB, x);
+        FilterRowScalar(row, outputX, outputY, outputB, x);
     }
 
     /// <summary>
-    /// Gets a value indicating whether every position the vectorized row reads is inside a padded channel: from the first
-    /// sample of the row plus the most negative offsets to the last one plus the most positive offsets.
+    /// Gets a value indicating whether every position the vectorized row reads is inside its spans, from the first sample
+    /// of the row to the last one, in the three channels.
     /// </summary>
-    private static bool IsInside(int length, int rowStart, int width, ReadOnlySpan<int> neighborOffsets, ReadOnlySpan<int> patchOffsets)
+    private static bool IsInside(in EdgePreservingRow row, int width, int widthY, int widthB)
     {
-        int lowestNeighbor = 0, highestNeighbor = 0, lowestPatch = 0, highestPatch = 0;
-        foreach (var offset in neighborOffsets)
+        var neighbors = row.Neighbors;
+        var neighborCount = neighbors.Length / 2;
+        if (width < 4 || widthY < width || widthB < width || neighborCount > MaxNeighbors || row.DistanceOffsets.Length < neighborCount || row.SigmaRow.Length < (width + 7) / 8)
+            return false;
+
+        var border = (row.RowOffsets.Length - 1) / 2;
+        var lastSample = (2L * row.ChannelLength) + width;
+        if (!IsInRange(row.RowOffsets[border], lastSample, row.Samples.Length))
+            return false;
+
+        for (var i = 0; i < neighborCount; i++)
         {
-            lowestNeighbor = Math.Min(lowestNeighbor, offset);
-            highestNeighbor = Math.Max(highestNeighbor, offset);
+            var rowIndex = border + neighbors[i * 2];
+            if ((uint)rowIndex >= (uint)row.RowOffsets.Length || !IsInRange(row.RowOffsets[rowIndex] + neighbors[(i * 2) + 1], lastSample, row.Samples.Length))
+                return false;
         }
 
-        foreach (var offset in patchOffsets)
+        var lastDistance = (2L * row.DistanceChannelLength) + width;
+        foreach (var offset in row.DistanceOffsets[..neighborCount])
         {
-            lowestPatch = Math.Min(lowestPatch, offset);
-            highestPatch = Math.Max(highestPatch, offset);
+            if (!IsInRange(offset, lastDistance, row.Distances.Length))
+                return false;
         }
 
-        return width > 0 && (long)rowStart + lowestNeighbor + lowestPatch >= 0 && (long)rowStart + width - 1 + highestNeighbor + highestPatch < length;
+        return true;
+
+        static bool IsInRange(int offset, long end, int length) => offset >= 0 && offset + end <= length;
     }
 
-    /// <summary>Loads four samples from a position that was checked.</summary>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static Vector128<float> Load(ref float origin, int position) => unsafe(Vector128.LoadUnsafe(ref origin, (nuint)position));
-
-    /// <summary>The scalar reference of <see cref="FilterRow"/>, from the sample <paramref name="start"/> on.</summary>
-    internal static void FilterRowScalar(
-        ReadOnlySpan<float> paddedX,
-        ReadOnlySpan<float> paddedY,
-        ReadOnlySpan<float> paddedB,
-        int rowStart,
-        int width,
-        ReadOnlySpan<int> neighborOffsets,
-        ReadOnlySpan<int> patchOffsets,
-        ReadOnlySpan<float> sigmaRow,
-        bool isBorderRow,
-        in EdgePreservingStep parameters,
-        Span<float> outputX,
-        Span<float> outputY,
-        Span<float> outputB,
-        int start = 0)
+    /// <summary>The loop of <see cref="FilterRow"/> on blocks of eight samples, from the first sample of the row; returns the first sample it did not filter.</summary>
+    private static int FilterVector256(in EdgePreservingRow row, Span<float> outputX, Span<float> outputY, Span<float> outputB)
     {
-        for (var x = start; x < width; x++)
+        // Every position read or written is checked by IsInside, once for the row: the loads are not checked again
+        ref var samples = ref unsafe(MemoryMarshal.GetReference(row.Samples));
+        ref var distances = ref unsafe(MemoryMarshal.GetReference(row.Distances));
+        ref var targetX = ref unsafe(MemoryMarshal.GetReference(outputX));
+        ref var targetY = ref unsafe(MemoryMarshal.GetReference(outputY));
+        ref var targetB = ref unsafe(MemoryMarshal.GetReference(outputB));
+        var channelLength = (nuint)row.ChannelLength;
+        var distanceChannelLength = (nuint)row.DistanceChannelLength;
+        var parameters = row.Parameters;
+        var scaleX = Vector256.Create(parameters.ScaleX);
+        var scaleY = Vector256.Create(parameters.ScaleY);
+        var scaleB = Vector256.Create(parameters.ScaleB);
+        var neighborCount = row.Neighbors.Length / 2;
+        var distanceOffsets = row.DistanceOffsets;
+        Span<int> neighborOffsets = stackalloc int[MaxNeighbors];
+        var center = GetNeighborOffsets(row, neighborOffsets);
+        var width = outputX.Length;
+        var x = 0;
+        for (; x <= width - 8; x += 8)
         {
-            var blockInverseSigma = sigmaRow[x >> 3];
+            // The eight samples are a row of a block, from its left border to its right border
+            var blockInverseSigma = row.SigmaRow[x >> 3];
             if (blockInverseSigma < MinInverseSigma)
                 continue;
 
-            var position = rowStart + x;
-            var scaledInverseSigma = blockInverseSigma * (isBorderRow || (x & 7) is 0 or 7 ? parameters.BorderScale : parameters.SigmaScale);
+            var inner = blockInverseSigma * parameters.SigmaScale;
+            var border = blockInverseSigma * parameters.BorderScale;
+            var scaledInverseSigma = row.IsBorderRow ? Vector256.Create(border) : Vector256.Create(border, inner, inner, inner, inner, inner, inner, border);
+            var position = (nuint)(center + x);
+            var weightSum = Vector256<float>.One;
+            Vector256<float> sumX, sumY, sumB;
+            unsafe
+            {
+                sumX = Vector256.LoadUnsafe(ref samples, position);
+                sumY = Vector256.LoadUnsafe(ref samples, position + channelLength);
+                sumB = Vector256.LoadUnsafe(ref samples, position + (2 * channelLength));
+            }
+
+            for (var i = 0; i < neighborCount; i++)
+            {
+                var reference = (nuint)(distanceOffsets[i] + x);
+                Vector256<float> differenceX, differenceY, differenceB;
+                unsafe
+                {
+                    differenceX = Vector256.LoadUnsafe(ref distances, reference);
+                    differenceY = Vector256.LoadUnsafe(ref distances, reference + distanceChannelLength);
+                    differenceB = Vector256.LoadUnsafe(ref distances, reference + (2 * distanceChannelLength));
+                }
+
+                var difference = (differenceX * scaleX) + (differenceY * scaleY) + (differenceB * scaleB);
+                var weight = (difference * scaledInverseSigma) + Vector256<float>.One;
+                var isPositive = Vector256.GreaterThan(weight, Vector256<float>.Zero);
+                var neighbor = (nuint)(neighborOffsets[i] + x);
+                Vector256<float> neighborX, neighborY, neighborB;
+                unsafe
+                {
+                    neighborX = Vector256.LoadUnsafe(ref samples, neighbor);
+                    neighborY = Vector256.LoadUnsafe(ref samples, neighbor + channelLength);
+                    neighborB = Vector256.LoadUnsafe(ref samples, neighbor + (2 * channelLength));
+                }
+
+                weightSum = Vector256.ConditionalSelect(isPositive, weightSum + weight, weightSum);
+                sumX = Vector256.ConditionalSelect(isPositive, sumX + (weight * neighborX), sumX);
+                sumY = Vector256.ConditionalSelect(isPositive, sumY + (weight * neighborY), sumY);
+                sumB = Vector256.ConditionalSelect(isPositive, sumB + (weight * neighborB), sumB);
+            }
+
+            var inverseWeight = Vector256<float>.One / weightSum;
+            unsafe
+            {
+                (sumX * inverseWeight).StoreUnsafe(ref targetX, (nuint)x);
+                (sumY * inverseWeight).StoreUnsafe(ref targetY, (nuint)x);
+                (sumB * inverseWeight).StoreUnsafe(ref targetB, (nuint)x);
+            }
+        }
+
+        return x;
+    }
+
+    /// <summary>The loop of <see cref="FilterRow"/> on blocks of eight samples as two vectors of four, from the first sample of the row; returns the first sample it did not filter.</summary>
+    private static int FilterVector128Pairs(in EdgePreservingRow row, Span<float> outputX, Span<float> outputY, Span<float> outputB)
+    {
+        // Every position read or written is checked by IsInside, once for the row: the loads are not checked again
+        ref var samples = ref unsafe(MemoryMarshal.GetReference(row.Samples));
+        ref var distances = ref unsafe(MemoryMarshal.GetReference(row.Distances));
+        ref var targetX = ref unsafe(MemoryMarshal.GetReference(outputX));
+        ref var targetY = ref unsafe(MemoryMarshal.GetReference(outputY));
+        ref var targetB = ref unsafe(MemoryMarshal.GetReference(outputB));
+        var channelLength = (nuint)row.ChannelLength;
+        var distanceChannelLength = (nuint)row.DistanceChannelLength;
+        var parameters = row.Parameters;
+        var scaleX = Vector128.Create(parameters.ScaleX);
+        var scaleY = Vector128.Create(parameters.ScaleY);
+        var scaleB = Vector128.Create(parameters.ScaleB);
+        var neighborCount = row.Neighbors.Length / 2;
+        var distanceOffsets = row.DistanceOffsets;
+        Span<int> neighborOffsets = stackalloc int[MaxNeighbors];
+        var center = GetNeighborOffsets(row, neighborOffsets);
+        var width = outputX.Length;
+        var x = 0;
+        for (; x <= width - 8; x += 8)
+        {
+            // The eight samples are a row of a block, from its left border to its right border
+            var blockInverseSigma = row.SigmaRow[x >> 3];
+            if (blockInverseSigma < MinInverseSigma)
+                continue;
+
+            var inner = blockInverseSigma * parameters.SigmaScale;
+            var border = blockInverseSigma * parameters.BorderScale;
+            var scaledInverseSigma0 = row.IsBorderRow ? Vector128.Create(border) : Vector128.Create(border, inner, inner, inner);
+            var scaledInverseSigma1 = row.IsBorderRow ? Vector128.Create(border) : Vector128.Create(inner, inner, inner, border);
+            var position = (nuint)(center + x);
+            var weightSum0 = Vector128<float>.One;
+            var weightSum1 = Vector128<float>.One;
+            Vector128<float> sumX0, sumY0, sumB0, sumX1, sumY1, sumB1;
+            unsafe
+            {
+                sumX0 = Vector128.LoadUnsafe(ref samples, position);
+                sumY0 = Vector128.LoadUnsafe(ref samples, position + channelLength);
+                sumB0 = Vector128.LoadUnsafe(ref samples, position + (2 * channelLength));
+                sumX1 = Vector128.LoadUnsafe(ref samples, position + 4);
+                sumY1 = Vector128.LoadUnsafe(ref samples, position + channelLength + 4);
+                sumB1 = Vector128.LoadUnsafe(ref samples, position + (2 * channelLength) + 4);
+            }
+
+            for (var i = 0; i < neighborCount; i++)
+            {
+                ref var distance = ref unsafe(Unsafe.Add(ref distances, distanceOffsets[i] + x));
+                ref var neighbor = ref unsafe(Unsafe.Add(ref samples, neighborOffsets[i] + x));
+                Vector128<float> difference0, difference1, neighborX0, neighborY0, neighborB0, neighborX1, neighborY1, neighborB1;
+                unsafe
+                {
+                    difference0 = (Vector128.LoadUnsafe(ref distance) * scaleX) + (Vector128.LoadUnsafe(ref distance, distanceChannelLength) * scaleY) + (Vector128.LoadUnsafe(ref distance, 2 * distanceChannelLength) * scaleB);
+                    difference1 = (Vector128.LoadUnsafe(ref distance, 4) * scaleX) + (Vector128.LoadUnsafe(ref distance, distanceChannelLength + 4) * scaleY) + (Vector128.LoadUnsafe(ref distance, (2 * distanceChannelLength) + 4) * scaleB);
+                    neighborX0 = Vector128.LoadUnsafe(ref neighbor);
+                    neighborY0 = Vector128.LoadUnsafe(ref neighbor, channelLength);
+                    neighborB0 = Vector128.LoadUnsafe(ref neighbor, 2 * channelLength);
+                    neighborX1 = Vector128.LoadUnsafe(ref neighbor, 4);
+                    neighborY1 = Vector128.LoadUnsafe(ref neighbor, channelLength + 4);
+                    neighborB1 = Vector128.LoadUnsafe(ref neighbor, (2 * channelLength) + 4);
+                }
+
+                var weight0 = (difference0 * scaledInverseSigma0) + Vector128<float>.One;
+                var weight1 = (difference1 * scaledInverseSigma1) + Vector128<float>.One;
+                var isPositive0 = Vector128.GreaterThan(weight0, Vector128<float>.Zero);
+                var isPositive1 = Vector128.GreaterThan(weight1, Vector128<float>.Zero);
+                weightSum0 = Vector128.ConditionalSelect(isPositive0, weightSum0 + weight0, weightSum0);
+                weightSum1 = Vector128.ConditionalSelect(isPositive1, weightSum1 + weight1, weightSum1);
+                sumX0 = Vector128.ConditionalSelect(isPositive0, sumX0 + (weight0 * neighborX0), sumX0);
+                sumX1 = Vector128.ConditionalSelect(isPositive1, sumX1 + (weight1 * neighborX1), sumX1);
+                sumY0 = Vector128.ConditionalSelect(isPositive0, sumY0 + (weight0 * neighborY0), sumY0);
+                sumY1 = Vector128.ConditionalSelect(isPositive1, sumY1 + (weight1 * neighborY1), sumY1);
+                sumB0 = Vector128.ConditionalSelect(isPositive0, sumB0 + (weight0 * neighborB0), sumB0);
+                sumB1 = Vector128.ConditionalSelect(isPositive1, sumB1 + (weight1 * neighborB1), sumB1);
+            }
+
+            var inverseWeight0 = Vector128<float>.One / weightSum0;
+            var inverseWeight1 = Vector128<float>.One / weightSum1;
+            unsafe
+            {
+                (sumX0 * inverseWeight0).StoreUnsafe(ref targetX, (nuint)x);
+                (sumY0 * inverseWeight0).StoreUnsafe(ref targetY, (nuint)x);
+                (sumB0 * inverseWeight0).StoreUnsafe(ref targetB, (nuint)x);
+                (sumX1 * inverseWeight1).StoreUnsafe(ref targetX, (nuint)x + 4);
+                (sumY1 * inverseWeight1).StoreUnsafe(ref targetY, (nuint)x + 4);
+                (sumB1 * inverseWeight1).StoreUnsafe(ref targetB, (nuint)x + 4);
+            }
+        }
+
+        return x;
+    }
+
+    /// <summary>The loop of <see cref="FilterRow"/> on four samples at a time, from the sample <paramref name="start"/>, a multiple of 4; returns the first sample it did not filter.</summary>
+    private static int FilterVector128(in EdgePreservingRow row, Span<float> outputX, Span<float> outputY, Span<float> outputB, int start)
+    {
+        // Every position read or written is checked by IsInside, once for the row: the loads are not checked again
+        ref var samples = ref unsafe(MemoryMarshal.GetReference(row.Samples));
+        ref var distances = ref unsafe(MemoryMarshal.GetReference(row.Distances));
+        ref var targetX = ref unsafe(MemoryMarshal.GetReference(outputX));
+        ref var targetY = ref unsafe(MemoryMarshal.GetReference(outputY));
+        ref var targetB = ref unsafe(MemoryMarshal.GetReference(outputB));
+        var channelLength = (nuint)row.ChannelLength;
+        var distanceChannelLength = (nuint)row.DistanceChannelLength;
+        var parameters = row.Parameters;
+        var scaleX = Vector128.Create(parameters.ScaleX);
+        var scaleY = Vector128.Create(parameters.ScaleY);
+        var scaleB = Vector128.Create(parameters.ScaleB);
+        var neighborCount = row.Neighbors.Length / 2;
+        var distanceOffsets = row.DistanceOffsets;
+        Span<int> neighborOffsets = stackalloc int[MaxNeighbors];
+        var center = GetNeighborOffsets(row, neighborOffsets);
+        var width = outputX.Length;
+        var x = start;
+        for (; x <= width - 4; x += 4)
+        {
+            // The four samples are in the same block: the first one is on its left border, or the last one on its right border
+            var blockInverseSigma = row.SigmaRow[x >> 3];
+            if (blockInverseSigma < MinInverseSigma)
+                continue;
+
+            var inner = blockInverseSigma * parameters.SigmaScale;
+            var border = blockInverseSigma * parameters.BorderScale;
+            var scaledInverseSigma = row.IsBorderRow ? Vector128.Create(border) : (x & 4) == 0 ? Vector128.Create(border, inner, inner, inner) : Vector128.Create(inner, inner, inner, border);
+            var position = (nuint)(center + x);
+            var weightSum = Vector128<float>.One;
+            Vector128<float> sumX, sumY, sumB;
+            unsafe
+            {
+                sumX = Vector128.LoadUnsafe(ref samples, position);
+                sumY = Vector128.LoadUnsafe(ref samples, position + channelLength);
+                sumB = Vector128.LoadUnsafe(ref samples, position + (2 * channelLength));
+            }
+
+            for (var i = 0; i < neighborCount; i++)
+            {
+                var reference = (nuint)(distanceOffsets[i] + x);
+                Vector128<float> differenceX, differenceY, differenceB;
+                unsafe
+                {
+                    differenceX = Vector128.LoadUnsafe(ref distances, reference);
+                    differenceY = Vector128.LoadUnsafe(ref distances, reference + distanceChannelLength);
+                    differenceB = Vector128.LoadUnsafe(ref distances, reference + (2 * distanceChannelLength));
+                }
+
+                var difference = (differenceX * scaleX) + (differenceY * scaleY) + (differenceB * scaleB);
+                var weight = (difference * scaledInverseSigma) + Vector128<float>.One;
+                var isPositive = Vector128.GreaterThan(weight, Vector128<float>.Zero);
+                var neighbor = (nuint)(neighborOffsets[i] + x);
+                Vector128<float> neighborX, neighborY, neighborB;
+                unsafe
+                {
+                    neighborX = Vector128.LoadUnsafe(ref samples, neighbor);
+                    neighborY = Vector128.LoadUnsafe(ref samples, neighbor + channelLength);
+                    neighborB = Vector128.LoadUnsafe(ref samples, neighbor + (2 * channelLength));
+                }
+
+                weightSum = Vector128.ConditionalSelect(isPositive, weightSum + weight, weightSum);
+                sumX = Vector128.ConditionalSelect(isPositive, sumX + (weight * neighborX), sumX);
+                sumY = Vector128.ConditionalSelect(isPositive, sumY + (weight * neighborY), sumY);
+                sumB = Vector128.ConditionalSelect(isPositive, sumB + (weight * neighborB), sumB);
+            }
+
+            var inverseWeight = Vector128<float>.One / weightSum;
+            unsafe
+            {
+                (sumX * inverseWeight).StoreUnsafe(ref targetX, (nuint)x);
+                (sumY * inverseWeight).StoreUnsafe(ref targetY, (nuint)x);
+                (sumB * inverseWeight).StoreUnsafe(ref targetB, (nuint)x);
+            }
+        }
+
+        return x;
+    }
+
+    /// <summary>Gets the position of the first neighbor of the first sample of the row, for each neighbor, and returns the position of the sample.</summary>
+    private static int GetNeighborOffsets(in EdgePreservingRow row, Span<int> neighborOffsets)
+    {
+        var border = (row.RowOffsets.Length - 1) / 2;
+        var neighbors = row.Neighbors;
+        for (var i = 0; i < neighbors.Length / 2; i++)
+        {
+            neighborOffsets[i] = row.RowOffsets[border + neighbors[i * 2]] + neighbors[(i * 2) + 1];
+        }
+
+        return row.RowOffsets[border];
+    }
+
+    /// <summary>
+    /// The scalar reference of <see cref="FilterRow"/>, from the sample <paramref name="start"/> on: it reads the samples
+    /// only, and computes each absolute difference where it uses it.
+    /// </summary>
+    internal static void FilterRowScalar(in EdgePreservingRow row, Span<float> outputX, Span<float> outputY, Span<float> outputB, int start = 0)
+    {
+        var samples = row.Samples;
+        var channelLength = row.ChannelLength;
+        var rowOffsets = row.RowOffsets;
+        var border = (rowOffsets.Length - 1) / 2;
+        var neighbors = row.Neighbors;
+        var patch = row.Patch;
+        var parameters = row.Parameters;
+        for (var x = start; x < outputX.Length; x++)
+        {
+            var blockInverseSigma = row.SigmaRow[x >> 3];
+            if (blockInverseSigma < MinInverseSigma)
+                continue;
+
+            var position = rowOffsets[border] + x;
+            var scaledInverseSigma = blockInverseSigma * (row.IsBorderRow || (x & 7) is 0 or 7 ? parameters.BorderScale : parameters.SigmaScale);
             var weightSum = 1f;
-            var sumX = paddedX[position];
-            var sumY = paddedY[position];
-            var sumB = paddedB[position];
-            foreach (var neighbor in neighborOffsets)
+            var sumX = samples[position];
+            var sumY = samples[channelLength + position];
+            var sumB = samples[(2 * channelLength) + position];
+            for (var i = 0; i < neighbors.Length; i += 2)
             {
                 var differenceX = 0f;
                 var differenceY = 0f;
                 var differenceB = 0f;
-                foreach (var offset in patchOffsets)
+                for (var k = 0; k < patch.Length; k += 2)
                 {
-                    var reference = position + offset;
-                    differenceX += MathF.Abs(paddedX[reference] - paddedX[reference + neighbor]);
-                    differenceY += MathF.Abs(paddedY[reference] - paddedY[reference + neighbor]);
-                    differenceB += MathF.Abs(paddedB[reference] - paddedB[reference + neighbor]);
+                    var reference = rowOffsets[border + patch[k]] + x + patch[k + 1];
+                    var other = rowOffsets[border + patch[k] + neighbors[i]] + x + patch[k + 1] + neighbors[i + 1];
+                    differenceX += MathF.Abs(samples[reference] - samples[other]);
+                    differenceY += MathF.Abs(samples[channelLength + reference] - samples[channelLength + other]);
+                    differenceB += MathF.Abs(samples[(2 * channelLength) + reference] - samples[(2 * channelLength) + other]);
                 }
 
                 var difference = (differenceX * parameters.ScaleX) + (differenceY * parameters.ScaleY) + (differenceB * parameters.ScaleB);
                 var weight = (difference * scaledInverseSigma) + 1f;
                 if (weight > 0)
                 {
+                    var neighbor = rowOffsets[border + neighbors[i]] + x + neighbors[i + 1];
                     weightSum += weight;
-                    sumX += weight * paddedX[position + neighbor];
-                    sumY += weight * paddedY[position + neighbor];
-                    sumB += weight * paddedB[position + neighbor];
+                    sumX += weight * samples[neighbor];
+                    sumY += weight * samples[channelLength + neighbor];
+                    sumB += weight * samples[(2 * channelLength) + neighbor];
                 }
             }
 
@@ -410,6 +747,29 @@ internal static class JpegXlRestorationFilters
             outputX[x] = sumX * inverseWeight;
             outputY[x] = sumY * inverseWeight;
             outputB[x] = sumB * inverseWeight;
+        }
+    }
+
+    /// <summary>The position inside a side of a position that may be outside: the side is mirrored at its two ends, which are repeated.</summary>
+    internal static int Mirror(int position, int size)
+    {
+        while (position < 0 || position >= size)
+        {
+            position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
+        }
+
+        return position;
+    }
+
+    private static int Modulo(int value, int divisor) => ((value % divisor) + divisor) % divisor;
+
+    /// <summary>Fills the border of a row of a ring with the mirror image of its samples.</summary>
+    private static void FillBorder(Span<float> row, int border, int width)
+    {
+        for (var x = 1; x <= border; x++)
+        {
+            row[border - x] = row[border + Mirror(-x, width)];
+            row[border + width - 1 + x] = row[border + Mirror(width - 1 + x, width)];
         }
     }
 
@@ -422,31 +782,442 @@ internal static class JpegXlRestorationFilters
     [StructLayout(LayoutKind.Auto)]
     internal readonly record struct EdgePreservingStep(float SigmaScale, float BorderScale, float ScaleX, float ScaleY, float ScaleB);
 
-    /// <summary>Copies a channel with a border of mirrored samples around it.</summary>
-    private static void CopyWithBorder(ReadOnlySpan<float> plane, int stride, int width, int height, Span<float> padded, int border)
+    /// <summary>A row that a step of the edge-preserving filter filters: the rows it reads, the distances of its samples to their neighbors and its parameters.</summary>
+    /// <param name="samples">The rows of the three channels, one channel after the other.</param>
+    /// <param name="channelLength">The distance between two channels in <paramref name="samples"/>.</param>
+    /// <param name="rowOffsets">The position of the first sample of each row from the reach of the step above the row to its reach below.</param>
+    /// <param name="neighbors">The neighbors averaged with a sample, as (row, column) offsets.</param>
+    /// <param name="patch">The samples over which a neighbor is compared with the sample, as (row, column) offsets.</param>
+    /// <param name="distances">
+    /// The distance of the samples to their neighbors in each direction of the step, one channel after the other: the sum
+    /// over the patch of the absolute differences of the samples with their neighbor, from zero, in the order of the patch.
+    /// </param>
+    /// <param name="distanceChannelLength">The distance between two channels in <paramref name="distances"/>.</param>
+    /// <param name="distanceOffsets">For each neighbor, the position in <paramref name="distances"/> of the distance of the first sample of the row to it.</param>
+    /// <param name="sigmaRow">The inverse strength of each block of the row.</param>
+    /// <param name="isBorderRow">Whether the row is the first or the last of its blocks.</param>
+    /// <param name="parameters">The scales of the step.</param>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly ref struct EdgePreservingRow(
+        ReadOnlySpan<float> samples,
+        int channelLength,
+        ReadOnlySpan<int> rowOffsets,
+        ReadOnlySpan<sbyte> neighbors,
+        ReadOnlySpan<sbyte> patch,
+        ReadOnlySpan<float> distances,
+        int distanceChannelLength,
+        ReadOnlySpan<int> distanceOffsets,
+        ReadOnlySpan<float> sigmaRow,
+        bool isBorderRow,
+        EdgePreservingStep parameters)
     {
-        var paddedWidth = width + (2 * border);
-        for (var y = -border; y < height + border; y++)
-        {
-            var source = plane.Slice(Mirror(y, height) * stride, width);
-            var target = padded.Slice((y + border) * paddedWidth, paddedWidth);
-            source.CopyTo(target[border..]);
-            for (var x = 1; x <= border; x++)
-            {
-                target[border - x] = source[Mirror(-x, width)];
-                target[border + width - 1 + x] = source[Mirror(width - 1 + x, width)];
-            }
-        }
+        public ReadOnlySpan<float> Samples { get; } = samples;
+
+        public int ChannelLength { get; } = channelLength;
+
+        public ReadOnlySpan<int> RowOffsets { get; } = rowOffsets;
+
+        public ReadOnlySpan<sbyte> Neighbors { get; } = neighbors;
+
+        public ReadOnlySpan<sbyte> Patch { get; } = patch;
+
+        public ReadOnlySpan<float> Distances { get; } = distances;
+
+        public int DistanceChannelLength { get; } = distanceChannelLength;
+
+        public ReadOnlySpan<int> DistanceOffsets { get; } = distanceOffsets;
+
+        public ReadOnlySpan<float> SigmaRow { get; } = sigmaRow;
+
+        public bool IsBorderRow { get; } = isBorderRow;
+
+        public EdgePreservingStep Parameters { get; } = parameters;
     }
 
-    /// <summary>The position inside a side of a position that may be outside: the side is mirrored at its two ends, which are repeated.</summary>
-    private static int Mirror(int position, int size)
+    /// <summary>
+    /// A filter of the pipeline and its working memory: a ring of the rows it reads, the three channels one after the
+    /// other, then, for a step of the edge-preserving filter, for each direction of the step and each channel, a ring of
+    /// the absolute differences of these rows with their neighbor in that direction, and a ring of their sums over the
+    /// patch: the distance of a sample to its neighbor in that direction.
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct Stage
     {
-        while (position < 0 || position >= size)
+        public Stage(int step, int width, long start)
         {
-            position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
+            Step = step;
+            Border = step switch
+            {
+                GaborishStep => 1,
+                0 => 3,
+                1 => 2,
+                _ => 1,
+            };
+            Rows = (2 * Border) + 1;
+            PaddedWidth = width + (2 * Border);
+            Start = checked((int)start);
+            ChannelLength = checked(Rows * PaddedWidth);
+            var length = 3L * ChannelLength;
+            if (step != GaborishStep)
+            {
+                var patch = GetPatch(step);
+                var directions = GetDirections(step);
+                int firstRow = 0, lastRow = 0, deepestDirection = 0;
+                for (var k = 0; k < patch.Length; k += 2)
+                {
+                    firstRow = Math.Min(firstRow, patch[k]);
+                    lastRow = Math.Max(lastRow, patch[k]);
+                }
+
+                for (var d = 0; d < directions.Length; d += 2)
+                {
+                    deepestDirection = Math.Max(deepestDirection, directions[d]);
+                }
+
+                // The distance to a neighbor in the opposite direction is the distance of that neighbor, on a row up to
+                // the deepest direction above; the distances of a row sum the differences of the rows of the patch
+                DistanceRows = deepestDirection + 1;
+                NextDistance = -deepestDirection;
+                DifferenceRows = lastRow - firstRow + 1;
+                NextDifference = NextDistance + firstRow;
+                DifferenceStart = checked((int)(start + length));
+                DifferenceChannelLength = checked(DifferenceRows * PaddedWidth);
+                DirectionLength = checked(3 * DifferenceChannelLength);
+                length += (long)DirectionLength * (directions.Length / 2);
+                DistanceStart = checked((int)(start + length));
+                DistanceChannelLength = checked(DistanceRows * PaddedWidth);
+                DistanceDirectionLength = checked(3 * DistanceChannelLength);
+                length += (long)DistanceDirectionLength * (directions.Length / 2);
+            }
+
+            Length = length;
         }
 
-        return position;
+        /// <summary>Gets the filter: <see cref="GaborishStep"/> or the step of the edge-preserving filter.</summary>
+        public int Step { get; }
+
+        /// <summary>Gets the reach of the filter: the number of rows it reads above and below a row, and of samples on each side.</summary>
+        public int Border { get; }
+
+        /// <summary>Gets the number of rows of the ring.</summary>
+        public int Rows { get; }
+
+        /// <summary>Gets the length of a row of the ring, borders included.</summary>
+        public int PaddedWidth { get; }
+
+        /// <summary>Gets the position of the ring in the working memory.</summary>
+        public int Start { get; }
+
+        /// <summary>Gets the distance between two channels of the ring.</summary>
+        public int ChannelLength { get; }
+
+        /// <summary>Gets the number of rows of differences in each direction and channel.</summary>
+        public int DifferenceRows { get; }
+
+        /// <summary>Gets the position of the differences in the working memory.</summary>
+        public int DifferenceStart { get; }
+
+        /// <summary>Gets the distance between two channels of the differences of a direction.</summary>
+        public int DifferenceChannelLength { get; }
+
+        /// <summary>Gets the distance between the differences of two directions.</summary>
+        public int DirectionLength { get; }
+
+        /// <summary>Gets the number of rows of distances in each direction and channel.</summary>
+        public int DistanceRows { get; }
+
+        /// <summary>Gets the position of the distances in the working memory.</summary>
+        public int DistanceStart { get; }
+
+        /// <summary>Gets the distance between two channels of the distances of a direction.</summary>
+        public int DistanceChannelLength { get; }
+
+        /// <summary>Gets the distance between the distances of two directions.</summary>
+        public int DistanceDirectionLength { get; }
+
+        /// <summary>Gets the working memory of the filter.</summary>
+        public long Length { get; }
+
+        /// <summary>Gets or sets the number of rows the filter has received.</summary>
+        public int Received { get; set; }
+
+        /// <summary>Gets or sets the next row the filter produces.</summary>
+        public int NextOutput { get; set; }
+
+        /// <summary>Gets or sets the next row whose differences are computed; rows above the frame are mirrored rows.</summary>
+        public int NextDifference { get; set; }
+
+        /// <summary>Gets or sets the next row whose distances are computed.</summary>
+        public int NextDistance { get; set; }
+    }
+
+    /// <summary>The filters of a frame, in the order they apply, and the rows that go through them.</summary>
+    private readonly ref struct Pipeline
+    {
+        private readonly Span<float> _planeX;
+        private readonly Span<float> _planeY;
+        private readonly Span<float> _planeB;
+        private readonly int _stride;
+        private readonly int _width;
+        private readonly int _height;
+        private readonly Span<float> _buffer;
+        private readonly Span<Stage> _stages;
+        private readonly JpegXlRestorationFilter _filter;
+        private readonly ReadOnlySpan<float> _inverseSigma;
+        private readonly int _blocksWide;
+
+        public Pipeline(Span<float> planeX, Span<float> planeY, Span<float> planeB, int stride, int width, int height, Span<float> buffer, Span<Stage> stages, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide)
+        {
+            _planeX = planeX;
+            _planeY = planeY;
+            _planeB = planeB;
+            _stride = stride;
+            _width = width;
+            _height = height;
+            _buffer = buffer;
+            _stages = stages;
+            _filter = filter;
+            _inverseSigma = inverseSigma;
+            _blocksWide = blocksWide;
+        }
+
+        /// <summary>Gives a row of the channels to the first filter, then lets every filter produce the rows it can.</summary>
+        public void Receive(int y)
+        {
+            ref var first = ref _stages[0];
+            for (var c = 0; c < 3; c++)
+            {
+                var target = GetRingRow(first, c, y % first.Rows);
+                GetPlane(c).Slice(y * _stride, _width).CopyTo(target[first.Border..]);
+                FillBorder(target, first.Border, _width);
+            }
+
+            Deliver(0, y);
+        }
+
+        private Span<float> GetPlane(int channel) => channel switch
+        {
+            0 => _planeX,
+            1 => _planeY,
+            _ => _planeB,
+        };
+
+        private Span<float> GetRingRow(in Stage stage, int channel, int slot) => _buffer.Slice(stage.Start + (channel * stage.ChannelLength) + (slot * stage.PaddedWidth), stage.PaddedWidth);
+
+        /// <summary>Records that a filter has received a row, and produces the rows it can, each given to the next filter.</summary>
+        private void Deliver(int index, int row)
+        {
+            ref var stage = ref _stages[index];
+            stage.Received = row + 1;
+            while (stage.NextOutput < _height && stage.Received >= Math.Min(stage.NextOutput + stage.Border + 1, _height))
+            {
+                var y = stage.NextOutput;
+                stage.NextOutput = y + 1;
+                if (stage.Step == GaborishStep)
+                {
+                    ProduceGaborish(stage, index, y);
+                }
+                else
+                {
+                    ProduceEdgePreserving(ref stage, index, y);
+                }
+
+                if (index + 1 < _stages.Length)
+                {
+                    ref var next = ref _stages[index + 1];
+                    for (var c = 0; c < 3; c++)
+                    {
+                        FillBorder(GetRingRow(next, c, y % next.Rows), next.Border, _width);
+                    }
+
+                    Deliver(index + 1, y);
+                }
+            }
+        }
+
+        /// <summary>Gets where a filter writes a row: the ring of the next filter, or the channel for the last one.</summary>
+        private Span<float> GetTarget(int index, int channel, int y)
+        {
+            if (index + 1 == _stages.Length)
+                return GetPlane(channel).Slice(y * _stride, _width);
+
+            ref var next = ref _stages[index + 1];
+            return GetRingRow(next, channel, y % next.Rows).Slice(next.Border, _width);
+        }
+
+        private void ProduceGaborish(in Stage stage, int index, int y)
+        {
+            var top = Mirror(y - 1, _height) % stage.Rows;
+            var middle = y % stage.Rows;
+            var bottom = Mirror(y + 1, _height) % stage.Rows;
+            for (var c = 0; c < 3; c++)
+            {
+                // The weights of the center, of the four sides and of the four corners, normalized
+                var side = _filter.GaborWeights[c * 2];
+                var corner = _filter.GaborWeights[(c * 2) + 1];
+                var scale = 1f / (1f + (4f * (side + corner)));
+                GaborishRow(GetRingRow(stage, c, top), GetRingRow(stage, c, middle), GetRingRow(stage, c, bottom), scale, side * scale, corner * scale, GetTarget(index, c, y));
+            }
+        }
+
+        private void ProduceEdgePreserving(ref Stage stage, int index, int y)
+        {
+            var step = stage.Step;
+            var neighbors = GetNeighbors(step);
+            var patch = GetPatch(step);
+            var directions = GetDirections(step);
+            var border = stage.Border;
+            var paddedWidth = stage.PaddedWidth;
+
+            // The rows the step reads, mirrored at the top and bottom of the frame
+            Span<int> rowOffsets = stackalloc int[(2 * MaxBorder) + 1];
+            rowOffsets = rowOffsets[..((2 * border) + 1)];
+            for (var dy = -border; dy <= border; dy++)
+            {
+                rowOffsets[dy + border] = (Mirror(y + dy, _height) % stage.Rows * paddedWidth) + border;
+            }
+
+            // The distances of the row, from the differences of the rows of its patch
+            var lastPatchRow = 0;
+            for (var k = 0; k < patch.Length; k += 2)
+            {
+                lastPatchRow = Math.Max(lastPatchRow, patch[k]);
+            }
+
+            while (stage.NextDistance <= y)
+            {
+                while (stage.NextDifference <= stage.NextDistance + lastPatchRow)
+                {
+                    ComputeDifferences(stage, stage.NextDifference, patch, directions);
+                    stage.NextDifference++;
+                }
+
+                ComputeDistances(stage, stage.NextDistance, patch, directions);
+                stage.NextDistance++;
+            }
+
+            // The distance to a neighbor is the distance in its direction, or, for the opposite direction, the distance of
+            // the neighbor in that direction: the absolute difference of two samples does not depend on their order
+            Span<int> distanceOffsets = stackalloc int[MaxNeighbors];
+            distanceOffsets = distanceOffsets[..(neighbors.Length / 2)];
+            for (var i = 0; i < distanceOffsets.Length; i++)
+            {
+                var direction = FindDirection(directions, neighbors[i * 2], neighbors[(i * 2) + 1], out var isOpposite);
+                int rowShift = 0, columnShift = 0;
+                if (isOpposite)
+                {
+                    rowShift = -directions[direction * 2];
+                    columnShift = -directions[(direction * 2) + 1];
+                }
+
+                distanceOffsets[i] = (direction * stage.DistanceDirectionLength) + (Modulo(y + rowShift, stage.DistanceRows) * paddedWidth) + border + columnShift;
+            }
+
+            // A block that the filter leaves keeps its samples: they are copied first
+            var samples = _buffer.Slice(stage.Start, 3 * stage.ChannelLength);
+            var outputX = GetTarget(index, 0, y);
+            var outputY = GetTarget(index, 1, y);
+            var outputB = GetTarget(index, 2, y);
+            samples.Slice(rowOffsets[border], _width).CopyTo(outputX);
+            samples.Slice(stage.ChannelLength + rowOffsets[border], _width).CopyTo(outputY);
+            samples.Slice((2 * stage.ChannelLength) + rowOffsets[border], _width).CopyTo(outputB);
+
+            // The differences count less on the border of a block of 8x8 samples, where the transforms leave discontinuities
+            var sigmaScale = step switch
+            {
+                0 => _filter.EpfPass0SigmaScale * 1.65f,
+                1 => 1.65f,
+                _ => _filter.EpfPass2SigmaScale * 1.65f,
+            };
+            var parameters = new EdgePreservingStep(sigmaScale, sigmaScale * _filter.EpfBorderSadMultiplier, _filter.EpfChannelScale[0], _filter.EpfChannelScale[1], _filter.EpfChannelScale[2]);
+            var distances = _buffer.Slice(stage.DistanceStart, directions.Length / 2 * stage.DistanceDirectionLength);
+            var sigmaRow = _inverseSigma.Slice((y >> 3) * _blocksWide, _blocksWide);
+            var row = new EdgePreservingRow(samples, stage.ChannelLength, rowOffsets, neighbors, patch, distances, stage.DistanceChannelLength, distanceOffsets, sigmaRow, (y & 7) is 0 or 7, parameters);
+            FilterRow(row, outputX, outputY, outputB);
+        }
+
+        /// <summary>Gets the columns of the distances a step reads in a direction: from the first sample of a row and from its last sample, both shifted by the opposite direction.</summary>
+        private (int First, int Last) GetDistanceColumns(int columnStep) => (Math.Min(0, -columnStep), _width - 1 + Math.Max(0, -columnStep));
+
+        /// <summary>
+        /// Computes the absolute differences of a row, which may be above or below the frame, with its neighbor in each
+        /// direction, over the columns the distances read them at.
+        /// </summary>
+        private void ComputeDifferences(in Stage stage, int y, ReadOnlySpan<sbyte> patch, ReadOnlySpan<sbyte> directions)
+        {
+            int lowestColumn = 0, highestColumn = 0;
+            for (var k = 1; k < patch.Length; k += 2)
+            {
+                lowestColumn = Math.Min(lowestColumn, patch[k]);
+                highestColumn = Math.Max(highestColumn, patch[k]);
+            }
+
+            var border = stage.Border;
+            var paddedWidth = stage.PaddedWidth;
+            var differenceRow = Modulo(y, stage.DifferenceRows) * paddedWidth;
+            for (var d = 0; d < directions.Length / 2; d++)
+            {
+                var rowStep = directions[d * 2];
+                var columnStep = directions[(d * 2) + 1];
+                var (first, last) = GetDistanceColumns(columnStep);
+                first += lowestColumn;
+                last += highestColumn;
+                var count = last - first + 1;
+                var sample = (Mirror(y, _height) % stage.Rows * paddedWidth) + border + first;
+                var neighbor = (Mirror(y + rowStep, _height) % stage.Rows * paddedWidth) + border + first + columnStep;
+                for (var c = 0; c < 3; c++)
+                {
+                    var ring = _buffer.Slice(stage.Start + (c * stage.ChannelLength), stage.ChannelLength);
+                    var target = _buffer.Slice(stage.DifferenceStart + (d * stage.DirectionLength) + (c * stage.DifferenceChannelLength) + differenceRow + border + first, count);
+                    AbsoluteDifferences(ring.Slice(sample, count), ring.Slice(neighbor, count), target);
+                }
+            }
+        }
+
+        /// <summary>Computes the distances of a row, which may be above the frame, to its neighbor in each direction: the sums of the differences over the patch.</summary>
+        private void ComputeDistances(in Stage stage, int y, ReadOnlySpan<sbyte> patch, ReadOnlySpan<sbyte> directions)
+        {
+            var border = stage.Border;
+            var paddedWidth = stage.PaddedWidth;
+            Span<int> terms = stackalloc int[MaxPatchLength];
+            terms = terms[..(patch.Length / 2)];
+            for (var k = 0; k < terms.Length; k++)
+            {
+                terms[k] = (Modulo(y + patch[k * 2], stage.DifferenceRows) * paddedWidth) + border + patch[(k * 2) + 1];
+            }
+
+            var distanceRow = (Modulo(y, stage.DistanceRows) * paddedWidth) + border;
+            for (var d = 0; d < directions.Length / 2; d++)
+            {
+                var (first, last) = GetDistanceColumns(directions[(d * 2) + 1]);
+                for (var c = 0; c < 3; c++)
+                {
+                    var differences = _buffer.Slice(stage.DifferenceStart + (d * stage.DirectionLength) + (c * stage.DifferenceChannelLength), stage.DifferenceChannelLength);
+                    var target = _buffer.Slice(stage.DistanceStart + (d * stage.DistanceDirectionLength) + (c * stage.DistanceChannelLength) + distanceRow + first, last - first + 1);
+                    SumPatch(differences, terms, first, target);
+                }
+            }
+        }
+
+        /// <summary>Finds the direction of a neighbor, or the opposite one.</summary>
+        private static int FindDirection(ReadOnlySpan<sbyte> directions, int rowOffset, int columnOffset, out bool isOpposite)
+        {
+            for (var d = 0; d < directions.Length / 2; d++)
+            {
+                if (directions[d * 2] == rowOffset && directions[(d * 2) + 1] == columnOffset)
+                {
+                    isOpposite = false;
+                    return d;
+                }
+
+                if (directions[d * 2] == -rowOffset && directions[(d * 2) + 1] == -columnOffset)
+                {
+                    isOpposite = true;
+                    return d;
+                }
+            }
+
+            throw new InvalidOperationException("A neighbor of the edge-preserving filter has no direction.");
+        }
     }
 }

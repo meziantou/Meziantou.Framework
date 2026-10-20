@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Imaging.Benchmarks.Infrastructure;
 using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
@@ -35,6 +36,14 @@ public class JpegXlBenchmarks : IDisposable
     private byte[] _lossyTransparent = null!;
     private byte[] _recompressed = null!;
 
+    // The rendering stages that the encoder of the library never asks for (upsampling, noise), on seeded samples
+    private readonly AllocationScope _stageScope = new(new ImageResourceLimits());
+    private float[] _upsamplingSource = null!;
+    private float[] _upsampled = null!;
+    private float[] _upsamplingKernels2 = null!;
+    private float[] _upsamplingKernels8 = null!;
+    private JpegXlImageBuffer _noiseFrame = null!;
+
     private static int Width => BenchmarkInputs.ServiceWidth;
 
     private static int Height => BenchmarkInputs.ServiceHeight;
@@ -66,6 +75,7 @@ public class JpegXlBenchmarks : IDisposable
         _lossyTransparent = Encode(_transparent, Lossy);
         ImageWorkloads.Recompress(BenchmarkInputs.ServiceJpeg, _output);
         _recompressed = _output.ToArray();
+        SetupStages();
 
         // Untimed correctness gates: the inputs are what the workloads say
         WorkloadChecks.RequireLossless(_lossless, source);
@@ -86,6 +96,7 @@ public class JpegXlBenchmarks : IDisposable
         _transparent?.Dispose();
         _frames?.Dispose();
         _destination?.Dispose();
+        _noiseFrame?.Dispose();
     }
 
     [Benchmark]
@@ -133,6 +144,18 @@ public class JpegXlBenchmarks : IDisposable
     public int ReadRefinements() => ImageWorkloads.ReadRefinements(_progressiveLossy, _destination);
 
     [Benchmark]
+    [Workload("JPEG XL upsampling by 2 of one 512x384 float channel -> 1024x768 (default weights)")]
+    public void UpsampleBy2() => JpegXlUpsampler.Upsample(_upsamplingSource, Width / 2, Width / 2, Height / 2, 2, _upsamplingKernels2, _upsampled, Width, Height, CancellationToken.None);
+
+    [Benchmark]
+    [Workload("JPEG XL upsampling by 8 of one 128x96 float channel -> 1024x768 (default weights)")]
+    public void UpsampleBy8() => JpegXlUpsampler.Upsample(_upsamplingSource, Width / 8, Width / 8, Height / 8, 8, _upsamplingKernels8, _upsampled, Width, Height, CancellationToken.None);
+
+    [Benchmark]
+    [Workload("JPEG XL noise synthesis on 1024x768 XYB float samples (strength 0.5 at every intensity)")]
+    public void SynthesizeNoise() => JpegXlNoise.Apply(_noiseFrame, [0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f], 256, 1, 0, 0, 1, _stageScope, CancellationToken.None);
+
+    [Benchmark]
     [Workload("1024x768 Rgb24 -> lossless JPEG XL, effort 0", ReturnsOutputBytes = true)]
     public long EncodeLosslessFastest() => ImageWorkloads.Encode(_photo, new JpegXlEncoder { Effort = 0 }, _output);
 
@@ -177,6 +200,34 @@ public class JpegXlBenchmarks : IDisposable
         Cleanup();
         _output.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded benchmark inputs.")]
+    private void SetupStages()
+    {
+        var random = new Random(7);
+        _upsamplingSource = new float[(Width / 2) * (Height / 2)];
+        for (var i = 0; i < _upsamplingSource.Length; i++)
+        {
+            _upsamplingSource[i] = (float)random.NextDouble();
+        }
+
+        _upsampled = new float[Width * Height];
+        _upsamplingKernels2 = JpegXlUpsampler.CreateKernels(2, JpegXlTransformData.Default);
+        _upsamplingKernels8 = JpegXlUpsampler.CreateKernels(8, JpegXlTransformData.Default);
+        _noiseFrame = new JpegXlImageBuffer(Width, Height, 3, 0);
+        for (var c = 0; c < 3; c++)
+        {
+            _noiseFrame.Allocate(c, _stageScope);
+            for (var y = 0; y < Height; y++)
+            {
+                var row = _noiseFrame.GetRow(c, y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = c == 1 ? (float)random.NextDouble() : ((float)random.NextDouble() - 0.5f) * 0.05f;
+                }
+            }
+        }
     }
 
     private byte[] Encode(Image image, ImageEncoder encoder)

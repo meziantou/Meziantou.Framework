@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Animations;
 /// <c>finish</c>, <c>cancel</c> and <c>remove</c> events are dispatched there (https://drafts.csswg.org/web-animations-1/#update-animations-and-send-events).
 /// An animation without timeline, or whose timeline is inactive (e.g. its document has no browsing context), stays pending.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#animation"/>
 [IdlInterface("Animation", "https://drafts.csswg.org/web-animations-1/#animation")]
 public partial class Animation : EventTarget, IRealmBoundPlatformObject
 {
@@ -47,6 +48,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// Creates an animation of the effect on the timeline (https://drafts.csswg.org/web-animations-1/#dom-animation-animation):
     /// the default timeline of the document of the current global object.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-animation"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-animation-animation")]
     public Animation(AnimationEffect? effect = null)
         : this(effect, Document.CurrentGlobalDocument.Timeline)
@@ -54,6 +56,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Creates an animation of the effect on the timeline (null for no timeline).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-animation"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-animation-animation")]
     public Animation(AnimationEffect? effect, AnimationTimeline? timeline)
     {
@@ -96,10 +99,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal Document? DocumentForTiming => _timeline?.Document;
 
     /// <summary>Gets or sets the identifier of the animation.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-id"/>
     [IdlMember("id", "https://drafts.csswg.org/web-animations-1/#dom-animation-id")]
     public string Id { get; set; } = "";
 
     /// <summary>Gets or sets the effect of the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-effect).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-effect"/>
     [IdlMember("effect", "https://drafts.csswg.org/web-animations-1/#dom-animation-effect")]
     public AnimationEffect? Effect
     {
@@ -119,6 +124,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal AnimationEffect? EffectValue => _effect;
 
     /// <summary>Gets or sets the timeline of the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-timeline).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-timeline"/>
     [IdlMember("timeline", "https://drafts.csswg.org/web-animations-1/#dom-animation-timeline")]
     public AnimationTimeline? Timeline
     {
@@ -136,6 +142,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal AnimationTimeline? TimelineValue => _timeline;
 
     /// <summary>Gets or sets the playback rate (https://drafts.csswg.org/web-animations-1/#dom-animation-playbackrate).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-playbackrate"/>
     [IdlMember("playbackRate", "https://drafts.csswg.org/web-animations-1/#dom-animation-playbackrate")]
     public double PlaybackRate
     {
@@ -169,6 +176,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the start time of the animation, in milliseconds (https://drafts.csswg.org/web-animations-1/#dom-animation-starttime).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animation-starttime"/>
     [IdlMember("startTime", "https://drafts.csswg.org/web-animations-2/#dom-animation-starttime")]
     public CssNumberish? StartTime
     {
@@ -189,6 +197,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal double? StartTimeValue => _startTime;
 
     /// <summary>Gets or sets the current time of the animation, in milliseconds (https://drafts.csswg.org/web-animations-1/#dom-animation-currenttime).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animation-currenttime"/>
     [IdlMember("currentTime", "https://drafts.csswg.org/web-animations-2/#dom-animation-currenttime")]
     public CssNumberish? CurrentTime
     {
@@ -209,6 +218,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal double? CurrentTimeValue => GetCurrentTime(ignoreHoldTime: false);
 
     /// <summary>Gets the play state of the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-playstate).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-playstate"/>
     [IdlMember("playState", "https://drafts.csswg.org/web-animations-1/#dom-animation-playstate")]
     public AnimationPlayState PlayState
     {
@@ -239,10 +249,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets the replace state of the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-replacestate).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-replacestate"/>
     [IdlMember("replaceState", "https://drafts.csswg.org/web-animations-1/#dom-animation-replacestate")]
     public AnimationReplaceState ReplaceState { get; internal set; }
 
     /// <summary>Gets whether the animation has a pending play or pause task (https://drafts.csswg.org/web-animations-1/#dom-animation-pending).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-pending"/>
     [IdlMember("pending", "https://drafts.csswg.org/web-animations-1/#dom-animation-pending")]
     public bool Pending
     {
@@ -256,6 +268,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal bool HasPendingTask => _pendingTask != PendingTask.None;
 
     /// <summary>Gets the overall progress of the animation, from 0 to 1 (https://drafts.csswg.org/web-animations-2/#dom-animation-overallprogress).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animation-overallprogress"/>
     [IdlMember("overallProgress", "https://drafts.csswg.org/web-animations-2/#dom-animation-overallprogress")]
     public double? OverallProgress
     {
@@ -281,6 +294,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// "normal" or a <see cref="TimelineRangeOffset"/>. A string is parsed as an <c>animation-range-start</c> value.
     /// </summary>
     /// <exception cref="TypeErrorException">The value is invalid.</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animation-rangestart"/>
     [IdlMember("rangeStart", "https://drafts.csswg.org/web-animations-2/#dom-animation-rangestart")]
     public TimelineRangeValue RangeStart
     {
@@ -302,6 +316,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// "normal" or a <see cref="TimelineRangeOffset"/>. A string is parsed as an <c>animation-range-end</c> value.
     /// </summary>
     /// <exception cref="TypeErrorException">The value is invalid.</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animation-rangeend"/>
     [IdlMember("rangeEnd", "https://drafts.csswg.org/web-animations-2/#dom-animation-rangeend")]
     public TimelineRangeValue RangeEnd
     {
@@ -363,6 +378,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal CssNumberish ToCssNumberish(double time) => _timeline is { IsProgressBased: true } ? new CssUnitValue(time, "percent") : time;
 
     /// <summary>Gets the promise resolved when the animation is ready to play (https://drafts.csswg.org/web-animations-1/#dom-animation-ready).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-ready"/>
     [IdlMember("ready", "https://drafts.csswg.org/web-animations-1/#dom-animation-ready")]
     public Task<Animation> Ready
     {
@@ -374,6 +390,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets the promise resolved when the animation finishes (https://drafts.csswg.org/web-animations-1/#dom-animation-finished).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-finished"/>
     [IdlMember("finished", "https://drafts.csswg.org/web-animations-1/#dom-animation-finished")]
     public Task<Animation> Finished
     {
@@ -385,6 +402,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>finish</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-onfinish"/>
     [IdlMember("onfinish", "https://drafts.csswg.org/web-animations-1/#dom-animation-onfinish")]
     public Action<Event>? OnFinish
     {
@@ -393,6 +411,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>cancel</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-oncancel"/>
     [IdlMember("oncancel", "https://drafts.csswg.org/web-animations-1/#dom-animation-oncancel")]
     public Action<Event>? OnCancel
     {
@@ -401,6 +420,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>remove</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-onremove"/>
     [IdlMember("onremove", "https://drafts.csswg.org/web-animations-1/#dom-animation-onremove")]
     public Action<Event>? OnRemove
     {
@@ -415,6 +435,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal double EffectEnd => _effect?.EndTime ?? 0;
 
     /// <summary>Cancels the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-cancel).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-cancel"/>
     [IdlMember("cancel", "https://drafts.csswg.org/web-animations-1/#dom-animation-cancel")]
     public void Cancel()
     {
@@ -425,6 +446,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
 
     /// <summary>Seeks the animation to the end of its effect (https://drafts.csswg.org/web-animations-1/#dom-animation-finish).</summary>
     /// <exception cref="DomException">The playback rate is 0, or the effect is infinite and the playback rate is positive (InvalidStateError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-finish"/>
     [IdlMember("finish", "https://drafts.csswg.org/web-animations-1/#dom-animation-finish")]
     public void Finish()
     {
@@ -466,6 +488,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
 
     /// <summary>Plays or resumes the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-play).</summary>
     /// <exception cref="DomException">The animation plays backwards and its effect is infinite (InvalidStateError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-play"/>
     [IdlMember("play", "https://drafts.csswg.org/web-animations-1/#dom-animation-play")]
     public void Play()
     {
@@ -476,6 +499,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
 
     /// <summary>Pauses the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-pause).</summary>
     /// <exception cref="DomException">The current time is unresolved, the animation plays backwards and its effect is infinite (InvalidStateError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-pause"/>
     [IdlMember("pause", "https://drafts.csswg.org/web-animations-1/#dom-animation-pause")]
     public void Pause()
     {
@@ -488,6 +512,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// Sets the playback rate without a jump of the current time, once the animation is ready
     /// (https://drafts.csswg.org/web-animations-1/#dom-animation-updateplaybackrate).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-updateplaybackrate"/>
     [IdlMember("updatePlaybackRate", "https://drafts.csswg.org/web-animations-1/#dom-animation-updateplaybackrate")]
     public void UpdatePlaybackRate(double playbackRate)
     {
@@ -523,6 +548,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
 
     /// <summary>Reverses the playback direction of the animation (https://drafts.csswg.org/web-animations-1/#dom-animation-reverse).</summary>
     /// <exception cref="DomException">The animation has no active timeline, or its effect is infinite (InvalidStateError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-reverse"/>
     [IdlMember("reverse", "https://drafts.csswg.org/web-animations-1/#dom-animation-reverse")]
     public void Reverse()
     {
@@ -549,6 +575,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Prevents the animation from being removed when it is replaced (https://drafts.csswg.org/web-animations-1/#dom-animation-persist).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animation-persist"/>
     [IdlMember("persist", "https://drafts.csswg.org/web-animations-1/#dom-animation-persist")]
     public void Persist()
     {

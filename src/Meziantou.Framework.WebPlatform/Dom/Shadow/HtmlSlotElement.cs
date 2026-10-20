@@ -1,12 +1,14 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>Represents the options of <c>assignedNodes()</c> and <c>assignedElements()</c>.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#assignednodesoptions"/>
 [IdlInterface("AssignedNodesOptions", "https://html.spec.whatwg.org/multipage/scripting.html#assignednodesoptions")]
 public sealed class AssignedNodesOptions
 {
     /// <summary>
     /// Gets or sets a value indicating whether the nodes assigned to nested slots are returned instead of the slots.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-assignednodesoptions-flatten"/>
     [IdlMember("flatten", "https://html.spec.whatwg.org/multipage/scripting.html#dom-assignednodesoptions-flatten")]
     public bool Flatten { get; init; }
 }
@@ -29,6 +31,7 @@ public partial class HtmlSlotElement
     internal List<Node> ManuallyAssignedNodes { get; private set; } = [];
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignednodes</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignednodes"/>
     [IdlMember("assignedNodes", "https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignednodes")]
     public IReadOnlyList<Node> AssignedNodes(AssignedNodesOptions? options = null)
     {
@@ -39,6 +42,7 @@ public partial class HtmlSlotElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignedelements</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignedelements"/>
     [IdlMember("assignedElements", "https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assignedelements")]
     public IReadOnlyList<Element> AssignedElements(AssignedNodesOptions? options = null)
     {
@@ -52,6 +56,7 @@ public partial class HtmlSlotElement
     /// their assigned nodes change, and they are signaled a slot change (the specification only runs "assign slottables for a
     /// tree" for the root of this slot, which leaves the assigned nodes of the previous slot of a node out of date).
     /// </remarks>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assign"/>
     [IdlMember("assign", "https://html.spec.whatwg.org/multipage/scripting.html#dom-slot-assign")]
     public void Assign(params IReadOnlyList<Node> nodes)
     {

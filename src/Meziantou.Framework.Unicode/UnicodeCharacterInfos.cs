@@ -14,7 +14,8 @@ internal static partial class UnicodeCharacterInfos
 {
     private const int MaxCodePoint = 0x10FFFF;
 
-    private static string?[]? s_names;
+    // The decoded names, by bucket: a program that reads a few names does not allocate a slot for every one.
+    private static readonly string?[]?[] NameCache = new string?[]?[(NamedCharacterCount + NameBucketSize - 1) / NameBucketSize];
     private static string?[]? s_decompositions;
     private static string?[]? s_strings;
     private static int s_count = -1;
@@ -120,7 +121,8 @@ internal static partial class UnicodeCharacterInfos
     {
         var entries = NameEntries;
         var firstEntryPosition = ReadUInt24(NameBuckets, bucketOffset + 3);
-        var firstOrdinal = bucketOffset / NameBucketRecordSize * NameBucketSize;
+        var bucket = bucketOffset / NameBucketRecordSize;
+        var firstOrdinal = bucket * NameBucketSize;
         var count = Math.Min(NameBucketSize, NamedCharacterCount - firstOrdinal);
 
         // Find the entry first: when its name is cached, nothing has to be decoded.
@@ -141,8 +143,8 @@ internal static partial class UnicodeCharacterInfos
         }
 
         // Caching keeps a code point looked up more than once from decoding and allocating its name again.
-        var names = s_names ?? CreateCache(ref s_names, NamedCharacterCount);
-        var name = names[firstOrdinal + index];
+        var names = NameCache[bucket] ?? CreateCache(ref NameCache[bucket], NameBucketSize);
+        var name = names[index];
         if (name is not null)
             return name;
 
@@ -157,7 +159,7 @@ internal static partial class UnicodeCharacterInfos
         }
 
         name = Encoding.UTF8.GetString(buffer[..length]);
-        names[firstOrdinal + index] = name;
+        names[index] = name;
         return name;
     }
 
@@ -357,7 +359,7 @@ internal static partial class UnicodeCharacterInfos
             if (codePoint == _nextNamedCodePoint)
             {
                 var length = DecodeFrontCodedName(ref _nameEntryPosition, ref _nameTextPosition, _nameBuffer);
-                var name = s_names?[_nameOrdinal] ?? Encoding.UTF8.GetString(_nameBuffer, 0, length);
+                var name = NameCache[_nameOrdinal / NameBucketSize]?[_nameOrdinal % NameBucketSize] ?? Encoding.UTF8.GetString(_nameBuffer, 0, length);
                 _nameOrdinal++;
                 if (_nameOrdinal == NamedCharacterCount)
                 {

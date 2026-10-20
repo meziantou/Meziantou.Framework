@@ -3,14 +3,17 @@ using Meziantou.Framework.WebPlatform.Media;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>How the media segments appended to a <see cref="SourceBuffer"/> are placed on the media timeline (https://w3c.github.io/media-source/#dom-appendmode).</summary>
+/// <seealso href="https://w3c.github.io/media-source/#dom-appendmode"/>
 [IdlInterface("AppendMode", "https://w3c.github.io/media-source/#dom-appendmode")]
 public enum AppendMode
 {
     /// <summary>The timestamps of the media segments determine where the coded frames are placed: the segments can be appended in any order.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-appendmode-segments"/>
     [IdlMember("segments", "https://w3c.github.io/media-source/#dom-appendmode-segments")]
     Segments,
 
     /// <summary>The media segments are adjacent in time, whatever their timestamps: the coded frames of a segment are placed after the ones of the previous segment.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-appendmode-sequence"/>
     [IdlMember("sequence", "https://w3c.github.io/media-source/#dom-appendmode-sequence")]
     Sequence,
 }
@@ -49,6 +52,7 @@ internal sealed class SourceBufferTrack(SourceBuffer sourceBuffer, TrackBuffer b
 /// <see cref="Mode"/>, the append window, the coded frame groups, the frames that overlap), the removals, the eviction
 /// when the buffer is full, and the <see cref="Buffered"/> ranges.
 /// </summary>
+/// <seealso href="https://w3c.github.io/media-source/#sourcebuffer"/>
 [IdlInterface("SourceBuffer", "https://w3c.github.io/media-source/#sourcebuffer")]
 public class SourceBuffer : EventTarget
 {
@@ -120,6 +124,7 @@ public class SourceBuffer : EventTarget
     /// segment, and a <c>TypeError</c> when the timestamps of the byte stream format are generated (the mode is always
     /// <see cref="AppendMode.Sequence"/>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-mode"/>
     [IdlMember("mode", "https://w3c.github.io/media-source/#dom-sourcebuffer-mode")]
     public AppendMode Mode
     {
@@ -145,6 +150,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets a value indicating whether an append or a removal is being processed (https://w3c.github.io/media-source/#dom-sourcebuffer-updating).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-updating"/>
     [IdlMember("updating", "https://w3c.github.io/media-source/#dom-sourcebuffer-updating")]
     public bool Updating => _updating;
 
@@ -153,6 +159,7 @@ public class SourceBuffer : EventTarget
     /// intersection of the ranges of the audio and video track buffers. The same object is returned while the ranges do not
     /// change. Throws an <c>InvalidStateError</c> when the source buffer is removed.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-buffered"/>
     [IdlMember("buffered", "https://w3c.github.io/media-source/#dom-sourcebuffer-buffered")]
     public TimeRanges Buffered
     {
@@ -173,6 +180,7 @@ public class SourceBuffer : EventTarget
     /// Gets or sets the offset applied to the timestamps of the next media segments, in seconds
     /// (https://w3c.github.io/media-source/#dom-sourcebuffer-timestampoffset).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-timestampoffset"/>
     [IdlMember("timestampOffset", "https://w3c.github.io/media-source/#dom-sourcebuffer-timestampoffset")]
     public double TimestampOffset
     {
@@ -195,10 +203,12 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets the audio tracks created by the source buffer (https://w3c.github.io/media-source/#dom-sourcebuffer-audiotracks).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-audiotracks"/>
     [IdlMember("audioTracks", "https://w3c.github.io/media-source/#dom-sourcebuffer-audiotracks")]
     public AudioTrackList AudioTracks => field ??= new AudioTrackList(this);
 
     /// <summary>Gets the video tracks created by the source buffer (https://w3c.github.io/media-source/#dom-sourcebuffer-videotracks).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-videotracks"/>
     [IdlMember("videoTracks", "https://w3c.github.io/media-source/#dom-sourcebuffer-videotracks")]
     public VideoTrackList VideoTracks => field ??= new VideoTrackList(this);
 
@@ -206,6 +216,7 @@ public class SourceBuffer : EventTarget
     /// Gets the text tracks created by the source buffer (https://w3c.github.io/media-source/#dom-sourcebuffer-texttracks):
     /// the list is always empty (the text tracks of the byte streams are not supported, as in the browsers).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-texttracks"/>
     [IdlMember("textTracks", "https://w3c.github.io/media-source/#dom-sourcebuffer-texttracks")]
     public TextTrackList TextTracks => field ??= new TextTrackList(this);
 
@@ -213,6 +224,7 @@ public class SourceBuffer : EventTarget
     /// Gets or sets the start of the append window, in seconds (https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowstart):
     /// the coded frames that start before it are dropped.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowstart"/>
     [IdlMember("appendWindowStart", "https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowstart")]
     public double AppendWindowStart
     {
@@ -232,6 +244,7 @@ public class SourceBuffer : EventTarget
     /// Gets or sets the end of the append window, in seconds (https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowend):
     /// the coded frames that end after it are dropped.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowend"/>
     [IdlMember("appendWindowEnd", "https://w3c.github.io/media-source/#dom-sourcebuffer-appendwindowend")]
     public double AppendWindowEnd
     {
@@ -248,6 +261,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>updatestart</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-onupdatestart"/>
     [IdlMember("onupdatestart", "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdatestart")]
     public Action<Event>? OnUpdateStart
     {
@@ -256,6 +270,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>update</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-onupdate"/>
     [IdlMember("onupdate", "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdate")]
     public Action<Event>? OnUpdate
     {
@@ -264,6 +279,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>updateend</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-onupdateend"/>
     [IdlMember("onupdateend", "https://w3c.github.io/media-source/#dom-sourcebuffer-onupdateend")]
     public Action<Event>? OnUpdateEnd
     {
@@ -272,6 +288,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-onerror"/>
     [IdlMember("onerror", "https://w3c.github.io/media-source/#dom-sourcebuffer-onerror")]
     public Action<Event>? OnError
     {
@@ -280,6 +297,7 @@ public class SourceBuffer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-onabort"/>
     [IdlMember("onabort", "https://w3c.github.io/media-source/#dom-sourcebuffer-onabort")]
     public Action<Event>? OnAbort
     {
@@ -293,6 +311,7 @@ public class SourceBuffer : EventTarget
     /// <c>InvalidStateError</c> when the source buffer is removed or updating, or when the media element has an error, and a
     /// <c>QuotaExceededError</c> when the buffer is full.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-appendbuffer"/>
     [IdlMember("appendBuffer", "https://w3c.github.io/media-source/#dom-sourcebuffer-appendbuffer")]
     public void AppendBuffer(ReadOnlySpan<byte> data)
     {
@@ -322,6 +341,7 @@ public class SourceBuffer : EventTarget
     /// Aborts the current segment and resets the segment parser (https://w3c.github.io/media-source/#dom-sourcebuffer-abort):
     /// a pending append is aborted (<c>abort</c>, <c>updateend</c>), and the append window is reset.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-abort"/>
     [IdlMember("abort", "https://w3c.github.io/media-source/#dom-sourcebuffer-abort")]
     public void Abort()
     {
@@ -344,6 +364,7 @@ public class SourceBuffer : EventTarget
     /// next segment must be an initialization segment. Throws a <c>TypeError</c> for an empty type and a
     /// <c>NotSupportedError</c> when the media backend does not support the type.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-changetype"/>
     [IdlMember("changeType", "https://w3c.github.io/media-source/#dom-sourcebuffer-changetype")]
     public void ChangeType(string type)
     {
@@ -373,6 +394,7 @@ public class SourceBuffer : EventTarget
     /// Removes the media of a time range (https://w3c.github.io/media-source/#dom-sourcebuffer-remove), in a task
     /// (<c>updatestart</c>, <c>update</c>, <c>updateend</c>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-sourcebuffer-remove"/>
     [IdlMember("remove", "https://w3c.github.io/media-source/#dom-sourcebuffer-remove")]
     public void Remove(double start, double end)
     {

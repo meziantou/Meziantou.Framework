@@ -3,14 +3,17 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The kind of a file system entry (https://fs.spec.whatwg.org/#enumdef-filesystemhandlekind).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#enumdef-filesystemhandlekind"/>
 [IdlInterface("FileSystemHandleKind", "https://fs.spec.whatwg.org/#enumdef-filesystemhandlekind")]
 public enum FileSystemHandleKind
 {
     /// <summary>A file.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemhandlekind-file"/>
     [IdlMember("file", "https://fs.spec.whatwg.org/#dom-filesystemhandlekind-file")]
     File,
 
     /// <summary>A directory.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemhandlekind-directory"/>
     [IdlMember("directory", "https://fs.spec.whatwg.org/#dom-filesystemhandlekind-directory")]
     Directory,
 }
@@ -20,6 +23,7 @@ public enum FileSystemHandleKind
 /// obtained from <see cref="StorageManager.GetDirectory"/>. A handle is a locator (the path of the entry in the file system
 /// of its origin): the entry may not exist, and several handles can locate the same entry.
 /// </summary>
+/// <seealso href="https://fs.spec.whatwg.org/#filesystemhandle"/>
 [IdlInterface("FileSystemHandle", "https://fs.spec.whatwg.org/#filesystemhandle")]
 public abstract class FileSystemHandle : IStructuredSerializable
 {
@@ -43,14 +47,17 @@ public abstract class FileSystemHandle : IStructuredSerializable
     internal string[] Path { get; private protected set; }
 
     /// <summary>Gets the kind of the entry.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemhandle-kind"/>
     [IdlMember("kind", "https://fs.spec.whatwg.org/#dom-filesystemhandle-kind")]
     public abstract FileSystemHandleKind Kind { get; }
 
     /// <summary>Gets the name of the entry: the last component of its path (the empty string for the root directory).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemhandle-name"/>
     [IdlMember("name", "https://fs.spec.whatwg.org/#dom-filesystemhandle-name")]
     public string Name => Path.Length == 0 ? "" : Path[^1];
 
     /// <summary>Returns whether the two handles locate the same entry (https://fs.spec.whatwg.org/#dom-filesystemhandle-issameentry).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemhandle-issameentry"/>
     [IdlMember("isSameEntry", "https://fs.spec.whatwg.org/#dom-filesystemhandle-issameentry")]
     public Task<bool> IsSameEntry(FileSystemHandle other)
     {
@@ -206,28 +213,34 @@ internal sealed class SerializedFileSystemHandle(string settingsOrigin, FileSyst
 }
 
 /// <summary>The options of <see cref="FileSystemDirectoryHandle.GetFileHandle"/> (https://fs.spec.whatwg.org/#dictdef-filesystemgetfileoptions).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#dictdef-filesystemgetfileoptions"/>
 [IdlInterface("FileSystemGetFileOptions", "https://fs.spec.whatwg.org/#dictdef-filesystemgetfileoptions")]
 public sealed class FileSystemGetFileOptions
 {
     /// <summary>Gets whether the file is created when it does not exist.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemgetfileoptions-create"/>
     [IdlMember("create", "https://fs.spec.whatwg.org/#dom-filesystemgetfileoptions-create")]
     public bool Create { get; init; }
 }
 
 /// <summary>The options of <see cref="FileSystemDirectoryHandle.GetDirectoryHandle"/> (https://fs.spec.whatwg.org/#dictdef-filesystemgetdirectoryoptions).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#dictdef-filesystemgetdirectoryoptions"/>
 [IdlInterface("FileSystemGetDirectoryOptions", "https://fs.spec.whatwg.org/#dictdef-filesystemgetdirectoryoptions")]
 public sealed class FileSystemGetDirectoryOptions
 {
     /// <summary>Gets whether the directory is created when it does not exist.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemgetdirectoryoptions-create"/>
     [IdlMember("create", "https://fs.spec.whatwg.org/#dom-filesystemgetdirectoryoptions-create")]
     public bool Create { get; init; }
 }
 
 /// <summary>The options of <see cref="FileSystemDirectoryHandle.RemoveEntry"/> (https://fs.spec.whatwg.org/#dictdef-filesystemremoveoptions).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#dictdef-filesystemremoveoptions"/>
 [IdlInterface("FileSystemRemoveOptions", "https://fs.spec.whatwg.org/#dictdef-filesystemremoveoptions")]
 public sealed class FileSystemRemoveOptions
 {
     /// <summary>Gets whether a directory is removed with its entries.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemremoveoptions-recursive"/>
     [IdlMember("recursive", "https://fs.spec.whatwg.org/#dom-filesystemremoveoptions-recursive")]
     public bool Recursive { get; init; }
 }
@@ -236,6 +249,7 @@ public sealed class FileSystemRemoveOptions
 /// A handle to a directory (https://fs.spec.whatwg.org/#api-filesystemdirectoryhandle). In the scripts, it is an async
 /// iterable of its entries (<c>entries()</c>, <c>keys()</c>, <c>values()</c>); in .NET, see <see cref="GetEntriesAsync"/>.
 /// </summary>
+/// <seealso href="https://fs.spec.whatwg.org/#filesystemdirectoryhandle"/>
 [IdlInterface("FileSystemDirectoryHandle", "https://fs.spec.whatwg.org/#filesystemdirectoryhandle")]
 public sealed class FileSystemDirectoryHandle : FileSystemHandle
 {
@@ -254,6 +268,7 @@ public sealed class FileSystemDirectoryHandle : FileSystemHandle
     /// for an invalid name, a <c>NotFoundError</c> when the directory or the file does not exist, and a
     /// <c>TypeMismatchError</c> when the name is the one of a directory.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getfilehandle"/>
     [IdlMember("getFileHandle", "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getfilehandle")]
     public Task<FileSystemFileHandle> GetFileHandle(string name, FileSystemGetFileOptions? options = null)
         => Invoke(() => (FileSystemFileHandle)GetChild(name, FileSystemHandleKind.File, options?.Create ?? false));
@@ -263,6 +278,7 @@ public sealed class FileSystemDirectoryHandle : FileSystemHandle
     /// (https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getdirectoryhandle), created when it does not exist and the
     /// <see cref="FileSystemGetDirectoryOptions.Create"/> option is set. The task fails as the one of <see cref="GetFileHandle"/>.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getdirectoryhandle"/>
     [IdlMember("getDirectoryHandle", "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-getdirectoryhandle")]
     public Task<FileSystemDirectoryHandle> GetDirectoryHandle(string name, FileSystemGetDirectoryOptions? options = null)
         => Invoke(() => (FileSystemDirectoryHandle)GetChild(name, FileSystemHandleKind.Directory, options?.Create ?? false));
@@ -308,6 +324,7 @@ public sealed class FileSystemDirectoryHandle : FileSystemHandle
     /// <c>NoModificationAllowedError</c> while a writable stream or an access handle of the file, or of a file of the
     /// directory, is open.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-removeentry"/>
     [IdlMember("removeEntry", "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-removeentry")]
     public Task RemoveEntry(string name, FileSystemRemoveOptions? options = null)
         => Invoke<object?>(() =>
@@ -332,6 +349,7 @@ public sealed class FileSystemDirectoryHandle : FileSystemHandle
     /// (https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-resolve): an empty list for the directory itself, and null
     /// when the entry is not in the directory.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-resolve"/>
     [IdlMember("resolve", "https://fs.spec.whatwg.org/#dom-filesystemdirectoryhandle-resolve")]
     public Task<IReadOnlyList<string>?> Resolve(FileSystemHandle possibleDescendant)
     {

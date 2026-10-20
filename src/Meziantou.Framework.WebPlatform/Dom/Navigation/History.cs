@@ -4,14 +4,17 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#scrollrestoration</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#scrollrestoration"/>
 [IdlInterface("ScrollRestoration", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#scrollrestoration")]
 public enum ScrollRestoration
 {
     /// <summary>The user agent restores the scroll position when the entry is traversed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-scrollrestoration-auto"/>
     [IdlMember("auto", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-scrollrestoration-auto")]
     Auto,
 
     /// <summary>The page restores the scroll position itself.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-scrollrestoration-manual"/>
     [IdlMember("manual", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-scrollrestoration-manual")]
     Manual,
 }
@@ -32,6 +35,7 @@ public enum ScrollRestoration
 /// and <see cref="State"/> is a deserialization of the state of the session history entry.
 /// </para>
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#history-3"/>
 [IdlInterface("History", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#history-3")]
 public sealed class History
 {
@@ -52,6 +56,7 @@ public sealed class History
     private BrowsingContext? FullyActiveNavigable => _window.Document.IsFullyActive ? _window.Document.BrowsingContext : null;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-length</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-length")]
     public uint Length
     {
@@ -63,6 +68,7 @@ public sealed class History
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-scroll-restoration</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-scroll-restoration"/>
     [IdlMember("scrollRestoration", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-scroll-restoration")]
     public ScrollRestoration ScrollRestoration
     {
@@ -79,6 +85,7 @@ public sealed class History
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-state</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-state"/>
     [IdlMember("state", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-state")]
     public object? State
     {
@@ -144,14 +151,17 @@ public sealed class History
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-go</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-go"/>
     [IdlMember("go", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-go")]
     public void Go(int delta = 0) => DeltaTraverse(delta);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-back</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-back"/>
     [IdlMember("back", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-back")]
     public void Back() => DeltaTraverse(-1);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-forward</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-forward"/>
     [IdlMember("forward", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-forward")]
     public void Forward() => DeltaTraverse(1);
 
@@ -172,6 +182,7 @@ public sealed class History
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-pushstate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-pushstate"/>
     [IdlMember("pushState", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-pushstate")]
     public void PushState(object? data, string unused, string? url = null)
     {
@@ -180,6 +191,7 @@ public sealed class History
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-replacestate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-replacestate"/>
     [IdlMember("replaceState", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-replacestate")]
     public void ReplaceState(object? data, string unused, string? url = null)
     {

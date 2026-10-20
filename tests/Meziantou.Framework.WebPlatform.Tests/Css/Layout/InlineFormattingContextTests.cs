@@ -245,7 +245,7 @@ public sealed class InlineFormattingContextTests : IDisposable
         // https://drafts.csswg.org/css-text-4/#valdef-hyphens-auto: "Automatic hyphenation opportunities within a word must be
         // ignored if the word contains a conditional hyphen"
         var document = Parse("<div id=d lang=en style='width: 60px; hyphens: auto'>implemen&shy;tation now</div>");
-        Assert.Equal(["implemen­-", "tation", "now"], GetLines(document, "d"));
+        Assert.Equal(["implemen\u00AD-", "tation", "now"], GetLines(document, "d"));
     }
 
     [Fact]

@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <c>canvas.getContext("2d")</c>. The drawing is rasterized by the rendering backend of the browsing context; the bitmap is
 /// painted in the box of the canvas.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#canvasrenderingcontext2d"/>
 [IdlInterface("CanvasRenderingContext2D", "https://html.spec.whatwg.org/multipage/canvas.html#canvasrenderingcontext2d")]
 public sealed class CanvasRenderingContext2D : CanvasRenderingContext2DBase
 {
@@ -19,6 +20,7 @@ public sealed class CanvasRenderingContext2D : CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets the canvas element of the context (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-canvas).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-canvas"/>
     [IdlMember("canvas", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-canvas")]
     public HtmlCanvasElement Canvas { get; }
 
@@ -36,6 +38,7 @@ public sealed class CanvasRenderingContext2D : CanvasRenderingContext2DBase
 /// The 2D rendering context of an <see cref="OffscreenCanvas"/> (https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvasrenderingcontext2d):
 /// the same drawing as <see cref="CanvasRenderingContext2D"/>, without the focus rings; it is available in the workers.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvasrenderingcontext2d"/>
 [IdlInterface("OffscreenCanvasRenderingContext2D", "https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvasrenderingcontext2d")]
 public sealed class OffscreenCanvasRenderingContext2D : CanvasRenderingContext2DBase
 {
@@ -46,6 +49,7 @@ public sealed class OffscreenCanvasRenderingContext2D : CanvasRenderingContext2D
     }
 
     /// <summary>Gets the canvas of the context (https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencontext2d-canvas).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencontext2d-canvas"/>
     [IdlMember("canvas", "https://html.spec.whatwg.org/multipage/canvas.html#dom-offscreencontext2d-canvas")]
     public OffscreenCanvas Canvas { get; }
 

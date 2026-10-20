@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A transaction (https://w3c.github.io/IndexedDB/#transaction).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbtransaction"/>
 [IdlInterface("IDBTransaction", "https://w3c.github.io/IndexedDB/#idbtransaction")]
 public sealed class IdbTransaction : EventTarget
 {
@@ -64,26 +65,32 @@ public sealed class IdbTransaction : EventTarget
     internal Action? UpgradeFinished { get; init; }
 
     /// <summary>Gets the sorted names of the object stores of the scope.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstorenames"/>
     [IdlMember("objectStoreNames", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstorenames")]
     public DomStringList ObjectStoreNames => IdbDatabase.CreateSortedNameList((Mode == IdbTransactionMode.VersionChange ? Connection.ObjectStoreSet : Scope).Select(store => store.Name));
 
     /// <summary>Gets the mode of the transaction.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-mode"/>
     [IdlMember("mode", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-mode")]
     public IdbTransactionMode Mode { get; }
 
     /// <summary>Gets the durability hint of the transaction.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-durability"/>
     [IdlMember("durability", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-durability")]
     public IdbTransactionDurability Durability { get; }
 
     /// <summary>Gets the connection of the transaction.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-db"/>
     [IdlMember("db", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-db")]
     public IdbDatabase Db => Connection;
 
     /// <summary>Gets the error of an aborted transaction, or null.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-error"/>
     [IdlMember("error", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-error")]
     public DomException? Error => _error;
 
     /// <summary>The event handler of the abort events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-onabort"/>
     [IdlMember("onabort", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-onabort")]
     public Action<Event>? OnAbort
     {
@@ -92,6 +99,7 @@ public sealed class IdbTransaction : EventTarget
     }
 
     /// <summary>The event handler of the complete events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-oncomplete"/>
     [IdlMember("oncomplete", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-oncomplete")]
     public Action<Event>? OnComplete
     {
@@ -100,6 +108,7 @@ public sealed class IdbTransaction : EventTarget
     }
 
     /// <summary>The event handler of the error events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-onerror"/>
     [IdlMember("onerror", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-onerror")]
     public Action<Event>? OnError
     {
@@ -108,6 +117,7 @@ public sealed class IdbTransaction : EventTarget
     }
 
     /// <summary>Returns the object store handle of an object store of the scope (https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstore).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstore"/>
     [IdlMember("objectStore", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-objectstore")]
     public IdbObjectStore ObjectStore(string name)
     {
@@ -120,6 +130,7 @@ public sealed class IdbTransaction : EventTarget
     }
 
     /// <summary>Commits the transaction without waiting for the events of the pending requests (https://w3c.github.io/IndexedDB/#dom-idbtransaction-commit).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-commit"/>
     [IdlMember("commit", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-commit")]
     public void Commit()
     {
@@ -130,6 +141,7 @@ public sealed class IdbTransaction : EventTarget
     }
 
     /// <summary>Aborts the transaction (https://w3c.github.io/IndexedDB/#dom-idbtransaction-abort).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbtransaction-abort"/>
     [IdlMember("abort", "https://w3c.github.io/IndexedDB/#dom-idbtransaction-abort")]
     public void Abort()
     {

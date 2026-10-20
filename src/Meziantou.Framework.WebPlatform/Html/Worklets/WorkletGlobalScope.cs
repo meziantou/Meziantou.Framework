@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The realm of a worklet global scope belongs to the script engine of the document of the worklet: its scripts and its
 /// callbacks run on the thread of the event loop of the document.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/worklets.html#workletglobalscope"/>
 [IdlInterface("WorkletGlobalScope", "https://html.spec.whatwg.org/multipage/worklets.html#workletglobalscope")]
 public abstract class WorkletGlobalScope : GlobalScope
 {

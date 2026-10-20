@@ -44,7 +44,7 @@ public sealed class ZoneIdentifier
         var hostUrl = default(Entry);
 
         var isInSection = false;
-        foreach (var rawLine in content.AsSpan().TrimStart('﻿').EnumerateLines())
+        foreach (var rawLine in content.AsSpan().TrimStart('\uFEFF').EnumerateLines())
         {
             var line = rawLine.Trim();
             if (line.IsEmpty || line[0] is ';')

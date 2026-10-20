@@ -16,6 +16,7 @@ public partial class Document
     internal WorkerGlobalScope? FontSourceWorker { get; init; }
 
     /// <summary>The font source of the document (https://drafts.csswg.org/css-font-loading/#font-source).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesource-fonts"/>
     [IdlMember("fonts", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesource-fonts")]
     public FontFaceSet Fonts => _fonts ?? CreateFonts(deferEnvironmentCheck: false);
 

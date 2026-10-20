@@ -4,110 +4,136 @@ using System.Text;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://drafts.fxtf.org/geometry/#dictdef-dommatrix2dinit</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dictdef-dommatrix2dinit"/>
 [IdlInterface("DOMMatrix2DInit", "https://drafts.fxtf.org/geometry/#dictdef-dommatrix2dinit")]
 public class DomMatrix2DInit
 {
     /// <summary>Gets or sets the <c>a</c> component of the matrix, an alias of <c>m11</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-a"/>
     [IdlMember("a", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-a")]
     public double? A { get; init; }
 
     /// <summary>Gets or sets the <c>b</c> component of the matrix, an alias of <c>m12</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-b"/>
     [IdlMember("b", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-b")]
     public double? B { get; init; }
 
     /// <summary>Gets or sets the <c>c</c> component of the matrix, an alias of <c>m21</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-c"/>
     [IdlMember("c", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-c")]
     public double? C { get; init; }
 
     /// <summary>Gets or sets the <c>d</c> component of the matrix, an alias of <c>m22</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-d"/>
     [IdlMember("d", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-d")]
     public double? D { get; init; }
 
     /// <summary>Gets or sets the <c>e</c> component of the matrix, an alias of <c>m41</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-e"/>
     [IdlMember("e", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-e")]
     public double? E { get; init; }
 
     /// <summary>Gets or sets the <c>f</c> component of the matrix, an alias of <c>m42</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-f"/>
     [IdlMember("f", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-f")]
     public double? F { get; init; }
 
     /// <summary>Gets or sets the <c>m11</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m11"/>
     [IdlMember("m11", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m11")]
     public double? M11 { get; init; }
 
     /// <summary>Gets or sets the <c>m12</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m12"/>
     [IdlMember("m12", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m12")]
     public double? M12 { get; init; }
 
     /// <summary>Gets or sets the <c>m21</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m21"/>
     [IdlMember("m21", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m21")]
     public double? M21 { get; init; }
 
     /// <summary>Gets or sets the <c>m22</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m22"/>
     [IdlMember("m22", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m22")]
     public double? M22 { get; init; }
 
     /// <summary>Gets or sets the <c>m41</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m41"/>
     [IdlMember("m41", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m41")]
     public double? M41 { get; init; }
 
     /// <summary>Gets or sets the <c>m42</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m42"/>
     [IdlMember("m42", "https://drafts.fxtf.org/geometry/#dom-dommatrix2dinit-m42")]
     public double? M42 { get; init; }
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dictdef-dommatrixinit</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dictdef-dommatrixinit"/>
 [IdlInterface("DOMMatrixInit", "https://drafts.fxtf.org/geometry/#dictdef-dommatrixinit")]
 public sealed class DomMatrixInit : DomMatrix2DInit
 {
     /// <summary>Gets or sets the <c>m13</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m13"/>
     [IdlMember("m13", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m13")]
     public double M13 { get; init; }
 
     /// <summary>Gets or sets the <c>m14</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m14"/>
     [IdlMember("m14", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m14")]
     public double M14 { get; init; }
 
     /// <summary>Gets or sets the <c>m23</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m23"/>
     [IdlMember("m23", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m23")]
     public double M23 { get; init; }
 
     /// <summary>Gets or sets the <c>m24</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m24"/>
     [IdlMember("m24", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m24")]
     public double M24 { get; init; }
 
     /// <summary>Gets or sets the <c>m31</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m31"/>
     [IdlMember("m31", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m31")]
     public double M31 { get; init; }
 
     /// <summary>Gets or sets the <c>m32</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m32"/>
     [IdlMember("m32", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m32")]
     public double M32 { get; init; }
 
     /// <summary>Gets or sets the <c>m33</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m33"/>
     [IdlMember("m33", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m33")]
     public double M33 { get; init; } = 1;
 
     /// <summary>Gets or sets the <c>m34</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m34"/>
     [IdlMember("m34", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m34")]
     public double M34 { get; init; }
 
     /// <summary>Gets or sets the <c>m43</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m43"/>
     [IdlMember("m43", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m43")]
     public double M43 { get; init; }
 
     /// <summary>Gets or sets the <c>m44</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m44"/>
     [IdlMember("m44", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-m44")]
     public double M44 { get; init; } = 1;
 
     /// <summary>
     /// Gets or sets a value indicating whether the matrix is a 2D matrix, or null to infer it from the components.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixinit-is2d"/>
     [IdlMember("is2D", "https://drafts.fxtf.org/geometry/#dom-dommatrixinit-is2d")]
     public bool? Is2D { get; init; }
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dommatrixreadonly</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dommatrixreadonly"/>
 [IdlInterface("DOMMatrixReadOnly", "https://drafts.fxtf.org/geometry/#dommatrixreadonly")]
 public class DomMatrixReadOnly : Scripting.IStructuredSerializable
 {
@@ -116,6 +142,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     private protected bool Is2DFlag = true;
 
     /// <summary>Creates the 2D identity matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly")]
     public DomMatrixReadOnly()
     {
@@ -139,6 +166,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Creates a matrix by parsing the given CSS transform list.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly")]
     public DomMatrixReadOnly(string init)
     {
@@ -170,6 +198,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Creates a matrix from a sequence of 6 (2D) or 16 (3D) values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-dommatrixreadonly")]
     public DomMatrixReadOnly(IReadOnlyList<double> init)
     {
@@ -262,6 +291,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Creates a read-only matrix from the components of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-frommatrix"/>
     [IdlMember("fromMatrix", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-frommatrix")]
     public static DomMatrixReadOnly FromMatrix(DomMatrixInit? other = null)
     {
@@ -273,6 +303,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Creates a read-only matrix from an array of 6 (2D) or 16 (3D) single-precision values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-fromfloat32array"/>
     [IdlMember("fromFloat32Array", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-fromfloat32array")]
     public static DomMatrixReadOnly FromFloat32Array(float[] array32)
     {
@@ -281,6 +312,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Creates a read-only matrix from an array of 6 (2D) or 16 (3D) double-precision values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-fromfloat64array"/>
     [IdlMember("fromFloat64Array", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-fromfloat64array")]
     public static DomMatrixReadOnly FromFloat64Array(double[] array64)
     {
@@ -289,98 +321,122 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Gets the <c>a</c> component of the matrix, an alias of <c>m11</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-a"/>
     [IdlMember("a", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-a")]
     public double A => Values[0];
 
     /// <summary>Gets the <c>b</c> component of the matrix, an alias of <c>m12</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-b"/>
     [IdlMember("b", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-b")]
     public double B => Values[1];
 
     /// <summary>Gets the <c>c</c> component of the matrix, an alias of <c>m21</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-c"/>
     [IdlMember("c", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-c")]
     public double C => Values[4];
 
     /// <summary>Gets the <c>d</c> component of the matrix, an alias of <c>m22</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-d"/>
     [IdlMember("d", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-d")]
     public double D => Values[5];
 
     /// <summary>Gets the <c>e</c> component of the matrix, an alias of <c>m41</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-e"/>
     [IdlMember("e", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-e")]
     public double E => Values[12];
 
     /// <summary>Gets the <c>f</c> component of the matrix, an alias of <c>m42</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-f"/>
     [IdlMember("f", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-f")]
     public double F => Values[13];
 
     /// <summary>Gets the <c>m11</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m11"/>
     [IdlMember("m11", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m11")]
     public double M11 => Values[0];
 
     /// <summary>Gets the <c>m12</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m12"/>
     [IdlMember("m12", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m12")]
     public double M12 => Values[1];
 
     /// <summary>Gets the <c>m13</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m13"/>
     [IdlMember("m13", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m13")]
     public double M13 => Values[2];
 
     /// <summary>Gets the <c>m14</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m14"/>
     [IdlMember("m14", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m14")]
     public double M14 => Values[3];
 
     /// <summary>Gets the <c>m21</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m21"/>
     [IdlMember("m21", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m21")]
     public double M21 => Values[4];
 
     /// <summary>Gets the <c>m22</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m22"/>
     [IdlMember("m22", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m22")]
     public double M22 => Values[5];
 
     /// <summary>Gets the <c>m23</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m23"/>
     [IdlMember("m23", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m23")]
     public double M23 => Values[6];
 
     /// <summary>Gets the <c>m24</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m24"/>
     [IdlMember("m24", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m24")]
     public double M24 => Values[7];
 
     /// <summary>Gets the <c>m31</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m31"/>
     [IdlMember("m31", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m31")]
     public double M31 => Values[8];
 
     /// <summary>Gets the <c>m32</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m32"/>
     [IdlMember("m32", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m32")]
     public double M32 => Values[9];
 
     /// <summary>Gets the <c>m33</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m33"/>
     [IdlMember("m33", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m33")]
     public double M33 => Values[10];
 
     /// <summary>Gets the <c>m34</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m34"/>
     [IdlMember("m34", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m34")]
     public double M34 => Values[11];
 
     /// <summary>Gets the <c>m41</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m41"/>
     [IdlMember("m41", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m41")]
     public double M41 => Values[12];
 
     /// <summary>Gets the <c>m42</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m42"/>
     [IdlMember("m42", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m42")]
     public double M42 => Values[13];
 
     /// <summary>Gets the <c>m43</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m43"/>
     [IdlMember("m43", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m43")]
     public double M43 => Values[14];
 
     /// <summary>Gets the <c>m44</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m44"/>
     [IdlMember("m44", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-m44")]
     public double M44 => Values[15];
 
     /// <summary>Gets a value indicating whether the matrix is a 2D matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-is2d"/>
     [IdlMember("is2D", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-is2d")]
     public bool Is2D => Is2DFlag;
 
     /// <summary>Gets a value indicating whether the matrix is the identity matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-isidentity"/>
     [IdlMember("isIdentity", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-isidentity")]
     public bool IsIdentity
     {
@@ -420,46 +476,57 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     internal bool Is2DMatrix => Is2DFlag;
 
     /// <summary>Returns a new matrix translated by the given offsets.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-translate"/>
     [IdlMember("translate", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-translate")]
     public DomMatrix Translate(double tx = 0, double ty = 0, double tz = 0) => CloneMutable().TranslateSelf(tx, ty, tz);
 
     /// <summary>Returns a new matrix scaled by the given factors around the given origin.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale"/>
     [IdlMember("scale", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale")]
     public DomMatrix Scale(double scaleX = 1, double? scaleY = null, double scaleZ = 1, double originX = 0, double originY = 0, double originZ = 0) => CloneMutable().ScaleSelf(scaleX, scaleY, scaleZ, originX, originY, originZ);
 
     /// <summary>Returns a new matrix scaled by the given factors on the X and Y axes.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scalenonuniform"/>
     [IdlMember("scaleNonUniform", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scalenonuniform")]
     public DomMatrix ScaleNonUniform(double scaleX = 1, double scaleY = 1) => CloneMutable().ScaleSelf(scaleX, scaleY, 1, 0, 0, 0);
 
     /// <summary>Returns a new matrix scaled uniformly in 3D around the given origin.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale3d"/>
     [IdlMember("scale3d", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-scale3d")]
     public DomMatrix Scale3d(double scale = 1, double originX = 0, double originY = 0, double originZ = 0) => CloneMutable().Scale3dSelf(scale, originX, originY, originZ);
 
     /// <summary>Returns a new matrix rotated by the given angles, in degrees, around the X, Y and Z axes.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotate"/>
     [IdlMember("rotate", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotate")]
     public DomMatrix Rotate(double rotX = 0, double? rotY = null, double? rotZ = null) => CloneMutable().RotateSelf(rotX, rotY, rotZ);
 
     /// <summary>Returns a new matrix rotated by the angle between the positive X axis and the given vector.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotatefromvector"/>
     [IdlMember("rotateFromVector", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotatefromvector")]
     public DomMatrix RotateFromVector(double x = 0, double y = 0) => CloneMutable().RotateFromVectorSelf(x, y);
 
     /// <summary>Returns a new matrix rotated by the given angle, in degrees, around the given axis vector.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotateaxisangle"/>
     [IdlMember("rotateAxisAngle", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-rotateaxisangle")]
     public DomMatrix RotateAxisAngle(double x = 0, double y = 0, double z = 0, double angle = 0) => CloneMutable().RotateAxisAngleSelf(x, y, z, angle);
 
     /// <summary>Returns a new matrix skewed along the X axis by the given angle in degrees.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewx"/>
     [IdlMember("skewX", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewx")]
     public DomMatrix SkewX(double sx = 0) => CloneMutable().SkewXSelf(sx);
 
     /// <summary>Returns a new matrix skewed along the Y axis by the given angle in degrees.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewy"/>
     [IdlMember("skewY", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-skewy")]
     public DomMatrix SkewY(double sy = 0) => CloneMutable().SkewYSelf(sy);
 
     /// <summary>Returns a new matrix that is the product of this matrix and the given matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-multiply"/>
     [IdlMember("multiply", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-multiply")]
     public DomMatrix Multiply(DomMatrixInit? other = null) => CloneMutable().MultiplySelf(other);
 
     /// <summary>Returns a new matrix flipped along the X axis.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-flipx"/>
     [IdlMember("flipX", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-flipx")]
     public DomMatrix FlipX()
     {
@@ -469,6 +536,7 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns a new matrix flipped along the Y axis.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-flipy"/>
     [IdlMember("flipY", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-flipy")]
     public DomMatrix FlipY()
     {
@@ -478,10 +546,12 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns the inverse of the matrix, or a matrix filled with NaN when it is not invertible.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-inverse"/>
     [IdlMember("inverse", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-inverse")]
     public DomMatrix Inverse() => CloneMutable().InvertSelf();
 
     /// <summary>Returns the point obtained by transforming the given point with the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-transformpoint"/>
     [IdlMember("transformPoint", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-transformpoint")]
     public DomPoint TransformPoint(DomPointInit? point = null)
     {
@@ -499,14 +569,17 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
     }
 
     /// <summary>Returns the 16 components of the matrix as single-precision values, in column-major order.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat32array"/>
     [IdlMember("toFloat32Array", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat32array")]
     public float[] ToFloat32Array() => Array.ConvertAll(Values, v => (float)v);
 
     /// <summary>Returns the 16 components of the matrix as double-precision values, in column-major order.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat64array"/>
     [IdlMember("toFloat64Array", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat64array")]
     public double[] ToFloat64Array() => (double[])Values.Clone();
 
     /// <summary>Returns a dictionary representation of the matrix, as used by <c>JSON.stringify()</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tojson"/>
     [IdlMember("toJSON", "https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tojson")]
     public DomMatrixInit ToJson() => new()
     {
@@ -588,16 +661,19 @@ public class DomMatrixReadOnly : Scripting.IStructuredSerializable
 }
 
 /// <summary>https://drafts.fxtf.org/geometry/#dommatrix</summary>
+/// <seealso href="https://drafts.fxtf.org/geometry/#dommatrix"/>
 [IdlInterface("DOMMatrix", "https://drafts.fxtf.org/geometry/#dommatrix")]
 public class DomMatrix : DomMatrixReadOnly
 {
     /// <summary>Creates the 2D identity matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix")]
     public DomMatrix()
     {
     }
 
     /// <summary>Creates a matrix by parsing the given CSS transform list.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix")]
     public DomMatrix(string init)
         : base(init)
@@ -605,6 +681,7 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Creates a matrix from a sequence of 6 (2D) or 16 (3D) values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix"/>
     [IdlMember("constructor", "https://drafts.fxtf.org/geometry/#dom-dommatrix-dommatrix")]
     public DomMatrix(IReadOnlyList<double> init)
         : base(init)
@@ -622,10 +699,12 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Creates a mutable matrix from the components of the given dictionary.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-frommatrix"/>
     [IdlMember("fromMatrix", "https://drafts.fxtf.org/geometry/#dom-dommatrix-frommatrix")]
     public static new DomMatrix FromMatrix(DomMatrixInit? other = null) => FromMatrixInit(other);
 
     /// <summary>Creates a mutable matrix from an array of 6 (2D) or 16 (3D) single-precision values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-fromfloat32array"/>
     [IdlMember("fromFloat32Array", "https://drafts.fxtf.org/geometry/#dom-dommatrix-fromfloat32array")]
     public static new DomMatrix FromFloat32Array(float[] array32)
     {
@@ -634,6 +713,7 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Creates a mutable matrix from an array of 6 (2D) or 16 (3D) double-precision values.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-fromfloat64array"/>
     [IdlMember("fromFloat64Array", "https://drafts.fxtf.org/geometry/#dom-dommatrix-fromfloat64array")]
     public static new DomMatrix FromFloat64Array(double[] array64)
     {
@@ -656,90 +736,112 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Gets or sets the <c>a</c> component of the matrix, an alias of <c>m11</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-a"/>
     [IdlMember("a", "https://drafts.fxtf.org/geometry/#dom-dommatrix-a")]
     public new double A { get => Get(0); set => Set(0, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>b</c> component of the matrix, an alias of <c>m12</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-b"/>
     [IdlMember("b", "https://drafts.fxtf.org/geometry/#dom-dommatrix-b")]
     public new double B { get => Get(1); set => Set(1, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>c</c> component of the matrix, an alias of <c>m21</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-c"/>
     [IdlMember("c", "https://drafts.fxtf.org/geometry/#dom-dommatrix-c")]
     public new double C { get => Get(4); set => Set(4, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>d</c> component of the matrix, an alias of <c>m22</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-d"/>
     [IdlMember("d", "https://drafts.fxtf.org/geometry/#dom-dommatrix-d")]
     public new double D { get => Get(5); set => Set(5, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>e</c> component of the matrix, an alias of <c>m41</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-e"/>
     [IdlMember("e", "https://drafts.fxtf.org/geometry/#dom-dommatrix-e")]
     public new double E { get => Get(12); set => Set(12, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>f</c> component of the matrix, an alias of <c>m42</c>.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-f"/>
     [IdlMember("f", "https://drafts.fxtf.org/geometry/#dom-dommatrix-f")]
     public new double F { get => Get(13); set => Set(13, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m11</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m11"/>
     [IdlMember("m11", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m11")]
     public new double M11 { get => Get(0); set => Set(0, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m12</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m12"/>
     [IdlMember("m12", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m12")]
     public new double M12 { get => Get(1); set => Set(1, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m13</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m13"/>
     [IdlMember("m13", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m13")]
     public new double M13 { get => Get(2); set => Set(2, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m14</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m14"/>
     [IdlMember("m14", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m14")]
     public new double M14 { get => Get(3); set => Set(3, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m21</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m21"/>
     [IdlMember("m21", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m21")]
     public new double M21 { get => Get(4); set => Set(4, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m22</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m22"/>
     [IdlMember("m22", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m22")]
     public new double M22 { get => Get(5); set => Set(5, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m23</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m23"/>
     [IdlMember("m23", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m23")]
     public new double M23 { get => Get(6); set => Set(6, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m24</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m24"/>
     [IdlMember("m24", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m24")]
     public new double M24 { get => Get(7); set => Set(7, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m31</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m31"/>
     [IdlMember("m31", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m31")]
     public new double M31 { get => Get(8); set => Set(8, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m32</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m32"/>
     [IdlMember("m32", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m32")]
     public new double M32 { get => Get(9); set => Set(9, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m33</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m33"/>
     [IdlMember("m33", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m33")]
     public new double M33 { get => Get(10); set => Set(10, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m34</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m34"/>
     [IdlMember("m34", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m34")]
     public new double M34 { get => Get(11); set => Set(11, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m41</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m41"/>
     [IdlMember("m41", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m41")]
     public new double M41 { get => Get(12); set => Set(12, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m42</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m42"/>
     [IdlMember("m42", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m42")]
     public new double M42 { get => Get(13); set => Set(13, value, breaks2D: false); }
 
     /// <summary>Gets or sets the <c>m43</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m43"/>
     [IdlMember("m43", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m43")]
     public new double M43 { get => Get(14); set => Set(14, value, breaks2D: true); }
 
     /// <summary>Gets or sets the <c>m44</c> component of the matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-m44"/>
     [IdlMember("m44", "https://drafts.fxtf.org/geometry/#dom-dommatrix-m44")]
     public new double M44 { get => Get(15); set => Set(15, value, breaks2D: true); }
 
@@ -752,6 +854,7 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Post-multiplies this matrix by the given matrix and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-multiplyself"/>
     [IdlMember("multiplySelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-multiplyself")]
     public DomMatrix MultiplySelf(DomMatrixInit? other = null)
     {
@@ -764,6 +867,7 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Pre-multiplies this matrix by the given matrix and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-premultiplyself"/>
     [IdlMember("preMultiplySelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-premultiplyself")]
     public DomMatrix PreMultiplySelf(DomMatrixInit? other = null)
     {
@@ -776,6 +880,7 @@ public class DomMatrix : DomMatrixReadOnly
     }
 
     /// <summary>Translates this matrix by the given offsets and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-translateself"/>
     [IdlMember("translateSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-translateself")]
     public DomMatrix TranslateSelf(double tx = 0, double ty = 0, double tz = 0) => Mutate(() =>
     {
@@ -787,6 +892,7 @@ public class DomMatrix : DomMatrixReadOnly
     });
 
     /// <summary>Scales this matrix by the given factors around the given origin and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-scaleself"/>
     [IdlMember("scaleSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-scaleself")]
     public DomMatrix ScaleSelf(double scaleX = 1, double? scaleY = null, double scaleZ = 1, double originX = 0, double originY = 0, double originZ = 0) => Mutate(() =>
     {
@@ -800,12 +906,14 @@ public class DomMatrix : DomMatrixReadOnly
     });
 
     /// <summary>Scales this matrix uniformly in 3D around the given origin and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-scale3dself"/>
     [IdlMember("scale3dSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-scale3dself")]
     public DomMatrix Scale3dSelf(double scale = 1, double originX = 0, double originY = 0, double originZ = 0) => ScaleSelf(scale, scale, scale, originX, originY, originZ);
 
     /// <summary>
     /// Rotates this matrix by the given angles, in degrees, around the X, Y and Z axes and returns this matrix.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateself"/>
     [IdlMember("rotateSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateself")]
     public DomMatrix RotateSelf(double rotX = 0, double? rotY = null, double? rotZ = null)
     {
@@ -834,6 +942,7 @@ public class DomMatrix : DomMatrixReadOnly
     /// <summary>
     /// Rotates this matrix by the angle between the positive X axis and the given vector and returns this matrix.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-rotatefromvectorself"/>
     [IdlMember("rotateFromVectorSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-rotatefromvectorself")]
     public DomMatrix RotateFromVectorSelf(double x = 0, double y = 0)
     {
@@ -844,6 +953,7 @@ public class DomMatrix : DomMatrixReadOnly
     /// <summary>
     /// Rotates this matrix by the given angle, in degrees, around the given axis vector and returns this matrix.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateaxisangleself"/>
     [IdlMember("rotateAxisAngleSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-rotateaxisangleself")]
     public DomMatrix RotateAxisAngleSelf(double x = 0, double y = 0, double z = 0, double angle = 0) => Mutate(() =>
     {
@@ -855,14 +965,17 @@ public class DomMatrix : DomMatrixReadOnly
     });
 
     /// <summary>Skews this matrix along the X axis by the given angle in degrees and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-skewxself"/>
     [IdlMember("skewXSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-skewxself")]
     public DomMatrix SkewXSelf(double sx = 0) => Mutate(() => PostMultiply([1, 0, 0, 0, Math.Tan(sx * Math.PI / 180), 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
 
     /// <summary>Skews this matrix along the Y axis by the given angle in degrees and returns this matrix.</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-skewyself"/>
     [IdlMember("skewYSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-skewyself")]
     public DomMatrix SkewYSelf(double sy = 0) => Mutate(() => PostMultiply([1, Math.Tan(sy * Math.PI / 180), 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
 
     /// <summary>https://drafts.fxtf.org/geometry/#dom-dommatrix-invertself</summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-invertself"/>
     [IdlMember("invertSelf", "https://drafts.fxtf.org/geometry/#dom-dommatrix-invertself")]
     public DomMatrix InvertSelf() => Mutate(() =>
     {
@@ -879,6 +992,7 @@ public class DomMatrix : DomMatrixReadOnly
     /// <summary>
     /// Replaces the components of this matrix with the result of parsing the given CSS transform list.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/geometry/#dom-dommatrix-setmatrixvalue"/>
     [IdlMember("setMatrixValue", "https://drafts.fxtf.org/geometry/#dom-dommatrix-setmatrixvalue")]
     public DomMatrix SetMatrixValue(string transformList)
     {

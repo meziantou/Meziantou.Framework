@@ -6,6 +6,7 @@ using File = Meziantou.Framework.WebPlatform.Dom.FileApi.File;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The value of a form data entry: a string or a file (https://xhr.spec.whatwg.org/#formdataentryvalue).</summary>
+/// <seealso href="https://xhr.spec.whatwg.org/#formdataentryvalue"/>
 [IdlInterface("FormDataEntryValue", "https://xhr.spec.whatwg.org/#formdataentryvalue")]
 public readonly struct FormDataEntryValue : IUnionValue, IEquatable<FormDataEntryValue>
 {
@@ -65,12 +66,14 @@ public readonly struct FormDataEntryValue : IUnionValue, IEquatable<FormDataEntr
 }
 
 /// <summary>https://xhr.spec.whatwg.org/#interface-formdata</summary>
+/// <seealso href="https://xhr.spec.whatwg.org/#interface-formdata"/>
 [IdlInterface("FormData", "https://xhr.spec.whatwg.org/#interface-formdata")]
 public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryValue>>
 {
     private readonly List<KeyValuePair<string, FormDataEntryValue>> _entries = [];
 
     /// <summary>https://xhr.spec.whatwg.org/#dom-formdata</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata"/>
     [IdlMember("constructor", "https://xhr.spec.whatwg.org/#dom-formdata")]
     public FormData(HtmlFormElement? form = null, HtmlElement? submitter = null)
     {
@@ -98,16 +101,19 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     internal List<KeyValuePair<string, FormDataEntryValue>> Entries => _entries;
 
     /// <summary>Appends a new entry with the given name and string value.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-append"/>
     [IdlMember("append", "https://xhr.spec.whatwg.org/#dom-formdata-append")]
     public void Append(string name, string value) => _entries.Add(CreateEntry(name, value));
 
     /// <summary>
     /// Appends a new entry with the given name and blob value; a blob is converted to a file with the given file name.
     /// </summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-append-blob"/>
     [IdlMember("append", "https://xhr.spec.whatwg.org/#dom-formdata-append-blob")]
     public void Append(string name, Blob blobValue, string? filename = null) => _entries.Add(CreateEntry(name, blobValue, filename));
 
     /// <summary>Removes all the entries with the given name.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-delete"/>
     [IdlMember("delete", "https://xhr.spec.whatwg.org/#dom-formdata-delete")]
     public void Delete(string name)
     {
@@ -116,6 +122,7 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     }
 
     /// <summary>Returns the value of the first entry with the given name, or null when there is none.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-get"/>
     [IdlMember("get", "https://xhr.spec.whatwg.org/#dom-formdata-get")]
     public FormDataEntryValue? Get(string name)
     {
@@ -130,6 +137,7 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     }
 
     /// <summary>Returns the values of all the entries with the given name.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-getall"/>
     [IdlMember("getAll", "https://xhr.spec.whatwg.org/#dom-formdata-getall")]
     public IReadOnlyList<FormDataEntryValue> GetAll(string name)
     {
@@ -138,6 +146,7 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     }
 
     /// <summary>Returns a value indicating whether an entry with the given name exists.</summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-has"/>
     [IdlMember("has", "https://xhr.spec.whatwg.org/#dom-formdata-has")]
     public bool Has(string name)
     {
@@ -148,12 +157,14 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     /// <summary>
     /// Sets the value of the first entry with the given name and removes the other ones, or appends a new entry.
     /// </summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-set"/>
     [IdlMember("set", "https://xhr.spec.whatwg.org/#dom-formdata-set")]
     public void Set(string name, string value) => SetEntry(CreateEntry(name, value));
 
     /// <summary>
     /// Sets the blob value of the first entry with the given name and removes the other ones, or appends a new entry.
     /// </summary>
+    /// <seealso href="https://xhr.spec.whatwg.org/#dom-formdata-set-blob"/>
     [IdlMember("set", "https://xhr.spec.whatwg.org/#dom-formdata-set-blob")]
     public void Set(string name, Blob blobValue, string? filename = null) => SetEntry(CreateEntry(name, blobValue, filename));
 
@@ -207,6 +218,7 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
     }
 
     /// <inheritdoc/>
+    /// <seealso href="https://xhr.spec.whatwg.org/#interface-formdata"/>
     [IdlMember("iterable", "https://xhr.spec.whatwg.org/#interface-formdata")]
     public IEnumerator<KeyValuePair<string, FormDataEntryValue>> GetEnumerator()
     {
@@ -221,19 +233,23 @@ public sealed class FormData : IEnumerable<KeyValuePair<string, FormDataEntryVal
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submitevent</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submiteventinit"/>
 [IdlInterface("SubmitEventInit", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submiteventinit")]
 public sealed class SubmitEventInit : EventInit
 {
     /// <summary>Gets the submit button used to submit the form, if any.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submiteventinit-submitter"/>
     [IdlMember("submitter", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submiteventinit-submitter")]
     public HtmlElement? Submitter { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submitevent</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submitevent"/>
 [IdlInterface("SubmitEvent", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submitevent")]
 public sealed class SubmitEvent : Event
 {
     /// <summary>Creates a <c>submit</c> event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submitevent-constructor"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submitevent-constructor")]
     public SubmitEvent(string type, SubmitEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -244,24 +260,29 @@ public sealed class SubmitEvent : Event
     /// <summary>
     /// Gets the element that was used to submit the form, or null when the form was submitted by other means.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submitevent-submitter"/>
     [IdlMember("submitter", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-submitevent-submitter")]
     public HtmlElement? Submitter { get; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataeventinit</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataeventinit"/>
 [IdlInterface("FormDataEventInit", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataeventinit")]
 public sealed class FormDataEventInit : EventInit
 {
     /// <summary>Gets the entry list of the form to expose to the event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataeventinit-formdata"/>
     [IdlMember("formData", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataeventinit-formdata")]
     public required FormData FormData { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataevent</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataevent"/>
 [IdlInterface("FormDataEvent", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#formdataevent")]
 public sealed class FormDataEvent : Event
 {
     /// <summary>Creates a <c>formdata</c> event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataevent-constructor"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataevent-constructor")]
     public FormDataEvent(string type, FormDataEventInit eventInitDict)
         : base(type, eventInitDict)
@@ -271,6 +292,7 @@ public sealed class FormDataEvent : Event
     }
 
     /// <summary>Gets the form data containing the entries of the form being submitted.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataevent-formdata"/>
     [IdlMember("formData", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-formdataevent-formdata")]
     public FormData FormData { get; }
 }

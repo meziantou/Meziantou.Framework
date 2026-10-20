@@ -42,4 +42,7 @@ public sealed class DropShadowFilter : Filter
         => processor.DropShadow(surface, Color.R / 65535.0, Color.G / 65535.0, Color.B / 65535.0, Color.A / 65535.0, Offset, Sigma, Sigma, ShadowOnly);
 
     internal override (double X, double Y) GetReach() => (GaussianKernel.GetRadius(Sigma) + Math.Abs(Offset.X), GaussianKernel.GetRadius(Sigma) + Math.Abs(Offset.Y));
+
+    // The shadow is blurred with transparent edges; its offset is interpolated between two pixels: one step
+    internal override int GetLocalSteps(bool isAfterReach) => 1;
 }

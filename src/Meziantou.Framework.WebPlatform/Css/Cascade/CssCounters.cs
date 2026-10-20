@@ -152,7 +152,7 @@ internal sealed class CssCounters
                 siblingSet = ProcessPseudoElement(element, "before", parentSet, siblingSet);
             }
 
-            foreach (var child in GetFlatTreeChildren(element))
+            foreach (var child in HtmlElement.GetFlatTreeChildren(element))
             {
                 if (child is Element childElement && Process(childElement, parentSet, siblingSet) is { } childSet)
                 {
@@ -213,7 +213,7 @@ internal sealed class CssCounters
             childSiblingSet = ProcessPseudoElement(element, "before", set, childSiblingSet);
         }
 
-        foreach (var child in GetFlatTreeChildren(element))
+        foreach (var child in HtmlElement.GetFlatTreeChildren(element))
         {
             if (child is Element childElement && Process(childElement, set, childSiblingSet) is { } childSet)
             {
@@ -363,7 +363,7 @@ internal sealed class CssCounters
             if (HtmlElement.GetFlatTreeParent(element) is Element parent)
             {
                 var following = false;
-                foreach (var sibling in GetFlatTreeChildren(parent))
+                foreach (var sibling in HtmlElement.GetFlatTreeChildren(parent))
                 {
                     if (!following)
                     {
@@ -426,7 +426,7 @@ internal sealed class CssCounters
         if (display != "contents" && style.Layout.HasStyleContainment)
             return ScopeWalk.Continue;
 
-        foreach (var child in GetFlatTreeChildren(element))
+        foreach (var child in HtmlElement.GetFlatTreeChildren(element))
         {
             if (child is not Element childElement)
                 continue;
@@ -525,17 +525,6 @@ internal sealed class CssCounters
         }
 
         return result;
-    }
-
-    private static IEnumerable<Node> GetFlatTreeChildren(Element element)
-    {
-        if (element.AttachedShadowRoot is { } shadowRoot)
-            return shadowRoot.ChildNodes;
-
-        if (element is HtmlSlotElement slot && slot.AssignedNodesList.Count > 0)
-            return slot.AssignedNodesList;
-
-        return element.ChildNodes;
     }
 
     /// <summary>The box that created a counter: an element or one of its pseudo-elements.</summary>

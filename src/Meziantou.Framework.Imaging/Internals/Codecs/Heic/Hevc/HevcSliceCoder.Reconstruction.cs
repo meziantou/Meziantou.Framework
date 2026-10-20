@@ -101,6 +101,12 @@ internal ref partial struct HevcSliceCoder
     {
         var maxValue = (1 << _bitDepth) - 1;
         var samples = plane.Samples;
+        if (nTbS is 4 && Vector128.IsHardwareAccelerated)
+        {
+            AddResidual4x4(samples[((yTb * plane.Stride) + xTb)..], plane.Stride, residual, maxValue);
+            return;
+        }
+
         for (var y = 0; y < nTbS; y++)
         {
             AddResidualRow(samples.Slice(((yTb + y) * plane.Stride) + xTb, nTbS), residual.Slice(y * nTbS, nTbS), maxValue);
@@ -127,6 +133,26 @@ internal ref partial struct HevcSliceCoder
         }
 
         AddResidualRowScalar(row[x..], residual[x..], maxValue);
+    }
+
+    /// <summary>
+    /// Adds the residual samples of a 4x4 block to its prediction samples, clipped to the range of the samples (Equation
+    /// 8-300): two rows per vector.
+    /// </summary>
+    internal static void AddResidual4x4(Span<ushort> samples, int stride, ReadOnlySpan<int> residual, int maxValue)
+    {
+        var max = Vector128.Create(maxValue);
+        for (var y = 0; y < 4; y += 2)
+        {
+            var first = samples.Slice(y * stride, 4);
+            var second = samples.Slice((y + 1) * stride, 4);
+            var (low, high) = Vector128.Widen(Vector128.Create(Vector64.Create<ushort>(first), Vector64.Create<ushort>(second)));
+            var sumLow = Vector128.Min(Vector128.Max(low.AsInt32() + Vector128.Create(residual[(4 * y)..]), Vector128<int>.Zero), max);
+            var sumHigh = Vector128.Min(Vector128.Max(high.AsInt32() + Vector128.Create(residual[((4 * y) + 4)..]), Vector128<int>.Zero), max);
+            var rows = Vector128.Narrow(sumLow.AsUInt32(), sumHigh.AsUInt32());
+            rows.GetLower().CopyTo(first);
+            rows.GetUpper().CopyTo(second);
+        }
     }
 
     /// <summary>The addition of <see cref="AddResidualRow"/>, one sample at a time: the reference of the vector path.</summary>

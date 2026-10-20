@@ -5,38 +5,46 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-gethtmloptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-gethtmloptions"/>
 [IdlInterface("GetHTMLOptions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-gethtmloptions")]
 public sealed class GetHtmlOptions
 {
     /// <summary>
     /// Gets a value indicating whether the serializable shadow roots of the descendants are included in the result.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-gethtmloptions-serializableshadowroots"/>
     [IdlMember("serializableShadowRoots", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-gethtmloptions-serializableshadowroots")]
     public bool SerializableShadowRoots { get; init; }
 
     /// <summary>Gets the shadow roots to include in the result, in addition to the serializable ones.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-gethtmloptions-shadowroots"/>
     [IdlMember("shadowRoots", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-gethtmloptions-shadowroots")]
     public IReadOnlyList<ShadowRoot> ShadowRoots { get; init; } = [];
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmlunsafeoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmlunsafeoptions"/>
 [IdlInterface("SetHTMLUnsafeOptions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmlunsafeoptions")]
 public sealed class SetHtmlUnsafeOptions
 {
     /// <summary>The sanitizer, or null (the member does not exist) to sanitize nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmlunsafeoptions-sanitizer"/>
     [IdlMember("sanitizer", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmlunsafeoptions-sanitizer")]
     public SanitizerOrSanitizerConfigOrSanitizerPresets? Sanitizer { get; init; }
 
     /// <summary>Scripts are never executed by this library; the option only changes the parser scripting mode.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmlunsafeoptions-runscripts"/>
     [IdlMember("runScripts", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmlunsafeoptions-runscripts")]
     public bool RunScripts { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-parsehtmlunsafeoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-parsehtmlunsafeoptions"/>
 [IdlInterface("ParseHTMLUnsafeOptions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-parsehtmlunsafeoptions")]
 public sealed class ParseHtmlUnsafeOptions
 {
     /// <summary>The sanitizer, or null (the member does not exist) to sanitize nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafeoptions-sanitizer"/>
     [IdlMember("sanitizer", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafeoptions-sanitizer")]
     public SanitizerOrSanitizerConfigOrSanitizerPresets? Sanitizer { get; init; }
 }
@@ -414,6 +422,7 @@ public partial class Element
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml"/>
     [IdlMember("innerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml")]
     public string InnerHtml
     {
@@ -422,6 +431,7 @@ public partial class Element
     }
 
     /// <summary>The innerHTML setter with a <see cref="TrustedHtml"/> value (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml"/>
     [IdlMember("innerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml")]
     public void SetInnerHtml(TrustedHtml html)
     {
@@ -433,6 +443,7 @@ public partial class Element
         => DynamicMarkup.SetAndFilterHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), compliantInput.Html, compliantInput.Options, FragmentParserMode.Legacy);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml"/>
     [IdlMember("outerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml")]
     public string OuterHtml
     {
@@ -448,6 +459,7 @@ public partial class Element
     }
 
     /// <summary>The outerHTML setter with a <see cref="TrustedHtml"/> value (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml"/>
     [IdlMember("outerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-outerhtml")]
     public void SetOuterHtml(TrustedHtml html)
     {
@@ -476,6 +488,7 @@ public partial class Element
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml"/>
     [IdlMember("insertAdjacentHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml")]
     public void InsertAdjacentHtml(string position, string text)
     {
@@ -485,6 +498,7 @@ public partial class Element
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml"/>
     [IdlMember("insertAdjacentHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-insertadjacenthtml")]
     public void InsertAdjacentHtml(string position, TrustedHtml text)
     {
@@ -541,10 +555,12 @@ public partial class Element
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml"/>
     [IdlMember("getHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml")]
     public string GetHtml(GetHtmlOptions? options = null) => HtmlSerializer.SerializeChildren(this, options?.SerializableShadowRoots ?? false, options?.ShadowRoots);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtml"/>
     [IdlMember("setHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtml")]
     public void SetHtml(string html, SetHtmlOptions? options = null)
     {
@@ -554,6 +570,7 @@ public partial class Element
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options or the value are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe"/>
     [IdlMember("setHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe")]
     public void SetHtmlUnsafe(string html, SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -563,6 +580,7 @@ public partial class Element
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe"/>
     [IdlMember("setHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe")]
     public void SetHtmlUnsafe(TrustedHtml html, SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -578,6 +596,7 @@ public sealed partial class ShadowRoot
 {
 
     /// <summary>Gets or sets the event handler of the <c>slotchange</c> event.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange"/>
     [IdlMember("onslotchange", "https://dom.spec.whatwg.org/#dom-shadowroot-onslotchange")]
     public Action<Event>? OnSlotChange
     {
@@ -587,6 +606,7 @@ public sealed partial class ShadowRoot
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml"/>
     [IdlMember("innerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml")]
     public string InnerHtml
     {
@@ -595,6 +615,7 @@ public sealed partial class ShadowRoot
     }
 
     /// <summary>The innerHTML setter with a <see cref="TrustedHtml"/> value (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml"/>
     [IdlMember("innerHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml")]
     public void SetInnerHtml(TrustedHtml html)
     {
@@ -606,10 +627,12 @@ public sealed partial class ShadowRoot
         => DynamicMarkup.SetAndFilterHtml(this, compliantInput.Html, compliantInput.Options, FragmentParserMode.Legacy);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-gethtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-gethtml"/>
     [IdlMember("getHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-gethtml")]
     public string GetHtml(GetHtmlOptions? options = null) => HtmlSerializer.SerializeChildren(this, options?.SerializableShadowRoots ?? false, options?.ShadowRoots);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtml"/>
     [IdlMember("setHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtml")]
     public void SetHtml(string html, SetHtmlOptions? options = null)
     {
@@ -619,6 +642,7 @@ public sealed partial class ShadowRoot
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options or the value are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe"/>
     [IdlMember("setHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe")]
     public void SetHtmlUnsafe(string html, SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -629,6 +653,7 @@ public sealed partial class ShadowRoot
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe"/>
     [IdlMember("setHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe")]
     public void SetHtmlUnsafe(TrustedHtml html, SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -642,6 +667,7 @@ public partial class Document
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options or the value are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe"/>
     [IdlMember("parseHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe")]
     public static Document ParseHtmlUnsafe(string html, ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -652,6 +678,7 @@ public partial class Document
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the options are not trusted.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe"/>
     [IdlMember("parseHTMLUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe")]
     public static Document ParseHtmlUnsafe(TrustedHtml html, ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
@@ -661,6 +688,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtml</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtml"/>
     [IdlMember("parseHTML", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtml")]
     public static Document ParseHtml(string html, SetHtmlOptions? options = null)
     {
@@ -703,6 +731,7 @@ public sealed partial class Range
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment"/>
     [IdlMember("createContextualFragment", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment")]
     public DocumentFragment CreateContextualFragment(string fragment)
     {
@@ -711,6 +740,7 @@ public sealed partial class Range
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment"/>
     [IdlMember("createContextualFragment", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment")]
     public DocumentFragment CreateContextualFragment(TrustedHtml fragment)
     {

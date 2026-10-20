@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// tool that a decoder must be fast at: they are HEVC streams of the golden corpus, written by x265, in a minimal HEIC
 /// container (<see cref="HevcStreamContainer"/>): two 384x216 lossy stills with both in-loop filters (deblocking and
 /// sample adaptive offset), 4:2:0 and 4:4:4, and a 176x144 animation of 5 images coded with P and B pictures, which the
-/// decoder outputs in another order than it decodes them. These inputs are small: the workloads measure the decoder on its
+/// decoder outputs in another order than it decodes them, and a 3000x1280 grid of 8x6 copies of the 4:2:0 still, as phone
+/// cameras write their photos (tiles decoded one by one, then assembled and converted). These inputs are small: the workloads measure the decoder on its
 /// own corpus and say nothing about photographs. The corpus has no large 10-bit stream: the 10-bit still is the 512x384
 /// photo-like still of the encoder workloads, written by the encoder of the library (lossy 4:2:0, effort 0), and decoded to
 /// its 16-bit pixels.
@@ -26,11 +27,16 @@ public class HeicBenchmarks : IDisposable
     private const int EncodedWidth = 512;
     private const int EncodedHeight = 384;
     private const int EncodedFrames = 8;
+    private const int GridColumns = 8;
+    private const int GridRows = 6;
+    private const int GridWidth = 3000;
+    private const int GridHeight = 1280;
     private readonly MemoryStream _output = new();
     private byte[] _still420 = null!;
     private byte[] _still444 = null!;
     private byte[] _animation = null!;
     private byte[] _still10Bit = null!;
+    private byte[] _grid = null!;
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _frames = null!;
 
@@ -40,11 +46,13 @@ public class HeicBenchmarks : IDisposable
         _still420 = Wrap("hevc/x265-benchmark-intra-420-384x216.hevc", 384, 216, chromaFormatIdc: 1);
         _still444 = Wrap("hevc/x265-benchmark-intra-444-384x216.hevc", 384, 216, chromaFormatIdc: 3);
         _animation = Wrap("hevc/x265-benchmark-inter-420-176x144.hevc", 176, 144, chromaFormatIdc: 1);
+        _grid = HevcStreamContainer.WrapGrid(ReadResource("hevc/x265-benchmark-intra-420-384x216.hevc"), 384, 216, chromaFormatIdc: 1, GridColumns, GridRows, GridWidth, GridHeight);
 
         // Untimed gates: the inputs are what the workloads say
         Require(_still420, 384, 216, frames: 1);
         Require(_still444, 384, 216, frames: 1);
         Require(_animation, 176, 144, frames: 5);
+        Require(_grid, GridWidth, GridHeight, frames: 1);
 
         _photo = Image.ImportPixelBytes<Rgb24>(BenchmarkPixels.Rgb24(EncodedWidth, EncodedHeight, seed: 21), EncodedWidth, EncodedHeight);
         var frames = BenchmarkPixels.AnimationFrames(BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, EncodedFrames, seed: 6);
@@ -101,6 +109,14 @@ public class HeicBenchmarks : IDisposable
     public int DecodeStill444()
     {
         using var image = Image.Load<Rgb24>(_still444);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("3000x1280 HEIC grid of 8x6 lossy 4:2:0 tiles -> Rgb24")]
+    public int DecodeGrid()
+    {
+        using var image = Image.Load<Rgb24>(_grid);
         return image.Width;
     }
 
@@ -166,12 +182,14 @@ public class HeicBenchmarks : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static byte[] Wrap(string resourceName, int width, int height, int chromaFormatIdc)
+    private static byte[] Wrap(string resourceName, int width, int height, int chromaFormatIdc) => HevcStreamContainer.Wrap(ReadResource(resourceName), width, height, bitDepth: 8, chromaFormatIdc);
+
+    private static byte[] ReadResource(string resourceName)
     {
         using var resource = typeof(HeicBenchmarks).Assembly.GetManifestResourceStream(resourceName) ?? throw new InvalidOperationException($"The resource '{resourceName}' is missing.");
         using var stream = new MemoryStream();
         resource.CopyTo(stream);
-        return HevcStreamContainer.Wrap(stream.ToArray(), width, height, bitDepth: 8, chromaFormatIdc);
+        return stream.ToArray();
     }
 
     private static void Require(byte[] encoded, int width, int height, int frames)

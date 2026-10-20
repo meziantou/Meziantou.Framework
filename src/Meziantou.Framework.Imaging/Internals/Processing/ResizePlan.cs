@@ -137,12 +137,17 @@ internal sealed class ResizePlan : IDisposable
             return;
         }
 
-        XWeights = ResampleWeights.Create(scope, Geometry.X, Filter);
+        // The vector loops of the horizontal pass read windows padded to the same number of taps
+        var group = Resampler.GetHorizontalWeightsGroup(Channels);
+        XWeights = group is 0 ? ResampleWeights.Create(scope, Geometry.X, Filter) : ResampleWeights.CreatePadded(scope, Geometry.X, Filter, group);
         YWeights = ResampleWeights.Create(scope, Geometry.Y, Filter);
         var rowLength = (long)output.Width * Channels;
 
-        // The working row has one extra element for 3-sample pixels: the vectorized horizontal pass loads 4 samples per pixel
-        var workingLength = (((long)XWeights.Last - XWeights.First + 1) * Channels) + (Channels == 3 ? 1 : 0);
+        // The working row covers the padded windows, whose samples after the used columns stay zero (the buffer is cleared
+        // when rented, and only the used columns are loaded), and has one extra element for 3-sample pixels: the vectorized
+        // horizontal pass loads 4 samples per pixel
+        var sourceLength = group is 0 ? XWeights.Last - XWeights.First + 1 : XWeights.PaddedSourceLength;
+        var workingLength = ((long)sourceLength * Channels) + (Channels == 3 ? 1 : 0);
         Strategy = TestStrategyOverride ?? SelectStrategy(scope, YWeights, workingLength, rowLength);
         var rows = Strategy == ResizeVerticalStrategy.Gather ? YWeights.MaxCount : YWeights.MaxOverlap;
         _scratch = new ResizeScratch?[Workers];

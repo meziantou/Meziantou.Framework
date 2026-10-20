@@ -20,4 +20,15 @@ internal sealed class CicpDecodeStage(byte transfer, int channelCount) : IccStag
             values[i] = CicpTransfer.Decode(transfer, values[i]);
         }
     }
+
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            foreach (ref var value in GetComponent(components, channel, count))
+            {
+                value = CicpTransfer.Decode(transfer, value);
+            }
+        }
+    }
 }

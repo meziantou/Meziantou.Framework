@@ -206,6 +206,7 @@ public partial class HtmlEmbedElement
     internal ImageNaturalSize ImageNaturalSize { get; private set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-getsvgdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-getsvgdocument"/>
     [IdlMember("getSVGDocument", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-embed-getsvgdocument")]
     public Document? GetSvgDocument() => NavigableContainers.GetSvgDocument(this);
 
@@ -448,14 +449,17 @@ public partial class HtmlObjectElement
     internal bool IsOnStackOfOpenElements { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentdocument"/>
     [IdlMember("contentDocument", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentdocument")]
     public Document? ContentDocument => NavigableContainers.GetContentDocument(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentwindow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentwindow"/>
     [IdlMember("contentWindow", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-contentwindow")]
     public Window? ContentWindow => ContentNavigable?.Window;
 
     /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-getsvgdocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-getsvgdocument"/>
     [IdlMember("getSVGDocument", "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-object-getsvgdocument")]
     public Document? GetSvgDocument() => NavigableContainers.GetSvgDocument(this);
 

@@ -43,6 +43,7 @@ public partial class HtmlTrackElement
     partial void OnCreated() => _track = new TextTrack(this);
 
     /// <summary>Gets the text track of the element (https://html.spec.whatwg.org/multipage/media.html#dom-track-track).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-track"/>
     [IdlMember("track", "https://html.spec.whatwg.org/multipage/media.html#dom-track-track")]
     public TextTrack Track => _track!;
 
@@ -50,6 +51,7 @@ public partial class HtmlTrackElement
     /// Gets the readiness state of the text track of the element (https://html.spec.whatwg.org/multipage/media.html#dom-track-readystate):
     /// <see cref="None"/>, <see cref="Loading"/>, <see cref="Loaded"/> or <see cref="Error"/>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-track-readystate"/>
     [IdlMember("readyState", "https://html.spec.whatwg.org/multipage/media.html#dom-track-readystate")]
     public ushort ReadyState => (ushort)Track.ReadinessState;
 

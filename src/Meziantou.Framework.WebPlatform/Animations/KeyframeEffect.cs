@@ -4,23 +4,28 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Animations;
 
 /// <summary>The options of a keyframe effect (https://drafts.csswg.org/web-animations-1/#dictdef-keyframeeffectoptions).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-keyframeeffectoptions"/>
 [IdlInterface("KeyframeEffectOptions", "https://drafts.csswg.org/web-animations-1/#dictdef-keyframeeffectoptions")]
 public class KeyframeEffectOptions : EffectTiming
 {
     /// <summary>Gets the composite operation of the effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-composite"/>
     [IdlMember("composite", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-composite")]
     public CompositeOperation Composite { get; init; }
 
     /// <summary>Gets the pseudo-element targeted by the effect (e.g. <c>::before</c>), or null to target the element.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-pseudoelement"/>
     [IdlMember("pseudoElement", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectoptions-pseudoelement")]
     public string? PseudoElement { get; init; }
 
     /// <summary>Gets the iteration composite operation of the effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-keyframeeffectoptions-iterationcomposite"/>
     [IdlMember("iterationComposite", "https://drafts.csswg.org/web-animations-2/#dom-keyframeeffectoptions-iterationcomposite")]
     public IterationCompositeOperation IterationComposite { get; init; }
 }
 
 /// <summary>An animation effect that animates the properties of an element with keyframes (https://drafts.csswg.org/web-animations-1/#keyframe-effects).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#keyframeeffect"/>
 [IdlInterface("KeyframeEffect", "https://drafts.csswg.org/web-animations-1/#keyframeeffect")]
 public partial class KeyframeEffect : AnimationEffect
 {
@@ -33,6 +38,7 @@ public partial class KeyframeEffect : AnimationEffect
 
     /// <summary>Creates a keyframe effect whose duration is <paramref name="duration"/> milliseconds (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect).</summary>
     /// <exception cref="TypeErrorException">The keyframes or the duration are invalid.</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect")]
     public KeyframeEffect(Element? target, IEnumerable<Keyframe>? keyframes, double duration)
         : this(target, keyframes, new KeyframeEffectOptions { Duration = duration })
@@ -42,6 +48,7 @@ public partial class KeyframeEffect : AnimationEffect
     /// <summary>Creates a keyframe effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect).</summary>
     /// <exception cref="TypeErrorException">The keyframes or the timing properties are invalid.</exception>
     /// <exception cref="DomException">The pseudo-element is invalid (SyntaxError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect")]
     public KeyframeEffect(Element? target, IEnumerable<Keyframe>? keyframes, KeyframeEffectOptions? options = null)
     {
@@ -62,6 +69,7 @@ public partial class KeyframeEffect : AnimationEffect
     }
 
     /// <summary>Creates a copy of a keyframe effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect-source).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect-source"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-keyframeeffect-source")]
     public KeyframeEffect(KeyframeEffect source)
     {
@@ -83,6 +91,7 @@ public partial class KeyframeEffect : AnimationEffect
     }
 
     /// <summary>Gets or sets the element targeted by the effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-target).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-target"/>
     [IdlMember("target", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-target")]
     public Element? Target
     {
@@ -105,6 +114,7 @@ public partial class KeyframeEffect : AnimationEffect
     /// (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-pseudoelement).
     /// </summary>
     /// <exception cref="DomException">The pseudo-element is invalid (SyntaxError).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-pseudoelement"/>
     [IdlMember("pseudoElement", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-pseudoelement")]
     public string? PseudoElement
     {
@@ -124,6 +134,7 @@ public partial class KeyframeEffect : AnimationEffect
     internal string? PseudoElementName => _pseudoElement;
 
     /// <summary>Gets or sets the composite operation of the effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-composite).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-composite"/>
     [IdlMember("composite", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-composite")]
     public CompositeOperation Composite
     {
@@ -140,6 +151,7 @@ public partial class KeyframeEffect : AnimationEffect
     internal CompositeOperation CompositeValue { get; set; }
 
     /// <summary>Gets or sets the iteration composite operation of the effect (https://drafts.csswg.org/web-animations-2/#dom-keyframeeffect-iterationcomposite).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-keyframeeffect-iterationcomposite"/>
     [IdlMember("iterationComposite", "https://drafts.csswg.org/web-animations-2/#dom-keyframeeffect-iterationcomposite")]
     public IterationCompositeOperation IterationComposite
     {
@@ -157,6 +169,7 @@ public partial class KeyframeEffect : AnimationEffect
     internal List<ProcessedKeyframe> Keyframes => _keyframes;
 
     /// <summary>Returns the keyframes of the effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-getkeyframes).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-getkeyframes"/>
     [IdlMember("getKeyframes", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-getkeyframes")]
     public IReadOnlyList<ComputedKeyframe> GetKeyframes()
     {
@@ -340,6 +353,7 @@ public partial class KeyframeEffect : AnimationEffect
 
     /// <summary>Replaces the keyframes of the effect (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-setkeyframes).</summary>
     /// <exception cref="TypeErrorException">The keyframes are invalid.</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-setkeyframes"/>
     [IdlMember("setKeyframes", "https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-setkeyframes")]
     public void SetKeyframes(IEnumerable<Keyframe>? keyframes)
     {

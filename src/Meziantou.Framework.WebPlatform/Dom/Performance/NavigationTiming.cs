@@ -1,18 +1,22 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The type of the navigation that created a document (https://w3c.github.io/navigation-timing/#sec-performance-navigation-types).</summary>
+/// <seealso href="https://w3c.github.io/navigation-timing/#dom-navigationtimingtype"/>
 [IdlInterface("NavigationTimingType", "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype")]
 public enum NavigationTimingType
 {
     /// <summary>A navigation that is not a reload nor a traversal of the session history.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-navigate"/>
     [IdlMember("navigate", "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-navigate")]
     Navigate,
 
     /// <summary>A reload of the document.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-reload"/>
     [IdlMember("reload", "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-reload")]
     Reload,
 
     /// <summary>A traversal of the session history.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-back_forward"/>
     [IdlMember("back_forward", "https://w3c.github.io/navigation-timing/#dom-navigationtimingtype-back_forward")]
     BackForward,
 }
@@ -135,6 +139,7 @@ internal sealed class DocumentLoadTimingInfo
 /// performance timeline of the window, available as soon as the document is created. The times are in milliseconds relative to
 /// the time origin of the window (the start of the navigation), and 0 until the step they measure happens.
 /// </summary>
+/// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming"/>
 [IdlInterface("PerformanceNavigationTiming", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming")]
 public sealed class PerformanceNavigationTiming : PerformanceResourceTiming
 {
@@ -156,46 +161,57 @@ public sealed class PerformanceNavigationTiming : PerformanceResourceTiming
     private protected override double GetDuration() => LoadEventEnd - StartTime;
 
     /// <summary>Gets the time the unload event of the previous document started, or 0 when there is no previous document or when it has another origin.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventstart"/>
     [IdlMember("unloadEventStart", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventstart")]
     public double UnloadEventStart => ToRelativeTime(_loadTimingInfo.UnloadEventStart);
 
     /// <summary>Gets the time the unload event of the previous document completed, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventend"/>
     [IdlMember("unloadEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-unloadeventend")]
     public double UnloadEventEnd => ToRelativeTime(_loadTimingInfo.UnloadEventEnd);
 
     /// <summary>Gets the time the readiness of the document became <c>interactive</c>.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-dominteractive"/>
     [IdlMember("domInteractive", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-dominteractive")]
     public double DomInteractive => ToRelativeTime(_loadTimingInfo.DomInteractive);
 
     /// <summary>Gets the time the <c>DOMContentLoaded</c> event started.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventstart"/>
     [IdlMember("domContentLoadedEventStart", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventstart")]
     public double DomContentLoadedEventStart => ToRelativeTime(_loadTimingInfo.DomContentLoadedEventStart);
 
     /// <summary>Gets the time the <c>DOMContentLoaded</c> event completed.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventend"/>
     [IdlMember("domContentLoadedEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcontentloadedeventend")]
     public double DomContentLoadedEventEnd => ToRelativeTime(_loadTimingInfo.DomContentLoadedEventEnd);
 
     /// <summary>Gets the time the readiness of the document became <c>complete</c>.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcomplete"/>
     [IdlMember("domComplete", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-domcomplete")]
     public double DomComplete => ToRelativeTime(_loadTimingInfo.DomComplete);
 
     /// <summary>Gets the time the <c>load</c> event started.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventstart"/>
     [IdlMember("loadEventStart", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventstart")]
     public double LoadEventStart => ToRelativeTime(_loadTimingInfo.LoadEventStart);
 
     /// <summary>Gets the time the <c>load</c> event completed.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventend"/>
     [IdlMember("loadEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-loadeventend")]
     public double LoadEventEnd => ToRelativeTime(_loadTimingInfo.LoadEventEnd);
 
     /// <summary>Gets the type of the navigation.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-type"/>
     [IdlMember("type", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-type")]
     public NavigationTimingType Type => _loadTimingInfo.Type;
 
     /// <summary>Gets the number of redirects of the navigation, or 0 when one of them is cross-origin.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-redirectcount"/>
     [IdlMember("redirectCount", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-redirectcount")]
     public ushort RedirectCount => (ushort)_loadTimingInfo.RedirectCount;
 
     /// <summary>Gets the time the navigation was restarted to send the critical client hints (the <c>Critical-CH</c> header of a response), or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-criticalchrestart"/>
     [IdlMember("criticalCHRestart", "https://w3c.github.io/navigation-timing/#dom-performancenavigationtiming-criticalchrestart")]
     public double CriticalCHRestart => ToRelativeTime(_loadTimingInfo.CriticalCHRestart);
 
@@ -203,6 +219,7 @@ public sealed class PerformanceNavigationTiming : PerformanceResourceTiming
     /// Gets the time the prerendered document was activated, or 0 for a document that was not prerendered
     /// (https://wicg.github.io/nav-speculation/prerendering.html#dom-performancenavigationtiming-activationstart).
     /// </summary>
+    /// <seealso href="https://wicg.github.io/nav-speculation/prerendering.html#dom-performancenavigationtiming-activationstart"/>
     [IdlMember("activationStart", "https://wicg.github.io/nav-speculation/prerendering.html#dom-performancenavigationtiming-activationstart")]
     public double ActivationStart => ToRelativeTime(_loadTimingInfo.ActivationStart);
 
@@ -214,6 +231,7 @@ public sealed class PerformanceNavigationTiming : PerformanceResourceTiming
 /// (https://w3c.github.io/navigation-timing/#sec-navigation-timing-interface, <c>performance.timing</c>): the values of the
 /// <see cref="PerformanceNavigationTiming"/> entry of the window.
 /// </summary>
+/// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming"/>
 [IdlInterface("PerformanceTiming", "https://w3c.github.io/navigation-timing/#dom-performancetiming")]
 public sealed class PerformanceTiming
 {
@@ -236,86 +254,107 @@ public sealed class PerformanceTiming
     private PerformanceNavigationTiming? Entry => _window.Performance.NavigationTimingEntry;
 
     /// <summary>Gets the time the navigation started: the time origin of the window.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-navigationstart"/>
     [IdlMember("navigationStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-navigationstart")]
     public ulong NavigationStart => ToEpochTime(0, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the unload event of the previous document started, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventstart"/>
     [IdlMember("unloadEventStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventstart")]
     public ulong UnloadEventStart => ToEpochTime(Entry?.UnloadEventStart);
 
     /// <summary>Gets the time the unload event of the previous document completed, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventend"/>
     [IdlMember("unloadEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-unloadeventend")]
     public ulong UnloadEventEnd => ToEpochTime(Entry?.UnloadEventEnd);
 
     /// <summary>Gets the time the first redirect started, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectstart"/>
     [IdlMember("redirectStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectstart")]
     public ulong RedirectStart => Entry is { RedirectCount: > 0 } entry ? ToEpochTime(entry.RedirectStart, zeroWhenNotSet: false) : 0;
 
     /// <summary>Gets the time the last redirect completed, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectend"/>
     [IdlMember("redirectEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-redirectend")]
     public ulong RedirectEnd => Entry is { RedirectCount: > 0 } entry ? ToEpochTime(entry.RedirectEnd, zeroWhenNotSet: false) : 0;
 
     /// <summary>Gets the time the fetch of the document started.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-fetchstart"/>
     [IdlMember("fetchStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-fetchstart")]
     public ulong FetchStart => ToEpochTime(Entry?.FetchStart, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the domain name lookup started.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupstart"/>
     [IdlMember("domainLookupStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupstart")]
     public ulong DomainLookupStart => ToEpochTime(Entry?.DomainLookupStart, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the domain name lookup completed.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupend"/>
     [IdlMember("domainLookupEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domainlookupend")]
     public ulong DomainLookupEnd => ToEpochTime(Entry?.DomainLookupEnd, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the connection started.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-connectstart"/>
     [IdlMember("connectStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-connectstart")]
     public ulong ConnectStart => ToEpochTime(Entry?.ConnectStart, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the connection was established.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-connectend"/>
     [IdlMember("connectEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-connectend")]
     public ulong ConnectEnd => ToEpochTime(Entry?.ConnectEnd, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the TLS handshake started, or 0 for a connection that is not secure.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-secureconnectionstart"/>
     [IdlMember("secureConnectionStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-secureconnectionstart")]
     public ulong SecureConnectionStart => Entry is { } entry && entry.IsSecureConnection ? ToEpochTime(entry.SecureConnectionStart, zeroWhenNotSet: false) : 0;
 
     /// <summary>Gets the time the request was sent.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-requeststart"/>
     [IdlMember("requestStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-requeststart")]
     public ulong RequestStart => ToEpochTime(Entry?.RequestStart, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the response was received.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-responsestart"/>
     [IdlMember("responseStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-responsestart")]
     public ulong ResponseStart => ToEpochTime(Entry?.ResponseStart, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the body of the response was received.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-responseend"/>
     [IdlMember("responseEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-responseend")]
     public ulong ResponseEnd => ToEpochTime(Entry?.ResponseEnd, zeroWhenNotSet: false);
 
     /// <summary>Gets the time the document was created (its readiness is <c>loading</c>).</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domloading"/>
     [IdlMember("domLoading", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domloading")]
     public ulong DomLoading => Entry is { } entry ? ToEpochTime(_window.ToRelativeHighResolutionTime(entry.LoadTimingInfo.DomLoading), zeroWhenNotSet: false) : 0;
 
     /// <summary>Gets the time the readiness of the document became <c>interactive</c>, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-dominteractive"/>
     [IdlMember("domInteractive", "https://w3c.github.io/navigation-timing/#dom-performancetiming-dominteractive")]
     public ulong DomInteractive => ToEpochTime(Entry?.DomInteractive);
 
     /// <summary>Gets the time the <c>DOMContentLoaded</c> event started, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventstart"/>
     [IdlMember("domContentLoadedEventStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventstart")]
     public ulong DomContentLoadedEventStart => ToEpochTime(Entry?.DomContentLoadedEventStart);
 
     /// <summary>Gets the time the <c>DOMContentLoaded</c> event completed, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventend"/>
     [IdlMember("domContentLoadedEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcontentloadedeventend")]
     public ulong DomContentLoadedEventEnd => ToEpochTime(Entry?.DomContentLoadedEventEnd);
 
     /// <summary>Gets the time the readiness of the document became <c>complete</c>, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-domcomplete"/>
     [IdlMember("domComplete", "https://w3c.github.io/navigation-timing/#dom-performancetiming-domcomplete")]
     public ulong DomComplete => ToEpochTime(Entry?.DomComplete);
 
     /// <summary>Gets the time the <c>load</c> event started, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventstart"/>
     [IdlMember("loadEventStart", "https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventstart")]
     public ulong LoadEventStart => ToEpochTime(Entry?.LoadEventStart);
 
     /// <summary>Gets the time the <c>load</c> event completed, or 0.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventend"/>
     [IdlMember("loadEventEnd", "https://w3c.github.io/navigation-timing/#dom-performancetiming-loadeventend")]
     public ulong LoadEventEnd => ToEpochTime(Entry?.LoadEventEnd);
 
@@ -363,22 +402,27 @@ public sealed class PerformanceTiming
 /// The legacy description of the navigation of the document of a window
 /// (https://w3c.github.io/navigation-timing/#sec-window.performance-attribute, <c>performance.navigation</c>).
 /// </summary>
+/// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation"/>
 [IdlInterface("PerformanceNavigation", "https://w3c.github.io/navigation-timing/#dom-performancenavigation")]
 public sealed class PerformanceNavigation
 {
     /// <summary>A navigation that is not a reload nor a traversal of the session history.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_navigate"/>
     [IdlMember("TYPE_NAVIGATE", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_navigate")]
     public const ushort TypeNavigate = 0;
 
     /// <summary>A reload of the document.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reload"/>
     [IdlMember("TYPE_RELOAD", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reload")]
     public const ushort TypeReload = 1;
 
     /// <summary>A traversal of the session history.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_back_forward"/>
     [IdlMember("TYPE_BACK_FORWARD", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_back_forward")]
     public const ushort TypeBackForward = 2;
 
     /// <summary>Another type of navigation.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reserved"/>
     [IdlMember("TYPE_RESERVED", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type_reserved")]
     public const ushort TypeReserved = 255;
 
@@ -390,6 +434,7 @@ public sealed class PerformanceNavigation
     }
 
     /// <summary>Gets the type of the navigation: <see cref="TypeNavigate"/>, <see cref="TypeReload"/> or <see cref="TypeBackForward"/>.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-type"/>
     [IdlMember("type", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-type")]
     public ushort Type => _window.Performance.NavigationTimingEntry?.Type switch
     {
@@ -399,6 +444,7 @@ public sealed class PerformanceNavigation
     };
 
     /// <summary>Gets the number of redirects of the navigation, or 0 when one of them is cross-origin.</summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performancenavigation-redirectcount"/>
     [IdlMember("redirectCount", "https://w3c.github.io/navigation-timing/#dom-performancenavigation-redirectcount")]
     public ushort RedirectCount => _window.Performance.NavigationTimingEntry?.RedirectCount ?? 0;
 }

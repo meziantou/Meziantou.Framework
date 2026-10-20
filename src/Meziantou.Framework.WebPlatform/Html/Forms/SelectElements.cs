@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmloptionscollection</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmloptionscollection"/>
 [IdlInterface("HTMLOptionsCollection", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmloptionscollection")]
 public sealed class HtmlOptionsCollection : HtmlCollection
 {
@@ -15,6 +16,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-length</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-length")]
     public new uint Length
     {
@@ -44,6 +46,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     }
 
     /// <summary>The indexed setter (https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-setter).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-setter"/>
     [IdlMember("setter", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-setter")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public new HtmlOptionElement? this[uint index]
@@ -77,6 +80,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-add</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-add")]
     public void Add(HtmlElement element, HtmlElement? before = null) => AddCore(element, before, null);
 
@@ -84,6 +88,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     /// Inserts an <c>option</c> or <c>optgroup</c> element before the option at the given index, or at the end when the
     /// index is invalid.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-add")]
     public void Add(HtmlElement element, int before) => AddCore(element, null, before);
 
@@ -113,6 +118,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-remove</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-remove"/>
     [IdlMember("remove", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-remove")]
     public void Remove(int index)
     {
@@ -123,6 +129,7 @@ public sealed class HtmlOptionsCollection : HtmlCollection
     }
 
     /// <summary>Gets or sets the index of the first selected option, or -1 when no option is selected.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-selectedindex"/>
     [IdlMember("selectedIndex", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmloptionscollection-selectedindex")]
     public int SelectedIndex
     {
@@ -151,14 +158,17 @@ public partial class HtmlSelectElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-type</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-type")]
     public string Type => IsMultiple ? "select-multiple" : "select-one";
 
     /// <summary>Gets the collection of the options of the select element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-options"/>
     [IdlMember("options", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-options")]
     public HtmlOptionsCollection Options => _options ??= new HtmlOptionsCollection(this);
 
     /// <summary>Gets or sets the number of options; setting it adds blank options or removes the last ones.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-length")]
     public uint Length
     {
@@ -167,10 +177,12 @@ public partial class HtmlSelectElement
     }
 
     /// <summary>Returns the option at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-item"/>
     [IdlMember("item", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-item")]
     public HtmlOptionElement? Item(uint index) => Options[index];
 
     /// <summary>Gets or sets the option at the given index; setting null removes the option.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-setter"/>
     [IdlMember("setter", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-setter")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public HtmlOptionElement? this[uint index]
@@ -182,6 +194,7 @@ public partial class HtmlSelectElement
     /// <summary>
     /// Returns the first option whose <c>id</c> or <c>name</c> matches the given name, or null when none matches.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-nameditem"/>
     [IdlMember("namedItem", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-nameditem")]
     public HtmlOptionElement? NamedItem(string name) => Options.NamedItem(name) as HtmlOptionElement;
 
@@ -189,6 +202,7 @@ public partial class HtmlSelectElement
     /// Inserts an <c>option</c> or <c>optgroup</c> element before the given element, or at the end when no element is
     /// given.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-add")]
     public void Add(HtmlElement element, HtmlElement? before = null) => Options.AddCore(element, before, null);
 
@@ -196,18 +210,22 @@ public partial class HtmlSelectElement
     /// Inserts an <c>option</c> or <c>optgroup</c> element before the option at the given index, or at the end when the
     /// index is invalid.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-add")]
     public void Add(HtmlElement element, int before) => Options.AddCore(element, null, before);
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-remove</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-remove"/>
     [IdlMember("remove", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-remove")]
     public void Remove(int index) => Options.Remove(index);
 
     /// <summary>Gets the collection of the options that are currently selected.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-selectedoptions"/>
     [IdlMember("selectedOptions", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-selectedoptions")]
     public HtmlCollection SelectedOptions => _selectedOptions ??= new HtmlCollection(this, list => list.AddRange(GetListOfOptions().Where(o => o.Selectedness)));
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-selectedindex</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-selectedindex"/>
     [IdlMember("selectedIndex", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-selectedindex")]
     public int SelectedIndex
     {
@@ -235,6 +253,7 @@ public partial class HtmlSelectElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-value</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-value")]
     public string Value
     {
@@ -262,6 +281,7 @@ public partial class HtmlSelectElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-select-showpicker</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-select-showpicker"/>
     [IdlMember("showPicker", "https://html.spec.whatwg.org/multipage/input.html#dom-select-showpicker")]
     public void ShowPicker()
     {
@@ -330,6 +350,7 @@ public partial class HtmlSelectElement
 public partial class HtmlOptionElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-selected</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-selected"/>
     [IdlMember("selected", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-selected")]
     public bool Selected
     {
@@ -359,6 +380,7 @@ public partial class HtmlOptionElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-text</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-text"/>
     [IdlMember("text", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-text")]
     public string Text
     {
@@ -367,6 +389,7 @@ public partial class HtmlOptionElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#concept-option-index</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-index"/>
     [IdlMember("index", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-index")]
     public int Index
     {
@@ -381,12 +404,14 @@ public partial class HtmlOptionElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-form</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-form"/>
     [IdlMember("form", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-form")]
     public HtmlFormElement? Form => CachedNearestAncestorSelect?.FormOwner;
 
     /// <summary>
     /// The Option() legacy factory function (https://html.spec.whatwg.org/multipage/form-elements.html#dom-option).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-option"/>
     [IdlMember("Option", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-option")]
     public static HtmlOptionElement Create(Document document, string text = "", string? value = null, bool defaultSelected = false, bool selected = false)
     {
@@ -419,6 +444,7 @@ public partial class HtmlDataListElement
     /// <summary>
     /// Gets the collection of the <c>option</c> elements that are descendants of the <c>datalist</c> element.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-datalist-options"/>
     [IdlMember("options", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-datalist-options")]
     public HtmlCollection Options => _options ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Option));
 }

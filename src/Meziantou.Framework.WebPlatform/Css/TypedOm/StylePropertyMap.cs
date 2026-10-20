@@ -60,6 +60,7 @@ public readonly struct CssStyleValueOrString : IUnionValue, IEquatable<CssStyleV
 /// (https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymapreadonly). The map is live: it reflects the current
 /// declarations. A list-valued property (e.g. transition-duration) has one value per iteration.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymapreadonly"/>
 [IdlInterface("StylePropertyMapReadOnly", "https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymapreadonly")]
 public abstract class StylePropertyMapReadOnly : IEnumerable<KeyValuePair<string, IReadOnlyList<CssStyleValue>>>, IIndexedPairIterable<string, IReadOnlyList<CssStyleValue>>
 {
@@ -68,6 +69,7 @@ public abstract class StylePropertyMapReadOnly : IEnumerable<KeyValuePair<string
     }
 
     /// <summary>Returns the first value of a property, or null when the map does not contain it (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-get).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-get"/>
     [IdlMember("get", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-get")]
     public CssStyleValue? Get(string property)
     {
@@ -76,14 +78,17 @@ public abstract class StylePropertyMapReadOnly : IEnumerable<KeyValuePair<string
     }
 
     /// <summary>Returns the values of a property (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-getall).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-getall"/>
     [IdlMember("getAll", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-getall")]
     public IReadOnlyList<CssStyleValue> GetAll(string property) => GetValues(GetPropertyName(property)) ?? [];
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-has</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-has"/>
     [IdlMember("has", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-has")]
     public bool Has(string property) => GetValues(GetPropertyName(property)) is not null;
 
     /// <summary>The number of properties of the map (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-size).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-size"/>
     [IdlMember("size", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymapreadonly-size")]
     public uint Size => (uint)GetNames().Count();
 
@@ -134,6 +139,7 @@ public abstract class StylePropertyMapReadOnly : IEnumerable<KeyValuePair<string
 /// The declarations of a style rule or of the style attribute of an element (https://drafts.css-houdini.org/css-typed-om-1/#declared-stylepropertymap-objects),
 /// as <see cref="CssStyleValue"/> objects. Setting a value updates the declarations.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymap"/>
 [IdlInterface("StylePropertyMap", "https://drafts.css-houdini.org/css-typed-om-1/#stylepropertymap")]
 public sealed class StylePropertyMap : StylePropertyMapReadOnly
 {
@@ -145,6 +151,7 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
     }
 
     /// <summary>Sets the value of a property (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-set).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-set"/>
     [IdlMember("set", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-set")]
     public void Set(string property, params ReadOnlySpan<CssStyleValueOrString> values)
     {
@@ -160,6 +167,7 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
     }
 
     /// <summary>Appends values to a list-valued property (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-append).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-append"/>
     [IdlMember("append", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-append")]
     public void Append(string property, params ReadOnlySpan<CssStyleValueOrString> values)
     {
@@ -192,10 +200,12 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
     }
 
     /// <summary>Removes a property (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-delete); removing a shorthand removes its longhands.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-delete"/>
     [IdlMember("delete", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-delete")]
     public void Delete(string property) => _declarations.RemoveProperty(GetPropertyName(property));
 
     /// <summary>Removes all the declarations (https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-clear).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-clear"/>
     [IdlMember("clear", "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-clear")]
     public void Clear() => _declarations.CssText = "";
 

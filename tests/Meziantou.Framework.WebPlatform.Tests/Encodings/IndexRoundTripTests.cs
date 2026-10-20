@@ -281,5 +281,62 @@ public sealed class IndexRoundTripTests
         }
     }
 
+    public static TheoryData<string> AllEncodings()
+    {
+        var result = new TheoryData<string>("UTF-8", "gb18030", "gbk", "Big5", "EUC-JP", "ISO-2022-JP", "Shift_JIS", "EUC-KR", "UTF-16LE", "UTF-16BE", "x-user-defined");
+        foreach (var name in SingleByteEncodings())
+        {
+            result.Add(name);
+        }
+
+        return result;
+    }
+
+    /// <summary>The decoding of a whole input (with its fast paths) matches the decoding of each byte by the handler, errors included.</summary>
+    [Theory]
+    [MemberData(nameof(AllEncodings))]
+    public void DecodeToString_MatchesByteByByteDecoding(string name)
+    {
+        Assert.True(WebEncodingRegistry.TryGetEncoding(name, out var encoding));
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 500; iteration++)
+        {
+#pragma warning disable CA5394 // The inputs are reproducible (seeded), not secret
+            var bytes = new byte[random.Next(0, 80)];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = random.Next(iteration % 5 == 0 ? 40 : 4) switch
+                {
+                    0 => (byte)random.Next(0x80, 0x100),
+                    1 => (byte)random.Next(0xC0, 0xF8),
+                    2 => (byte)(iteration % 7 == 0 ? 0x1B : random.Next(0x20, 0x7F)),
+                    _ => (byte)random.Next(0x20, 0x7F),
+                };
+            }
+#pragma warning restore CA5394
+
+            foreach (var fatal in new[] { false, true })
+            {
+                var expected = new StringBuilder();
+                var decoder = WebEncodingRegistry.CreateDecoder(encoding, fatal);
+                var valid = true;
+                for (var i = 0; i < bytes.Length && valid; i++)
+                {
+                    valid = decoder.DecodeTo(bytes.AsSpan(i, 1), expected, flush: false);
+                }
+
+                valid = valid && decoder.DecodeTo([], expected, flush: true);
+                if (valid)
+                {
+                    Assert.Equal(expected.ToString(), WebEncodingRegistry.CreateDecoder(encoding, fatal).DecodeToString(bytes));
+                }
+                else
+                {
+                    Assert.Throws<DecoderFallbackException>(() => WebEncodingRegistry.CreateDecoder(encoding, fatal).DecodeToString(bytes));
+                }
+            }
+        }
+    }
+
     private static string? NullIfError(string value) => value.Contains('\U0000FFFD', StringComparison.Ordinal) ? null : value;
 }

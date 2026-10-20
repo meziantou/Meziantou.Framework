@@ -3,18 +3,22 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>https://w3c.github.io/reporting/#callbackdef-reportingobservercallback</summary>
 /// <param name="reports">The reports observed since the previous call, in the order in which they were generated.</param>
 /// <param name="observer">The observer.</param>
+/// <seealso href="https://w3c.github.io/reporting/#callbackdef-reportingobservercallback"/>
 [IdlInterface("ReportingObserverCallback", "https://w3c.github.io/reporting/#callbackdef-reportingobservercallback")]
 public delegate void ReportingObserverCallback(IReadOnlyList<Report> reports, ReportingObserver observer);
 
 /// <summary>https://w3c.github.io/reporting/#dictdef-reportingobserveroptions</summary>
+/// <seealso href="https://w3c.github.io/reporting/#dictdef-reportingobserveroptions"/>
 [IdlInterface("ReportingObserverOptions", "https://w3c.github.io/reporting/#dictdef-reportingobserveroptions")]
 public sealed class ReportingObserverOptions
 {
     /// <summary>Gets or sets the types of the observed reports, or null (or an empty list) to observe all the types.</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserveroptions-types"/>
     [IdlMember("types", "https://w3c.github.io/reporting/#dom-reportingobserveroptions-types")]
     public IReadOnlyList<string>? Types { get; set; }
 
     /// <summary>Gets or sets whether <see cref="ReportingObserver.Observe"/> delivers the reports generated before (the report buffer of the global object).</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserveroptions-buffered"/>
     [IdlMember("buffered", "https://w3c.github.io/reporting/#dom-reportingobserveroptions-buffered")]
     public bool Buffered { get; set; }
 }
@@ -24,6 +28,7 @@ public sealed class ReportingObserverOptions
 /// violations of its content security policies that have a <c>report-to</c> directive. Its callback is invoked from a task
 /// with the reports queued since the previous call.
 /// </summary>
+/// <seealso href="https://w3c.github.io/reporting/#reportingobserver"/>
 [IdlInterface("ReportingObserver", "https://w3c.github.io/reporting/#reportingobserver")]
 public sealed class ReportingObserver
 {
@@ -35,6 +40,7 @@ public sealed class ReportingObserver
     /// <summary>Creates an observer of the reports of the current global object (https://w3c.github.io/reporting/#dom-reportingobserver-reportingobserver).</summary>
     /// <param name="callback">The callback invoked with the observed reports.</param>
     /// <param name="options">The observed types, and whether the reports generated before are observed.</param>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserver-reportingobserver"/>
     [IdlMember("constructor", "https://w3c.github.io/reporting/#dom-reportingobserver-reportingobserver")]
     public ReportingObserver(ReportingObserverCallback callback, ReportingObserverOptions? options = null)
         : this(GlobalScope.Current ?? throw new InvalidOperationException("A reporting observer can only be created by a window or a worker"), callback, options)
@@ -66,6 +72,7 @@ public sealed class ReportingObserver
     /// Starts observing the reports of the global object (https://w3c.github.io/reporting/#dom-reportingobserver-observe):
     /// with the <c>buffered</c> option, the reports of the report buffer are delivered too (once).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserver-observe"/>
     [IdlMember("observe", "https://w3c.github.io/reporting/#dom-reportingobserver-observe")]
     public void Observe()
     {
@@ -84,10 +91,12 @@ public sealed class ReportingObserver
     }
 
     /// <summary>Stops observing the reports (https://w3c.github.io/reporting/#dom-reportingobserver-disconnect). The reports already queued are still delivered by the queued task.</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserver-disconnect"/>
     [IdlMember("disconnect", "https://w3c.github.io/reporting/#dom-reportingobserver-disconnect")]
     public void Disconnect() => Global.UnregisterReportingObserver(this);
 
     /// <summary>Returns the reports of the report queue and empties it (https://w3c.github.io/reporting/#dom-reportingobserver-takerecords).</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-reportingobserver-takerecords"/>
     [IdlMember("takeRecords", "https://w3c.github.io/reporting/#dom-reportingobserver-takerecords")]
     public IReadOnlyList<Report> TakeRecords()
     {

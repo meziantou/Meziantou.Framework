@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <c>document.permissionsPolicy</c> and <c>iframe.permissionsPolicy</c>): the introspection of the permissions policy of the
 /// document, or of the policy that a document loaded into the iframe would inherit.
 /// </summary>
+/// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#permissionspolicy"/>
 [IdlInterface("PermissionsPolicy", "https://w3c.github.io/webappsec-permissions-policy/#permissionspolicy")]
 public sealed class PermissionsPolicy
 {
@@ -23,6 +24,7 @@ public sealed class PermissionsPolicy
     /// </summary>
     /// <param name="feature">The token of the feature (e.g. <c>fullscreen</c>).</param>
     /// <param name="origin">The serialization of an origin, or null for the origin of the document (the declared origin of the iframe).</param>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowsfeature"/>
     [IdlMember("allowsFeature", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowsfeature")]
     public bool AllowsFeature(string feature, string? origin = null)
     {
@@ -38,6 +40,7 @@ public sealed class PermissionsPolicy
     }
 
     /// <summary>Returns the tokens of the supported features (https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-features).</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-features"/>
     [IdlMember("features", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-features")]
     public IReadOnlyList<string> Features()
     {
@@ -55,6 +58,7 @@ public sealed class PermissionsPolicy
     /// Returns the tokens of the features allowed by the policy for the origin of the document, or for the declared origin
     /// of the iframe (https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowedfeatures).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowedfeatures"/>
     [IdlMember("allowedFeatures", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-allowedfeatures")]
     public IReadOnlyList<string> AllowedFeatures()
     {
@@ -78,6 +82,7 @@ public sealed class PermissionsPolicy
     /// its default allowlist: <c>*</c>, or the origin of the document (the declared origin of the iframe).
     /// </summary>
     /// <param name="feature">The token of the feature.</param>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-getallowlistforfeature"/>
     [IdlMember("getAllowlistForFeature", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicy-getallowlistforfeature")]
     public IReadOnlyList<string> GetAllowlistForFeature(string feature)
     {

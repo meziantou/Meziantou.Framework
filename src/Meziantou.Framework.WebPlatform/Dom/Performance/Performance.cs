@@ -8,6 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// (https://w3c.github.io/navigation-timing/#extensions-to-the-performance-interface). It holds the performance timeline of its
 /// global object: the performance entry buffer and the registered performance observers.
 /// </summary>
+/// <seealso href="https://w3c.github.io/hr-time/#sec-performance"/>
 [IdlInterface("Performance", "https://w3c.github.io/hr-time/#sec-performance")]
 public sealed class Performance : EventTarget
 {
@@ -133,14 +134,17 @@ public sealed class Performance : EventTarget
     /// https://w3c.github.io/hr-time/#now-method: the time elapsed since the time origin of the global object, in milliseconds,
     /// measured with <see cref="DomEventLoop.TimeProvider"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/hr-time/#dom-performance-now"/>
     [IdlMember("now", "https://w3c.github.io/hr-time/#dom-performance-now")]
     public double Now() => _global.GetCurrentHighResolutionTime();
 
     /// <summary>https://w3c.github.io/hr-time/#timeorigin-attribute: the time origin of the global object, in milliseconds since the Unix epoch.</summary>
+    /// <seealso href="https://w3c.github.io/hr-time/#dom-performance-timeorigin"/>
     [IdlMember("timeOrigin", "https://w3c.github.io/hr-time/#dom-performance-timeorigin")]
     public double TimeOrigin => _global.TimeOrigin;
 
     /// <summary>https://w3c.github.io/performance-timeline/#getentries-method: the entries of the performance entry buffer, in chronological order.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performance-getentries"/>
     [IdlMember("getEntries", "https://w3c.github.io/performance-timeline/#dom-performance-getentries")]
     public IReadOnlyList<PerformanceEntry> GetEntries()
     {
@@ -149,6 +153,7 @@ public sealed class Performance : EventTarget
     }
 
     /// <summary>https://w3c.github.io/performance-timeline/#getentriesbytype-method</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performance-getentriesbytype"/>
     [IdlMember("getEntriesByType", "https://w3c.github.io/performance-timeline/#dom-performance-getentriesbytype")]
     public IReadOnlyList<PerformanceEntry> GetEntriesByType(string type)
     {
@@ -158,6 +163,7 @@ public sealed class Performance : EventTarget
     }
 
     /// <summary>https://w3c.github.io/performance-timeline/#getentriesbyname-method</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performance-getentriesbyname"/>
     [IdlMember("getEntriesByName", "https://w3c.github.io/performance-timeline/#dom-performance-getentriesbyname")]
     public IReadOnlyList<PerformanceEntry> GetEntriesByName(string name, string? type = null)
     {
@@ -173,6 +179,7 @@ public sealed class Performance : EventTarget
     /// <param name="markName">The name of the mark.</param>
     /// <param name="markOptions">The time and the data of the mark.</param>
     /// <returns>The mark.</returns>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performance-mark"/>
     [IdlMember("mark", "https://w3c.github.io/user-timing/#dom-performance-mark")]
     public PerformanceMark Mark(string markName, PerformanceMarkOptions? markOptions = null)
     {
@@ -184,6 +191,7 @@ public sealed class Performance : EventTarget
 
     /// <summary>https://w3c.github.io/user-timing/#clearmarks-method: removes the marks of a name, or all the marks, from the performance timeline.</summary>
     /// <param name="markName">The name of the marks to remove, or null for all the marks.</param>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performance-clearmarks"/>
     [IdlMember("clearMarks", "https://w3c.github.io/user-timing/#dom-performance-clearmarks")]
     public void ClearMarks(string? markName = null) => ClearBuffer(_markBuffer, markName);
 
@@ -198,6 +206,7 @@ public sealed class Performance : EventTarget
     /// <returns>The measure.</returns>
     /// <exception cref="TypeErrorException">The options are not valid, or a time is negative.</exception>
     /// <exception cref="DomException">A <c>SyntaxError</c> when a mark does not exist; an <c>InvalidAccessError</c> when an attribute of <see cref="PerformanceTiming"/> is not set yet.</exception>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performance-measure"/>
     [IdlMember("measure", "https://w3c.github.io/user-timing/#dom-performance-measure")]
     public PerformanceMeasure Measure(string measureName, object? startOrMeasureOptions = null, string? endMark = null)
     {
@@ -265,6 +274,7 @@ public sealed class Performance : EventTarget
 
     /// <summary>https://w3c.github.io/user-timing/#clearmeasures-method: removes the measures of a name, or all the measures, from the performance timeline.</summary>
     /// <param name="measureName">The name of the measures to remove, or null for all the measures.</param>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performance-clearmeasures"/>
     [IdlMember("clearMeasures", "https://w3c.github.io/user-timing/#dom-performance-clearmeasures")]
     public void ClearMeasures(string? measureName = null) => ClearBuffer(_measureBuffer, measureName);
 
@@ -324,6 +334,7 @@ public sealed class Performance : EventTarget
     /// Gets the legacy timing of the navigation of the document of the window (https://w3c.github.io/navigation-timing/#dom-performance-timing),
     /// or null for a worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performance-timing"/>
     [IdlMember("timing", "https://w3c.github.io/navigation-timing/#dom-performance-timing")]
     public PerformanceTiming? Timing => _timing ??= _global is Window window ? new PerformanceTiming(window) : null;
 
@@ -331,6 +342,7 @@ public sealed class Performance : EventTarget
     /// Gets the legacy description of the navigation of the document of the window (https://w3c.github.io/navigation-timing/#dom-performance-navigation),
     /// or null for a worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/navigation-timing/#dom-performance-navigation"/>
     [IdlMember("navigation", "https://w3c.github.io/navigation-timing/#dom-performance-navigation")]
     public PerformanceNavigation? Navigation => _navigation ??= _global is Window window ? new PerformanceNavigation(window) : null;
 
@@ -355,6 +367,7 @@ public sealed class Performance : EventTarget
     }
 
     /// <summary>https://w3c.github.io/resource-timing/#dom-performance-clearresourcetimings: removes the entries of the resource timing buffer.</summary>
+    /// <seealso href="https://w3c.github.io/resource-timing/#dom-performance-clearresourcetimings"/>
     [IdlMember("clearResourceTimings", "https://w3c.github.io/resource-timing/#dom-performance-clearresourcetimings")]
     public void ClearResourceTimings() => _resourceTimingBuffer.Clear();
 
@@ -362,10 +375,12 @@ public sealed class Performance : EventTarget
     /// https://w3c.github.io/resource-timing/#dom-performance-setresourcetimingbuffersize: sets the size limit of the resource
     /// timing buffer. The entries above the limit are kept.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/resource-timing/#dom-performance-setresourcetimingbuffersize"/>
     [IdlMember("setResourceTimingBufferSize", "https://w3c.github.io/resource-timing/#dom-performance-setresourcetimingbuffersize")]
     public void SetResourceTimingBufferSize(uint maxSize) => _resourceTimingBufferSizeLimit = (int)Math.Min(maxSize, int.MaxValue);
 
     /// <summary>The event handler of the <c>resourcetimingbufferfull</c> event, fired when the resource timing buffer is full.</summary>
+    /// <seealso href="https://w3c.github.io/resource-timing/#dom-performance-onresourcetimingbufferfull"/>
     [IdlMember("onresourcetimingbufferfull", "https://w3c.github.io/resource-timing/#dom-performance-onresourcetimingbufferfull")]
     public Action<Event>? OnResourceTimingBufferFull
     {
@@ -378,6 +393,7 @@ public sealed class Performance : EventTarget
     /// (https://w3c.github.io/event-timing/#dom-performance-eventcounts), or null for a worker. The counts stay at 0 when Event
     /// Timing is disabled (<see cref="WebPlatformFeatures.EventTimingEnabled"/>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performance-eventcounts"/>
     [IdlMember("eventCounts", "https://w3c.github.io/event-timing/#dom-performance-eventcounts")]
     public EventCounts? EventCounts => _global is Window window ? window.Options.EffectiveFeatures.EventTimingEnabled ? window.EventTiming.EventCounts : _eventCounts ??= new EventCounts() : null;
 
@@ -385,6 +401,7 @@ public sealed class Performance : EventTarget
     /// Gets the number of interactions of the user with the window (https://w3c.github.io/event-timing/#dom-performance-interactioncount):
     /// the presses of a pointer followed by its release, and the presses of a key. It is 0 for a worker.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performance-interactioncount"/>
     [IdlMember("interactionCount", "https://w3c.github.io/event-timing/#dom-performance-interactioncount")]
     public ulong InteractionCount => _global is Window window && window.Options.EffectiveFeatures.EventTimingEnabled ? window.EventTiming.InteractionCount : 0;
 

@@ -131,7 +131,7 @@ internal sealed partial class HtmlFormatter : ValueFormatter
 
     private sealed class SimpleQuoteHtmlMarkupWriter(TextWriter output) : WebHtmlMarkupWriter(output)
     {
-        private static readonly SearchValues<char> AttributeEscapeChars = SearchValues.Create("&<>' ");
+        private static readonly SearchValues<char> AttributeEscapeChars = SearchValues.Create("&<>'\u00A0");
 
         protected override void WriteAttribute(WebElement element, string serializedName, string value)
         {

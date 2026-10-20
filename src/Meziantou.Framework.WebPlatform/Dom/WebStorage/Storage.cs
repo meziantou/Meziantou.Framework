@@ -6,6 +6,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// of the document, shared by the documents of the same origin (and, for the session storage, of the same top-level
 /// browsing context).
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#storage-2"/>
 [IdlInterface("Storage", "https://html.spec.whatwg.org/multipage/webstorage.html#storage-2")]
 public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
 {
@@ -25,14 +26,17 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => _window;
 
     /// <summary>Gets the number of items (https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-length).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-length")]
     public uint Length => (uint)_map.Count;
 
     /// <summary>Returns the key at an index, or null (https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-key).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-key"/>
     [IdlMember("key", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-key")]
     public string? Key(uint index) => _map.GetKey(index);
 
     /// <summary>Returns the value of a key, or null (https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-getitem).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-getitem"/>
     [IdlMember("getItem", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-getitem")]
     public string? GetItem(string key)
     {
@@ -45,6 +49,7 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
     /// <c>storage</c> event at the other windows that use the storage area. Throws a <c>QuotaExceededError</c> when the
     /// quota of the storage area is exceeded.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-setitem"/>
     [IdlMember("setItem", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-setitem")]
     public void SetItem(string key, string value)
     {
@@ -57,6 +62,7 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
     }
 
     /// <summary>Removes a key (https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-removeitem).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-removeitem"/>
     [IdlMember("removeItem", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-removeitem")]
     public void RemoveItem(string key)
     {
@@ -68,6 +74,7 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
     }
 
     /// <summary>Removes all the items (https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-clear).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-clear"/>
     [IdlMember("clear", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-storage-clear")]
     public void Clear()
     {

@@ -129,6 +129,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Translucent ellipse covering most of a 1024x768 Rgba64 canvas: fill")]
+    public int FillLargeTranslucent64()
+    {
+        _image64.Draw(static canvas => canvas.FillEllipse(new Rgba64(10000, 30000, 50000, 25700), new PointD(512, 384), 500, 370));
+        return _image64.Width;
+    }
+
+    [Benchmark]
     [Workload("4,300 small antialiased shapes (circles and rectangles of 3 to 5 pixels): fill")]
     public int FillSmallShapes()
     {

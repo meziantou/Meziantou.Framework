@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>An index handle (https://w3c.github.io/IndexedDB/#idbindex).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbindex"/>
 [IdlInterface("IDBIndex", "https://w3c.github.io/IndexedDB/#idbindex")]
 public sealed class IdbIndex
 {
@@ -21,6 +22,7 @@ public sealed class IdbIndex
     private IIndexedDBValueOperations Operations => TransactionObject.Operations;
 
     /// <summary>Gets or sets the name of the index (it can only be changed in an upgrade transaction).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-name"/>
     [IdlMember("name", "https://w3c.github.io/IndexedDB/#dom-idbindex-name")]
     public string Name
     {
@@ -51,22 +53,27 @@ public sealed class IdbIndex
     }
 
     /// <summary>Gets the object store handle of the index.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-objectstore"/>
     [IdlMember("objectStore", "https://w3c.github.io/IndexedDB/#dom-idbindex-objectstore")]
     public IdbObjectStore ObjectStore => ObjectStoreHandle;
 
     /// <summary>Gets the key path of the index: a string or an array of strings (the same array each time).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-keypath"/>
     [IdlMember("keyPath", "https://w3c.github.io/IndexedDB/#dom-idbindex-keypath")]
     public object? KeyPath => _keyPathValue ??= IdbObjectStore.KeyPathToValue(Operations, Index.KeyPath);
 
     /// <summary>Gets whether an array key adds a record per item.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-multientry"/>
     [IdlMember("multiEntry", "https://w3c.github.io/IndexedDB/#dom-idbindex-multientry")]
     public bool MultiEntry => Index.MultiEntry;
 
     /// <summary>Gets whether the keys of the index are unique.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-unique"/>
     [IdlMember("unique", "https://w3c.github.io/IndexedDB/#dom-idbindex-unique")]
     public bool Unique => Index.Unique;
 
     /// <summary>Retrieves the value of the record referenced by the first index record with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbindex-get).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-get"/>
     [IdlMember("get", "https://w3c.github.io/IndexedDB/#dom-idbindex-get")]
     public IdbRequest Get(object? query)
     {
@@ -84,6 +91,7 @@ public sealed class IdbIndex
     }
 
     /// <summary>Retrieves the primary key of the first index record with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbindex-getkey).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-getkey"/>
     [IdlMember("getKey", "https://w3c.github.io/IndexedDB/#dom-idbindex-getkey")]
     public IdbRequest GetKey(object? query)
     {
@@ -95,18 +103,22 @@ public sealed class IdbIndex
     }
 
     /// <summary>Retrieves the values of the records (https://w3c.github.io/IndexedDB/#dom-idbindex-getall).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-getall"/>
     [IdlMember("getAll", "https://w3c.github.io/IndexedDB/#dom-idbindex-getall")]
     public IdbRequest GetAll(object? queryOrOptions = null, uint? count = null) => RetrieveMultiple("value", queryOrOptions, count);
 
     /// <summary>Retrieves the primary keys of the records (https://w3c.github.io/IndexedDB/#dom-idbindex-getallkeys).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-getallkeys"/>
     [IdlMember("getAllKeys", "https://w3c.github.io/IndexedDB/#dom-idbindex-getallkeys")]
     public IdbRequest GetAllKeys(object? queryOrOptions = null, uint? count = null) => RetrieveMultiple("key", queryOrOptions, count);
 
     /// <summary>Retrieves the keys, the primary keys and the values of the records (https://w3c.github.io/IndexedDB/#dom-idbindex-getallrecords).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-getallrecords"/>
     [IdlMember("getAllRecords", "https://w3c.github.io/IndexedDB/#dom-idbindex-getallrecords")]
     public IdbRequest GetAllRecords(IdbGetAllOptions? options = null) => RetrieveMultiple("record", options ?? new IdbGetAllOptions(), count: null);
 
     /// <summary>Counts the index records with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbindex-count).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-count"/>
     [IdlMember("count", "https://w3c.github.io/IndexedDB/#dom-idbindex-count")]
     public IdbRequest Count(object? query = null)
     {
@@ -117,10 +129,12 @@ public sealed class IdbIndex
     }
 
     /// <summary>Opens a cursor over the index records (https://w3c.github.io/IndexedDB/#dom-idbindex-opencursor).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-opencursor"/>
     [IdlMember("openCursor", "https://w3c.github.io/IndexedDB/#dom-idbindex-opencursor")]
     public IdbRequest OpenCursor(object? query = null, IdbCursorDirection direction = IdbCursorDirection.Next) => OpenCursorCore(query, direction, keyOnly: false);
 
     /// <summary>Opens a cursor over the keys of the index records (https://w3c.github.io/IndexedDB/#dom-idbindex-openkeycursor).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbindex-openkeycursor"/>
     [IdlMember("openKeyCursor", "https://w3c.github.io/IndexedDB/#dom-idbindex-openkeycursor")]
     public IdbRequest OpenKeyCursor(object? query = null, IdbCursorDirection direction = IdbCursorDirection.Next) => OpenCursorCore(query, direction, keyOnly: true);
 

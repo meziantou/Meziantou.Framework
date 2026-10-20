@@ -18,6 +18,7 @@ public partial class HtmlElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-attachinternals</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-attachinternals"/>
     [IdlMember("attachInternals", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-attachinternals")]
     public ElementInternals AttachInternals()
     {

@@ -103,6 +103,10 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     private Av1PooledArray<int>? _coefficients;
     private Av1PooledArray<int>? _blockOffsets;
     private Av1PooledArray<byte>? _nonZeros;
+
+    // For each block of the group, in the coordinates of each channel, a bit per channel set when a pass gives it a
+    // non-zero coefficient
+    private Av1PooledArray<byte>? _codedChannels;
     private Av1PooledArray<float>? _work;
     private int _groupX;
     private int _groupY;
@@ -663,6 +667,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _coefficients = Av1PooledArray<int>.Rent(_scope, 3L * GroupBlocks * GroupBlocks * 64, clear: false);
         _blockOffsets = Av1PooledArray<int>.Rent(_scope, GroupBlocks * GroupBlocks, clear: false);
         _nonZeros = Av1PooledArray<byte>.Rent(_scope, 3L * GroupBlocks * GroupBlocks, clear: false);
+        _codedChannels = Av1PooledArray<byte>.Rent(_scope, GroupBlocks * GroupBlocks, clear: false);
         _work = Av1PooledArray<float>.Rent(_scope, (3L * _largestTransformSize) + JpegXlInverseTransform.ScratchLength, clear: false);
     }
 
@@ -674,6 +679,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _groupWidth = Math.Min(GroupBlocks, _blocksWide - _groupX);
         _groupHeight = Math.Min(GroupBlocks, _blocksHigh - _groupY);
         _coefficients!.Span[..(3 * _groupWidth * _groupHeight * 64)].Clear();
+        _codedChannels!.Span.Clear();
 
         // The coefficients of the transforms follow each other in the order of their first block
         var offsets = _blockOffsets!.Span;
@@ -717,6 +723,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var offsets = _blockOffsets!.Span;
         var coefficients = _coefficients!.Span;
         var nonZeros = _nonZeros!.Span;
+        var codedChannels = _codedChannels!.Span;
         var orders = _orders!;
         var quantContextCount = _quantThresholds.Length + 1;
         using var decoder = new JpegXlEntropyDecoder(code, _scope);
@@ -776,6 +783,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                     if (nonZeroCount == 0)
                         continue;
 
+                    codedChannels[index] |= (byte)(1 << c);
                     var block = coefficients.Slice((c * groupArea) + offsets[(y * GroupBlocks) + x], size);
                     var coefficientOrder = orders.GetOrder(pass, order, c);
                     var coefficientContext = contextOffset + JpegXlCoefficientContexts.GetCoefficientContextOffset(_blockContextCount, blockContext);
@@ -888,6 +896,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var quantField = _quantField!.Span;
         var offsets = _blockOffsets!.Span;
         var coefficients = _coefficients!.Span;
+        var codedChannels = _codedChannels!.Span;
         var work = _work!.Span;
         var scratch = work.Slice(3 * _largestTransformSize, JpegXlInverseTransform.ScratchLength);
         var matrices = _matrices!;
@@ -924,6 +933,20 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                 var dequantizedB = work.Slice(2 * _largestTransformSize, size);
                 if (_is444)
                 {
+                    // A DCT of 8x8 samples whose channel has no coefficient (nor Y, from which X and B are predicted) has
+                    // the samples of its LF value
+                    var constantChannels = transform == JpegXlVarDctTables.TransformDct8 ? GetConstantChannels(codedChannels[(y * GroupBlocks) + x], position) : 0;
+                    if (constantChannels == 0b111)
+                    {
+                        for (var c = 0; c < 3; c++)
+                        {
+                            var planeWidth = _blocksWide * 8;
+                            JpegXlInverseTransform.FillConstantBlock(_lf[c]!.Span[position], _planes[c]!.Span[((blockY * 8 * planeWidth) + (blockX * 8))..], planeWidth);
+                        }
+
+                        continue;
+                    }
+
                     var tile = ((blockY / ColorTileBlocks) * _tilesWide) + (blockX / ColorTileBlocks);
                     var kx = _baseCorrelationX + (_xFromY!.Span[tile] * _colorScale);
                     var kb = _baseCorrelationB + (_bFromY!.Span[tile] * _colorScale);
@@ -938,10 +961,17 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
                     for (var c = 0; c < 3; c++)
                     {
+                        var planeWidth = _blocksWide * 8;
+                        var output = _planes[c]!.Span[((blockY * 8 * planeWidth) + (blockX * 8))..];
+                        if ((constantChannels & (1 << c)) != 0)
+                        {
+                            JpegXlInverseTransform.FillConstantBlock(_lf[c]!.Span[position], output, planeWidth);
+                            continue;
+                        }
+
                         var block = work.Slice(c * _largestTransformSize, size);
                         JpegXlInverseTransform.SetLowestFrequencies(_lf[c]!.Span[position..], _blocksWide, blocksHigh, blocksWide, block, scratch);
-                        var planeWidth = _blocksWide * 8;
-                        JpegXlInverseTransform.Apply(transform, block, _planes[c]!.Span[((blockY * 8 * planeWidth) + (blockX * 8))..], planeWidth, scratch);
+                        JpegXlInverseTransform.Apply(transform, block, output, planeWidth, scratch);
                     }
                 }
                 else
@@ -954,6 +984,18 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                         if (((blockX >> hs) << hs) != blockX || ((blockY >> vs) << vs) != blockY)
                             continue;
 
+                        var channelBlocksWide = _blocksWide >> hs;
+                        var channelX = blockX >> hs;
+                        var channelY = blockY >> vs;
+                        var planeWidth = channelBlocksWide * 8;
+                        var output = _planes[c]!.Span[((channelY * 8 * planeWidth) + (channelX * 8))..];
+                        var lowestFrequency = _lf[c]!.Span[(channelY * channelBlocksWide) + channelX];
+                        if (transform == JpegXlVarDctTables.TransformDct8 && (codedChannels[((y >> vs) * GroupBlocks) + (x >> hs)] & (1 << c)) == 0 && JpegXlInverseTransform.IsConstantBlockExact(lowestFrequency))
+                        {
+                            JpegXlInverseTransform.FillConstantBlock(lowestFrequency, output, planeWidth);
+                            continue;
+                        }
+
                         var channelStep = c switch
                         {
                             0 => scale * scaleX,
@@ -965,17 +1007,38 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                         var channelMatrix = matrix.Slice(c * size, size);
                         var block = work[..size];
                         Dequantize(source, channelMatrix, channelStep, bias, biasNumerator, block);
-
-                        var channelBlocksWide = _blocksWide >> hs;
-                        var channelX = blockX >> hs;
-                        var channelY = blockY >> vs;
-                        block[0] = _lf[c]!.Span[(channelY * channelBlocksWide) + channelX];
-                        var planeWidth = channelBlocksWide * 8;
-                        JpegXlInverseTransform.Apply(transform, block, _planes[c]!.Span[((channelY * 8 * planeWidth) + (channelX * 8))..], planeWidth, scratch);
+                        block[0] = lowestFrequency;
+                        JpegXlInverseTransform.Apply(transform, block, output, planeWidth, scratch);
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the channels of a DCT of 8x8 samples of a frame whose channels are not subsampled that have the samples of
+    /// their LF value, one bit per channel: the channels without coefficient whose LF value gives them exactly, when Y has
+    /// no coefficient either (X and B add a prediction from the coefficients of Y).
+    /// </summary>
+    /// <remarks>
+    /// The dequantization of a zero coefficient is a zero, whatever its sign, since the quantization tables, the steps
+    /// and the correlations are finite.
+    /// </remarks>
+    private int GetConstantChannels(byte codedChannels, int position)
+    {
+        if ((codedChannels & 0b010) != 0)
+            return 0;
+
+        var result = 0;
+        for (var c = 0; c < 3; c++)
+        {
+            if ((codedChannels & (1 << c)) == 0 && JpegXlInverseTransform.IsConstantBlockExact(_lf[c]!.Span[position]))
+            {
+                result |= 1 << c;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -1100,18 +1163,15 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var height = (int)_frame.CodedHeight;
         var stride = _blocksWide * 8;
         ReadOnlySpan<Av1PooledArray<float>> planes = [_planes[0]!, _planes[1]!, _planes[2]!];
-        if (filter.IsGaborEnabled)
+        using var inverseSigma = filter.EpfIterations > 0 ? Av1PooledArray<float>.Rent(_scope, (long)_blocksWide * _blocksHigh, clear: false) : null;
+        var blocks = inverseSigma is null ? default : inverseSigma.Span[..(_blocksWide * _blocksHigh)];
+        if (inverseSigma is not null)
         {
-            JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, _scope, _cancellationToken);
+            JpegXlRestorationFilters.ComputeInverseSigma(filter, _globalScale, QuantField, Sharpness, blocks);
         }
 
-        if (filter.EpfIterations > 0)
-        {
-            using var inverseSigma = Av1PooledArray<float>.Rent(_scope, (long)_blocksWide * _blocksHigh, clear: false);
-            var blocks = inverseSigma.Span[..(_blocksWide * _blocksHigh)];
-            JpegXlRestorationFilters.ComputeInverseSigma(filter, _globalScale, QuantField, Sharpness, blocks);
-            JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, blocks, _blocksWide, _scope, _cancellationToken);
-        }
+        // The Gabor-like filter and the steps of the edge-preserving filter, in one pass over the rows
+        JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, blocks, _blocksWide, _scope, _cancellationToken);
     }
 
     public void Dispose()
@@ -1141,6 +1201,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _coefficients?.Dispose();
         _blockOffsets?.Dispose();
         _nonZeros?.Dispose();
+        _codedChannels?.Dispose();
         _work?.Dispose();
         JpegCoefficients?.Dispose();
         JpegCoefficients = null;
@@ -1155,6 +1216,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _coefficients = null;
         _blockOffsets = null;
         _nonZeros = null;
+        _codedChannels = null;
         _work = null;
     }
 

@@ -3,6 +3,7 @@ using System.Text;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-abstractrange</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#abstractrange"/>
 [IdlInterface("AbstractRange", "https://dom.spec.whatwg.org/#abstractrange")]
 public abstract class AbstractRange
 {
@@ -23,22 +24,27 @@ public abstract class AbstractRange
     private protected uint EndOffsetInternal { get; set; }
 
     /// <summary>Gets the node in which the range starts.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-startcontainer"/>
     [IdlMember("startContainer", "https://dom.spec.whatwg.org/#dom-range-startcontainer")]
     public Node StartContainer => StartContainerInternal;
 
     /// <summary>Gets the offset of the start of the range within <c>startContainer</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-startoffset"/>
     [IdlMember("startOffset", "https://dom.spec.whatwg.org/#dom-range-startoffset")]
     public uint StartOffset => StartOffsetInternal;
 
     /// <summary>Gets the node in which the range ends.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-endcontainer"/>
     [IdlMember("endContainer", "https://dom.spec.whatwg.org/#dom-range-endcontainer")]
     public Node EndContainer => EndContainerInternal;
 
     /// <summary>Gets the offset of the end of the range within <c>endContainer</c>.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-endoffset"/>
     [IdlMember("endOffset", "https://dom.spec.whatwg.org/#dom-range-endoffset")]
     public uint EndOffset => EndOffsetInternal;
 
     /// <summary>Gets a value indicating whether the start and the end of the range are the same point.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-collapsed"/>
     [IdlMember("collapsed", "https://dom.spec.whatwg.org/#dom-range-collapsed")]
     public bool Collapsed => ReferenceEquals(StartContainerInternal, EndContainerInternal) && StartOffsetInternal == EndOffsetInternal;
 
@@ -146,31 +152,38 @@ public abstract class AbstractRange
 }
 
 /// <summary>Represents the boundary points used to create a <c>StaticRange</c>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-staticrangeinit"/>
 [IdlInterface("StaticRangeInit", "https://dom.spec.whatwg.org/#dictdef-staticrangeinit")]
 public sealed class StaticRangeInit
 {
     /// <summary>Gets or sets the node in which the range starts.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrangeinit-startcontainer"/>
     [IdlMember("startContainer", "https://dom.spec.whatwg.org/#dom-staticrangeinit-startcontainer")]
     public required Node StartContainer { get; init; }
 
     /// <summary>Gets or sets the offset of the start of the range within the start container.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrangeinit-startoffset"/>
     [IdlMember("startOffset", "https://dom.spec.whatwg.org/#dom-staticrangeinit-startoffset")]
     public required uint StartOffset { get; init; }
 
     /// <summary>Gets or sets the node in which the range ends.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrangeinit-endcontainer"/>
     [IdlMember("endContainer", "https://dom.spec.whatwg.org/#dom-staticrangeinit-endcontainer")]
     public required Node EndContainer { get; init; }
 
     /// <summary>Gets or sets the offset of the end of the range within the end container.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrangeinit-endoffset"/>
     [IdlMember("endOffset", "https://dom.spec.whatwg.org/#dom-staticrangeinit-endoffset")]
     public required uint EndOffset { get; init; }
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-staticrange</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#staticrange"/>
 [IdlInterface("StaticRange", "https://dom.spec.whatwg.org/#staticrange")]
 public sealed class StaticRange : AbstractRange
 {
     /// <summary>Creates a static range with the boundary points of the given initializer.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrange-staticrange"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-staticrange-staticrange")]
     public StaticRange(StaticRangeInit init)
         : base(Validate(init).StartContainer, init.StartOffset, init.EndContainer, init.EndOffset)
@@ -197,22 +210,27 @@ public sealed class StaticRange : AbstractRange
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-range</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#range"/>
 [IdlInterface("Range", "https://dom.spec.whatwg.org/#range")]
 public sealed partial class Range : AbstractRange
 {
     /// <summary>Compares the start of the given range to the start of this range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-start_to_start"/>
     [IdlMember("START_TO_START", "https://dom.spec.whatwg.org/#dom-range-start_to_start")]
     public const ushort StartToStart = 0;
 
     /// <summary>Compares the end of the given range to the start of this range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-start_to_end"/>
     [IdlMember("START_TO_END", "https://dom.spec.whatwg.org/#dom-range-start_to_end")]
     public const ushort StartToEnd = 1;
 
     /// <summary>Compares the end of the given range to the end of this range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-end_to_end"/>
     [IdlMember("END_TO_END", "https://dom.spec.whatwg.org/#dom-range-end_to_end")]
     public const ushort EndToEnd = 2;
 
     /// <summary>Compares the start of the given range to the end of this range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-end_to_start"/>
     [IdlMember("END_TO_START", "https://dom.spec.whatwg.org/#dom-range-end_to_start")]
     public const ushort EndToStart = 3;
 
@@ -222,6 +240,7 @@ public sealed partial class Range : AbstractRange
     internal Selection? Selection { get; set; }
 
     /// <summary>Creates a collapsed range at the start of the current global document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-range"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-range-range")]
     public Range()
         : this(Document.CurrentGlobalDocument)
@@ -270,6 +289,7 @@ public sealed partial class Range : AbstractRange
     private Node Root => StartContainerInternal.GetRoot();
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer"/>
     [IdlMember("commonAncestorContainer", "https://dom.spec.whatwg.org/#dom-range-commonancestorcontainer")]
     public Node CommonAncestorContainer
     {
@@ -316,26 +336,32 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Sets the start of the range to the given node and offset.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setstart"/>
     [IdlMember("setStart", "https://dom.spec.whatwg.org/#dom-range-setstart")]
     public void SetStart(Node node, uint offset) => SetBoundary(node, offset, isStart: true);
 
     /// <summary>Sets the end of the range to the given node and offset.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setend"/>
     [IdlMember("setEnd", "https://dom.spec.whatwg.org/#dom-range-setend")]
     public void SetEnd(Node node, uint offset) => SetBoundary(node, offset, isStart: false);
 
     /// <summary>Sets the start of the range to the position just before the given node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setstartbefore"/>
     [IdlMember("setStartBefore", "https://dom.spec.whatwg.org/#dom-range-setstartbefore")]
     public void SetStartBefore(Node node) => SetBoundary(GetParentOrThrow(node), (uint)node.GetIndex(), isStart: true);
 
     /// <summary>Sets the start of the range to the position just after the given node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setstartafter"/>
     [IdlMember("setStartAfter", "https://dom.spec.whatwg.org/#dom-range-setstartafter")]
     public void SetStartAfter(Node node) => SetBoundary(GetParentOrThrow(node), (uint)node.GetIndex() + 1, isStart: true);
 
     /// <summary>Sets the end of the range to the position just before the given node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setendbefore"/>
     [IdlMember("setEndBefore", "https://dom.spec.whatwg.org/#dom-range-setendbefore")]
     public void SetEndBefore(Node node) => SetBoundary(GetParentOrThrow(node), (uint)node.GetIndex(), isStart: false);
 
     /// <summary>Sets the end of the range to the position just after the given node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-setendafter"/>
     [IdlMember("setEndAfter", "https://dom.spec.whatwg.org/#dom-range-setendafter")]
     public void SetEndAfter(Node node) => SetBoundary(GetParentOrThrow(node), (uint)node.GetIndex() + 1, isStart: false);
 
@@ -346,6 +372,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Collapses the range to its start when <c>toStart</c> is true, or to its end otherwise.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-collapse"/>
     [IdlMember("collapse", "https://dom.spec.whatwg.org/#dom-range-collapse")]
     public void Collapse(bool toStart = false)
     {
@@ -360,6 +387,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#concept-range-select</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-selectnode"/>
     [IdlMember("selectNode", "https://dom.spec.whatwg.org/#dom-range-selectnode")]
     public void SelectNode(Node node)
     {
@@ -370,6 +398,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Sets the range to contain all the children of the given node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-selectnodecontents"/>
     [IdlMember("selectNodeContents", "https://dom.spec.whatwg.org/#dom-range-selectnodecontents")]
     public void SelectNodeContents(Node node)
     {
@@ -383,6 +412,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-compareboundarypoints</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-compareboundarypoints"/>
     [IdlMember("compareBoundaryPoints", "https://dom.spec.whatwg.org/#dom-range-compareboundarypoints")]
     public short CompareBoundaryPoints(ushort how, Range sourceRange)
     {
@@ -420,6 +450,7 @@ public sealed partial class Range : AbstractRange
         node.IsInclusiveAncestorOf(StartContainerInternal) != node.IsInclusiveAncestorOf(EndContainerInternal);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-deletecontents</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-deletecontents"/>
     [IdlMember("deleteContents", "https://dom.spec.whatwg.org/#dom-range-deletecontents")]
     public void DeleteContents()
     {
@@ -487,6 +518,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Removes the contents of the range from the tree and returns them in a document fragment.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-extractcontents"/>
     [IdlMember("extractContents", "https://dom.spec.whatwg.org/#dom-range-extractcontents")]
     public DocumentFragment ExtractContents()
     {
@@ -608,6 +640,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Returns a document fragment containing a copy of the contents of the range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-clonecontents"/>
     [IdlMember("cloneContents", "https://dom.spec.whatwg.org/#dom-range-clonecontents")]
     public DocumentFragment CloneContents()
     {
@@ -674,6 +707,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Inserts the given node into the tree at the start of the range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-insertnode"/>
     [IdlMember("insertNode", "https://dom.spec.whatwg.org/#dom-range-insertnode")]
     public void InsertNode(Node node)
     {
@@ -726,6 +760,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-surroundcontents</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-surroundcontents"/>
     [IdlMember("surroundContents", "https://dom.spec.whatwg.org/#dom-range-surroundcontents")]
     public void SurroundContents(Node newParent)
     {
@@ -753,10 +788,12 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>Returns a new range with the same boundary points as this range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-clonerange"/>
     [IdlMember("cloneRange", "https://dom.spec.whatwg.org/#dom-range-clonerange")]
     public Range CloneRange() => new(StartContainerInternal, StartOffsetInternal, EndContainerInternal, EndOffsetInternal);
 
     /// <summary>Does nothing (https://dom.spec.whatwg.org/#dom-range-detach).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-detach"/>
     [IdlMember("detach", "https://dom.spec.whatwg.org/#dom-range-detach")]
     public void Detach()
     {
@@ -764,6 +801,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-ispointinrange</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-ispointinrange"/>
     [IdlMember("isPointInRange", "https://dom.spec.whatwg.org/#dom-range-ispointinrange")]
     public bool IsPointInRange(Node node, uint offset)
     {
@@ -782,6 +820,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-comparepoint</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-comparepoint"/>
     [IdlMember("comparePoint", "https://dom.spec.whatwg.org/#dom-range-comparepoint")]
     public short ComparePoint(Node node, uint offset)
     {
@@ -805,6 +844,7 @@ public sealed partial class Range : AbstractRange
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-range-intersectsnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-intersectsnode"/>
     [IdlMember("intersectsNode", "https://dom.spec.whatwg.org/#dom-range-intersectsnode")]
     public bool IntersectsNode(Node node)
     {

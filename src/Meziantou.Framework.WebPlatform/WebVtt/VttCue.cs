@@ -3,90 +3,111 @@ using Meziantou.Framework.WebPlatform.WebVtt;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/webvtt/#enumdef-autokeyword</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-autokeyword"/>
 [IdlInterface("AutoKeyword", "https://w3c.github.io/webvtt/#enumdef-autokeyword")]
 public enum AutoKeyword
 {
     /// <summary>The line or the position of the cue is automatic.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-autokeyword-auto"/>
     [IdlMember("auto", "https://w3c.github.io/webvtt/#dom-autokeyword-auto")]
     Auto,
 }
 
 /// <summary>The writing direction of a WebVTT cue (https://w3c.github.io/webvtt/#enumdef-directionsetting).</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-directionsetting"/>
 [IdlInterface("DirectionSetting", "https://w3c.github.io/webvtt/#enumdef-directionsetting")]
 public enum DirectionSetting
 {
     /// <summary>A line extends horizontally and is offset vertically from the video viewport's top edge.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#webvtt-cue-horizontal-writing-direction"/>
     [IdlMember("", "https://w3c.github.io/webvtt/#webvtt-cue-horizontal-writing-direction")]
     Horizontal,
 
     /// <summary>A line extends vertically, and the consecutive lines are displayed to the left of each other.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-directionsetting-rl"/>
     [IdlMember("rl", "https://w3c.github.io/webvtt/#dom-directionsetting-rl")]
     Rl,
 
     /// <summary>A line extends vertically, and the consecutive lines are displayed to the right of each other.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-directionsetting-lr"/>
     [IdlMember("lr", "https://w3c.github.io/webvtt/#dom-directionsetting-lr")]
     Lr,
 }
 
 /// <summary>The alignment of the line of a WebVTT cue (https://w3c.github.io/webvtt/#enumdef-linealignsetting).</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-linealignsetting"/>
 [IdlInterface("LineAlignSetting", "https://w3c.github.io/webvtt/#enumdef-linealignsetting")]
 public enum LineAlignSetting
 {
     /// <summary>The start side of the cue box is aligned at the line.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-linealignsetting-start"/>
     [IdlMember("start", "https://w3c.github.io/webvtt/#dom-linealignsetting-start")]
     Start,
 
     /// <summary>The cue box is centered at the line.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-linealignsetting-center"/>
     [IdlMember("center", "https://w3c.github.io/webvtt/#dom-linealignsetting-center")]
     Center,
 
     /// <summary>The end side of the cue box is aligned at the line.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-linealignsetting-end"/>
     [IdlMember("end", "https://w3c.github.io/webvtt/#dom-linealignsetting-end")]
     End,
 }
 
 /// <summary>The alignment of the position of a WebVTT cue (https://w3c.github.io/webvtt/#enumdef-positionalignsetting).</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-positionalignsetting"/>
 [IdlInterface("PositionAlignSetting", "https://w3c.github.io/webvtt/#enumdef-positionalignsetting")]
 public enum PositionAlignSetting
 {
     /// <summary>The left side (or the top side of a vertical cue) of the cue box is aligned at the position.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-positionalignsetting-line-left"/>
     [IdlMember("line-left", "https://w3c.github.io/webvtt/#dom-positionalignsetting-line-left")]
     LineLeft,
 
     /// <summary>The cue box is centered at the position.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-positionalignsetting-center"/>
     [IdlMember("center", "https://w3c.github.io/webvtt/#dom-positionalignsetting-center")]
     Center,
 
     /// <summary>The right side (or the bottom side of a vertical cue) of the cue box is aligned at the position.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-positionalignsetting-line-right"/>
     [IdlMember("line-right", "https://w3c.github.io/webvtt/#dom-positionalignsetting-line-right")]
     LineRight,
 
     /// <summary>The alignment depends on the text alignment of the cue.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-positionalignsetting-auto"/>
     [IdlMember("auto", "https://w3c.github.io/webvtt/#dom-positionalignsetting-auto")]
     Auto,
 }
 
 /// <summary>The alignment of the text of a WebVTT cue (https://w3c.github.io/webvtt/#enumdef-alignsetting).</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-alignsetting"/>
 [IdlInterface("AlignSetting", "https://w3c.github.io/webvtt/#enumdef-alignsetting")]
 public enum AlignSetting
 {
     /// <summary>The text of each line is aligned towards the start side of the box.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-alignsetting-start"/>
     [IdlMember("start", "https://w3c.github.io/webvtt/#dom-alignsetting-start")]
     Start,
 
     /// <summary>The text of each line is centered in the box.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-alignsetting-center"/>
     [IdlMember("center", "https://w3c.github.io/webvtt/#dom-alignsetting-center")]
     Center,
 
     /// <summary>The text of each line is aligned towards the end side of the box.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-alignsetting-end"/>
     [IdlMember("end", "https://w3c.github.io/webvtt/#dom-alignsetting-end")]
     End,
 
     /// <summary>The text of each line is aligned to the left side of the box (or to its top side for a vertical cue).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-alignsetting-left"/>
     [IdlMember("left", "https://w3c.github.io/webvtt/#dom-alignsetting-left")]
     Left,
 
     /// <summary>The text of each line is aligned to the right side of the box (or to its bottom side for a vertical cue).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-alignsetting-right"/>
     [IdlMember("right", "https://w3c.github.io/webvtt/#dom-alignsetting-right")]
     Right,
 }
@@ -167,6 +188,7 @@ public readonly struct LineAndPositionSetting : IUnionValue, IEquatable<LineAndP
 /// A WebVTT cue (https://w3c.github.io/webvtt/#the-vttcue-interface): the cue of a WebVTT file, or a cue created to be added
 /// to a text track with <see cref="TextTrack.AddCue"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/webvtt/#the-vttcue-interface"/>
 [IdlInterface("VTTCue", "https://w3c.github.io/webvtt/#the-vttcue-interface")]
 public sealed class VttCue : TextTrackCue
 {
@@ -186,6 +208,7 @@ public sealed class VttCue : TextTrackCue
     /// <param name="endTime">The end time of the cue, in seconds (positive infinity for an unbounded cue).</param>
     /// <param name="text">The cue text.</param>
     /// <exception cref="ArgumentException"><paramref name="endTime"/> is negative infinity or NaN.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-vttcue"/>
     [IdlMember("constructor", "https://w3c.github.io/webvtt/#dom-vttcue-vttcue")]
     public VttCue(double startTime, double endTime, string text)
         : base(ValidateStartTime(startTime), ValidateEndTime(endTime))
@@ -209,6 +232,7 @@ public sealed class VttCue : TextTrackCue
     private protected override void OnDisplayStateEmptied() => DisplayState = null;
 
     /// <summary>Gets or sets the region of the cue (https://w3c.github.io/webvtt/#dom-vttcue-region), or null.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-region"/>
     [IdlMember("region", "https://w3c.github.io/webvtt/#dom-vttcue-region")]
     public VttRegion? Region
     {
@@ -226,6 +250,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the writing direction of the cue (https://w3c.github.io/webvtt/#dom-vttcue-vertical).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-vertical"/>
     [IdlMember("vertical", "https://w3c.github.io/webvtt/#dom-vttcue-vertical")]
     public DirectionSetting Vertical
     {
@@ -241,6 +266,7 @@ public sealed class VttCue : TextTrackCue
     /// Gets or sets a value indicating whether the line of the cue is a number of lines, rather than a percentage of the
     /// dimensions of the video (https://w3c.github.io/webvtt/#dom-vttcue-snaptolines).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-snaptolines"/>
     [IdlMember("snapToLines", "https://w3c.github.io/webvtt/#dom-vttcue-snaptolines")]
     public bool SnapToLines
     {
@@ -253,6 +279,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the line of the cue (https://w3c.github.io/webvtt/#dom-vttcue-line): a number, or <c>auto</c>.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-line"/>
     [IdlMember("line", "https://w3c.github.io/webvtt/#dom-vttcue-line")]
     public LineAndPositionSetting Line
     {
@@ -268,6 +295,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the alignment of the line of the cue (https://w3c.github.io/webvtt/#dom-vttcue-linealign).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-linealign"/>
     [IdlMember("lineAlign", "https://w3c.github.io/webvtt/#dom-vttcue-linealign")]
     public LineAlignSetting LineAlign
     {
@@ -283,6 +311,7 @@ public sealed class VttCue : TextTrackCue
     /// Gets or sets the position of the cue (https://w3c.github.io/webvtt/#dom-vttcue-position): a percentage, or <c>auto</c>.
     /// </summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-position"/>
     [IdlMember("position", "https://w3c.github.io/webvtt/#dom-vttcue-position")]
     public LineAndPositionSetting Position
     {
@@ -304,6 +333,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the alignment of the position of the cue (https://w3c.github.io/webvtt/#dom-vttcue-positionalign).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-positionalign"/>
     [IdlMember("positionAlign", "https://w3c.github.io/webvtt/#dom-vttcue-positionalign")]
     public PositionAlignSetting PositionAlign
     {
@@ -317,6 +347,7 @@ public sealed class VttCue : TextTrackCue
 
     /// <summary>Gets or sets the size of the cue box, a percentage of the video (https://w3c.github.io/webvtt/#dom-vttcue-size).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-size"/>
     [IdlMember("size", "https://w3c.github.io/webvtt/#dom-vttcue-size")]
     public double Size
     {
@@ -335,6 +366,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the alignment of the text of the cue (https://w3c.github.io/webvtt/#dom-vttcue-align).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-align"/>
     [IdlMember("align", "https://w3c.github.io/webvtt/#dom-vttcue-align")]
     public AlignSetting Align
     {
@@ -347,6 +379,7 @@ public sealed class VttCue : TextTrackCue
     }
 
     /// <summary>Gets or sets the cue text, in raw unparsed form (https://w3c.github.io/webvtt/#dom-vttcue-text).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-text"/>
     [IdlMember("text", "https://w3c.github.io/webvtt/#dom-vttcue-text")]
     public string Text
     {
@@ -364,6 +397,7 @@ public sealed class VttCue : TextTrackCue
     /// the WebVTT cue text parsing rules, then the WebVTT cue text DOM construction rules. The nodes belong to the document
     /// of the current global object.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttcue-getcueashtml"/>
     [IdlMember("getCueAsHTML", "https://w3c.github.io/webvtt/#dom-vttcue-getcueashtml")]
     public DocumentFragment GetCueAsHtml() => GetCueAsHtml(Document.CurrentGlobalDocument);
 

@@ -1,14 +1,17 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The result of <see cref="StorageManager.Estimate"/> (https://storage.spec.whatwg.org/#dictdef-storageestimate).</summary>
+/// <seealso href="https://storage.spec.whatwg.org/#dictdef-storageestimate"/>
 [IdlInterface("StorageEstimate", "https://storage.spec.whatwg.org/#dictdef-storageestimate")]
 public sealed class StorageEstimate
 {
     /// <summary>Gets an estimation of the number of bytes used by the storage of the origin.</summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-storageestimate-usage"/>
     [IdlMember("usage", "https://storage.spec.whatwg.org/#dom-storageestimate-usage")]
     public ulong? Usage { get; init; }
 
     /// <summary>Gets the number of bytes that the origin can store.</summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-storageestimate-quota"/>
     [IdlMember("quota", "https://storage.spec.whatwg.org/#dom-storageestimate-quota")]
     public ulong? Quota { get; init; }
 }
@@ -54,6 +57,7 @@ public sealed record StorageOptions
 /// <see cref="Navigator.Storage"/>): the estimation of the usage of the storage of its origin, the persistence of that
 /// storage, and the root directory of its origin private file system (https://fs.spec.whatwg.org/).
 /// </summary>
+/// <seealso href="https://storage.spec.whatwg.org/#storagemanager"/>
 [IdlInterface("StorageManager", "https://storage.spec.whatwg.org/#storagemanager")]
 public sealed class StorageManager
 {
@@ -69,6 +73,7 @@ public sealed class StorageManager
     /// the mode of its local storage bucket is "persistent", so the user agent does not clear it under storage pressure. The
     /// task fails with a <see cref="TypeErrorException"/> when the origin is opaque.
     /// </summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-storagemanager-persisted"/>
     [IdlMember("persisted", "https://storage.spec.whatwg.org/#dom-storagemanager-persisted")]
     public Task<bool> Persisted()
     {
@@ -84,6 +89,7 @@ public sealed class StorageManager
     /// <see cref="StorageOptions.RequestPersistentStorage"/> (it is denied by default). The request of a prerendering document
     /// is made when the document is activated.
     /// </summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-storagemanager-persist"/>
     [IdlMember("persist", "https://storage.spec.whatwg.org/#dom-storagemanager-persist")]
     public Task<bool> Persist()
     {
@@ -109,6 +115,7 @@ public sealed class StorageManager
     /// (<see cref="CacheStorageBackend.GetUsage"/>) and of the file system (<see cref="FileSystemBackend.GetUsage"/>). The
     /// quota is <see cref="StorageOptions.Quota"/>.
     /// </summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-storagemanager-estimate"/>
     [IdlMember("estimate", "https://storage.spec.whatwg.org/#dom-storagemanager-estimate")]
     public Task<StorageEstimate> Estimate()
     {
@@ -136,6 +143,7 @@ public sealed class StorageManager
     /// the bucket file system of the storage key of the window or of the worker, stored by
     /// <see cref="BrowsingContextOptions.FileSystem"/>. The task fails with a <c>SecurityError</c> when the origin is opaque.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory"/>
     [IdlMember("getDirectory", "https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory")]
     public Task<FileSystemDirectoryHandle> GetDirectory()
     {

@@ -22,6 +22,7 @@ public partial class Document
     /// <summary>
     /// Gets the active view transition of the document, or null (https://drafts.csswg.org/css-view-transitions-2/#dom-document-activeviewtransition).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-document-activeviewtransition"/>
     [IdlMember("activeViewTransition", "https://drafts.csswg.org/css-view-transitions-2/#dom-document-activeviewtransition")]
     public ViewTransition? ActiveViewTransition => _activeViewTransition;
 
@@ -31,6 +32,7 @@ public partial class Document
     /// between the two states is animated. The active view transition of the document, if any, is skipped.
     /// </summary>
     /// <param name="callback">The callback that updates the document. It is always called, even when the transition cannot happen.</param>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-1/#dom-document-startviewtransition"/>
     [IdlMember("startViewTransition", "https://drafts.csswg.org/css-view-transitions-1/#dom-document-startviewtransition")]
     public ViewTransition StartViewTransition(ViewTransitionUpdateCallback callback) => StartViewTransitionCore(DocumentElement, callback, types: null);
 
@@ -38,6 +40,7 @@ public partial class Document
     /// Starts a view transition with options (https://drafts.csswg.org/css-view-transitions-2/#dom-document-startviewtransition):
     /// the update callback and the types of the transition.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-document-startviewtransition"/>
     [IdlMember("startViewTransition", "https://drafts.csswg.org/css-view-transitions-2/#dom-document-startviewtransition")]
     public ViewTransition StartViewTransition(StartViewTransitionOptions? options = null) => StartViewTransitionCore(DocumentElement, options?.Update, options?.Types);
 

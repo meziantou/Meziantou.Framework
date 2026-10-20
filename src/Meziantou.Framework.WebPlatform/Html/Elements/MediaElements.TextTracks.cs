@@ -35,6 +35,7 @@ public partial class HtmlMediaElement
     private bool _processCuesAgain;
 
     /// <summary>Gets the text tracks of the media element (https://html.spec.whatwg.org/multipage/media.html#dom-media-texttracks).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-texttracks"/>
     [IdlMember("textTracks", "https://html.spec.whatwg.org/multipage/media.html#dom-media-texttracks")]
     public TextTrackList TextTracks => _textTracks ??= new TextTrackList(this);
 
@@ -47,6 +48,7 @@ public partial class HtmlMediaElement
     /// <param name="label">The label of the track.</param>
     /// <param name="language">The language of the track (a BCP 47 language tag).</param>
     /// <returns>The new track.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-addtexttrack"/>
     [IdlMember("addTextTrack", "https://html.spec.whatwg.org/multipage/media.html#dom-media-addtexttrack")]
     public TextTrack AddTextTrack(TextTrackKind kind, string label = "", string language = "")
     {

@@ -4,104 +4,129 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Animations;
 
 /// <summary>The timing properties of an animation effect (https://drafts.csswg.org/web-animations-1/#dictdef-effecttiming).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-effecttiming"/>
 [IdlInterface("EffectTiming", "https://drafts.csswg.org/web-animations-1/#dictdef-effecttiming")]
 public class EffectTiming
 {
     /// <summary>Gets the start delay, in milliseconds.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-effecttiming-delay"/>
     [IdlMember("delay", "https://drafts.csswg.org/web-animations-2/#dom-effecttiming-delay")]
     public double Delay { get; init; }
 
     /// <summary>Gets the end delay, in milliseconds.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-effecttiming-enddelay"/>
     [IdlMember("endDelay", "https://drafts.csswg.org/web-animations-2/#dom-effecttiming-enddelay")]
     public double EndDelay { get; init; }
 
     /// <summary>Gets the fill mode.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-effecttiming-fill"/>
     [IdlMember("fill", "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-fill")]
     public FillMode Fill { get; init; } = FillMode.Auto;
 
     /// <summary>Gets the iteration start: the offset, in iterations, at which the effect begins.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterationstart"/>
     [IdlMember("iterationStart", "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterationstart")]
     public double IterationStart { get; init; }
 
     /// <summary>Gets the number of iterations (may be infinity).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterations"/>
     [IdlMember("iterations", "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-iterations")]
     public double Iterations { get; init; } = 1;
 
     /// <summary>Gets the iteration duration, in milliseconds, or "auto".</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-effecttiming-duration"/>
     [IdlMember("duration", "https://drafts.csswg.org/web-animations-2/#dom-effecttiming-duration")]
     public EffectDuration Duration { get; init; } = "auto";
 
     /// <summary>Gets the playback direction.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-effecttiming-direction"/>
     [IdlMember("direction", "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-direction")]
     public PlaybackDirection Direction { get; init; }
 
     /// <summary>Gets the easing function applied to the iterations.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-effecttiming-easing"/>
     [IdlMember("easing", "https://drafts.csswg.org/web-animations-1/#dom-effecttiming-easing")]
     public string Easing { get; init; } = "linear";
 }
 
 /// <summary>The timing properties to update (https://drafts.csswg.org/web-animations-1/#dictdef-optionaleffecttiming): null members are not changed.</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-optionaleffecttiming"/>
 [IdlInterface("OptionalEffectTiming", "https://drafts.csswg.org/web-animations-1/#dictdef-optionaleffecttiming")]
 public sealed class OptionalEffectTiming
 {
     /// <summary>Gets the start delay, in milliseconds.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-delay"/>
     [IdlMember("delay", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-delay")]
     public double? Delay { get; init; }
 
     /// <summary>Gets the end delay, in milliseconds.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-enddelay"/>
     [IdlMember("endDelay", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-enddelay")]
     public double? EndDelay { get; init; }
 
     /// <summary>Gets the fill mode.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-fill"/>
     [IdlMember("fill", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-fill")]
     public FillMode? Fill { get; init; }
 
     /// <summary>Gets the iteration start.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterationstart"/>
     [IdlMember("iterationStart", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterationstart")]
     public double? IterationStart { get; init; }
 
     /// <summary>Gets the number of iterations.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterations"/>
     [IdlMember("iterations", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-iterations")]
     public double? Iterations { get; init; }
 
     /// <summary>Gets the iteration duration, in milliseconds, or "auto".</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-duration"/>
     [IdlMember("duration", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-duration")]
     public EffectDuration? Duration { get; init; }
 
     /// <summary>Gets the playback direction.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-direction"/>
     [IdlMember("direction", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-direction")]
     public PlaybackDirection? Direction { get; init; }
 
     /// <summary>Gets the easing function.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-easing"/>
     [IdlMember("easing", "https://drafts.csswg.org/web-animations-1/#dom-optionaleffecttiming-easing")]
     public string? Easing { get; init; }
 }
 
 /// <summary>The timing properties of an animation effect and its calculated timing (https://drafts.csswg.org/web-animations-1/#dictdef-computedeffecttiming).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-computedeffecttiming"/>
 [IdlInterface("ComputedEffectTiming", "https://drafts.csswg.org/web-animations-1/#dictdef-computedeffecttiming")]
 public sealed class ComputedEffectTiming : EffectTiming
 {
     /// <summary>Gets the iteration progress, or null when the effect is not in effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-progress"/>
     [IdlMember("progress", "https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-progress")]
     public double? Progress { get; init; }
 
     /// <summary>Gets the current iteration, or null when the effect is not in effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-currentiteration"/>
     [IdlMember("currentIteration", "https://drafts.csswg.org/web-animations-1/#dom-computedeffecttiming-currentiteration")]
     public double? CurrentIteration { get; init; }
 
     /// <summary>Gets the start time of the effect (always 0).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-starttime"/>
     [IdlMember("startTime", "https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-starttime")]
     public CssNumberish StartTime { get; init; }
 
     /// <summary>Gets the end time of the effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-endtime"/>
     [IdlMember("endTime", "https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-endtime")]
     public CssNumberish EndTime { get; init; }
 
     /// <summary>Gets the active duration of the effect.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-activeduration"/>
     [IdlMember("activeDuration", "https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-activeduration")]
     public CssNumberish ActiveDuration { get; init; }
 
     /// <summary>Gets the local time of the effect, or null when it is not associated with an animation or the current time of the animation is unresolved.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-localtime"/>
     [IdlMember("localTime", "https://drafts.csswg.org/web-animations-2/#dom-computedeffecttiming-localtime")]
     public CssNumberish? LocalTime { get; init; }
 }

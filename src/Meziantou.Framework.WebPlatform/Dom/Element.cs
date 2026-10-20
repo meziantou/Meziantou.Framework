@@ -6,22 +6,88 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-element</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#element"/>
 [IdlInterface("Element", "https://dom.spec.whatwg.org/#element")]
 public partial class Element : Node
 {
-    /// <summary>An attribute of the element. The <see cref="Attr"/> node is only created when requested.</summary>
+    /// <summary>
+    /// An attribute of the element. Most attributes have no namespace, no prefix and no <see cref="Attr"/> node (it is only
+    /// created when requested): <see cref="Extra"/> holds the data of the other attributes.
+    /// </summary>
     private struct AttributeSlot
     {
         public string LocalName;
-        public string? Namespace;
-        public string? Prefix;
         public string Value;
-        public Attr? Node;
+
+        /// <summary>
+        /// The <see cref="Attr"/> node (which has the namespace and the prefix), an <see cref="AttributeNamespace"/>, the
+        /// classes of the class attribute parsed from <see cref="Value"/> (see <see cref="GetClassNames"/>), or null.
+        /// </summary>
+        public object? Extra;
+
+        public readonly string? Namespace => Extra switch
+        {
+            Attr attr => attr.NamespaceUri,
+            AttributeNamespace name => name.Namespace,
+            _ => null,
+        };
+
+        public readonly string? Prefix => Extra switch
+        {
+            Attr attr => attr.Prefix,
+            AttributeNamespace name => name.Prefix,
+            _ => null,
+        };
+
+        public readonly Attr? Node => Extra as Attr;
+
+        public static object? CreateExtra(string? @namespace, string? prefix, Attr? node)
+        {
+            if (node is not null)
+                return node;
+
+            if (@namespace is null && prefix is null)
+                return null;
+
+            return AttributeNamespace.Get(@namespace, prefix);
+        }
+    }
+
+    /// <summary>The namespace and the prefix of an attribute that has no <see cref="Attr"/> node.</summary>
+    private sealed class AttributeNamespace(string? @namespace, string? prefix)
+    {
+        private static readonly AttributeNamespace XLink = new(Namespaces.XLink, "xlink");
+        private static readonly AttributeNamespace Xml = new(Namespaces.Xml, "xml");
+        private static readonly AttributeNamespace Xmlns = new(Namespaces.Xmlns, "xmlns");
+        private static readonly AttributeNamespace XmlnsDefault = new(Namespaces.Xmlns, prefix: null);
+
+        public string? Namespace { get; } = @namespace;
+
+        public string? Prefix { get; } = prefix;
+
+        /// <summary>Returns the namespace and the prefix: the ones of the attributes of the foreign elements (xlink:href, xml:lang, xmlns...) are shared.</summary>
+        public static AttributeNamespace Get(string? @namespace, string? prefix) => (@namespace, prefix) switch
+        {
+            (Namespaces.XLink, "xlink") => XLink,
+            (Namespaces.Xml, "xml") => Xml,
+            (Namespaces.Xmlns, "xmlns") => Xmlns,
+            (Namespaces.Xmlns, null) => XmlnsDefault,
+            _ => new AttributeNamespace(@namespace, prefix),
+        };
     }
 
     private AttributeSlot[]? _attributes;
     private int _attributeCount;
     private string? _id;
+
+    /// <summary>
+    /// The index of the element among the element children of its parent, cached for :nth-child() and :nth-last-child():
+    /// it is valid when <see cref="ElementIndexStamp"/> is the <see cref="Node.ChildrenVersion"/> of the parent plus one.
+    /// </summary>
+    internal int ElementIndex { get; set; }
+
+    /// <summary>The <see cref="Node.ChildrenVersion"/> of the parent plus one when <see cref="ElementIndex"/> was computed, or 0.</summary>
+    internal int ElementIndexStamp { get; set; }
 
     internal Element(Document document, string localName, string? @namespace, string? prefix)
         : base(document)
@@ -80,6 +146,7 @@ public partial class Element : Node
     /// https://dom.spec.whatwg.org/#element-custom-element-registry. Most elements use the registry of their node document,
     /// which is not stored in each element: only the other registries (scoped registries) are stored in the rare data.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-customelementregistry"/>
     [IdlMember("customElementRegistry", "https://dom.spec.whatwg.org/#dom-element-customelementregistry")]
     public CustomElementRegistry? CustomElementRegistry
     {
@@ -134,14 +201,17 @@ public partial class Element : Node
     public override string NodeName => TagName;
 
     /// <summary>Gets the namespace of the element, or null when it has none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-namespaceuri"/>
     [IdlMember("namespaceURI", "https://dom.spec.whatwg.org/#dom-element-namespaceuri")]
     public string? NamespaceUri { get; }
 
     /// <summary>Gets the namespace prefix of the element, or null when it has none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-prefix"/>
     [IdlMember("prefix", "https://dom.spec.whatwg.org/#dom-element-prefix")]
     public string? Prefix { get; internal set; }
 
     /// <summary>Gets the local name of the element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-localname"/>
     [IdlMember("localName", "https://dom.spec.whatwg.org/#dom-element-localname")]
     public string LocalName { get; }
 
@@ -149,6 +219,7 @@ public partial class Element : Node
     internal string QualifiedName => Prefix is null ? LocalName : Prefix + ":" + LocalName;
 
     /// <summary>https://dom.spec.whatwg.org/#element-html-uppercased-qualified-name</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-tagname"/>
     [IdlMember("tagName", "https://dom.spec.whatwg.org/#dom-element-tagname")]
     public string TagName
     {
@@ -178,6 +249,7 @@ public partial class Element : Node
     internal bool IsHtml(TagId tagId) => TagId == tagId && IsHtmlNamespace;
 
     /// <summary>Gets or sets the value of the <c>id</c> attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-id"/>
     [IdlMember("id", "https://dom.spec.whatwg.org/#dom-element-id")]
     public string Id
     {
@@ -189,6 +261,7 @@ public partial class Element : Node
     internal string? IdValue => _id;
 
     /// <summary>Gets or sets the <c>elementtiming</c> attribute: the identifier of the element timing entries of the element (https://w3c.github.io/element-timing/#sec-elements-exposed).</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-element-elementtiming"/>
     [IdlMember("elementTiming", "https://w3c.github.io/element-timing/#dom-element-elementtiming")]
     public string ElementTiming
     {
@@ -197,6 +270,7 @@ public partial class Element : Node
     }
 
     /// <summary>Gets or sets the value of the <c>slot</c> attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-slot"/>
     [IdlMember("slot", "https://dom.spec.whatwg.org/#dom-element-slot")]
     public string Slot
     {
@@ -207,10 +281,12 @@ public partial class Element : Node
     /// <summary>
     /// Gets the slot the element is assigned to, or null when it is not assigned to an open shadow tree slot.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-slotable-assignedslot"/>
     [IdlMember("assignedSlot", "https://dom.spec.whatwg.org/#dom-slotable-assignedslot")]
     public HtmlSlotElement? AssignedSlot => Slots.FindASlot(this, open: true);
 
     /// <summary>Gets or sets the value of the <c>class</c> attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-classname"/>
     [IdlMember("className", "https://dom.spec.whatwg.org/#dom-element-classname")]
     public string ClassName
     {
@@ -357,12 +433,12 @@ public partial class Element : Node
     internal Attr GetAttributeNodeAt(int index)
     {
         ref var slot = ref _attributes![index];
-        if (slot.Node is null)
-        {
-            slot.Node = new Attr(NodeDocument, slot.LocalName, slot.Namespace, slot.Prefix, slot.Value) { OwnerElement = this };
-        }
+        if (slot.Node is { } node)
+            return node;
 
-        return slot.Node;
+        node = new Attr(NodeDocument, slot.LocalName, slot.Namespace, slot.Prefix, slot.Value) { OwnerElement = this };
+        slot.Extra = node;
+        return node;
     }
 
     internal IEnumerable<Attr> GetAttributeNodesForComparison()
@@ -388,7 +464,7 @@ public partial class Element : Node
             Array.Resize(ref _attributes, _attributes.Length * 2);
         }
 
-        _attributes[_attributeCount++] = new AttributeSlot { LocalName = localName, Namespace = @namespace, Prefix = prefix, Value = value, Node = node };
+        _attributes[_attributeCount++] = new AttributeSlot { LocalName = localName, Value = value, Extra = AttributeSlot.CreateExtra(@namespace, prefix, node) };
         if (node is not null)
         {
             node.OwnerElement = this;
@@ -419,6 +495,12 @@ public partial class Element : Node
         ref var slot = ref _attributes![index];
         var oldValue = slot.Value;
         slot.Value = value;
+        if (slot.Extra is List<string>)
+        {
+            // The classes parsed from the old value
+            slot.Extra = null;
+        }
+
         HandleAttributeChanges(slot.LocalName, slot.Namespace, oldValue, value);
     }
 
@@ -667,10 +749,12 @@ public partial class Element : Node
     }
 
     /// <summary>Returns a value indicating whether the element has at least one attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-hasattributes"/>
     [IdlMember("hasAttributes", "https://dom.spec.whatwg.org/#dom-element-hasattributes")]
     public bool HasAttributes() => _attributeCount > 0;
 
     /// <summary>Returns the qualified names of the attributes of the element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getattributenames"/>
     [IdlMember("getAttributeNames", "https://dom.spec.whatwg.org/#dom-element-getattributenames")]
     public IReadOnlyList<string> GetAttributeNames()
     {
@@ -684,6 +768,7 @@ public partial class Element : Node
     }
 
     /// <summary>Returns the value of the attribute with the given qualified name, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getattribute"/>
     [IdlMember("getAttribute", "https://dom.spec.whatwg.org/#dom-element-getattribute")]
     public string? GetAttribute(string qualifiedName)
     {
@@ -695,6 +780,7 @@ public partial class Element : Node
     /// <summary>
     /// Returns the value of the attribute with the given namespace and local name, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getattributens"/>
     [IdlMember("getAttributeNS", "https://dom.spec.whatwg.org/#dom-element-getattributens")]
     public string? GetAttributeNS(string? @namespace, string localName)
     {
@@ -704,6 +790,7 @@ public partial class Element : Node
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-setattribute</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced for the attribute and the default policy did not convert the value.</exception>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattribute"/>
     [IdlMember("setAttribute", "https://dom.spec.whatwg.org/#dom-element-setattribute")]
     public void SetAttribute(string qualifiedName, string value)
     {
@@ -713,6 +800,7 @@ public partial class Element : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-setattribute</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattribute"/>
     [IdlMember("setAttribute", "https://dom.spec.whatwg.org/#dom-element-setattribute")]
     public void SetAttribute(string qualifiedName, TrustedType value)
     {
@@ -745,6 +833,7 @@ public partial class Element : Node
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-setattributens</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced for the attribute and the default policy did not convert the value.</exception>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattributens"/>
     [IdlMember("setAttributeNS", "https://dom.spec.whatwg.org/#dom-element-setattributens")]
     public void SetAttributeNS(string? @namespace, string qualifiedName, string value)
     {
@@ -754,6 +843,7 @@ public partial class Element : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-setattributens</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattributens"/>
     [IdlMember("setAttributeNS", "https://dom.spec.whatwg.org/#dom-element-setattributens")]
     public void SetAttributeNS(string? @namespace, string qualifiedName, TrustedType value)
     {
@@ -771,6 +861,7 @@ public partial class Element : Node
     }
 
     /// <summary>Removes the attribute with the given qualified name, if any.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-removeattribute"/>
     [IdlMember("removeAttribute", "https://dom.spec.whatwg.org/#dom-element-removeattribute")]
     public void RemoveAttribute(string qualifiedName)
     {
@@ -783,6 +874,7 @@ public partial class Element : Node
     }
 
     /// <summary>Removes the attribute with the given namespace and local name, if any.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-removeattributens"/>
     [IdlMember("removeAttributeNS", "https://dom.spec.whatwg.org/#dom-element-removeattributens")]
     public void RemoveAttributeNS(string? @namespace, string localName)
     {
@@ -795,6 +887,7 @@ public partial class Element : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-toggleattribute</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-toggleattribute"/>
     [IdlMember("toggleAttribute", "https://dom.spec.whatwg.org/#dom-element-toggleattribute")]
     public bool ToggleAttribute(string qualifiedName, bool? force = null)
     {
@@ -831,6 +924,7 @@ public partial class Element : Node
     /// <summary>
     /// Returns a value indicating whether the element has an attribute with the given qualified name.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-hasattribute"/>
     [IdlMember("hasAttribute", "https://dom.spec.whatwg.org/#dom-element-hasattribute")]
     public bool HasAttribute(string qualifiedName)
     {
@@ -841,6 +935,7 @@ public partial class Element : Node
     /// <summary>
     /// Returns a value indicating whether the element has an attribute with the given namespace and local name.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-hasattributens"/>
     [IdlMember("hasAttributeNS", "https://dom.spec.whatwg.org/#dom-element-hasattributens")]
     public bool HasAttributeNS(string? @namespace, string localName)
     {
@@ -849,6 +944,7 @@ public partial class Element : Node
     }
 
     /// <summary>Returns the attribute node with the given qualified name, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getattributenode"/>
     [IdlMember("getAttributeNode", "https://dom.spec.whatwg.org/#dom-element-getattributenode")]
     public Attr? GetAttributeNode(string qualifiedName)
     {
@@ -860,6 +956,7 @@ public partial class Element : Node
     /// <summary>
     /// Returns the attribute node with the given namespace and local name, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getattributenodens"/>
     [IdlMember("getAttributeNodeNS", "https://dom.spec.whatwg.org/#dom-element-getattributenodens")]
     public Attr? GetAttributeNodeNS(string? @namespace, string localName)
     {
@@ -869,10 +966,12 @@ public partial class Element : Node
     }
 
     /// <summary>Adds the attribute node to the element and returns the attribute node it replaced, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattributenode"/>
     [IdlMember("setAttributeNode", "https://dom.spec.whatwg.org/#dom-element-setattributenode")]
     public Attr? SetAttributeNode(Attr attr) => SetAttributeNodeCore(attr);
 
     /// <summary>Adds the attribute node to the element and returns the attribute node it replaced, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-setattributenodens"/>
     [IdlMember("setAttributeNodeNS", "https://dom.spec.whatwg.org/#dom-element-setattributenodens")]
     public Attr? SetAttributeNodeNS(Attr attr) => SetAttributeNodeCore(attr);
 
@@ -900,8 +999,7 @@ public partial class Element : Node
             ref var slot = ref _attributes![index];
             var oldValue = slot.Value;
             slot.Value = attr.DetachedValue;
-            slot.Node = attr;
-            slot.Prefix = attr.Prefix;
+            slot.Extra = attr;
             attr.OwnerElement = this;
             oldAttr.DetachedValue = oldValue;
             oldAttr.OwnerElement = null;
@@ -914,6 +1012,7 @@ public partial class Element : Node
     }
 
     /// <summary>Removes the attribute node from the element and returns it.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-removeattributenode"/>
     [IdlMember("removeAttributeNode", "https://dom.spec.whatwg.org/#dom-element-removeattributenode")]
     public Attr RemoveAttributeNode(Attr attr)
     {
@@ -933,10 +1032,12 @@ public partial class Element : Node
     internal ShadowRoot? AttachedShadowRoot => ShadowRootStorage;
 
     /// <summary>Gets the open shadow root of the element, or null when it has none or it is closed.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-shadowroot"/>
     [IdlMember("shadowRoot", "https://dom.spec.whatwg.org/#dom-element-shadowroot")]
     public ShadowRoot? ShadowRoot => ShadowRootStorage is { Mode: ShadowRootMode.Open } ? ShadowRootStorage : null;
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-attachshadow</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-attachshadow"/>
     [IdlMember("attachShadow", "https://dom.spec.whatwg.org/#dom-element-attachshadow")]
     public ShadowRoot AttachShadow(ShadowRootInit init)
     {

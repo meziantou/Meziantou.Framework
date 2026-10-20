@@ -14,9 +14,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Still images are written straight to the sink (source layout <see cref="PixelFormat.Rgba32"/>); the frame ends at the end of
-/// the RIFF data after the trailing metadata (<c>EXIF</c>, <c>XMP </c>) was collected, so readers and eager loads report the
-/// same metadata.
+/// Still images are written straight to the sink, into the rows of the frame when they need no conversion (source layout
+/// <see cref="PixelFormat.Rgba32"/>, or <see cref="PixelFormat.Rgb24"/> for an image without alpha requested as
+/// <see cref="PixelFormat.Rgb24"/>); the frame ends at the end of the RIFF data after the trailing metadata (<c>EXIF</c>,
+/// <c>XMP </c>) was collected, so readers and eager loads report the same metadata.
+/// </description></item>
+/// <item><description>
+/// An eager load of a still lossy image without alpha converts the pixel rows as soon as they are final
+/// (<see cref="Vp8Decoder.DecodeRows"/>): the planes are a window of a few macroblock rows. Elsewhere (sequential readers,
+/// whose caller may own the frame, and images with alpha) the whole frame is decoded first, so that malformed data leaves
+/// the frame untouched.
 /// </description></item>
 /// <item><description>
 /// When the input ends in the bitstream of a still lossy image, a sequential reader that asks for renderings gets the
@@ -31,7 +38,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// libwebp animation decoder and the browsers do). Durations are the exact milliseconds; zero is kept.
 /// </description></item>
 /// <item><description>
-/// Memory: the payloads of one image (the walker), the decoded image (ARGB pixels, or Y'CbCr planes and an alpha plane),
+/// Memory: the payloads of one image (the walker), the decoded image (ARGB pixels, or Y'CbCr planes, or a window of them,
+/// and an alpha plane),
 /// the compositor canvas of an animation and two rows, all charged to the operation scope and released after each image.
 /// Frames and pixels are charged to the per-input limits before each image is decoded.
 /// </description></item>
@@ -39,7 +47,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
 {
-    private const int BytesPerPixel = 4;
+    private const int MaxBytesPerPixel = 4;
 
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
@@ -49,6 +57,9 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
     private PooledBuffer? _row;
     private PooledBuffer? _scratch;
     private int _framesStarted;
+
+    // The bytes per pixel of the rows given to the sink: 4 (RGBA), or 3 (RGB) for a still image without alpha decoded to RGB
+    private int _bytesPerPixel = MaxBytesPerPixel;
 
     public WebPDecoder(ImageDecodeRequest request, ImageCodecContext context)
     {
@@ -62,7 +73,12 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.WebP, structure.Size, structure.DefaultPixelFormat, PixelFormat.Rgba32, structure.Metadata.IccProfile);
+
+        // A still image without alpha (the default pixel format is RGB only then) has opaque pixels: RGB rows lose nothing
+        var defaultPixelFormat = structure.DefaultPixelFormat;
+        var rgb = defaultPixelFormat == PixelFormat.Rgb24 && (_request.PixelFormat ?? defaultPixelFormat) == PixelFormat.Rgb24;
+        _bytesPerPixel = rgb ? 3 : MaxBytesPerPixel;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.WebP, structure.Size, defaultPixelFormat, rgb ? PixelFormat.Rgb24 : PixelFormat.Rgba32, structure.Metadata.IccProfile);
         _sink.SetPartialFrameRenderer(this);
     }
 
@@ -75,20 +91,44 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         sink.BeginFrame(isAnimated ? AnimationTiming.FromWebPDuration(frame.DurationMilliseconds) : FrameDuration.Zero);
         _framesStarted++;
         EnsureRows(structure.Width);
-        using var image = DecodeImage(frame, alpha, bitstream);
-        var row = _row!.RawBuffer.AsSpan(0, frame.Width * BytesPerPixel);
-        if (!isAnimated)
+        if (!isAnimated && !frame.IsLossless && alpha is null && _context.Sequential is null)
         {
-            // The still image is the canvas; the frame ends in OnEnd, after the trailing metadata
-            using var target = sink.LeaseCurrentFrame();
-            for (var y = 0; y < frame.Height; y++)
+            // An eager load discards the frame on failure: the rows are converted as soon as they are final
+            using var decoder = Vp8Decoder.Open(_context.Scope, bitstream.Data, 0, bitstream.Length, _context.CancellationToken);
+            var lossyRow = _row!.RawBuffer.AsSpan(0, frame.Width * _bytesPerPixel);
+            using var lossyTarget = sink.LeaseCurrentFrame();
+            while (decoder.DecodeRows(out var firstRow, out var endRow))
             {
-                image.ReadRow(y, row, _scratch!.RawBuffer);
-                sink.WriteRow(target, y, row);
+                for (var y = firstRow; y < endRow; y++)
+                {
+                    var direct = sink.GetDirectRow(lossyTarget, y);
+                    var destination = direct.IsEmpty ? lossyRow : direct;
+                    WebPYuvConverter.ConvertRow(decoder.Planes, decoder.LumaOrigin, y, default, destination, _scratch!.RawBuffer, _bytesPerPixel);
+                    if (direct.IsEmpty)
+                    {
+                        sink.WriteRow(lossyTarget, y, lossyRow);
+                    }
+                }
             }
 
             return true;
         }
+
+        using var image = DecodeImage(frame, alpha, bitstream);
+        if (!isAnimated)
+        {
+            // The still image is the canvas; the frame ends in OnEnd, after the trailing metadata
+            var row = _row!.RawBuffer.AsSpan(0, frame.Width * _bytesPerPixel);
+            using var target = sink.LeaseCurrentFrame();
+            for (var y = 0; y < frame.Height; y++)
+            {
+                WriteRow(sink, target, y, image, row);
+            }
+
+            return true;
+        }
+
+        var rgbaRow = _row!.RawBuffer.AsSpan(0, frame.Width * MaxBytesPerPixel);
 
         var compositor = _compositor ??= new AnimationCompositor(_context.Scope, structure.Size, PixelFormat.Rgba32);
         var blend = frame.AlphaBlend && _framesStarted > 1 ? AnimationBlend.Over : AnimationBlend.Source;
@@ -98,8 +138,8 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         {
             for (var y = 0; y < frame.Height; y++)
             {
-                image.ReadRow(y, row, _scratch!.RawBuffer);
-                compositor.WritePixels(canvas, frame.X, frame.Y + y, step: 1, frame.Width, row);
+                image.ReadRow(y, rgbaRow, _scratch!.RawBuffer, MaxBytesPerPixel);
+                compositor.WritePixels(canvas, frame.X, frame.Y + y, step: 1, frame.Width, rgbaRow);
             }
         }
 
@@ -131,7 +171,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
 
         using var image = CreateLossyImage(frame, alpha, planes);
         EnsureRows(structure.Width);
-        var row = _row!.RawBuffer.AsSpan(0, frame.Width * BytesPerPixel);
+        var row = _row!.RawBuffer.AsSpan(0, frame.Width * _bytesPerPixel);
         sink.BeginRefinement(FrameDuration.Zero);
         using (var target = sink.LeaseCurrentFrame())
         {
@@ -139,8 +179,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
             {
                 if (y < rows)
                 {
-                    image.ReadRow(y, row, _scratch!.RawBuffer);
-                    sink.WriteRow(target, y, row);
+                    WriteRow(sink, target, y, image, row);
                 }
                 else
                 {
@@ -176,10 +215,24 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         base.Dispose(disposing);
     }
 
+    /// <summary>Writes row <paramref name="y"/> of a still image: straight into the frame when its rows need no conversion.</summary>
+    private void WriteRow(DecodedFrameSink sink, scoped in PixelLease target, int y, DecodedWebPImage image, Span<byte> row)
+    {
+        var direct = sink.GetDirectRow(target, y);
+        if (!direct.IsEmpty)
+        {
+            image.ReadRow(y, direct, _scratch!.RawBuffer, _bytesPerPixel);
+            return;
+        }
+
+        image.ReadRow(y, row, _scratch!.RawBuffer, _bytesPerPixel);
+        sink.WriteRow(target, y, row);
+    }
+
     private void EnsureRows(int canvasWidth)
     {
         // One RGBA row and the chroma upsampling scratch of the widest frame (the canvas width), allocated once
-        _row ??= _context.Scope.Rent(canvasWidth * BytesPerPixel, AllocationKind.DecoderState, clear: false);
+        _row ??= _context.Scope.Rent(canvasWidth * MaxBytesPerPixel, AllocationKind.DecoderState, clear: false);
         _scratch ??= _context.Scope.Rent(canvasWidth * 2, AllocationKind.DecoderState, clear: false);
     }
 
@@ -218,6 +271,37 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         }
     }
 
+    /// <summary>Converts ARGB pixels (<c>0xAARRGGBB</c>) to RGB bytes, 4 pixels at a time.</summary>
+    internal static void ArgbToRgb(ReadOnlySpan<uint> pixels, Span<byte> rgb)
+    {
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+        {
+            // Each pixel is B, G, R, A in memory; 16 bytes are written for 12, the next store overwrites the last 4
+            var order = Vector128.Create((byte)2, 1, 0, 6, 5, 4, 10, 9, 8, 14, 13, 12, 0xFF, 0xFF, 0xFF, 0xFF);
+            for (; x <= pixels.Length - Vector128<uint>.Count && (3 * x) + Vector128<byte>.Count <= rgb.Length; x += Vector128<uint>.Count)
+            {
+                var bytes = Vector128.Create(pixels.Slice(x, Vector128<uint>.Count)).AsByte();
+                Vector128.Shuffle(bytes, order).CopyTo(rgb.Slice(3 * x, Vector128<byte>.Count));
+            }
+        }
+
+        ArgbToRgbScalar(pixels[x..], rgb[(3 * x)..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="ArgbToRgb"/>.</summary>
+    internal static void ArgbToRgbScalar(ReadOnlySpan<uint> pixels, Span<byte> rgb)
+    {
+        for (var x = 0; x < pixels.Length; x++)
+        {
+            var argb = pixels[x];
+            var pixel = rgb.Slice(x * 3, 3);
+            pixel[0] = (byte)(argb >> 16);
+            pixel[1] = (byte)(argb >> 8);
+            pixel[2] = (byte)argb;
+        }
+    }
+
     /// <summary>Converts ARGB pixels (<c>0xAARRGGBB</c>) to RGBA bytes (alpha 255 when <paramref name="opaque"/>), 4 pixels at a time.</summary>
     internal static void ArgbToRgba(ReadOnlySpan<uint> pixels, Span<byte> rgba, bool opaque)
     {
@@ -236,14 +320,14 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
             for (; x <= pixels.Length - Vector128<uint>.Count; x += Vector128<uint>.Count)
             {
                 var bytes = Vector128.Create(pixels.Slice(x, Vector128<uint>.Count)).AsByte();
-                (Vector128.Shuffle(bytes, order) | alpha).CopyTo(rgba.Slice(x * BytesPerPixel, Vector128<byte>.Count));
+                (Vector128.Shuffle(bytes, order) | alpha).CopyTo(rgba.Slice(x * MaxBytesPerPixel, Vector128<byte>.Count));
             }
         }
 
         for (; x < pixels.Length; x++)
         {
             var argb = pixels[x];
-            var pixel = rgba.Slice(x * BytesPerPixel, BytesPerPixel);
+            var pixel = rgba.Slice(x * MaxBytesPerPixel, MaxBytesPerPixel);
             pixel[0] = (byte)(argb >> 16);
             pixel[1] = (byte)(argb >> 8);
             pixel[2] = (byte)argb;
@@ -257,7 +341,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         for (var x = 0; x < pixels.Length; x++)
         {
             var argb = pixels[x];
-            var pixel = rgba.Slice(x * BytesPerPixel, BytesPerPixel);
+            var pixel = rgba.Slice(x * MaxBytesPerPixel, MaxBytesPerPixel);
             pixel[0] = (byte)(argb >> 16);
             pixel[1] = (byte)(argb >> 8);
             pixel[2] = (byte)argb;
@@ -265,7 +349,7 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
         }
     }
 
-    /// <summary>A decoded image that produces RGBA rows: VP8L ARGB pixels, or VP8 planes with an optional alpha plane.</summary>
+    /// <summary>A decoded image that produces RGBA or RGB rows: VP8L ARGB pixels, or VP8 planes with an optional alpha plane.</summary>
     private sealed class DecodedWebPImage : IDisposable
     {
         private readonly int _width;
@@ -288,17 +372,26 @@ internal sealed class WebPDecoder : WebPDecodeObserver, IPartialFrameRenderer
             _alpha = alpha;
         }
 
-        public void ReadRow(int y, Span<byte> rgba, byte[] scratch)
+        /// <summary>Writes row <paramref name="y"/> as RGBA (<paramref name="bytesPerPixel"/> 4) or RGB (3: the image is opaque) pixels.</summary>
+        public void ReadRow(int y, Span<byte> destination, byte[] scratch, int bytesPerPixel)
         {
             if (_argb is not null)
             {
                 var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(_argb.RawBuffer.AsSpan())).Slice(y * _width, _width);
-                ArgbToRgba(pixels, rgba, _opaque);
+                if (bytesPerPixel == 3)
+                {
+                    ArgbToRgb(pixels, destination);
+                }
+                else
+                {
+                    ArgbToRgba(pixels, destination, _opaque);
+                }
+
                 return;
             }
 
             var alpha = _alpha is null ? default : _alpha.RawBuffer.AsSpan(y * _width, _width);
-            WebPYuvConverter.ConvertRow(_planes!, y, alpha, rgba, scratch);
+            WebPYuvConverter.ConvertRow(_planes!, lumaOrigin: 0, y, alpha, destination, scratch, bytesPerPixel);
         }
 
         public void Dispose()

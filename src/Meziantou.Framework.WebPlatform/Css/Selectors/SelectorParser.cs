@@ -1,6 +1,7 @@
 using System.Text;
 using System.Collections.Frozen;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Infra;
 
@@ -127,6 +128,13 @@ internal sealed class SelectorParser
     /// </summary>
     private PseudoElementSelector? _afterPseudoElement;
 
+    // The lists the selectors are built in, shared by the nested selectors (e.g. the arguments of :is()): each one uses the end
+    // of the lists, and removes its items before returning
+    private readonly List<ComplexSelector> _complexBuffer = [];
+    private readonly List<CompoundSelector> _compoundBuffer = [];
+    private readonly List<Combinator> _combinatorBuffer = [];
+    private readonly List<SimpleSelector> _simpleBuffer = [];
+
     private SelectorParser(SelectorNamespaceContext namespaces, string? source = null)
     {
         _namespaces = namespaces;
@@ -215,6 +223,16 @@ internal sealed class SelectorParser
 
     private static CssComponentValue? At(List<CssComponentValue> values, int index) => index < values.Count ? values[index] : null;
 
+    private static CssComponentValue? At(ReadOnlySpan<CssComponentValue> values, int index) => index < values.Length ? values[index] : null;
+
+    private static void SkipWhitespace(ReadOnlySpan<CssComponentValue> values, ref int index)
+    {
+        while (index < values.Length && IsWhitespace(values[index]))
+        {
+            index++;
+        }
+    }
+
     private static void SkipWhitespace(List<CssComponentValue> values, ref int index)
     {
         while (index < values.Count && IsWhitespace(values[index]))
@@ -256,41 +274,56 @@ internal sealed class SelectorParser
 
     private SelectorList? ParseListCore(List<CssComponentValue> values, ListKind kind)
     {
-        var result = new List<ComplexSelector>();
-        List<UnparsedSelector>? unparsed = null;
-        var parts = SplitByComma(values);
-        for (var i = 0; i < parts.Count; i++)
+        var resultStart = _complexBuffer.Count;
+        try
         {
-            var part = parts[i];
-            var nested = kind is ListKind.Nested or ListKind.Scoped;
-            var selector = ParseComplex(part, relative: kind is ListKind.Relative || nested, allowPseudoElements: kind is ListKind.Normal || nested, impliedCombinator: !nested);
-            if (selector is not null && nested)
+            List<UnparsedSelector>? unparsed = null;
+            var span = CollectionsMarshal.AsSpan(values);
+            var partStart = 0;
+            var partIndex = 0;
+            for (var position = 0; position <= span.Length; position++)
             {
-                selector = Absolutize(selector, scoped: kind == ListKind.Scoped, implicitNesting: _implicitNesting || kind == ListKind.Scoped);
-            }
-
-            if (selector is not null && kind is ListKind.Forgiving or ListKind.Real && !IsAllowedInContext(selector))
-            {
-                selector = null;
-            }
-
-            if (selector is null)
-            {
-                // The invalid selector never matches, but it is serialized as written. It must be an <any-value>: the
-                // bad tokens and the unmatched blocks make the list invalid (https://drafts.csswg.org/css-syntax-3/#typedef-any-value).
-                if (kind == ListKind.Forgiving && !ContainsBadToken(part))
-                {
-                    (unparsed ??= []).Add(new UnparsedSelector(i, GetText(part), ContainsNestingDelim(part)));
+                // The selectors are the component values between the commas
+                if (position < span.Length && !IsToken(span[position], CssTokenType.Comma))
                     continue;
+
+                var part = span[partStart..position];
+                var i = partIndex++;
+                partStart = position + 1;
+                var nested = kind is ListKind.Nested or ListKind.Scoped;
+                var selector = ParseComplex(part, relative: kind is ListKind.Relative || nested, allowPseudoElements: kind is ListKind.Normal || nested, impliedCombinator: !nested);
+                if (selector is not null && nested)
+                {
+                    selector = Absolutize(selector, scoped: kind == ListKind.Scoped, implicitNesting: _implicitNesting || kind == ListKind.Scoped);
                 }
 
-                return null;
+                if (selector is not null && kind is ListKind.Forgiving or ListKind.Real && !IsAllowedInContext(selector))
+                {
+                    selector = null;
+                }
+
+                if (selector is null)
+                {
+                    // The invalid selector never matches, but it is serialized as written. It must be an <any-value>: the
+                    // bad tokens and the unmatched blocks make the list invalid (https://drafts.csswg.org/css-syntax-3/#typedef-any-value).
+                    if (kind == ListKind.Forgiving && !ContainsBadToken(part))
+                    {
+                        (unparsed ??= []).Add(new UnparsedSelector(i, GetText(part), ContainsNestingDelim(part)));
+                        continue;
+                    }
+
+                    return null;
+                }
+
+                _complexBuffer.Add(selector);
             }
 
-            result.Add(selector);
+            return new SelectorList(CollectionsMarshal.AsSpan(_complexBuffer)[resultStart..].ToArray(), unparsed?.ToArray());
         }
-
-        return new SelectorList(result.ToArray(), unparsed?.ToArray());
+        finally
+        {
+            _complexBuffer.RemoveRange(resultStart, _complexBuffer.Count - resultStart);
+        }
     }
 
     /// <summary>
@@ -319,22 +352,28 @@ internal sealed class SelectorParser
     }
 
     /// <summary>Returns the text of component values as written, without the leading and trailing whitespace.</summary>
-    private string GetText(List<CssComponentValue> values)
+    private string GetText(ReadOnlySpan<CssComponentValue> values)
     {
-        var start = values.FindIndex(v => !IsWhitespace(v));
-        if (start < 0)
+        var start = 0;
+        SkipWhitespace(values, ref start);
+        if (start >= values.Length)
             return "";
 
-        var end = values.FindLastIndex(v => !IsWhitespace(v));
+        var end = values.Length - 1;
+        while (IsWhitespace(values[end]))
+        {
+            end--;
+        }
+
         var from = values[start].Start;
         var to = values[end].End;
         if (_source is null || from < 0 || to > _source.Length || from > to)
-            return Values.CssSerializer.SerializeValue(values[start..(end + 1)], property: null);
+            return Values.CssSerializer.SerializeValue([.. values[start..(end + 1)]], property: null);
 
         return _source[from..to];
     }
 
-    private static bool ContainsBadToken(List<CssComponentValue> values)
+    private static bool ContainsBadToken(ReadOnlySpan<CssComponentValue> values)
     {
         foreach (var value in values)
         {
@@ -343,8 +382,8 @@ internal sealed class SelectorParser
                 case CssPreservedToken { Type: CssTokenType.BadString or CssTokenType.BadUrl }:
                 case CssFunction { Unterminated: true }:
                 case CssSimpleBlock { Unterminated: true }:
-                case CssFunction function when ContainsBadToken(function.Value):
-                case CssSimpleBlock block when ContainsBadToken(block.Value):
+                case CssFunction function when ContainsBadToken(CollectionsMarshal.AsSpan(function.Value)):
+                case CssSimpleBlock block when ContainsBadToken(CollectionsMarshal.AsSpan(block.Value)):
                     return true;
             }
         }
@@ -352,15 +391,15 @@ internal sealed class SelectorParser
         return false;
     }
 
-    private static bool ContainsNestingDelim(List<CssComponentValue> values)
+    private static bool ContainsNestingDelim(ReadOnlySpan<CssComponentValue> values)
     {
         foreach (var value in values)
         {
             switch (value)
             {
                 case CssPreservedToken token when token.Token.IsDelim('&'):
-                case CssFunction function when ContainsNestingDelim(function.Value):
-                case CssSimpleBlock block when ContainsNestingDelim(block.Value):
+                case CssFunction function when ContainsNestingDelim(CollectionsMarshal.AsSpan(function.Value)):
+                case CssSimpleBlock block when ContainsNestingDelim(CollectionsMarshal.AsSpan(block.Value)):
                     return true;
             }
         }
@@ -404,11 +443,11 @@ internal sealed class SelectorParser
         return false;
     }
 
-    private ComplexSelector? ParseComplex(List<CssComponentValue> values, bool relative, bool allowPseudoElements, bool impliedCombinator = true)
+    private ComplexSelector? ParseComplex(ReadOnlySpan<CssComponentValue> values, bool relative, bool allowPseudoElements, bool impliedCombinator = true)
     {
         var index = 0;
         SkipWhitespace(values, ref index);
-        if (index >= values.Count)
+        if (index >= values.Length)
             return null; // An empty selector is invalid
 
         Combinator? relativeCombinator = null;
@@ -418,50 +457,69 @@ internal sealed class SelectorParser
             SkipWhitespace(values, ref index);
         }
 
-        var compounds = new List<CompoundSelector>();
-        var combinators = new List<Combinator>();
-        while (true)
+        var compoundStart = _compoundBuffer.Count;
+        var combinatorStart = _combinatorBuffer.Count;
+        try
         {
-            var compound = ParseCompound(values, ref index, allowPseudoElements);
-            if (compound is null)
-                return null;
-
-            compounds.Add(compound);
-            var hadWhitespace = index < values.Count && IsWhitespace(values[index]);
-            SkipWhitespace(values, ref index);
-            if (index >= values.Count)
-                break;
-
-            if (compound.HasPseudoElement)
-                return null; // Pseudo-elements must be in the last compound selector
-
-            var combinator = TryParseCombinator(values, ref index);
-            if (combinator is null)
+            while (true)
             {
-                if (!hadWhitespace)
+                var compound = ParseCompound(values, ref index, allowPseudoElements);
+                if (compound is null)
                     return null;
 
-                combinator = Combinator.Descendant;
+                _compoundBuffer.Add(compound);
+                var hadWhitespace = index < values.Length && IsWhitespace(values[index]);
+                SkipWhitespace(values, ref index);
+                if (index >= values.Length)
+                    break;
+
+                if (compound.HasPseudoElement)
+                    return null; // Pseudo-elements must be in the last compound selector
+
+                var combinator = TryParseCombinator(values, ref index);
+                if (combinator is null)
+                {
+                    if (!hadWhitespace)
+                        return null;
+
+                    combinator = Combinator.Descendant;
+                }
+
+                SkipWhitespace(values, ref index);
+                if (index >= values.Length)
+                    return null;
+
+                // In the argument of a pseudo-class, the default namespace only spares the compound selector of the subject
+                // (https://drafts.csswg.org/selectors-4/#matches): e.g. .container in :is(.container .a)
+                if (_listDepth > 1 && _namespaces.DefaultNamespace is { } defaultNamespace && compound.Selectors[0] is not TypeSelector && !ContainsNestingSelector(compound))
+                {
+                    _compoundBuffer[^1] = new CompoundSelector([new TypeSelector(GetNamespaceConstraint(defaultNamespace), localName: null) { Implicit = true }, .. compound.Selectors]);
+                }
+
+                _combinatorBuffer.Add(combinator.Value);
             }
 
-            SkipWhitespace(values, ref index);
-            if (index >= values.Count)
-                return null;
-
-            // In the argument of a pseudo-class, the default namespace only spares the compound selector of the subject
-            // (https://drafts.csswg.org/selectors-4/#matches): e.g. .container in :is(.container .a)
-            if (_listDepth > 1 && _namespaces.DefaultNamespace is { } defaultNamespace && compound.Selectors[0] is not TypeSelector && !compound.Selectors.Any(static selector => selector is NestingSelector))
-            {
-                compounds[^1] = new CompoundSelector([new TypeSelector(GetNamespaceConstraint(defaultNamespace), localName: null) { Implicit = true }, .. compound.Selectors]);
-            }
-
-            combinators.Add(combinator.Value);
+            return new ComplexSelector(CollectionsMarshal.AsSpan(_compoundBuffer)[compoundStart..].ToArray(), CollectionsMarshal.AsSpan(_combinatorBuffer)[combinatorStart..].ToArray(), relativeCombinator);
         }
-
-        return new ComplexSelector(compounds.ToArray(), combinators.ToArray(), relativeCombinator);
+        finally
+        {
+            _compoundBuffer.RemoveRange(compoundStart, _compoundBuffer.Count - compoundStart);
+            _combinatorBuffer.RemoveRange(combinatorStart, _combinatorBuffer.Count - combinatorStart);
+        }
     }
 
-    private static Combinator? TryParseCombinator(List<CssComponentValue> values, ref int index)
+    private static bool ContainsNestingSelector(CompoundSelector compound)
+    {
+        foreach (var selector in compound.Selectors)
+        {
+            if (selector is NestingSelector)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static Combinator? TryParseCombinator(ReadOnlySpan<CssComponentValue> values, ref int index)
     {
         var value = At(values, index);
         Combinator? result = value switch
@@ -484,9 +542,22 @@ internal sealed class SelectorParser
     // Compound selectors
     // ----------------------------------------------------------------------------------------------------------------
 
-    private CompoundSelector? ParseCompound(List<CssComponentValue> values, ref int index, bool allowPseudoElements)
+    private CompoundSelector? ParseCompound(ReadOnlySpan<CssComponentValue> values, ref int index, bool allowPseudoElements)
     {
-        var selectors = new List<SimpleSelector>();
+        var start = _simpleBuffer.Count;
+        try
+        {
+            return ParseCompoundCore(values, ref index, allowPseudoElements, start);
+        }
+        finally
+        {
+            _simpleBuffer.RemoveRange(start, _simpleBuffer.Count - start);
+        }
+    }
+
+    private CompoundSelector? ParseCompoundCore(ReadOnlySpan<CssComponentValue> values, ref int index, bool allowPseudoElements, int start)
+    {
+        var selectors = _simpleBuffer;
         if (TryParseTypeSelector(values, ref index, out var typeSelector, out var failed))
         {
             selectors.Add(typeSelector);
@@ -497,7 +568,7 @@ internal sealed class SelectorParser
         }
 
         PseudoElementSelector? pseudoElement = null;
-        while (index < values.Count)
+        while (index < values.Length)
         {
             var value = values[index];
             if (value is CssPreservedToken { Type: CssTokenType.Hash } hash)
@@ -601,17 +672,32 @@ internal sealed class SelectorParser
             }
         }
 
-        if (selectors.Count == 0)
+        var parsed = CollectionsMarshal.AsSpan(selectors)[start..];
+        if (parsed.IsEmpty)
             return null;
 
         // https://drafts.csswg.org/css-namespaces/#prefixes: a compound selector without type selector only matches the
         // elements of the default namespace, except in the arguments of the pseudo-classes (https://drafts.csswg.org/selectors-4/#matches)
-        if (_listDepth == 1 && _namespaces.DefaultNamespace is { } defaultNamespace && selectors[0] is not TypeSelector && !selectors.Exists(selector => selector is NestingSelector))
+        if (_listDepth == 1 && _namespaces.DefaultNamespace is { } defaultNamespace && parsed[0] is not TypeSelector && !ContainsNestingSelector(parsed))
         {
-            selectors.Insert(0, new TypeSelector(GetNamespaceConstraint(defaultNamespace), localName: null) { Implicit = true });
+            var withType = new SimpleSelector[parsed.Length + 1];
+            withType[0] = new TypeSelector(GetNamespaceConstraint(defaultNamespace), localName: null) { Implicit = true };
+            parsed.CopyTo(withType.AsSpan(1));
+            return new CompoundSelector(withType);
         }
 
-        return new CompoundSelector(selectors.ToArray());
+        return new CompoundSelector(parsed.ToArray());
+    }
+
+    private static bool ContainsNestingSelector(ReadOnlySpan<SimpleSelector> selectors)
+    {
+        foreach (var selector in selectors)
+        {
+            if (selector is NestingSelector)
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsPseudoElementAllowedAfter(PseudoElementSelector? previous, PseudoElementSelector element)
@@ -710,7 +796,7 @@ internal sealed class SelectorParser
     }
 
     /// <summary>Parses a type selector or the universal selector with an optional namespace prefix (https://drafts.csswg.org/selectors-4/#typedef-type-selector).</summary>
-    private bool TryParseTypeSelector(List<CssComponentValue> values, ref int index, out TypeSelector selector, out bool failed)
+    private bool TryParseTypeSelector(ReadOnlySpan<CssComponentValue> values, ref int index, out TypeSelector selector, out bool failed)
     {
         selector = null!;
         failed = false;
@@ -1113,7 +1199,7 @@ internal sealed class SelectorParser
         CompoundSelector? compound;
         try
         {
-            compound = ParseCompound(arguments, ref index, allowPseudoElements: false);
+            compound = ParseCompound(CollectionsMarshal.AsSpan(arguments), ref index, allowPseudoElements: false);
         }
         finally
         {

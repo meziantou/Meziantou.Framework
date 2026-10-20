@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The options of an <see cref="ImageBitmapRenderingContext"/> (https://html.spec.whatwg.org/multipage/canvas.html#imagebitmaprenderingcontextsettings).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#imagebitmaprenderingcontextsettings"/>
 [IdlInterface("ImageBitmapRenderingContextSettings", "https://html.spec.whatwg.org/multipage/canvas.html#imagebitmaprenderingcontextsettings")]
 public sealed class ImageBitmapRenderingContextSettings
 {
     /// <summary>Gets whether the canvas has an alpha channel (an opaque canvas displays its bitmaps over black).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontextsettings-alpha"/>
     [IdlMember("alpha", "https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontextsettings-alpha")]
     public bool Alpha { get; init; } = true;
 }
@@ -14,6 +16,7 @@ public sealed class ImageBitmapRenderingContextSettings
 /// <c>canvas.getContext("bitmaprenderer")</c>. Its output bitmap is the bitmap of the canvas: the bitmaps given to
 /// <see cref="TransferFromImageBitmap"/> are displayed without copy.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#the-imagebitmaprenderingcontext-interface"/>
 [IdlInterface("ImageBitmapRenderingContext", "https://html.spec.whatwg.org/multipage/canvas.html#the-imagebitmaprenderingcontext-interface")]
 public sealed class ImageBitmapRenderingContext
 {
@@ -36,6 +39,7 @@ public sealed class ImageBitmapRenderingContext
     }
 
     /// <summary>Gets the canvas of the context: an <see cref="HtmlCanvasElement"/> or an <see cref="OffscreenCanvas"/>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontext-canvas"/>
     [IdlMember("canvas", "https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontext-canvas")]
     public object Canvas => _host;
 
@@ -54,6 +58,7 @@ public sealed class ImageBitmapRenderingContext
     /// </summary>
     /// <param name="bitmap">The bitmap, or null.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the bitmap is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontext-transferfromimagebitmap"/>
     [IdlMember("transferFromImageBitmap", "https://html.spec.whatwg.org/multipage/canvas.html#dom-imagebitmaprenderingcontext-transferfromimagebitmap")]
     public void TransferFromImageBitmap(ImageBitmap? bitmap)
     {

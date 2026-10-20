@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// viewport of a nested browsing context is the size of its <c>iframe</c>). The <c>change</c> events are fired when the
 /// event loop updates the rendering (e.g. before the animation frame callbacks), as specified.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#mediaquerylist"/>
 [IdlInterface("MediaQueryList", "https://drafts.csswg.org/cssom-view/#mediaquerylist")]
 public sealed class MediaQueryList : EventTarget, IRealmBoundPlatformObject
 {
@@ -38,14 +39,17 @@ public sealed class MediaQueryList : EventTarget, IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => Document.RelevantWindow;
 
     /// <summary>Gets the serialized media query list (https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-media")]
     public string Media { get; }
 
     /// <summary>Gets whether the media query list matches the environment of the document (https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-matches")]
     public bool Matches => MediaQueryEvaluator.Matches(_queries, StyleEngine.CreateEnvironment(Document));
 
     /// <summary>Adds a listener of the <c>change</c> events (https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener"/>
     [IdlMember("addListener", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-addlistener")]
     public void AddListener(IEventListener? callback) => AddEventListenerCore("change", callback, options: null);
 
@@ -54,6 +58,7 @@ public sealed class MediaQueryList : EventTarget, IRealmBoundPlatformObject
     public void AddListener(Action<Event>? callback) => AddEventListenerCore("change", callback, options: null);
 
     /// <summary>Removes a listener of the <c>change</c> events (https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-removelistener).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-removelistener"/>
     [IdlMember("removeListener", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-removelistener")]
     public void RemoveListener(IEventListener? callback) => RemoveEventListenerCore("change", callback, capture: false);
 
@@ -62,6 +67,7 @@ public sealed class MediaQueryList : EventTarget, IRealmBoundPlatformObject
     public void RemoveListener(Action<Event>? callback) => RemoveEventListenerCore("change", callback, capture: false);
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-onchange"/>
     [IdlMember("onchange", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylist-onchange")]
     public Action<Event>? OnChange
     {
@@ -81,25 +87,30 @@ public sealed class MediaQueryList : EventTarget, IRealmBoundPlatformObject
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-mediaquerylisteventinit</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-mediaquerylisteventinit"/>
 [IdlInterface("MediaQueryListEventInit", "https://drafts.csswg.org/cssom-view/#dictdef-mediaquerylisteventinit")]
 public sealed class MediaQueryListEventInit : EventInit
 {
     /// <summary>Gets the serialized media query list of the event.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylisteventinit-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylisteventinit-media")]
     public string Media { get; init; } = "";
 
     /// <summary>Gets a value indicating whether the document matches the media query list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylisteventinit-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylisteventinit-matches")]
     public bool Matches { get; init; }
 }
 
 /// <summary>The event fired when the state of a <see cref="MediaQueryList"/> changes (https://drafts.csswg.org/cssom-view/#mediaquerylistevent).</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#mediaquerylistevent"/>
 [IdlInterface("MediaQueryListEvent", "https://drafts.csswg.org/cssom-view/#mediaquerylistevent")]
 public sealed class MediaQueryListEvent : Event, IRealmBoundPlatformObject
 {
     /// <summary>
     /// Creates an event of the given type with the media and matching state of the initialization dictionary.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-mediaquerylistevent"/>
     [IdlMember("constructor", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-mediaquerylistevent")]
     public MediaQueryListEvent(string type, MediaQueryListEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -114,10 +125,12 @@ public sealed class MediaQueryListEvent : Event, IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => RealmWindow;
 
     /// <summary>Gets the serialized media query list that changed.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-media")]
     public string Media { get; }
 
     /// <summary>Gets a value indicating whether the document matches the media query list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/cssom-view/#dom-mediaquerylistevent-matches")]
     public bool Matches { get; }
 }

@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// viewport split by the display features of a foldable or dual-screen device. The output device has a single screen
 /// without display features, so the viewport has a single segment.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-viewport/#viewport"/>
 [IdlInterface("Viewport", "https://drafts.csswg.org/css-viewport/#viewport")]
 public sealed class Viewport : IRealmBoundPlatformObject
 {
@@ -25,6 +26,7 @@ public sealed class Viewport : IRealmBoundPlatformObject
     /// array with that single segment": the rectangle of the viewport (its origin, the size of <see cref="Window.InnerWidth"/>
     /// and <see cref="Window.InnerHeight"/>). The display features cannot be overridden (no WebDriver emulation).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-viewport/#dom-viewport-segments"/>
     [IdlMember("segments", "https://drafts.csswg.org/css-viewport/#dom-viewport-segments")]
     public IReadOnlyList<DomRect>? Segments
     {
@@ -45,6 +47,7 @@ public partial class Window
     private Viewport? _viewport;
 
     /// <summary>Gets the viewport of the window (https://drafts.csswg.org/css-viewport/#dom-window-viewport).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-viewport/#dom-window-viewport"/>
     [IdlMember("viewport", "https://drafts.csswg.org/css-viewport/#dom-window-viewport")]
     public Viewport Viewport => _viewport ??= new Viewport(this);
 }

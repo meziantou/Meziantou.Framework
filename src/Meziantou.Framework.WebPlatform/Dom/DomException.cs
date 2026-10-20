@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://webidl.spec.whatwg.org/#idl-DOMException</summary>
+/// <seealso href="https://webidl.spec.whatwg.org/#idl-DOMException"/>
 [IdlInterface("DOMException", "https://webidl.spec.whatwg.org/#idl-DOMException")]
 public class DomException : Exception, Scripting.IStructuredSerializable, IRealmBoundPlatformObject
 {
@@ -16,6 +17,7 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     object Scripting.IStructuredSerializable.CloneForStructuredSerialization() => new DomException(Message, Name);
 
     /// <summary>The legacy error code of <c>IndexSizeError</c>: the index is not in the allowed range.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-index_size_err"/>
     [IdlMember("INDEX_SIZE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-index_size_err")]
     public const ushort IndexSizeErr = 1;
 
@@ -23,22 +25,26 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     /// The legacy error code of <c>DOMStringSizeError</c>: the specified range of text does not fit in a string
     /// (legacy).
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-domstring_size_err"/>
     [IdlMember("DOMSTRING_SIZE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-domstring_size_err")]
     public const ushort DomstringSizeErr = 2;
 
     /// <summary>
     /// The legacy error code of <c>HierarchyRequestError</c>: the operation would yield an incorrect node tree.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-hierarchy_request_err"/>
     [IdlMember("HIERARCHY_REQUEST_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-hierarchy_request_err")]
     public const ushort HierarchyRequestErr = 3;
 
     /// <summary>The legacy error code of <c>WrongDocumentError</c>: the object is in the wrong document.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-wrong_document_err"/>
     [IdlMember("WRONG_DOCUMENT_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-wrong_document_err")]
     public const ushort WrongDocumentErr = 4;
 
     /// <summary>
     /// The legacy error code of <c>InvalidCharacterError</c>: a string contains an invalid character.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-invalid_character_err"/>
     [IdlMember("INVALID_CHARACTER_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-invalid_character_err")]
     public const ushort InvalidCharacterErr = 5;
 
@@ -46,54 +52,65 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     /// The legacy error code of <c>NoDataAllowedError</c>: data is specified for a node that does not support data
     /// (legacy).
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-no_data_allowed_err"/>
     [IdlMember("NO_DATA_ALLOWED_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-no_data_allowed_err")]
     public const ushort NoDataAllowedErr = 6;
 
     /// <summary>The legacy error code of <c>NoModificationAllowedError</c>: the object cannot be modified.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-no_modification_allowed_err"/>
     [IdlMember("NO_MODIFICATION_ALLOWED_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-no_modification_allowed_err")]
     public const ushort NoModificationAllowedErr = 7;
 
     /// <summary>The legacy error code of <c>NotFoundError</c>: the object cannot be found here.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-not_found_err"/>
     [IdlMember("NOT_FOUND_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-not_found_err")]
     public const ushort NotFoundErr = 8;
 
     /// <summary>The legacy error code of <c>NotSupportedError</c>: the operation is not supported.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-not_supported_err"/>
     [IdlMember("NOT_SUPPORTED_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-not_supported_err")]
     public const ushort NotSupportedErr = 9;
 
     /// <summary>
     /// The legacy error code of <c>InUseAttributeError</c>: the attribute is already in use by another element.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-inuse_attribute_err"/>
     [IdlMember("INUSE_ATTRIBUTE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-inuse_attribute_err")]
     public const ushort InuseAttributeErr = 10;
 
     /// <summary>The legacy error code of <c>InvalidStateError</c>: the object is in an invalid state.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-invalid_state_err"/>
     [IdlMember("INVALID_STATE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-invalid_state_err")]
     public const ushort InvalidStateErr = 11;
 
     /// <summary>The legacy error code of <c>SyntaxError</c>: the string does not match the expected pattern.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-syntax_err"/>
     [IdlMember("SYNTAX_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-syntax_err")]
     public const ushort SyntaxErr = 12;
 
     /// <summary>
     /// The legacy error code of <c>InvalidModificationError</c>: the object cannot be modified in this way.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-invalid_modification_err"/>
     [IdlMember("INVALID_MODIFICATION_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-invalid_modification_err")]
     public const ushort InvalidModificationErr = 13;
 
     /// <summary>
     /// The legacy error code of <c>NamespaceError</c>: the operation is not allowed by the namespaces rules.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-namespace_err"/>
     [IdlMember("NAMESPACE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-namespace_err")]
     public const ushort NamespaceErr = 14;
 
     /// <summary>
     /// The legacy error code of <c>InvalidAccessError</c>: the object does not support the operation or argument.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-invalid_access_err"/>
     [IdlMember("INVALID_ACCESS_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-invalid_access_err")]
     public const ushort InvalidAccessErr = 15;
 
     /// <summary>The legacy error code of <c>ValidationError</c>: a validation error occurred (legacy).</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-validation_err"/>
     [IdlMember("VALIDATION_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-validation_err")]
     public const ushort ValidationErr = 16;
 
@@ -101,30 +118,37 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     /// The legacy error code of <c>TypeMismatchError</c>: the type of the object does not match the expected type
     /// (legacy).
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-type_mismatch_err"/>
     [IdlMember("TYPE_MISMATCH_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-type_mismatch_err")]
     public const ushort TypeMismatchErr = 17;
 
     /// <summary>The legacy error code of <c>SecurityError</c>: the operation is insecure.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-security_err"/>
     [IdlMember("SECURITY_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-security_err")]
     public const ushort SecurityErr = 18;
 
     /// <summary>The legacy error code of <c>NetworkError</c>: a network error occurred.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-network_err"/>
     [IdlMember("NETWORK_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-network_err")]
     public const ushort NetworkErr = 19;
 
     /// <summary>The legacy error code of <c>AbortError</c>: the operation was aborted.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-abort_err"/>
     [IdlMember("ABORT_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-abort_err")]
     public const ushort AbortErr = 20;
 
     /// <summary>The legacy error code of <c>URLMismatchError</c>: the given URL does not match another URL.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-url_mismatch_err"/>
     [IdlMember("URL_MISMATCH_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-url_mismatch_err")]
     public const ushort UrlMismatchErr = 21;
 
     /// <summary>The legacy error code of <c>QuotaExceededError</c>: the quota has been exceeded.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-quota_exceeded_err"/>
     [IdlMember("QUOTA_EXCEEDED_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-quota_exceeded_err")]
     public const ushort QuotaExceededErr = 22;
 
     /// <summary>The legacy error code of <c>TimeoutError</c>: the operation timed out.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-timeout_err"/>
     [IdlMember("TIMEOUT_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-timeout_err")]
     public const ushort TimeoutErr = 23;
 
@@ -132,14 +156,17 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     /// The legacy error code of <c>InvalidNodeTypeError</c>: the supplied node is incorrect or has an incorrect
     /// ancestor for this operation.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-invalid_node_type_err"/>
     [IdlMember("INVALID_NODE_TYPE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-invalid_node_type_err")]
     public const ushort InvalidNodeTypeErr = 24;
 
     /// <summary>The legacy error code of <c>DataCloneError</c>: the object cannot be cloned.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-data_clone_err"/>
     [IdlMember("DATA_CLONE_ERR", "https://webidl.spec.whatwg.org/#dom-domexception-data_clone_err")]
     public const ushort DataCloneErr = 25;
 
     /// <summary>Creates an exception with an empty message and the <c>Error</c> name.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-domexception"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-domexception-domexception")]
     public DomException()
         : this("", "Error")
@@ -147,6 +174,7 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     }
 
     /// <summary>Creates an exception with the given message and the <c>Error</c> name.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-domexception"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-domexception-domexception")]
     public DomException(string? message)
         : this(message ?? "", "Error")
@@ -154,6 +182,7 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     }
 
     /// <summary>Creates an exception with the given message and name.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-domexception"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-domexception-domexception")]
     public DomException(string message, string name)
         : base(message)
@@ -172,16 +201,19 @@ public class DomException : Exception, Scripting.IStructuredSerializable, IRealm
     }
 
     /// <summary>Gets the message describing the error.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-message"/>
     [IdlMember("message", "https://webidl.spec.whatwg.org/#dom-domexception-message")]
     public override string Message => base.Message;
 
     /// <summary>Gets the name of the error, such as <c>NotFoundError</c>.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-name"/>
     [IdlMember("name", "https://webidl.spec.whatwg.org/#dom-domexception-name")]
     public string Name { get; private protected init; }
 
     /// <summary>
     /// Gets the legacy numeric error code associated with the name, or 0 when the name has no legacy code.
     /// </summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-domexception-code"/>
     [IdlMember("code", "https://webidl.spec.whatwg.org/#dom-domexception-code")]
     public ushort Code => Name switch
     {

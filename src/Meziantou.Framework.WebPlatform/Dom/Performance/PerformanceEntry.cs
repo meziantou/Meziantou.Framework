@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A performance metric of the performance timeline of a global object (https://w3c.github.io/performance-timeline/#the-performanceentry-interface).</summary>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry"/>
 [IdlInterface("PerformanceEntry", "https://w3c.github.io/performance-timeline/#dom-performanceentry")]
 public abstract class PerformanceEntry
 {
@@ -19,22 +20,27 @@ public abstract class PerformanceEntry
     internal GlobalScope Global { get; }
 
     /// <summary>Gets the identifier of the entry (https://w3c.github.io/performance-timeline/#dom-performanceentry-id), unique in the performance timeline of its global object.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-id"/>
     [IdlMember("id", "https://w3c.github.io/performance-timeline/#dom-performanceentry-id")]
     public ulong Id { get; internal set; }
 
     /// <summary>Gets the name of the entry, e.g. the requested URL of a <see cref="PerformanceResourceTiming"/>.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-name"/>
     [IdlMember("name", "https://w3c.github.io/performance-timeline/#dom-performanceentry-name")]
     public string Name { get; }
 
     /// <summary>Gets the type of the entry, e.g. <c>resource</c>.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-entrytype"/>
     [IdlMember("entryType", "https://w3c.github.io/performance-timeline/#dom-performanceentry-entrytype")]
     public string EntryType { get; }
 
     /// <summary>Gets the time of the start of the entry, in milliseconds relative to the time origin of its global object.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-starttime"/>
     [IdlMember("startTime", "https://w3c.github.io/performance-timeline/#dom-performanceentry-starttime")]
     public double StartTime { get; }
 
     /// <summary>Gets the duration of the entry, in milliseconds.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-duration"/>
     [IdlMember("duration", "https://w3c.github.io/performance-timeline/#dom-performanceentry-duration")]
     public double Duration => GetDuration();
 
@@ -42,6 +48,7 @@ public abstract class PerformanceEntry
     private protected virtual double GetDuration() => _duration;
 
     /// <summary>Gets the identifier of the navigation of the document of the global object when the entry was queued, or 0 for a worker.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceentry-navigationid"/>
     [IdlMember("navigationId", "https://w3c.github.io/performance-timeline/#dom-performanceentry-navigationid")]
     public ulong NavigationId { get; internal set; }
 }

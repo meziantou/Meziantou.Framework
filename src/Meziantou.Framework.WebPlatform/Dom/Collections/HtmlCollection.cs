@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-htmlcollection</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#htmlcollection"/>
 [IdlInterface("HTMLCollection", "https://dom.spec.whatwg.org/#htmlcollection")]
 public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
 {
@@ -85,6 +86,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     }
 
     /// <summary>Gets the number of elements in the collection.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-htmlcollection-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-htmlcollection-length")]
     public uint Length => (uint)Elements.Count;
 
@@ -93,6 +95,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     public int Count => Elements.Count;
 
     /// <summary>Returns the element at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-htmlcollection-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-htmlcollection-item")]
     public Element? Item(uint index)
     {
@@ -101,6 +104,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem-key</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem"/>
     [IdlMember("namedItem", "https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem")]
     public virtual Element? NamedItem(string key)
     {
@@ -118,6 +122,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     }
 
     /// <summary>Gets the element at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-htmlcollection-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-htmlcollection-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Element? this[uint index] => Item(index);
@@ -128,6 +133,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     public Element this[int index] => Elements[index];
 
     /// <summary>Gets the first element with the given <c>id</c> or <c>name</c>, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem"/>
     [IdlMember("namedItem", "https://dom.spec.whatwg.org/#dom-htmlcollection-nameditem")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Element? this[string name] => NamedItem(name);

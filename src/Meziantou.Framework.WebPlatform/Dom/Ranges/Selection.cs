@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/selection-api/#dom-getcomposedrangesoptions</summary>
+/// <seealso href="https://w3c.github.io/selection-api/#dom-getcomposedrangesoptions"/>
 [IdlInterface("GetComposedRangesOptions", "https://w3c.github.io/selection-api/#dom-getcomposedrangesoptions")]
 public sealed class GetComposedRangesOptions
 {
     /// <summary>Gets the shadow roots whose content may be exposed by the composed ranges.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-getcomposedrangesoptions-shadowroots"/>
     [IdlMember("shadowRoots", "https://w3c.github.io/selection-api/#dom-getcomposedrangesoptions-shadowroots")]
     public IReadOnlyList<ShadowRoot> ShadowRoots { get; init; } = [];
 }
@@ -14,6 +16,7 @@ public sealed class GetComposedRangesOptions
 /// and a direction. The selection changes through this API (<c>modify()</c> moves it over the layout as the keyboard does),
 /// the <see cref="Range"/> methods, the DOM mutations, and the caret movement keys in editable content.
 /// </summary>
+/// <seealso href="https://w3c.github.io/selection-api/#selection-interface"/>
 [IdlInterface("Selection", "https://w3c.github.io/selection-api/#selection-interface")]
 public sealed partial class Selection
 {
@@ -66,36 +69,44 @@ public sealed partial class Selection
     /// <summary>
     /// Gets the node in which the selection starts, or null when there is no range in the document tree.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-anchornode"/>
     [IdlMember("anchorNode", "https://w3c.github.io/selection-api/#dom-selection-anchornode")]
     public Node? AnchorNode => _range is not null && IsInDocumentTree(Anchor.Node) ? Anchor.Node : null;
 
     /// <summary>Gets the offset of the anchor of the selection within the anchor node.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-anchoroffset"/>
     [IdlMember("anchorOffset", "https://w3c.github.io/selection-api/#dom-selection-anchoroffset")]
     public uint AnchorOffset => _range is not null && IsInDocumentTree(Anchor.Node) ? Anchor.Offset : 0;
 
     /// <summary>
     /// Gets the node in which the selection ends, or null when there is no range in the document tree.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-focusnode"/>
     [IdlMember("focusNode", "https://w3c.github.io/selection-api/#dom-selection-focusnode")]
     public Node? FocusNode => _range is not null && IsInDocumentTree(Focus.Node) ? Focus.Node : null;
 
     /// <summary>Gets the offset of the focus of the selection within the focus node.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-focusoffset"/>
     [IdlMember("focusOffset", "https://w3c.github.io/selection-api/#dom-selection-focusoffset")]
     public uint FocusOffset => _range is not null && IsInDocumentTree(Focus.Node) ? Focus.Offset : 0;
 
     /// <summary>Whether the anchor and the focus are the same, including when the selection is empty.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-iscollapsed"/>
     [IdlMember("isCollapsed", "https://w3c.github.io/selection-api/#dom-selection-iscollapsed")]
     public bool IsCollapsed => _range is null || _range.Collapsed;
 
     /// <summary>Gets the number of ranges in the selection (0 or 1).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-rangecount"/>
     [IdlMember("rangeCount", "https://w3c.github.io/selection-api/#dom-selection-rangecount")]
     public uint RangeCount => HasRangeInDocumentTree ? 1u : 0u;
 
     /// <summary>"None", "Caret" or "Range".</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-type"/>
     [IdlMember("type", "https://w3c.github.io/selection-api/#dom-selection-type")]
     public string Type => !HasRangeInDocumentTree ? "None" : _range!.Collapsed ? "Caret" : "Range";
 
     /// <summary>"none", "forward" or "backward".</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-direction"/>
     [IdlMember("direction", "https://w3c.github.io/selection-api/#dom-selection-direction")]
     public string Direction => _range is null ? "none" : _direction switch
     {
@@ -105,6 +116,7 @@ public sealed partial class Selection
     };
 
     /// <summary>Returns the range of the selection (not a copy).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-getrangeat"/>
     [IdlMember("getRangeAt", "https://w3c.github.io/selection-api/#dom-selection-getrangeat")]
     public Range GetRangeAt(uint index)
     {
@@ -115,6 +127,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Associates the range (not a copy) with the selection, when the selection is empty.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-addrange"/>
     [IdlMember("addRange", "https://w3c.github.io/selection-api/#dom-selection-addrange")]
     public void AddRange(Range range)
     {
@@ -127,6 +140,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Removes the given range from the selection.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-removerange"/>
     [IdlMember("removeRange", "https://w3c.github.io/selection-api/#dom-selection-removerange")]
     public void RemoveRange(Range range)
     {
@@ -138,6 +152,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Removes all the ranges from the selection.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-removeallranges"/>
     [IdlMember("removeAllRanges", "https://w3c.github.io/selection-api/#dom-selection-removeallranges")]
     public void RemoveAllRanges()
     {
@@ -148,6 +163,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Removes all the ranges from the selection. This is an alias of <c>removeAllRanges()</c>.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-empty"/>
     [IdlMember("empty", "https://w3c.github.io/selection-api/#dom-selection-empty")]
     public void Empty() => RemoveAllRanges();
 
@@ -155,6 +171,7 @@ public sealed partial class Selection
     /// Returns the range of the selection, with the boundary points in the shadow trees that are not in
     /// <paramref name="options"/> rescoped to their shadow host.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-getcomposedranges"/>
     [IdlMember("getComposedRanges", "https://w3c.github.io/selection-api/#dom-selection-getcomposedranges")]
     public IReadOnlyList<StaticRange> GetComposedRanges(GetComposedRangesOptions? options = null)
     {
@@ -192,6 +209,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Collapses the selection to the boundary point, or empties it when <paramref name="node"/> is null.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-collapse"/>
     [IdlMember("collapse", "https://w3c.github.io/selection-api/#dom-selection-collapse")]
     public void Collapse(Node? node, uint offset = 0)
     {
@@ -214,10 +232,12 @@ public sealed partial class Selection
     }
 
     /// <summary>Collapses the selection to the given node and offset. This is an alias of <c>collapse()</c>.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-setposition"/>
     [IdlMember("setPosition", "https://w3c.github.io/selection-api/#dom-selection-setposition")]
     public void SetPosition(Node? node, uint offset = 0) => Collapse(node, offset);
 
     /// <summary>Collapses the selection to the start of its range.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-collapsetostart"/>
     [IdlMember("collapseToStart", "https://w3c.github.io/selection-api/#dom-selection-collapsetostart")]
     public void CollapseToStart()
     {
@@ -228,6 +248,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Collapses the selection to the end of its range.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-collapsetoend"/>
     [IdlMember("collapseToEnd", "https://w3c.github.io/selection-api/#dom-selection-collapsetoend")]
     public void CollapseToEnd()
     {
@@ -238,6 +259,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Moves the focus of the selection to the boundary point, keeping the anchor.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-extend"/>
     [IdlMember("extend", "https://w3c.github.io/selection-api/#dom-selection-extend")]
     public void Extend(Node node, uint offset = 0)
     {
@@ -272,6 +294,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Sets the anchor and the focus of the selection to the given nodes and offsets.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-setbaseandextent"/>
     [IdlMember("setBaseAndExtent", "https://w3c.github.io/selection-api/#dom-selection-setbaseandextent")]
     public void SetBaseAndExtent(Node anchorNode, uint anchorOffset, Node focusNode, uint focusOffset)
     {
@@ -332,6 +355,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Sets the selection to contain all the children of the given node.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-selectallchildren"/>
     [IdlMember("selectAllChildren", "https://w3c.github.io/selection-api/#dom-selection-selectallchildren")]
     public void SelectAllChildren(Node node)
     {
@@ -346,6 +370,7 @@ public sealed partial class Selection
     }
 
     /// <summary>Deletes the contents of the range of the selection (the range is mutated, not replaced).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-deletefromdocument"/>
     [IdlMember("deleteFromDocument", "https://w3c.github.io/selection-api/#dom-selection-deletefromdocument")]
     public void DeleteFromDocument()
     {
@@ -359,6 +384,7 @@ public sealed partial class Selection
     /// Whether the node is selected (or partially selected when <paramref name="allowPartialContainment"/> is true). There
     /// is no rendering, so boundary points are never visually equivalent: the boundary points are compared.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-containsnode"/>
     [IdlMember("containsNode", "https://w3c.github.io/selection-api/#dom-selection-containsnode")]
     public bool ContainsNode(Node node, bool allowPartialContainment = false)
     {
@@ -536,6 +562,7 @@ public partial class Document
     internal HashSet<Node>? ScheduledSelectionChangeTargets { get; set; }
 
     /// <summary>Returns the selection of the document, or null when the document has no browsing context.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-document-getselection"/>
     [IdlMember("getSelection", "https://w3c.github.io/selection-api/#dom-document-getselection")]
     public Selection? GetSelection() => BrowsingContext is null ? null : _selection ??= new Selection(this);
 
@@ -546,6 +573,7 @@ public partial class Document
 public sealed partial class Window
 {
     /// <summary>Returns the selection associated with the document of the window.</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-window-getselection"/>
     [IdlMember("getSelection", "https://w3c.github.io/selection-api/#dom-window-getselection")]
     public Selection? GetSelection() => Document.GetSelection();
 }
@@ -556,6 +584,7 @@ public sealed partial class ShadowRoot
     /// Returns the selection of the node document. The member was defined by the obsolete Shadow DOM specification and is
     /// implemented by Blink and WebKit, but the Selection API does not define it.
     /// </summary>
+    /// <seealso href="https://www.w3.org/TR/2014/WD-shadow-dom-20140617/#widl-ShadowRoot-getSelection-Selection"/>
     [IdlMember("getSelection", "https://www.w3.org/TR/2014/WD-shadow-dom-20140617/#widl-ShadowRoot-getSelection-Selection")]
     [Experimental(ExperimentalApis.ShadowRootExtensions, UrlFormat = ExperimentalApis.UrlFormat)]
     public Selection? GetSelection() => NodeDocument.GetSelection();

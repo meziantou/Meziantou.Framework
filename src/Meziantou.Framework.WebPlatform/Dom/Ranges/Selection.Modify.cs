@@ -35,6 +35,7 @@ public sealed partial class Selection
     /// boundary, in the direction <paramref name="direction"/> (<c>forward</c>, <c>backward</c>, <c>left</c> or <c>right</c>),
     /// as the user would with the keyboard. The movements follow the layout: see <see cref="CaretNavigator"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-modify"/>
     [IdlMember("modify", "https://w3c.github.io/selection-api/#dom-selection-modify")]
     public void Modify(string? alter = null, string? direction = null, string? granularity = null)
     {

@@ -4,10 +4,12 @@ using Meziantou.Framework.WebPlatform.Css.Om;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-caretpositionfrompointoptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-caretpositionfrompointoptions"/>
 [IdlInterface("CaretPositionFromPointOptions", "https://drafts.csswg.org/cssom-view/#dictdef-caretpositionfrompointoptions")]
 public sealed class CaretPositionFromPointOptions
 {
     /// <summary>Gets the shadow roots whose positions may be returned (the positions in the other shadow trees are retargeted to their shadow hosts).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-caretpositionfrompointoptions-shadowroots"/>
     [IdlMember("shadowRoots", "https://drafts.csswg.org/cssom-view/#dom-caretpositionfrompointoptions-shadowroots")]
     public IReadOnlyList<ShadowRoot> ShadowRoots { get; init; } = [];
 }
@@ -16,6 +18,7 @@ public sealed class CaretPositionFromPointOptions
 /// A caret position (https://drafts.csswg.org/cssom-view/#caretposition): a node and an offset in it, returned by
 /// <see cref="Document.CaretPositionFromPoint"/>.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#caretposition"/>
 [IdlInterface("CaretPosition", "https://drafts.csswg.org/cssom-view/#caretposition")]
 public sealed class CaretPosition
 {
@@ -30,10 +33,12 @@ public sealed class CaretPosition
     private PhysicalRect? TextControlCaret { get; }
 
     /// <summary>Gets the node of the caret position (https://drafts.csswg.org/cssom-view/#dom-caretposition-offsetnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-caretposition-offsetnode"/>
     [IdlMember("offsetNode", "https://drafts.csswg.org/cssom-view/#dom-caretposition-offsetnode")]
     public Node OffsetNode { get; }
 
     /// <summary>Gets the offset of the caret position in its node (https://drafts.csswg.org/cssom-view/#dom-caretposition-offset).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-caretposition-offset"/>
     [IdlMember("offset", "https://drafts.csswg.org/cssom-view/#dom-caretposition-offset")]
     public uint Offset { get; }
 
@@ -42,6 +47,7 @@ public sealed class CaretPosition
     /// rectangle of the collapsed range of the caret position (see <see cref="Range.GetBoundingClientRect"/>), or null when the
     /// node is not in a document anymore.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-caretposition-getclientrect"/>
     [IdlMember("getClientRect", "https://drafts.csswg.org/cssom-view/#dom-caretposition-getclientrect")]
     public DomRect? GetClientRect()
     {

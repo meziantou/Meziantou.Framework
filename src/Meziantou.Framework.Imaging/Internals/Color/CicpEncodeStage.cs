@@ -14,4 +14,15 @@ internal sealed class CicpEncodeStage(byte transfer, int channelCount) : IccStag
             values[i] = CicpTransfer.Encode(transfer, values[i]);
         }
     }
+
+    public override void ApplyBatch(Span<double> components, int count)
+    {
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            foreach (ref var value in GetComponent(components, channel, count))
+            {
+                value = CicpTransfer.Encode(transfer, value);
+            }
+        }
+    }
 }

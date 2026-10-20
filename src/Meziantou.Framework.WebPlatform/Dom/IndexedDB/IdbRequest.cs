@@ -4,6 +4,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A request (https://w3c.github.io/IndexedDB/#request-api): the result of an asynchronous operation on a database, made
 /// available when the <c>success</c> or <c>error</c> event is fired at the request.
 /// </summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbrequest"/>
 [IdlInterface("IDBRequest", "https://w3c.github.io/IndexedDB/#idbrequest")]
 public class IdbRequest : EventTarget
 {
@@ -37,27 +38,33 @@ public class IdbRequest : EventTarget
 
     /// <summary>Gets the result of the request (an IDL <c>any</c> value: null is undefined).</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the request is not done.</exception>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-result"/>
     [IdlMember("result", "https://w3c.github.io/IndexedDB/#dom-idbrequest-result")]
     public object? Result => IsDone ? _result : throw DomException.InvalidState("The request is not done");
 
     /// <summary>Gets the error of the request, or null.</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the request is not done.</exception>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-error"/>
     [IdlMember("error", "https://w3c.github.io/IndexedDB/#dom-idbrequest-error")]
     public DomException? Error => IsDone ? _error : throw DomException.InvalidState("The request is not done");
 
     /// <summary>Gets the source of the request: an <see cref="IdbObjectStore"/>, an <see cref="IdbIndex"/>, an <see cref="IdbCursor"/>, or null.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-source"/>
     [IdlMember("source", "https://w3c.github.io/IndexedDB/#dom-idbrequest-source")]
     public object? Source => SourceObject;
 
     /// <summary>Gets the transaction of the request, or null.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-transaction"/>
     [IdlMember("transaction", "https://w3c.github.io/IndexedDB/#dom-idbrequest-transaction")]
     public IdbTransaction? Transaction => TransactionObject;
 
     /// <summary>Gets the state of the request.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-readystate"/>
     [IdlMember("readyState", "https://w3c.github.io/IndexedDB/#dom-idbrequest-readystate")]
     public IdbRequestReadyState ReadyState => IsDone ? IdbRequestReadyState.Done : IdbRequestReadyState.Pending;
 
     /// <summary>The event handler of the success events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-onsuccess"/>
     [IdlMember("onsuccess", "https://w3c.github.io/IndexedDB/#dom-idbrequest-onsuccess")]
     public Action<Event>? OnSuccess
     {
@@ -66,6 +73,7 @@ public class IdbRequest : EventTarget
     }
 
     /// <summary>The event handler of the error events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbrequest-onerror"/>
     [IdlMember("onerror", "https://w3c.github.io/IndexedDB/#dom-idbrequest-onerror")]
     public Action<Event>? OnError
     {
@@ -108,6 +116,7 @@ public class IdbRequest : EventTarget
 }
 
 /// <summary>A request to open or delete a database (https://w3c.github.io/IndexedDB/#idbopendbrequest).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbopendbrequest"/>
 [IdlInterface("IDBOpenDBRequest", "https://w3c.github.io/IndexedDB/#idbopendbrequest")]
 public sealed class IdbOpenDBRequest : IdbRequest
 {
@@ -117,6 +126,7 @@ public sealed class IdbOpenDBRequest : IdbRequest
     }
 
     /// <summary>The event handler of the blocked events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onblocked"/>
     [IdlMember("onblocked", "https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onblocked")]
     public Action<Event>? OnBlocked
     {
@@ -125,6 +135,7 @@ public sealed class IdbOpenDBRequest : IdbRequest
     }
 
     /// <summary>The event handler of the upgradeneeded events.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onupgradeneeded"/>
     [IdlMember("onupgradeneeded", "https://w3c.github.io/IndexedDB/#dom-idbopendbrequest-onupgradeneeded")]
     public Action<Event>? OnUpgradeNeeded
     {

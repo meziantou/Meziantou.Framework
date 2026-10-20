@@ -1304,7 +1304,7 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
 
-        var query = queryBuilder.Build("int32:1 sample");
+        var query = queryBuilder.Build("int32:1\u00A0sample");
 
         Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }));
         Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }));
